@@ -30,6 +30,8 @@ node app.js
 
 ## Setup for New Developers
 
+> **Note**: If you're setting up SharePoint/Entra ID for the first time (organization admin), see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) for detailed configuration steps. The steps below assume SharePoint is already configured.
+
 ### 1. Clone and Install
 
 ```bash
@@ -38,9 +40,19 @@ cd dtv-tracker-app
 npm install
 ```
 
-### 2. Create Environment File
+### 2. Get Credentials
 
-Create a `.env` file in the project root (this file is git-ignored and won't be committed):
+**Ask your team lead or admin for**:
+- SharePoint Client ID
+- SharePoint Client Secret
+- SharePoint Tenant ID
+- SharePoint Site URL
+
+These are stored securely and shared via password manager or secure channel (never via email/Slack).
+
+### 3. Create Environment File
+
+Create a `.env` file in the project root:
 
 ```bash
 # SharePoint Configuration
@@ -49,7 +61,7 @@ SHAREPOINT_CLIENT_ID=your_client_id_here
 SHAREPOINT_CLIENT_SECRET=your_client_secret_here
 SHAREPOINT_TENANT_ID=your_tenant_id_here
 
-# SharePoint List GUIDs
+# SharePoint List GUIDs (these are the same for all developers)
 GROUPS_LIST_GUID=68f9eb4a-1eea-4c1f-88e5-9211cf56e002
 SESSIONS_LIST_GUID=857fc298-6eba-49ab-99bf-9712ef6b8448
 ENTRIES_LIST_GUID=8a362810-15ea-4210-9ad0-a98196747866
@@ -57,70 +69,11 @@ PROFILES_LIST_GUID=f3d3c40c-35cb-4167-8c83-c566edef6f29
 REGULARS_LIST_GUID=34b535f1-34ec-4fe6-a887-3b8523e492e1
 ```
 
-**⚠️ Important**: Never commit the `.env` file to version control. It contains sensitive credentials.
+**⚠️ Important**:
+- Never commit the `.env` file to version control (already in `.gitignore`)
+- The list GUIDs are the same for everyone - they identify the SharePoint lists
 
-### 3. Set Up Microsoft Entra ID App Registration
-
-#### A. Create App Registration
-
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Microsoft Entra ID** → **App registrations**
-3. Click **+ New registration**
-4. Configure:
-   - **Name**: `DTV Volunteer Tracker` (or your preferred name)
-   - **Supported account types**: Single tenant
-   - **Redirect URI**: Leave blank for now
-5. Click **Register**
-6. **Copy the following values to your `.env` file**:
-   - **Application (client) ID** → `SHAREPOINT_CLIENT_ID`
-   - **Directory (tenant) ID** → `SHAREPOINT_TENANT_ID`
-
-#### B. Create Client Secret
-
-1. In your app registration, go to **Certificates & secrets**
-2. Click **+ New client secret**
-3. Add description: `Dev Secret` (or preferred name)
-4. Choose expiration period
-5. Click **Add**
-6. **⚠️ Copy the secret Value immediately** → `SHAREPOINT_CLIENT_SECRET` in `.env`
-   - You can't view it again after leaving the page!
-
-#### C. Grant SharePoint Permissions
-
-1. In your app registration, go to **API permissions**
-2. Click **+ Add a permission**
-3. Select **SharePoint**
-4. Select **Application permissions** (not Delegated)
-5. Check **`Sites.ReadWrite.All`**
-6. Click **Add permissions**
-7. **Click "✓ Grant admin consent for [your org]"** (requires admin role)
-8. Verify Status shows "Granted for [your org]" with green checkmark
-
-### 4. Grant SharePoint Site-Level Access
-
-Even with API permissions, you need to grant the app access to the specific SharePoint site.
-
-1. Visit (replace with your site URL):
-   ```
-   https://dtvolunteers.sharepoint.com/sites/members/_layouts/15/appinv.aspx
-   ```
-
-2. Enter your **Client ID** in the "App Id" field and click **Lookup**
-
-3. Paste this permission XML:
-   ```xml
-   <AppPermissionRequests AllowAppOnlyPolicy="true">
-     <AppPermissionRequest Scope="http://sharepoint/content/sitecollection" Right="FullControl" />
-   </AppPermissionRequests>
-   ```
-
-4. Click **Create**
-
-5. Click **Trust It** when prompted
-
-6. Wait 1-2 minutes for permissions to propagate
-
-### 5. Verify Setup
+### 4. Verify Setup
 
 Test your configuration:
 
@@ -135,7 +88,7 @@ node test-auth.js
 
 If successful, you should see sample group data from SharePoint.
 
-### 6. Start Development
+### 5. Start Development
 
 ```bash
 # Start the server
@@ -166,7 +119,8 @@ dtv-tracker-app/
 ├── .gitignore                 # Git ignore rules
 ├── docs/
 │   ├── progress.md           # Development session notes
-│   └── sharepoint-schema.md  # SharePoint data model documentation
+│   ├── sharepoint-schema.md  # SharePoint data model documentation
+│   └── sharepoint-setup.md   # One-time SharePoint/Entra ID setup (admin)
 ├── public/
 │   └── index.html            # Frontend landing page
 ├── services/
@@ -178,7 +132,8 @@ dtv-tracker-app/
 
 - **[claude.md](claude.md)** - Project overview, data model, and development guidelines
 - **[docs/sharepoint-schema.md](docs/sharepoint-schema.md)** - Complete SharePoint list schemas and relationships
-- **[docs/progress.md](docs/progress.md)** - Development progress and session notes
+- **[docs/sharepoint-setup.md](docs/sharepoint-setup.md)** - One-time SharePoint/Entra ID configuration (for admins)
+- **[docs/progress.md](docs/progress.md)** - Development session notes
 
 ## SharePoint Data Model
 
@@ -192,43 +147,43 @@ The app uses 5 SharePoint lists:
 
 See [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for detailed schema documentation.
 
+## SharePoint Administration
+
+**For organization admins**: See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) for complete SharePoint and Entra ID configuration guide.
+
 ## Troubleshooting
-
-### "Unsupported app only token" error
-
-**Cause**: SharePoint site permissions not granted (Step 4 above)
-
-**Solution**: Visit `https://[your-site]/_layouts/15/appinv.aspx` and grant site-level permissions
-
-### "401 Unauthorized" error
-
-**Causes**:
-1. Entra ID permissions not granted admin consent (Step 3C)
-2. Client secret expired or incorrect
-3. Site-level permissions not configured (Step 4)
-
-**Solutions**:
-1. Verify "Granted" status in Entra ID app permissions
-2. Generate a new client secret
-3. Complete Step 4 above
-
-### "Invalid client secret" error
-
-**Cause**: Client secret copied incorrectly or expired
-
-**Solution**:
-1. Create a new client secret in Entra ID
-2. Update `SHAREPOINT_CLIENT_SECRET` in `.env`
-3. Make sure you copied the secret **Value**, not the Secret ID
 
 ### Cannot connect to SharePoint
 
 **Checklist**:
 - [ ] `.env` file exists with all required variables
-- [ ] Client ID, Secret, and Tenant ID are correct
-- [ ] API permissions granted and admin-consented
-- [ ] Site-level permissions granted via appinv.aspx
-- [ ] Waited 1-2 minutes after granting permissions
+- [ ] Client ID, Secret, and Tenant ID are correct (ask your team lead if unsure)
+- [ ] No extra spaces in `.env` values
+- [ ] Using the correct SharePoint site URL
+
+### "401 Unauthorized" or "Invalid client secret"
+
+**Cause**: Credentials in `.env` are incorrect or expired
+
+**Solution**: Contact your team lead for updated credentials
+
+### "Unsupported app only token" error
+
+**Cause**: SharePoint site permissions issue (admin-level problem)
+
+**Solution**: Contact your SharePoint administrator - see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3
+
+### Test script fails
+
+```bash
+# Run the authentication test to diagnose
+node test-auth.js
+```
+
+If this fails, the error message will indicate whether it's:
+- Authentication problem (bad credentials)
+- Permission problem (contact admin)
+- Network problem (check VPN/firewall)
 
 ## Development Guidelines
 

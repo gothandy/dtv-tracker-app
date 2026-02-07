@@ -126,8 +126,9 @@ dtv-tracker-app/
 ├── claude.md                  # This file - project context for Claude
 ├── package.json               # Node dependencies
 ├── docs/
-│   ├── progress.md           # Development progress and session notes
-│   └── sharepoint-schema.md  # Complete SharePoint schema documentation
+│   ├── progress.md           # Development session notes
+│   ├── sharepoint-schema.md  # SharePoint data model documentation
+│   └── sharepoint-setup.md   # One-time SharePoint/Entra ID setup (admin)
 ├── public/
 │   └── index.html            # Frontend landing page
 └── services/
