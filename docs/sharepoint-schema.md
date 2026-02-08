@@ -15,8 +15,8 @@ This document describes the SharePoint list schema for the Volunteer App backend
 | Column Name | Internal Name | Type | Required | Max Length | Description |
 |------------|---------------|------|----------|------------|-------------|
 | **ID** | ID | Counter | Auto | - | Unique identifier (Primary Key) |
-| **Title** | Title | Single line of text | No | 255 | Group title |
-| **Name** | Name | Single line of text | No | 255 | Short unique name for the Crew |
+| **Title** | Title | Single line of text | No | 255 | Shorthand identifier (e.g., "Sat") - used in lookups |
+| **Name** | Name | Single line of text | No | 255 | Full display name (e.g., "Saturday Dig") - use for UI |
 | **Description** | Description | Single line of text | No | 255 | Group description |
 | **EventbriteSeriesID** | EventbriteSeriesID | Single line of text | No | 255 | Eventbrite Series identifier for the group |
 | **Content Type ID** | ContentTypeId | Content Type Id | No | - | SharePoint content type (hidden) |
@@ -242,9 +242,16 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 ## Notes
 
+### Field Naming Conventions
 - All lists include standard SharePoint metadata fields (ID, Created, Modified, Created By, Modified By)
 - Field names with spaces are encoded in internal names (e.g., "Content Type" becomes "ContentType")
 - Auto-generated fields are read-only and managed by SharePoint
+- **Column names ending in "Flow"** (e.g., FinancialYearFlow) are auto-populated by Power Automate flows
+
+### Important Implementation Notes
+- **Pagination Required**: Microsoft Graph API returns a maximum of 999 items per request. Always follow `@odata.nextLink` to retrieve all items from large lists.
+- **Lookup Field IDs**: Graph API returns both display values and lookup IDs (e.g., `Crew` and `CrewLookupId`). Use lookup IDs for joins and filtering.
+- **Financial Year Filtering**: Use `Sessions.FinancialYearFlow` as the authoritative source. The `Entries.FinancialYearFlow` field is deprecated and should be deleted.
 
 ## Usage
 
@@ -256,4 +263,4 @@ This schema can be used to:
 
 ---
 
-*Last Updated: 2026-02-06*
+*Last Updated: 2026-02-08*

@@ -236,7 +236,7 @@
                 grid.className = 'groups-grid';
 
                 groups.forEach(group => {
-                    // Note: group.Name is SharePoint internal shorthand (e.g., "Sat") - not for UI display
+                    // Note: group.Title is SharePoint shorthand (e.g., "Sat") - use group.Name (e.g., "Saturday Dig") for UI display
                     const card = document.createElement('a');
                     card.className = 'group-card';
                     card.href = `/group-detail.html?id=${group.ID}`;
@@ -246,7 +246,7 @@
                         : '';
 
                     card.innerHTML = `
-                        <h3>${escapeHtml(group.Title)}</h3>
+                        <h3>${escapeHtml(group.Name)}</h3>
                         ${group.Description ? `<div class="description">${escapeHtml(group.Description)}</div>` : ''}
                         <div class="meta">
                             ${group.EventbriteSeriesID ? `

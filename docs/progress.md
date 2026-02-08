@@ -422,3 +422,139 @@ curl http://localhost:3000/api/sessions
 ---
 
 *Last Updated: 2026-02-08 - Mobile-First Reporting Complete*
+
+---
+
+## Session: 2026-02-08 (Afternoon)
+
+### Completed Tasks
+
+#### 1. Fixed Critical Pagination Bug ✓
+
+**Objective**: Resolve hours calculation discrepancy (67.5 hours vs expected 2826.5 hours)
+
+**Root Cause**: Microsoft Graph API only returns 200 items by default; pagination wasn't implemented
+
+**Solution**:
+- Updated [services/sharepoint.js](../services/sharepoint.js) `getListItems()` method to handle pagination
+- Added `$top=999` parameter to increase page size
+- Implemented loop to follow `@odata.nextLink` until all items retrieved
+- Now fetches all items from large lists automatically
+
+**Results**:
+- **Before**: 200 sessions, 200 entries, 67.5 hours
+- **After**: 517 sessions, 3,242 entries, 2,628.5 hours ✓
+- Dashboard now matches SharePoint pivot table perfectly
+
+**Files Modified**:
+- [services/sharepoint.js](../services/sharepoint.js) lines 176-230 - Added pagination loop
+
+#### 2. Implemented Hybrid Financial Year Filtering ✓
+
+**Objective**: Use Sessions.FinancialYearFlow field as authoritative source for FY filtering
+
+**Background**:
+- `FinancialYearFlow` field is auto-populated by Power Automate (column names ending in "Flow")
+- Only recent sessions have this field populated (7 of 517 sessions)
+- Older sessions need date-based filtering fallback
+
+**Implementation**:
+- Filter entries by joining to Sessions via EventLookupId
+- Use Sessions.FinancialYearFlow when populated (preferred)
+- Fall back to date-based filtering (April 1 - March 31) when FinancialYearFlow is null
+- Entries.FinancialYearFlow field marked for deletion (not maintained)
+
+**Files Modified**:
+- [app.js](../app.js) lines 79-126 - Hybrid FY filtering logic
+- [docs/sharepoint-refactoring.md](sharepoint-refactoring.md) - Documented FY field usage
+
+#### 3. Added Active Groups Stat to Dashboard ✓
+
+**Objective**: Show count of groups with active sessions in current FY (more meaningful than total groups)
+
+**Implementation**:
+- Calculate unique CrewLookupId values from sessions in current FY
+- Replace "Total Groups" stat with "Active Groups This FY"
+- Shows 14 active groups out of 25 total for FY 2025-2026
+
+**Dashboard Stats**:
+- Active Groups: 14 (This FY)
+- Sessions: 103 (This FY)
+- Hours: 2,628.5 (This FY)
+
+**Files Modified**:
+- [app.js](../app.js) lines 133-145 - Active groups calculation
+- [public/index.html](../public/index.html) - Updated dashboard UI
+
+#### 4. Documentation & Refactoring ✓
+
+**Documentation Created**:
+- [docs/sharepoint-refactoring.md](sharepoint-refactoring.md) - Tracks legacy columns, naming issues, and cleanup tasks
+
+**Schema Updates**:
+- [docs/sharepoint-schema.md](sharepoint-schema.md) - Clarified Title vs Name field usage in Groups list
+- Added notes about "Flow" suffix convention (Power Automate fields)
+- Added pagination requirements and implementation notes
+
+**Code Cleanup**:
+- Moved 7 test files to [test/](../test/) folder
+- Deleted accidental NUL file
+- Updated comments to reflect actual field usage
+
+### Key Learnings Documented
+
+1. **Pagination is Critical**: Always implement pagination when using Microsoft Graph API
+   - Default limit: 200-1000 items depending on endpoint
+   - Follow `@odata.nextLink` to get all pages
+   - Use `$top=999` to reduce number of requests
+
+2. **Power Automate Naming Convention**: Column names ending in "Flow" are auto-populated by Power Automate flows
+   - Example: `FinancialYearFlow` in Sessions list
+
+3. **Financial Year Data Model**:
+   - Sessions.FinancialYearFlow = Authoritative source (maintained by Power Automate)
+   - Entries.FinancialYearFlow = Deprecated (not maintained, delete column)
+   - Always join Entries → Sessions to get FY data
+
+4. **Hybrid Filtering Pattern**: When a field isn't fully populated, use a hybrid approach:
+   - Prefer the dedicated field when available
+   - Fall back to calculated/derived values when null
+   - Ensures both new and legacy data are included
+
+5. **Field Name Confusion - Groups List**:
+   - `Title` = Shorthand (e.g., "Sat") - used in lookups
+   - `Name` = Full name (e.g., "Saturday Dig") - use for UI display
+   - Schema documentation was backwards from actual usage
+
+### Current Status: ✅ DASHBOARD STATS WORKING
+
+**What's Working**:
+- ✓ Pagination retrieves all 3,242 entries and 517 sessions
+- ✓ Dashboard shows accurate FY stats: 14 active groups, 103 sessions, 2,628.5 hours
+- ✓ Numbers match SharePoint pivot table exactly
+- ✓ Hybrid FY filtering handles both new and legacy data
+- ✓ All three dashboard stats are FY-specific and consistent
+
+**Files in This Session**:
+- [services/sharepoint.js](../services/sharepoint.js) - Pagination + hybrid filtering
+- [app.js](../app.js) - Active groups stat + FY filtering
+- [public/index.html](../public/index.html) - Dashboard UI updates
+- [docs/sharepoint-schema.md](sharepoint-schema.md) - Field clarifications
+- [docs/sharepoint-refactoring.md](sharepoint-refactoring.md) - Cleanup tracking (NEW)
+
+### Next Steps
+
+1. **SharePoint Cleanup**:
+   - [ ] Delete FinancialYearFlow column from Entries list
+   - [ ] Backfill FinancialYearFlow for all Sessions (or rely on date-based fallback)
+   - [ ] Review and update Power Automate flows
+
+2. **Future Enhancements**:
+   - [ ] Add volunteers page (currently "Coming soon")
+   - [ ] Implement check-in workflow
+   - [ ] Add filtering/sorting to Sessions page
+   - [ ] Build volunteer hours reports
+
+---
+
+*Last Updated: 2026-02-08 - Dashboard Stats Fixed with Pagination*

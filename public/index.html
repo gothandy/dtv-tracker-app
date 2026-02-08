@@ -161,18 +161,19 @@
         <!-- Dashboard Stats -->
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
-                <div class="number" id="totalGroups">-</div>
-                <div class="label">Groups</div>
+                <div class="number" id="activeGroupsFY">-</div>
+                <div class="label">Active Groups</div>
+                <div class="sublabel" id="fyLabel">This FY</div>
             </div>
             <div class="stat-card">
                 <div class="number" id="sessionsFY">-</div>
                 <div class="label">Sessions</div>
-                <div class="sublabel" id="fyLabel">This FY</div>
+                <div class="sublabel" id="fyLabel2">This FY</div>
             </div>
             <div class="stat-card">
                 <div class="number" id="hoursFY">-</div>
                 <div class="label">Hours</div>
-                <div class="sublabel" id="fyLabel2">This FY</div>
+                <div class="sublabel" id="fyLabel3">This FY</div>
             </div>
         </div>
 
@@ -227,7 +228,7 @@
                 const stats = result.data;
 
                 // Update stat cards
-                document.getElementById('totalGroups').textContent = stats.totalGroups;
+                document.getElementById('activeGroupsFY').textContent = stats.activeGroupsFY;
                 document.getElementById('sessionsFY').textContent = stats.sessionsFY;
                 document.getElementById('hoursFY').textContent = stats.hoursFY.toLocaleString();
 
@@ -235,6 +236,7 @@
                 const fyText = `FY ${stats.financialYear}`;
                 document.getElementById('fyLabel').textContent = fyText;
                 document.getElementById('fyLabel2').textContent = fyText;
+                document.getElementById('fyLabel3').textContent = fyText;
 
             } catch (error) {
                 console.error('Error loading stats:', error);

@@ -221,10 +221,10 @@
                 }
 
                 // Update page title
-                document.title = `${group.Title} - DTV Tracker`;
+                document.title = `${group.Name} - DTV Tracker`;
 
                 // Display group details
-                // Note: group.Name is SharePoint internal shorthand - use Title for display
+                // Note: group.Title is SharePoint shorthand (e.g., "Sat") - use group.Name (e.g., "Saturday Dig") for display
                 const eventbriteButton = group.EventbriteSeriesID
                     ? `<a href="https://www.eventbrite.co.uk/e/${group.EventbriteSeriesID}" target="_blank" class="eventbrite-button">
                             View on Eventbrite &rarr;
@@ -233,7 +233,7 @@
 
                 contentDiv.innerHTML = `
                     <div class="group-detail">
-                        <h1>${escapeHtml(group.Title)}</h1>
+                        <h1>${escapeHtml(group.Name)}</h1>
                         ${group.Description ? `<div class="description">${escapeHtml(group.Description)}</div>` : '<p style="color: #999; font-style: italic;">No description available</p>'}
                         ${eventbriteButton}
                     </div>

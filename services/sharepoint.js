@@ -172,6 +172,7 @@ class SharePointService {
 
     /**
      * Get all items from a SharePoint list by GUID using Microsoft Graph API
+     * Handles pagination automatically to retrieve all items
      */
     async getListItems(listGuid, selectFields = null, filter = null, orderBy = null) {
         try {
@@ -198,14 +199,35 @@ class SharePointService {
                 params.push(`orderby=${orderBy}`);
             }
 
+            // Request more items per page to reduce pagination requests
+            params.push('$top=999');
+
             if (params.length > 0) {
                 endpoint += `?${params.join('&')}`;
             }
 
-            const data = await this.get(endpoint);
+            // Handle pagination - Graph API returns @odata.nextLink if there are more items
+            let allItems = [];
+            let currentEndpoint = endpoint;
 
-            // Transform Graph API response to match SharePoint REST API format
-            return this.transformGraphResponse(data);
+            while (currentEndpoint) {
+                const data = await this.get(currentEndpoint);
+
+                // Transform and accumulate items
+                const items = this.transformGraphResponse(data);
+                allItems = allItems.concat(items);
+
+                // Check for next page
+                if (data['@odata.nextLink']) {
+                    // Extract just the path and query from the full URL
+                    const nextUrl = new URL(data['@odata.nextLink']);
+                    currentEndpoint = nextUrl.pathname.replace('/v1.0/', '') + nextUrl.search;
+                } else {
+                    currentEndpoint = null; // No more pages
+                }
+            }
+
+            return allItems;
         } catch (error) {
             console.error(`Error fetching list items (${listGuid}):`, error.message);
             throw error;
@@ -254,7 +276,7 @@ class SharePointService {
         const listGuid = process.env.ENTRIES_LIST_GUID;
         return await this.getListItems(
             listGuid,
-            'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,FinancialYearFlow,Created,Modified'
+            'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified'
         );
     }
 
