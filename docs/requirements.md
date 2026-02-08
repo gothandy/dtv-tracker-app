@@ -70,4 +70,76 @@ The application has a clear security boundary based on data sensitivity:
 
 ---
 
+## Mobile & Field Usage Requirements
+
+**Primary Use Case**: On-site outdoor work environments with volunteers
+
+### Device Constraints
+
+- **Target Device**: Mobile phones (smartphones)
+- **Network**: Limited bandwidth in rural/outdoor locations
+- **Conditions**: Outdoor use - bright sunlight, gloves, wet weather
+
+### Design Principles
+
+1. **Mobile-First Design**
+   - Optimize all layouts for mobile devices first
+   - Touch-friendly interface with adequate tap targets
+   - Responsive design that works on all screen sizes
+
+2. **Big Simple Buttons**
+   - Large, easy-to-tap buttons (minimum 44x44px)
+   - High contrast for outdoor visibility
+   - Clear, unambiguous labels
+   - Adequate spacing between interactive elements
+
+3. **Server-Side Processing**
+   - Perform aggregations, filtering, and calculations on the server
+   - Minimize data transfer to client
+   - Return only necessary data for current view
+   - Cache static data where appropriate
+
+4. **Progressive Disclosure**
+   - Show summary/list views by default
+   - Click through to see detail pages
+   - Avoid showing all data on one screen
+   - Lazy load additional data as needed
+
+5. **Performance Optimization**
+   - Minimize page load times
+   - Reduce HTTP requests
+   - Compress assets
+   - Consider offline-first patterns for future
+
+### UI Pattern: List → Detail
+
+**Preferred Pattern**:
+```
+Lists Page (summary data)
+  ↓ Click item
+Detail Page (full data)
+```
+
+**Avoid**:
+- Showing all details in expandable sections on one page
+- Large tables with many columns
+- Heavy JavaScript frameworks that increase bundle size
+
+### Example Implementations
+
+**Groups Page**: ✅ Correctly implemented
+- Grid of cards with key info (Title, Description)
+- Click through to see full group details (future)
+
+**Sessions Page**: Should follow same pattern
+- List view: Date, Title, Group, Hours (summary)
+- Detail view: Full session info, registrations count, notes
+
+**Dashboard**: Summary stats only
+- Total counts and FY totals
+- Big numbers, minimal text
+- Quick scan overview
+
+---
+
 *Last Updated: 2026-02-08*

@@ -89,6 +89,10 @@
             padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
         }
 
         .group-card:hover {
@@ -100,13 +104,6 @@
             color: #2c5f2d;
             margin-bottom: 0.5rem;
             font-size: 1.3rem;
-        }
-
-        .group-card .name {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-            font-style: italic;
         }
 
         .group-card .description {
@@ -182,7 +179,7 @@
 <body>
     <header>
         <h1>DTV Volunteer Tracker</h1>
-        <p>Volunteer Crews & Groups</p>
+        <p>Volunteer Groups</p>
     </header>
 
     <nav>
@@ -239,21 +236,19 @@
                 grid.className = 'groups-grid';
 
                 groups.forEach(group => {
-                    const card = document.createElement('div');
+                    // Note: group.Name is SharePoint internal shorthand (e.g., "Sat") - not for UI display
+                    const card = document.createElement('a');
                     card.className = 'group-card';
+                    card.href = `/group-detail.html?id=${group.ID}`;
 
                     const eventbriteLink = group.EventbriteSeriesID
-                        ? `<a href="https://www.eventbrite.co.uk/e/${group.EventbriteSeriesID}" target="_blank" style="color: #2c5f2d; text-decoration: none;">View on Eventbrite &rarr;</a>`
+                        ? `<a href="https://www.eventbrite.co.uk/e/${group.EventbriteSeriesID}" target="_blank" style="color: #2c5f2d; text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`
                         : '';
 
                     card.innerHTML = `
                         <h3>${escapeHtml(group.Title)}</h3>
-                        ${group.Name ? `<div class="name">${escapeHtml(group.Name)}</div>` : ''}
                         ${group.Description ? `<div class="description">${escapeHtml(group.Description)}</div>` : ''}
                         <div class="meta">
-                            <div class="meta-item">
-                                <strong>ID:</strong> ${group.ID}
-                            </div>
                             ${group.EventbriteSeriesID ? `
                                 <div class="meta-item">
                                     ${eventbriteLink}

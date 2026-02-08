@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Details - DTV Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Mobile-first: Big back button for easy tapping */
+        .back-nav {
+            background-color: #2c5f2d;
+            padding: 1rem;
+        }
+
+        .back-button {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: background 0.2s;
+            min-height: 44px; /* iOS touch target minimum */
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: fit-content;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .group-detail {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .group-detail h1 {
+            color: #2c5f2d;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        .group-detail .description {
+            color: #555;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            white-space: pre-wrap;
+        }
+
+        /* Big button for Eventbrite link - mobile-friendly */
+        .eventbrite-button {
+            display: inline-block;
+            background-color: #2c5f2d;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+            min-height: 52px; /* Extra large touch target for outdoor use */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .eventbrite-button:hover {
+            background-color: #234d24;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .empty-state p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .error h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .group-detail {
+                padding: 1.5rem;
+            }
+
+            .group-detail h1 {
+                font-size: 1.75rem;
+            }
+
+            .back-button {
+                padding: 0.65rem 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="back-nav">
+        <a href="/groups.html" class="back-button">
+            <span>&larr;</span>
+            <span>Back to Groups</span>
+        </a>
+    </nav>
+
+    <div class="container">
+        <div id="content">
+            <div class="loading">Loading group details</div>
+        </div>
+    </div>
+
+    <script>
+        // Get group ID from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('id');
+
+        async function loadGroupDetail() {
+            const contentDiv = document.getElementById('content');
+
+            if (!groupId) {
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <p>No group ID specified</p>
+                        <a href="/groups.html" class="back-button">Back to Groups</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/groups');
+
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch groups');
+                }
+
+                // Find the specific group by ID
+                const group = data.data.find(g => g.ID === parseInt(groupId, 10));
+
+                if (!group) {
+                    contentDiv.innerHTML = `
+                        <div class="empty-state">
+                            <p>Group not found</p>
+                            <a href="/groups.html" class="back-button">Back to Groups</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Update page title
+                document.title = `${group.Title} - DTV Tracker`;
+
+                // Display group details
+                // Note: group.Name is SharePoint internal shorthand - use Title for display
+                const eventbriteButton = group.EventbriteSeriesID
+                    ? `<a href="https://www.eventbrite.co.uk/e/${group.EventbriteSeriesID}" target="_blank" class="eventbrite-button">
+                            View on Eventbrite &rarr;
+                       </a>`
+                    : '';
+
+                contentDiv.innerHTML = `
+                    <div class="group-detail">
+                        <h1>${escapeHtml(group.Title)}</h1>
+                        ${group.Description ? `<div class="description">${escapeHtml(group.Description)}</div>` : '<p style="color: #999; font-style: italic;">No description available</p>'}
+                        ${eventbriteButton}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading group detail:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Group Details</h3>
+                        <p>${escapeHtml(error.message)}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">
+                            Make sure the server is running: <code>node app.js</code>
+                        </p>
+                    </div>
+                    <a href="/groups.html" class="back-button" style="margin-top: 1rem;">Back to Groups</a>
+                `;
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load group when page loads
+        loadGroupDetail();
+    </script>
+</body>
+</html>
