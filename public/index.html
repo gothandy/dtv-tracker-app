@@ -126,6 +126,41 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Refresh button */
+        .refresh-btn {
+            display: block;
+            margin: 1.5rem auto;
+            padding: 0.75rem 1.5rem;
+            background: #2c5f2d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+        }
+
+        .refresh-btn:hover:not(:disabled) {
+            background: #234d23;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .refresh-message {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #2c5f2d;
+            min-height: 1.2rem;
+        }
+
     </style>
     <script src="/js/common.js"></script>
 </head>
@@ -151,6 +186,11 @@
                 <div class="sublabel" id="fyLabel3">This FY</div>
             </div>
         </div>
+
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+            ↻ Refresh Data
+        </button>
+        <div class="refresh-message" id="refreshMessage"></div>
 
         <div class="nav-grid">
             <a href="/groups.html" class="nav-card">
@@ -213,6 +253,51 @@
             } catch (error) {
                 console.error('Error loading stats:', error);
                 // On error, just leave the placeholder "-" values
+            }
+        }
+
+        // Refresh data by clearing cache and reloading
+        async function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            const msg = document.getElementById('refreshMessage');
+
+            try {
+                // Disable button and show loading state
+                btn.disabled = true;
+                btn.textContent = '↻ Refreshing...';
+                msg.textContent = 'Clearing cache...';
+
+                // Clear cache on server
+                const clearResponse = await fetch('/api/cache/clear', {
+                    method: 'POST'
+                });
+
+                if (!clearResponse.ok) {
+                    throw new Error('Failed to clear cache');
+                }
+
+                // Reload stats
+                msg.textContent = 'Loading fresh data...';
+                await loadStats();
+
+                // Show success message
+                msg.textContent = '✓ Data refreshed successfully';
+                setTimeout(() => {
+                    msg.textContent = '';
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                msg.textContent = '✗ Failed to refresh data';
+                msg.style.color = '#c00';
+                setTimeout(() => {
+                    msg.textContent = '';
+                    msg.style.color = '#2c5f2d';
+                }, 3000);
+            } finally {
+                // Re-enable button
+                btn.disabled = false;
+                btn.textContent = '↻ Refresh Data';
             }
         }
 

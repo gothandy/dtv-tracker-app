@@ -1,4 +1,5 @@
 const axios = require('axios');
+const NodeCache = require('node-cache');
 require('dotenv').config();
 
 class SharePointService {
@@ -10,6 +11,21 @@ class SharePointService {
         this.accessToken = null;
         this.tokenExpiry = null;
         this.siteId = null;  // Cache for Microsoft Graph API site ID
+
+        // Data cache with 5 minute TTL (300 seconds)
+        this.cache = new NodeCache({
+            stdTTL: 300,           // Default TTL: 5 minutes
+            checkperiod: 60,       // Check for expired keys every 60 seconds
+            useClones: false       // Return references for better performance
+        });
+
+        // Log cache statistics on init
+        this.cache.on('set', (key) => {
+            console.log(`[Cache] Set: ${key}`);
+        });
+        this.cache.on('expired', (key) => {
+            console.log(`[Cache] Expired: ${key}`);
+        });
     }
 
     /**
@@ -192,11 +208,11 @@ class SharePointService {
             }
 
             if (filter) {
-                params.push(`filter=${filter}`);
+                params.push(`$filter=${filter}`);
             }
 
             if (orderBy) {
-                params.push(`orderby=${orderBy}`);
+                params.push(`$orderby=${orderBy}`);
             }
 
             // Request more items per page to reduce pagination requests
@@ -209,9 +225,11 @@ class SharePointService {
             // Handle pagination - Graph API returns @odata.nextLink if there are more items
             let allItems = [];
             let currentEndpoint = endpoint;
+            let pageCount = 0;
 
             while (currentEndpoint) {
                 const data = await this.get(currentEndpoint);
+                pageCount++;
 
                 // Transform and accumulate items
                 const items = this.transformGraphResponse(data);
@@ -222,11 +240,13 @@ class SharePointService {
                     // Extract just the path and query from the full URL
                     const nextUrl = new URL(data['@odata.nextLink']);
                     currentEndpoint = nextUrl.pathname.replace('/v1.0/', '') + nextUrl.search;
+                    console.log(`[Pagination] Fetching page ${pageCount + 1} for list ${listGuid}`);
                 } else {
                     currentEndpoint = null; // No more pages
                 }
             }
 
+            console.log(`[Fetch Complete] Retrieved ${allItems.length} items across ${pageCount} page(s) for list ${listGuid}`);
             return allItems;
         } catch (error) {
             console.error(`Error fetching list items (${listGuid}):`, error.message);
@@ -238,57 +258,238 @@ class SharePointService {
      * Get all Groups (Crews)
      */
     async getGroups() {
+        const cacheKey = 'groups';
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            console.log(`[Cache] Hit: ${cacheKey}`);
+            return cached;
+        }
+
+        console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
         const listGuid = process.env.GROUPS_LIST_GUID;
-        return await this.getListItems(
+        const data = await this.getListItems(
             listGuid,
             'ID,Title,Name,Description,EventbriteSeriesID,Created,Modified'
         );
+        this.cache.set(cacheKey, data);
+        return data;
     }
 
     /**
      * Get all Sessions (Events)
      */
     async getSessions() {
+        const cacheKey = 'sessions';
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            console.log(`[Cache] Hit: ${cacheKey}`);
+            return cached;
+        }
+
+        console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
         const listGuid = process.env.SESSIONS_LIST_GUID;
-        return await this.getListItems(
+        const data = await this.getListItems(
             listGuid,
             'ID,Title,Name,Date,Description,Registrations,Hours,FinancialYearFlow,EventbriteEventID,Url,Crew,CrewLookupId,Created,Modified',
             null,
-            'Date desc'
+            null  // Temporarily disabled orderby to test if it causes 400 error
         );
+        this.cache.set(cacheKey, data);
+        return data;
     }
 
     /**
      * Get all Profiles (Volunteers)
      */
     async getProfiles() {
+        const cacheKey = 'profiles';
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            console.log(`[Cache] Hit: ${cacheKey}`);
+            return cached;
+        }
+
+        console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
         const listGuid = process.env.PROFILES_LIST_GUID;
-        return await this.getListItems(
+        const data = await this.getListItems(
             listGuid,
             'ID,Title,Email,MatchName,IsGroup,HoursLastFY,HoursThisFY,Created,Modified'
         );
+        this.cache.set(cacheKey, data);
+        return data;
     }
 
     /**
      * Get all Entries (Registrations)
      */
     async getEntries() {
+        const cacheKey = 'entries';
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            console.log(`[Cache] Hit: ${cacheKey}`);
+            return cached;
+        }
+
+        console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
         const listGuid = process.env.ENTRIES_LIST_GUID;
-        return await this.getListItems(
+        const data = await this.getListItems(
             listGuid,
             'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified'
         );
+        this.cache.set(cacheKey, data);
+        return data;
     }
 
     /**
      * Get all Regulars
      */
     async getRegulars() {
+        const cacheKey = 'regulars';
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            console.log(`[Cache] Hit: ${cacheKey}`);
+            return cached;
+        }
+
+        console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
         const listGuid = process.env.REGULARS_LIST_GUID;
-        return await this.getListItems(
+        const data = await this.getListItems(
             listGuid,
             'ID,Title,Volunteer,VolunteerLookupId,Crew,CrewLookupId,Created,Modified'
         );
+        this.cache.set(cacheKey, data);
+        return data;
+    }
+
+    /**
+     * Get Sessions filtered by Financial Year
+     * @param {string} fy - Financial year in format "FY2025"
+     * @returns {Promise<Array>} Sessions in the specified FY
+     */
+    async getSessionsByFY(fy) {
+        const cacheKey = `sessions_${fy}`;
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            console.log(`[Cache] Hit: ${cacheKey}`);
+            return cached;
+        }
+
+        console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
+        // Fetch all sessions and filter in Node.js (SharePoint filter on FinancialYearFlow fails)
+        const allSessions = await this.getSessions();
+
+        // Parse FY to get date range: FY2025 -> April 1, 2025 to March 31, 2026
+        const fyStartYear = parseInt(fy.substring(2));
+        const fyEndYear = fyStartYear + 1;
+        const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1)); // April 1
+        const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59)); // March 31
+
+        // Filter with fallback: use FinancialYearFlow if set, otherwise use Date field
+        const filteredData = allSessions.filter(session => {
+            if (session.FinancialYearFlow) {
+                return session.FinancialYearFlow === fy;
+            } else if (session.Date) {
+                const sessionDate = new Date(session.Date);
+                return sessionDate >= fyStartDate && sessionDate <= fyEndDate;
+            }
+            return false;
+        });
+
+        console.log(`[SessionsByFY] Filtered ${filteredData.length} sessions for ${fy} from ${allSessions.length} total`);
+        this.cache.set(cacheKey, filteredData);
+        return filteredData;
+    }
+
+    /**
+     * Get Entries for specific session IDs
+     * @param {Array<number>} sessionIds - Array of session IDs
+     * @returns {Promise<Array>} Entries for the specified sessions
+     */
+    async getEntriesBySessionIds(sessionIds) {
+        if (!sessionIds || sessionIds.length === 0) {
+            return [];
+        }
+
+        const listGuid = process.env.ENTRIES_LIST_GUID;
+
+        // OData filter for multiple IDs: EventLookupId eq 1 or EventLookupId eq 2 or...
+        // Limit to first 20 for reasonable URL length (OData limitation)
+        const idsToFetch = sessionIds.slice(0, 100);
+        const filterParts = idsToFetch.map(id => `fields/EventLookupId eq ${id}`);
+        const filter = filterParts.join(' or ');
+
+        return await this.getListItems(
+            listGuid,
+            'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified',
+            filter
+        );
+    }
+
+    /**
+     * Get Entries filtered by Financial Year using Title field date pattern
+     * Assumes Entry Title contains session date in "yyyy-mm-dd" format
+     * @param {string} fy - Financial year in format "FY2025"
+     * @returns {Promise<Array>} Entries for the specified FY
+     */
+    async getEntriesByFYTitle(fy) {
+        const listGuid = process.env.ENTRIES_LIST_GUID;
+
+        // Parse FY: "FY2025" -> starts April 2024, ends March 2025
+        const fyStartYear = parseInt(fy.substring(2));
+        const fyEndYear = fyStartYear + 1;
+
+        // Build filter for date patterns in Title field
+        // FY2025: 2024-04 through 2024-12, and 2025-01 through 2025-03
+        const filterParts = [];
+
+        // April through December of start year
+        for (let month = 4; month <= 12; month++) {
+            const monthStr = month.toString().padStart(2, '0');
+            filterParts.push(`startswith(fields/Title, '${fyStartYear}-${monthStr}-')`);
+        }
+
+        // January through March of end year
+        for (let month = 1; month <= 3; month++) {
+            const monthStr = month.toString().padStart(2, '0');
+            filterParts.push(`startswith(fields/Title, '${fyEndYear}-${monthStr}-')`);
+        }
+
+        const filter = filterParts.join(' or ');
+
+        return await this.getListItems(
+            listGuid,
+            'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified',
+            filter
+        );
+    }
+
+    /**
+     * Clear all cached data
+     * Useful for manual cache invalidation or testing
+     */
+    clearCache() {
+        this.cache.flushAll();
+        console.log('[Cache] Cleared all cached data');
+    }
+
+    /**
+     * Clear specific cached key(s)
+     * @param {string|string[]} keys - Cache key or array of keys to clear
+     */
+    clearCacheKey(keys) {
+        const keysArray = Array.isArray(keys) ? keys : [keys];
+        keysArray.forEach(key => {
+            this.cache.del(key);
+            console.log(`[Cache] Cleared: ${key}`);
+        });
+    }
+
+    /**
+     * Get cache statistics
+     * @returns {object} Cache stats including hits, misses, keys count
+     */
+    getCacheStats() {
+        return this.cache.getStats();
     }
 }
 

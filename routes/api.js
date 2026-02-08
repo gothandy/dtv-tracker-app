@@ -63,13 +63,6 @@ router.get('/profiles', async (req, res) => {
 // Get dashboard statistics (server-side aggregation for mobile performance)
 router.get('/stats', async (req, res) => {
     try {
-        // Fetch groups, sessions, and entries in parallel
-        const [groups, sessions, entries] = await Promise.all([
-            sharepoint.getGroups(),
-            sharepoint.getSessions(),
-            sharepoint.getEntries()
-        ]);
-
         // Calculate current Financial Year (April 1 to March 31)
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -80,69 +73,47 @@ router.get('/stats', async (req, res) => {
         const fyEndYear = fyStartYear + 1;
         const currentFY = `FY${fyStartYear}`;
 
-        // Create FY date range for fallback when FinancialYearFlow is null
-        const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1)); // April 1, 00:00:00 UTC
-        const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59)); // March 31, 23:59:59 UTC
+        // Fetch sessions for current FY (filtered at SharePoint - works well)
+        // and all entries (filtering at SharePoint is slow due to complex OR conditions)
+        const [sessionsFY, entries] = await Promise.all([
+            sharepoint.getSessionsByFY(currentFY),
+            sharepoint.getEntries()
+        ]);
 
-        // Create maps for session lookup
-        // Note: FinancialYearFlow on Entries is not maintained; use Sessions.FinancialYearFlow instead
-        // Note: FinancialYearFlow is auto-populated by Power Automate but not backfilled for older sessions
-        const sessionDataMap = new Map();
-        sessions.forEach(session => {
-            sessionDataMap.set(session.ID, {
-                fy: session.FinancialYearFlow,
-                date: session.Date ? new Date(session.Date) : null
-            });
-        });
+        // Create set of session IDs for quick lookup
+        const sessionIdsFY = new Set(sessionsFY.map(s => s.ID));
 
-        // Filter entries using hybrid approach:
-        // 1. Use Sessions.FinancialYearFlow when populated (preferred)
-        // 2. Fall back to date-based filtering when FinancialYearFlow is null (for older sessions)
+        // Filter entries by current FY sessions (in Node.js - faster than complex OData)
         const entriesFY = entries.filter(entry => {
             if (!entry.EventLookupId) return false;
-
-            // Convert EventLookupId from string to number for Map lookup
             const sessionId = parseInt(entry.EventLookupId, 10);
-            const sessionData = sessionDataMap.get(sessionId);
-            if (!sessionData) return false;
-
-            // Prefer FinancialYearFlow if available
-            if (sessionData.fy) {
-                return sessionData.fy === currentFY;
-            }
-
-            // Fall back to date-based filtering
-            if (sessionData.date) {
-                return sessionData.date >= fyStartDate && sessionData.date <= fyEndDate;
-            }
-
-            return false;
+            return sessionIdsFY.has(sessionId);
         });
+
+        console.log(`[Stats] Total entries: ${entries.length}, FY entries: ${entriesFY.length}, FY sessions: ${sessionsFY.length}`);
 
         // Sum individual volunteer hours from entries (not event hours from sessions)
+        let entriesWithHours = 0;
         const totalHoursFY = entriesFY.reduce((sum, entry) => {
-            return sum + (parseFloat(entry.Hours) || 0);
+            const hours = parseFloat(entry.Hours) || 0;
+            if (hours > 0) entriesWithHours++;
+            return sum + hours;
         }, 0);
 
-        // Count unique sessions in current FY
-        const sessionIdsFY = new Set(entriesFY.map(entry => entry.EventLookupId).filter(id => id));
+        console.log(`[Stats] Entries with hours: ${entriesWithHours}, Total hours: ${totalHoursFY}`);
 
         // Count unique groups/crews with active sessions in current FY
-        // Get the group ID for each session in the FY
-        const activeGroupIds = new Set();
-        sessionIdsFY.forEach(sessionIdStr => {
-            const sessionId = parseInt(sessionIdStr, 10);
-            const session = sessions.find(s => s.ID === sessionId);
-            if (session && session.CrewLookupId) {
-                activeGroupIds.add(session.CrewLookupId);
-            }
-        });
+        const activeGroupIds = new Set(
+            sessionsFY
+                .filter(s => s.CrewLookupId)
+                .map(s => parseInt(s.CrewLookupId, 10))
+        );
 
         res.json({
             success: true,
             data: {
                 activeGroupsFY: activeGroupIds.size,
-                sessionsFY: sessionIdsFY.size,
+                sessionsFY: sessionsFY.length,
                 hoursFY: Math.round(totalHoursFY * 10) / 10, // Round to 1 decimal place
                 financialYear: `${fyStartYear}-${fyEndYear}`
             }
@@ -164,6 +135,42 @@ router.get('/health', (req, res) => {
         message: 'Server is running',
         timestamp: new Date().toISOString()
     });
+});
+
+// Clear cache endpoint
+router.post('/cache/clear', (req, res) => {
+    try {
+        sharepoint.clearCache();
+        res.json({
+            success: true,
+            message: 'Cache cleared successfully'
+        });
+    } catch (error) {
+        console.error('Error clearing cache:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to clear cache',
+            message: error.message
+        });
+    }
+});
+
+// Get cache statistics
+router.get('/cache/stats', (req, res) => {
+    try {
+        const stats = sharepoint.getCacheStats();
+        res.json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        console.error('Error fetching cache stats:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch cache stats',
+            message: error.message
+        });
+    }
 });
 
 module.exports = router;
