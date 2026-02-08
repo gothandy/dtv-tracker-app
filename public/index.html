@@ -41,6 +41,52 @@
             padding: 0 2rem;
         }
 
+        /* Dashboard stats - mobile-first with big numbers */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2c5f2d;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .label {
+            font-size: 0.95rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stat-card .sublabel {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 600px) {
+            .stat-card .number {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
         .nav-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -112,15 +158,33 @@
     </header>
 
     <div class="container">
+        <!-- Dashboard Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="number" id="totalGroups">-</div>
+                <div class="label">Groups</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="sessionsFY">-</div>
+                <div class="label">Sessions</div>
+                <div class="sublabel" id="fyLabel">This FY</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="hoursFY">-</div>
+                <div class="label">Hours</div>
+                <div class="sublabel" id="fyLabel2">This FY</div>
+            </div>
+        </div>
+
         <div class="nav-grid">
             <a href="/groups.html" class="nav-card">
                 <h2>Groups</h2>
                 <p>View volunteer groups</p>
             </a>
 
-            <a href="#" class="nav-card" onclick="alert('Coming soon!'); return false;">
+            <a href="/sessions.html" class="nav-card">
                 <h2>Sessions</h2>
-                <p>Upcoming volunteer events</p>
+                <p>Volunteer sessions and events</p>
             </a>
 
             <a href="#" class="nav-card" onclick="alert('Coming soon!'); return false;">
@@ -143,5 +207,43 @@
     <footer>
         <p>Dean Trail Volunteers &copy; 2026</p>
     </footer>
+
+    <script>
+        // Load dashboard statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch stats');
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to fetch stats');
+                }
+
+                const stats = result.data;
+
+                // Update stat cards
+                document.getElementById('totalGroups').textContent = stats.totalGroups;
+                document.getElementById('sessionsFY').textContent = stats.sessionsFY;
+                document.getElementById('hoursFY').textContent = stats.hoursFY.toLocaleString();
+
+                // Update FY labels
+                const fyText = `FY ${stats.financialYear}`;
+                document.getElementById('fyLabel').textContent = fyText;
+                document.getElementById('fyLabel2').textContent = fyText;
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                // On error, just leave the placeholder "-" values
+            }
+        }
+
+        // Load stats when page loads
+        loadStats();
+    </script>
 </body>
 </html>

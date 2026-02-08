@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sessions - DTV Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        header {
+            background-color: #2c5f2d;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        nav {
+            background-color: #f8f8f8;
+            border-bottom: 1px solid #ddd;
+            padding: 0.8rem 2rem;
+        }
+
+        nav a {
+            color: #2c5f2d;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .stats {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stats-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stats h2 {
+            font-size: 1.3rem;
+            color: #2c5f2d;
+            margin-bottom: 0.3rem;
+        }
+
+        .stats .count {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c5f2d;
+        }
+
+        /* Mobile-first: Big filter buttons */
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #2c5f2d;
+            background: white;
+            color: #2c5f2d;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+            min-width: 80px;
+        }
+
+        .filter-btn.active {
+            background: #2c5f2d;
+            color: white;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Session cards - mobile-optimized list */
+        .sessions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .session-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .session-card .date {
+            font-size: 0.9rem;
+            color: #2c5f2d;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .session-card .title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .session-card .group {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .session-card .meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: #777;
+            padding-top: 0.75rem;
+            border-top: 1px solid #eee;
+        }
+
+        .session-card .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .session-card .meta-item strong {
+            color: #555;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .error h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .empty-state p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .stats {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .filter-buttons {
+                width: 100%;
+            }
+
+            .filter-btn {
+                flex: 1;
+            }
+
+            .session-card .meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DTV Volunteer Tracker</h1>
+        <p>Volunteer Sessions</p>
+    </header>
+
+    <nav>
+        <a href="/">&larr; Back to Home</a>
+    </nav>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stats-left">
+                <h2>Sessions</h2>
+                <div class="count" id="sessionCount">-</div>
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" id="btnAll" onclick="filterSessions('all')">All</button>
+                <button class="filter-btn" id="btnFY" onclick="filterSessions('fy')">This FY</button>
+            </div>
+        </div>
+
+        <div id="content">
+            <div class="loading">Loading sessions</div>
+        </div>
+    </div>
+
+    <script>
+        let allSessions = [];
+        let currentFilter = 'all';
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'No date';
+            const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-GB', options);
+        }
+
+        // Calculate current Financial Year
+        function getCurrentFY() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth(); // 0-indexed (0=Jan, 3=Apr)
+            const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+            return `FY${fyStartYear}`;
+        }
+
+        // Filter sessions
+        function filterSessions(filter) {
+            currentFilter = filter;
+
+            // Update button states
+            document.getElementById('btnAll').classList.toggle('active', filter === 'all');
+            document.getElementById('btnFY').classList.toggle('active', filter === 'fy');
+
+            displaySessions(allSessions);
+        }
+
+        // Display sessions based on current filter
+        function displaySessions(sessions) {
+            const contentDiv = document.getElementById('content');
+            const countDiv = document.getElementById('sessionCount');
+
+            // Filter by FY if needed
+            let filteredSessions = sessions;
+            if (currentFilter === 'fy') {
+                const currentFY = getCurrentFY();
+                filteredSessions = sessions.filter(s => s.FinancialYearFlow === currentFY);
+            }
+
+            // Update count
+            countDiv.textContent = filteredSessions.length;
+
+            // Display sessions
+            if (filteredSessions.length === 0) {
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <p>No sessions found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Create list of session cards
+            const list = document.createElement('div');
+            list.className = 'sessions-list';
+
+            filteredSessions.forEach(session => {
+                const card = document.createElement('div');
+                card.className = 'session-card';
+
+                // Note: session.Name is descriptive name, session.Crew is the group name (legacy field name)
+                card.innerHTML = `
+                    <div class="date">${formatDate(session.Date)}</div>
+                    <div class="title">${escapeHtml(session.Title || 'Untitled Session')}</div>
+                    ${session.Crew ? `<div class="group">${escapeHtml(session.Crew)}</div>` : ''}
+                    <div class="meta">
+                        <div class="meta-item">
+                            <strong>Hours:</strong> ${session.Hours || 0}
+                        </div>
+                        <div class="meta-item">
+                            <strong>Registrations:</strong> ${session.Registrations || 0}
+                        </div>
+                    </div>
+                `;
+
+                list.appendChild(card);
+            });
+
+            contentDiv.innerHTML = '';
+            contentDiv.appendChild(list);
+        }
+
+        // Fetch and display sessions
+        async function loadSessions() {
+            const contentDiv = document.getElementById('content');
+            const countDiv = document.getElementById('sessionCount');
+
+            try {
+                const response = await fetch('/api/sessions');
+
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch sessions');
+                }
+
+                allSessions = data.data;
+
+                // Sessions are already sorted by Date desc from the API
+                displaySessions(allSessions);
+
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                countDiv.textContent = '?';
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Sessions</h3>
+                        <p>${escapeHtml(error.message)}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">
+                            Make sure the server is running: <code>node app.js</code>
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load sessions when page loads
+        loadSessions();
+    </script>
+</body>
+</html>
