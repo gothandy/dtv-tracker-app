@@ -319,3 +319,106 @@ http://localhost:3000/groups.html
 ---
 
 *Last Updated: 2026-02-08 - Groups Page Complete*
+
+---
+
+#### 3. Mobile-First Requirements & Reporting Features ✓
+
+**Objective**: Implement mobile-first design principles and build public reporting features (Options 2 + 4).
+
+**Requirements Captured**:
+- **Mobile & Field Usage** - Documented in [docs/requirements.md](../docs/requirements.md)
+  - Primary use case: On-site outdoor work with limited bandwidth
+  - Big simple buttons (minimum 44px touch targets)
+  - Server-side processing for aggregations
+  - Progressive disclosure pattern (list → detail)
+  - High contrast for outdoor visibility
+
+**Implementation**:
+
+**A. Terminology Cleanup (Option 4)**
+- Updated all UI references: "Crew" → "Group"
+- [public/index.html](../public/index.html) - Navigation and about section
+- [public/groups.html](../public/groups.html) - Header and card display
+- Removed Name shorthand display (e.g., "Sat" is internal only)
+- Added code comments: SharePoint field names (Crew, CrewLookupId) remain unchanged
+- Note: Title field displays full name like "Saturday Dig" instead of shorthand
+
+**B. Group Details Page**
+- Created [public/group-detail.html](../public/group-detail.html)
+- Mobile-first design with large touch targets (52px Eventbrite button)
+- Big back button (44px minimum) for easy navigation
+- Click through from Groups list via ?id={groupId}
+- Displays Title (not internal Name shorthand)
+- Prominent Eventbrite link when available
+
+**C. Dashboard Stats (Option 2 - Part 1)**
+- Added `/api/stats` endpoint in [app.js](../app.js)
+  - Server-side Financial Year calculation (April 1 to March 31)
+  - Aggregates: totalGroups, sessionsFY, hoursFY
+  - Filters sessions by current FY (FinancialYearFlow field)
+  - Returns minimal data (3 numbers + FY label)
+- Updated [public/index.html](../public/index.html)
+  - Dashboard stats with big numbers (3rem font size)
+  - Three stat cards: Groups, Sessions This FY, Hours This FY
+  - Mobile-optimized grid layout
+  - Fetches data from /api/stats on page load
+
+**D. Sessions Page (Option 2 - Part 2)**
+- Created [public/sessions.html](../public/sessions.html)
+  - Mobile-first list view with 200 sessions
+  - Big filter buttons: "All" vs "This FY" (44px touch targets)
+  - Displays: Date, Title, Group name, Hours, Registrations
+  - Server-sorted by Date desc (from API)
+  - Progressive disclosure - list view only (detail page future)
+  - Responsive layout optimized for mobile devices
+- Updated home page navigation to link to Sessions
+
+**Files Modified**:
+- [docs/requirements.md](../docs/requirements.md) - Added mobile & field usage requirements (NEW)
+- [app.js](../app.js) - Added /api/stats endpoint with FY calculation
+- [public/index.html](../public/index.html) - Dashboard stats + terminology cleanup
+- [public/groups.html](../public/groups.html) - Terminology + clickable cards
+- [public/group-detail.html](../public/group-detail.html) - NEW mobile-first detail page
+- [public/sessions.html](../public/sessions.html) - NEW mobile-first Sessions list
+
+**Testing**:
+```bash
+# View all pages
+http://localhost:3000/                    # Dashboard with stats
+http://localhost:3000/groups.html         # Groups list
+http://localhost:3000/group-detail.html?id=1  # Group detail
+http://localhost:3000/sessions.html       # Sessions list
+
+# Test API endpoints
+curl http://localhost:3000/api/stats
+curl http://localhost:3000/api/groups
+curl http://localhost:3000/api/sessions
+```
+
+### Current Status: ✅ MOBILE-FIRST REPORTING COMPLETE
+
+**What's Working**:
+- ✓ Mobile-first requirements documented
+- ✓ Terminology cleanup: "Crew" → "Group" throughout UI
+- ✓ Group Details page with big buttons and touch targets
+- ✓ Dashboard stats with big numbers (Groups, Sessions FY, Hours FY)
+- ✓ Sessions page with filter toggle (All vs This FY)
+- ✓ Server-side FY calculation and aggregation
+- ✓ Progressive disclosure pattern (list → detail)
+- ✓ All pages optimized for mobile devices
+
+**Key Technical Decisions**:
+- Financial Year calculation: `currentMonth >= 3 ? currentYear : currentYear - 1`
+- Uses SharePoint's `FinancialYearFlow` field (auto-populated by Power Automate)
+- Server-side filtering/aggregation to minimize bandwidth usage
+- Big buttons (44px minimum) for outdoor use with gloves
+- High contrast colors (#2c5f2d green) for visibility in bright sunlight
+
+**Pushed to GitHub**: 2 commits
+1. Mobile-first requirements + terminology cleanup + Group Details
+2. Dashboard stats + Sessions page
+
+---
+
+*Last Updated: 2026-02-08 - Mobile-First Reporting Complete*
