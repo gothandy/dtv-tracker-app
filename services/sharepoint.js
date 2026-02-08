@@ -118,12 +118,16 @@ class SharePointService {
 
             return response.data;
         } catch (error) {
-            console.error('Microsoft Graph API Error:', error.response?.data || error.message);
+            const status = error.response?.status;
+            console.error(`Microsoft Graph API Error: ${error.message} (Status: ${status || 'unknown'})`);
+
             // Map common Graph API error codes to meaningful messages
-            if (error.response?.status === 404) {
+            if (status === 404) {
                 throw new Error('SharePoint list or item not found');
-            } else if (error.response?.status === 403) {
+            } else if (status === 403) {
                 throw new Error('Access denied - check API permissions');
+            } else if (status === 401) {
+                throw new Error('Unauthorized - token may be invalid or expired');
             }
             throw error;
         }

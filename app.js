@@ -1,6 +1,6 @@
+require('dotenv').config();
 const express = require('express');
 const sharepoint = require('./services/sharepoint');
-require('dotenv').config();
 
 const app = express();
 
