@@ -274,7 +274,23 @@
             let filteredSessions = sessions;
             if (currentFilter === 'fy') {
                 const currentFY = getCurrentFY();
-                filteredSessions = sessions.filter(s => s.FinancialYearFlow === currentFY);
+
+                // Parse FY to get date range: FY2025 -> April 1, 2025 to March 31, 2026
+                const fyStartYear = parseInt(currentFY.substring(2));
+                const fyEndYear = fyStartYear + 1;
+                const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1)); // April 1
+                const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59)); // March 31
+
+                // Filter with fallback: use FinancialYearFlow if set, otherwise use Date field
+                filteredSessions = sessions.filter(s => {
+                    if (s.FinancialYearFlow) {
+                        return s.FinancialYearFlow === currentFY;
+                    } else if (s.Date) {
+                        const sessionDate = new Date(s.Date);
+                        return sessionDate >= fyStartDate && sessionDate <= fyEndDate;
+                    }
+                    return false;
+                });
             }
 
             // Update count

@@ -22,14 +22,50 @@ router.get('/groups', async (req, res) => {
     }
 });
 
-// Get all sessions (events)
+// Get all sessions (events) with calculated hours and registrations from Entries
 router.get('/sessions', async (req, res) => {
     try {
-        const sessions = await sharepoint.getSessions();
+        // Fetch sessions and entries in parallel
+        const [sessions, entries] = await Promise.all([
+            sharepoint.getSessions(),
+            sharepoint.getEntries()
+        ]);
+
+        // Group entries by session ID and calculate hours/registrations
+        const sessionStats = {};
+        entries.forEach(entry => {
+            const sessionId = entry.EventLookupId;
+            if (!sessionId) return;
+
+            if (!sessionStats[sessionId]) {
+                sessionStats[sessionId] = {
+                    registrations: 0,
+                    hours: 0
+                };
+            }
+
+            sessionStats[sessionId].registrations++;
+            sessionStats[sessionId].hours += parseFloat(entry.Hours) || 0;
+        });
+
+        // Add calculated stats to each session
+        const sessionsWithStats = sessions.map(session => ({
+            ...session,
+            Registrations: sessionStats[session.ID]?.registrations || 0,
+            Hours: Math.round((sessionStats[session.ID]?.hours || 0) * 10) / 10 // Round to 1 decimal
+        }));
+
+        // Sort by Date descending (most recent first)
+        sessionsWithStats.sort((a, b) => {
+            const dateA = a.Date ? new Date(a.Date) : new Date(0);
+            const dateB = b.Date ? new Date(b.Date) : new Date(0);
+            return dateB - dateA;
+        });
+
         res.json({
             success: true,
-            count: sessions.length,
-            data: sessions
+            count: sessionsWithStats.length,
+            data: sessionsWithStats
         });
     } catch (error) {
         console.error('Error fetching sessions:', error);
