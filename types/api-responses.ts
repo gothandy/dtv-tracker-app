@@ -10,6 +10,8 @@ export interface GroupResponse {
   displayName?: string;
   description?: string;
   eventbriteSeriesId?: string;
+  regularsCount: number;
+  regulars: string[];
 }
 
 export interface SessionResponse {

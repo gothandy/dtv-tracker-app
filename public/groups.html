@@ -321,6 +321,11 @@
                     <h3>${escapeHtml(group.displayName)}</h3>
                     ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
                     <div class="meta">
+                        ${group.regularsCount ? `
+                            <div class="meta-item">
+                                <strong>${group.regularsCount}</strong> ${group.regularsCount === 1 ? 'regular' : 'regulars'}
+                            </div>
+                        ` : ''}
                         ${group.eventbriteSeriesId ? `
                             <div class="meta-item">
                                 ${eventbriteLink}

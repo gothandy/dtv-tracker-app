@@ -100,6 +100,33 @@
             background-color: #234d24;
         }
 
+        .regulars-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+
+        .regulars-section h2 {
+            color: #2c5f2d;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .regulars-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .regulars-list li {
+            background: #f0f7f0;
+            padding: 0.4rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            color: #333;
+        }
+
         .empty-state {
             text-align: center;
             padding: 3rem 1rem;
@@ -227,11 +254,22 @@
                        </a>`
                     : '';
 
+                const regulars = group.regulars || [];
+                const regularsSection = regulars.length > 0
+                    ? `<div class="regulars-section">
+                            <h2>Regulars (${regulars.length})</h2>
+                            <ul class="regulars-list">
+                                ${regulars.map(name => `<li>${escapeHtml(name)}</li>`).join('')}
+                            </ul>
+                       </div>`
+                    : '';
+
                 contentDiv.innerHTML = `
                     <div class="group-detail">
                         <h1>${escapeHtml(group.displayName)}</h1>
                         ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : '<p style="color: #999; font-style: italic;">No description available</p>'}
                         ${eventbriteButton}
+                        ${regularsSection}
                     </div>
                 `;
 

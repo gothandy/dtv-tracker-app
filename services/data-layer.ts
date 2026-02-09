@@ -13,6 +13,7 @@ import { SharePointSession, Session } from '../types/session';
 import {
   SharePointProfile,
   SharePointEntry,
+  SharePointRegular,
   Profile,
   Entry,
   GroupLookupMap,
@@ -343,6 +344,26 @@ export function calculateFYStats(
     hours: Math.round(totalHours * 10) / 10,
     financialYear: fy.startYear
   };
+}
+
+// ============================================================================
+// Regulars Grouping
+// ============================================================================
+
+export function groupRegularsByCrewId(regulars: SharePointRegular[]): Map<number, string[]> {
+  const map = new Map<number, string[]>();
+  regulars.forEach(regular => {
+    const crewId = safeParseLookupId(regular.CrewLookupId);
+    if (crewId === undefined || !regular.Volunteer) return;
+
+    const names = map.get(crewId);
+    if (names) {
+      names.push(regular.Volunteer);
+    } else {
+      map.set(crewId, [regular.Volunteer]);
+    }
+  });
+  return map;
 }
 
 // ============================================================================

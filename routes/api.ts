@@ -4,6 +4,7 @@ import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
+import { regularsRepository } from '../services/repositories/regulars-repository';
 import {
   enrichSessions,
   sortSessionsByDate,
@@ -14,6 +15,7 @@ import {
   validateProfile,
   convertGroup,
   convertProfile,
+  groupRegularsByCrewId,
   calculateCurrentFY,
   calculateFYStats
 } from '../services/data-layer';
@@ -24,16 +26,23 @@ const router: Router = express.Router();
 
 router.get('/groups', async (req: Request, res: Response) => {
   try {
-    const rawGroups = await groupsRepository.getAll();
+    const [rawGroups, rawRegulars] = await Promise.all([
+      groupsRepository.getAll(),
+      regularsRepository.getAll()
+    ]);
     const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const regularsMap = groupRegularsByCrewId(rawRegulars);
 
     const data: GroupResponse[] = groups.map(spGroup => {
       const group = convertGroup(spGroup);
+      const regulars = regularsMap.get(group.sharePointId) || [];
       return {
         id: group.sharePointId,
         displayName: group.displayName,
         description: group.description,
-        eventbriteSeriesId: group.eventbriteSeriesId
+        eventbriteSeriesId: group.eventbriteSeriesId,
+        regularsCount: regulars.length,
+        regulars
       };
     });
 
