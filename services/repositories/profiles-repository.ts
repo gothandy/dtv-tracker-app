@@ -14,10 +14,6 @@ class ProfilesRepository {
     this.listGuid = process.env.PROFILES_LIST_GUID!;
   }
 
-  /**
-   * Get all profiles
-   * Returns: SharePointProfile[]
-   */
   async getAll(): Promise<SharePointProfile[]> {
     const cacheKey = 'profiles';
     const cached = sharePointClient.cache.get(cacheKey);

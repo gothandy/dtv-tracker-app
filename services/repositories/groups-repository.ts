@@ -14,10 +14,6 @@ class GroupsRepository {
     this.listGuid = process.env.GROUPS_LIST_GUID!;
   }
 
-  /**
-   * Get all groups
-   * Returns: SharePointGroup[]
-   */
   async getAll(): Promise<SharePointGroup[]> {
     const cacheKey = 'groups';
     const cached = sharePointClient.cache.get(cacheKey);

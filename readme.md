@@ -5,18 +5,16 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 ## Quick Start
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd dtv-tracker-app
-
-# Install dependencies
 npm install
 
-# Configure environment (see Setup section below)
-# Create .env file with your credentials
+# Create .env file with your credentials (see Setup section)
 
-# Start the server
-node app.js
+npm run build   # Compile TypeScript
+npm run dev     # Start with auto-reload (development)
+# or
+npm start       # Start without auto-reload
 
 # Visit http://localhost:3000
 ```
@@ -69,87 +67,115 @@ PROFILES_LIST_GUID=f3d3c40c-35cb-4167-8c83-c566edef6f29
 REGULARS_LIST_GUID=34b535f1-34ec-4fe6-a887-3b8523e492e1
 ```
 
-**⚠️ Important**:
-- Never commit the `.env` file to version control (already in `.gitignore`)
-- The list GUIDs are the same for everyone - they identify the SharePoint lists
+Never commit the `.env` file to version control (already in `.gitignore`). The list GUIDs are the same for everyone - they identify the SharePoint lists.
 
 ### 4. Verify Setup
 
-Test your configuration:
-
 ```bash
-# Run the authentication test
-node test-auth.js
+node test/test-auth.js
 
 # Expected output:
 # ✓ Access token obtained successfully
 # ✓ Success! Retrieved X group(s)
 ```
 
-If successful, you should see sample group data from SharePoint.
-
-### 5. Start Development
+### 5. Build and Run
 
 ```bash
-# Start the server
-node app.js
-
-# Server will be running at http://localhost:3000
+npm run build   # Compile TypeScript services
+npm run dev     # Start with nodemon (auto-restarts on changes)
 ```
 
-**Available API endpoints**:
-- `GET /api/health` - Health check
-- `GET /api/groups` - Fetch all volunteer groups/crews
-- `GET /api/sessions` - Fetch all sessions/events
-- `GET /api/profiles` - Fetch all volunteer profiles
+The server runs at http://localhost:3000.
 
-Test an endpoint:
-```bash
-curl http://localhost:3000/api/groups
-```
+## API Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/health` | GET | Health check |
+| `/api/stats` | GET | Dashboard statistics (current FY) |
+| `/api/groups` | GET | All volunteer groups/crews |
+| `/api/sessions` | GET | All sessions with calculated hours and registrations |
+| `/api/profiles` | GET | All volunteer profiles |
+| `/api/cache/clear` | POST | Clear server-side data cache |
+| `/api/cache/stats` | GET | Cache hit/miss statistics |
 
 ## Project Structure
 
 ```
 dtv-tracker-app/
-├── app.js                     # Express server entry point
-├── claude.md                  # AI assistant project context
-├── package.json               # Node dependencies
-├── .env                       # Environment variables (git-ignored)
-├── .gitignore                 # Git ignore rules
+├── app.js                          # Express server entry point
+├── package.json
+├── tsconfig.json                   # TypeScript configuration
+├── CLAUDE.md                       # AI assistant project context
 ├── docs/
-│   ├── progress.md           # Development session notes
-│   ├── sharepoint-schema.md  # SharePoint data model documentation
-│   └── sharepoint-setup.md   # One-time SharePoint/Entra ID setup (admin)
-├── public/
-│   └── index.html            # Frontend landing page
+│   ├── progress.md                # Development session notes
+│   ├── sharepoint-schema.md       # SharePoint list schemas and field names
+│   └── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
+├── types/
+│   ├── group.ts                   # Group entity types (SharePoint + domain)
+│   ├── session.ts                 # Session entity types
+│   └── sharepoint.ts             # Profile, Entry, Regular types + utilities
 ├── services/
-│   └── sharepoint.js         # SharePoint API integration
-└── test-auth.js              # Authentication testing script
+│   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
+│   ├── data-layer.ts              # Data conversion, enrichment, validation
+│   └── repositories/
+│       ├── groups-repository.ts
+│       ├── sessions-repository.ts
+│       ├── profiles-repository.ts
+│       ├── entries-repository.ts
+│       └── regulars-repository.ts
+├── routes/
+│   └── api.js                     # Express API route handlers
+├── public/
+│   ├── index.html                 # Dashboard homepage
+│   ├── groups.html                # Groups listing with FY filter
+│   ├── group-detail.html          # Individual group detail page
+│   ├── sessions.html              # Sessions listing with FY filter
+│   └── js/
+│       └── common.js              # Shared header/footer components
+└── test/
+    ├── test-auth.js               # Authentication verification
+    ├── test-entries.js
+    ├── test-fy-dates.js
+    ├── test-fy-entries.js
+    ├── test-fy-values.js
+    ├── test-specific-session.js
+    └── test-stats-debug.js
 ```
+
+## Tech Stack
+
+- **Backend**: Node.js with Express 5, TypeScript for services/types
+- **Frontend**: Vanilla HTML/CSS/JavaScript (mobile-first, served statically)
+- **Data**: SharePoint Online lists via Microsoft Graph API
+- **Integrations**: Eventbrite (event series linking)
 
 ## Documentation
 
-- **[claude.md](claude.md)** - Project overview, data model, and development guidelines
-- **[docs/sharepoint-schema.md](docs/sharepoint-schema.md)** - Complete SharePoint list schemas and relationships
-- **[docs/sharepoint-setup.md](docs/sharepoint-setup.md)** - One-time SharePoint/Entra ID configuration (for admins)
+- **[CLAUDE.md](CLAUDE.md)** - Project context, data model, and development guidelines
+- **[docs/sharepoint-schema.md](docs/sharepoint-schema.md)** - SharePoint list schemas and field definitions
+- **[docs/sharepoint-setup.md](docs/sharepoint-setup.md)** - One-time SharePoint/Entra ID configuration (admin)
 - **[docs/progress.md](docs/progress.md)** - Development session notes
 
-## SharePoint Data Model
+## Development Guidelines
 
-The app uses 5 SharePoint lists:
+### Code Style
+- TypeScript for services and types, CommonJS for routes and entry point
+- Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)
+- Prefer readable code over comments; use comments to explain non-obvious decisions
+- Keep code simple and follow existing patterns
 
-1. **Groups (Crews)** - Volunteer groups/teams
-2. **Sessions (Events)** - Scheduled volunteer events
-3. **Profiles (Volunteers)** - Volunteer information
-4. **Entries (Registrations)** - Links volunteers to sessions
-5. **Regulars** - Tracks regular volunteers for each crew
+### Security
+- Never commit `.env` file (already in `.gitignore`)
+- Never commit secrets or credentials
+- Validate all user input
+- Prevent XSS when displaying user content (`escapeHtml()` in frontend)
 
-See [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for detailed schema documentation.
-
-## SharePoint Administration
-
-**For organization admins**: See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) for complete SharePoint and Entra ID configuration guide.
+### SharePoint Integration
+- Always reference [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for field names
+- Use internal field names (e.g., `Crew` not `Group`)
+- Don't modify `FinancialYearFlow` fields (managed by Power Automate)
 
 ## Troubleshooting
 
@@ -157,69 +183,22 @@ See [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for detailed schema d
 
 **Checklist**:
 - [ ] `.env` file exists with all required variables
-- [ ] Client ID, Secret, and Tenant ID are correct (ask your team lead if unsure)
+- [ ] Client ID, Secret, and Tenant ID are correct
 - [ ] No extra spaces in `.env` values
 - [ ] Using the correct SharePoint site URL
 
 ### "401 Unauthorized" or "Invalid client secret"
 
-**Cause**: Credentials in `.env` are incorrect or expired
-
-**Solution**: Contact your team lead for updated credentials
+Credentials in `.env` are incorrect or expired. Contact your team lead for updated credentials.
 
 ### "Unsupported app only token" error
 
-**Cause**: SharePoint site permissions issue (admin-level problem)
-
-**Solution**: Contact your SharePoint administrator - see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3
+SharePoint site permissions issue (admin-level). See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3.
 
 ### Test script fails
 
 ```bash
-# Run the authentication test to diagnose
-node test-auth.js
+node test/test-auth.js
 ```
 
-If this fails, the error message will indicate whether it's:
-- Authentication problem (bad credentials)
-- Permission problem (contact admin)
-- Network problem (check VPN/firewall)
-
-## Development Guidelines
-
-### Code Style
-- Use CommonJS modules
-- Lowercase-hyphen naming for files (e.g., `sharepoint.js`, `test-auth.js`)
-- Keep code simple and maintainable
-- Follow existing patterns
-
-### Security
-- ✅ Never commit `.env` file (already in `.gitignore`)
-- ✅ Never commit secrets or credentials
-- ✅ Validate all user input
-- ✅ Prevent XSS when displaying user content
-- ✅ Use parameterized queries for SharePoint API
-
-### SharePoint Integration
-- Always reference [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for field names
-- Use internal field names (e.g., `Crew` not `Group`)
-- Don't modify `FinancialYearFlow` fields (managed by Power Automate)
-- Be aware of SharePoint API rate limits
-
-## Getting Help
-
-- Check [docs/progress.md](docs/progress.md) for known issues and recent changes
-- Review [claude.md](claude.md) for project context and guidelines
-- Check [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for data structure questions
-
-## License
-
-[Add your license here]
-
-## Contributors
-
-[Add contributor information here]
-
----
-
-*For detailed project context and AI assistant instructions, see [claude.md](claude.md)*
+The error message will indicate whether it's authentication, permission, or network related.

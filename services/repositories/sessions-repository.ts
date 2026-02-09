@@ -14,10 +14,6 @@ class SessionsRepository {
     this.listGuid = process.env.SESSIONS_LIST_GUID!;
   }
 
-  /**
-   * Get all sessions
-   * Returns: SharePointSession[]
-   */
   async getAll(): Promise<SharePointSession[]> {
     const cacheKey = 'sessions';
     const cached = sharePointClient.cache.get(cacheKey);
@@ -31,17 +27,12 @@ class SessionsRepository {
       this.listGuid,
       'ID,Title,Name,Date,Description,Registrations,Hours,FinancialYearFlow,EventbriteEventID,Url,Crew,CrewLookupId,Created,Modified',
       null,
-      null  // Temporarily disabled orderby to test if it causes 400 error
+      null  // TODO: Graph API orderby on this list returns 400 - sorting done in data layer instead
     );
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointSession[];
   }
 
-  /**
-   * Get sessions filtered by Financial Year
-   * @param fy - Financial year in format "FY2025"
-   * Returns: SharePointSession[]
-   */
   async getByFinancialYear(fy: string): Promise<SharePointSession[]> {
     const cacheKey = `sessions_${fy}`;
     const cached = sharePointClient.cache.get(cacheKey);

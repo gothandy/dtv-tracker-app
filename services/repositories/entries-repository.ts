@@ -14,10 +14,6 @@ class EntriesRepository {
     this.listGuid = process.env.ENTRIES_LIST_GUID!;
   }
 
-  /**
-   * Get all entries
-   * Returns: SharePointEntry[]
-   */
   async getAll(): Promise<SharePointEntry[]> {
     const cacheKey = 'entries';
     const cached = sharePointClient.cache.get(cacheKey);
@@ -35,11 +31,6 @@ class EntriesRepository {
     return data as SharePointEntry[];
   }
 
-  /**
-   * Get entries for specific session IDs
-   * @param sessionIds - Array of session IDs
-   * Returns: SharePointEntry[]
-   */
   async getBySessionIds(sessionIds: number[]): Promise<SharePointEntry[]> {
     if (!sessionIds || sessionIds.length === 0) {
       return [];
@@ -58,12 +49,7 @@ class EntriesRepository {
     ) as SharePointEntry[];
   }
 
-  /**
-   * Get entries filtered by Financial Year using Title field date pattern
-   * Assumes Entry Title contains session date in "yyyy-mm-dd" format
-   * @param fy - Financial year in format "FY2025"
-   * Returns: SharePointEntry[]
-   */
+  // Filters by date pattern in Title field (assumes "yyyy-mm-dd" format)
   async getByFinancialYearTitle(fy: string): Promise<SharePointEntry[]> {
     // Parse FY: "FY2025" -> starts April 2024, ends March 2025
     const fyStartYear = parseInt(fy.substring(2));

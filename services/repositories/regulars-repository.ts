@@ -14,10 +14,6 @@ class RegularsRepository {
     this.listGuid = process.env.REGULARS_LIST_GUID!;
   }
 
-  /**
-   * Get all regulars
-   * Returns: SharePointRegular[]
-   */
   async getAll(): Promise<SharePointRegular[]> {
     const cacheKey = 'regulars';
     const cached = sharePointClient.cache.get(cacheKey);

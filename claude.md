@@ -6,24 +6,26 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Tech Stack
 
-- **Backend**: Node.js with Express 5.2.1
-- **Frontend**: Vanilla HTML/CSS/JavaScript (served statically)
-- **Data Storage**: SharePoint Lists (via REST API)
+- **Backend**: Node.js with Express 5, TypeScript for services/types
+- **Frontend**: Vanilla HTML/CSS/JavaScript (mobile-first, served statically)
+- **Data Storage**: SharePoint Online lists via Microsoft Graph API
 - **External Integration**: Eventbrite API
 - **Server**: Express server running on http://localhost:3000
 
 ## Current State
 
-**Last Updated**: 2026-02-06
+**Last Updated**: 2026-02-09
 
-The project has basic infrastructure in place:
+Working application with:
 - Express server with REST API endpoints ([app.js](app.js))
-- SharePoint authentication and service layer ([services/sharepoint.js](services/sharepoint.js))
-- API endpoints for Groups, Sessions, and Profiles
-- Simple HTML landing page ([public/index.html](public/index.html))
+- TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
+- Data layer handling SharePoint quirks ([services/data-layer.ts](services/data-layer.ts))
+- Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
+- Dashboard with FY stats ([public/index.html](public/index.html))
+- Groups listing and detail pages ([public/groups.html](public/groups.html))
+- Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
+- Server-side caching with 5-minute TTL
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
-
-**Current Blocker**: SharePoint site-level access needs to be granted for app-only authentication. See [docs/progress.md](docs/progress.md) for details and next steps.
 
 ## Data Model
 
@@ -84,15 +86,21 @@ Groups N:N Regulars N:N Profiles
 
 ### SharePoint
 - All data stored in SharePoint Online lists
-- Access via SharePoint REST API
+- Access via Microsoft Graph API
 - Lists have specific GUIDs for API access
 - Financial year tracking automated via Power Automate
 
 ## Development Guidelines
 
+### Comments and Documentation Philosophy
+- **Readable code over comments**: Use clear naming conventions so the code explains itself
+- **Comments explain why, not what**: Use comments for things developers need to know that aren't obvious from the code (SharePoint quirks, business rules, workarounds)
+- **Comments as a tech debt flag**: If you need a comment to explain what code does, consider whether the code itself could be clearer
+- **Keep readme/docs updated on commits**: Documentation should reflect the current state of the project
+
 ### Code Style
-- Use CommonJS modules (configured in package.json)
-- Lowercase-hyphen naming for files (e.g., `test-auth.js`, `sharepoint-schema.md`)
+- TypeScript for services and types, CommonJS for routes and entry point
+- Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)
 - Keep code simple and maintainable
 - Follow existing patterns in the codebase
 
@@ -122,37 +130,46 @@ Groups N:N Regulars N:N Profiles
 
 ```
 dtv-tracker-app/
-├── app.js                     # Express server entry point
-├── claude.md                  # This file - project context for Claude
-├── package.json               # Node dependencies
+├── app.js                          # Express server entry point
+├── package.json
+├── tsconfig.json                   # TypeScript configuration
+├── CLAUDE.md                       # This file - project context for Claude
 ├── docs/
-│   ├── progress.md           # Development session notes
-│   ├── sharepoint-schema.md  # SharePoint data model documentation
-│   └── sharepoint-setup.md   # One-time SharePoint/Entra ID setup (admin)
-├── public/
-│   └── index.html            # Frontend landing page
+│   ├── progress.md                # Development session notes
+│   ├── sharepoint-schema.md       # SharePoint list schemas and field names
+│   └── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
 ├── types/
-│   ├── group.ts              # Group entity types
-│   ├── session.ts            # Session entity types
-│   └── sharepoint.ts         # SharePoint base types, Profile, Entry, Regular types
+│   ├── group.ts                   # Group entity types (SharePoint + domain)
+│   ├── session.ts                 # Session entity types
+│   └── sharepoint.ts             # Profile, Entry, Regular types + utilities
 ├── services/
-│   ├── sharepoint-client.ts  # Generic SharePoint/Graph API client (auth, caching, requests)
-│   ├── data-layer.ts         # Data conversion, enrichment, and validation
+│   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
+│   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   └── repositories/
 │       ├── groups-repository.ts
 │       ├── sessions-repository.ts
 │       ├── profiles-repository.ts
 │       ├── entries-repository.ts
 │       └── regulars-repository.ts
-└── routes/
-    └── api.js                # Express API route handlers
+├── routes/
+│   └── api.js                     # Express API route handlers
+├── public/
+│   ├── index.html                 # Dashboard homepage
+│   ├── groups.html                # Groups listing with FY filter
+│   ├── group-detail.html          # Individual group detail page
+│   ├── sessions.html              # Sessions listing with FY filter
+│   └── js/
+│       └── common.js              # Shared header/footer components
+└── test/
+    ├── test-auth.js               # Authentication verification
+    └── test-*.js                  # Various data/integration tests
 ```
 
 ## Planned Features
 
 The application should eventually support:
-- [ ] View all volunteer crews/groups
-- [ ] View upcoming sessions/events
+- [x] View all volunteer crews/groups
+- [x] View upcoming sessions/events
 - [ ] Volunteer registration for sessions
 - [ ] Check-in volunteers at events
 - [ ] Record volunteer hours
@@ -163,14 +180,13 @@ The application should eventually support:
 ## Running the Application
 
 ```bash
-# Install dependencies
-npm install
+npm install       # Install dependencies
+npm run build     # Compile TypeScript
+npm run dev       # Start with auto-reload (development)
+# or
+npm start         # Start without auto-reload
 
-# Start the server
-node app.js
-
-# Access the app
-# http://localhost:3000
+# Visit http://localhost:3000
 ```
 
 ## Important Notes
@@ -184,10 +200,11 @@ node app.js
 ## Known Constraints
 
 - SharePoint API rate limits may apply
+- Graph API orderby on Sessions list returns 400 - sorting done in Node.js instead
 - Single line of text fields have 255 character max length
 - Lookup fields require the related list item to exist first
 - Power Automate handles some field updates automatically
 
 ---
 
-*Last Updated: 2026-02-06*
+*Last Updated: 2026-02-09*
