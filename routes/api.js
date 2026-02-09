@@ -1,5 +1,6 @@
 const express = require('express');
 const sharepoint = require('../services/sharepoint');
+const { enrichSessions, sortSessionsByDate, validateArray, validateSession, validateEntry, validateGroup } = require('../dist/services/data-layer');
 
 const router = express.Router();
 
@@ -26,59 +27,50 @@ router.get('/groups', async (req, res) => {
 router.get('/sessions', async (req, res) => {
     try {
         // Fetch sessions, entries, and groups in parallel
-        const [sessions, entries, groups] = await Promise.all([
+        const [sessionsRaw, entriesRaw, groupsRaw] = await Promise.all([
             sharepoint.getSessions(),
             sharepoint.getEntries(),
             sharepoint.getGroups()
         ]);
 
-        // Create a map of group ID to group Name (convert ID to string for consistent lookup)
-        const groupMap = {};
-        groups.forEach(group => {
-            groupMap[String(group.ID)] = group.Name || group.Title;
-        });
+        // Validate data from SharePoint (logs warnings for invalid items)
+        const sessions = validateArray(sessionsRaw, validateSession, 'Session');
+        const entries = validateArray(entriesRaw, validateEntry, 'Entry');
+        const groups = validateArray(groupsRaw, validateGroup, 'Group');
 
-        // Group entries by session ID and calculate hours/registrations
-        const sessionStats = {};
-        entries.forEach(entry => {
-            const sessionId = entry.EventLookupId;
-            if (!sessionId) return;
+        // Use data layer to enrich sessions with stats and group names
+        // This handles all the SharePoint nasties:
+        // - Title vs Name convention
+        // - Type coercion (string vs number IDs)
+        // - Lookup map building
+        // - Stats calculation
+        const enrichedSessions = enrichSessions(sessions, entries, groups);
 
-            if (!sessionStats[sessionId]) {
-                sessionStats[sessionId] = {
-                    registrations: 0,
-                    hours: 0
-                };
-            }
+        // Sort by date (most recent first)
+        const sortedSessions = sortSessionsByDate(enrichedSessions);
 
-            sessionStats[sessionId].registrations++;
-            sessionStats[sessionId].hours += parseFloat(entry.Hours) || 0;
-        });
-
-        // Add calculated stats and group name to each session
-        const sessionsWithStats = sessions.map(session => ({
-            ...session,
-            Registrations: sessionStats[session.ID]?.registrations || 0,
-            Hours: Math.round((sessionStats[session.ID]?.hours || 0) * 10) / 10, // Round to 1 decimal
-            GroupName: session.CrewLookupId ? groupMap[session.CrewLookupId] : null
+        // Convert to API response format with SharePoint field names for backwards compatibility
+        const apiSessions = sortedSessions.map(session => ({
+            ID: session.id,
+            Title: session.title,
+            Name: session.displayName,
+            Description: session.notes,
+            Date: session.date.toISOString(),
+            CrewLookupId: session.groupId ? String(session.groupId) : undefined,
+            GroupName: session.groupName,
+            Registrations: session.registrations,
+            Hours: session.hours,
+            FinancialYearFlow: session.financialYear,
+            EventbriteEventID: session.eventbriteEventId,
+            Url: session.eventbriteUrl,
+            Created: session.created.toISOString(),
+            Modified: session.modified.toISOString()
         }));
-
-        // Debug: Log first session to verify GroupName is added
-        if (sessionsWithStats.length > 0) {
-            console.log('[Sessions API] First session GroupName:', sessionsWithStats[0].GroupName);
-        }
-
-        // Sort by Date descending (most recent first)
-        sessionsWithStats.sort((a, b) => {
-            const dateA = a.Date ? new Date(a.Date) : new Date(0);
-            const dateB = b.Date ? new Date(b.Date) : new Date(0);
-            return dateB - dateA;
-        });
 
         res.json({
             success: true,
-            count: sessionsWithStats.length,
-            data: sessionsWithStats
+            count: apiSessions.length,
+            data: apiSessions
         });
     } catch (error) {
         console.error('Error fetching sessions:', error);
