@@ -5,147 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sessions - DTV Tracker</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .stats {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .stats-left {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stats h2 {
-            font-size: 1.3rem;
-            color: #2c5f2d;
-            margin-bottom: 0.3rem;
-        }
-
-        .stats .count {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #2c5f2d;
-        }
-
-        .filter-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .filter-btn {
-            padding: 0.75rem 1.5rem;
-            border: 2px solid #2c5f2d;
-            background: white;
-            color: #2c5f2d;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-height: 44px;
-            min-width: 80px;
-        }
-
-        .filter-btn.active {
-            background: #2c5f2d;
-            color: white;
-        }
-
-        .filter-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #666;
-        }
-
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-
-        .error {
-            background: #fee;
-            border: 1px solid #fcc;
-            color: #c00;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin: 2rem 0;
-        }
-
-        .error h3 {
-            margin-bottom: 0.5rem;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .stats {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .filter-buttons {
-                width: 100%;
-            }
-
-            .filter-btn {
-                flex: 1;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .loading { text-align: center; padding: 3rem; color: #666; }
+        .loading::after { content: '...'; animation: dots 1.5s steps(4, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
+        .error { background: #fee; border: 1px solid #fcc; color: #c00; padding: 1.5rem; border-radius: 8px; margin: 2rem 0; }
+        .error h3 { margin-bottom: 0.5rem; }
+        @media (max-width: 600px) { .container { padding: 1rem; } }
     </style>
     <script src="/js/common.js"></script>
 </head>
 <body>
-    <script>createHeader('Volunteer Sessions', true);</script>
+    <script>createHeader('Volunteer Sessions', true); injectFilterBarCSS();</script>
 
     <div class="container">
-        <div class="stats">
-            <div class="stats-left">
+        <div class="filter-bar">
+            <div class="filter-left">
                 <h2>Sessions</h2>
                 <div class="count" id="sessionCount">-</div>
             </div>
             <div class="filter-buttons">
-                <button class="filter-btn active" id="btnAll" onclick="filterSessions('all')">All</button>
-                <button class="filter-btn" id="btnFY" onclick="filterSessions('fy')">This FY</button>
+                <button class="filter-btn" id="btnPast" onclick="filterSessions('past')">Past</button>
+                <button class="filter-btn" id="btnLastFY" onclick="filterSessions('lastFy')">Last FY</button>
+                <button class="filter-btn active" id="btnThisFY" onclick="filterSessions('thisFy')">This FY</button>
+                <button class="filter-btn" id="btnFuture" onclick="filterSessions('future')">Future</button>
             </div>
         </div>
 
@@ -156,20 +41,33 @@
 
     <script>
         let allSessions = [];
-        let currentFilter = 'all';
+        let currentFilter = 'thisFy';
 
-        function getCurrentFY() {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
-            const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1;
-            return `FY${fyStartYear}`;
+        function getLastFYStart() {
+            const lastFYStartYear = parseInt(getFYKey(-1).substring(2));
+            return new Date(Date.UTC(lastFYStartYear, 3, 1));
+        }
+
+        function findNextSessionDate(sessions) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let nearest = null;
+            for (const s of sessions) {
+                if (!s.date) continue;
+                const d = new Date(s.date);
+                d.setHours(0, 0, 0, 0);
+                if (d >= today && (!nearest || d < nearest)) nearest = d;
+            }
+            return nearest;
         }
 
         function filterSessions(filter) {
             currentFilter = filter;
-            document.getElementById('btnAll').classList.toggle('active', filter === 'all');
-            document.getElementById('btnFY').classList.toggle('active', filter === 'fy');
+            ['btnPast', 'btnLastFY', 'btnThisFY', 'btnFuture'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+            const btnMap = { past: 'btnPast', lastFy: 'btnLastFY', thisFy: 'btnThisFY', future: 'btnFuture' };
+            document.getElementById(btnMap[filter]).classList.add('active');
             displaySessions(allSessions);
         }
 
@@ -177,22 +75,35 @@
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('sessionCount');
 
-            let filteredSessions = sessions;
-            if (currentFilter === 'fy') {
-                const currentFY = getCurrentFY();
-                const fyStartYear = parseInt(currentFY.substring(2));
-                const fyEndYear = fyStartYear + 1;
-                const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1));
-                const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59));
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const lastFYStart = getLastFYStart();
+            const thisFYKey = getFYKey(0);
+            const lastFYKey = getFYKey(-1);
+            const nextDate = findNextSessionDate(sessions);
 
+            let filteredSessions = sessions;
+            if (currentFilter === 'past') {
                 filteredSessions = sessions.filter(s => {
-                    if (s.financialYear) {
-                        return s.financialYear === currentFY;
-                    } else if (s.date) {
-                        const sessionDate = new Date(s.date);
-                        return sessionDate >= fyStartDate && sessionDate <= fyEndDate;
-                    }
-                    return false;
+                    if (!s.date) return false;
+                    return new Date(s.date) < lastFYStart;
+                });
+            } else if (currentFilter === 'lastFy') {
+                filteredSessions = sessions.filter(s => s.financialYear === lastFYKey);
+            } else if (currentFilter === 'thisFy') {
+                filteredSessions = sessions.filter(s => {
+                    if (s.financialYear !== thisFYKey) return false;
+                    if (!nextDate || !s.date) return true;
+                    const d = new Date(s.date);
+                    d.setHours(0, 0, 0, 0);
+                    return d <= nextDate;
+                });
+            } else if (currentFilter === 'future') {
+                filteredSessions = sessions.filter(s => {
+                    if (!s.date) return false;
+                    const d = new Date(s.date);
+                    d.setHours(0, 0, 0, 0);
+                    return d >= today;
                 });
             }
 

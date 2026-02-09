@@ -5,216 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Groups - DTV Tracker</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
-        }
+        .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
+        .group-card { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+        .group-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .group-card h3 { color: #2c5f2d; margin-bottom: 0.5rem; font-size: 1.3rem; }
+        .group-card .description { color: #555; margin-bottom: 1rem; line-height: 1.5; }
+        .group-card .meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: #777; border-top: 1px solid #eee; padding-top: 1rem; }
+        .group-card .meta-item { display: flex; align-items: center; gap: 0.3rem; }
+        .group-card .meta-item strong { color: #555; }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
+        .loading { text-align: center; padding: 3rem; color: #666; }
+        .loading::after { content: '...'; animation: dots 1.5s steps(4, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
+        .error { background: #fee; border: 1px solid #fcc; color: #c00; padding: 1.5rem; border-radius: 8px; margin: 2rem 0; }
+        .error h3 { margin-bottom: 0.5rem; }
+        .empty-state { text-align: center; padding: 3rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .empty-state p { color: #666; font-size: 1.1rem; }
 
-        .stats {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .stats-left {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stats h2 {
-            font-size: 1.3rem;
-            color: #2c5f2d;
-            margin-bottom: 0.3rem;
-        }
-
-        .stats .count {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #2c5f2d;
-        }
-
-        /* Mobile-first: Big filter buttons */
-        .filter-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .filter-btn {
-            padding: 0.75rem 1.5rem;
-            border: 2px solid #2c5f2d;
-            background: white;
-            color: #2c5f2d;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-height: 44px;
-            min-width: 80px;
-        }
-
-        .filter-btn.active {
-            background: #2c5f2d;
-            color: white;
-        }
-
-        .filter-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .groups-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .group-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-
-        .group-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .group-card h3 {
-            color: #2c5f2d;
-            margin-bottom: 0.5rem;
-            font-size: 1.3rem;
-        }
-
-        .group-card .description {
-            color: #555;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
-
-        .group-card .meta {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            font-size: 0.85rem;
-            color: #777;
-            border-top: 1px solid #eee;
-            padding-top: 1rem;
-        }
-
-        .group-card .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .group-card .meta-item strong {
-            color: #555;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #666;
-        }
-
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-
-        .error {
-            background: #fee;
-            border: 1px solid #fcc;
-            color: #c00;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin: 2rem 0;
-        }
-
-        .error h3 {
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .empty-state p {
-            color: #666;
-            font-size: 1.1rem;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .stats {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .filter-buttons {
-                width: 100%;
-            }
-
-            .filter-btn {
-                flex: 1;
-            }
-        }
+        @media (max-width: 600px) { .container { padding: 1rem; } }
     </style>
     <script src="/js/common.js"></script>
 </head>
 <body>
-    <script>createHeader('Volunteer Groups', true);</script>
+    <script>createHeader('Volunteer Groups', true); injectFilterBarCSS();</script>
 
     <div class="container">
-        <div class="stats">
-            <div class="stats-left">
+        <div class="filter-bar">
+            <div class="filter-left">
                 <h2>Groups</h2>
                 <div class="count" id="groupCount">-</div>
             </div>
             <div class="filter-buttons">
                 <button class="filter-btn" id="btnAll" onclick="filterGroups('all')">All</button>
-                <button class="filter-btn active" id="btnFY" onclick="filterGroups('fy')">This FY</button>
+                <button class="filter-btn" id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
+                <button class="filter-btn active" id="btnThisFY" onclick="filterGroups('thisFy')">This FY</button>
             </div>
         </div>
 
@@ -226,85 +54,46 @@
     <script>
         let allGroups = [];
         let allSessions = [];
-        let currentFilter = 'fy'; // Default to This FY
+        let currentFilter = 'thisFy';
 
-        // Calculate current Financial Year
-        function getCurrentFY() {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth(); // 0-indexed (0=Jan, 3=Apr)
-            const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1;
-            return `FY${fyStartYear}`;
-        }
-
-        // Get active group IDs for current FY
-        function getActiveGroupIds() {
-            const currentFY = getCurrentFY();
+        function getActiveGroupIds(fyKey) {
             const activeGroupIds = new Set();
-
-            // Filter sessions by current FY
-            const fyStartYear = parseInt(currentFY.substring(2));
-            const fyEndYear = fyStartYear + 1;
-            const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1)); // April 1
-            const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59)); // March 31
-
             allSessions.forEach(session => {
-                // Check if session is in current FY
-                let isInFY = false;
-
-                if (session.financialYear) {
-                    isInFY = session.financialYear === currentFY;
-                } else if (session.date) {
-                    const sessionDate = new Date(session.date);
-                    isInFY = sessionDate >= fyStartDate && sessionDate <= fyEndDate;
-                }
-
-                // Add group ID if session is in FY (convert string to number for comparison)
-                if (isInFY && session.groupId) {
+                if (session.financialYear === fyKey && session.groupId) {
                     activeGroupIds.add(session.groupId);
                 }
             });
-
             return activeGroupIds;
         }
 
-        // Filter groups
         function filterGroups(filter) {
             currentFilter = filter;
-
-            // Update button states
-            document.getElementById('btnAll').classList.toggle('active', filter === 'all');
-            document.getElementById('btnFY').classList.toggle('active', filter === 'fy');
-
+            ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
+            document.getElementById(btnMap[filter]).classList.add('active');
             displayGroups();
         }
 
-        // Display groups based on current filter
         function displayGroups() {
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('groupCount');
 
-            // Filter by FY if needed
             let filteredGroups = allGroups;
-            if (currentFilter === 'fy') {
-                const activeGroupIds = getActiveGroupIds();
+            if (currentFilter === 'thisFy' || currentFilter === 'lastFy') {
+                const fyKey = getFYKey(currentFilter === 'lastFy' ? -1 : 0);
+                const activeGroupIds = getActiveGroupIds(fyKey);
                 filteredGroups = allGroups.filter(g => activeGroupIds.has(g.id));
             }
 
-            // Update count
             countDiv.textContent = filteredGroups.length;
 
-            // Display groups
             if (filteredGroups.length === 0) {
-                contentDiv.innerHTML = `
-                    <div class="empty-state">
-                        <p>No groups found</p>
-                    </div>
-                `;
+                contentDiv.innerHTML = '<div class="empty-state"><p>No groups found</p></div>';
                 return;
             }
 
-            // Create grid of group cards
             const grid = document.createElement('div');
             grid.className = 'groups-grid';
 
@@ -341,13 +130,11 @@
             contentDiv.appendChild(grid);
         }
 
-        // Fetch and display groups
         async function loadGroups() {
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('groupCount');
 
             try {
-                // Fetch both groups and sessions in parallel
                 const [groupsResponse, sessionsResponse] = await Promise.all([
                     fetch('/api/groups'),
                     fetch('/api/sessions')
@@ -366,8 +153,6 @@
 
                 allGroups = groupsData.data;
                 allSessions = sessionsData.data;
-
-                // Display with default filter (This FY)
                 displayGroups();
 
             } catch (error) {
@@ -385,15 +170,6 @@
             }
         }
 
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Load groups when page loads
         loadGroups();
     </script>
 </body>

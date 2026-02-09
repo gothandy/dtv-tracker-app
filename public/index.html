@@ -69,16 +69,40 @@
         }
 
         @media (max-width: 600px) {
-            .nav-card .number {
-                font-size: 2rem;
+            .container {
+                margin: 1.5rem auto;
+                padding: 0 1rem;
+            }
+
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-card {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                grid-template-rows: auto auto;
+                text-align: left;
+                padding: 1.25rem 1.5rem;
+                gap: 0 1rem;
             }
 
             .nav-card .label {
-                font-size: 0.9rem;
+                grid-column: 1;
+                grid-row: 1;
+                font-size: 1rem;
             }
 
-            .container {
-                padding: 0 1rem;
+            .nav-card .number {
+                grid-column: 2;
+                grid-row: 1 / 3;
+                align-self: center;
+                font-size: 2rem;
+            }
+
+            .nav-card .sublabel {
+                grid-column: 1;
+                grid-row: 2;
             }
         }
 

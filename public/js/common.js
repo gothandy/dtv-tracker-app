@@ -43,6 +43,37 @@ function escapeHtml(text) {
 }
 
 /**
+ * Get FY key string (e.g. "FY2025") with optional offset (-1 for last FY)
+ */
+function getFYKey(offset = 0) {
+    const now = new Date();
+    const fyStartYear = (now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1) + offset;
+    return `FY${fyStartYear}`;
+}
+
+/**
+ * Inject filter bar CSS once (stats header + filter buttons)
+ */
+let _filterCssInjected = false;
+function injectFilterBarCSS() {
+    if (_filterCssInjected) return;
+    _filterCssInjected = true;
+    const style = document.createElement('style');
+    style.textContent = `
+        .filter-bar { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .filter-bar .filter-left { display: flex; flex-direction: column; }
+        .filter-bar h2 { font-size: 1.3rem; color: #2c5f2d; margin-bottom: 0.3rem; }
+        .filter-bar .count { font-size: 2rem; font-weight: bold; color: #2c5f2d; }
+        .filter-buttons { display: flex; gap: 0.5rem; }
+        .filter-btn { padding: 0.6rem 1rem; border: 2px solid #2c5f2d; background: white; color: #2c5f2d; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-height: 44px; }
+        .filter-btn.active { background: #2c5f2d; color: white; }
+        .filter-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        @media (max-width: 600px) { .filter-bar { flex-direction: column; align-items: flex-start; } .filter-buttons { width: 100%; } .filter-btn { flex: 1; } }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
  * Inject session list CSS once
  */
 let _sessionCssInjected = false;
