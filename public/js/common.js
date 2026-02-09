@@ -4,23 +4,31 @@
 
 /**
  * Create and insert the site header
- * @param {string} subtitle - The subtitle to display (e.g., "Volunteer Groups", "Volunteer Sessions")
- * @param {boolean} showBackLink - Whether to show the back to home link
  */
 function createHeader(subtitle = 'Volunteer hours tracking and registration system', showBackLink = false) {
     const headerHTML = `
-        <header style="background-color: #2c5f2d; color: white; padding: ${showBackLink ? '1.5rem 2rem' : '2rem'}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); ${showBackLink ? '' : 'text-align: center;'}">
-            <h1 style="font-size: ${showBackLink ? '1.8rem' : '2.5rem'}; margin-bottom: ${showBackLink ? '0.3rem' : '0.5rem'};">DTV Tracker</h1>
-            <p style="font-size: ${showBackLink ? '0.95rem' : '1.1rem'}; opacity: 0.9;">${subtitle}</p>
+        <header class="site-header${showBackLink ? ' compact' : ''}">
+            <h1>DTV Tracker</h1>
+            <p>${subtitle}</p>
         </header>
         ${showBackLink ? `
-        <nav style="background-color: #f8f8f8; border-bottom: 1px solid #ddd; padding: 0.8rem 2rem;">
-            <a href="/" style="color: #2c5f2d; text-decoration: none; font-weight: 500;">&larr; Back to Home</a>
+        <nav class="site-nav">
+            <a href="/">&larr; Back to Home</a>
         </nav>
         ` : ''}
     `;
-
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
+}
+
+/**
+ * Create the site footer
+ */
+function createFooter() {
+    document.body.insertAdjacentHTML('beforeend', `
+        <footer class="site-footer">
+            <p>Dean Trail Volunteers &copy; ${new Date().getFullYear()}</p>
+        </footer>
+    `);
 }
 
 /**
@@ -52,51 +60,16 @@ function getFYKey(offset = 0) {
 }
 
 /**
- * Inject filter bar CSS once (stats header + filter buttons)
+ * Show an error message in a container
  */
-let _filterCssInjected = false;
-function injectFilterBarCSS() {
-    if (_filterCssInjected) return;
-    _filterCssInjected = true;
-    const style = document.createElement('style');
-    style.textContent = `
-        .filter-bar { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-        .filter-bar .filter-left { display: flex; flex-direction: column; }
-        .filter-bar h2 { font-size: 1.3rem; color: #2c5f2d; margin-bottom: 0.3rem; }
-        .filter-bar .count { font-size: 2rem; font-weight: bold; color: #2c5f2d; }
-        .filter-buttons { display: flex; gap: 0.5rem; }
-        .filter-btn { padding: 0.6rem 1rem; border: 2px solid #2c5f2d; background: white; color: #2c5f2d; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-height: 44px; }
-        .filter-btn.active { background: #2c5f2d; color: white; }
-        .filter-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        @media (max-width: 600px) { .filter-bar { flex-direction: column; align-items: flex-start; } .filter-buttons { width: 100%; } .filter-btn { flex: 1; } }
+function showError(container, title, message) {
+    container.innerHTML = `
+        <div class="error">
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(message)}</p>
+            <p class="hint">Make sure the server is running: <code>node app.js</code></p>
+        </div>
     `;
-    document.head.appendChild(style);
-}
-
-/**
- * Inject session list CSS once
- */
-let _sessionCssInjected = false;
-function injectSessionListCSS() {
-    if (_sessionCssInjected) return;
-    _sessionCssInjected = true;
-    const style = document.createElement('style');
-    style.textContent = `
-        .sessions-list { display: flex; flex-direction: column; gap: 1rem; }
-        .session-card { background: white; border-radius: 8px; padding: 1.25rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
-        .session-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .session-card.next-session { background: #f4faf4; border-left: 4px solid #2c5f2d; }
-        .session-card .countdown { font-size: 0.85rem; color: #2c5f2d; font-weight: 600; margin-bottom: 0.5rem; }
-        .session-card .date { font-size: 0.9rem; color: #2c5f2d; font-weight: 600; margin-bottom: 0.3rem; }
-        .session-card .title { font-size: 1.2rem; font-weight: 600; color: #333; margin-bottom: 0.5rem; line-height: 1.3; }
-        .session-card .group { font-size: 0.95rem; color: #666; margin-bottom: 0.75rem; }
-        .session-card .description { font-size: 0.95rem; color: #888; font-style: italic; margin-bottom: 0.75rem; }
-        .session-card .meta { display: flex; gap: 1.5rem; font-size: 0.9rem; color: #777; padding-top: 0.75rem; border-top: 1px solid #eee; }
-        .session-card .meta-item { display: flex; align-items: center; gap: 0.3rem; }
-        .session-card .meta-item strong { color: #555; }
-        @media (max-width: 600px) { .session-card .meta { flex-direction: column; gap: 0.5rem; } }
-    `;
-    document.head.appendChild(style);
 }
 
 /**
@@ -136,16 +109,12 @@ function findNextSessionIndex(sessions) {
 
 /**
  * Render a list of session cards into a container element
- * @param {HTMLElement} container - The element to render into
- * @param {Array} sessions - Array of session objects from the API
- * @param {object} options - { showGroup: boolean }
  */
 function renderSessionList(container, sessions, options = {}) {
-    injectSessionListCSS();
     const { showGroup = true } = options;
 
     if (sessions.length === 0) {
-        container.innerHTML = '<p style="color: #999; text-align: center; padding: 1rem;">No sessions</p>';
+        container.innerHTML = '<p class="no-sessions">No sessions</p>';
         return;
     }
 
@@ -176,17 +145,4 @@ function renderSessionList(container, sessions, options = {}) {
 
     container.innerHTML = '';
     container.appendChild(list);
-}
-
-/**
- * Create the site footer
- */
-function createFooter() {
-    const footerHTML = `
-        <footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem;">
-            <p>Dean Trail Volunteers &copy; ${new Date().getFullYear()}</p>
-        </footer>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', footerHTML);
 }

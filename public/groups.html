@@ -4,34 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Groups - DTV Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-
         .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
-        .group-card { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; text-decoration: none; color: inherit; display: block; }
-        .group-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .group-card h3 { color: #2c5f2d; margin-bottom: 0.5rem; font-size: 1.3rem; }
-        .group-card .description { color: #555; margin-bottom: 1rem; line-height: 1.5; }
-        .group-card .meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: #777; border-top: 1px solid #eee; padding-top: 1rem; }
+        .group-card {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer; text-decoration: none; color: inherit; display: block;
+        }
+        .group-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+        .group-card h3 { color: var(--green); margin-bottom: 0.5rem; font-size: 1.3rem; }
+        .group-card .description { color: var(--text-mid); margin-bottom: 1rem; line-height: 1.5; }
+        .group-card .meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-lighter); border-top: 1px solid var(--border); padding-top: 1rem; }
         .group-card .meta-item { display: flex; align-items: center; gap: 0.3rem; }
-        .group-card .meta-item strong { color: #555; }
-
-        .loading { text-align: center; padding: 3rem; color: #666; }
-        .loading::after { content: '...'; animation: dots 1.5s steps(4, end) infinite; }
-        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
-        .error { background: #fee; border: 1px solid #fcc; color: #c00; padding: 1.5rem; border-radius: 8px; margin: 2rem 0; }
-        .error h3 { margin-bottom: 0.5rem; }
-        .empty-state { text-align: center; padding: 3rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .empty-state p { color: #666; font-size: 1.1rem; }
-
-        @media (max-width: 600px) { .container { padding: 1rem; } }
+        .group-card .meta-item strong { color: var(--text-mid); }
     </style>
     <script src="/js/common.js"></script>
 </head>
 <body>
-    <script>createHeader('Volunteer Groups', true); injectFilterBarCSS();</script>
+    <script>createHeader('Volunteer Groups', true);</script>
 
     <div class="container">
         <div class="filter-bar">
@@ -103,7 +94,7 @@
                 card.href = `/groups/${group.key}/detail.html`;
 
                 const eventbriteLink = group.eventbriteSeriesId
-                    ? `<a href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" style="color: #2c5f2d; text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`
+                    ? `<a href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" style="color: var(--green); text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`
                     : '';
 
                 card.innerHTML = `
@@ -158,15 +149,7 @@
             } catch (error) {
                 console.error('Error loading groups:', error);
                 countDiv.textContent = '?';
-                contentDiv.innerHTML = `
-                    <div class="error">
-                        <h3>Error Loading Groups</h3>
-                        <p>${escapeHtml(error.message)}</p>
-                        <p style="margin-top: 1rem; font-size: 0.9rem;">
-                            Make sure the server is running: <code>node app.js</code>
-                        </p>
-                    </div>
-                `;
+                showError(contentDiv, 'Error Loading Groups', error.message);
             }
         }
 
