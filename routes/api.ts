@@ -40,6 +40,7 @@ router.get('/groups', async (req: Request, res: Response) => {
       const regulars = regularsMap.get(group.sharePointId) || [];
       return {
         id: group.sharePointId,
+        key: (group.lookupKeyName || '').toLowerCase(),
         displayName: group.displayName,
         description: group.description,
         eventbriteSeriesId: group.eventbriteSeriesId,
@@ -59,13 +60,9 @@ router.get('/groups', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/groups/:id', async (req: Request, res: Response) => {
+router.get('/groups/:key', async (req: Request, res: Response) => {
   try {
-    const groupId = parseInt(String(req.params.id), 10);
-    if (isNaN(groupId)) {
-      res.status(400).json({ success: false, error: 'Invalid group ID' });
-      return;
-    }
+    const key = String(req.params.key).toLowerCase();
 
     const fy = calculateCurrentFY();
 
@@ -77,12 +74,13 @@ router.get('/groups/:id', async (req: Request, res: Response) => {
     ]);
 
     const groups = validateArray(rawGroups, validateGroup, 'Group');
-    const spGroup = groups.find(g => g.ID === groupId);
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === key);
     if (!spGroup) {
       res.status(404).json({ success: false, error: 'Group not found' });
       return;
     }
 
+    const groupId = spGroup.ID;
     const group = convertGroup(spGroup);
     const regularsMap = groupRegularsByCrewId(rawRegulars);
     const regulars = regularsMap.get(group.sharePointId) || [];
@@ -146,6 +144,7 @@ router.get('/groups/:id', async (req: Request, res: Response) => {
 
     const data: GroupDetailResponse = {
       id: group.sharePointId,
+      key: (group.lookupKeyName || '').toLowerCase(),
       displayName: group.displayName,
       description: group.description,
       eventbriteSeriesId: group.eventbriteSeriesId,

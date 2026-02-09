@@ -54,6 +54,8 @@ function injectSessionListCSS() {
         .sessions-list { display: flex; flex-direction: column; gap: 1rem; }
         .session-card { background: white; border-radius: 8px; padding: 1.25rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
         .session-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .session-card.next-session { background: #f4faf4; border-left: 4px solid #2c5f2d; }
+        .session-card .countdown { font-size: 0.85rem; color: #2c5f2d; font-weight: 600; margin-bottom: 0.5rem; }
         .session-card .date { font-size: 0.9rem; color: #2c5f2d; font-weight: 600; margin-bottom: 0.3rem; }
         .session-card .title { font-size: 1.2rem; font-weight: 600; color: #333; margin-bottom: 0.5rem; line-height: 1.3; }
         .session-card .group { font-size: 0.95rem; color: #666; margin-bottom: 0.75rem; }
@@ -64,6 +66,41 @@ function injectSessionListCSS() {
         @media (max-width: 600px) { .session-card .meta { flex-direction: column; gap: 0.5rem; } }
     `;
     document.head.appendChild(style);
+}
+
+/**
+ * Build a countdown string for an upcoming session date
+ * Returns null if the date is in the past
+ */
+function getCountdown(dateString) {
+    if (!dateString) return null;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const sessionDate = new Date(dateString);
+    sessionDate.setHours(0, 0, 0, 0);
+    const diffMs = sessionDate - now;
+    if (diffMs < 0) return null;
+    const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Tomorrow';
+    return `In ${days} days`;
+}
+
+/**
+ * Find the nearest upcoming session from a list (sorted date desc)
+ * Returns the index, or -1 if none are upcoming
+ */
+function findNextSessionIndex(sessions) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    let nextIdx = -1;
+    for (let i = 0; i < sessions.length; i++) {
+        if (!sessions[i].date) continue;
+        const d = new Date(sessions[i].date);
+        d.setHours(0, 0, 0, 0);
+        if (d >= now) nextIdx = i;
+    }
+    return nextIdx;
 }
 
 /**
@@ -81,21 +118,27 @@ function renderSessionList(container, sessions, options = {}) {
         return;
     }
 
+    const nextIdx = findNextSessionIndex(sessions);
+
     const list = document.createElement('div');
     list.className = 'sessions-list';
 
-    sessions.forEach(session => {
+    sessions.forEach((session, i) => {
+        const isNext = i === nextIdx;
+        const countdown = isNext ? getCountdown(session.date) : null;
+
         const card = document.createElement('div');
-        card.className = 'session-card';
+        card.className = 'session-card' + (isNext ? ' next-session' : '');
         card.innerHTML = `
+            ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
             <div class="date">${formatDate(session.date)}</div>
             <div class="title">${escapeHtml(session.displayName)}</div>
             ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
             ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
-            <div class="meta">
-                <div class="meta-item"><strong>Hours:</strong> ${session.hours || 0}</div>
-                <div class="meta-item"><strong>Registrations:</strong> ${session.registrations || 0}</div>
-            </div>
+            ${session.registrations || session.hours ? `<div class="meta">
+                ${session.registrations ? `<div class="meta-item"><strong>${new Date(session.date) >= new Date(new Date().toDateString()) ? 'Registrations' : 'Attendees'}:</strong> ${session.registrations}</div>` : ''}
+                ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
+            </div>` : ''}
         `;
         list.appendChild(card);
     });

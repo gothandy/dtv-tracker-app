@@ -311,7 +311,7 @@
             filteredGroups.forEach(group => {
                 const card = document.createElement('a');
                 card.className = 'group-card';
-                card.href = `/group-detail.html?id=${group.id}`;
+                card.href = `/groups/${group.key}/detail.html`;
 
                 const eventbriteLink = group.eventbriteSeriesId
                     ? `<a href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" style="color: #2c5f2d; text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`

@@ -7,6 +7,7 @@
 
 export interface GroupResponse {
   id: number;
+  key: string;
   displayName?: string;
   description?: string;
   eventbriteSeriesId?: string;
@@ -39,6 +40,7 @@ export interface ProfileResponse {
 
 export interface GroupDetailResponse {
   id: number;
+  key: string;
   displayName?: string;
   description?: string;
   eventbriteSeriesId?: string;

@@ -1,11 +1,17 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const apiRoutes = require('./dist/routes/api');
 
 const app = express();
 
 app.use(express.static('public'));
 app.use(express.json());
+
+// Serve group detail page at /groups/:key/detail.html
+app.get('/groups/:key/detail.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'group-detail.html'));
+});
 
 // Mount API routes
 app.use('/api', apiRoutes);

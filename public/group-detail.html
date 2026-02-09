@@ -248,16 +248,17 @@
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const groupId = urlParams.get('id');
+        // Extract group key from URL path: /groups/:key/detail.html
+        const pathParts = window.location.pathname.split('/');
+        const groupKey = pathParts[2];
 
         async function loadGroupDetail() {
             const contentDiv = document.getElementById('content');
 
-            if (!groupId) {
+            if (!groupKey) {
                 contentDiv.innerHTML = `
                     <div class="empty-state">
-                        <p>No group ID specified</p>
+                        <p>No group specified</p>
                         <a href="/groups.html" class="back-button">Back to Groups</a>
                     </div>
                 `;
@@ -265,7 +266,7 @@
             }
 
             try {
-                const response = await fetch(`/api/groups/${groupId}`);
+                const response = await fetch(`/api/groups/${encodeURIComponent(groupKey)}`);
 
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}: ${response.statusText}`);
