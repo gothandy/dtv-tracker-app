@@ -1,18 +1,20 @@
-const sharepoint = require('./services/sharepoint');
+const { sharePointClient } = require('../dist/services/sharepoint-client');
+const { groupsRepository } = require('../dist/services/repositories/groups-repository');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
 
 async function test() {
     console.log('Testing Microsoft Graph API authentication...\n');
 
     console.log('Configuration:');
-    console.log('- Site URL:', process.env.SHAREPOINT_SITE_URL || sharepoint.siteUrl);
-    console.log('- Tenant ID:', process.env.SHAREPOINT_TENANT_ID || sharepoint.tenantId);
-    console.log('- Client ID:', process.env.SHAREPOINT_CLIENT_ID || sharepoint.clientId);
-    console.log('- Client Secret:', process.env.SHAREPOINT_CLIENT_SECRET ? '***' + sharepoint.clientSecret.slice(-4) : 'Not set');
+    console.log('- Site URL:', process.env.SHAREPOINT_SITE_URL);
+    console.log('- Tenant ID:', process.env.SHAREPOINT_TENANT_ID);
+    console.log('- Client ID:', process.env.SHAREPOINT_CLIENT_ID);
+    console.log('- Client Secret:', process.env.SHAREPOINT_CLIENT_SECRET ? '***' + process.env.SHAREPOINT_CLIENT_SECRET.slice(-4) : 'Not set');
     console.log();
 
     try {
         console.log('Step 1: Getting access token for Microsoft Graph...');
-        const token = await sharepoint.getAccessToken();
+        const token = await sharePointClient.getAccessToken();
         console.log('✓ Access token obtained successfully');
         console.log('  Token preview:', token.substring(0, 50) + '...');
         console.log();
@@ -41,13 +43,13 @@ async function test() {
         }
 
         console.log('Step 2: Getting SharePoint site ID...');
-        const siteId = await sharepoint.getSiteId();
+        const siteId = await sharePointClient.getSiteId();
         console.log('✓ Site ID obtained successfully');
         console.log('  Site ID:', siteId);
         console.log();
 
         console.log('Step 3: Fetching Groups from SharePoint via Graph API...');
-        const groups = await sharepoint.getGroups();
+        const groups = await groupsRepository.getAll();
         console.log('✓ Success! Retrieved', groups.length, 'group(s)');
         console.log();
 
@@ -57,7 +59,7 @@ async function test() {
             console.log();
 
             console.log('Step 4: Fetching Sessions (testing lookup fields)...');
-            const sessions = await sharepoint.getSessions();
+            const sessions = await sessionsRepository.getAll();
             console.log('✓ Retrieved', sessions.length, 'session(s)');
 
             if (sessions.length > 0) {

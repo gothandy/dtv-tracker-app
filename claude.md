@@ -131,8 +131,21 @@ dtv-tracker-app/
 │   └── sharepoint-setup.md   # One-time SharePoint/Entra ID setup (admin)
 ├── public/
 │   └── index.html            # Frontend landing page
-└── services/
-    └── sharepoint.js         # SharePoint API integration service
+├── types/
+│   ├── group.ts              # Group entity types
+│   ├── session.ts            # Session entity types
+│   └── sharepoint.ts         # SharePoint base types, Profile, Entry, Regular types
+├── services/
+│   ├── sharepoint-client.ts  # Generic SharePoint/Graph API client (auth, caching, requests)
+│   ├── data-layer.ts         # Data conversion, enrichment, and validation
+│   └── repositories/
+│       ├── groups-repository.ts
+│       ├── sessions-repository.ts
+│       ├── profiles-repository.ts
+│       ├── entries-repository.ts
+│       └── regulars-repository.ts
+└── routes/
+    └── api.js                # Express API route handlers
 ```
 
 ## Planned Features

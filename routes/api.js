@@ -1,5 +1,9 @@
 const express = require('express');
-const sharepoint = require('../services/sharepoint');
+const { sharePointClient } = require('../dist/services/sharepoint-client');
+const { groupsRepository } = require('../dist/services/repositories/groups-repository');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { profilesRepository } = require('../dist/services/repositories/profiles-repository');
+const { entriesRepository } = require('../dist/services/repositories/entries-repository');
 const { enrichSessions, sortSessionsByDate, validateArray, validateSession, validateEntry, validateGroup } = require('../dist/services/data-layer');
 
 const router = express.Router();
@@ -7,7 +11,7 @@ const router = express.Router();
 // Get all groups (crews)
 router.get('/groups', async (req, res) => {
     try {
-        const groups = await sharepoint.getGroups();
+        const groups = await groupsRepository.getAll();
         res.json({
             success: true,
             count: groups.length,
@@ -28,9 +32,9 @@ router.get('/sessions', async (req, res) => {
     try {
         // Fetch sessions, entries, and groups in parallel
         const [sessionsRaw, entriesRaw, groupsRaw] = await Promise.all([
-            sharepoint.getSessions(),
-            sharepoint.getEntries(),
-            sharepoint.getGroups()
+            sessionsRepository.getAll(),
+            entriesRepository.getAll(),
+            groupsRepository.getAll()
         ]);
 
         // Validate data from SharePoint (logs warnings for invalid items)
@@ -51,20 +55,18 @@ router.get('/sessions', async (req, res) => {
 
         // Convert to API response format with SharePoint field names for backwards compatibility
         const apiSessions = sortedSessions.map(session => ({
-            ID: session.id,
-            Title: session.title,
+            ID: session.sharePointId,
+            Title: session.lookupKeyName,
             Name: session.displayName,
-            Description: session.notes,
-            Date: session.date.toISOString(),
+            Description: session.description,
+            Date: session.sessionDate.toISOString(),
             CrewLookupId: session.groupId ? String(session.groupId) : undefined,
             GroupName: session.groupName,
             Registrations: session.registrations,
             Hours: session.hours,
-            FinancialYearFlow: session.financialYear,
+            FinancialYearFlow: `FY${session.financialYear}`,
             EventbriteEventID: session.eventbriteEventId,
-            Url: session.eventbriteUrl,
-            Created: session.created.toISOString(),
-            Modified: session.modified.toISOString()
+            Url: session.eventbriteUrl
         }));
 
         res.json({
@@ -85,7 +87,7 @@ router.get('/sessions', async (req, res) => {
 // Get all profiles (volunteers)
 router.get('/profiles', async (req, res) => {
     try {
-        const profiles = await sharepoint.getProfiles();
+        const profiles = await profilesRepository.getAll();
         res.json({
             success: true,
             count: profiles.length,
@@ -117,8 +119,8 @@ router.get('/stats', async (req, res) => {
         // Fetch sessions for current FY (filtered at SharePoint - works well)
         // and all entries (filtering at SharePoint is slow due to complex OR conditions)
         const [sessionsFY, entries] = await Promise.all([
-            sharepoint.getSessionsByFY(currentFY),
-            sharepoint.getEntries()
+            sessionsRepository.getByFinancialYear(currentFY),
+            entriesRepository.getAll()
         ]);
 
         // Create set of session IDs for quick lookup
@@ -181,7 +183,7 @@ router.get('/health', (req, res) => {
 // Clear cache endpoint
 router.post('/cache/clear', (req, res) => {
     try {
-        sharepoint.clearCache();
+        sharePointClient.clearCache();
         res.json({
             success: true,
             message: 'Cache cleared successfully'
@@ -199,7 +201,7 @@ router.post('/cache/clear', (req, res) => {
 // Get cache statistics
 router.get('/cache/stats', (req, res) => {
     try {
-        const stats = sharepoint.getCacheStats();
+        const stats = sharePointClient.getCacheStats();
         res.json({
             success: true,
             data: stats

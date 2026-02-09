@@ -1,14 +1,16 @@
 require('dotenv').config();
-const sharepoint = require('./services/sharepoint');
+const { groupsRepository } = require('../dist/services/repositories/groups-repository');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { entriesRepository } = require('../dist/services/repositories/entries-repository');
 
 async function testStats() {
     console.log('Testing stats calculation with UTC dates...\n');
 
     try {
         const [groups, sessions, entries] = await Promise.all([
-            sharepoint.getGroups(),
-            sharepoint.getSessions(),
-            sharepoint.getEntries()
+            groupsRepository.getAll(),
+            sessionsRepository.getAll(),
+            entriesRepository.getAll()
         ]);
 
         console.log(`Loaded: ${groups.length} groups, ${sessions.length} sessions, ${entries.length} entries\n`);

@@ -1,13 +1,14 @@
 require('dotenv').config();
-const sharepoint = require('./services/sharepoint');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { entriesRepository } = require('../dist/services/repositories/entries-repository');
 
 async function testSpecificSession() {
     console.log('Testing 2025-04-09 Wed session...\n');
 
     try {
         const [sessions, entries] = await Promise.all([
-            sharepoint.getSessions(),
-            sharepoint.getEntries()
+            sessionsRepository.getAll(),
+            entriesRepository.getAll()
         ]);
 
         // Find the session

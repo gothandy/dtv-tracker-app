@@ -1,11 +1,11 @@
 require('dotenv').config();
-const sharepoint = require('./services/sharepoint');
+const { entriesRepository } = require('../dist/services/repositories/entries-repository');
 
 async function testEntries() {
     console.log('Testing Entries list data...\n');
 
     try {
-        const entries = await sharepoint.getEntries();
+        const entries = await entriesRepository.getAll();
 
         console.log(`✓ Retrieved ${entries.length} entries\n`);
 

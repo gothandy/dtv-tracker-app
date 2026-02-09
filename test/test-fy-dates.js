@@ -1,13 +1,14 @@
 require('dotenv').config();
-const sharepoint = require('./services/sharepoint');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { entriesRepository } = require('../dist/services/repositories/entries-repository');
 
 async function testFYDates() {
     console.log('Testing Financial Year date filtering...\n');
 
     try {
         const [sessions, entries] = await Promise.all([
-            sharepoint.getSessions(),
-            sharepoint.getEntries()
+            sessionsRepository.getAll(),
+            entriesRepository.getAll()
         ]);
 
         // Calculate current FY

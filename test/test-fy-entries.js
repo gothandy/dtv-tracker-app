@@ -1,13 +1,14 @@
 require('dotenv').config();
-const sharepoint = require('./services/sharepoint');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { entriesRepository } = require('../dist/services/repositories/entries-repository');
 
 async function testFYEntries() {
     console.log('Testing entries for FY2025 sessions...\n');
 
     try {
         const [sessions, entries] = await Promise.all([
-            sharepoint.getSessions(),
-            sharepoint.getEntries()
+            sessionsRepository.getAll(),
+            entriesRepository.getAll()
         ]);
 
         const currentFY = 'FY2025';

@@ -1,11 +1,11 @@
 require('dotenv').config();
-const sharepoint = require('./services/sharepoint');
+const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
 
 async function testFYValues() {
     console.log('Testing FinancialYearFlow values in Sessions...\n');
 
     try {
-        const sessions = await sharepoint.getSessions();
+        const sessions = await sessionsRepository.getAll();
 
         console.log(`Total sessions: ${sessions.length}\n`);
 

@@ -32,18 +32,18 @@ export interface SharePointGroup extends SharePointBaseItem {
  * Clean Group domain type for use in application
  *
  * Transformations from SharePoint:
- * - Title → LookupKeyName (semantic clarity)
- * - Name → DisplayName (UI convention)
- * - Created/Modified → Date objects
+ * - ID → sharePointId (clarity)
+ * - Title → lookupKeyName (lookup key used in relationships)
+ * - Name → displayName (UI display name)
+ * - EventbriteSeriesID → eventbriteSeriesId (camelCase)
+ * - Created/Modified hidden (not needed at application layer yet)
  */
 export interface Group {
-  ID: number;
+  sharePointId: number;
   /** Lookup key used in relationships and dropdowns (from SharePoint Title) */
-  LookupKeyName: string;
+  lookupKeyName: string;
   /** Full display name for UI (from SharePoint Name) */
-  DisplayName?: string;
-  Description?: string;
-  EventbriteSeriesID?: string;
-  Created: Date;
-  Modified: Date;
+  displayName?: string;
+  description?: string;
+  eventbriteSeriesId?: string;
 }

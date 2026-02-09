@@ -9,11 +9,10 @@
  */
 
 import { SharePointGroup, Group } from '../types/group';
+import { SharePointSession, Session } from '../types/session';
 import {
-  SharePointSession,
   SharePointProfile,
   SharePointEntry,
-  Session,
   Profile,
   Entry,
   GroupLookupMap,
@@ -25,18 +24,29 @@ import {
 // ============================================================================
 
 /**
+ * Calculates financial year from a date
+ * Financial year runs April 1 to March 31
+ * Returns the year number (e.g., 2025 for FY2025)
+ */
+export function calculateFinancialYear(date: Date): number {
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-indexed (0=Jan, 3=Apr)
+  // If month is Jan-Mar (0-2), FY is previous year
+  // If month is Apr-Dec (3-11), FY is current year
+  return month >= 3 ? year : year - 1;
+}
+
+/**
  * Converts SharePoint Group to clean domain type
- * Maps Title -> LookupKeyName, Name -> DisplayName
+ * Maps Title -> lookupKeyName, Name -> displayName
  */
 export function convertGroup(spGroup: SharePointGroup): Group {
   return {
-    ID: spGroup.ID,
-    LookupKeyName: spGroup.Title,
-    DisplayName: spGroup.Name,
-    Description: spGroup.Description,
-    EventbriteSeriesID: spGroup.EventbriteSeriesID,
-    Created: new Date(spGroup.Created),
-    Modified: new Date(spGroup.Modified)
+    sharePointId: spGroup.ID,
+    lookupKeyName: spGroup.Title,
+    displayName: spGroup.Name,
+    description: spGroup.Description,
+    eventbriteSeriesId: spGroup.EventbriteSeriesID
   };
 }
 
@@ -46,18 +56,17 @@ export function convertGroup(spGroup: SharePointGroup): Group {
  * Use enrichSessions() to add those
  */
 export function convertSession(spSession: SharePointSession): Omit<Session, 'registrations' | 'hours' | 'groupName'> {
+  const sessionDate = new Date(spSession.Date);
   return {
-    id: spSession.ID,
-    displayName: spSession.Name || spSession.Title || 'Untitled Session',
-    title: spSession.Title,
-    notes: spSession.Description,
-    date: new Date(spSession.Date),
+    sharePointId: spSession.ID,
+    lookupKeyName: spSession.Title,
+    displayName: spSession.Name,
+    description: spSession.Description,
+    sessionDate: sessionDate,
     groupId: spSession.CrewLookupId ? parseInt(spSession.CrewLookupId, 10) : undefined,
-    financialYear: spSession.FinancialYearFlow,
+    financialYear: calculateFinancialYear(sessionDate),
     eventbriteEventId: spSession.EventbriteEventID,
-    eventbriteUrl: spSession.Url,
-    created: new Date(spSession.Created),
-    modified: new Date(spSession.Modified)
+    eventbriteUrl: spSession.Url
   };
 }
 
@@ -291,7 +300,7 @@ export function validateArray<T>(
  */
 export function sortSessionsByDate(sessions: Session[]): Session[] {
   return sessions.sort((a, b) => {
-    return b.date.getTime() - a.date.getTime();
+    return b.sessionDate.getTime() - a.sessionDate.getTime();
   });
 }
 
@@ -307,12 +316,4 @@ export function safeParseLookupId(lookupId: string | undefined): number | undefi
   if (!lookupId) return undefined;
   const parsed = parseInt(lookupId, 10);
   return isNaN(parsed) ? undefined : parsed;
-}
-
-/**
- * Safely extracts a display name using the Title/Name convention
- * Prefers Name over Title
- */
-export function getDisplayName(entity: { Name?: string; Title?: string }, fallback: string = 'Untitled'): string {
-  return entity.Name || entity.Title || fallback;
 }
