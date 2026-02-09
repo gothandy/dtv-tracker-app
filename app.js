@@ -10,8 +10,9 @@ app.use(express.json());
 // Mount API routes
 app.use('/api', apiRoutes);
 
-app.listen(3000, () => {
-    console.log('Running at http://localhost:3000');
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Running at http://localhost:${port}`);
     console.log('API endpoints available:');
     console.log('  - GET /api/health');
     console.log('  - GET /api/stats');
