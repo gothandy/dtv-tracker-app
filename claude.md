@@ -17,9 +17,11 @@ This is a volunteer hours tracking and registration system for managing voluntee
 **Last Updated**: 2026-02-09
 
 Working application with:
-- Express server with REST API endpoints ([app.js](app.js))
+- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
+- TypeScript API routes with clean domain naming ([routes/api.ts](routes/api.ts))
+- API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
-- Data layer handling SharePoint quirks ([services/data-layer.ts](services/data-layer.ts))
+- Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Dashboard with FY stats ([public/index.html](public/index.html))
 - Groups listing and detail pages ([public/groups.html](public/groups.html))
@@ -99,7 +101,7 @@ Groups N:N Regulars N:N Profiles
 - **Keep readme/docs updated on commits**: Documentation should reflect the current state of the project
 
 ### Code Style
-- TypeScript for services and types, CommonJS for routes and entry point
+- TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
 - Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)
 - Keep code simple and maintainable
 - Follow existing patterns in the codebase
@@ -139,6 +141,7 @@ dtv-tracker-app/
 │   ├── sharepoint-schema.md       # SharePoint list schemas and field names
 │   └── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
 ├── types/
+│   ├── api-responses.ts           # API response types (HTTP contract)
 │   ├── group.ts                   # Group entity types (SharePoint + domain)
 │   ├── session.ts                 # Session entity types
 │   └── sharepoint.ts             # Profile, Entry, Regular types + utilities
@@ -152,7 +155,7 @@ dtv-tracker-app/
 │       ├── entries-repository.ts
 │       └── regulars-repository.ts
 ├── routes/
-│   └── api.js                     # Express API route handlers
+│   └── api.ts                     # Express API route handlers (TypeScript)
 ├── public/
 │   ├── index.html                 # Dashboard homepage
 │   ├── groups.html                # Groups listing with FY filter

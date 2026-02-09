@@ -281,12 +281,11 @@
                 const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1)); // April 1
                 const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59)); // March 31
 
-                // Filter with fallback: use FinancialYearFlow if set, otherwise use Date field
                 filteredSessions = sessions.filter(s => {
-                    if (s.FinancialYearFlow) {
-                        return s.FinancialYearFlow === currentFY;
-                    } else if (s.Date) {
-                        const sessionDate = new Date(s.Date);
+                    if (s.financialYear) {
+                        return s.financialYear === currentFY;
+                    } else if (s.date) {
+                        const sessionDate = new Date(s.date);
                         return sessionDate >= fyStartDate && sessionDate <= fyEndDate;
                     }
                     return false;
@@ -314,22 +313,17 @@
                 const card = document.createElement('div');
                 card.className = 'session-card';
 
-                // Use Name (better for UI) instead of Title (used for lookups)
-                const displayName = session.Name || session.Title || 'Untitled Session';
-                const groupName = session.GroupName || session.Crew || '';
-                const notes = session.Description || '';
-
                 card.innerHTML = `
-                    <div class="date">${formatDate(session.Date)}</div>
-                    <div class="title">${escapeHtml(displayName)}</div>
-                    ${groupName ? `<div class="group">${escapeHtml(groupName)}</div>` : ''}
-                    ${notes ? `<div class="group" style="color: #888; font-style: italic; margin-top: 0.5rem;">${escapeHtml(notes)}</div>` : ''}
+                    <div class="date">${formatDate(session.date)}</div>
+                    <div class="title">${escapeHtml(session.displayName)}</div>
+                    ${session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
+                    ${session.description ? `<div class="group" style="color: #888; font-style: italic; margin-top: 0.5rem;">${escapeHtml(session.description)}</div>` : ''}
                     <div class="meta">
                         <div class="meta-item">
-                            <strong>Hours:</strong> ${session.Hours || 0}
+                            <strong>Hours:</strong> ${session.hours || 0}
                         </div>
                         <div class="meta-item">
-                            <strong>Registrations:</strong> ${session.Registrations || 0}
+                            <strong>Registrations:</strong> ${session.registrations || 0}
                         </div>
                     </div>
                 `;

@@ -104,44 +104,13 @@ The server runs at http://localhost:3000.
 
 ```
 dtv-tracker-app/
-├── app.js                          # Express server entry point
-├── package.json
-├── tsconfig.json                   # TypeScript configuration
-├── CLAUDE.md                       # AI assistant project context
-├── docs/
-│   ├── progress.md                # Development session notes
-│   ├── sharepoint-schema.md       # SharePoint list schemas and field names
-│   └── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
-├── types/
-│   ├── group.ts                   # Group entity types (SharePoint + domain)
-│   ├── session.ts                 # Session entity types
-│   └── sharepoint.ts             # Profile, Entry, Regular types + utilities
-├── services/
-│   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
-│   ├── data-layer.ts              # Data conversion, enrichment, validation
-│   └── repositories/
-│       ├── groups-repository.ts
-│       ├── sessions-repository.ts
-│       ├── profiles-repository.ts
-│       ├── entries-repository.ts
-│       └── regulars-repository.ts
-├── routes/
-│   └── api.js                     # Express API route handlers
-├── public/
-│   ├── index.html                 # Dashboard homepage
-│   ├── groups.html                # Groups listing with FY filter
-│   ├── group-detail.html          # Individual group detail page
-│   ├── sessions.html              # Sessions listing with FY filter
-│   └── js/
-│       └── common.js              # Shared header/footer components
-└── test/
-    ├── test-auth.js               # Authentication verification
-    ├── test-entries.js
-    ├── test-fy-dates.js
-    ├── test-fy-entries.js
-    ├── test-fy-values.js
-    ├── test-specific-session.js
-    └── test-stats-debug.js
+├── app.js              # Express server entry point
+├── types/              # TypeScript type definitions (SharePoint + domain + API)
+├── services/           # Data layer: Graph API client, repositories, enrichment
+├── routes/             # Express API route handlers
+├── public/             # Frontend HTML/CSS/JS (served statically)
+├── docs/               # SharePoint schema, setup guides, progress notes
+└── test/               # Auth and data verification scripts
 ```
 
 ## Tech Stack
@@ -161,7 +130,7 @@ dtv-tracker-app/
 ## Development Guidelines
 
 ### Code Style
-- TypeScript for services and types, CommonJS for routes and entry point
+- TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
 - Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)
 - Prefer readable code over comments; use comments to explain non-obvious decisions
 - Keep code simple and follow existing patterns

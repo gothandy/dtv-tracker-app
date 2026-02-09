@@ -42,7 +42,7 @@ export interface SharePointProfile extends SharePointBaseItem {
  */
 export interface Profile {
   id: number;
-  name: string;
+  name?: string;
   email?: string;
   matchName?: string;
   isGroup: boolean;

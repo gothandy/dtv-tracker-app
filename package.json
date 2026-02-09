@@ -18,10 +18,9 @@
     ],
     "watch": [
       "app.js",
-      "routes/",
-      "services/"
+      "dist/"
     ],
-    "ext": "js,json"
+    "ext": "js,json,ts"
   },
   "keywords": [],
   "author": "",

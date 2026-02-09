@@ -558,3 +558,88 @@ curl http://localhost:3000/api/sessions
 ---
 
 *Last Updated: 2026-02-08 - Dashboard Stats Fixed with Pagination*
+
+---
+
+## Session: 2026-02-09
+
+### Completed Tasks
+
+#### 1. Comment and Documentation Cleanup ✓
+
+Applied three documentation principles across the codebase:
+1. Readable code over comments - good naming conventions
+2. Comments explain what developers need to know, not what the code does
+3. Keep readmes updated on commits
+
+**Changes**:
+- Removed redundant JSDoc from all 5 repository files (getAll methods are self-explanatory)
+- Fixed stale "Temporarily disabled orderby" comment in sessions-repository.ts to a proper TODO
+- Trimmed verbose JSDoc in entries-repository.ts
+- Removed redundant CSS comment in index.html
+- Added documentation philosophy to CLAUDE.md
+
+#### 2. API TypeScript Conversion ✓
+
+**Objective**: Convert `routes/api.js` to TypeScript with clean domain naming, preventing SharePoint field names from leaking into the HTTP API.
+
+**Architecture Decision**: Thin API layer (HTTP plumbing only), heavy domain/data layer (all business logic, conversions, aggregation). Neither layer handles UI concerns like fallbacks.
+
+**New Files**:
+- [types/api-responses.ts](../types/api-responses.ts) - API contract types (GroupResponse, SessionResponse, ProfileResponse, StatsResponse)
+- [routes/api.ts](../routes/api.ts) - TypeScript API routes using domain types
+
+**Deleted Files**:
+- `routes/api.js` - Replaced by TypeScript version
+
+**Key Changes**:
+- All API responses use clean camelCase field names (`displayName`, `groupId`, `financialYear`) instead of SharePoint names (`Name`, `CrewLookupId`, `FinancialYearFlow`)
+- No fallback logic in API (e.g., removed `|| 'Untitled Session'`) - UI decides what to show for null values
+- Stats calculation (`calculateCurrentFY`, `calculateFYStats`) moved from API route to data-layer.ts
+- `app.js` imports from `./dist/routes/api` (compiled TypeScript)
+- nodemon config updated to watch `dist/` and `.ts` files
+
+**Field Name Mapping (old → new)**:
+| SharePoint | API Response |
+|---|---|
+| `.ID` | `.id` |
+| `.Name` | `.displayName` |
+| `.Description` | `.description` |
+| `.Date` | `.date` |
+| `.CrewLookupId` | `.groupId` |
+| `.GroupName` | `.groupName` |
+| `.Hours` | `.hours` |
+| `.Registrations` | `.registrations` |
+| `.FinancialYearFlow` | `.financialYear` |
+| `.EventbriteSeriesID` | `.eventbriteSeriesId` |
+| `.EventbriteEventID` | `.eventbriteEventId` |
+
+**Frontend Updated**:
+- [public/groups.html](../public/groups.html) - Updated all field references
+- [public/group-detail.html](../public/group-detail.html) - Updated all field references
+- [public/sessions.html](../public/sessions.html) - Updated all field references
+
+#### 3. Documentation Updates ✓
+
+- Updated readme.md: file structure (`api.js` → `api.ts`, added `api-responses.ts`), code style description
+- Updated CLAUDE.md: current state, file structure, code style description
+- Updated docs/progress.md: this session entry
+
+### Current Status: ✅ API TYPESCRIPT CONVERSION COMPLETE
+
+**Architecture**:
+```
+SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map to response types) → Frontend
+                          (heavy: business logic)                  (thin: HTTP plumbing)
+```
+
+**What's Working**:
+- ✓ TypeScript API routes with compiler-enforced domain types
+- ✓ No SharePoint field names leak into HTTP responses
+- ✓ Clean separation: data layer owns business logic, API is thin HTTP adapter
+- ✓ All frontend pages updated and working with new field names
+- ✓ Dashboard, Groups, Group Detail, and Sessions pages all functional
+
+---
+
+*Last Updated: 2026-02-09 - API TypeScript Conversion Complete*

@@ -76,7 +76,7 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
 export function convertProfile(spProfile: SharePointProfile): Profile {
   return {
     id: spProfile.ID,
-    name: spProfile.Title || 'Unknown Volunteer',
+    name: spProfile.Title,
     email: spProfile.Email,
     matchName: spProfile.MatchName,
     isGroup: spProfile.IsGroup || false,
@@ -210,8 +210,7 @@ export function enrichSessions(
       // Add calculated stats
       registrations: stats?.registrations || 0,
       hours: stats ? Math.round(stats.hours * 10) / 10 : 0, // Round to 1 decimal
-      // Add group name (handles the type coercion issue)
-      groupName: spSession.CrewLookupId ? groupMap.get(spSession.CrewLookupId) || null : null
+      groupName: spSession.CrewLookupId ? groupMap.get(spSession.CrewLookupId) : undefined
     } as Session;
 
     return session;
@@ -289,6 +288,61 @@ export function validateArray<T>(
     }
   });
   return validItems;
+}
+
+// ============================================================================
+// FY Aggregation
+// ============================================================================
+
+export interface FYStats {
+  activeGroups: number;
+  sessions: number;
+  hours: number;
+  financialYear: number;
+}
+
+export function calculateCurrentFY(): { startYear: number; endYear: number; key: string } {
+  const now = new Date();
+  const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return { startYear, endYear: startYear + 1, key: `FY${startYear}` };
+}
+
+/**
+ * Aggregates FY dashboard stats from sessions and entries
+ * Filters entries to only those belonging to the given FY sessions,
+ * then sums hours and counts active groups
+ */
+export function calculateFYStats(
+  sessionsFY: SharePointSession[],
+  allEntries: SharePointEntry[]
+): FYStats {
+  const fy = calculateCurrentFY();
+  const sessionIdsFY = new Set(sessionsFY.map(s => s.ID));
+
+  const entriesFY = allEntries.filter(entry => {
+    const sessionId = safeParseLookupId(entry.EventLookupId);
+    return sessionId !== undefined && sessionIdsFY.has(sessionId);
+  });
+
+  const totalHours = entriesFY.reduce((sum, entry) => {
+    return sum + (parseFloat(String(entry.Hours)) || 0);
+  }, 0);
+
+  const activeGroupIds = new Set(
+    sessionsFY
+      .filter(s => s.CrewLookupId)
+      .map(s => safeParseLookupId(s.CrewLookupId))
+      .filter((id): id is number => id !== undefined)
+  );
+
+  console.log(`[Stats] FY sessions: ${sessionsFY.length}, FY entries: ${entriesFY.length}, Hours: ${totalHours}`);
+
+  return {
+    activeGroups: activeGroupIds.size,
+    sessions: sessionsFY.length,
+    hours: Math.round(totalHours * 10) / 10,
+    financialYear: fy.startYear
+  };
 }
 
 // ============================================================================

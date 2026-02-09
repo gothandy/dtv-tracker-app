@@ -252,16 +252,16 @@
                 // Check if session is in current FY
                 let isInFY = false;
 
-                if (session.FinancialYearFlow) {
-                    isInFY = session.FinancialYearFlow === currentFY;
-                } else if (session.Date) {
-                    const sessionDate = new Date(session.Date);
+                if (session.financialYear) {
+                    isInFY = session.financialYear === currentFY;
+                } else if (session.date) {
+                    const sessionDate = new Date(session.date);
                     isInFY = sessionDate >= fyStartDate && sessionDate <= fyEndDate;
                 }
 
                 // Add group ID if session is in FY (convert string to number for comparison)
-                if (isInFY && session.CrewLookupId) {
-                    activeGroupIds.add(parseInt(session.CrewLookupId, 10));
+                if (isInFY && session.groupId) {
+                    activeGroupIds.add(session.groupId);
                 }
             });
 
@@ -288,7 +288,7 @@
             let filteredGroups = allGroups;
             if (currentFilter === 'fy') {
                 const activeGroupIds = getActiveGroupIds();
-                filteredGroups = allGroups.filter(g => activeGroupIds.has(g.ID));
+                filteredGroups = allGroups.filter(g => activeGroupIds.has(g.id));
             }
 
             // Update count
@@ -309,20 +309,19 @@
             grid.className = 'groups-grid';
 
             filteredGroups.forEach(group => {
-                // Note: group.Title is SharePoint shorthand (e.g., "Sat") - use group.Name (e.g., "Saturday Dig") for UI display
                 const card = document.createElement('a');
                 card.className = 'group-card';
-                card.href = `/group-detail.html?id=${group.ID}`;
+                card.href = `/group-detail.html?id=${group.id}`;
 
-                const eventbriteLink = group.EventbriteSeriesID
-                    ? `<a href="https://www.eventbrite.co.uk/e/${group.EventbriteSeriesID}" target="_blank" style="color: #2c5f2d; text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`
+                const eventbriteLink = group.eventbriteSeriesId
+                    ? `<a href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" style="color: #2c5f2d; text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`
                     : '';
 
                 card.innerHTML = `
-                    <h3>${escapeHtml(group.Name)}</h3>
-                    ${group.Description ? `<div class="description">${escapeHtml(group.Description)}</div>` : ''}
+                    <h3>${escapeHtml(group.displayName)}</h3>
+                    ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
                     <div class="meta">
-                        ${group.EventbriteSeriesID ? `
+                        ${group.eventbriteSeriesId ? `
                             <div class="meta-item">
                                 ${eventbriteLink}
                             </div>
