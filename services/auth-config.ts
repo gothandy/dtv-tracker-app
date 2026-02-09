@@ -20,4 +20,6 @@ export const msalClient = new ConfidentialClientApplication(msalConfig);
 
 export const AUTH_SCOPES = ['User.Read'];
 
-export const REDIRECT_URI = process.env.AUTH_REDIRECT_URI || 'http://localhost:3000/auth/callback';
+export function getRedirectUri(req: { protocol: string; get(name: string): string | undefined }): string {
+  return `${req.protocol}://${req.get('host')}/auth/callback`;
+}

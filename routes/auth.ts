@@ -1,7 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 import axios from 'axios';
 /// <reference path="../types/express-session.d.ts" />
-import { msalClient, AUTH_SCOPES, REDIRECT_URI } from '../services/auth-config';
+import { msalClient, AUTH_SCOPES, getRedirectUri } from '../services/auth-config';
 
 const router: Router = express.Router();
 
@@ -10,7 +10,7 @@ router.get('/login', async (req: Request, res: Response) => {
   try {
     const authCodeUrl = await msalClient.getAuthCodeUrl({
       scopes: AUTH_SCOPES,
-      redirectUri: REDIRECT_URI,
+      redirectUri: getRedirectUri(req),
       prompt: 'select_account',
     });
     res.redirect(authCodeUrl);
@@ -38,7 +38,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     const tokenResponse = await msalClient.acquireTokenByCode({
       code,
       scopes: AUTH_SCOPES,
-      redirectUri: REDIRECT_URI,
+      redirectUri: getRedirectUri(req),
     });
 
     // Fetch user profile from Microsoft Graph

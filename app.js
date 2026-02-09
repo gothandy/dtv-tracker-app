@@ -8,6 +8,9 @@ const { requireAuth } = require('./dist/middleware/require-auth');
 
 const app = express();
 
+// Trust Azure App Service reverse proxy (for correct req.protocol)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 
 // Session management
