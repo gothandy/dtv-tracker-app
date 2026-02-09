@@ -8,7 +8,10 @@
 function createHeader(subtitle = 'Volunteer hours tracking and registration system', showBackLink = false) {
     const headerHTML = `
         <header class="site-header${showBackLink ? ' compact' : ''}">
-            <h1>DTV Tracker</h1>
+            <div class="header-top">
+                <h1>DTV Tracker</h1>
+                <div class="user-info" id="userInfo"></div>
+            </div>
             <p>${subtitle}</p>
         </header>
         ${showBackLink ? `
@@ -18,6 +21,19 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
         ` : ''}
     `;
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
+
+    fetch('/auth/me')
+        .then(r => r.json())
+        .then(data => {
+            const el = document.getElementById('userInfo');
+            if (data.authenticated && el) {
+                el.innerHTML = `
+                    <span class="user-name">${escapeHtml(data.user.displayName)}</span>
+                    <a href="/auth/logout" class="logout-link">Logout</a>
+                `;
+            }
+        })
+        .catch(() => {});
 }
 
 /**
@@ -145,4 +161,16 @@ function renderSessionList(container, sessions, options = {}) {
 
     container.innerHTML = '';
     container.appendChild(list);
+}
+
+/**
+ * Fetch wrapper that redirects to login on 401
+ */
+async function apiFetch(url, options = {}) {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+        window.location.href = '/auth/login';
+        throw new Error('Authentication required');
+    }
+    return response;
 }

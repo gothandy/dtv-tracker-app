@@ -1,12 +1,40 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 const apiRoutes = require('./dist/routes/api');
+const authRoutes = require('./dist/routes/auth');
+const { requireAuth } = require('./dist/middleware/require-auth');
 
 const app = express();
 
-app.use(express.static('public'));
 app.use(express.json());
+
+// Session management
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 8 * 60 * 60 * 1000, // 8 hours
+        sameSite: 'lax',
+    },
+}));
+
+// Health check (unprotected — Azure health probes)
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, message: 'Server is running', timestamp: new Date().toISOString() });
+});
+
+// Auth routes (unprotected — login/callback/logout/me)
+app.use('/auth', authRoutes);
+
+// Everything below requires login
+app.use(requireAuth);
+
+app.use(express.static('public'));
 
 // Serve group detail page at /groups/:key/detail.html
 app.get('/groups/:key/detail.html', (req, res) => {
@@ -19,10 +47,4 @@ app.use('/api', apiRoutes);
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Running at http://localhost:${port}`);
-    console.log('API endpoints available:');
-    console.log('  - GET /api/health');
-    console.log('  - GET /api/stats');
-    console.log('  - GET /api/groups');
-    console.log('  - GET /api/sessions');
-    console.log('  - GET /api/profiles');
 });

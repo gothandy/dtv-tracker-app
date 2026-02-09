@@ -21,6 +21,7 @@
     "types/**/*",
     "services/**/*",
     "routes/**/*",
+    "middleware/**/*",
     "app.js"
   ],
   "exclude": [
