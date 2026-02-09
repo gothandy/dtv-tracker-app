@@ -37,6 +37,24 @@ export interface ProfileResponse {
   hoursThisFY: number;
 }
 
+export interface GroupDetailResponse {
+  id: number;
+  displayName?: string;
+  description?: string;
+  eventbriteSeriesId?: string;
+  regulars: string[];
+  financialYear: string;
+  stats: {
+    sessions: number;
+    hours: number;
+    newVolunteers: number;
+    children: number;
+    totalVolunteers: number;
+  };
+  nextSession?: SessionResponse;
+  recentSessions: SessionResponse[];
+}
+
 export interface StatsResponse {
   activeGroupsFY: number;
   sessionsFY: number;

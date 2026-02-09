@@ -24,63 +24,17 @@
             padding: 0 2rem;
         }
 
-        /* Dashboard stats - mobile-first with big numbers */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 3rem;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .stat-card .number {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #2c5f2d;
-            line-height: 1;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card .label {
-            font-size: 0.95rem;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .stat-card .sublabel {
-            font-size: 0.85rem;
-            color: #999;
-            margin-top: 0.25rem;
-        }
-
-        @media (max-width: 600px) {
-            .stat-card .number {
-                font-size: 2.5rem;
-            }
-
-            .container {
-                padding: 0 1rem;
-            }
-        }
-
         .nav-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
         .nav-card {
             background: white;
             border-radius: 8px;
-            padding: 2rem;
+            padding: 1.5rem 1rem;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
@@ -94,15 +48,38 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .nav-card h2 {
+        .nav-card .number {
+            font-size: 2.5rem;
+            font-weight: bold;
             color: #2c5f2d;
-            margin-bottom: 0.5rem;
-            font-size: 1.5rem;
+            line-height: 1;
+            margin-bottom: 0.3rem;
         }
 
-        .nav-card p {
-            color: #666;
-            font-size: 0.95rem;
+        .nav-card .label {
+            font-size: 1rem;
+            color: #2c5f2d;
+            font-weight: 600;
+        }
+
+        .nav-card .sublabel {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 600px) {
+            .nav-card .number {
+                font-size: 2rem;
+            }
+
+            .nav-card .label {
+                font-size: 0.9rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
         }
 
         .info-box {
@@ -167,46 +144,30 @@
     <script>createHeader();</script>
 
     <div class="container">
-        <!-- Dashboard Stats -->
-        <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
+        <div class="nav-grid">
+            <a href="/groups.html" class="nav-card">
+                <div class="label">Groups</div>
                 <div class="number" id="activeGroupsFY">-</div>
-                <div class="label">Active Groups</div>
                 <div class="sublabel" id="fyLabel">This FY</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="sessionsFY">-</div>
+            </a>
+
+            <a href="/sessions.html" class="nav-card">
                 <div class="label">Sessions</div>
+                <div class="number" id="sessionsFY">-</div>
                 <div class="sublabel" id="fyLabel2">This FY</div>
-            </div>
-            <div class="stat-card">
+            </a>
+
+            <a href="#" class="nav-card" onclick="alert('Coming soon!'); return false;">
+                <div class="label">Volunteers</div>
                 <div class="number" id="hoursFY">-</div>
-                <div class="label">Hours</div>
                 <div class="sublabel" id="fyLabel3">This FY</div>
-            </div>
+            </a>
         </div>
 
         <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
             ↻ Refresh Data
         </button>
         <div class="refresh-message" id="refreshMessage"></div>
-
-        <div class="nav-grid">
-            <a href="/groups.html" class="nav-card">
-                <h2>Groups</h2>
-                <p>View volunteer groups</p>
-            </a>
-
-            <a href="/sessions.html" class="nav-card">
-                <h2>Sessions</h2>
-                <p>Volunteer sessions and events</p>
-            </a>
-
-            <a href="#" class="nav-card" onclick="alert('Coming soon!'); return false;">
-                <h2>Volunteers</h2>
-                <p>Volunteer profiles and hours</p>
-            </a>
-        </div>
 
         <div class="info-box">
             <h3>About This System</h3>

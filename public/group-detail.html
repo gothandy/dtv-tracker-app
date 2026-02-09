@@ -21,14 +21,13 @@
             flex-direction: column;
         }
 
-        /* Mobile-first: Big back button for easy tapping */
         .back-nav {
             background-color: #2c5f2d;
             padding: 1rem;
         }
 
         .back-button {
-            display: inline-block;
+            display: inline-flex;
             background: rgba(255, 255, 255, 0.2);
             color: white;
             padding: 0.75rem 1.5rem;
@@ -37,8 +36,7 @@
             font-weight: 500;
             font-size: 1rem;
             transition: background 0.2s;
-            min-height: 44px; /* iOS touch target minimum */
-            display: flex;
+            min-height: 44px;
             align-items: center;
             gap: 0.5rem;
             width: fit-content;
@@ -60,13 +58,13 @@
             border-radius: 12px;
             padding: 2rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .group-detail h1 {
             color: #2c5f2d;
             font-size: 2rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             line-height: 1.3;
         }
 
@@ -74,13 +72,12 @@
             color: #555;
             font-size: 1.1rem;
             line-height: 1.7;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             white-space: pre-wrap;
         }
 
-        /* Big button for Eventbrite link - mobile-friendly */
         .eventbrite-button {
-            display: inline-block;
+            display: inline-flex;
             background-color: #2c5f2d;
             color: white;
             padding: 1rem 2rem;
@@ -89,8 +86,7 @@
             font-weight: 600;
             font-size: 1.1rem;
             transition: background 0.2s;
-            min-height: 52px; /* Extra large touch target for outdoor use */
-            display: flex;
+            min-height: 52px;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
@@ -100,8 +96,46 @@
             background-color: #234d24;
         }
 
+        .stats-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+
+        .stats-section .fy-label {
+            color: #999;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem 0.5rem;
+            background: #f8faf8;
+            border-radius: 8px;
+        }
+
+        .stat-item .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c5f2d;
+            line-height: 1;
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
         .regulars-section {
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             padding-top: 1.5rem;
             border-top: 1px solid #eee;
         }
@@ -125,6 +159,12 @@
             border-radius: 6px;
             font-size: 0.95rem;
             color: #333;
+        }
+
+        .sessions-heading {
+            color: #2c5f2d;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
         }
 
         .empty-state {
@@ -169,7 +209,6 @@
             margin-bottom: 0.5rem;
         }
 
-        /* Mobile optimizations */
         @media (max-width: 600px) {
             .container {
                 padding: 1rem;
@@ -186,8 +225,13 @@
             .back-button {
                 padding: 0.65rem 1.25rem;
             }
+
+            .stat-item .stat-number {
+                font-size: 1.5rem;
+            }
         }
     </style>
+    <script src="/js/common.js"></script>
 </head>
 <body>
     <nav class="back-nav">
@@ -204,7 +248,6 @@
     </div>
 
     <script>
-        // Get group ID from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const groupId = urlParams.get('id');
 
@@ -222,30 +265,19 @@
             }
 
             try {
-                const response = await fetch('/api/groups');
+                const response = await fetch(`/api/groups/${groupId}`);
 
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}: ${response.statusText}`);
                 }
 
-                const data = await response.json();
+                const result = await response.json();
 
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to fetch groups');
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to fetch group');
                 }
 
-                const group = data.data.find(g => g.id === parseInt(groupId, 10));
-
-                if (!group) {
-                    contentDiv.innerHTML = `
-                        <div class="empty-state">
-                            <p>Group not found</p>
-                            <a href="/groups.html" class="back-button">Back to Groups</a>
-                        </div>
-                    `;
-                    return;
-                }
-
+                const group = result.data;
                 document.title = `${group.displayName} - DTV Tracker`;
 
                 const eventbriteButton = group.eventbriteSeriesId
@@ -253,6 +285,35 @@
                             View on Eventbrite &rarr;
                        </a>`
                     : '';
+
+                const stats = group.stats;
+                const statsSection = `
+                    <div class="stats-section">
+                        <div class="fy-label">FY ${group.financialYear}</div>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.sessions}</div>
+                                <div class="stat-label">Sessions</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.hours}</div>
+                                <div class="stat-label">Hours</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.newVolunteers}</div>
+                                <div class="stat-label">New</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.children}</div>
+                                <div class="stat-label">Children</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.totalVolunteers}</div>
+                                <div class="stat-label">Volunteers</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
                 const regulars = group.regulars || [];
                 const regularsSection = regulars.length > 0
@@ -264,14 +325,27 @@
                        </div>`
                     : '';
 
+                // Combine next + recent into a single flat list
+                const allSessions = [];
+                if (group.nextSession) allSessions.push(group.nextSession);
+                if (group.recentSessions) allSessions.push(...group.recentSessions);
+
                 contentDiv.innerHTML = `
                     <div class="group-detail">
                         <h1>${escapeHtml(group.displayName)}</h1>
-                        ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : '<p style="color: #999; font-style: italic;">No description available</p>'}
+                        ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
                         ${eventbriteButton}
+                        ${statsSection}
                         ${regularsSection}
                     </div>
+                    ${allSessions.length > 0 ? '<h2 class="sessions-heading">Sessions</h2><div id="sessionsContainer"></div>' : ''}
                 `;
+
+                // Render sessions using the shared component
+                if (allSessions.length > 0) {
+                    const container = document.getElementById('sessionsContainer');
+                    renderSessionList(container, allSessions, { showGroup: false });
+                }
 
             } catch (error) {
                 console.error('Error loading group detail:', error);
@@ -288,15 +362,6 @@
             }
         }
 
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Load group when page loads
         loadGroupDetail();
     </script>
 </body>
