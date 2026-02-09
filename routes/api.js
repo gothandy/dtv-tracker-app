@@ -25,11 +25,18 @@ router.get('/groups', async (req, res) => {
 // Get all sessions (events) with calculated hours and registrations from Entries
 router.get('/sessions', async (req, res) => {
     try {
-        // Fetch sessions and entries in parallel
-        const [sessions, entries] = await Promise.all([
+        // Fetch sessions, entries, and groups in parallel
+        const [sessions, entries, groups] = await Promise.all([
             sharepoint.getSessions(),
-            sharepoint.getEntries()
+            sharepoint.getEntries(),
+            sharepoint.getGroups()
         ]);
+
+        // Create a map of group ID to group Name (convert ID to string for consistent lookup)
+        const groupMap = {};
+        groups.forEach(group => {
+            groupMap[String(group.ID)] = group.Name || group.Title;
+        });
 
         // Group entries by session ID and calculate hours/registrations
         const sessionStats = {};
@@ -48,12 +55,18 @@ router.get('/sessions', async (req, res) => {
             sessionStats[sessionId].hours += parseFloat(entry.Hours) || 0;
         });
 
-        // Add calculated stats to each session
+        // Add calculated stats and group name to each session
         const sessionsWithStats = sessions.map(session => ({
             ...session,
             Registrations: sessionStats[session.ID]?.registrations || 0,
-            Hours: Math.round((sessionStats[session.ID]?.hours || 0) * 10) / 10 // Round to 1 decimal
+            Hours: Math.round((sessionStats[session.ID]?.hours || 0) * 10) / 10, // Round to 1 decimal
+            GroupName: session.CrewLookupId ? groupMap[session.CrewLookupId] : null
         }));
+
+        // Debug: Log first session to verify GroupName is added
+        if (sessionsWithStats.length > 0) {
+            console.log('[Sessions API] First session GroupName:', sessionsWithStats[0].GroupName);
+        }
 
         // Sort by Date descending (most recent first)
         sessionsWithStats.sort((a, b) => {

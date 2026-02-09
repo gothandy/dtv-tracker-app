@@ -314,11 +314,16 @@
                 const card = document.createElement('div');
                 card.className = 'session-card';
 
-                // Note: session.Name is descriptive name, session.Crew is the group name (legacy field name)
+                // Use Name (better for UI) instead of Title (used for lookups)
+                const displayName = session.Name || session.Title || 'Untitled Session';
+                const groupName = session.GroupName || session.Crew || '';
+                const notes = session.Description || '';
+
                 card.innerHTML = `
                     <div class="date">${formatDate(session.Date)}</div>
-                    <div class="title">${escapeHtml(session.Title || 'Untitled Session')}</div>
-                    ${session.Crew ? `<div class="group">${escapeHtml(session.Crew)}</div>` : ''}
+                    <div class="title">${escapeHtml(displayName)}</div>
+                    ${groupName ? `<div class="group">${escapeHtml(groupName)}</div>` : ''}
+                    ${notes ? `<div class="group" style="color: #888; font-style: italic; margin-top: 0.5rem;">${escapeHtml(notes)}</div>` : ''}
                     <div class="meta">
                         <div class="meta-item">
                             <strong>Hours:</strong> ${session.Hours || 0}
