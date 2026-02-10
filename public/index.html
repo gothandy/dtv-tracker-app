@@ -90,9 +90,14 @@
             </a>
         </div>
 
-        <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
-            ↻ Refresh Data
-        </button>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                ↻ Refresh Data
+            </button>
+            <a class="refresh-btn" href="/api/sessions/export" style="text-decoration: none; display: inline-flex; align-items: center;">
+                Hours CSV
+            </a>
+        </div>
         <div class="refresh-message" id="refreshMessage"></div>
 
         <div class="info-box">

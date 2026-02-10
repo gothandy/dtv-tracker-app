@@ -218,6 +218,53 @@ router.get('/sessions', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/sessions/export', async (req: Request, res: Response) => {
+  try {
+    const fy = calculateCurrentFY();
+
+    const [sessionsRaw, entriesRaw, groupsRaw] = await Promise.all([
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      groupsRepository.getAll()
+    ]);
+
+    const sessions = validateArray(sessionsRaw, validateSession, 'Session');
+    const entries = validateArray(entriesRaw, validateEntry, 'Entry');
+    const groups = validateArray(groupsRaw, validateGroup, 'Group');
+
+    const enrichedSessions = enrichSessions(sessions, entries, groups);
+    const sortedSessions = sortSessionsByDate(enrichedSessions);
+
+    const groupKeyMap = new Map(groups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const fySessions = sortedSessions.filter(s => s.financialYear === fy.startYear && s.sessionDate <= today);
+
+    const csvHeader = 'Group Key,Date,Count,Hours,Display Name';
+    const csvRows = fySessions.map(s => {
+      const groupKey = s.groupId ? (groupKeyMap.get(s.groupId) || '') : '';
+      const date = s.sessionDate.toISOString().substring(0, 10);
+      const name = (s.displayName || '').replace(/"/g, '""');
+      return `${groupKey},${date},${s.registrations},${s.hours},"${name}"`;
+    });
+
+    const csv = [csvHeader, ...csvRows].join('\n');
+
+    const todayStr = today.toISOString().substring(0, 10);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${todayStr} DTV Hours.csv"`);
+    res.send(csv);
+  } catch (error: any) {
+    console.error('Error exporting sessions CSV:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export sessions',
+      message: error.message
+    });
+  }
+});
+
 router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
