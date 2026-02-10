@@ -284,6 +284,36 @@ export class SharePointClient {
   }
 
   /**
+   * Update fields on a single SharePoint list item via Microsoft Graph PATCH
+   */
+  async updateListItem(listGuid: string, itemId: number, fields: Record<string, any>): Promise<void> {
+    try {
+      const token = await this.getAccessToken();
+      const siteId = await this.getSiteId();
+      const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items/${itemId}/fields`;
+
+      await axios.patch(url, fields, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (error: any) {
+      const status = error.response?.status;
+      console.error(`Error updating list item ${itemId} in ${listGuid}:`, error.response?.data || error.message);
+
+      if (status === 404) {
+        throw new Error('SharePoint list item not found');
+      } else if (status === 403) {
+        throw new Error('Access denied - check API permissions');
+      } else if (status === 401) {
+        throw new Error('Unauthorized - token may be invalid or expired');
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Clear all cached data
    */
   clearCache(): void {

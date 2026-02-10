@@ -420,6 +420,57 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
   }
 });
 
+router.patch('/entries/:id', async (req: Request, res: Response) => {
+  try {
+    const entryId = parseInt(String(req.params.id), 10);
+    if (isNaN(entryId)) {
+      res.status(400).json({ success: false, error: 'Invalid entry ID' });
+      return;
+    }
+
+    const { checkedIn, count, hours, notes } = req.body;
+    const fields: Record<string, any> = {};
+
+    if (typeof checkedIn === 'boolean') {
+      fields.Checked = checkedIn;
+    }
+    if (count !== undefined) {
+      const countNum = parseInt(String(count), 10);
+      if (isNaN(countNum) || countNum < 0) {
+        res.status(400).json({ success: false, error: 'Count must be a non-negative integer' });
+        return;
+      }
+      fields.Count = countNum;
+    }
+    if (hours !== undefined) {
+      const hoursNum = parseFloat(String(hours));
+      if (isNaN(hoursNum) || hoursNum < 0) {
+        res.status(400).json({ success: false, error: 'Hours must be a non-negative number' });
+        return;
+      }
+      fields.Hours = hoursNum;
+    }
+    if (typeof notes === 'string') {
+      fields.Notes = notes;
+    }
+
+    if (Object.keys(fields).length === 0) {
+      res.status(400).json({ success: false, error: 'No valid fields to update' });
+      return;
+    }
+
+    await entriesRepository.updateFields(entryId, fields);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error updating entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update entry',
+      message: error.message
+    });
+  }
+});
+
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
     const rawProfiles = await profilesRepository.getAll();

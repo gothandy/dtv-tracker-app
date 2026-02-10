@@ -137,7 +137,7 @@
             container.innerHTML = '<div class="entries-list">' + filtered.map(entry => {
                 const icons = notesToIcons(entry.notes);
                 const detailUrl = entry.groupKey && entry.date
-                    ? `/entries/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/${encodeURIComponent(profileSlug)}/details.html`
+                    ? `/entries/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/${encodeURIComponent(profileSlug)}/edit.html`
                     : '#';
                 return `
                     <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${detailUrl}">

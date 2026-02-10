@@ -79,6 +79,11 @@ class EntriesRepository {
       filter
     ) as SharePointEntry[];
   }
+
+  async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes'>>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, entryId, fields);
+    sharePointClient.cache.del('entries');
+  }
 }
 
 export const entriesRepository = new EntriesRepository();

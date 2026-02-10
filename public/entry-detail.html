@@ -9,16 +9,16 @@
         body { min-height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 
-        .entry-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        .entry-detail h1 { color: var(--green); font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.3; }
-        .entry-detail h1 .group-badge {
+        .entry-header { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .entry-header h1 { color: var(--green); font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.3; }
+        .entry-header h1 .group-badge {
             display: inline-block; font-size: 0.7rem; font-weight: 600;
             background: var(--green); color: white; padding: 0.15rem 0.5rem;
             border-radius: 4px; vertical-align: middle; margin-left: 0.5rem;
         }
-        .entry-detail .subtitle { color: var(--text-light); font-size: 1rem; margin-bottom: 1.5rem; }
+        .entry-header .subtitle { color: var(--text-light); font-size: 1rem; margin-bottom: 1.5rem; }
 
-        .nav-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .nav-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; }
         .nav-btn {
             display: inline-flex; align-items: center; gap: 0.4rem;
             padding: 0.6rem 1.1rem; border-radius: var(--radius);
@@ -28,25 +28,44 @@
         }
         .nav-btn:hover { background: var(--green-tint); }
 
-        .detail-grid { display: flex; flex-direction: column; gap: 1rem; }
-        .detail-item {
-            display: flex; align-items: center; gap: 1rem;
-            padding: 1rem 1.25rem; background: var(--green-bg); border-radius: var(--radius);
-        }
-        .detail-label { font-size: 0.85rem; color: var(--text-light); min-width: 80px; flex-shrink: 0; }
-        .detail-value { font-size: 1.1rem; font-weight: 600; color: var(--text); }
-        .detail-value.checked-yes { color: var(--green); }
-        .detail-value.checked-no { color: var(--text-lighter); }
+        .edit-form { display: flex; flex-direction: column; gap: 1rem; }
 
-        .notes-value { font-weight: 400; white-space: pre-wrap; line-height: 1.6; }
-        .notes-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
-        .notes-tag { font-size: 1.2rem; }
+        .form-field {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 1rem 1.25rem; background: var(--surface); border-radius: var(--radius);
+            box-shadow: var(--shadow); transition: box-shadow 0.3s;
+        }
+        .form-field.save-ok { box-shadow: 0 0 0 2px var(--green); }
+        .form-field.save-err { box-shadow: 0 0 0 2px var(--error, #e74c3c); }
+
+        .form-label { font-size: 0.85rem; color: var(--text-light); min-width: 80px; flex-shrink: 0; }
+
+        .form-field input[type="number"] {
+            font-size: 1.1rem; font-weight: 600; color: var(--text);
+            border: 1px solid var(--border); border-radius: 6px;
+            padding: 0.5rem 0.75rem; width: 100px; background: var(--surface);
+        }
+        .form-field input[type="number"]:focus { outline: none; border-color: var(--green); }
+
+        .form-field input[type="checkbox"] {
+            width: 22px; height: 22px; accent-color: var(--green); cursor: pointer;
+        }
+
+        .form-field textarea {
+            flex: 1; font-size: 1rem; color: var(--text); font-family: inherit;
+            border: 1px solid var(--border); border-radius: 6px;
+            padding: 0.5rem 0.75rem; min-height: 80px; resize: vertical;
+            background: var(--surface);
+        }
+        .form-field textarea:focus { outline: none; border-color: var(--green); }
 
         @media (max-width: 600px) {
-            .entry-detail { padding: 1.5rem; }
-            .entry-detail h1 { font-size: 1.75rem; }
+            .entry-header { padding: 1.5rem; }
+            .entry-header h1 { font-size: 1.75rem; }
             .nav-buttons { flex-direction: column; }
             .nav-btn { justify-content: center; }
+            .form-field { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .form-field input[type="number"] { width: 100%; }
         }
     </style>
     <script src="/js/common.js"></script>
@@ -61,30 +80,40 @@
     </div>
 
     <script>
-        const TAG_ICONS = [
-            { icon: "\u{1F476}", tag: "#Child" },
-            { icon: "\u{1F501}", tag: "#Regular" },
-            { icon: "\u2728", tag: "#New" },
-            { icon: "\u{1F451}", tag: "#DigLead" },
-            { icon: "\u{1F691}", tag: "#FirstAider" },
-            { icon: "\u{1F40C}", tag: "#Late" },
-            { icon: "\u{1F3E2}", tag: "#CSR" },
-            { icon: "\u{1F4F5}", tag: "#NoPhoto" }
-        ];
-
-        function notesToIcons(notes) {
-            if (!notes) return '';
-            return TAG_ICONS
-                .filter(t => new RegExp(t.tag.replace('#', '#'), 'i').test(notes))
-                .map(t => `<span class="notes-tag" title="${escapeHtml(t.tag)}">${t.icon}</span>`)
-                .join('');
-        }
-
-        // Extract from URL: /entries/:group/:date/:slug/details.html
+        // Extract from URL: /entries/:group/:date/:slug/edit.html
         const pathParts = window.location.pathname.split('/');
         const groupKey = pathParts[2];
         const entryDate = pathParts[3];
         const profileSlug = pathParts[4];
+
+        let entryId = null;
+        let notesTimer = null;
+
+        async function saveField(fieldName, value, fieldEl) {
+            try {
+                const response = await apiFetch(`/api/entries/${entryId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [fieldName]: value })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Save failed');
+                }
+
+                if (fieldEl) {
+                    fieldEl.classList.add('save-ok');
+                    setTimeout(() => fieldEl.classList.remove('save-ok'), 1000);
+                }
+            } catch (error) {
+                console.error(`Error saving ${fieldName}:`, error);
+                if (fieldEl) {
+                    fieldEl.classList.add('save-err');
+                    setTimeout(() => fieldEl.classList.remove('save-err'), 2000);
+                }
+            }
+        }
 
         async function loadEntry() {
             const contentDiv = document.getElementById('content');
@@ -113,26 +142,15 @@
                 }
 
                 const entry = result.data;
+                entryId = entry.id;
                 document.title = `${entry.volunteerName || 'Entry'} - DTV Tracker`;
 
                 const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
-                const icons = notesToIcons(entry.notes);
-
                 const sessionUrl = `/sessions/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/details.html`;
                 const profileUrl = entry.volunteerSlug ? `/profiles/${encodeURIComponent(entry.volunteerSlug)}/details.html` : '#';
 
-                const notesHtml = entry.notes
-                    ? `<div class="detail-item">
-                            <div class="detail-label">Notes</div>
-                            <div class="detail-value notes-value">
-                                ${escapeHtml(entry.notes)}
-                                ${icons ? `<div class="notes-tags">${icons}</div>` : ''}
-                            </div>
-                       </div>`
-                    : '';
-
                 contentDiv.innerHTML = `
-                    <div class="entry-detail">
+                    <div class="entry-header">
                         <h1>${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}</h1>
                         <div class="subtitle">${formatDate(entry.date)} &middot; ${escapeHtml(entry.groupName || '')}</div>
 
@@ -140,24 +158,54 @@
                             <a class="nav-btn" href="${profileUrl}">View Profile</a>
                             <a class="nav-btn" href="${sessionUrl}">View Session</a>
                         </div>
+                    </div>
 
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <div class="detail-label">Checked In</div>
-                                <div class="detail-value ${entry.checkedIn ? 'checked-yes' : 'checked-no'}">${entry.checkedIn ? 'Yes' : 'No'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Count</div>
-                                <div class="detail-value">${entry.count}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Hours</div>
-                                <div class="detail-value">${entry.hours}</div>
-                            </div>
-                            ${notesHtml}
+                    <div class="edit-form">
+                        <div class="form-field" id="field-checked">
+                            <div class="form-label">Checked In</div>
+                            <input type="checkbox" id="inputChecked" ${entry.checkedIn ? 'checked' : ''}>
+                        </div>
+                        <div class="form-field" id="field-count">
+                            <div class="form-label">Count</div>
+                            <input type="number" id="inputCount" min="0" step="1" value="${entry.count}">
+                        </div>
+                        <div class="form-field" id="field-hours">
+                            <div class="form-label">Hours</div>
+                            <input type="number" id="inputHours" min="0" step="0.5" value="${entry.hours}">
+                        </div>
+                        <div class="form-field" id="field-notes">
+                            <div class="form-label">Notes</div>
+                            <textarea id="inputNotes">${escapeHtml(entry.notes || '')}</textarea>
                         </div>
                     </div>
                 `;
+
+                // Bind live-save events
+                document.getElementById('inputChecked').addEventListener('change', function() {
+                    saveField('checkedIn', this.checked, document.getElementById('field-checked'));
+                });
+
+                document.getElementById('inputCount').addEventListener('change', function() {
+                    const val = parseInt(this.value, 10);
+                    if (!isNaN(val) && val >= 0) {
+                        saveField('count', val, document.getElementById('field-count'));
+                    }
+                });
+
+                document.getElementById('inputHours').addEventListener('change', function() {
+                    const val = parseFloat(this.value);
+                    if (!isNaN(val) && val >= 0) {
+                        saveField('hours', val, document.getElementById('field-hours'));
+                    }
+                });
+
+                document.getElementById('inputNotes').addEventListener('input', function() {
+                    clearTimeout(notesTimer);
+                    const val = this.value;
+                    notesTimer = setTimeout(() => {
+                        saveField('notes', val, document.getElementById('field-notes'));
+                    }, 500);
+                });
 
             } catch (error) {
                 console.error('Error loading entry:', error);

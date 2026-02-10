@@ -146,7 +146,7 @@
                         const icons = notesToIcons(entry.notes);
                         const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
                         const href = entry.volunteerSlug
-                            ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/details.html`
+                            ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/edit.html`
                             : '#';
                         return `
                             <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">

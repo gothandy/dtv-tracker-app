@@ -34,7 +34,7 @@ function getBreadcrumbs() {
     }
 
     // Entry detail: Home > Sessions > Session
-    if (path.startsWith('/entries/') && path.endsWith('/details.html')) {
+    if (path.startsWith('/entries/') && path.endsWith('/edit.html')) {
         const parts = path.split('/');
         const group = parts[2];
         const date = parts[3];
