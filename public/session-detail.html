@@ -145,7 +145,9 @@
                     ? entries.map(entry => {
                         const icons = notesToIcons(entry.notes);
                         const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
-                        const href = entry.volunteerSlug ? `/profiles/${encodeURIComponent(entry.volunteerSlug)}/details.html` : '#';
+                        const href = entry.volunteerSlug
+                            ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/details.html`
+                            : '#';
                         return `
                             <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
                                 <div class="entry-info" style="flex:1">

@@ -23,7 +23,7 @@ import {
   safeParseLookupId,
   nameToSlug
 } from '../services/data-layer';
-import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, StatsResponse } from '../types/api-responses';
+import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -296,6 +296,78 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch session detail',
+      message: error.message
+    });
+  }
+});
+
+router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+    const slug = String(req.params.slug).toLowerCase();
+
+    const [rawGroups, rawSessions, rawEntries, rawProfiles] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => {
+      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      return s.Date.substring(0, 10) === dateParam;
+    });
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const spEntry = entries.find(e => {
+      if (safeParseLookupId(e.EventLookupId) !== spSession.ID) return false;
+      return nameToSlug(e.Volunteer) === slug;
+    });
+    if (!spEntry) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const volunteerId = safeParseLookupId(spEntry.VolunteerLookupId);
+    const profile = volunteerId !== undefined ? profiles.find(p => p.ID === volunteerId) : undefined;
+
+    const group = convertGroup(spGroup);
+
+    const data: EntryDetailResponse = {
+      id: spEntry.ID,
+      volunteerName: spEntry.Volunteer,
+      volunteerSlug: nameToSlug(spEntry.Volunteer),
+      isGroup: profile?.IsGroup || false,
+      count: spEntry.Count || 1,
+      hours: spEntry.Hours || 0,
+      checkedIn: spEntry.Checked || false,
+      notes: spEntry.Notes,
+      date: spSession.Date,
+      groupKey,
+      groupName: group.displayName,
+      sessionDisplayName: spSession.Name || spSession.Title
+    };
+
+    res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);
+  } catch (error: any) {
+    console.error('Error fetching entry detail:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch entry detail',
       message: error.message
     });
   }

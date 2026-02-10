@@ -114,6 +114,21 @@ export interface SessionDetailResponse {
   entries: EntryResponse[];
 }
 
+export interface EntryDetailResponse {
+  id: number;
+  volunteerName?: string;
+  volunteerSlug?: string;
+  isGroup: boolean;
+  count: number;
+  hours: number;
+  checkedIn: boolean;
+  notes?: string;
+  date: string;
+  groupKey?: string;
+  groupName?: string;
+  sessionDisplayName?: string;
+}
+
 export interface StatsResponse {
   activeGroupsFY: number;
   sessionsFY: number;
