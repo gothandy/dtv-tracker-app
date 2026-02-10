@@ -87,5 +87,6 @@ export interface StatsResponse {
   activeGroupsFY: number;
   sessionsFY: number;
   hoursFY: number;
+  volunteersFY: number;
   financialYear: string;
 }

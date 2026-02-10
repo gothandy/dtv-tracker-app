@@ -299,6 +299,7 @@ export interface FYStats {
   activeGroups: number;
   sessions: number;
   hours: number;
+  volunteers: number;
   financialYear: number;
 }
 
@@ -336,12 +337,19 @@ export function calculateFYStats(
       .filter((id): id is number => id !== undefined)
   );
 
-  console.log(`[Stats] FY sessions: ${sessionsFY.length}, FY entries: ${entriesFY.length}, Hours: ${totalHours}`);
+  const uniqueVolunteers = new Set(
+    entriesFY
+      .map(e => safeParseLookupId(e.VolunteerLookupId))
+      .filter((id): id is number => id !== undefined)
+  );
+
+  console.log(`[Stats] FY sessions: ${sessionsFY.length}, FY entries: ${entriesFY.length}, Hours: ${totalHours}, Volunteers: ${uniqueVolunteers.size}`);
 
   return {
     activeGroups: activeGroupIds.size,
     sessions: sessionsFY.length,
     hours: Math.round(totalHours * 10) / 10,
+    volunteers: uniqueVolunteers.size,
     financialYear: fy.startYear
   };
 }

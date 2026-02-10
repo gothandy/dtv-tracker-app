@@ -120,6 +120,7 @@
                 document.title = `${session.displayName || formatDate(session.date)} - DTV Tracker`;
 
                 const isPast = new Date(session.date) < new Date(new Date().toDateString());
+                const countdown = getCountdown(session.date);
 
                 const statsSection = `
                     <div class="stats-section">
@@ -159,7 +160,8 @@
                     : '<p class="no-sessions">No registrations yet</p>';
 
                 contentDiv.innerHTML = `
-                    <div class="session-detail">
+                    <div class="session-detail${countdown ? ' next-session' : ''}">
+                        ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
                         <div class="date">${formatDate(session.date)}</div>
                         <h1>${escapeHtml(session.displayName || 'Session')}</h1>
                         ${session.groupName ? `<div class="group-name">${escapeHtml(session.groupName)}</div>` : ''}

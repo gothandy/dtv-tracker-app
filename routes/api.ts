@@ -341,6 +341,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       activeGroupsFY: stats.activeGroups,
       sessionsFY: stats.sessions,
       hoursFY: stats.hours,
+      volunteersFY: stats.volunteers,
       financialYear: `${fy.startYear}-${fy.endYear}`
     };
 

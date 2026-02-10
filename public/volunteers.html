@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteers - DTV Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body { min-height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 900px; padding: 1.5rem; flex: 1; }
+
+        .search-box {
+            width: 100%; padding: 0.85rem 1.25rem; font-size: 1rem;
+            border: 2px solid var(--border-mid); border-radius: var(--radius);
+            background: var(--surface); color: var(--text);
+            margin-bottom: 1.5rem; box-shadow: var(--shadow);
+            font-family: var(--font);
+        }
+        .search-box:focus { outline: none; border-color: var(--green); }
+
+        .volunteer-count { color: var(--text-faint); font-size: 0.9rem; margin-bottom: 0.75rem; }
+
+        .volunteer-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .volunteer-card {
+            background: var(--surface); border-radius: var(--radius); padding: 1rem 1.25rem;
+            box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
+        }
+        .volunteer-card.is-group { border-left: 4px solid var(--green); }
+
+        .volunteer-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
+        .volunteer-name .group-badge {
+            display: inline-block; font-size: 0.7rem; font-weight: 600;
+            background: var(--green); color: white; padding: 0.1rem 0.4rem;
+            border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
+        }
+
+        .volunteer-hours { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
+        .volunteer-hours .fy-hours { white-space: nowrap; }
+        .volunteer-hours strong { color: var(--text-mid); }
+
+        @media (max-width: 600px) {
+            .volunteer-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .volunteer-hours { width: 100%; justify-content: flex-start; }
+        }
+    </style>
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <script>createHeader('Volunteers', true);</script>
+
+    <div class="container">
+        <input type="text" class="search-box" id="searchBox" placeholder="Search volunteers..." autocomplete="off">
+        <div class="volunteer-count" id="volunteerCount"></div>
+        <div id="content">
+            <div class="loading">Loading volunteers</div>
+        </div>
+    </div>
+
+    <script>
+        let allVolunteers = [];
+
+        function displayVolunteers(filter) {
+            const contentDiv = document.getElementById('content');
+            const countDiv = document.getElementById('volunteerCount');
+
+            let filtered = allVolunteers;
+            if (filter && filter.length >= 3) {
+                const term = filter.toLowerCase();
+                filtered = allVolunteers.filter(v => (v.name || '').toLowerCase().includes(term));
+            }
+
+            countDiv.textContent = `${filtered.length} volunteer${filtered.length !== 1 ? 's' : ''}`;
+
+            if (filtered.length === 0) {
+                contentDiv.innerHTML = '<p class="no-sessions">No volunteers found</p>';
+                return;
+            }
+
+            const html = filtered.map(v => {
+                const groupBadge = v.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+                return `
+                    <div class="volunteer-card${v.isGroup ? ' is-group' : ''}">
+                        <div class="volunteer-name">${escapeHtml(v.name || 'Unknown')}${groupBadge}</div>
+                        <div class="volunteer-hours">
+                            <span class="fy-hours"><strong>Last FY:</strong> ${v.hoursLastFY}</span>
+                            <span class="fy-hours"><strong>This FY:</strong> ${v.hoursThisFY}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            contentDiv.innerHTML = `<div class="volunteer-list">${html}</div>`;
+        }
+
+        async function loadVolunteers() {
+            const contentDiv = document.getElementById('content');
+
+            try {
+                const response = await apiFetch('/api/profiles');
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to fetch volunteers');
+                }
+
+                allVolunteers = result.data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                displayVolunteers('');
+
+            } catch (error) {
+                console.error('Error loading volunteers:', error);
+                showError(contentDiv, 'Error Loading Volunteers', error.message);
+            }
+        }
+
+        document.getElementById('searchBox').addEventListener('input', function () {
+            displayVolunteers(this.value);
+        });
+
+        loadVolunteers();
+    </script>
+</body>
+</html>
