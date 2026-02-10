@@ -49,6 +49,11 @@ app.get('/sessions/:group/:date/details.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
 });
 
+// Serve profile detail page at /profiles/:slug/details.html
+app.get('/profiles/:slug/details.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'profile-detail.html'));
+});
+
 // Mount API routes
 app.use('/api', apiRoutes);
 

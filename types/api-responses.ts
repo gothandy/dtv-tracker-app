@@ -32,11 +32,41 @@ export interface SessionResponse {
 
 export interface ProfileResponse {
   id: number;
+  slug: string;
   name?: string;
   email?: string;
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
+}
+
+export interface ProfileEntryResponse {
+  id: number;
+  date: string;
+  groupKey?: string;
+  groupName?: string;
+  count: number;
+  hours: number;
+  checkedIn: boolean;
+  notes?: string;
+  financialYear: string;
+}
+
+export interface ProfileGroupHours {
+  groupName: string;
+  hours: number;
+}
+
+export interface ProfileDetailResponse {
+  id: number;
+  slug: string;
+  name?: string;
+  email?: string;
+  isGroup: boolean;
+  hoursLastFY: number;
+  hoursThisFY: number;
+  groupHours: ProfileGroupHours[];
+  entries: ProfileEntryResponse[];
 }
 
 export interface GroupDetailResponse {

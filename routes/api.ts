@@ -19,9 +19,11 @@ import {
   groupRegularsByCrewId,
   calculateCurrentFY,
   calculateFYStats,
-  safeParseLookupId
+  calculateFinancialYear,
+  safeParseLookupId,
+  nameToSlug
 } from '../services/data-layer';
-import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, ProfileResponse, StatsResponse } from '../types/api-responses';
+import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -307,6 +309,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const profile = convertProfile(spProfile);
       return {
         id: profile.id,
+        slug: nameToSlug(profile.name),
         name: profile.name,
         email: profile.email,
         isGroup: profile.isGroup,
@@ -321,6 +324,114 @@ router.get('/profiles', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch profiles from SharePoint',
+      message: error.message
+    });
+  }
+});
+
+router.get('/profiles/:slug', async (req: Request, res: Response) => {
+  try {
+    const slug = String(req.params.slug).toLowerCase();
+
+    const [rawProfiles, rawEntries, rawSessions, rawGroups] = await Promise.all([
+      profilesRepository.getAll(),
+      entriesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll()
+    ]);
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    if (!spProfile) {
+      res.status(404).json({ success: false, error: 'Profile not found' });
+      return;
+    }
+
+    const profile = convertProfile(spProfile);
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const profileEntries = entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === spProfile.ID);
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const groupMap = new Map(groups.map(g => [g.ID, g]));
+    const groupKeyMap = new Map(groups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+
+    // Calculate FY hours from entries and build group hours breakdown
+    const fy = calculateCurrentFY();
+    const lastFYStart = fy.startYear - 1;
+    let calculatedThisFY = 0;
+    let calculatedLastFY = 0;
+    const groupHoursMap = new Map<string, number>();
+
+    profileEntries.forEach(e => {
+      const sessionId = safeParseLookupId(e.EventLookupId);
+      if (sessionId === undefined) return;
+      const session = sessionMap.get(sessionId);
+      if (!session) return;
+      const hours = parseFloat(String(e.Hours)) || 0;
+      const sessionFY = calculateFinancialYear(new Date(session.Date));
+
+      if (sessionFY === fy.startYear) {
+        calculatedThisFY += hours;
+        const groupId = safeParseLookupId(session.CrewLookupId);
+        if (groupId !== undefined) {
+          const group = groupMap.get(groupId);
+          const groupName = group?.Name || group?.Title || 'Unknown';
+          groupHoursMap.set(groupName, (groupHoursMap.get(groupName) || 0) + hours);
+        }
+      } else if (sessionFY === lastFYStart) {
+        calculatedLastFY += hours;
+      }
+    });
+
+    const groupHours = [...groupHoursMap.entries()]
+      .map(([groupName, hours]) => ({ groupName, hours: Math.round(hours * 10) / 10 }))
+      .sort((a, b) => b.hours - a.hours);
+
+    // Build entry responses sorted by date desc
+    const entryResponses: ProfileEntryResponse[] = profileEntries
+      .map(e => {
+        const sessionId = safeParseLookupId(e.EventLookupId);
+        const session = sessionId !== undefined ? sessionMap.get(sessionId) : undefined;
+        const groupId = session ? safeParseLookupId(session.CrewLookupId) : undefined;
+        const group = groupId !== undefined ? groupMap.get(groupId) : undefined;
+        const date = session?.Date || '';
+        const sessionFY = date ? calculateFinancialYear(new Date(date)) : 0;
+        return {
+          id: e.ID,
+          date,
+          groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
+          groupName: group?.Name || group?.Title,
+          count: e.Count || 1,
+          hours: e.Hours || 0,
+          checkedIn: e.Checked || false,
+          notes: e.Notes,
+          financialYear: `FY${sessionFY}`
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const data: ProfileDetailResponse = {
+      id: profile.id,
+      slug: nameToSlug(profile.name),
+      name: profile.name,
+      email: profile.email,
+      isGroup: profile.isGroup,
+      hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
+      hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
+      groupHours,
+      entries: entryResponses
+    };
+
+    res.json({ success: true, data } as ApiResponse<ProfileDetailResponse>);
+  } catch (error: any) {
+    console.error('Error fetching profile detail:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch profile detail',
       message: error.message
     });
   }

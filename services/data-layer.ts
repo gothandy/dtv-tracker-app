@@ -392,6 +392,19 @@ export function sortSessionsByDate(sessions: Session[]): Session[] {
 // ============================================================================
 
 /**
+ * Converts a name to a URL-safe slug
+ * "Andrew Davies" -> "andrew-davies", "O'Brien" -> "obrien"
+ */
+export function nameToSlug(name: string | undefined): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/[\u2018\u2019']/g, '') // strip apostrophes and smart quotes
+    .replace(/[^a-z0-9]+/g, '-')     // non-alphanumeric to hyphens
+    .replace(/^-+|-+$/g, '');        // trim leading/trailing hyphens
+}
+
+/**
  * Safely converts a lookup ID to a number
  * Returns undefined if the ID is invalid
  */

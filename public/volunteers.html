@@ -21,10 +21,13 @@
         .volunteer-count { color: var(--text-faint); font-size: 0.9rem; margin-bottom: 0.75rem; }
 
         .volunteer-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        a.volunteer-card { text-decoration: none; color: inherit; }
         .volunteer-card {
             background: var(--surface); border-radius: var(--radius); padding: 1rem 1.25rem;
             box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
         }
+        .volunteer-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
         .volunteer-card.is-group { border-left: 4px solid var(--green); }
 
         .volunteer-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
@@ -78,14 +81,15 @@
 
             const html = filtered.map(v => {
                 const groupBadge = v.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+                const href = v.slug ? `/profiles/${encodeURIComponent(v.slug)}/details.html` : '#';
                 return `
-                    <div class="volunteer-card${v.isGroup ? ' is-group' : ''}">
+                    <a class="volunteer-card${v.isGroup ? ' is-group' : ''}" href="${href}">
                         <div class="volunteer-name">${escapeHtml(v.name || 'Unknown')}${groupBadge}</div>
                         <div class="volunteer-hours">
                             <span class="fy-hours"><strong>Last FY:</strong> ${v.hoursLastFY}</span>
                             <span class="fy-hours"><strong>This FY:</strong> ${v.hoursThisFY}</span>
                         </div>
-                    </div>
+                    </a>
                 `;
             }).join('');
 
