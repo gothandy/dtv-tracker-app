@@ -26,10 +26,13 @@
         .entries-heading { color: var(--green); font-size: 1.3rem; margin-bottom: 1rem; }
 
         .entries-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        a.entry-card { text-decoration: none; color: inherit; }
         .entry-card {
             background: var(--surface); border-radius: var(--radius); padding: 1rem 1.25rem;
             box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
         }
+        .entry-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
         .entry-card.checked-in { border-left: 4px solid var(--green); }
 
         .entry-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
@@ -142,8 +145,9 @@
                     ? entries.map(entry => {
                         const icons = notesToIcons(entry.notes);
                         const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+                        const href = entry.volunteerSlug ? `/profiles/${encodeURIComponent(entry.volunteerSlug)}/details.html` : '#';
                         return `
-                            <div class="entry-card${entry.checkedIn ? ' checked-in' : ''}">
+                            <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
                                 <div class="entry-info" style="flex:1">
                                     <div class="entry-name">
                                         ${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}
@@ -154,7 +158,7 @@
                                     ${entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : ''}
                                     <span class="entry-hours"><strong>Hours:</strong> ${entry.hours}</span>
                                 </div>
-                            </div>
+                            </a>
                         `;
                     }).join('')
                     : '<p class="no-sessions">No registrations yet</p>';

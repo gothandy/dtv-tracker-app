@@ -91,6 +91,7 @@ export interface GroupDetailResponse {
 export interface EntryResponse {
   id: number;
   volunteerName?: string;
+  volunteerSlug?: string;
   isGroup: boolean;
   count: number;
   hours: number;

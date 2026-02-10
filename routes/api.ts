@@ -264,6 +264,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       return {
         id: e.ID,
         volunteerName: e.Volunteer,
+        volunteerSlug: nameToSlug(e.Volunteer),
         isGroup: profile?.IsGroup || false,
         count: e.Count || 1,
         hours: e.Hours || 0,
