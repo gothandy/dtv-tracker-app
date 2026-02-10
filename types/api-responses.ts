@@ -21,6 +21,7 @@ export interface SessionResponse {
   description?: string;
   date: string;
   groupId?: number;
+  groupKey?: string;
   groupName?: string;
   registrations: number;
   hours: number;
@@ -55,6 +56,31 @@ export interface GroupDetailResponse {
   };
   nextSession?: SessionResponse;
   recentSessions: SessionResponse[];
+}
+
+export interface EntryResponse {
+  id: number;
+  volunteerName?: string;
+  isGroup: boolean;
+  count: number;
+  hours: number;
+  checkedIn: boolean;
+  notes?: string;
+}
+
+export interface SessionDetailResponse {
+  id: number;
+  displayName?: string;
+  description?: string;
+  date: string;
+  groupId?: number;
+  groupName?: string;
+  registrations: number;
+  hours: number;
+  financialYear: string;
+  eventbriteEventId?: string;
+  eventbriteUrl?: string;
+  entries: EntryResponse[];
 }
 
 export interface StatsResponse {

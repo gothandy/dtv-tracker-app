@@ -242,12 +242,14 @@ body {
     flex-direction: column;
     gap: 1rem;
 }
+a.session-card { text-decoration: none; color: inherit; display: block; }
 .session-card {
     background: var(--surface);
     border-radius: var(--radius);
     padding: 1.25rem;
     box-shadow: var(--shadow);
     transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
 }
 .session-card:hover {
     transform: translateY(-2px);

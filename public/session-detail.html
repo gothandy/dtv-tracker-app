@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Details - DTV Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body { min-height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 900px; padding: 1.5rem; flex: 1; }
+
+        .session-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .session-detail.next-session { background: var(--green-light); border-left: 4px solid var(--green); }
+        .session-detail .countdown { font-size: 0.95rem; color: var(--green); font-weight: 600; margin-bottom: 0.75rem; }
+        .session-detail h1 { color: var(--green); font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.3; }
+        .session-detail .date { color: var(--text-mid); font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .session-detail .group-name { color: var(--text-light); font-size: 1rem; margin-bottom: 1rem; }
+        .session-detail .description { color: var(--text-mid); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-wrap; }
+
+        .stats-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
+        .stat-item { text-align: center; padding: 0.75rem 0.5rem; background: var(--green-bg); border-radius: var(--radius); }
+        .stat-item .stat-number { font-size: 1.8rem; font-weight: bold; color: var(--green); line-height: 1; }
+        .stat-item .stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 0.25rem; }
+
+        .entries-heading { color: var(--green); font-size: 1.3rem; margin-bottom: 1rem; }
+
+        .entries-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .entry-card {
+            background: var(--surface); border-radius: var(--radius); padding: 1rem 1.25rem;
+            box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
+        }
+        .entry-card.checked-in { border-left: 4px solid var(--green); }
+
+        .entry-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
+        .entry-name .group-badge {
+            display: inline-block; font-size: 0.7rem; font-weight: 600;
+            background: var(--green); color: white; padding: 0.1rem 0.4rem;
+            border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
+        }
+
+        .entry-meta { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
+        .entry-count, .entry-hours { white-space: nowrap; }
+        .entry-count strong, .entry-hours strong { color: var(--text-mid); }
+
+        .entry-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.3rem; }
+        .entry-tag { font-size: 1.1rem; cursor: default; }
+
+        @media (max-width: 600px) {
+            .session-detail { padding: 1.5rem; }
+            .session-detail h1 { font-size: 1.75rem; }
+            .stat-item .stat-number { font-size: 1.5rem; }
+            .entry-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .entry-meta { width: 100%; justify-content: flex-start; }
+        }
+    </style>
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <script>createHeader('Session Details', true);</script>
+
+    <div class="container">
+        <div id="content">
+            <div class="loading">Loading session details</div>
+        </div>
+    </div>
+
+    <script>
+        const TAG_ICONS = [
+            { icon: "\u{1F476}", tag: "#Child" },
+            { icon: "\u{1F501}", tag: "#Regular" },
+            { icon: "\u2728", tag: "#New" },
+            { icon: "\u{1F451}", tag: "#DigLead" },
+            { icon: "\u{1F691}", tag: "#FirstAider" },
+            { icon: "\u{1F40C}", tag: "#Late" },
+            { icon: "\u{1F3E2}", tag: "#CSR" },
+            { icon: "\u{1F4F5}", tag: "#NoPhoto" }
+        ];
+
+        function notesToIcons(notes) {
+            if (!notes) return '';
+            return TAG_ICONS
+                .filter(t => new RegExp(t.tag.replace('#', '#'), 'i').test(notes))
+                .map(t => `<span class="entry-tag" title="${escapeHtml(t.tag)}">${t.icon}</span>`)
+                .join('');
+        }
+
+        // Extract group and date from URL: /sessions/:group/:date/details.html
+        const pathParts = window.location.pathname.split('/');
+        const groupKey = pathParts[2];
+        const sessionDate = pathParts[3];
+
+        async function loadSessionDetail() {
+            const contentDiv = document.getElementById('content');
+
+            if (!groupKey || !sessionDate) {
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <p>No session specified</p>
+                        <a href="/sessions.html" class="btn-primary">Back to Sessions</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`);
+
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to fetch session');
+                }
+
+                const session = result.data;
+                document.title = `${session.displayName || formatDate(session.date)} - DTV Tracker`;
+
+                const isPast = new Date(session.date) < new Date(new Date().toDateString());
+
+                const statsSection = `
+                    <div class="stats-section">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">${session.registrations}</div>
+                                <div class="stat-label">${isPast ? 'Attendees' : 'Registrations'}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${session.hours}</div>
+                                <div class="stat-label">Hours</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const entries = session.entries || [];
+                const entriesHtml = entries.length > 0
+                    ? entries.map(entry => {
+                        const icons = notesToIcons(entry.notes);
+                        const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+                        return `
+                            <div class="entry-card${entry.checkedIn ? ' checked-in' : ''}">
+                                <div class="entry-info" style="flex:1">
+                                    <div class="entry-name">
+                                        ${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}
+                                    </div>
+                                    ${icons ? `<div class="entry-tags">${icons}</div>` : ''}
+                                </div>
+                                <div class="entry-meta">
+                                    ${entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : ''}
+                                    <span class="entry-hours"><strong>Hours:</strong> ${entry.hours}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<p class="no-sessions">No registrations yet</p>';
+
+                contentDiv.innerHTML = `
+                    <div class="session-detail">
+                        <div class="date">${formatDate(session.date)}</div>
+                        <h1>${escapeHtml(session.displayName || 'Session')}</h1>
+                        ${session.groupName ? `<div class="group-name">${escapeHtml(session.groupName)}</div>` : ''}
+                        ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
+                        ${statsSection}
+                    </div>
+                    <h2 class="entries-heading">${isPast ? 'Attendees' : 'Registrations'} (${entries.length})</h2>
+                    <div class="entries-list">
+                        ${entriesHtml}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading session detail:', error);
+                showError(contentDiv, 'Error Loading Session', error.message);
+            }
+        }
+
+        loadSessionDetail();
+    </script>
+</body>
+</html>

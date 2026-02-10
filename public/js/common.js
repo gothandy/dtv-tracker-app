@@ -124,6 +124,15 @@ function findNextSessionIndex(sessions) {
 }
 
 /**
+ * Build the URL for a session detail page from a session object
+ */
+function buildSessionDetailUrl(session) {
+    if (!session.groupKey || !session.date) return '#';
+    const dateStr = session.date.substring(0, 10);
+    return `/sessions/${encodeURIComponent(session.groupKey)}/${dateStr}/details.html`;
+}
+
+/**
  * Render a list of session cards into a container element
  */
 function renderSessionList(container, sessions, options = {}) {
@@ -143,8 +152,9 @@ function renderSessionList(container, sessions, options = {}) {
         const isNext = i === nextIdx;
         const countdown = isNext ? getCountdown(session.date) : null;
 
-        const card = document.createElement('div');
+        const card = document.createElement('a');
         card.className = 'session-card' + (isNext ? ' next-session' : '');
+        card.href = buildSessionDetailUrl(session);
         card.innerHTML = `
             ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
             <div class="date">${formatDate(session.date)}</div>

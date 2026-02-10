@@ -21,7 +21,7 @@ import {
   calculateFYStats,
   safeParseLookupId
 } from '../services/data-layer';
-import type { GroupResponse, GroupDetailResponse, SessionResponse, ProfileResponse, StatsResponse } from '../types/api-responses';
+import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, ProfileResponse, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -131,6 +131,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       description: s.description,
       date: s.sessionDate.toISOString(),
       groupId: s.groupId,
+      groupKey: key,
       groupName: s.groupName,
       registrations: s.registrations,
       hours: s.hours,
@@ -187,12 +188,15 @@ router.get('/sessions', async (req: Request, res: Response) => {
     const enrichedSessions = enrichSessions(sessions, entries, groups);
     const sortedSessions = sortSessionsByDate(enrichedSessions);
 
+    const groupKeyMap = new Map(groups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+
     const data: SessionResponse[] = sortedSessions.map(s => ({
       id: s.sharePointId,
       displayName: s.displayName,
       description: s.description,
       date: s.sessionDate.toISOString(),
       groupId: s.groupId,
+      groupKey: s.groupId ? groupKeyMap.get(s.groupId) : undefined,
       groupName: s.groupName,
       registrations: s.registrations,
       hours: s.hours,
@@ -207,6 +211,88 @@ router.get('/sessions', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch sessions from SharePoint',
+      message: error.message
+    });
+  }
+});
+
+router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+
+    const [rawGroups, rawSessions, rawEntries, rawProfiles] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const groupId = spGroup.ID;
+    const group = convertGroup(spGroup);
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => {
+      if (safeParseLookupId(s.CrewLookupId) !== groupId) return false;
+      const sessionDate = s.Date.substring(0, 10);
+      return sessionDate === dateParam;
+    });
+
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const sessionEntries = entries.filter(e => safeParseLookupId(e.EventLookupId) === spSession.ID);
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profileMap = new Map(profiles.map(p => [p.ID, p]));
+
+    const entryResponses: EntryResponse[] = sessionEntries.map(e => {
+      const volunteerId = safeParseLookupId(e.VolunteerLookupId);
+      const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
+      return {
+        id: e.ID,
+        volunteerName: e.Volunteer,
+        isGroup: profile?.IsGroup || false,
+        count: e.Count || 1,
+        hours: e.Hours || 0,
+        checkedIn: e.Checked || false,
+        notes: e.Notes
+      };
+    });
+
+    const totalHours = sessionEntries.reduce((sum, e) => sum + (parseFloat(String(e.Hours)) || 0), 0);
+
+    const data: SessionDetailResponse = {
+      id: spSession.ID,
+      displayName: spSession.Name || spSession.Title,
+      description: spSession.Description,
+      date: spSession.Date,
+      groupId: groupId,
+      groupName: group.displayName,
+      registrations: sessionEntries.length,
+      hours: Math.round(totalHours * 10) / 10,
+      financialYear: `FY${new Date(spSession.Date).getMonth() >= 3 ? new Date(spSession.Date).getFullYear() : new Date(spSession.Date).getFullYear() - 1}`,
+      eventbriteEventId: spSession.EventbriteEventID,
+      eventbriteUrl: spSession.Url,
+      entries: entryResponses
+    };
+
+    res.json({ success: true, data } as ApiResponse<SessionDetailResponse>);
+  } catch (error: any) {
+    console.error('Error fetching session detail:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch session detail',
       message: error.message
     });
   }
