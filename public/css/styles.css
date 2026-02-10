@@ -98,12 +98,18 @@ body {
     background-color: #f8f8f8;
     border-bottom: 1px solid var(--border-mid);
     padding: 0.8rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
 }
 .site-nav a {
     color: var(--green);
     text-decoration: none;
     font-weight: 500;
 }
+.site-nav a:hover { text-decoration: underline; }
+.site-nav .breadcrumb-sep { color: var(--text-faint); font-size: 0.8rem; }
 
 /* === Site footer === */
 .site-footer {

@@ -3,9 +3,57 @@
  */
 
 /**
+ * Build breadcrumb trail based on the current page's position in the hierarchy.
+ * Each page has fixed parents — navigation always goes "up".
+ */
+function getBreadcrumbs() {
+    const path = window.location.pathname;
+    const crumbs = [{ href: '/', label: 'Home' }];
+
+    // Listing pages: one level below Home
+    if (path === '/groups.html' || path === '/sessions.html' || path === '/volunteers.html') {
+        return crumbs;
+    }
+
+    // Group detail: Home > Groups
+    if (path.startsWith('/groups/') && path.endsWith('/detail.html')) {
+        crumbs.push({ href: '/groups.html', label: 'Groups' });
+        return crumbs;
+    }
+
+    // Session detail: Home > Sessions
+    if (path.startsWith('/sessions/') && path.endsWith('/details.html')) {
+        crumbs.push({ href: '/sessions.html', label: 'Sessions' });
+        return crumbs;
+    }
+
+    // Profile detail: Home > Volunteers
+    if (path.startsWith('/profiles/') && path.endsWith('/details.html')) {
+        crumbs.push({ href: '/volunteers.html', label: 'Volunteers' });
+        return crumbs;
+    }
+
+    // Entry detail: Home > Sessions > Session
+    if (path.startsWith('/entries/') && path.endsWith('/details.html')) {
+        const parts = path.split('/');
+        const group = parts[2];
+        const date = parts[3];
+        crumbs.push({ href: '/sessions.html', label: 'Sessions' });
+        crumbs.push({ href: `/sessions/${group}/${date}/details.html`, label: 'Session' });
+        return crumbs;
+    }
+
+    return crumbs;
+}
+
+/**
  * Create and insert the site header
  */
 function createHeader(subtitle = 'Volunteer hours tracking and registration system', showBackLink = false) {
+    const crumbs = showBackLink ? getBreadcrumbs() : null;
+    const breadcrumbHtml = crumbs
+        ? crumbs.map(c => `<a href="${c.href}">${c.label}</a>`).join('<span class="breadcrumb-sep">/</span>')
+        : '';
     const headerHTML = `
         <header class="site-header${showBackLink ? ' compact' : ''}">
             <div class="header-top">
@@ -14,9 +62,9 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
             </div>
             <p>${subtitle}</p>
         </header>
-        ${showBackLink ? `
+        ${breadcrumbHtml ? `
         <nav class="site-nav">
-            <a href="/">&larr; Back to Home</a>
+            ${breadcrumbHtml}
         </nav>
         ` : ''}
     `;
