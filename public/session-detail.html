@@ -26,7 +26,8 @@
         .entries-heading { color: var(--green); font-size: 1.3rem; margin-bottom: 1rem; }
 
         .entries-list { display: flex; flex-direction: column; gap: 0.75rem; }
-        a.entry-card { text-decoration: none; color: inherit; }
+        .entry-row { display: flex; align-items: center; gap: 0.75rem; }
+        a.entry-card { text-decoration: none; color: inherit; flex: 1; min-width: 0; }
         .entry-card {
             background: var(--surface); border-radius: var(--radius); padding: 1rem 1.25rem;
             box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
@@ -34,6 +35,20 @@
         }
         .entry-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
         .entry-card.checked-in { border-left: 4px solid var(--green); }
+
+        .checkin-toggle { display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; width: 44px; height: 44px; }
+        .checkin-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+        .checkin-box {
+            width: 28px; height: 28px; border: 2px solid var(--border-mid); border-radius: 6px;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .checkin-box::after {
+            content: ''; display: block; width: 8px; height: 14px;
+            border: solid white; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+            margin-top: -2px; opacity: 0; transition: opacity 0.2s;
+        }
+        .checkin-toggle input:checked + .checkin-box { background: var(--green); border-color: var(--green); }
+        .checkin-toggle input:checked + .checkin-box::after { opacity: 1; }
 
         .entry-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
         .entry-name .group-badge {
@@ -53,7 +68,7 @@
             .session-detail { padding: 1.5rem; }
             .session-detail h1 { font-size: 1.75rem; }
             .stat-item .stat-number { font-size: 1.5rem; }
-            .entry-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .entry-card { flex-wrap: wrap; gap: 0.5rem; }
             .entry-meta { width: 100%; justify-content: flex-start; }
         }
     </style>
@@ -92,6 +107,22 @@
         const pathParts = window.location.pathname.split('/');
         const groupKey = pathParts[2];
         const sessionDate = pathParts[3];
+
+        async function toggleCheckin(entryId, checkbox) {
+            const row = checkbox.closest('.entry-row');
+            const card = row.querySelector('.entry-card');
+            try {
+                const res = await apiFetch(`/api/entries/${entryId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ checkedIn: checkbox.checked })
+                });
+                if (!res.ok) throw new Error();
+                card.classList.toggle('checked-in', checkbox.checked);
+            } catch {
+                checkbox.checked = !checkbox.checked;
+            }
+        }
 
         async function loadSessionDetail() {
             const contentDiv = document.getElementById('content');
@@ -149,18 +180,25 @@
                             ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/edit.html`
                             : '#';
                         return `
-                            <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
-                                <div class="entry-info" style="flex:1">
-                                    <div class="entry-name">
-                                        ${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}
+                            <div class="entry-row">
+                                <label class="checkin-toggle">
+                                    <input type="checkbox" ${entry.checkedIn ? 'checked' : ''}
+                                           onchange="toggleCheckin(${entry.id}, this)">
+                                    <span class="checkin-box"></span>
+                                </label>
+                                <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
+                                    <div class="entry-info" style="flex:1">
+                                        <div class="entry-name">
+                                            ${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}
+                                        </div>
+                                        ${icons ? `<div class="entry-tags">${icons}</div>` : ''}
                                     </div>
-                                    ${icons ? `<div class="entry-tags">${icons}</div>` : ''}
-                                </div>
-                                <div class="entry-meta">
-                                    ${entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : ''}
-                                    <span class="entry-hours"><strong>Hours:</strong> ${entry.hours}</span>
-                                </div>
-                            </a>
+                                    <div class="entry-meta">
+                                        ${entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : ''}
+                                        <span class="entry-hours"><strong>Hours:</strong> ${entry.hours}</span>
+                                    </div>
+                                </a>
+                            </div>
                         `;
                     }).join('')
                     : '<p class="no-sessions">No registrations yet</p>';
