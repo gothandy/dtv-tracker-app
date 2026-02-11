@@ -9,13 +9,33 @@
         body { min-height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 
-        .session-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .session-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; position: relative; }
         .session-detail.next-session { background: var(--green-light); border-left: 4px solid var(--green); }
         .session-detail .countdown { font-size: 0.95rem; color: var(--green); font-weight: 600; margin-bottom: 0.75rem; }
         .session-detail h1 { color: var(--green); font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.3; }
         .session-detail .date { color: var(--text-mid); font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
         .session-detail .group-name { color: var(--text-light); font-size: 1rem; margin-bottom: 1rem; }
         .session-detail .description { color: var(--text-mid); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-wrap; }
+
+        .btn-edit {
+            position: absolute; top: 1.25rem; right: 1.25rem;
+            width: 40px; height: 40px; border: none; border-radius: var(--radius);
+            background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .btn-edit:hover { background: rgba(0,0,0,0.08); }
+        .btn-edit svg { width: 22px; height: 22px; }
+
+        .modal.modal-wide { max-width: 480px; }
+        .modal-field { margin-bottom: 1rem; }
+        .modal-field label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.3rem; }
+        .modal-field input[type="text"], .modal-field textarea {
+            width: 100%; font-size: 1rem; padding: 0.6rem 0.75rem;
+            border: 2px solid var(--border-mid); border-radius: 6px;
+            font-family: inherit;
+        }
+        .modal-field textarea { min-height: 120px; resize: vertical; }
+        .modal-field input[type="text"]:focus, .modal-field textarea:focus { outline: none; border-color: var(--green); }
 
         .stats-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
@@ -118,6 +138,24 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="editModal">
+        <div class="modal modal-wide">
+            <h3>Edit Session</h3>
+            <div class="modal-field">
+                <label for="editName">Display Name</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="modal-field">
+                <label for="editDescription">Description</label>
+                <textarea id="editDescription"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveSessionEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="hoursModal">
         <div class="modal">
             <h3>Set Default Hours</h3>
@@ -137,6 +175,48 @@
         const sessionDate = pathParts[3];
 
         let sessionEntries = [];
+        let currentSession = null;
+
+        function openEditModal() {
+            if (!currentSession) return;
+            document.getElementById('editName').value = currentSession.displayName || '';
+            document.getElementById('editDescription').value = currentSession.description || '';
+            document.getElementById('editModal').classList.add('visible');
+            document.getElementById('editName').focus();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('visible');
+        }
+
+        async function saveSessionEdit() {
+            const displayName = document.getElementById('editName').value.trim();
+            const description = document.getElementById('editDescription').value;
+
+            const btn = document.getElementById('confirmEditBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ displayName, description })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Save failed');
+                }
+                closeEditModal();
+                loadSessionDetail();
+            } catch (error) {
+                console.error('Error saving session:', error);
+                alert(error.message || 'Failed to save session.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+            }
+        }
 
         function openHoursModal() {
             document.getElementById('defaultHoursInput').value = '3';
@@ -220,6 +300,7 @@
                 }
 
                 const session = result.data;
+                currentSession = session;
                 document.title = `${session.displayName || formatDate(session.date)} - DTV Tracker`;
 
                 const isPast = new Date(session.date) < new Date(new Date().toDateString());
@@ -278,6 +359,12 @@
 
                 contentDiv.innerHTML = `
                     <div class="session-detail${countdown ? ' next-session' : ''}">
+                        <button class="btn-edit" onclick="openEditModal()" title="Edit session">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                <path d="m15 5 4 4"/>
+                            </svg>
+                        </button>
                         ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
                         <div class="date">${formatDate(session.date)}</div>
                         <h1>${escapeHtml(session.displayName || 'Session')}</h1>

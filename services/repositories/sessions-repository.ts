@@ -66,6 +66,11 @@ class SessionsRepository {
     sharePointClient.cache.set(cacheKey, filteredData);
     return filteredData;
   }
+
+  async updateFields(sessionId: number, fields: Partial<Pick<SharePointSession, 'Name' | 'Description'>>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
+    sharePointClient.cache.del('sessions');
+  }
 }
 
 export const sessionsRepository = new SessionsRepository();

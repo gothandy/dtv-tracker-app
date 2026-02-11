@@ -348,6 +348,55 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
   }
 });
 
+router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+    const { displayName, description } = req.body;
+
+    const fields: Record<string, any> = {};
+    if (typeof displayName === 'string') fields.Name = displayName;
+    if (typeof description === 'string') fields.Description = description;
+
+    if (Object.keys(fields).length === 0) {
+      res.status(400).json({ success: false, error: 'No valid fields to update' });
+      return;
+    }
+
+    const [rawGroups, rawSessions] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => {
+      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      return s.Date.substring(0, 10) === dateParam;
+    });
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    await sessionsRepository.updateFields(spSession.ID, fields);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error updating session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update session',
+      message: error.message
+    });
+  }
+});
+
 router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
