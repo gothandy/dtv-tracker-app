@@ -92,25 +92,6 @@
     </div>
 
     <script>
-        const TAG_ICONS = [
-            { icon: "\u{1F476}", tag: "#Child" },
-            { icon: "\u{1F501}", tag: "#Regular" },
-            { icon: "\u2728", tag: "#New" },
-            { icon: "\u{1F451}", tag: "#DigLead" },
-            { icon: "\u{1F691}", tag: "#FirstAider" },
-            { icon: "\u{1F40C}", tag: "#Late" },
-            { icon: "\u{1F3E2}", tag: "#CSR" },
-            { icon: "\u{1F4F5}", tag: "#NoPhoto" }
-        ];
-
-        function notesToIcons(notes) {
-            if (!notes) return '';
-            return TAG_ICONS
-                .filter(t => new RegExp(t.tag.replace('#', '#'), 'i').test(notes))
-                .map(t => `<span class="entry-tag" title="${escapeHtml(t.tag)}">${t.icon}</span>`)
-                .join('');
-        }
-
         // Extract group and date from URL: /sessions/:group/:date/details.html
         const pathParts = window.location.pathname.split('/');
         const groupKey = pathParts[2];

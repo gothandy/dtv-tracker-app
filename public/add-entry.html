@@ -31,6 +31,14 @@
         .btn-create:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); }
         .btn-create:disabled { opacity: 0.6; cursor: not-allowed; }
 
+        .tag-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+        .tag-btn {
+            font-size: 1.3rem; padding: 0.3rem 0.5rem; border: 2px solid var(--border);
+            border-radius: 6px; background: var(--surface); cursor: pointer;
+            transition: all 0.2s; line-height: 1;
+        }
+        .tag-btn.active { border-color: var(--green); background: var(--green-light); }
+
         .search-box {
             background: var(--surface); border-radius: var(--radius); padding: 1.25rem;
             box-shadow: var(--shadow); margin-bottom: 1rem;
@@ -162,6 +170,7 @@
                         <div class="form-row">
                             <label for="inputNotes">Notes (optional)</label>
                             <textarea id="inputNotes" placeholder="#New #Child #Regular etc."></textarea>
+                            <div class="tag-buttons" id="tagButtons"></div>
                         </div>
                         <button class="btn-create" id="createBtn" onclick="createEntry()">Create Entry</button>
                     </div>
@@ -173,6 +182,7 @@
                     <div class="results-list" id="resultsList"></div>
                 `;
 
+                renderTagButtons('inputNotes', 'tagButtons');
                 document.getElementById('searchInput').focus();
             } catch (error) {
                 console.error('Error loading profiles:', error);

@@ -59,6 +59,14 @@
         }
         .form-field textarea:focus { outline: none; border-color: var(--green); }
 
+        .tag-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+        .tag-btn {
+            font-size: 1.3rem; padding: 0.3rem 0.5rem; border: 2px solid var(--border);
+            border-radius: 6px; background: var(--surface); cursor: pointer;
+            transition: all 0.2s; line-height: 1;
+        }
+        .tag-btn.active { border-color: var(--green); background: var(--green-light); }
+
         .delete-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
         .btn-delete {
             display: inline-flex; align-items: center; gap: 0.4rem;
@@ -196,7 +204,10 @@
                         </div>
                         <div class="form-field" id="field-notes">
                             <div class="form-label">Notes</div>
-                            <textarea id="inputNotes">${escapeHtml(entry.notes || '')}</textarea>
+                            <div style="flex:1">
+                                <textarea id="inputNotes" style="width:100%">${escapeHtml(entry.notes || '')}</textarea>
+                                <div class="tag-buttons" id="tagButtons"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -204,6 +215,8 @@
                         <button class="btn-delete" onclick="deleteEntry()">Delete Entry</button>
                     </div>
                 `;
+
+                renderTagButtons('inputNotes', 'tagButtons');
 
                 // Bind live-save events
                 document.getElementById('inputChecked').addEventListener('change', function() {
