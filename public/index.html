@@ -8,17 +8,7 @@
     <style>
         .container { max-width: 900px; margin: 3rem auto; padding: 0 2rem; }
 
-        .next-dig-card {
-            display: none; background: var(--green-light); border-left: 4px solid var(--green);
-            border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
-            box-shadow: var(--shadow); text-decoration: none; color: inherit;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .next-dig-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-        .next-dig-card .countdown { font-size: 0.85rem; color: var(--green); font-weight: 600; margin-bottom: 0.4rem; }
-        .next-dig-card .dig-title { font-size: 1.3rem; font-weight: 700; color: var(--green); margin-bottom: 0.2rem; }
-        .next-dig-card .dig-date { font-size: 0.95rem; color: var(--text-mid); }
-        .next-dig-card .dig-group { font-size: 0.9rem; color: var(--text-light); }
+        #nextDigCard { display: none; margin-bottom: 1.5rem; }
 
         .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
         .nav-card {
@@ -63,12 +53,7 @@
     <script>createHeader();</script>
 
     <div class="container">
-        <a class="next-dig-card" id="nextDigCard" href="#">
-            <div class="countdown" id="nextDigCountdown"></div>
-            <div class="dig-title" id="nextDigTitle"></div>
-            <div class="dig-date" id="nextDigDate"></div>
-            <div class="dig-group" id="nextDigGroup"></div>
-        </a>
+        <div id="nextDigCard"></div>
 
         <div class="nav-grid">
             <a href="/groups.html" class="nav-card">
@@ -207,14 +192,8 @@
 
                 if (upcoming.length === 0) return;
 
-                const next = upcoming[0];
-                const countdown = getCountdown(next.date);
                 const card = document.getElementById('nextDigCard');
-                card.href = buildSessionDetailUrl(next);
-                document.getElementById('nextDigCountdown').textContent = 'Next session \u00B7 ' + (countdown || '');
-                document.getElementById('nextDigTitle').textContent = next.displayName || 'Upcoming Session';
-                document.getElementById('nextDigDate').textContent = formatDate(next.date);
-                document.getElementById('nextDigGroup').textContent = next.groupName || '';
+                renderSessionList(card, [upcoming[0]]);
                 card.style.display = 'block';
             } catch (e) {
                 // Silently fail — next dig card stays hidden
