@@ -738,6 +738,40 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
   }
 });
 
+router.patch('/profiles/:slug', async (req: Request, res: Response) => {
+  try {
+    const slug = String(req.params.slug).toLowerCase();
+    const { name, email } = req.body;
+
+    const fields: Record<string, any> = {};
+    if (typeof name === 'string' && name.trim()) fields.Title = name.trim();
+    if (typeof email === 'string') fields.Email = email.trim();
+
+    if (Object.keys(fields).length === 0) {
+      res.status(400).json({ success: false, error: 'No valid fields to update' });
+      return;
+    }
+
+    const rawProfiles = await profilesRepository.getAll();
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    if (!spProfile) {
+      res.status(404).json({ success: false, error: 'Profile not found' });
+      return;
+    }
+
+    await profilesRepository.updateFields(spProfile.ID, fields);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update profile',
+      message: error.message
+    });
+  }
+});
+
 router.get('/stats', async (req: Request, res: Response) => {
   try {
     const fy = calculateCurrentFY();

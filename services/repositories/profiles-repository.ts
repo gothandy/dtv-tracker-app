@@ -30,6 +30,11 @@ class ProfilesRepository {
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointProfile[];
   }
+
+  async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email'>>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, profileId, fields);
+    sharePointClient.cache.del('profiles');
+  }
 }
 
 export const profilesRepository = new ProfilesRepository();
