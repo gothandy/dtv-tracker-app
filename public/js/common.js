@@ -33,6 +33,16 @@ function getBreadcrumbs() {
         return crumbs;
     }
 
+    // Add entry: Home > Sessions > Session
+    if (path.startsWith('/sessions/') && path.endsWith('/add-entry.html')) {
+        const parts = path.split('/');
+        const group = parts[2];
+        const date = parts[3];
+        crumbs.push({ href: '/sessions.html', label: 'Sessions' });
+        crumbs.push({ href: `/sessions/${group}/${date}/details.html`, label: 'Session' });
+        return crumbs;
+    }
+
     // Entry detail: Home > Sessions > Session
     if (path.startsWith('/entries/') && path.endsWith('/edit.html')) {
         const parts = path.split('/');

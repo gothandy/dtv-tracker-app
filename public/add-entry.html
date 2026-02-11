@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Entry - DTV Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body { min-height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 900px; padding: 1.5rem; flex: 1; }
+
+        .selected-card {
+            background: var(--green-light); border-left: 4px solid var(--green);
+            border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1rem;
+            display: none;
+        }
+        .selected-card.visible { display: block; }
+        .selected-card h3 { color: var(--green); margin-bottom: 1rem; font-size: 1.2rem; }
+        .form-row { margin-bottom: 1rem; }
+        .form-row label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.3rem; }
+        .form-row textarea {
+            width: 100%; font-size: 1rem; font-family: inherit; padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border); border-radius: 6px; min-height: 60px; resize: vertical;
+        }
+        .form-row textarea:focus { outline: none; border-color: var(--green); }
+        .btn-create {
+            display: inline-flex; align-items: center; padding: 0.75rem 1.5rem;
+            background: var(--green); color: white; border: none; border-radius: var(--radius);
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-height: 44px;
+        }
+        .btn-create:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); }
+        .btn-create:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .search-box {
+            background: var(--surface); border-radius: var(--radius); padding: 1.25rem;
+            box-shadow: var(--shadow); margin-bottom: 1rem;
+        }
+        .search-box input {
+            width: 100%; font-size: 1.1rem; padding: 0.75rem 1rem;
+            border: 2px solid var(--border-mid); border-radius: var(--radius);
+            font-family: inherit; background: var(--surface);
+        }
+        .search-box input:focus { outline: none; border-color: var(--green); }
+        .search-hint { font-size: 0.85rem; color: var(--text-faint); margin-top: 0.5rem; }
+
+        .results-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .result-card {
+            background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1.25rem;
+            box-shadow: var(--shadow); cursor: pointer; transition: all 0.2s;
+        }
+        .result-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); }
+        .result-name { font-weight: 600; font-size: 1.05rem; color: var(--text); }
+        .result-email { font-size: 0.85rem; color: var(--text-faint); }
+
+        @media (max-width: 600px) {
+            .search-box input { font-size: 1rem; }
+        }
+    </style>
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <script>createHeader('Add Entry', true);</script>
+
+    <div class="container">
+        <div id="content">
+            <div class="loading">Loading volunteers</div>
+        </div>
+    </div>
+
+    <script>
+        const pathParts = window.location.pathname.split('/');
+        const groupKey = pathParts[2];
+        const sessionDate = pathParts[3];
+        const sessionUrl = `/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/details.html`;
+
+        let allProfiles = [];
+        let selectedId = null;
+
+        function renderResults(profiles) {
+            const list = document.getElementById('resultsList');
+            if (!profiles.length) {
+                list.innerHTML = '';
+                return;
+            }
+            list.innerHTML = profiles.slice(0, 50).map(p => `
+                <div class="result-card" onclick="selectVolunteer(${p.id}, this)" data-name="${escapeHtml(p.name || '')}">
+                    <div class="result-name">${escapeHtml(p.name || 'Unknown')}</div>
+                    ${p.email ? `<div class="result-email">${escapeHtml(p.email)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function filterProfiles(query) {
+            if (!query || query.length < 2) {
+                renderResults([]);
+                return;
+            }
+            const q = query.toLowerCase();
+            const matches = allProfiles.filter(p =>
+                (p.name && p.name.toLowerCase().includes(q)) ||
+                (p.email && p.email.toLowerCase().includes(q))
+            );
+            renderResults(matches);
+        }
+
+        function selectVolunteer(id, el) {
+            selectedId = id;
+            const name = el.dataset.name;
+
+            document.getElementById('selectedName').textContent = name;
+            document.getElementById('selectedCard').classList.add('visible');
+
+            // Clear search and hide results
+            document.getElementById('searchInput').value = '';
+            document.getElementById('resultsList').innerHTML = '';
+        }
+
+        async function createEntry() {
+            if (!selectedId) return;
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const notes = document.getElementById('inputNotes').value.trim();
+                const body = { volunteerId: selectedId };
+                if (notes) body.notes = notes;
+
+                const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/entries`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to create entry');
+                }
+
+                window.location.href = sessionUrl;
+            } catch (error) {
+                console.error('Error creating entry:', error);
+                alert(error.message || 'Failed to create entry.');
+                btn.disabled = false;
+                btn.textContent = 'Create Entry';
+            }
+        }
+
+        async function loadProfiles() {
+            const contentDiv = document.getElementById('content');
+            try {
+                const response = await apiFetch('/api/profiles');
+                if (!response.ok) throw new Error('Failed to load profiles');
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+
+                allProfiles = result.data;
+
+                contentDiv.innerHTML = `
+                    <div class="selected-card" id="selectedCard">
+                        <h3><span id="selectedName"></span></h3>
+                        <div class="form-row">
+                            <label for="inputNotes">Notes (optional)</label>
+                            <textarea id="inputNotes" placeholder="#New #Child #Regular etc."></textarea>
+                        </div>
+                        <button class="btn-create" id="createBtn" onclick="createEntry()">Create Entry</button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search by name or email..."
+                               oninput="filterProfiles(this.value)" autocomplete="off">
+                        <div class="search-hint">Type at least 2 characters to search</div>
+                    </div>
+                    <div class="results-list" id="resultsList"></div>
+                `;
+
+                document.getElementById('searchInput').focus();
+            } catch (error) {
+                console.error('Error loading profiles:', error);
+                showError(contentDiv, 'Error Loading Volunteers', error.message);
+            }
+        }
+
+        loadProfiles();
+    </script>
+</body>
+</html>

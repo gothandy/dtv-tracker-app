@@ -491,6 +491,67 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/sessions/:group/:date/entries', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+    const { volunteerId, notes } = req.body;
+
+    if (!volunteerId || typeof volunteerId !== 'number') {
+      res.status(400).json({ success: false, error: 'volunteerId is required and must be a number' });
+      return;
+    }
+
+    const [rawGroups, rawSessions, rawProfiles] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => {
+      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      return s.Date.substring(0, 10) === dateParam;
+    });
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profile = profiles.find(p => p.ID === volunteerId);
+    if (!profile) {
+      res.status(404).json({ success: false, error: 'Volunteer not found' });
+      return;
+    }
+
+    const fields: { EventLookupId: string; VolunteerLookupId: string; Notes?: string } = {
+      EventLookupId: String(spSession.ID),
+      VolunteerLookupId: String(profile.ID)
+    };
+    if (typeof notes === 'string' && notes.trim()) {
+      fields.Notes = notes;
+    }
+
+    const id = await entriesRepository.create(fields);
+    res.json({ success: true, data: { id } });
+  } catch (error: any) {
+    console.error('Error creating entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create entry',
+      message: error.message
+    });
+  }
+});
+
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
     const rawProfiles = await profilesRepository.getAll();

@@ -313,6 +313,32 @@ export class SharePointClient {
     }
   }
 
+  async createListItem(listGuid: string, fields: Record<string, any>): Promise<number> {
+    try {
+      const token = await this.getAccessToken();
+      const siteId = await this.getSiteId();
+      const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items`;
+
+      const response = await axios.post(url, { fields }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return parseInt(response.data.id, 10);
+    } catch (error: any) {
+      const status = error.response?.status;
+      console.error(`Error creating list item in ${listGuid}:`, error.response?.data || error.message);
+
+      if (status === 403) {
+        throw new Error('Access denied - check API permissions');
+      } else if (status === 401) {
+        throw new Error('Unauthorized - token may be invalid or expired');
+      }
+      throw error;
+    }
+  }
+
   async deleteListItem(listGuid: string, itemId: number): Promise<void> {
     try {
       const token = await this.getAccessToken();

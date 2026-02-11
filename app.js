@@ -49,6 +49,11 @@ app.get('/sessions/:group/:date/details.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
 });
 
+// Serve add entry page at /sessions/:group/:date/add-entry.html
+app.get('/sessions/:group/:date/add-entry.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'add-entry.html'));
+});
+
 // Serve entry edit page at /entries/:group/:date/:slug/edit.html
 app.get('/entries/:group/:date/:slug/edit.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));

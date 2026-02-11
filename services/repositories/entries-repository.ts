@@ -85,6 +85,12 @@ class EntriesRepository {
     sharePointClient.cache.del('entries');
   }
 
+  async create(fields: { EventLookupId: string; VolunteerLookupId: string; Notes?: string }): Promise<number> {
+    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    sharePointClient.cache.del('entries');
+    return id;
+  }
+
   async delete(entryId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, entryId);
     sharePointClient.cache.del('entries');
