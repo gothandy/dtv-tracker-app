@@ -441,6 +441,25 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     const volunteerId = safeParseLookupId(spEntry.VolunteerLookupId);
     const profile = volunteerId !== undefined ? profiles.find(p => p.ID === volunteerId) : undefined;
 
+    // Calculate FY hours from entries
+    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+    const fy = calculateCurrentFY();
+    const lastFYStart = fy.startYear - 1;
+    let calcThisFY = 0;
+    let calcLastFY = 0;
+    if (volunteerId !== undefined) {
+      entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === volunteerId).forEach(e => {
+        const sid = safeParseLookupId(e.EventLookupId);
+        if (sid === undefined) return;
+        const sess = sessionMap.get(sid);
+        if (!sess) return;
+        const h = parseFloat(String(e.Hours)) || 0;
+        const sessionFY = calculateFinancialYear(new Date(sess.Date));
+        if (sessionFY === fy.startYear) calcThisFY += h;
+        else if (sessionFY === lastFYStart) calcLastFY += h;
+      });
+    }
+
     const group = convertGroup(spGroup);
 
     const data: EntryDetailResponse = {
@@ -448,6 +467,8 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
       volunteerName: spEntry.Volunteer,
       volunteerSlug: nameToSlug(spEntry.Volunteer),
       isGroup: profile?.IsGroup || false,
+      hoursLastFY: Math.round(calcLastFY * 10) / 10,
+      hoursThisFY: Math.round(calcThisFY * 10) / 10,
       count: spEntry.Count || 1,
       hours: spEntry.Hours || 0,
       checkedIn: spEntry.Checked || false,
@@ -603,19 +624,54 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
 
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
-    const rawProfiles = await profilesRepository.getAll();
+    const [rawProfiles, rawEntries, rawSessions] = await Promise.all([
+      profilesRepository.getAll(),
+      entriesRepository.getAll(),
+      sessionsRepository.getAll()
+    ]);
+
     const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+
+    const fy = calculateCurrentFY();
+    const lastFYStart = fy.startYear - 1;
+
+    // Calculate hours per profile from entries
+    const profileHours = new Map<number, { thisFY: number; lastFY: number }>();
+    entries.forEach(e => {
+      const volunteerId = safeParseLookupId(e.VolunteerLookupId);
+      if (volunteerId === undefined) return;
+      const sessionId = safeParseLookupId(e.EventLookupId);
+      if (sessionId === undefined) return;
+      const session = sessionMap.get(sessionId);
+      if (!session) return;
+      const hours = parseFloat(String(e.Hours)) || 0;
+      const sessionFY = calculateFinancialYear(new Date(session.Date));
+
+      if (!profileHours.has(volunteerId)) {
+        profileHours.set(volunteerId, { thisFY: 0, lastFY: 0 });
+      }
+      const ph = profileHours.get(volunteerId)!;
+      if (sessionFY === fy.startYear) {
+        ph.thisFY += hours;
+      } else if (sessionFY === lastFYStart) {
+        ph.lastFY += hours;
+      }
+    });
 
     const data: ProfileResponse[] = validProfiles.map(spProfile => {
       const profile = convertProfile(spProfile);
+      const ph = profileHours.get(spProfile.ID);
       return {
         id: profile.id,
         slug: nameToSlug(profile.name),
         name: profile.name,
         email: profile.email,
         isGroup: profile.isGroup,
-        hoursLastFY: profile.hoursLastFY,
-        hoursThisFY: profile.hoursThisFY
+        hoursLastFY: ph ? Math.round(ph.lastFY * 10) / 10 : 0,
+        hoursThisFY: ph ? Math.round(ph.thisFY * 10) / 10 : 0
       };
     });
 

@@ -71,6 +71,21 @@ Sessions 1:N Entries (Registrations) N:1 Profiles (Volunteers)
 Groups N:N Regulars N:N Profiles
 ```
 
+## Membership Rules
+
+A volunteer becomes a **member** by completing 15 or more hours in a financial year. Groups cannot be members.
+
+- **Last FY membership carries forward**: Anyone who completed >=15h in the previous FY is a member for the whole of the current FY.
+- **Current FY achievement**: Anyone who reaches >=15h in the current FY becomes a member at that point.
+- **Overall member status**: A volunteer is a member if `hoursLastFY >= 15` OR `hoursThisFY >= 15`.
+
+### Member badge and highlighting
+- **MEMBER badge**: Always shows based on overall member status (either FY), regardless of filter. A member is a member.
+- **Card highlighting** (green background on volunteers list): Changes with the FY filter — only highlights if the volunteer meets 15h in the selected FY.
+- This separation makes at-risk members easy to spot: when filtering "This FY", a volunteer with a MEMBER badge but no green highlight hasn't yet reached 15h this year and may lose membership next FY.
+
+The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and entry detail pages use the literal `15`.
+
 ## Key Workflows
 
 1. **Create Groups**: Set up volunteer crews/groups

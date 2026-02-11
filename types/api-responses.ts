@@ -119,6 +119,8 @@ export interface EntryDetailResponse {
   volunteerName?: string;
   volunteerSlug?: string;
   isGroup: boolean;
+  hoursLastFY: number;
+  hoursThisFY: number;
   count: number;
   hours: number;
   checkedIn: boolean;

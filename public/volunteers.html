@@ -28,10 +28,10 @@
             transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
         }
         .volunteer-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-        .volunteer-card.is-group { border-left: 4px solid var(--green); }
+        .volunteer-card.is-member { background: var(--green-light); border-left: 4px solid var(--green); }
 
         .volunteer-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
-        .volunteer-name .group-badge {
+        .volunteer-name .group-badge, .volunteer-name .member-badge {
             display: inline-block; font-size: 0.7rem; font-weight: 600;
             background: var(--green); color: white; padding: 0.1rem 0.4rem;
             border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
@@ -53,7 +53,14 @@
 
     <div class="container">
         <input type="text" class="search-box" id="searchBox" placeholder="Search volunteers..." autocomplete="off">
-        <div class="volunteer-count" id="volunteerCount"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+            <div class="volunteer-count" id="volunteerCount" style="margin-bottom:0"></div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" id="btnAll" onclick="setFYFilter('all')">All</button>
+                <button class="filter-btn" id="btnLastFY" onclick="setFYFilter('lastFy')">Last FY</button>
+                <button class="filter-btn" id="btnThisFY" onclick="setFYFilter('thisFy')">This FY</button>
+            </div>
+        </div>
         <div id="content">
             <div class="loading">Loading volunteers</div>
         </div>
@@ -61,15 +68,41 @@
 
     <script>
         let allVolunteers = [];
+        let currentFYFilter = 'all';
+        const MEMBER_HOURS = 15;
+
+        function setFYFilter(filter) {
+            currentFYFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
+            const el = document.getElementById(btnMap[filter]);
+            if (el) el.classList.add('active');
+            displayVolunteers(document.getElementById('searchBox').value);
+        }
+
+        function isMember(v) {
+            return v.hoursLastFY >= MEMBER_HOURS || v.hoursThisFY >= MEMBER_HOURS;
+        }
+
+        function isMemberForFY(v, fyFilter) {
+            if (fyFilter === 'thisFy') return v.hoursThisFY >= MEMBER_HOURS;
+            if (fyFilter === 'lastFy') return v.hoursLastFY >= MEMBER_HOURS;
+            return isMember(v);
+        }
 
         function displayVolunteers(filter) {
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('volunteerCount');
 
             let filtered = allVolunteers;
+            if (currentFYFilter === 'thisFy') {
+                filtered = filtered.filter(v => v.hoursThisFY > 0);
+            } else if (currentFYFilter === 'lastFy') {
+                filtered = filtered.filter(v => v.hoursLastFY > 0);
+            }
             if (filter && filter.length >= 3) {
                 const term = filter.toLowerCase();
-                filtered = allVolunteers.filter(v => (v.name || '').toLowerCase().includes(term));
+                filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
             }
 
             countDiv.textContent = `${filtered.length} volunteer${filtered.length !== 1 ? 's' : ''}`;
@@ -80,11 +113,15 @@
             }
 
             const html = filtered.map(v => {
+                const member = isMember(v);
+                const memberForFY = isMemberForFY(v, currentFYFilter);
                 const groupBadge = v.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+                const memberBadge = member && !v.isGroup ? '<span class="member-badge">MEMBER</span>' : '';
+                const cardClass = memberForFY && !v.isGroup ? ' is-member' : '';
                 const href = v.slug ? `/profiles/${encodeURIComponent(v.slug)}/details.html` : '#';
                 return `
-                    <a class="volunteer-card${v.isGroup ? ' is-group' : ''}" href="${href}">
-                        <div class="volunteer-name">${escapeHtml(v.name || 'Unknown')}${groupBadge}</div>
+                    <a class="volunteer-card${cardClass}" href="${href}">
+                        <div class="volunteer-name">${escapeHtml(v.name || 'Unknown')}${groupBadge}${memberBadge}</div>
                         <div class="volunteer-hours">
                             <span class="fy-hours"><strong>Last FY:</strong> ${v.hoursLastFY}</span>
                             <span class="fy-hours"><strong>This FY:</strong> ${v.hoursThisFY}</span>
