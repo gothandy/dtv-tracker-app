@@ -313,6 +313,32 @@ export class SharePointClient {
     }
   }
 
+  async deleteListItem(listGuid: string, itemId: number): Promise<void> {
+    try {
+      const token = await this.getAccessToken();
+      const siteId = await this.getSiteId();
+      const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items/${itemId}`;
+
+      await axios.delete(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (error: any) {
+      const status = error.response?.status;
+      console.error(`Error deleting list item ${itemId} in ${listGuid}:`, error.response?.data || error.message);
+
+      if (status === 404) {
+        throw new Error('SharePoint list item not found');
+      } else if (status === 403) {
+        throw new Error('Access denied - check API permissions');
+      } else if (status === 401) {
+        throw new Error('Unauthorized - token may be invalid or expired');
+      }
+      throw error;
+    }
+  }
+
   /**
    * Clear all cached data
    */

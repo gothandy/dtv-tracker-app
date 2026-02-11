@@ -643,3 +643,40 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 ---
 
 *Last Updated: 2026-02-09 - API TypeScript Conversion Complete*
+
+---
+
+## Session: 2026-02-11
+
+### Completed Tasks
+
+#### 1. Homepage Next Session Card ✓
+- Replaced custom `.next-dig-card` with shared `renderSessionList()` from common.js
+- Homepage "next session" block now matches the session card style on the sessions page
+
+#### 2. Session Details Check-in Checkboxes ✓
+- Added check-in checkboxes to entry cards on the session detail page
+- Checkbox sits outside the `<a>` card as a sibling in a `.entry-row` wrapper, so both work independently
+- Uses existing `PATCH /api/entries/:id` endpoint with `{ checkedIn: boolean }`
+- Checkboxes only shown for the next upcoming session (when countdown is active)
+- Past sessions still show check-in state via the green left border but without checkboxes
+
+#### 3. Entry Card UI Refinements ✓
+- Hours meta hidden when value is 0
+- Tag icons (Child, Regular, New, etc.) now display inline to the right of volunteer name, wrapping only when space is tight
+
+#### 4. Delete Entry ✓
+- Added `deleteListItem()` to SharePoint client (Graph API DELETE)
+- Added `delete()` to entries repository with cache invalidation
+- Added `DELETE /api/entries/:id` endpoint with ID validation
+- Added "Delete Entry" button on entry detail page with confirm dialog
+- Redirects back to session detail page on success
+
+#### 5. Terminology: "Entry" Over "Registration" ✓
+- Updated CLAUDE.md to document that "Entry" is the preferred UI term
+- An entry starts as a registration and becomes an attendance record after check-in
+- Avoids "registration" or "attendee" labels since the same record serves both purposes
+
+---
+
+*Last Updated: 2026-02-11*

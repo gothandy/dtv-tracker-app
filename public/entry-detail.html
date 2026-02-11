@@ -59,6 +59,15 @@
         }
         .form-field textarea:focus { outline: none; border-color: var(--green); }
 
+        .delete-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .btn-delete {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.6rem 1.1rem; border: 2px solid var(--error); border-radius: var(--radius);
+            background: var(--surface); color: var(--error); font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; min-height: 44px;
+        }
+        .btn-delete:hover { background: var(--error); color: white; }
+
         @media (max-width: 600px) {
             .entry-header { padding: 1.5rem; }
             .entry-header h1 { font-size: 1.75rem; }
@@ -112,6 +121,18 @@
                     fieldEl.classList.add('save-err');
                     setTimeout(() => fieldEl.classList.remove('save-err'), 2000);
                 }
+            }
+        }
+
+        async function deleteEntry() {
+            if (!confirm('Delete this entry? This cannot be undone.')) return;
+            try {
+                const res = await apiFetch(`/api/entries/${entryId}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Delete failed');
+                window.location.href = `/sessions/${encodeURIComponent(groupKey)}/${entryDate}/details.html`;
+            } catch (error) {
+                console.error('Error deleting entry:', error);
+                alert('Failed to delete entry.');
             }
         }
 
@@ -177,6 +198,10 @@
                             <div class="form-label">Notes</div>
                             <textarea id="inputNotes">${escapeHtml(entry.notes || '')}</textarea>
                         </div>
+                    </div>
+
+                    <div class="delete-section">
+                        <button class="btn-delete" onclick="deleteEntry()">Delete Entry</button>
                     </div>
                 `;
 

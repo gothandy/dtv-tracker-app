@@ -84,6 +84,11 @@ class EntriesRepository {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
     sharePointClient.cache.del('entries');
   }
+
+  async delete(entryId: number): Promise<void> {
+    await sharePointClient.deleteListItem(this.listGuid, entryId);
+    sharePointClient.cache.del('entries');
+  }
 }
 
 export const entriesRepository = new EntriesRepository();

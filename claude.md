@@ -44,12 +44,13 @@ The application uses 5 SharePoint lists as the backend data store:
 - Key fields: Title, Date (required), Crew (lookup to Groups), Registrations count, Hours, EventbriteEventID
 - Links to Groups via Crew lookup field
 
-### 3. Entries (Registrations) List
+### 3. Entries List
 **GUID**: `8a362810-15ea-4210-9ad0-a98196747866`
 - Junction table linking volunteers to sessions
 - Key fields: Event (indexed lookup to Sessions), Volunteer (lookup to Profiles), Checked (check-in status), Hours, Count
 - Tracks registrations, check-ins, and individual hours per volunteer per session
 - Notes field supports hashtags: #New #Child #DofE #DigLead #FirstAider #Regular
+- **Naming**: "Entry" is the preferred term in the UI. An entry starts as a registration (before the session) and becomes an attendance record (after check-in). Avoid "registration" or "attendee" as labels since the same record serves both purposes.
 
 ### 4. Profiles (Volunteers) List
 **GUID**: `f3d3c40c-35cb-4167-8c83-c566edef6f29`

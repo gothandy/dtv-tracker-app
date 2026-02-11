@@ -471,6 +471,26 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/entries/:id', async (req: Request, res: Response) => {
+  try {
+    const entryId = parseInt(String(req.params.id), 10);
+    if (isNaN(entryId)) {
+      res.status(400).json({ success: false, error: 'Invalid entry ID' });
+      return;
+    }
+
+    await entriesRepository.delete(entryId);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete entry',
+      message: error.message
+    });
+  }
+});
+
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
     const rawProfiles = await profilesRepository.getAll();
