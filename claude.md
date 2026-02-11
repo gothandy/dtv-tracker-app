@@ -106,7 +106,6 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 - All data stored in SharePoint Online lists
 - Access via Microsoft Graph API
 - Lists have specific GUIDs for API access
-- Financial year tracking automated via Power Automate
 
 ## Development Guidelines
 
@@ -127,6 +126,12 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 - Update [docs/progress.md](docs/progress.md) at the end of each development session
 - Update [docs/sharepoint-schema.md](docs/sharepoint-schema.md) if SharePoint lists or fields change
 
+### Calculated Fields Over Stored Fields
+- **Always calculate derived values** (hours totals, membership status, counts) from source entries at query time rather than reading denormalized SharePoint columns.
+- SharePoint lists contain legacy fields (e.g. `HoursLastFY`, `HoursThisFY` on Profiles) that were maintained by Power Automate flows. These are stale and unreliable — do not use them.
+- The goal is to retire all Power Automate flows that auto-update fields. The app should be the source of truth for all derived data.
+- Cached data (5-minute TTL) keeps this performant despite recalculating on each request.
+
 ### SharePoint Integration
 - Use the documented GUIDs and internal field names from [docs/sharepoint-schema.md](docs/sharepoint-schema.md)
 - Remember SharePoint internal names are different from display names (e.g., "Crew" vs "Group")
@@ -136,7 +141,6 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 - Sessions require a Date field
 - Entries default Count to 1
 - Entries default Checked to false
-- Financial year fields are auto-populated (don't modify manually)
 
 ### Security Considerations
 - Validate all user input before SharePoint API calls
@@ -211,10 +215,10 @@ npm start         # Start without auto-reload
 ## Important Notes
 
 - Financial year runs April 1 to March 31
-- `FinancialYearFlow` fields are managed by Power Automate - don't modify directly
 - Session lookup in Entries is indexed for performance
 - Standard SharePoint metadata fields (ID, Created, Modified, Author, Editor) are auto-managed
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
+- Legacy Power Automate flows exist that update `FinancialYearFlow`, `HoursLastFY`, `HoursThisFY` etc. — these are being retired. The app calculates all derived values from entries.
 
 ## Known Constraints
 
@@ -222,8 +226,7 @@ npm start         # Start without auto-reload
 - Graph API orderby on Sessions list returns 400 - sorting done in Node.js instead
 - Single line of text fields have 255 character max length
 - Lookup fields require the related list item to exist first
-- Power Automate handles some field updates automatically
 
 ---
 
-*Last Updated: 2026-02-09*
+*Last Updated: 2026-02-11*
