@@ -317,6 +317,22 @@ a.session-card { text-decoration: none; color: inherit; display: block; }
     padding: 1rem;
 }
 
+/* === Description truncation === */
+.description-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.description-toggle {
+    font-size: 0.85rem;
+    color: var(--green);
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+.description-toggle:hover { text-decoration: underline; }
+
 /* === Mobile === */
 @media (max-width: 600px) {
     .container { padding: 1rem; }

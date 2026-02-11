@@ -229,6 +229,38 @@ function renderSessionList(container, sessions, options = {}) {
 
     container.innerHTML = '';
     container.appendChild(list);
+    clampDescriptions(list);
+}
+
+/**
+ * Clamp all .description elements to 3 lines with a "show more" toggle.
+ * Call after rendering content that contains descriptions.
+ */
+function clampDescriptions(container) {
+    const root = container || document;
+    root.querySelectorAll('.description').forEach(el => {
+        // Skip if already processed
+        if (el.dataset.clamped) return;
+        el.dataset.clamped = 'true';
+
+        el.classList.add('description-clamped');
+
+        // Check after a frame so layout is computed
+        requestAnimationFrame(() => {
+            if (el.scrollHeight <= el.clientHeight) return;
+
+            const toggle = document.createElement('div');
+            toggle.className = 'description-toggle';
+            toggle.textContent = 'Show more';
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const clamped = el.classList.toggle('description-clamped');
+                toggle.textContent = clamped ? 'Show more' : 'Show less';
+            });
+            el.insertAdjacentElement('afterend', toggle);
+        });
+    });
 }
 
 /**

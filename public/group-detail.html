@@ -147,6 +147,8 @@
                     ${allSessions.length > 0 ? '<h2 class="sessions-heading">Sessions</h2><div id="sessionsContainer"></div>' : ''}
                 `;
 
+                clampDescriptions(contentDiv);
+
                 // Render sessions using the shared component
                 if (allSessions.length > 0) {
                     const container = document.getElementById('sessionsContainer');
