@@ -32,6 +32,33 @@
             text-decoration: none; transition: all 0.2s; min-height: 44px;
         }
         .btn-add:hover { background: var(--green-dark); transform: translateY(-1px); }
+        .header-buttons { display: flex; gap: 0.5rem; align-items: center; }
+
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 90%; max-width: 340px;
+        }
+        .modal h3 { color: var(--green); margin-bottom: 0.75rem; font-size: 1.1rem; }
+        .modal p { font-size: 0.85rem; color: var(--text-light); margin-bottom: 1rem; }
+        .modal input[type="number"] {
+            width: 100%; font-size: 1.1rem; padding: 0.6rem 0.75rem;
+            border: 2px solid var(--border-mid); border-radius: 6px;
+            font-family: inherit; margin-bottom: 1rem;
+        }
+        .modal input[type="number"]:focus { outline: none; border-color: var(--green); }
+        .modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; border: none; min-height: 40px;
+        }
+        .modal-btn-cancel { background: var(--bg); color: var(--text-light); }
+        .modal-btn-confirm { background: var(--green); color: white; }
+        .modal-btn-confirm:hover { background: var(--green-dark); }
 
         .entries-list { display: flex; flex-direction: column; gap: 0.75rem; }
         .entry-row { display: flex; align-items: center; gap: 0.75rem; }
@@ -91,11 +118,64 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="hoursModal">
+        <div class="modal">
+            <h3>Set Default Hours</h3>
+            <p>Applies to checked-in entries where hours are currently 0.</p>
+            <input type="number" id="defaultHoursInput" min="0" step="0.5" value="3">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeHoursModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmHoursBtn" onclick="applyDefaultHours()">Apply</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Extract group and date from URL: /sessions/:group/:date/details.html
         const pathParts = window.location.pathname.split('/');
         const groupKey = pathParts[2];
         const sessionDate = pathParts[3];
+
+        let sessionEntries = [];
+
+        function openHoursModal() {
+            document.getElementById('defaultHoursInput').value = '3';
+            document.getElementById('hoursModal').classList.add('visible');
+            document.getElementById('defaultHoursInput').focus();
+        }
+
+        function closeHoursModal() {
+            document.getElementById('hoursModal').classList.remove('visible');
+        }
+
+        async function applyDefaultHours() {
+            const input = document.getElementById('defaultHoursInput');
+            const hours = parseFloat(input.value);
+            if (isNaN(hours) || hours <= 0) return;
+
+            const btn = document.getElementById('confirmHoursBtn');
+            btn.disabled = true;
+            btn.textContent = 'Applying...';
+
+            const toUpdate = sessionEntries.filter(e => e.checkedIn && !e.hours);
+            try {
+                await Promise.all(toUpdate.map(entry =>
+                    apiFetch(`/api/entries/${entry.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ hours })
+                    })
+                ));
+                closeHoursModal();
+                loadSessionDetail();
+            } catch (error) {
+                console.error('Error setting hours:', error);
+                alert('Failed to set hours for some entries.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Apply';
+            }
+        }
 
         async function toggleCheckin(entryId, checkbox) {
             const row = checkbox.closest('.entry-row');
@@ -161,6 +241,7 @@
                 `;
 
                 const entries = session.entries || [];
+                sessionEntries = entries;
                 const entriesHtml = entries.length > 0
                     ? entries.map(entry => {
                         const icons = notesToIcons(entry.notes);
@@ -206,7 +287,10 @@
                     </div>
                     <div class="entries-header">
                         <h2 class="entries-heading">Entries (${entries.length})</h2>
-                        ${countdown ? `<a class="btn-add" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">+ Add New</a>` : ''}
+                        ${countdown ? `<div class="header-buttons">
+                            <button class="btn-add" onclick="openHoursModal()">Set Hours</button>
+                            <a class="btn-add" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">+ Add New</a>
+                        </div>` : ''}
                     </div>
                     <div class="entries-list">
                         ${entriesHtml}
