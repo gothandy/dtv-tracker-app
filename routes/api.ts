@@ -894,20 +894,35 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
 router.get('/stats', async (req: Request, res: Response) => {
   try {
     const fy = calculateCurrentFY();
+    const lastFYStartYear = fy.startYear - 1;
+    const lastFYKey = `FY${lastFYStartYear}`;
 
-    const [sessionsFY, entries] = await Promise.all([
+    const [sessionsThisFY, sessionsLastFY, entries] = await Promise.all([
       sessionsRepository.getByFinancialYear(fy.key),
+      sessionsRepository.getByFinancialYear(lastFYKey),
       entriesRepository.getAll()
     ]);
 
-    const stats = calculateFYStats(sessionsFY, entries);
+    const statsThis = calculateFYStats(sessionsThisFY, entries);
+    const statsLast = calculateFYStats(sessionsLastFY, entries);
 
     const data: StatsResponse = {
-      activeGroupsFY: stats.activeGroups,
-      sessionsFY: stats.sessions,
-      hoursFY: stats.hours,
-      volunteersFY: stats.volunteers,
-      financialYear: `${fy.startYear}-${fy.endYear}`
+      thisFY: {
+        activeGroups: statsThis.activeGroups,
+        sessions: statsThis.sessions,
+        hours: statsThis.hours,
+        volunteers: statsThis.volunteers,
+        financialYear: `${fy.startYear}-${fy.endYear}`,
+        label: 'This FY'
+      },
+      lastFY: {
+        activeGroups: statsLast.activeGroups,
+        sessions: statsLast.sessions,
+        hours: statsLast.hours,
+        volunteers: statsLast.volunteers,
+        financialYear: `${lastFYStartYear}-${fy.startYear}`,
+        label: 'Last FY'
+      }
     };
 
     res.json({ success: true, data } as ApiResponse<StatsResponse>);

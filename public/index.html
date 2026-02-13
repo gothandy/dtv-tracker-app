@@ -26,6 +26,39 @@
         .info-box ul { list-style-position: inside; color: var(--text-mid); }
         .info-box li { margin-bottom: 0.5rem; }
 
+        .hours-progress {
+            background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow); margin-bottom: 1.5rem;
+        }
+        .hours-progress-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; gap: 1rem;
+        }
+        .hours-progress-left { display: flex; flex-direction: column; gap: 0.15rem; }
+        .hours-progress-label { font-size: 0.9rem; font-weight: 600; color: var(--green); }
+        .hours-progress-value { font-size: 0.85rem; color: var(--text-light); }
+        .hours-progress-track {
+            height: 12px; background: var(--bg); border-radius: 6px; overflow: visible;
+            position: relative;
+        }
+        .hours-progress-fill {
+            height: 100%; background: var(--green); border-radius: 6px;
+            transition: width 0.6s ease; width: 0%;
+            position: relative; z-index: 1;
+        }
+        .pace-marker {
+            position: absolute; top: -6px; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; z-index: 2;
+        }
+        .pace-marker::before {
+            content: ''; width: 0; height: 0;
+            border-left: 5px solid transparent; border-right: 5px solid transparent;
+            border-top: 6px solid var(--text-light);
+        }
+        .pace-marker::after {
+            content: ''; width: 2px; height: 18px;
+            background: var(--text-light);
+        }
+
         .refresh-btn {
             display: block; margin: 1.5rem auto; padding: 0.75rem 1.5rem;
             background: var(--green); color: white; border: none; border-radius: var(--radius);
@@ -55,6 +88,23 @@
     <div class="container">
         <div id="nextDigCard"></div>
 
+        <div class="hours-progress" id="hoursProgress">
+            <div class="hours-progress-header">
+                <div class="hours-progress-left">
+                    <span class="hours-progress-label" id="hoursProgressLabel">Hours This FY</span>
+                    <span class="hours-progress-value" id="hoursProgressValue"></span>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn" id="btnLastFY" onclick="switchFY('lastFY')">Last FY</button>
+                    <button class="filter-btn active" id="btnThisFY" onclick="switchFY('thisFY')">This FY</button>
+                </div>
+            </div>
+            <div class="hours-progress-track">
+                <div class="hours-progress-fill" id="hoursProgressFill"></div>
+                <div class="pace-marker" id="paceMarker"></div>
+            </div>
+        </div>
+
         <div class="nav-grid">
             <a href="/groups.html" class="nav-card">
                 <div class="label">Groups</div>
@@ -80,7 +130,7 @@
                 ↻ Refresh Data
             </button>
             <a class="refresh-btn" href="/api/sessions/export" style="text-decoration: none; display: inline-flex; align-items: center;">
-                Hours CSV
+                FE Download
             </a>
         </div>
         <div class="refresh-message" id="refreshMessage"></div>
@@ -98,37 +148,63 @@
 
     <script>createFooter();</script>
     <script>
-        // Load dashboard statistics
+        const TARGET_HOURS = 3300;
+        let allStats = null;
+        let currentFY = 'thisFY';
+
+        function getFYProgress(financialYear) {
+            const parts = financialYear.split('-');
+            const startYear = parseInt(parts[0]);
+            const fyStart = new Date(startYear, 3, 1);
+            const fyEnd = new Date(startYear + 1, 2, 31);
+            const now = new Date();
+            const totalDays = (fyEnd - fyStart) / (1000 * 60 * 60 * 24);
+            const elapsed = (now - fyStart) / (1000 * 60 * 60 * 24);
+            return Math.max(0, Math.min(1, elapsed / totalDays));
+        }
+
+        function displayStats(fy) {
+            if (!allStats) return;
+            const stats = allStats[fy];
+
+            document.getElementById('activeGroupsFY').textContent = stats.activeGroups;
+            document.getElementById('sessionsFY').textContent = stats.sessions;
+            document.getElementById('volunteersFY').textContent = stats.volunteers;
+
+            const fyText = `FY ${stats.financialYear}`;
+            document.getElementById('fyLabel').textContent = fyText;
+            document.getElementById('fyLabel2').textContent = fyText;
+            document.getElementById('fyLabel3').textContent = fyText;
+
+            const hours = stats.hours || 0;
+            const pct = Math.min(100, (hours / TARGET_HOURS) * 100);
+            document.getElementById('hoursProgressLabel').textContent = `Hours ${fyText}`;
+            document.getElementById('hoursProgressValue').textContent =
+                `${Math.round(hours).toLocaleString()} / ${TARGET_HOURS.toLocaleString()} hours`;
+            document.getElementById('hoursProgressFill').style.width = pct + '%';
+
+            const pacePct = getFYProgress(stats.financialYear) * 100;
+            document.getElementById('paceMarker').style.left = pacePct + '%';
+        }
+
+        function switchFY(fy) {
+            currentFY = fy;
+            document.getElementById('btnLastFY').classList.toggle('active', fy === 'lastFY');
+            document.getElementById('btnThisFY').classList.toggle('active', fy === 'thisFY');
+            displayStats(fy);
+        }
+
         async function loadStats() {
             try {
                 const response = await fetch('/api/stats');
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch stats');
-                }
-
+                if (!response.ok) throw new Error('Failed to fetch stats');
                 const result = await response.json();
+                if (!result.success) throw new Error(result.error || 'Failed to fetch stats');
 
-                if (!result.success) {
-                    throw new Error(result.error || 'Failed to fetch stats');
-                }
-
-                const stats = result.data;
-
-                // Update stat cards
-                document.getElementById('activeGroupsFY').textContent = stats.activeGroupsFY;
-                document.getElementById('sessionsFY').textContent = stats.sessionsFY;
-                document.getElementById('volunteersFY').textContent = stats.volunteersFY;
-
-                // Update FY labels
-                const fyText = `FY ${stats.financialYear}`;
-                document.getElementById('fyLabel').textContent = fyText;
-                document.getElementById('fyLabel2').textContent = fyText;
-                document.getElementById('fyLabel3').textContent = fyText;
-
+                allStats = result.data;
+                displayStats(currentFY);
             } catch (error) {
                 console.error('Error loading stats:', error);
-                // On error, just leave the placeholder "-" values
             }
         }
 

@@ -132,10 +132,16 @@ export interface EntryDetailResponse {
   sessionDisplayName?: string;
 }
 
-export interface StatsResponse {
-  activeGroupsFY: number;
-  sessionsFY: number;
-  hoursFY: number;
-  volunteersFY: number;
+export interface FYStatsResponse {
+  activeGroups: number;
+  sessions: number;
+  hours: number;
+  volunteers: number;
   financialYear: string;
+  label: string;
+}
+
+export interface StatsResponse {
+  thisFY: FYStatsResponse;
+  lastFY: FYStatsResponse;
 }
