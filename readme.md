@@ -141,10 +141,12 @@ dtv-tracker-app/
 - Validate all user input
 - Prevent XSS when displaying user content (`escapeHtml()` in frontend)
 
+### Claude Code Usage
+- Track API usage at https://claude.ai/settings/usage
+
 ### SharePoint Integration
 - Always reference [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for field names
 - Use internal field names (e.g., `Crew` not `Group`)
-- Don't modify `FinancialYearFlow` fields (managed by Power Automate)
 
 ## Troubleshooting
 

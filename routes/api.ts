@@ -447,18 +447,19 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     const lastFYStart = fy.startYear - 1;
     let calcThisFY = 0;
     let calcLastFY = 0;
-    if (volunteerId !== undefined) {
-      entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === volunteerId).forEach(e => {
-        const sid = safeParseLookupId(e.EventLookupId);
-        if (sid === undefined) return;
-        const sess = sessionMap.get(sid);
-        if (!sess) return;
-        const h = parseFloat(String(e.Hours)) || 0;
-        const sessionFY = calculateFinancialYear(new Date(sess.Date));
-        if (sessionFY === fy.startYear) calcThisFY += h;
-        else if (sessionFY === lastFYStart) calcLastFY += h;
-      });
-    }
+    const volunteerEntries = volunteerId !== undefined
+      ? entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === volunteerId)
+      : [];
+    volunteerEntries.forEach(e => {
+      const sid = safeParseLookupId(e.EventLookupId);
+      if (sid === undefined) return;
+      const sess = sessionMap.get(sid);
+      if (!sess) return;
+      const h = parseFloat(String(e.Hours)) || 0;
+      const sessionFY = calculateFinancialYear(new Date(sess.Date));
+      if (sessionFY === fy.startYear) calcThisFY += h;
+      else if (sessionFY === lastFYStart) calcLastFY += h;
+    });
 
     const group = convertGroup(spGroup);
 
@@ -469,6 +470,7 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,
+      volunteerEntryCount: volunteerEntries.length,
       count: spEntry.Count || 1,
       hours: spEntry.Hours || 0,
       checkedIn: spEntry.Checked || false,
@@ -823,6 +825,67 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update profile',
+      message: error.message
+    });
+  }
+});
+
+router.post('/profiles', async (req: Request, res: Response) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      res.status(400).json({ success: false, error: 'Name is required' });
+      return;
+    }
+
+    const fields: { Title: string; Email?: string } = { Title: name.trim() };
+    if (typeof email === 'string' && email.trim()) {
+      fields.Email = email.trim();
+    }
+
+    const id = await profilesRepository.create(fields);
+    res.json({ success: true, data: { id, name: fields.Title, email: fields.Email || '' } });
+  } catch (error: any) {
+    console.error('Error creating profile:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create profile',
+      message: error.message
+    });
+  }
+});
+
+router.delete('/profiles/:slug', async (req: Request, res: Response) => {
+  try {
+    const slug = String(req.params.slug).toLowerCase();
+
+    const [rawProfiles, rawEntries] = await Promise.all([
+      profilesRepository.getAll(),
+      entriesRepository.getAll()
+    ]);
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    if (!spProfile) {
+      res.status(404).json({ success: false, error: 'Profile not found' });
+      return;
+    }
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const profileEntries = entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === spProfile.ID);
+    if (profileEntries.length > 0) {
+      res.status(400).json({ success: false, error: 'Cannot delete profile with existing entries' });
+      return;
+    }
+
+    await profilesRepository.delete(spProfile.ID);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting profile:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete profile',
       message: error.message
     });
   }

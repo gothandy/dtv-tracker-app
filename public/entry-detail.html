@@ -104,6 +104,7 @@
         const profileSlug = pathParts[4];
 
         let entryId = null;
+        let currentEntry = null;
         let notesTimer = null;
 
         async function saveField(fieldName, value, fieldEl) {
@@ -137,7 +138,11 @@
             try {
                 const res = await apiFetch(`/api/entries/${entryId}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Delete failed');
-                window.location.href = `/sessions/${encodeURIComponent(groupKey)}/${entryDate}/details.html`;
+                if (currentEntry && currentEntry.volunteerEntryCount <= 1 && currentEntry.volunteerSlug) {
+                    window.location.href = `/profiles/${encodeURIComponent(currentEntry.volunteerSlug)}/details.html`;
+                } else {
+                    window.location.href = `/sessions/${encodeURIComponent(groupKey)}/${entryDate}/details.html`;
+                }
             } catch (error) {
                 console.error('Error deleting entry:', error);
                 alert('Failed to delete entry.');
@@ -172,6 +177,7 @@
 
                 const entry = result.data;
                 entryId = entry.id;
+                currentEntry = entry;
                 document.title = `${entry.volunteerName || 'Entry'} - DTV Tracker`;
 
                 const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';

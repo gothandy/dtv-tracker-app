@@ -86,6 +86,15 @@
         .entry-meta { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
         .entry-meta strong { color: var(--text-mid); }
 
+        .delete-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .btn-delete {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.6rem 1.1rem; border: 2px solid var(--error); border-radius: var(--radius);
+            background: var(--surface); color: var(--error); font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; min-height: 44px;
+        }
+        .btn-delete:hover { background: var(--error); color: white; }
+
         @media (max-width: 600px) {
             .profile-detail { padding: 1.5rem; }
             .profile-detail h1 { font-size: 1.75rem; }
@@ -143,6 +152,21 @@
 
         function closeEditModal() {
             document.getElementById('editModal').classList.remove('visible');
+        }
+
+        async function deleteProfile() {
+            if (!confirm('Delete this profile? This cannot be undone.')) return;
+            try {
+                const res = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Delete failed');
+                }
+                window.location.href = '/volunteers.html';
+            } catch (error) {
+                console.error('Error deleting profile:', error);
+                alert(error.message || 'Failed to delete profile.');
+            }
         }
 
         async function saveProfileEdit() {
@@ -309,6 +333,10 @@
                         </div>
                     </div>
                     <div id="entriesContainer"></div>
+                    ${allEntries.length === 0 ? `
+                    <div class="delete-section">
+                        <button class="btn-delete" onclick="deleteProfile()">Delete Profile</button>
+                    </div>` : ''}
                 `;
 
                 displayEntries();

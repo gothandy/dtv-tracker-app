@@ -49,7 +49,45 @@
             font-family: inherit; background: var(--surface);
         }
         .search-box input:focus { outline: none; border-color: var(--green); }
-        .search-hint { font-size: 0.85rem; color: var(--text-faint); margin-top: 0.5rem; }
+        .search-status {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 0.5rem;
+        }
+        .search-hint { font-size: 0.85rem; color: var(--text-faint); }
+        .btn-add-new {
+            display: none; padding: 0.4rem 0.8rem;
+            background: var(--green); color: white; border: none; border-radius: var(--radius);
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            min-height: 36px; white-space: nowrap;
+        }
+        .btn-add-new.visible { display: inline-flex; align-items: center; gap: 0.3rem; }
+        .btn-add-new:hover { background: var(--green-dark); }
+
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 90%; max-width: 400px;
+        }
+        .modal h3 { color: var(--green); margin-bottom: 1rem; font-size: 1.1rem; }
+        .modal-field { margin-bottom: 1rem; }
+        .modal-field label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.3rem; }
+        .modal-field input[type="text"], .modal-field input[type="email"] {
+            width: 100%; font-size: 1rem; padding: 0.6rem 0.75rem;
+            border: 2px solid var(--border-mid); border-radius: 6px; font-family: inherit;
+        }
+        .modal-field input:focus { outline: none; border-color: var(--green); }
+        .modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; border: none; min-height: 40px;
+        }
+        .modal-btn-cancel { background: var(--bg); color: var(--text-light); }
+        .modal-btn-confirm { background: var(--green); color: white; }
+        .modal-btn-confirm:hover { background: var(--green-dark); }
 
         .results-list { display: flex; flex-direction: column; gap: 0.5rem; }
         .result-card {
@@ -75,6 +113,24 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="newProfileModal">
+        <div class="modal">
+            <h3>New Volunteer</h3>
+            <div class="modal-field">
+                <label for="newName">Name</label>
+                <input type="text" id="newName">
+            </div>
+            <div class="modal-field">
+                <label for="newEmail">Email (optional)</label>
+                <input type="email" id="newEmail">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeNewProfileModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmNewBtn" onclick="saveNewProfile()">Create</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const pathParts = window.location.pathname.split('/');
         const groupKey = pathParts[2];
@@ -83,6 +139,7 @@
 
         let allProfiles = [];
         let selectedId = null;
+        let lastQuery = '';
 
         function renderResults(profiles) {
             const list = document.getElementById('resultsList');
@@ -91,7 +148,7 @@
                 return;
             }
             list.innerHTML = profiles.slice(0, 50).map(p => `
-                <div class="result-card" onclick="selectVolunteer(${p.id}, this)" data-name="${escapeHtml(p.name || '')}">
+                <div class="result-card" onclick="selectVolunteer(${p.id}, '${escapeHtml(p.name || '')}')" data-name="${escapeHtml(p.name || '')}">
                     <div class="result-name">${escapeHtml(p.name || 'Unknown')}</div>
                     ${p.email ? `<div class="result-email">${escapeHtml(p.email)}</div>` : ''}
                 </div>
@@ -99,28 +156,96 @@
         }
 
         function filterProfiles(query) {
+            lastQuery = query;
+            const hint = document.getElementById('searchHint');
+            const addBtn = document.getElementById('addNewBtn');
+
             if (!query || query.length < 2) {
                 renderResults([]);
+                hint.textContent = 'Type at least 2 characters to search';
+                addBtn.classList.remove('visible');
                 return;
             }
+
             const q = query.toLowerCase();
             const matches = allProfiles.filter(p =>
                 (p.name && p.name.toLowerCase().includes(q)) ||
                 (p.email && p.email.toLowerCase().includes(q))
             );
             renderResults(matches);
+
+            if (matches.length === 0) {
+                hint.textContent = 'No matches found';
+                addBtn.classList.add('visible');
+            } else {
+                hint.textContent = `${matches.length} match${matches.length !== 1 ? 'es' : ''} found`;
+                addBtn.classList.add('visible');
+            }
         }
 
-        function selectVolunteer(id, el) {
+        function selectVolunteer(id, name) {
             selectedId = id;
-            const name = el.dataset.name;
 
             document.getElementById('selectedName').textContent = name;
             document.getElementById('selectedCard').classList.add('visible');
 
-            // Clear search and hide results
             document.getElementById('searchInput').value = '';
             document.getElementById('resultsList').innerHTML = '';
+            document.getElementById('searchHint').textContent = 'Type at least 2 characters to search';
+            document.getElementById('addNewBtn').classList.remove('visible');
+        }
+
+        function openNewProfileModal() {
+            document.getElementById('newName').value = lastQuery;
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newProfileModal').classList.add('visible');
+            document.getElementById('newName').focus();
+        }
+
+        function closeNewProfileModal() {
+            document.getElementById('newProfileModal').classList.remove('visible');
+        }
+
+        async function saveNewProfile() {
+            const name = document.getElementById('newName').value.trim();
+            const email = document.getElementById('newEmail').value.trim();
+
+            if (!name) {
+                document.getElementById('newName').focus();
+                return;
+            }
+
+            const btn = document.getElementById('confirmNewBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const res = await apiFetch('/api/profiles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email: email || undefined })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to create profile');
+                }
+
+                const result = await res.json();
+                const newProfile = result.data;
+
+                // Add to local list so it's available for future searches
+                allProfiles.push({ id: newProfile.id, name: newProfile.name, email: newProfile.email });
+
+                closeNewProfileModal();
+                selectVolunteer(newProfile.id, newProfile.name);
+            } catch (error) {
+                console.error('Error creating profile:', error);
+                alert(error.message || 'Failed to create profile.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create';
+            }
         }
 
         async function createEntry() {
@@ -177,7 +302,10 @@
                     <div class="search-box">
                         <input type="text" id="searchInput" placeholder="Search by name or email..."
                                oninput="filterProfiles(this.value)" autocomplete="off">
-                        <div class="search-hint">Type at least 2 characters to search</div>
+                        <div class="search-status">
+                            <span class="search-hint" id="searchHint">Type at least 2 characters to search</span>
+                            <button class="btn-add-new" id="addNewBtn" onclick="openNewProfileModal()">+ Add New</button>
+                        </div>
                     </div>
                     <div class="results-list" id="resultsList"></div>
                 `;

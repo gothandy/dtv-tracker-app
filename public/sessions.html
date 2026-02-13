@@ -38,19 +38,6 @@
             return new Date(Date.UTC(lastFYStartYear, 3, 1));
         }
 
-        function findNextSessionDate(sessions) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            let nearest = null;
-            for (const s of sessions) {
-                if (!s.date) continue;
-                const d = new Date(s.date);
-                d.setHours(0, 0, 0, 0);
-                if (d >= today && (!nearest || d < nearest)) nearest = d;
-            }
-            return nearest;
-        }
-
         function filterSessions(filter) {
             currentFilter = filter;
             ['btnPast', 'btnLastFY', 'btnThisFY', 'btnFuture'].forEach(id => {

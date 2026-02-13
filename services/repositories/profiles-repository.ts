@@ -31,6 +31,17 @@ class ProfilesRepository {
     return data as SharePointProfile[];
   }
 
+  async create(fields: { Title: string; Email?: string }): Promise<number> {
+    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    sharePointClient.cache.del('profiles');
+    return id;
+  }
+
+  async delete(profileId: number): Promise<void> {
+    await sharePointClient.deleteListItem(this.listGuid, profileId);
+    sharePointClient.cache.del('profiles');
+  }
+
   async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, profileId, fields);
     sharePointClient.cache.del('profiles');

@@ -165,20 +165,20 @@ function getCountdown(dateString) {
 }
 
 /**
- * Find the nearest upcoming session from a list (sorted date desc)
- * Returns the index, or -1 if none are upcoming
+ * Find the nearest upcoming session date from a list.
+ * Returns the Date, or null if none are upcoming.
  */
-function findNextSessionIndex(sessions) {
+function findNextSessionDate(sessions) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    let nextIdx = -1;
-    for (let i = 0; i < sessions.length; i++) {
-        if (!sessions[i].date) continue;
-        const d = new Date(sessions[i].date);
+    let nearest = null;
+    for (const s of sessions) {
+        if (!s.date) continue;
+        const d = new Date(s.date);
         d.setHours(0, 0, 0, 0);
-        if (d >= now) nextIdx = i;
+        if (d >= now && (!nearest || d < nearest)) nearest = d;
     }
-    return nextIdx;
+    return nearest;
 }
 
 /**
@@ -201,13 +201,18 @@ function renderSessionList(container, sessions, options = {}) {
         return;
     }
 
-    const nextIdx = findNextSessionIndex(sessions);
+    const nextDate = findNextSessionDate(sessions);
 
     const list = document.createElement('div');
     list.className = 'sessions-list';
 
     sessions.forEach((session, i) => {
-        const isNext = i === nextIdx;
+        let isNext = false;
+        if (nextDate && session.date) {
+            const d = new Date(session.date);
+            d.setHours(0, 0, 0, 0);
+            isNext = d.getTime() === nextDate.getTime();
+        }
         const countdown = isNext ? getCountdown(session.date) : null;
 
         const card = document.createElement('a');

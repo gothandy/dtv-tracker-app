@@ -184,16 +184,20 @@
                 const result = await response.json();
                 if (!result.success) return;
 
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
-                const upcoming = result.data
-                    .filter(s => s.date && new Date(s.date) >= now)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                const nextDate = findNextSessionDate(result.data);
+                if (!nextDate) return;
 
-                if (upcoming.length === 0) return;
+                const nextSessions = result.data.filter(s => {
+                    if (!s.date) return false;
+                    const d = new Date(s.date);
+                    d.setHours(0, 0, 0, 0);
+                    return d.getTime() === nextDate.getTime();
+                });
+
+                if (nextSessions.length === 0) return;
 
                 const card = document.getElementById('nextDigCard');
-                renderSessionList(card, [upcoming[0]]);
+                renderSessionList(card, nextSessions);
                 card.style.display = 'block';
             } catch (e) {
                 // Silently fail — next dig card stays hidden

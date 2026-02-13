@@ -121,6 +121,7 @@ export interface EntryDetailResponse {
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
+  volunteerEntryCount: number;
   count: number;
   hours: number;
   checkedIn: boolean;
