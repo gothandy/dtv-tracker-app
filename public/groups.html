@@ -18,6 +18,41 @@
         .group-card .meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-lighter); border-top: 1px solid var(--border); padding-top: 1rem; }
         .group-card .meta-item { display: flex; align-items: center; gap: 0.3rem; }
         .group-card .meta-item strong { color: var(--text-mid); }
+
+        .btn-add-new {
+            padding: 0.4rem 0.8rem;
+            background: var(--green); color: white; border: none; border-radius: var(--radius);
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            min-height: 36px; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;
+        }
+        .btn-add-new:hover { background: var(--green-dark); }
+
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 90%; max-width: 400px;
+        }
+        .modal h3 { color: var(--green); margin-bottom: 1rem; font-size: 1.1rem; }
+        .modal-field { margin-bottom: 1rem; }
+        .modal-field label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.3rem; }
+        .modal-field input[type="text"], .modal-field textarea {
+            width: 100%; font-size: 1rem; padding: 0.6rem 0.75rem;
+            border: 2px solid var(--border-mid); border-radius: 6px; font-family: inherit;
+        }
+        .modal-field textarea { min-height: 60px; resize: vertical; }
+        .modal-field input:focus, .modal-field textarea:focus { outline: none; border-color: var(--green); }
+        .modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; border: none; min-height: 40px;
+        }
+        .modal-btn-cancel { background: var(--bg); color: var(--text-light); }
+        .modal-btn-confirm { background: var(--green); color: white; }
+        .modal-btn-confirm:hover { background: var(--green-dark); }
     </style>
     <script src="/js/common.js"></script>
 </head>
@@ -34,11 +69,34 @@
                 <button class="filter-btn" id="btnAll" onclick="filterGroups('all')">All</button>
                 <button class="filter-btn" id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
                 <button class="filter-btn active" id="btnThisFY" onclick="filterGroups('thisFy')">This FY</button>
+                <button class="btn-add-new" onclick="openNewGroupModal()">+ Add New</button>
             </div>
         </div>
 
         <div id="content">
             <div class="loading">Loading groups</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="newGroupModal">
+        <div class="modal">
+            <h3>New Group</h3>
+            <div class="modal-field">
+                <label for="newKey">Key (short name, e.g. "Sat")</label>
+                <input type="text" id="newKey">
+            </div>
+            <div class="modal-field">
+                <label for="newName">Display Name (e.g. "Saturday Dig")</label>
+                <input type="text" id="newName">
+            </div>
+            <div class="modal-field">
+                <label for="newDescription">Description (optional)</label>
+                <textarea id="newDescription"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeNewGroupModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmNewBtn" onclick="saveNewGroup()">Create</button>
+            </div>
         </div>
     </div>
 
@@ -150,6 +208,56 @@
                 console.error('Error loading groups:', error);
                 countDiv.textContent = '?';
                 showError(contentDiv, 'Error Loading Groups', error.message);
+            }
+        }
+
+        function openNewGroupModal() {
+            document.getElementById('newKey').value = '';
+            document.getElementById('newName').value = '';
+            document.getElementById('newDescription').value = '';
+            document.getElementById('newGroupModal').classList.add('visible');
+            document.getElementById('newKey').focus();
+        }
+
+        function closeNewGroupModal() {
+            document.getElementById('newGroupModal').classList.remove('visible');
+        }
+
+        async function saveNewGroup() {
+            const key = document.getElementById('newKey').value.trim();
+            const name = document.getElementById('newName').value.trim();
+            const description = document.getElementById('newDescription').value.trim();
+
+            if (!key) {
+                document.getElementById('newKey').focus();
+                return;
+            }
+
+            const btn = document.getElementById('confirmNewBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const res = await apiFetch('/api/groups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, name: name || undefined, description: description || undefined })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to create group');
+                }
+
+                const result = await res.json();
+                closeNewGroupModal();
+                window.location.href = `/groups/${encodeURIComponent(result.data.key)}/detail.html`;
+            } catch (error) {
+                console.error('Error creating group:', error);
+                alert(error.message || 'Failed to create group.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create';
             }
         }
 

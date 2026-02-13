@@ -62,6 +62,38 @@ router.get('/groups', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/groups', async (req: Request, res: Response) => {
+  try {
+    const { key, name, description } = req.body;
+
+    if (!key || typeof key !== 'string' || !key.trim()) {
+      res.status(400).json({ success: false, error: 'Key is required' });
+      return;
+    }
+
+    const fields: { Title: string; Name?: string; Description?: string } = { Title: key.trim() };
+    if (typeof name === 'string' && name.trim()) {
+      fields.Name = name.trim();
+    }
+    if (typeof description === 'string' && description.trim()) {
+      fields.Description = description.trim();
+    }
+
+    const id = await groupsRepository.create(fields);
+    res.json({
+      success: true,
+      data: { id, key: fields.Title.toLowerCase(), displayName: fields.Name || fields.Title }
+    });
+  } catch (error: any) {
+    console.error('Error creating group:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create group',
+      message: error.message
+    });
+  }
+});
+
 router.get('/groups/:key', async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();

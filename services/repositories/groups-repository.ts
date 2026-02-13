@@ -14,6 +14,12 @@ class GroupsRepository {
     this.listGuid = process.env.GROUPS_LIST_GUID!;
   }
 
+  async create(fields: { Title: string; Name?: string; Description?: string }): Promise<number> {
+    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    sharePointClient.cache.del('groups');
+    return id;
+  }
+
   async getAll(): Promise<SharePointGroup[]> {
     const cacheKey = 'groups';
     const cached = sharePointClient.cache.get(cacheKey);
