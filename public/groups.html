@@ -19,14 +19,6 @@
         .group-card .meta-item { display: flex; align-items: center; gap: 0.3rem; }
         .group-card .meta-item strong { color: var(--text-mid); }
 
-        .btn-add-new {
-            padding: 0.4rem 0.8rem;
-            background: var(--green); color: white; border: none; border-radius: var(--radius);
-            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
-            min-height: 36px; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;
-        }
-        .btn-add-new:hover { background: var(--green-dark); }
-
         .modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
             z-index: 100; align-items: center; justify-content: center;
@@ -61,15 +53,19 @@
 
     <div class="container">
         <div class="filter-bar">
-            <div class="filter-left">
-                <h2>Groups</h2>
-                <div class="count" id="groupCount">-</div>
+            <div class="title-row">
+                <div class="title-left">
+                    <h2>Groups</h2>
+                    <div class="count" id="groupCount">-</div>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn" id="btnAll" onclick="filterGroups('all')">All</button>
+                    <button class="filter-btn" id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
+                    <button class="filter-btn active" id="btnThisFY" onclick="filterGroups('thisFy')">This FY</button>
+                </div>
             </div>
-            <div class="filter-buttons">
-                <button class="filter-btn" id="btnAll" onclick="filterGroups('all')">All</button>
-                <button class="filter-btn" id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
-                <button class="filter-btn active" id="btnThisFY" onclick="filterGroups('thisFy')">This FY</button>
-                <button class="btn-add-new" onclick="openNewGroupModal()">+ Add New</button>
+            <div class="filter-row">
+                <button class="btn-action" onclick="openNewGroupModal()">+ Add New</button>
             </div>
         </div>
 

@@ -62,11 +62,6 @@
         }
         .group-hours-item strong { color: var(--green); }
 
-        .entries-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
-        }
-        .entries-heading { color: var(--green); font-size: 1.3rem; }
 
         .entries-list { display: flex; flex-direction: column; gap: 0.75rem; }
         .entry-card {
@@ -101,7 +96,6 @@
             .stat-item .stat-number { font-size: 1.5rem; }
             .entry-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .entry-meta { width: 100%; justify-content: flex-start; }
-            .entries-bar { flex-direction: column; align-items: flex-start; }
         }
     </style>
     <script src="/js/common.js"></script>
@@ -224,7 +218,7 @@
                 filtered = allEntries.filter(e => e.financialYear === lastFYKey);
             }
 
-            countEl.textContent = `(${filtered.length})`;
+            countEl.textContent = filtered.length;
 
             if (filtered.length === 0) {
                 container.innerHTML = '<p class="no-sessions">No entries</p>';
@@ -324,12 +318,17 @@
                         ${groupHoursSection}
                     </div>
 
-                    <div class="entries-bar">
-                        <h2 class="entries-heading">Entries <span id="entriesCount"></span></h2>
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" id="btnAll" onclick="filterEntries('all')">All</button>
-                            <button class="filter-btn" id="btnLastFY" onclick="filterEntries('lastFy')">Last FY</button>
-                            <button class="filter-btn" id="btnThisFY" onclick="filterEntries('thisFy')">This FY</button>
+                    <div class="filter-bar">
+                        <div class="title-row">
+                            <div class="title-left">
+                                <h2>Entries</h2>
+                                <div class="count" id="entriesCount"></div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" id="btnAll" onclick="filterEntries('all')">All</button>
+                                <button class="filter-btn" id="btnLastFY" onclick="filterEntries('lastFy')">Last FY</button>
+                                <button class="filter-btn" id="btnThisFY" onclick="filterEntries('thisFy')">This FY</button>
+                            </div>
                         </div>
                     </div>
                     <div id="entriesContainer"></div>

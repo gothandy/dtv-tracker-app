@@ -9,17 +9,6 @@
         body { min-height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 
-        .search-box {
-            width: 100%; padding: 0.85rem 1.25rem; font-size: 1rem;
-            border: 2px solid var(--border-mid); border-radius: var(--radius);
-            background: var(--surface); color: var(--text);
-            margin-bottom: 1.5rem; box-shadow: var(--shadow);
-            font-family: var(--font);
-        }
-        .search-box:focus { outline: none; border-color: var(--green); }
-
-        .volunteer-count { color: var(--text-faint); font-size: 0.9rem; margin-bottom: 0.75rem; }
-
         .volunteer-list { display: flex; flex-direction: column; gap: 0.75rem; }
         a.volunteer-card { text-decoration: none; color: inherit; }
         .volunteer-card {
@@ -52,13 +41,20 @@
     <script>createHeader('Volunteers', true);</script>
 
     <div class="container">
-        <input type="text" class="search-box" id="searchBox" placeholder="Search volunteers..." autocomplete="off">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-            <div class="volunteer-count" id="volunteerCount" style="margin-bottom:0"></div>
-            <div class="filter-buttons">
-                <button class="filter-btn active" id="btnAll" onclick="setFYFilter('all')">All</button>
-                <button class="filter-btn" id="btnLastFY" onclick="setFYFilter('lastFy')">Last FY</button>
-                <button class="filter-btn" id="btnThisFY" onclick="setFYFilter('thisFy')">This FY</button>
+        <div class="filter-bar">
+            <div class="title-row">
+                <div class="title-left">
+                    <h2>Volunteers</h2>
+                    <div class="count" id="volunteerCount">-</div>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" id="btnAll" onclick="setFYFilter('all')">All</button>
+                    <button class="filter-btn" id="btnLastFY" onclick="setFYFilter('lastFy')">Last FY</button>
+                    <button class="filter-btn" id="btnThisFY" onclick="setFYFilter('thisFy')">This FY</button>
+                </div>
+            </div>
+            <div class="filter-row">
+                <input type="text" class="filter-search" id="searchBox" placeholder="Search..." autocomplete="off">
             </div>
         </div>
         <div id="content">
@@ -105,7 +101,7 @@
                 filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
             }
 
-            countDiv.textContent = `${filtered.length} volunteer${filtered.length !== 1 ? 's' : ''}`;
+            countDiv.textContent = filtered.length;
 
             if (filtered.length === 0) {
                 contentDiv.innerHTML = '<p class="no-sessions">No volunteers found</p>';

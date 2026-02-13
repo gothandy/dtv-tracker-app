@@ -45,13 +45,6 @@
 
         .entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .entries-heading { color: var(--green); font-size: 1.3rem; }
-        .btn-add {
-            display: inline-flex; align-items: center; gap: 0.3rem;
-            padding: 0.5rem 1rem; background: var(--green); color: white;
-            border-radius: var(--radius); font-size: 0.9rem; font-weight: 600;
-            text-decoration: none; transition: all 0.2s; min-height: 44px;
-        }
-        .btn-add:hover { background: var(--green-dark); transform: translateY(-1px); }
         .header-buttons { display: flex; gap: 0.5rem; align-items: center; }
 
         .modal-overlay {
@@ -375,8 +368,8 @@
                     <div class="entries-header">
                         <h2 class="entries-heading">Entries (${entries.length})</h2>
                         ${countdown ? `<div class="header-buttons">
-                            <button class="btn-add" onclick="openHoursModal()">Set Hours</button>
-                            <a class="btn-add" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">+ Add New</a>
+                            <button class="btn-action" onclick="openHoursModal()">Set Hours</button>
+                            <a class="btn-action" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">+ Add New</a>
                         </div>` : ''}
                     </div>
                     <div class="entries-list">

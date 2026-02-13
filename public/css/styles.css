@@ -194,29 +194,68 @@ body {
 /* === Filter bar === */
 .filter-bar {
     background: var(--surface);
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
     border-radius: var(--radius);
     margin-bottom: 1.5rem;
     box-shadow: var(--shadow);
+}
+.filter-bar .title-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 1rem;
 }
-.filter-bar .filter-left {
+.filter-bar .title-left {
     display: flex;
-    flex-direction: column;
+    align-items: baseline;
+    gap: 0.5rem;
 }
 .filter-bar h2 {
     font-size: 1.3rem;
     color: var(--green);
-    margin-bottom: 0.3rem;
 }
 .filter-bar .count {
-    font-size: 2rem;
+    font-size: 1.3rem;
     font-weight: bold;
-    color: var(--green);
+    color: var(--text-faint);
+}
+.filter-bar .filter-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+.filter-bar .filter-search {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    border: 2px solid var(--border-mid);
+    border-radius: var(--radius);
+    font-family: var(--font);
+}
+.filter-bar .filter-search:focus {
+    outline: none;
+    border-color: var(--green);
+}
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 36px;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.btn-action:hover {
+    background: var(--green-dark);
 }
 .filter-buttons {
     display: flex;
@@ -337,7 +376,8 @@ a.session-card { text-decoration: none; color: inherit; display: block; }
 /* === Mobile === */
 @media (max-width: 600px) {
     .container { padding: 1rem; }
-    .filter-bar { flex-direction: column; align-items: flex-start; }
+    .filter-bar .title-row { flex-wrap: wrap; }
+    .filter-bar .filter-row { flex-wrap: wrap; }
     .filter-buttons { width: 100%; }
     .filter-btn { flex: 1; }
     .session-card .meta { flex-direction: column; gap: 0.5rem; }
