@@ -74,6 +74,7 @@ export interface ProfileDetailResponse {
   slug: string;
   name?: string;
   email?: string;
+  matchName?: string;
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;

@@ -444,7 +444,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       hours: Math.round(totalHours * 10) / 10,
       financialYear: `FY${new Date(spSession.Date).getMonth() >= 3 ? new Date(spSession.Date).getFullYear() : new Date(spSession.Date).getFullYear() - 1}`,
       eventbriteEventId: spSession.EventbriteEventID,
-      eventbriteUrl: spSession.Url,
+      eventbriteUrl: typeof spSession.Url === 'object' && spSession.Url ? (spSession.Url as any).Url : spSession.Url,
       entries: entryResponses
     };
 
@@ -463,11 +463,13 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description } = req.body;
+    const { displayName, description, eventbriteEventId, eventbriteUrl } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields.Description = description;
+    if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
+    if (typeof eventbriteUrl === 'string') fields.Url = eventbriteUrl ? { Url: eventbriteUrl, Description: eventbriteUrl } : null;
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -1014,6 +1016,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       slug: nameToSlug(profile.name),
       name: profile.name,
       email: profile.email,
+      matchName: spProfile.MatchName,
       isGroup: profile.isGroup,
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
@@ -1035,11 +1038,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 router.patch('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
-    const { name, email } = req.body;
+    const { name, email, matchName } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof name === 'string' && name.trim()) fields.Title = name.trim();
     if (typeof email === 'string') fields.Email = email.trim();
+    if (typeof matchName === 'string') fields.MatchName = matchName;
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });

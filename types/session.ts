@@ -30,7 +30,7 @@ export interface SharePointSession extends SharePointBaseItem {
   /** Financial year classification (e.g., "FY2025") - deprecated, calculated instead */
   FinancialYearFlow?: string;
   EventbriteEventID?: string;
-  Url?: string;
+  Url?: string | { Url: string; Description?: string };
 }
 
 /**

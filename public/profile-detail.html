@@ -119,6 +119,10 @@
                 <label for="editEmail">Email</label>
                 <input type="email" id="editEmail">
             </div>
+            <div class="modal-field">
+                <label for="editMatchName">Eventbrite Match Name</label>
+                <input type="text" id="editMatchName">
+            </div>
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveProfileEdit()">Save</button>
@@ -165,6 +169,7 @@
             if (!currentProfile) return;
             document.getElementById('editName').value = currentProfile.name || '';
             document.getElementById('editEmail').value = currentProfile.email || '';
+            document.getElementById('editMatchName').value = currentProfile.matchName || '';
             document.getElementById('editModal').classList.add('visible');
             document.getElementById('editName').focus();
         }
@@ -191,6 +196,7 @@
         async function saveProfileEdit() {
             const name = document.getElementById('editName').value.trim();
             const email = document.getElementById('editEmail').value.trim();
+            const matchName = document.getElementById('editMatchName').value.trim();
 
             if (!name) { alert('Name is required.'); return; }
 
@@ -202,7 +208,7 @@
                 const res = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email })
+                    body: JSON.stringify({ name, email, matchName })
                 });
                 if (!res.ok) {
                     const data = await res.json();

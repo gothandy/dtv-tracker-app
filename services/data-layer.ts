@@ -67,7 +67,7 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
     groupId: spSession.CrewLookupId ? parseInt(spSession.CrewLookupId, 10) : undefined,
     financialYear: calculateFinancialYear(sessionDate),
     eventbriteEventId: spSession.EventbriteEventID,
-    eventbriteUrl: spSession.Url
+    eventbriteUrl: typeof spSession.Url === 'object' && spSession.Url ? (spSession.Url as any).Url : spSession.Url
   };
 }
 
