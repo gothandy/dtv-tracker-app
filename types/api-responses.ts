@@ -43,6 +43,8 @@ export interface ProfileResponse {
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
+  sessionsLastFY: number;
+  sessionsThisFY: number;
 }
 
 export interface ProfileEntryResponse {

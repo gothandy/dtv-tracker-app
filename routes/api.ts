@@ -811,8 +811,8 @@ router.get('/profiles', async (req: Request, res: Response) => {
     const fy = calculateCurrentFY();
     const lastFYStart = fy.startYear - 1;
 
-    // Calculate hours per profile from entries
-    const profileHours = new Map<number, { thisFY: number; lastFY: number }>();
+    // Calculate hours and session counts per profile from entries
+    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number> }>();
     entries.forEach(e => {
       const volunteerId = safeParseLookupId(e.VolunteerLookupId);
       if (volunteerId === undefined) return;
@@ -823,28 +823,32 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const hours = parseFloat(String(e.Hours)) || 0;
       const sessionFY = calculateFinancialYear(new Date(session.Date));
 
-      if (!profileHours.has(volunteerId)) {
-        profileHours.set(volunteerId, { thisFY: 0, lastFY: 0 });
+      if (!profileStats.has(volunteerId)) {
+        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set() });
       }
-      const ph = profileHours.get(volunteerId)!;
+      const ps = profileStats.get(volunteerId)!;
       if (sessionFY === fy.startYear) {
-        ph.thisFY += hours;
+        ps.hoursThisFY += hours;
+        ps.sessionsThisFY.add(sessionId);
       } else if (sessionFY === lastFYStart) {
-        ph.lastFY += hours;
+        ps.hoursLastFY += hours;
+        ps.sessionsLastFY.add(sessionId);
       }
     });
 
     const data: ProfileResponse[] = validProfiles.map(spProfile => {
       const profile = convertProfile(spProfile);
-      const ph = profileHours.get(spProfile.ID);
+      const ps = profileStats.get(spProfile.ID);
       return {
         id: profile.id,
         slug: nameToSlug(profile.name),
         name: profile.name,
         email: profile.email,
         isGroup: profile.isGroup,
-        hoursLastFY: ph ? Math.round(ph.lastFY * 10) / 10 : 0,
-        hoursThisFY: ph ? Math.round(ph.thisFY * 10) / 10 : 0
+        hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
+        hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
+        sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
+        sessionsThisFY: ps ? ps.sessionsThisFY.size : 0
       };
     });
 

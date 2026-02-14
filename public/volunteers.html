@@ -26,13 +26,13 @@
             border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
         }
 
-        .volunteer-hours { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
-        .volunteer-hours .fy-hours { white-space: nowrap; }
-        .volunteer-hours strong { color: var(--text-mid); }
+        .volunteer-meta { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
+        .volunteer-meta span { white-space: nowrap; }
+        .volunteer-meta strong { color: var(--text-mid); }
 
         @media (max-width: 600px) {
             .volunteer-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-            .volunteer-hours { width: 100%; justify-content: flex-start; }
+            .volunteer-meta { width: 100%; justify-content: flex-start; }
         }
     </style>
     <script src="/js/common.js"></script>
@@ -47,10 +47,31 @@
                     <h2>Volunteers</h2>
                     <div class="count" id="volunteerCount">-</div>
                 </div>
-                <div class="filter-buttons">
-                    <button class="filter-btn active" id="btnAll" onclick="setFYFilter('all')">All</button>
-                    <button class="filter-btn" id="btnLastFY" onclick="setFYFilter('lastFy')">Last FY</button>
-                    <button class="filter-btn" id="btnThisFY" onclick="setFYFilter('thisFy')">This FY</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <div class="dropdown">
+                        <button class="dropdown-btn" onclick="toggleDropdown('filterMenu')">
+                            <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
+                            <span id="filterLabel">This FY</span>
+                        </button>
+                        <div class="dropdown-menu" id="filterMenu">
+                            <button id="btnAll" onclick="setFilter('all')">All</button>
+                            <button id="btnLastFY" onclick="setFilter('lastFy')">Last FY</button>
+                            <button id="btnThisFY" class="active" onclick="setFilter('thisFy')">This FY</button>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="dropdown-btn" onclick="toggleDropdown('sortMenu')">
+                            <svg viewBox="0 0 16 16"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+                            <span id="sortLabel">A-Z</span>
+                        </button>
+                        <div class="dropdown-menu" id="sortMenu">
+                            <button id="btnSortAZ" class="active" onclick="setSort('az')">A-Z</button>
+                            <button id="btnSortHours" onclick="setSort('hours')">Hours</button>
+                        </div>
+                    </div>
+                    <a class="btn-action" href="/volunteers/add.html">
+                        <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                    </a>
                 </div>
             </div>
             <div class="filter-row">
@@ -64,16 +85,43 @@
 
     <script>
         let allVolunteers = [];
-        let currentFYFilter = 'all';
+        let currentFilter = 'thisFy';
+        let currentSort = 'az';
         const MEMBER_HOURS = 15;
 
-        function setFYFilter(filter) {
-            currentFYFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        function toggleDropdown(menuId) {
+            const menu = document.getElementById(menuId);
+            const wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            if (!wasOpen) menu.classList.add('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            }
+        });
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY' };
+            document.getElementById('filterLabel').textContent = labels[filter];
+            ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => document.getElementById(id).classList.remove('active'));
             const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
-            const el = document.getElementById(btnMap[filter]);
-            if (el) el.classList.add('active');
-            displayVolunteers(document.getElementById('searchBox').value);
+            document.getElementById(btnMap[filter]).classList.add('active');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            displayVolunteers();
+        }
+
+        function setSort(sort) {
+            currentSort = sort;
+            const labels = { az: 'A-Z', hours: 'Hours' };
+            document.getElementById('sortLabel').textContent = labels[sort];
+            ['btnSortAZ', 'btnSortHours'].forEach(id => document.getElementById(id).classList.remove('active'));
+            const btnMap = { az: 'btnSortAZ', hours: 'btnSortHours' };
+            document.getElementById(btnMap[sort]).classList.add('active');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            displayVolunteers();
         }
 
         function isMember(v) {
@@ -86,19 +134,39 @@
             return isMember(v);
         }
 
-        function displayVolunteers(filter) {
+        function getHours(v) {
+            if (currentFilter === 'thisFy') return v.hoursThisFY;
+            if (currentFilter === 'lastFy') return v.hoursLastFY;
+            return v.hoursThisFY + v.hoursLastFY;
+        }
+
+        function getSessions(v) {
+            if (currentFilter === 'thisFy') return v.sessionsThisFY;
+            if (currentFilter === 'lastFy') return v.sessionsLastFY;
+            return v.sessionsThisFY + v.sessionsLastFY;
+        }
+
+        function displayVolunteers() {
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('volunteerCount');
+            const searchTerm = document.getElementById('searchBox').value;
 
             let filtered = allVolunteers;
-            if (currentFYFilter === 'thisFy') {
+            if (currentFilter === 'thisFy') {
                 filtered = filtered.filter(v => v.hoursThisFY > 0);
-            } else if (currentFYFilter === 'lastFy') {
+            } else if (currentFilter === 'lastFy') {
                 filtered = filtered.filter(v => v.hoursLastFY > 0);
             }
-            if (filter && filter.length >= 3) {
-                const term = filter.toLowerCase();
+            if (searchTerm && searchTerm.length >= 3) {
+                const term = searchTerm.toLowerCase();
                 filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
+            }
+
+            // Sort
+            if (currentSort === 'hours') {
+                filtered = [...filtered].sort((a, b) => getHours(b) - getHours(a) || (a.name || '').localeCompare(b.name || ''));
+            } else {
+                filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             }
 
             countDiv.textContent = filtered.length;
@@ -110,17 +178,19 @@
 
             const html = filtered.map(v => {
                 const member = isMember(v);
-                const memberForFY = isMemberForFY(v, currentFYFilter);
+                const memberForFY = isMemberForFY(v, currentFilter);
                 const groupBadge = v.isGroup ? '<span class="group-badge">GROUP</span>' : '';
                 const memberBadge = member && !v.isGroup ? '<span class="member-badge">MEMBER</span>' : '';
                 const cardClass = memberForFY && !v.isGroup ? ' is-member' : '';
                 const href = v.slug ? `/profiles/${encodeURIComponent(v.slug)}/details.html` : '#';
+                const sessions = getSessions(v);
+                const hours = getHours(v);
                 return `
                     <a class="volunteer-card${cardClass}" href="${href}">
                         <div class="volunteer-name">${escapeHtml(v.name || 'Unknown')}${groupBadge}${memberBadge}</div>
-                        <div class="volunteer-hours">
-                            <span class="fy-hours"><strong>Last FY:</strong> ${v.hoursLastFY}</span>
-                            <span class="fy-hours"><strong>This FY:</strong> ${v.hoursThisFY}</span>
+                        <div class="volunteer-meta">
+                            <span><strong>Sessions:</strong> ${sessions}</span>
+                            <span><strong>Hours:</strong> ${hours}</span>
                         </div>
                     </a>
                 `;
@@ -143,8 +213,8 @@
                     throw new Error(result.error || 'Failed to fetch volunteers');
                 }
 
-                allVolunteers = result.data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-                displayVolunteers('');
+                allVolunteers = result.data;
+                displayVolunteers();
 
             } catch (error) {
                 console.error('Error loading volunteers:', error);
@@ -152,9 +222,7 @@
             }
         }
 
-        document.getElementById('searchBox').addEventListener('input', function () {
-            displayVolunteers(this.value);
-        });
+        document.getElementById('searchBox').addEventListener('input', displayVolunteers);
 
         loadVolunteers();
     </script>
