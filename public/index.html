@@ -37,26 +37,12 @@
         .hours-progress-label { font-size: 0.9rem; font-weight: 600; color: var(--green); }
         .hours-progress-value { font-size: 0.85rem; color: var(--text-light); }
         .hours-progress-track {
-            height: 12px; background: var(--bg); border-radius: 6px; overflow: visible;
+            height: 12px; background: var(--bg); border-radius: 6px;
             position: relative;
         }
         .hours-progress-fill {
             height: 100%; background: var(--green); border-radius: 6px;
             transition: width 0.6s ease; width: 0%;
-            position: relative; z-index: 1;
-        }
-        .pace-marker {
-            position: absolute; top: -6px; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; z-index: 2;
-        }
-        .pace-marker::before {
-            content: ''; width: 0; height: 0;
-            border-left: 5px solid transparent; border-right: 5px solid transparent;
-            border-top: 6px solid var(--text-light);
-        }
-        .pace-marker::after {
-            content: ''; width: 2px; height: 18px;
-            background: var(--text-light);
         }
 
         .refresh-message { text-align: center; margin-top: 0.5rem; font-size: 0.9rem; color: var(--green); min-height: 1.2rem; }
@@ -112,7 +98,6 @@
             </div>
             <div class="hours-progress-track">
                 <div class="hours-progress-fill" id="hoursProgressFill"></div>
-                <div class="pace-marker" id="paceMarker"></div>
             </div>
         </div>
 
@@ -153,7 +138,6 @@
 
     <script>createFooter();</script>
     <script>
-        const TARGET_HOURS = 3300;
         let allStats = null;
         let currentFY = 'thisFY';
 
@@ -182,14 +166,14 @@
             document.getElementById('fyLabel3').textContent = fyText;
 
             const hours = stats.hours || 0;
-            const pct = Math.min(100, (hours / TARGET_HOURS) * 100);
+            const fyProgress = getFYProgress(stats.financialYear);
+            const predicted = fyProgress > 0 ? Math.round(hours / fyProgress) : 0;
+            const pct = Math.min(100, fyProgress * 100);
+
             document.getElementById('hoursProgressLabel').textContent = `Hours ${fyText}`;
             document.getElementById('hoursProgressValue').textContent =
-                `${Math.round(hours).toLocaleString()} / ${TARGET_HOURS.toLocaleString()} hours`;
+                `${Math.round(hours).toLocaleString()} actual / ${predicted.toLocaleString()} predicted`;
             document.getElementById('hoursProgressFill').style.width = pct + '%';
-
-            const pacePct = getFYProgress(stats.financialYear) * 100;
-            document.getElementById('paceMarker').style.left = pacePct + '%';
         }
 
         function toggleDropdown(menuId) {
