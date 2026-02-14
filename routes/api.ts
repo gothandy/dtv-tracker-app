@@ -797,16 +797,31 @@ router.post('/sessions/:group/:date/add-regulars', async (req: Request, res: Res
 
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
-    const [rawProfiles, rawEntries, rawSessions] = await Promise.all([
+    const groupFilter = req.query.group ? String(req.query.group).toLowerCase() : undefined;
+
+    const [rawProfiles, rawEntries, rawSessions, rawGroups] = await Promise.all([
       profilesRepository.getAll(),
       entriesRepository.getAll(),
-      sessionsRepository.getAll()
+      sessionsRepository.getAll(),
+      groupFilter ? groupsRepository.getAll() : Promise.resolve([])
     ]);
 
     const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+
+    // When filtering by group, build a set of session IDs belonging to that group
+    let groupSessionIds: Set<number> | undefined;
+    if (groupFilter) {
+      const groups = validateArray(rawGroups, validateGroup, 'Group');
+      const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupFilter);
+      if (spGroup) {
+        groupSessionIds = new Set(
+          sessions.filter(s => safeParseLookupId(s.CrewLookupId) === spGroup.ID).map(s => s.ID)
+        );
+      }
+    }
 
     const fy = calculateCurrentFY();
     const lastFYStart = fy.startYear - 1;
@@ -818,6 +833,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       if (volunteerId === undefined) return;
       const sessionId = safeParseLookupId(e.EventLookupId);
       if (sessionId === undefined) return;
+      if (groupSessionIds && !groupSessionIds.has(sessionId)) return;
       const session = sessionMap.get(sessionId);
       if (!session) return;
       const hours = parseFloat(String(e.Hours)) || 0;

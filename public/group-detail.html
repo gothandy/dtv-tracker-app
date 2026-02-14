@@ -10,6 +10,8 @@
         .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 
         .group-detail { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        .group-title-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .group-title-row h2 { font-size: 1.3rem; color: var(--green); margin: 0; }
         .group-detail .description { color: var(--text-mid); font-size: 1.05rem; line-height: 1.7; white-space: pre-wrap; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
@@ -53,6 +55,7 @@
 
         @media (max-width: 600px) {
             .group-detail { padding: 1.25rem; }
+            .group-title-row { flex-wrap: wrap; }
             .stat-item .stat-number { font-size: 1.5rem; }
         }
     </style>
@@ -347,8 +350,8 @@
 
                 contentDiv.innerHTML = `
                     <div class="group-detail">
-                        <div class="title-row" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
-                            <h2 style="font-size:1.3rem; color:var(--green); margin:0;">${escapeHtml(group.displayName)}</h2>
+                        <div class="group-title-row">
+                            <h2>${escapeHtml(group.displayName)}</h2>
                             <div style="display:flex; gap:0.5rem;">
                                 <div class="dropdown">
                                     <button class="dropdown-btn" onclick="toggleDropdown('filterMenu')">

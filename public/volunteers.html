@@ -30,6 +30,14 @@
         .volunteer-meta span { white-space: nowrap; }
         .volunteer-meta strong { color: var(--text-mid); }
 
+        .group-select {
+            padding: 0.5rem 0.75rem; font-size: 0.9rem;
+            border: 2px solid var(--border-mid); border-radius: var(--radius);
+            font-family: var(--font); background: var(--surface); color: var(--text);
+            min-height: 38px; min-width: 0;
+        }
+        .group-select:focus { outline: none; border-color: var(--green); }
+
         @media (max-width: 600px) {
             .volunteer-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .volunteer-meta { width: 100%; justify-content: flex-start; }
@@ -75,6 +83,9 @@
                 </div>
             </div>
             <div class="filter-row">
+                <select class="group-select" id="groupSelect" onchange="setGroup(this.value)">
+                    <option value="">All Groups</option>
+                </select>
                 <input type="text" class="filter-search" id="searchBox" placeholder="Search..." autocomplete="off">
             </div>
         </div>
@@ -87,6 +98,7 @@
         let allVolunteers = [];
         let currentFilter = 'thisFy';
         let currentSort = 'az';
+        let currentGroup = '';
         const MEMBER_HOURS = 15;
 
         function toggleDropdown(menuId) {
@@ -122,6 +134,11 @@
             document.getElementById(btnMap[sort]).classList.add('active');
             document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             displayVolunteers();
+        }
+
+        function setGroup(groupKey) {
+            currentGroup = groupKey;
+            loadVolunteers();
         }
 
         function isMember(v) {
@@ -203,7 +220,10 @@
             const contentDiv = document.getElementById('content');
 
             try {
-                const response = await apiFetch('/api/profiles');
+                const url = currentGroup
+                    ? `/api/profiles?group=${encodeURIComponent(currentGroup)}`
+                    : '/api/profiles';
+                const response = await apiFetch(url);
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}: ${response.statusText}`);
                 }
@@ -222,9 +242,31 @@
             }
         }
 
+        async function loadGroups() {
+            try {
+                const response = await apiFetch('/api/groups');
+                if (!response.ok) return;
+                const result = await response.json();
+                if (!result.success) return;
+
+                const select = document.getElementById('groupSelect');
+                result.data
+                    .sort((a, b) => (a.displayName || a.key).localeCompare(b.displayName || b.key))
+                    .forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.key;
+                        opt.textContent = g.displayName || g.key;
+                        select.appendChild(opt);
+                    });
+            } catch (e) {
+                console.error('Error loading groups:', e);
+            }
+        }
+
         document.getElementById('searchBox').addEventListener('input', displayVolunteers);
 
         loadVolunteers();
+        loadGroups();
     </script>
 </body>
 </html>
