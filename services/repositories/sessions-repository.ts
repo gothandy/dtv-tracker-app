@@ -67,6 +67,12 @@ class SessionsRepository {
     return filteredData;
   }
 
+  async create(fields: { Title: string; Date: string; CrewLookupId: string; Name?: string; Description?: string }): Promise<number> {
+    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    sharePointClient.cache.del('sessions');
+    return id;
+  }
+
   async updateFields(sessionId: number, fields: Partial<Pick<SharePointSession, 'Name' | 'Description'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
     sharePointClient.cache.del('sessions');

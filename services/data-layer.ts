@@ -358,17 +358,18 @@ export function calculateFYStats(
 // Regulars Grouping
 // ============================================================================
 
-export function groupRegularsByCrewId(regulars: SharePointRegular[]): Map<number, string[]> {
-  const map = new Map<number, string[]>();
+export function groupRegularsByCrewId(regulars: SharePointRegular[]): Map<number, { name: string; slug: string }[]> {
+  const map = new Map<number, { name: string; slug: string }[]>();
   regulars.forEach(regular => {
     const crewId = safeParseLookupId(regular.CrewLookupId);
     if (crewId === undefined || !regular.Volunteer) return;
 
-    const names = map.get(crewId);
-    if (names) {
-      names.push(regular.Volunteer);
+    const entry = { name: regular.Volunteer, slug: nameToSlug(regular.Volunteer) };
+    const list = map.get(crewId);
+    if (list) {
+      list.push(entry);
     } else {
-      map.set(crewId, [regular.Volunteer]);
+      map.set(crewId, [entry]);
     }
   });
   return map;

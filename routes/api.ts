@@ -23,7 +23,7 @@ import {
   safeParseLookupId,
   nameToSlug
 } from '../services/data-layer';
-import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, StatsResponse } from '../types/api-responses';
+import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -155,11 +155,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     const enriched = enrichSessions(groupSessions, rawEntries, rawGroups);
     const sorted = sortSessionsByDate(enriched);
 
-    const now = new Date();
-    const upcoming = sorted.filter(s => s.sessionDate >= now);
-    const past = sorted.filter(s => s.sessionDate < now);
-
-    const toSessionResponse = (s: any): SessionResponse => ({
+    const allSessionResponses: SessionResponse[] = sorted.map(s => ({
       id: s.sharePointId,
       displayName: s.displayName,
       description: s.description,
@@ -172,10 +168,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       financialYear: `FY${s.financialYear}`,
       eventbriteEventId: s.eventbriteEventId,
       eventbriteUrl: s.eventbriteUrl
-    });
-
-    const nextSession = upcoming.length > 0 ? toSessionResponse(upcoming[upcoming.length - 1]) : undefined;
-    const recentSessions = past.slice(0, 3).map(toSessionResponse);
+    }));
 
     const data: GroupDetailResponse = {
       id: group.sharePointId,
@@ -192,8 +185,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
         children,
         totalVolunteers: uniqueVolunteers
       },
-      nextSession,
-      recentSessions
+      sessions: allSessionResponses
     };
 
     res.json({ success: true, data } as ApiResponse<GroupDetailResponse>);
@@ -202,6 +194,41 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch group detail',
+      message: error.message
+    });
+  }
+});
+
+router.patch('/groups/:key', async (req: Request, res: Response) => {
+  try {
+    const key = String(req.params.key).toLowerCase();
+    const { displayName, description, eventbriteSeriesId } = req.body;
+
+    const fields: Record<string, any> = {};
+    if (typeof displayName === 'string') fields.Name = displayName;
+    if (typeof description === 'string') fields.Description = description;
+    if (typeof eventbriteSeriesId === 'string') fields.EventbriteSeriesID = eventbriteSeriesId;
+
+    if (Object.keys(fields).length === 0) {
+      res.status(400).json({ success: false, error: 'No valid fields to update' });
+      return;
+    }
+
+    const rawGroups = await groupsRepository.getAll();
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === key);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    await groupsRepository.updateFields(spGroup.ID, fields);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error updating group:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update group',
       message: error.message
     });
   }
@@ -245,6 +272,58 @@ router.get('/sessions', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch sessions from SharePoint',
+      message: error.message
+    });
+  }
+});
+
+router.post('/sessions', async (req: Request, res: Response) => {
+  try {
+    const { groupId, date, name, description } = req.body;
+
+    if (!groupId || !date) {
+      res.status(400).json({ success: false, error: 'groupId and date are required' });
+      return;
+    }
+
+    const dateStr = String(date);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      res.status(400).json({ success: false, error: 'date must be YYYY-MM-DD format' });
+      return;
+    }
+
+    const groups = await groupsRepository.getAll();
+    const group = groups.find(g => g.ID === Number(groupId));
+    if (!group) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const groupKey = (group.Title || '').toLowerCase();
+    const title = `${dateStr} ${group.Title || ''}`.trim();
+
+    const fields: { Title: string; Date: string; CrewLookupId: string; Name?: string; Description?: string } = {
+      Title: title,
+      Date: dateStr,
+      CrewLookupId: String(groupId)
+    };
+    if (typeof name === 'string' && name.trim()) {
+      fields.Name = name.trim();
+    }
+    if (typeof description === 'string' && description.trim()) {
+      fields.Description = description.trim();
+    }
+
+    const id = await sessionsRepository.create(fields);
+    res.json({
+      success: true,
+      data: { id, groupKey, date: dateStr }
+    });
+  } catch (error: any) {
+    console.error('Error creating session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create session',
       message: error.message
     });
   }
@@ -724,11 +803,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
 
-    const [rawProfiles, rawEntries, rawSessions, rawGroups] = await Promise.all([
+    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRegulars] = await Promise.all([
       profilesRepository.getAll(),
       entriesRepository.getAll(),
       sessionsRepository.getAll(),
-      groupsRepository.getAll()
+      groupsRepository.getAll(),
+      regularsRepository.getAll()
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -750,12 +830,21 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     const groupMap = new Map(groups.map(g => [g.ID, g]));
     const groupKeyMap = new Map(groups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
 
+    // Build regulars lookup for this volunteer: crewId → regularId
+    const regularsByCrewId = new Map<number, number>();
+    rawRegulars.forEach(r => {
+      if (safeParseLookupId(r.VolunteerLookupId) === spProfile.ID) {
+        const crewId = safeParseLookupId(r.CrewLookupId);
+        if (crewId !== undefined) regularsByCrewId.set(crewId, r.ID);
+      }
+    });
+
     // Calculate FY hours from entries and build group hours breakdown
     const fy = calculateCurrentFY();
     const lastFYStart = fy.startYear - 1;
     let calculatedThisFY = 0;
     let calculatedLastFY = 0;
-    const groupHoursMap = new Map<string, number>();
+    const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number }>();
 
     profileEntries.forEach(e => {
       const sessionId = safeParseLookupId(e.EventLookupId);
@@ -767,20 +856,55 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
       if (sessionFY === fy.startYear) {
         calculatedThisFY += hours;
-        const groupId = safeParseLookupId(session.CrewLookupId);
-        if (groupId !== undefined) {
-          const group = groupMap.get(groupId);
-          const groupName = group?.Name || group?.Title || 'Unknown';
-          groupHoursMap.set(groupName, (groupHoursMap.get(groupName) || 0) + hours);
-        }
       } else if (sessionFY === lastFYStart) {
         calculatedLastFY += hours;
       }
+
+      const groupId = safeParseLookupId(session.CrewLookupId);
+      if (groupId !== undefined && (sessionFY === fy.startYear || sessionFY === lastFYStart)) {
+        const existing = groupHoursMap.get(groupId);
+        if (existing) {
+          if (sessionFY === fy.startYear) existing.hoursThisFY += hours;
+          else existing.hoursLastFY += hours;
+        } else {
+          const group = groupMap.get(groupId);
+          groupHoursMap.set(groupId, {
+            groupName: group?.Name || group?.Title || 'Unknown',
+            hoursThisFY: sessionFY === fy.startYear ? hours : 0,
+            hoursLastFY: sessionFY === lastFYStart ? hours : 0
+          });
+        }
+      }
     });
 
-    const groupHours = [...groupHoursMap.entries()]
-      .map(([groupName, hours]) => ({ groupName, hours: Math.round(hours * 10) / 10 }))
-      .sort((a, b) => b.hours - a.hours);
+    // Include groups where volunteer is a regular but has no hours
+    regularsByCrewId.forEach((_regularId, crewId) => {
+      if (!groupHoursMap.has(crewId)) {
+        const group = groupMap.get(crewId);
+        if (group) {
+          groupHoursMap.set(crewId, {
+            groupName: group.Name || group.Title || 'Unknown',
+            hoursThisFY: 0,
+            hoursLastFY: 0
+          });
+        }
+      }
+    });
+
+    const groupHours: ProfileGroupHours[] = [...groupHoursMap.entries()]
+      .map(([groupId, { groupName, hoursThisFY, hoursLastFY }]) => {
+        const regularId = regularsByCrewId.get(groupId);
+        return {
+          groupId,
+          groupKey: groupKeyMap.get(groupId) || '',
+          groupName,
+          hoursThisFY: Math.round(hoursThisFY * 10) / 10,
+          hoursLastFY: Math.round(hoursLastFY * 10) / 10,
+          isRegular: regularId !== undefined,
+          regularId
+        };
+      })
+      .sort((a, b) => (b.hoursThisFY + b.hoursLastFY) - (a.hoursThisFY + a.hoursLastFY));
 
     // Build entry responses sorted by date desc
     const entryResponses: ProfileEntryResponse[] = profileEntries
@@ -918,6 +1042,83 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete profile',
+      message: error.message
+    });
+  }
+});
+
+router.post('/profiles/:slug/regulars', async (req: Request, res: Response) => {
+  try {
+    const slug = String(req.params.slug).toLowerCase();
+    const { groupId } = req.body;
+
+    if (!groupId || typeof groupId !== 'number') {
+      res.status(400).json({ success: false, error: 'groupId is required and must be a number' });
+      return;
+    }
+
+    const [rawProfiles, rawGroups, rawRegulars] = await Promise.all([
+      profilesRepository.getAll(),
+      groupsRepository.getAll(),
+      regularsRepository.getAll()
+    ]);
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    if (!spProfile) {
+      res.status(404).json({ success: false, error: 'Profile not found' });
+      return;
+    }
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const group = groups.find(g => g.ID === groupId);
+    if (!group) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    // Check for existing regular to prevent duplicates
+    const existing = rawRegulars.find(
+      r => safeParseLookupId(r.VolunteerLookupId) === spProfile.ID
+        && safeParseLookupId(r.CrewLookupId) === groupId
+    );
+    if (existing) {
+      res.json({ success: true, data: { id: existing.ID } } as ApiResponse<{ id: number }>);
+      return;
+    }
+
+    const id = await regularsRepository.create({
+      VolunteerLookupId: String(spProfile.ID),
+      CrewLookupId: String(group.ID),
+      Title: spProfile.Title || ''
+    });
+
+    res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
+  } catch (error: any) {
+    console.error('Error creating regular:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create regular',
+      message: error.message
+    });
+  }
+});
+
+router.delete('/regulars/:id', async (req: Request, res: Response) => {
+  try {
+    const regularId = parseInt(String(req.params.id), 10);
+    if (isNaN(regularId)) {
+      res.status(400).json({ success: false, error: 'Invalid regular ID' });
+      return;
+    }
+
+    await regularsRepository.delete(regularId);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting regular:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete regular',
       message: error.message
     });
   }

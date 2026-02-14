@@ -9,35 +9,50 @@
         body { min-height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 
-        .group-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        .group-detail h1 { color: var(--green); font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.3; }
-        .group-detail .description { color: var(--text-mid); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-wrap; }
+        .group-detail { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        .group-detail .description { color: var(--text-mid); font-size: 1.05rem; line-height: 1.7; white-space: pre-wrap; }
 
-        .eventbrite-button {
-            display: inline-flex; background-color: var(--green); color: white;
-            padding: 1rem 2rem; border-radius: var(--radius); text-decoration: none;
-            font-weight: 600; font-size: 1.1rem; transition: background 0.2s;
-            min-height: 52px; align-items: center; justify-content: center; gap: 0.5rem;
-        }
-        .eventbrite-button:hover { background-color: var(--green-dark); }
-
-        .stats-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-        .stats-section .fy-label { color: var(--text-faint); font-size: 0.9rem; margin-bottom: 0.75rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
         .stat-item { text-align: center; padding: 0.75rem 0.5rem; background: var(--green-bg); border-radius: var(--radius); }
         .stat-item .stat-number { font-size: 1.8rem; font-weight: bold; color: var(--green); line-height: 1; }
         .stat-item .stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 0.25rem; }
 
-        .regulars-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-        .regulars-section h2 { color: var(--green); font-size: 1.3rem; margin-bottom: 1rem; }
+        .regulars-section { background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        .regulars-section h2 { color: var(--green); font-size: 1.1rem; margin-bottom: 0.75rem; }
         .regulars-list { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; }
         .regulars-list li { background: var(--green-tint); padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.95rem; color: var(--text); }
+        .regulars-list a { color: inherit; text-decoration: none; }
+        .regulars-list a:hover { text-decoration: underline; color: var(--green); }
 
-        .sessions-heading { color: var(--green); font-size: 1.3rem; margin-bottom: 1rem; }
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 90%; max-width: 400px;
+        }
+        .modal h3 { color: var(--green); margin-bottom: 1rem; font-size: 1.1rem; }
+        .modal-field { margin-bottom: 1rem; }
+        .modal-field label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.3rem; }
+        .modal-field input[type="text"], .modal-field input[type="date"], .modal-field textarea, .modal-field select {
+            width: 100%; font-size: 1rem; padding: 0.6rem 0.75rem;
+            border: 2px solid var(--border-mid); border-radius: 6px; font-family: inherit;
+        }
+        .modal-field textarea { min-height: 60px; resize: vertical; }
+        .modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus { outline: none; border-color: var(--green); }
+        .modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; border: none; min-height: 40px;
+        }
+        .modal-btn-cancel { background: var(--bg); color: var(--text-light); }
+        .modal-btn-confirm { background: var(--green); color: white; }
+        .modal-btn-confirm:hover { background: var(--green-dark); }
 
         @media (max-width: 600px) {
-            .group-detail { padding: 1.5rem; }
-            .group-detail h1 { font-size: 1.75rem; }
+            .group-detail { padding: 1.25rem; }
             .stat-item .stat-number { font-size: 1.5rem; }
         }
     </style>
@@ -52,108 +67,331 @@
         </div>
     </div>
 
+    <!-- Edit Group Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h3>Edit Group</h3>
+            <div class="modal-field">
+                <label for="editName">Display Name</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="modal-field">
+                <label for="editDescription">Description</label>
+                <textarea id="editDescription"></textarea>
+            </div>
+            <div class="modal-field">
+                <label for="editEventbriteId">Eventbrite Series ID</label>
+                <input type="text" id="editEventbriteId" placeholder="e.g. 123456789">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveGroupEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Session Modal -->
+    <div class="modal-overlay" id="newSessionModal">
+        <div class="modal">
+            <h3>New Session</h3>
+            <div class="modal-field">
+                <label for="newSessionGroup">Group</label>
+                <select id="newSessionGroup" disabled></select>
+            </div>
+            <div class="modal-field">
+                <label for="newSessionDate">Date</label>
+                <input type="date" id="newSessionDate">
+            </div>
+            <div class="modal-field">
+                <label for="newSessionName">Name (optional)</label>
+                <input type="text" id="newSessionName">
+            </div>
+            <div class="modal-field">
+                <label for="newSessionDescription">Description (optional)</label>
+                <textarea id="newSessionDescription"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeNewSessionModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmNewSessionBtn" onclick="saveNewSession()">Create</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Extract group key from URL path: /groups/:key/detail.html
         const pathParts = window.location.pathname.split('/');
         const groupKey = pathParts[2];
+
+        let currentGroup = null;
+        let allSessions = [];
+        let currentFilter = 'thisFy';
+
+        function toggleDropdown(menuId) {
+            const menu = document.getElementById(menuId);
+            const wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            if (!wasOpen) menu.classList.add('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            }
+        });
+
+        function filterByFY(filter) {
+            currentFilter = filter;
+            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY' };
+            document.getElementById('filterLabel').textContent = labels[filter];
+            ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
+            document.getElementById(btnMap[filter]).classList.add('active');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            displayStats();
+            displaySessions();
+        }
+
+        function getFilteredSessions() {
+            const thisFYKey = getFYKey(0);
+            const lastFYKey = getFYKey(-1);
+            const nextDate = findNextSessionDate(allSessions);
+
+            if (currentFilter === 'thisFy') {
+                return allSessions.filter(s => {
+                    if (s.financialYear !== thisFYKey) return false;
+                    if (!nextDate || !s.date) return true;
+                    const d = new Date(s.date);
+                    d.setHours(0, 0, 0, 0);
+                    return d <= nextDate;
+                });
+            } else if (currentFilter === 'lastFy') {
+                return allSessions.filter(s => s.financialYear === lastFYKey);
+            }
+            return allSessions;
+        }
+
+        function displayStats() {
+            const statsContainer = document.getElementById('statsContainer');
+            if (!statsContainer || !currentGroup) return;
+
+            const filtered = getFilteredSessions();
+            const sessions = filtered.length;
+            const hours = Math.round(filtered.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10;
+            const registrations = filtered.reduce((sum, s) => sum + (s.registrations || 0), 0);
+
+            statsContainer.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">${sessions}</div>
+                        <div class="stat-label">Sessions</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${hours}</div>
+                        <div class="stat-label">Hours</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${registrations}</div>
+                        <div class="stat-label">Entries</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displaySessions() {
+            const container = document.getElementById('sessionsContainer');
+            if (!container) return;
+            const filtered = getFilteredSessions();
+            renderSessionList(container, filtered, { showGroup: false });
+        }
+
+        // Edit modal
+        function openEditModal() {
+            if (!currentGroup) return;
+            document.getElementById('editName').value = currentGroup.displayName || '';
+            document.getElementById('editDescription').value = currentGroup.description || '';
+            document.getElementById('editEventbriteId').value = currentGroup.eventbriteSeriesId || '';
+            document.getElementById('editModal').classList.add('visible');
+            document.getElementById('editName').focus();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('visible');
+        }
+
+        async function saveGroupEdit() {
+            const displayName = document.getElementById('editName').value.trim();
+            const description = document.getElementById('editDescription').value;
+            const eventbriteSeriesId = document.getElementById('editEventbriteId').value.trim();
+
+            const btn = document.getElementById('confirmEditBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const res = await apiFetch(`/api/groups/${encodeURIComponent(groupKey)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ displayName, description, eventbriteSeriesId })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Save failed');
+                }
+                closeEditModal();
+                loadGroupDetail();
+            } catch (error) {
+                console.error('Error saving group:', error);
+                alert(error.message || 'Failed to save group.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+            }
+        }
+
+        // New session modal
+        function openNewSessionModal() {
+            const select = document.getElementById('newSessionGroup');
+            select.innerHTML = `<option value="${currentGroup.id}">${escapeHtml(currentGroup.displayName || groupKey)}</option>`;
+            document.getElementById('newSessionDate').value = '';
+            document.getElementById('newSessionName').value = '';
+            document.getElementById('newSessionDescription').value = '';
+            document.getElementById('newSessionModal').classList.add('visible');
+            document.getElementById('newSessionDate').focus();
+        }
+
+        function closeNewSessionModal() {
+            document.getElementById('newSessionModal').classList.remove('visible');
+        }
+
+        async function saveNewSession() {
+            const date = document.getElementById('newSessionDate').value;
+            const name = document.getElementById('newSessionName').value.trim();
+            const description = document.getElementById('newSessionDescription').value.trim();
+
+            if (!date) {
+                document.getElementById('newSessionDate').focus();
+                return;
+            }
+
+            const btn = document.getElementById('confirmNewSessionBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const res = await apiFetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupId: currentGroup.id, date, name: name || undefined, description: description || undefined })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to create session');
+                }
+
+                const result = await res.json();
+                closeNewSessionModal();
+                window.location.href = `/sessions/${encodeURIComponent(result.data.groupKey)}/${result.data.date}/details.html`;
+            } catch (error) {
+                console.error('Error creating session:', error);
+                alert(error.message || 'Failed to create session.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create';
+            }
+        }
 
         async function loadGroupDetail() {
             const contentDiv = document.getElementById('content');
 
             if (!groupKey) {
-                contentDiv.innerHTML = `
-                    <div class="empty-state">
-                        <p>No group specified</p>
-                        <a href="/groups.html" class="back-button">Back to Groups</a>
-                    </div>
-                `;
+                contentDiv.innerHTML = '<div class="empty-state"><p>No group specified</p></div>';
                 return;
             }
 
             try {
                 const response = await fetch(`/api/groups/${encodeURIComponent(groupKey)}`);
-
-                if (!response.ok) {
-                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
-                }
-
+                if (!response.ok) throw new Error(`API returned ${response.status}: ${response.statusText}`);
                 const result = await response.json();
-
-                if (!result.success) {
-                    throw new Error(result.error || 'Failed to fetch group');
-                }
+                if (!result.success) throw new Error(result.error || 'Failed to fetch group');
 
                 const group = result.data;
+                currentGroup = group;
+                allSessions = group.sessions || [];
                 document.title = `${group.displayName} - DTV Tracker`;
 
-                const eventbriteButton = group.eventbriteSeriesId
-                    ? `<a href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" class="eventbrite-button">
-                            View on Eventbrite &rarr;
+                const eventbriteBtn = group.eventbriteSeriesId
+                    ? `<a class="btn-action" href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" title="Eventbrite" style="background:#F05537;">
+                            <svg viewBox="30 36 190 192" fill="white"><path d="M117.475323,82.7290398 C136.772428,78.4407943 156.069532,86.3025777 166.790146,101.311437 L81.5017079,120.608542 C84.3605382,102.26438 98.1782181,87.0172853 117.475323,82.7290398 Z M167.266618,153.48509 C160.596014,163.252761 150.351872,170.161601 138.678314,172.782195 C119.38121,177.070441 99.8458692,169.208657 89.1252554,153.961562 L174.651929,134.664457 L188.469609,131.567391 L215.152026,125.611495 C214.91379,119.893834 214.199082,114.176173 213.007903,108.696749 C202.287289,62.7172275 155.354825,33.8906884 108.42236,44.6113021 C61.4898956,55.3319159 32.1868848,101.073201 43.1457344,147.290958 C54.1045839,193.508715 100.798813,222.097018 147.731277,211.376404 C175.366637,205.182272 196.807864,186.599875 207.766714,163.014525 L167.266618,153.48509 Z"/></svg>
                        </a>`
                     : '';
 
-                const stats = group.stats;
-                const statsSection = `
-                    <div class="stats-section">
-                        <div class="fy-label">FY ${group.financialYear}</div>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-number">${stats.sessions}</div>
-                                <div class="stat-label">Sessions</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number">${stats.hours}</div>
-                                <div class="stat-label">Hours</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number">${stats.newVolunteers}</div>
-                                <div class="stat-label">New</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number">${stats.children}</div>
-                                <div class="stat-label">Children</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number">${stats.totalVolunteers}</div>
-                                <div class="stat-label">Volunteers</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const editBtn = `
+                    <button class="btn-action" onclick="openEditModal()" title="Edit group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            <path d="m15 5 4 4"/>
+                        </svg>
+                    </button>`;
 
                 const regulars = group.regulars || [];
                 const regularsSection = regulars.length > 0
                     ? `<div class="regulars-section">
                             <h2>Regulars (${regulars.length})</h2>
                             <ul class="regulars-list">
-                                ${regulars.map(name => `<li>${escapeHtml(name)}</li>`).join('')}
+                                ${regulars.map(r => `<li><a href="/profiles/${encodeURIComponent(r.slug)}/details.html">${escapeHtml(r.name)}</a></li>`).join('')}
                             </ul>
                        </div>`
                     : '';
 
-                // Combine next + recent into a single flat list
-                const allSessions = [];
-                if (group.nextSession) allSessions.push(group.nextSession);
-                if (group.recentSessions) allSessions.push(...group.recentSessions);
-
                 contentDiv.innerHTML = `
                     <div class="group-detail">
-                        <h1>${escapeHtml(group.displayName)}</h1>
-                        ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
-                        ${eventbriteButton}
-                        ${statsSection}
-                        ${regularsSection}
+                        <div class="title-row" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
+                            <h2 style="font-size:1.3rem; color:var(--green); margin:0;">${escapeHtml(group.displayName)}</h2>
+                            <div style="display:flex; gap:0.5rem;">
+                                <div class="dropdown">
+                                    <button class="dropdown-btn" onclick="toggleDropdown('filterMenu')">
+                                        <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
+                                        <span id="filterLabel">This FY</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="filterMenu">
+                                        <button id="btnAll" onclick="filterByFY('all')">All</button>
+                                        <button id="btnLastFY" onclick="filterByFY('lastFy')">Last FY</button>
+                                        <button id="btnThisFY" class="active" onclick="filterByFY('thisFy')">This FY</button>
+                                    </div>
+                                </div>
+                                ${eventbriteBtn}
+                                ${editBtn}
+                            </div>
+                        </div>
+                        ${group.description ? `<div class="description" style="margin-bottom:1.25rem;">${escapeHtml(group.description)}</div>` : ''}
+                        <div id="statsContainer"></div>
                     </div>
-                    ${allSessions.length > 0 ? '<h2 class="sessions-heading">Sessions</h2><div id="sessionsContainer"></div>' : ''}
+
+                    ${regularsSection}
+
+                    <div class="filter-bar">
+                        <div class="title-row">
+                            <div class="title-left">
+                                <h2>Sessions</h2>
+                            </div>
+                            <button class="btn-action" onclick="openNewSessionModal()">
+                                <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="sessionsContainer"></div>
                 `;
 
                 clampDescriptions(contentDiv);
-
-                // Render sessions using the shared component
-                if (allSessions.length > 0) {
-                    const container = document.getElementById('sessionsContainer');
-                    renderSessionList(container, allSessions, { showGroup: false });
+                const ebBtn = contentDiv.querySelector('.btn-action[title="Eventbrite"]');
+                if (ebBtn) {
+                    ebBtn.addEventListener('mouseover', () => ebBtn.style.background = '#D94425');
+                    ebBtn.addEventListener('mouseout', () => ebBtn.style.background = '#F05537');
                 }
+                displayStats();
+                displaySessions();
 
             } catch (error) {
                 console.error('Error loading group detail:', error);

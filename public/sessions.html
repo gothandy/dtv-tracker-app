@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sessions - DTV Tracker</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 90%; max-width: 400px;
+        }
+        .modal h3 { color: var(--green); margin-bottom: 1rem; font-size: 1.1rem; }
+        .modal-field { margin-bottom: 1rem; }
+        .modal-field label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.3rem; }
+        .modal-field input[type="text"], .modal-field input[type="date"], .modal-field textarea, .modal-field select {
+            width: 100%; font-size: 1rem; padding: 0.6rem 0.75rem;
+            border: 2px solid var(--border-mid); border-radius: 6px; font-family: inherit;
+        }
+        .modal-field textarea { min-height: 60px; resize: vertical; }
+        .modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus { outline: none; border-color: var(--green); }
+        .modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; border: none; min-height: 40px;
+        }
+        .modal-btn-cancel { background: var(--bg); color: var(--text-light); }
+        .modal-btn-confirm { background: var(--green); color: white; }
+        .modal-btn-confirm:hover { background: var(--green-dark); }
+    </style>
     <script src="/js/common.js"></script>
 </head>
 <body>
@@ -17,11 +45,22 @@
                     <h2>Sessions</h2>
                     <div class="count" id="sessionCount">-</div>
                 </div>
-                <div class="filter-buttons">
-                    <button class="filter-btn" id="btnPast" onclick="filterSessions('past')">Past</button>
-                    <button class="filter-btn" id="btnLastFY" onclick="filterSessions('lastFy')">Last FY</button>
-                    <button class="filter-btn active" id="btnThisFY" onclick="filterSessions('thisFy')">This FY</button>
-                    <button class="filter-btn" id="btnFuture" onclick="filterSessions('future')">Future</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <div class="dropdown">
+                        <button class="dropdown-btn" onclick="toggleDropdown('filterMenu')">
+                            <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
+                            <span id="filterLabel">This FY</span>
+                        </button>
+                        <div class="dropdown-menu" id="filterMenu">
+                            <button id="btnPast" onclick="filterSessions('past')">Past</button>
+                            <button id="btnLastFY" onclick="filterSessions('lastFy')">Last FY</button>
+                            <button id="btnThisFY" class="active" onclick="filterSessions('thisFy')">This FY</button>
+                            <button id="btnFuture" onclick="filterSessions('future')">Future</button>
+                        </div>
+                    </div>
+                    <button class="btn-action" onclick="openNewSessionModal()">
+                        <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -31,8 +70,35 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="newSessionModal">
+        <div class="modal">
+            <h3>New Session</h3>
+            <div class="modal-field">
+                <label for="newGroup">Group</label>
+                <select id="newGroup"></select>
+            </div>
+            <div class="modal-field">
+                <label for="newDate">Date</label>
+                <input type="date" id="newDate">
+            </div>
+            <div class="modal-field">
+                <label for="newName">Name (optional)</label>
+                <input type="text" id="newName">
+            </div>
+            <div class="modal-field">
+                <label for="newDescription">Description (optional)</label>
+                <textarea id="newDescription"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeNewSessionModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmNewBtn" onclick="saveNewSession()">Create</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let allSessions = [];
+        let allGroups = [];
         let currentFilter = 'thisFy';
 
         function getLastFYStart() {
@@ -40,13 +106,29 @@
             return new Date(Date.UTC(lastFYStartYear, 3, 1));
         }
 
+        function toggleDropdown(menuId) {
+            const menu = document.getElementById(menuId);
+            const wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            if (!wasOpen) menu.classList.add('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            }
+        });
+
         function filterSessions(filter) {
             currentFilter = filter;
+            const labels = { past: 'Past', lastFy: 'Last FY', thisFy: 'This FY', future: 'Future' };
+            document.getElementById('filterLabel').textContent = labels[filter];
             ['btnPast', 'btnLastFY', 'btnThisFY', 'btnFuture'].forEach(id => {
                 document.getElementById(id).classList.remove('active');
             });
             const btnMap = { past: 'btnPast', lastFy: 'btnLastFY', thisFy: 'btnThisFY', future: 'btnFuture' };
             document.getElementById(btnMap[filter]).classList.add('active');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             displaySessions(allSessions);
         }
 
@@ -115,7 +197,78 @@
             }
         }
 
+        async function loadGroups() {
+            try {
+                const response = await fetch('/api/groups');
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data.success) return;
+                allGroups = data.data;
+            } catch (e) {
+                console.error('Error loading groups:', e);
+            }
+        }
+
+        function openNewSessionModal() {
+            const select = document.getElementById('newGroup');
+            select.innerHTML = '<option value="">Select a group...</option>' +
+                allGroups.map(g => `<option value="${g.id}">${escapeHtml(g.displayName || g.key)}</option>`).join('');
+            document.getElementById('newDate').value = '';
+            document.getElementById('newName').value = '';
+            document.getElementById('newDescription').value = '';
+            document.getElementById('newSessionModal').classList.add('visible');
+            select.focus();
+        }
+
+        function closeNewSessionModal() {
+            document.getElementById('newSessionModal').classList.remove('visible');
+        }
+
+        async function saveNewSession() {
+            const groupId = document.getElementById('newGroup').value;
+            const date = document.getElementById('newDate').value;
+            const name = document.getElementById('newName').value.trim();
+            const description = document.getElementById('newDescription').value.trim();
+
+            if (!groupId) {
+                document.getElementById('newGroup').focus();
+                return;
+            }
+            if (!date) {
+                document.getElementById('newDate').focus();
+                return;
+            }
+
+            const btn = document.getElementById('confirmNewBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const res = await apiFetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupId: Number(groupId), date, name: name || undefined, description: description || undefined })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to create session');
+                }
+
+                const result = await res.json();
+                closeNewSessionModal();
+                window.location.href = `/sessions/${encodeURIComponent(result.data.groupKey)}/${result.data.date}/details.html`;
+            } catch (error) {
+                console.error('Error creating session:', error);
+                alert(error.message || 'Failed to create session.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create';
+            }
+        }
+
         loadSessions();
+        loadGroups();
     </script>
 </body>
 </html>

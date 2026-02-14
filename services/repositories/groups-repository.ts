@@ -20,6 +20,11 @@ class GroupsRepository {
     return id;
   }
 
+  async updateFields(groupId: number, fields: Partial<Pick<SharePointGroup, 'Name' | 'Description' | 'EventbriteSeriesID'>>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, groupId, fields);
+    sharePointClient.cache.del('groups');
+  }
+
   async getAll(): Promise<SharePointGroup[]> {
     const cacheKey = 'groups';
     const cached = sharePointClient.cache.get(cacheKey);

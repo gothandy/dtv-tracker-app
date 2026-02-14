@@ -5,6 +5,11 @@
  * independent of SharePoint column names and internal domain types.
  */
 
+export interface GroupRegularResponse {
+  name: string;
+  slug: string;
+}
+
 export interface GroupResponse {
   id: number;
   key: string;
@@ -12,7 +17,7 @@ export interface GroupResponse {
   description?: string;
   eventbriteSeriesId?: string;
   regularsCount: number;
-  regulars: string[];
+  regulars: GroupRegularResponse[];
 }
 
 export interface SessionResponse {
@@ -53,8 +58,13 @@ export interface ProfileEntryResponse {
 }
 
 export interface ProfileGroupHours {
+  groupId: number;
+  groupKey: string;
   groupName: string;
-  hours: number;
+  hoursThisFY: number;
+  hoursLastFY: number;
+  isRegular: boolean;
+  regularId?: number;
 }
 
 export interface ProfileDetailResponse {
@@ -75,7 +85,7 @@ export interface GroupDetailResponse {
   displayName?: string;
   description?: string;
   eventbriteSeriesId?: string;
-  regulars: string[];
+  regulars: GroupRegularResponse[];
   financialYear: string;
   stats: {
     sessions: number;
@@ -84,8 +94,7 @@ export interface GroupDetailResponse {
     children: number;
     totalVolunteers: number;
   };
-  nextSession?: SessionResponse;
-  recentSessions: SessionResponse[];
+  sessions: SessionResponse[];
 }
 
 export interface EntryResponse {
