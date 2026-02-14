@@ -735,6 +735,66 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
   }
 });
 
+router.post('/sessions/:group/:date/add-regulars', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+
+    const [rawGroups, rawSessions, rawEntries, rawRegulars] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      regularsRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => {
+      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      return s.Date.substring(0, 10) === dateParam;
+    });
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const sessionEntries = entries.filter(e => safeParseLookupId(e.EventLookupId) === spSession.ID);
+    const existingVolunteerIds = new Set(
+      sessionEntries.map(e => safeParseLookupId(e.VolunteerLookupId)).filter(id => id !== undefined)
+    );
+
+    const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r.CrewLookupId) === spGroup.ID);
+    const toAdd = groupRegulars.filter(r => {
+      const volunteerId = safeParseLookupId(r.VolunteerLookupId);
+      return volunteerId !== undefined && !existingVolunteerIds.has(volunteerId);
+    });
+
+    for (const regular of toAdd) {
+      await entriesRepository.create({
+        EventLookupId: String(spSession.ID),
+        VolunteerLookupId: String(safeParseLookupId(regular.VolunteerLookupId)),
+        Notes: '#Regular'
+      });
+    }
+
+    res.json({ success: true, data: { added: toAdd.length } } as ApiResponse<{ added: number }>);
+  } catch (error: any) {
+    console.error('Error adding regulars:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add regulars',
+      message: error.message
+    });
+  }
+});
+
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
     const [rawProfiles, rawEntries, rawSessions] = await Promise.all([

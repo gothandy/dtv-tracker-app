@@ -9,22 +9,14 @@
         body { min-height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 
-        .session-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; position: relative; }
+        .session-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
         .session-detail.next-session { background: var(--green-light); border-left: 4px solid var(--green); }
         .session-detail .countdown { font-size: 0.95rem; color: var(--green); font-weight: 600; margin-bottom: 0.75rem; }
-        .session-detail h1 { color: var(--green); font-size: 2rem; margin-bottom: 0.5rem; line-height: 1.3; }
+        .session-title-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+        .session-title-row h1 { color: var(--green); font-size: 2rem; margin: 0; line-height: 1.3; }
         .session-detail .date { color: var(--text-mid); font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
         .session-detail .group-name { color: var(--text-light); font-size: 1rem; margin-bottom: 1rem; }
         .session-detail .description { color: var(--text-mid); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-wrap; }
-
-        .btn-edit {
-            position: absolute; top: 1.25rem; right: 1.25rem;
-            width: 40px; height: 40px; border: none; border-radius: var(--radius);
-            background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
-        }
-        .btn-edit:hover { background: rgba(0,0,0,0.08); }
-        .btn-edit svg { width: 22px; height: 22px; }
 
         .modal.modal-wide { max-width: 480px; }
         .modal-field { margin-bottom: 1rem; }
@@ -114,7 +106,7 @@
 
         @media (max-width: 600px) {
             .session-detail { padding: 1.5rem; }
-            .session-detail h1 { font-size: 1.75rem; }
+            .session-title-row h1 { font-size: 1.5rem; }
             .stat-item .stat-number { font-size: 1.5rem; }
             .entry-card { flex-wrap: wrap; gap: 0.5rem; }
             .entry-meta { width: 100%; justify-content: flex-start; }
@@ -266,6 +258,32 @@
             }
         }
 
+        async function addRegulars() {
+            const btn = document.getElementById('addRegularsBtn');
+            btn.disabled = true;
+            try {
+                const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/add-regulars`, {
+                    method: 'POST'
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to add regulars');
+                }
+                const result = await res.json();
+                const added = result.data.added;
+                if (added > 0) {
+                    loadSessionDetail();
+                } else {
+                    alert('All regulars are already registered.');
+                }
+            } catch (error) {
+                console.error('Error adding regulars:', error);
+                alert(error.message || 'Failed to add regulars.');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
         async function loadSessionDetail() {
             const contentDiv = document.getElementById('content');
 
@@ -323,19 +341,17 @@
                         const href = entry.volunteerSlug
                             ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/edit.html`
                             : '#';
-                        const checkboxHtml = countdown ? `
-                                <label class="checkin-toggle">
-                                    <input type="checkbox" ${entry.checkedIn ? 'checked' : ''}
-                                           onchange="toggleCheckin(${entry.id}, this)">
-                                    <span class="checkin-box"></span>
-                                </label>` : '';
                         const metaItems = [
                             entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : '',
                             entry.hours ? `<span class="entry-hours"><strong>Hours:</strong> ${entry.hours}</span>` : ''
                         ].filter(Boolean).join('');
                         return `
                             <div class="entry-row">
-                                ${checkboxHtml}
+                                <label class="checkin-toggle">
+                                    <input type="checkbox" ${entry.checkedIn ? 'checked' : ''}
+                                           onchange="toggleCheckin(${entry.id}, this)">
+                                    <span class="checkin-box"></span>
+                                </label>
                                 <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
                                     <div class="entry-name-row" style="flex:1">
                                         <div class="entry-name">
@@ -352,25 +368,30 @@
 
                 contentDiv.innerHTML = `
                     <div class="session-detail${countdown ? ' next-session' : ''}">
-                        <button class="btn-edit" onclick="openEditModal()" title="Edit session">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                                <path d="m15 5 4 4"/>
-                            </svg>
-                        </button>
                         ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
                         <div class="date">${formatDate(session.date)}</div>
-                        <h1>${escapeHtml(session.displayName || 'Session')}</h1>
+                        <div class="session-title-row">
+                            <h1>${escapeHtml(session.displayName || 'Session')}</h1>
+                            <button class="btn-action" onclick="openEditModal()" title="Edit session">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                    <path d="m15 5 4 4"/>
+                                </svg>
+                            </button>
+                        </div>
                         ${session.groupName ? `<div class="group-name">${escapeHtml(session.groupName)}</div>` : ''}
                         ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                         ${statsSection}
                     </div>
                     <div class="entries-header">
                         <h2 class="entries-heading">Entries (${entries.length})</h2>
-                        ${countdown ? `<div class="header-buttons">
+                        <div class="header-buttons">
+                            <button class="btn-action" id="addRegularsBtn" onclick="addRegulars()">Regulars</button>
                             <button class="btn-action" onclick="openHoursModal()">Set Hours</button>
-                            <a class="btn-action" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">+ Add New</a>
-                        </div>` : ''}
+                            <a class="btn-action" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
+                                <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                            </a>
+                        </div>
                     </div>
                     <div class="entries-list">
                         ${entriesHtml}
