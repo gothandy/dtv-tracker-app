@@ -453,6 +453,13 @@ a.session-card { text-decoration: none; color: inherit; display: block; }
 /* === Mobile === */
 @media (max-width: 600px) {
     .container { padding: 1rem; }
+    .site-header { padding: 1.25rem; }
+    .site-header h1 { font-size: 2rem; }
+    .header-top { flex-direction: column-reverse; }
+    .user-info { align-self: flex-end; margin-bottom: 0.25rem; }
+    .site-header.compact { padding: 1rem 1.25rem; }
+    .site-header.compact h1 { font-size: 1.3rem; margin-bottom: 0.15rem; }
+    .site-header.compact p { font-size: 0.85rem; }
     .filter-bar .title-row { flex-wrap: wrap; }
     .filter-bar .filter-row { flex-wrap: wrap; }
     .filter-buttons { width: 100%; }
