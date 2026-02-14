@@ -14,20 +14,31 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-09
+**Last Updated**: 2026-02-14
 
-Working application with:
+Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
-- TypeScript API routes with clean domain naming ([routes/api.ts](routes/api.ts))
+- Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
+- TypeScript API routes with clean domain naming ([routes/api.ts](routes/api.ts)) — 25 endpoints
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
-- Dashboard with FY stats ([public/index.html](public/index.html))
-- Groups listing and detail pages ([public/groups.html](public/groups.html))
-- Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
+- Auth middleware protecting all API and page routes ([middleware/require-auth.ts](middleware/require-auth.ts))
 - Server-side caching with 5-minute TTL
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
+
+### Pages
+- Dashboard with FY stats, progress bar, next session card ([public/index.html](public/index.html))
+- Groups listing with FY filter ([public/groups.html](public/groups.html))
+- Group detail with stats, regulars, sessions, edit/create modals ([public/group-detail.html](public/group-detail.html))
+- Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
+- Session detail with entries, check-in, set hours, add regulars ([public/session-detail.html](public/session-detail.html))
+- Volunteers listing with FY filter, sort, group filter, search ([public/volunteers.html](public/volunteers.html))
+- Profile detail with FY stats, group hours, entries, regulars ([public/profile-detail.html](public/profile-detail.html))
+- Entry edit page with tag buttons, auto-fields, delete ([public/entry-detail.html](public/entry-detail.html))
+- Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
+- Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
 
 ## Data Model
 
@@ -152,20 +163,25 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 
 ```
 dtv-tracker-app/
-├── app.js                          # Express server entry point
+├── app.js                          # Express server entry point (CommonJS)
 ├── package.json
 ├── tsconfig.json                   # TypeScript configuration
 ├── CLAUDE.md                       # This file - project context for Claude
 ├── docs/
 │   ├── progress.md                # Development session notes
 │   ├── sharepoint-schema.md       # SharePoint list schemas and field names
-│   └── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
+│   ├── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
+│   ├── technical-debt.md          # Performance and optimization tracking
+│   ├── sharepoint-refactoring.md  # Legacy field cleanup tracking
+│   └── requirements.md            # Mobile & field usage requirements
 ├── types/
 │   ├── api-responses.ts           # API response types (HTTP contract)
 │   ├── group.ts                   # Group entity types (SharePoint + domain)
 │   ├── session.ts                 # Session entity types
-│   └── sharepoint.ts             # Profile, Entry, Regular types + utilities
+│   ├── sharepoint.ts              # Profile, Entry, Regular types + utilities
+│   └── express-session.d.ts       # Session type augmentation for auth
 ├── services/
+│   ├── auth-config.ts             # MSAL client configuration
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   └── repositories/
@@ -175,30 +191,51 @@ dtv-tracker-app/
 │       ├── entries-repository.ts
 │       └── regulars-repository.ts
 ├── routes/
-│   └── api.ts                     # Express API route handlers (TypeScript)
+│   ├── api.ts                     # Express API route handlers (25 endpoints)
+│   └── auth.ts                    # Authentication routes (login, callback, logout)
+├── middleware/
+│   └── require-auth.ts            # Auth guard middleware
 ├── public/
 │   ├── index.html                 # Dashboard homepage
 │   ├── groups.html                # Groups listing with FY filter
-│   ├── group-detail.html          # Individual group detail page
+│   ├── group-detail.html          # Group detail with stats and regulars
 │   ├── sessions.html              # Sessions listing with FY filter
+│   ├── session-detail.html        # Session detail with entries and check-in
+│   ├── volunteers.html            # Volunteers listing with filters and search
+│   ├── profile-detail.html        # Profile detail with FY stats and entries
+│   ├── entry-detail.html          # Entry edit page with tag buttons
+│   ├── add-entry.html             # Add entry (register volunteer to session)
+│   ├── css/
+│   │   └── styles.css             # Global stylesheet
 │   └── js/
-│       └── common.js              # Shared header/footer components
+│       └── common.js              # Shared header, footer, utilities
 └── test/
     ├── test-auth.js               # Authentication verification
     └── test-*.js                  # Various data/integration tests
 ```
 
-## Planned Features
+## Implemented Features
 
-The application should eventually support:
 - [x] View all volunteer crews/groups
 - [x] View upcoming sessions/events
-- [ ] Volunteer registration for sessions
-- [ ] Check-in volunteers at events
-- [ ] Record volunteer hours
-- [ ] View volunteer profiles and hours history
-- [ ] Report generation (hours by volunteer, by crew, by financial year)
+- [x] Create and edit groups, sessions, profiles
+- [x] Volunteer registration for sessions (add entry)
+- [x] Bulk add regulars to a session
+- [x] Check-in volunteers at events (checkbox per entry)
+- [x] Record volunteer hours (per-entry and bulk set hours)
+- [x] View volunteer profiles and hours history
+- [x] FY filtering on all list pages (This FY / Last FY / All)
+- [x] Group-filtered volunteer listing
+- [x] Regulars management (add/remove per group)
+- [x] Member status tracking (15h threshold with badge + highlight)
+- [x] CSV export of sessions
+- [x] Microsoft authentication (Entra ID OAuth)
+- [x] Mobile-first responsive design (44px touch targets)
+
+## Planned Features
+
 - [ ] Eventbrite sync for automatic registration import
+- [ ] Report generation (custom date ranges, exportable)
 
 ## Running the Application
 
@@ -229,4 +266,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-11*
+*Last Updated: 2026-02-14*

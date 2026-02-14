@@ -680,3 +680,97 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 ---
 
 *Last Updated: 2026-02-11*
+
+---
+
+## Session: 2026-02-12 to 2026-02-14
+
+### Completed Tasks
+
+#### 1. Profile Detail Page ✓
+- Created [public/profile-detail.html](../public/profile-detail.html) with FY filtering
+- Shows volunteer stats: sessions attended, hours, per-group breakdown
+- Regulars toggle: add/remove volunteer as regular for any group
+- Edit profile modal (name, email)
+- Delete profile (only if no entries exist)
+- Entries list with tag icons, linked to entry edit page
+- FY filter (This FY / Last FY / All) changes all displayed stats
+
+#### 2. Session Detail Page Redesign ✓
+- Replaced absolute-positioned edit button with title-row button pattern
+- Added "Add Regulars" button: bulk-creates entries for all group regulars with `#Regular` tag
+- Added "Set Hours" button: applies default hours to all checked-in entries
+- Moved entry-action buttons (Regulars, Set Hours, Add) to entries section header
+- Added `POST /api/sessions/:group/:date/add-regulars` endpoint
+- All actions available regardless of session timing (removed countdown gating)
+
+#### 3. Volunteers Page Redesign ✓
+- Replaced filter buttons with dropdown menus (filter + sort)
+- Filter dropdown: This FY (default), Last FY, All
+- Sort dropdown: A-Z (default), Hours (descending)
+- Cards show Sessions and Hours for the selected FY filter
+- Added `sessionsLastFY` and `sessionsThisFY` to `ProfileResponse` type
+- Updated `GET /api/profiles` to count unique sessions per FY using `Set<number>`
+
+#### 4. Group Filter on Volunteers Page ✓
+- Added group dropdown to filter-row (left of search box)
+- Added optional `?group=<key>` query param to `GET /api/profiles`
+- When group selected, only counts entries for sessions belonging to that group
+- Sessions/hours scoped to the selected group
+- Groups loaded from `/api/groups` and populated into select
+
+#### 5. Mobile Responsiveness Fixes ✓
+- Homepage: `flex-direction: column-reverse` on hours-progress-header so buttons appear above stats
+- Groups page: changed grid `minmax(350px, 1fr)` to `minmax(min(350px, 100%), 1fr)`
+- Compact header: reduced font sizes for mobile in global styles.css
+- Homepage header: `column-reverse` on `.header-top` so user info sits above title
+- Group detail: added `.group-title-row` CSS class with `flex-wrap: wrap` on mobile
+- Session detail: added `flex-wrap: wrap` on `.entries-header` for mobile
+- Global mobile overrides added to [public/css/styles.css](../public/css/styles.css)
+
+#### 6. Entry Detail & Add Entry Pages ✓
+- Created [public/entry-detail.html](../public/entry-detail.html) with tag buttons, auto-save fields
+- Created [public/add-entry.html](../public/add-entry.html) with volunteer search and create-new modal
+- Tag buttons for notes: #New, #Child, #DofE, #DigLead, #FirstAider, #Regular
+- Entry edit supports: checked-in toggle, count, hours, notes with hashtags
+- Delete entry with confirmation
+
+#### 7. Member Badges & Highlighting ✓
+- MEMBER badge on volunteer cards (based on overall member status across both FYs)
+- Green card highlighting changes with FY filter (only highlights if 15h met in selected FY)
+- At-risk members visible: badge but no highlight = hasn't reached 15h this FY yet
+
+#### 8. Authentication System ✓
+- Microsoft Entra ID OAuth flow ([routes/auth.ts](../routes/auth.ts))
+- Session-based auth with express-session
+- Auth middleware ([middleware/require-auth.ts](../middleware/require-auth.ts)) protects all routes
+- User display in header (name + logout link)
+- `/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me` endpoints
+
+#### 9. Eventbrite Integration Updates ✓
+- Updated Eventbrite logo to official SVG
+- Eventbrite links on groups and sessions pages
+
+#### 10. Documentation Review ✓
+- Updated CLAUDE.md: current state, implemented features, file structure
+- Updated progress.md: this session entry
+- Updated readme.md: API endpoints table
+- Updated technical-debt.md: current status
+
+### Files Modified
+- `types/api-responses.ts` - Added `sessionsLastFY`, `sessionsThisFY` to ProfileResponse
+- `routes/api.ts` - Profiles group filter, add-regulars endpoint, session counting
+- `public/volunteers.html` - Full redesign with dropdowns, group filter, search
+- `public/session-detail.html` - Button row, add regulars, entries header
+- `public/profile-detail.html` - New page
+- `public/entry-detail.html` - New page
+- `public/add-entry.html` - New page
+- `public/group-detail.html` - Title row CSS, mobile wrap
+- `public/index.html` - Mobile header/progress fixes
+- `public/groups.html` - Grid minmax fix
+- `public/css/styles.css` - Mobile overrides, compact header
+- `public/js/common.js` - Tag icons, breadcrumbs, shared utilities
+
+---
+
+*Last Updated: 2026-02-14*

@@ -92,11 +92,29 @@ The server runs at http://localhost:3000.
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/health` | GET | Health check |
-| `/api/stats` | GET | Dashboard statistics (current FY) |
-| `/api/groups` | GET | All volunteer groups/crews |
+| `/api/health` | GET | Health check (unauthenticated) |
+| `/api/stats` | GET | Dashboard statistics (current + last FY) |
+| `/api/groups` | GET | All groups with regulars count |
+| `/api/groups` | POST | Create new group |
+| `/api/groups/:key` | GET | Group detail with sessions and stats |
+| `/api/groups/:key` | PATCH | Update group |
 | `/api/sessions` | GET | All sessions with calculated hours and registrations |
-| `/api/profiles` | GET | All volunteer profiles |
+| `/api/sessions` | POST | Create new session |
+| `/api/sessions/export` | GET | Export this FY sessions as CSV |
+| `/api/sessions/:group/:date` | GET | Session detail with entries |
+| `/api/sessions/:group/:date` | PATCH | Update session |
+| `/api/sessions/:group/:date/entries` | POST | Create entry (register volunteer) |
+| `/api/sessions/:group/:date/add-regulars` | POST | Bulk add regulars as entries |
+| `/api/entries/:group/:date/:slug` | GET | Entry detail with FY hours |
+| `/api/entries/:id` | PATCH | Update entry (check-in, hours, notes) |
+| `/api/entries/:id` | DELETE | Delete entry |
+| `/api/profiles` | GET | All profiles with FY stats (optional `?group=` filter) |
+| `/api/profiles` | POST | Create new profile |
+| `/api/profiles/:slug` | GET | Profile detail with entries and group hours |
+| `/api/profiles/:slug` | PATCH | Update profile |
+| `/api/profiles/:slug` | DELETE | Delete profile (only if no entries) |
+| `/api/profiles/:slug/regulars` | POST | Add as regular to group |
+| `/api/regulars/:id` | DELETE | Remove regular assignment |
 | `/api/cache/clear` | POST | Clear server-side data cache |
 | `/api/cache/stats` | GET | Cache hit/miss statistics |
 
@@ -107,8 +125,9 @@ dtv-tracker-app/
 ├── app.js              # Express server entry point
 ├── types/              # TypeScript type definitions (SharePoint + domain + API)
 ├── services/           # Data layer: Graph API client, repositories, enrichment
-├── routes/             # Express API route handlers
-├── public/             # Frontend HTML/CSS/JS (served statically)
+├── routes/             # API endpoints (api.ts) and auth flow (auth.ts)
+├── middleware/          # Auth guard middleware
+├── public/             # Frontend HTML/CSS/JS (9 pages, served statically)
 ├── docs/               # SharePoint schema, setup guides, progress notes
 └── test/               # Auth and data verification scripts
 ```

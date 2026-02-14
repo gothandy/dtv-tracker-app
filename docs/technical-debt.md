@@ -1,160 +1,120 @@
 # Technical Debt & Future Optimizations
 
-This document tracks known performance issues, optimization opportunities, and technical debt that can be addressed when they become priorities.
+This document tracks known technical debt, optimization opportunities, and code quality items. Items are prioritised by impact and effort.
 
-## Performance Optimizations
+## Status Summary
+
+| # | Item | Priority | Status |
+|---|------|----------|--------|
+| 1 | Caching | - | ✅ Implemented (5-min TTL) |
+| 2 | SharePoint-side filtering | - | ✅ Implemented (hybrid) |
+| 3 | Modal HTML duplication | Medium | Open |
+| 4 | FY calculation duplication | Low | Open |
+| 5 | Automated tests | Medium | Open |
+| 6 | Tag icons duplication | Low | Open |
+| 7 | Graph API retry logic | Low | Open |
+
+---
+
+## Resolved Items
 
 ### 1. SharePoint Data Caching
-**Status**: Not Implemented
-**Priority**: Medium (premature optimization)
-**Impact**: High on scale
+**Status**: ✅ Implemented (2026-02-09)
 
-**Issue**:
-- All SharePoint data is fetched on every API request
-- No caching layer for Groups, Sessions, Entries, or Profiles
-- `/api/stats` endpoint fetches all three lists on every dashboard load
+Server-side caching with 5-minute TTL via `node-cache` in `services/sharepoint-client.ts`. Repositories use cache keys and invalidate on writes. Cache stats available at `GET /api/cache/stats`.
 
-**Current Behavior**:
-```javascript
-// Every API call triggers fresh SharePoint requests
-GET /api/stats → fetches ALL groups, sessions, entries (3 API calls)
-GET /api/groups → fetches ALL groups
-GET /api/sessions → fetches ALL sessions
-GET /api/profiles → fetches ALL profiles
-```
+### 2. SharePoint-Side Filtering
+**Status**: ✅ Implemented (2026-02-08)
 
-**Potential Solutions**:
-1. Add in-memory caching with TTL (e.g., 5-10 minutes)
-2. Implement cache invalidation on data changes
-3. Use Redis or similar for distributed caching
-
-**Files**: `services/sharepoint.js`, `routes/api.js`
+Hybrid approach: Sessions filtered at SharePoint by FY field where possible, Entries fetched in full and filtered in Node.js (complex OData OR filters were slower than fetching all). Current approach is simple and performant with the caching layer.
 
 ---
 
-### 2. SharePoint-Side Filtering (Hybrid Approach)
-**Status**: ✅ Partially Implemented (2026-02-08)
+## Open Items
+
+### 3. Modal HTML Duplication
 **Priority**: Medium
-**Impact**: Medium (helps with Sessions, neutral for Entries)
+**Effort**: Medium
 
-**Solution Implemented**:
-Hybrid filtering approach:
-1. **Sessions**: Filtered at SharePoint by FY (works well - simple filter)
-2. **Entries**: Fetch all, filter in Node.js (complex OData filter was slower)
+Modal markup (edit group, edit session, create session, edit profile, set hours) is duplicated across pages. Each page has its own inline `<style>` for modal styling.
 
-**Current Behavior**:
-```javascript
-// Sessions: Filter at SharePoint (103 of 517 - significant reduction)
-const sessionsFY = await sharepoint.getSessionsByFY('FY2025');
+**Options**:
+- Extract shared modal CSS to `styles.css` (quick win, reduces style duplication)
+- Create a `modal.js` helper in `common.js` that generates modal HTML from a config object (reduces HTML duplication too)
 
-// Entries: Fetch all, filter in Node.js (faster than complex OData OR)
-const entries = await sharepoint.getEntries();
-const entriesFY = entries.filter(e => sessionIdsFY.has(e.EventLookupId));
-```
-
-**Why This Approach**:
-- Sessions filter: Simple OData filter `FinancialYearFlow eq 'FY2025'` - fast ✓
-- Entries filter: Complex OR with 103 IDs (3,081 chars) - slow ✗
-- Filtering entries in Node.js is actually faster than complex SharePoint query
-
-**Performance**:
-- Sessions: Reduced from 517 to 103 (80% reduction)
-- Entries: Fetched all (no reduction yet)
-- Response time: ~2.6s (same as before filtering attempt)
-
-**Future Optimization**:
-Add `FinancialYearFlow` column to Entries list to enable simple SharePoint filtering (see section 3 below)
-
-**Files**: `services/sharepoint.js:299-309`, `routes/api.js:64-110`
+**Affected files**: `group-detail.html`, `groups.html`, `sessions.html`, `session-detail.html`, `profile-detail.html`
 
 ---
 
-### 3. Add Filter Columns to Entries List (SharePoint Schema)
-**Status**: Not Implemented (Requires SharePoint changes)
-**Priority**: Medium (for future scale)
-**Impact**: High query performance improvement
-
-**Issue**:
-Current approach filters Entries by joining through Sessions, which creates massive OData OR filters. Adding denormalized filter columns would enable direct, efficient filtering.
-
-**Proposed Changes**:
-
-1. **Add `FinancialYearFlow` Column to Entries List**
-   - Type: Single line of text
-   - Index: Yes
-   - Populate: Via Power Automate trigger on create (copy from related Session)
-
-2. **Optional: Add `SessionDate` Column**
-   - Type: Date
-   - For date-range queries if needed
-
-**Benefits**:
-```javascript
-// Before: Complex OR filter (3000+ chars, slow)
-fields/EventLookupId eq 1 or fields/EventLookupId eq 2 or ... (103 times)
-
-// After: Simple indexed filter (fast)
-fields/FinancialYearFlow eq 'FY2025'
-```
-
-**Implementation Steps**:
-1. Add column to Entries list in SharePoint
-2. Create Power Automate flow to populate on new entries
-3. Backfill existing entries with SQL/PowerShell script
-4. Update `sharepoint.js` to use new filter
-5. Remove `getEntriesBySessionIds()` method
-
-**Files**: SharePoint schema, Power Automate, `services/sharepoint.js`
-
----
-
-### 4. Use Title Field for Date-Based Filtering
-**Status**: ❌ Tested - No Performance Benefit (2026-02-08)
+### 4. FY Calculation Duplication
 **Priority**: Low
-**Impact**: None (no performance improvement)
+**Effort**: Low
 
-**Issue**:
-Investigated using Title field (contains "yyyy-mm-dd" dates) for filtering Entries at SharePoint instead of complex EventLookupId OR filters or fetching all entries.
+Financial year logic is implemented in two places:
+- Server: `data-layer.ts` → `calculateCurrentFY()`, `calculateFinancialYear()`
+- Client: `common.js` → `getFYKey()`
 
-**Test Results**:
-- Implemented `getEntriesByFYTitle()` with 12 `startswith` conditions (vs 103 EventLookupId OR conditions)
-- Performance: 2.7s (worse than 2.6s baseline)
-- Likely cause: Title field is not indexed in SharePoint
-- Conclusion: No advantage over fetching all entries and filtering in Node.js
+Both implement the same April-March rule. Currently works fine, but a change to FY boundaries would need updating in both places.
 
-**Current Approach (Best)**:
-Fetch all entries and filter in Node.js - simple and performs just as well as SharePoint-side filtering attempts.
-
-**For Future Reference**:
-- Sessions: Filter at SharePoint by `FinancialYearFlow` (works well)
-- Entries: Fetch all, filter in Node.js (simplest and fastest option)
-- Title-based filtering only helps if Title field is indexed
-
-**Files**: `services/sharepoint.js:342-372`, `routes/api.js:64-110`
+**Note**: The duplication is somewhat intentional — the client needs FY logic for display without a round-trip to the server. Not worth solving unless the FY rule changes.
 
 ---
 
-## Code Organization
+### 5. Automated Tests
+**Priority**: Medium
+**Effort**: High
 
-_(Reserved for future architectural improvements)_
+The `test/` directory contains manual verification scripts (`.js` files that hit the live API). There are no automated unit or integration tests.
+
+**What would benefit most from tests**:
+- `data-layer.ts` — FY calculations, session enrichment, validation functions
+- `routes/api.ts` — endpoint logic with mocked repositories
+- `common.js` — `getFYKey()`, `getCountdown()`, `formatDate()`
+
+**Blockers**: Would need a test framework (Jest/Vitest), mock layer for SharePoint client, and test data fixtures.
 
 ---
 
-## Security
+### 6. Tag Icons Duplication
+**Priority**: Low
+**Effort**: Low
 
-_(Reserved for security-related technical debt)_
+`TAG_ICONS` array defined in `common.js` maps hashtags (#New, #Child, etc.) to emoji icons. The server doesn't validate these — any text is accepted in the Notes field.
+
+Not a real problem since the client controls which tags can be set via the tag buttons. Only relevant if a future API consumer bypasses the UI.
+
+---
+
+### 7. Graph API Retry Logic
+**Priority**: Low
+**Effort**: Medium
+
+`services/sharepoint-client.ts` has no retry logic for transient Graph API failures (429 rate limits, 503 service unavailable). Currently relies on the 5-minute cache to reduce request volume.
+
+**When to address**: If users report intermittent errors in production, especially during high-usage periods.
+
+---
+
+## Historical Items (Tested & Rejected)
+
+### Title-Based Entry Filtering
+**Status**: ❌ No benefit (tested 2026-02-08)
+
+Investigated using the Title field for date-based filtering of Entries at SharePoint. Performance was 2.7s vs 2.6s baseline (worse). Title field isn't indexed. Current approach (fetch all, filter in Node.js) remains best.
+
+### Add FY Column to Entries List
+**Status**: Superseded by caching
+
+Originally proposed adding a `FinancialYearFlow` column to the Entries list for efficient SharePoint-side filtering. With server-side caching now implemented, the fetch-all-and-filter approach is fast enough. The goal is to retire Power Automate flows, not add new ones.
 
 ---
 
 ## Notes
 
-- Items marked "premature optimization" should only be implemented when:
-  - Performance becomes measurably slow
-  - Data volume causes real issues
-  - User experience is impacted
-
-- Prioritize based on actual metrics and user feedback, not theoretical concerns
+- Prioritise based on actual pain points, not theoretical concerns
+- The codebase is in good shape overall — most items here are polish, not architecture problems
+- "Calculated fields over stored fields" principle means legacy SharePoint columns (`HoursLastFY`, `HoursThisFY` on Profiles) should not be relied upon
 
 ---
 
-*Last Updated: 2026-02-08*
+*Last Updated: 2026-02-14*
