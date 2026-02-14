@@ -58,14 +58,22 @@
                     <h2>Groups</h2>
                     <div class="count" id="groupCount">-</div>
                 </div>
-                <div class="filter-buttons">
-                    <button class="filter-btn" id="btnAll" onclick="filterGroups('all')">All</button>
-                    <button class="filter-btn" id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
-                    <button class="filter-btn active" id="btnThisFY" onclick="filterGroups('thisFy')">This FY</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <div class="dropdown">
+                        <button class="dropdown-btn" id="filterMenuBtn" onclick="toggleDropdown('filterMenu')">
+                            <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
+                            <span id="filterLabel">This FY</span>
+                        </button>
+                        <div class="dropdown-menu" id="filterMenu">
+                            <button id="btnAll" onclick="filterGroups('all')">All</button>
+                            <button id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
+                            <button id="btnThisFY" class="active" onclick="filterGroups('thisFy')">This FY</button>
+                        </div>
+                    </div>
+                    <button class="btn-action" onclick="openNewGroupModal()">
+                        <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                    </button>
                 </div>
-            </div>
-            <div class="filter-row">
-                <button class="btn-action" onclick="openNewGroupModal()">+ Add New</button>
             </div>
         </div>
 
@@ -111,13 +119,29 @@
             return activeGroupIds;
         }
 
+        function toggleDropdown(menuId) {
+            const menu = document.getElementById(menuId);
+            const wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            if (!wasOpen) menu.classList.add('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            }
+        });
+
         function filterGroups(filter) {
             currentFilter = filter;
+            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY' };
+            document.getElementById('filterLabel').textContent = labels[filter];
             ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => {
                 document.getElementById(id).classList.remove('active');
             });
             const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
             document.getElementById(btnMap[filter]).classList.add('active');
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             displayGroups();
         }
 
