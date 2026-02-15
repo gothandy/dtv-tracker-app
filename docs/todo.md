@@ -1,47 +1,66 @@
 # Todo
 
-## Various
-### Is Group Checkbox
-Add the "Is Group" checkbox to the model edit screen profiles-details.
+## Site Migration
 
-## Eventbrite Updates
+### Update documentation
+Update `sharepoint-schema.md` and `site-migration.md` to reflect the actual Tracker site schema (dropped Registrations, Hours, Url, FinancialYearFlow on Sessions; dropped HoursLastFY/HoursThisFY on Profiles; renamed Url to EventbriteEventUrl then dropped).
 
-### Overall Planning
-Have ability to run these tasks from the UI. Perhaps via a Settings or Admin page.
+### Retire legacy site
+Once the Tracker site is validated and Eventbrite sync is working:
+- Remove legacy ternaries from `services/field-names.ts` — keep clean names only
+- Remove `legacy` conditionals from repositories and `api.ts`
+- Clean up types (`SharePointSession.Registrations`, `Hours`, `Url`, `FinancialYearFlow`; `SharePointProfile.HoursLastFY`, `HoursThisFY`; `SharePointEntry.FinancialYearFlow`)
+- Delete `.env.members` and migration scripts
+- Update `CLAUDE.md` with new GUIDs and field names
 
-### Attendees & Questions
-Planning first on how to do updates to entries if they don't exist and to the consent fields held on the profile. 
+### SharePoint button icon
+The SharePoint SVG on the homepage needs replacing with a better icon.
 
-### Events & Reoccuring
-Planning for how to do group and session updates based on seeing which events needed.
+## Quick Fixes
+
+### IsGroup checkbox
+Add the "Is Group" checkbox to the profile edit modal on `profile-detail.html`.
+
+## Eventbrite Sync
+
+### Admin page
+Have ability to run sync tasks from the UI. A Settings or Admin page with buttons to trigger sync operations.
+
+### Attendees & questions
+Plan how to sync attendee data from Eventbrite into entries (create if not exists, update if changed). Also plan consent fields on Profiles — checkboxes vs dates for tracking when consent was given.
+
+### Events & recurring series
+Plan how to match Eventbrite events to groups (via `EventbriteSeriesID`) and create/update sessions automatically.
 
 ## Member Benefits
 
-### Members "Newly New Member" Filter
-On the volunteer filter add below the Last FY. This is a list of Profiles who are not yet members but are close to 15h
+### Volunteer list filters
+Additional filters on the volunteers page:
 
-### Members "Member Needs Adding" Filter
-This is profiles for people who meet the criteria for membership but don't yet have a card etc.
+- **"Nearly there"** — profiles not yet members but approaching 15h this FY
+- **"Needs card"** — profiles who meet membership criteria but haven't been issued a card yet
+- **"At risk"** — members who aren't on track to meet 15h this FY (may lapse next year)
 
-### Members "May lapse this year" Filter
-This is people who are members but aren't on track to meet their quota this year.
+### New profile columns
+Plan the best column types for member benefit tracking. Key question: checkboxes (simple yes/no) vs dates (when it happened) vs status enums.
 
-### Members new columns
-Planning what is best way of capturing the following?
+- Added To Facebook Group (No | Invited | Joined | Left)
+- Emailed Discount Codes (last date sent)
+- Discount Card Given Out (expiry date)
+- Parking Permit Code (text, unique per user)
+- Parking Permit Registration 1 (text)
+- Parking Permit Registration 2 (text)
+- Bike Park Wales (date)
 
-- Added To Facebook Group (No|Invited|Joined|Left)
-- Emailed Discount Codes (Last Date Sent)
-- Discount Card Given Out (Expiry date)
-- Parking Permit Code (Text unique for user)
-- Parking Permit Registration 1 (Text)
-- Parking Permit Registration 2 (Text)
-- Bike Park Wales (Date)
+These need new columns on the Profiles list in SharePoint. Run the create-profiles-list script approach — or add columns individually via Graph API.
 
 ## Reporting
-### What mechanism?
-Reporting need a mechanism for running pivot tables in Excel for adhoc reporting. Options include
-1. Create a denormalised dataset and just open in CSV.
-2. Similar but add to Excel with a blank pivot table setup ready to go.
-3. Use Power Pivot and with a Data Model that draws on live data via an API?
 
-Users are generally not excel experts and may not have a full install of Excel with our licences ideally optomised for online only.
+### Mechanism
+Need a way for non-technical users to do ad-hoc reporting (pivot tables etc). Options:
+
+1. **CSV export** — denormalised dataset, open in Excel. Simple, already have session CSV export.
+2. **Excel template** — pre-built pivot table that loads from CSV or API.
+3. **Power Pivot** — live data model connecting to an API endpoint.
+
+Constraint: users may not have full Excel installed (online-only licences). Option 1 is the safest starting point.
