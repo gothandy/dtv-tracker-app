@@ -79,6 +79,16 @@
         .entry-meta { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
         .entry-meta strong { color: var(--text-mid); }
 
+        .consent-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .consent-section h2 { color: var(--green); font-size: 1.1rem; margin-bottom: 0.75rem; }
+        .consent-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .consent-pill {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: var(--green-tint); padding: 0.35rem 0.75rem; border-radius: 6px;
+            font-size: 0.85rem; color: var(--text);
+        }
+        .consent-pill .consent-date { color: var(--text-light); font-size: 0.8rem; }
+
         .delete-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
         .btn-delete {
             display: inline-flex; align-items: center; gap: 0.4rem;
@@ -432,6 +442,13 @@
                                 <span class="section-hint">Regular Attendee</span>
                             </div>
                             <div class="group-hours-list" id="groupsContainer"></div>
+                        </div>` : ''}
+                        ${profile.records && profile.records.length > 0 ? `
+                        <div class="consent-section">
+                            <h2>Records</h2>
+                            <div class="consent-pills">
+                                ${profile.records.map(r => `<span class="consent-pill">${escapeHtml(r.type)} <span class="consent-date">${formatDate(r.date)}</span></span>`).join('')}
+                            </div>
                         </div>` : ''}
                     </div>
 

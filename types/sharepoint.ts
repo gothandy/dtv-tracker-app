@@ -126,6 +126,38 @@ export interface Regular {
 }
 
 // ============================================================================
+// Records List
+// ============================================================================
+
+/**
+ * Raw Record entity from SharePoint
+ * Tracks consents, benefits, and governance items per profile.
+ * Type is a choice field (extensible via Graph API).
+ */
+export interface SharePointRecord extends SharePointBaseItem {
+  Title?: string;
+  ProfileLookupId?: number;
+  Profile?: string;
+  Type?: string;
+  Status?: string;
+  Date?: string;
+}
+
+/**
+ * Record entity for UI display
+ */
+export interface ConsentRecord {
+  id: number;
+  profileId: number;
+  profileName?: string;
+  type: string;
+  status: string;
+  date: string;
+  created: Date;
+  modified: Date;
+}
+
+// ============================================================================
 // Lookup Maps (for efficient data enrichment)
 // ============================================================================
 

@@ -69,6 +69,12 @@ export interface ProfileGroupHours {
   regularId?: number;
 }
 
+export interface ConsentRecordResponse {
+  type: string;
+  status: string;
+  date: string;
+}
+
 export interface ProfileDetailResponse {
   id: number;
   slug: string;
@@ -80,6 +86,7 @@ export interface ProfileDetailResponse {
   hoursThisFY: number;
   groupHours: ProfileGroupHours[];
   entries: ProfileEntryResponse[];
+  records?: ConsentRecordResponse[];
 }
 
 export interface GroupDetailResponse {

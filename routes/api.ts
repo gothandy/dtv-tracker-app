@@ -5,6 +5,7 @@ import { sessionsRepository } from '../services/repositories/sessions-repository
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
+import { recordsRepository } from '../services/repositories/records-repository';
 import {
   enrichSessions,
   sortSessionsByDate,
@@ -31,7 +32,7 @@ import {
   legacy
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
-import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse } from '../types/api-responses';
+import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse, ConsentRecordResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -1020,6 +1021,14 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
+    // Fetch consent records if available (one per profile+type)
+    const profileRecords = await recordsRepository.getByProfile(spProfile.ID);
+    const records: ConsentRecordResponse[] = profileRecords.map(r => ({
+      type: r.Type || '',
+      status: r.Status || '',
+      date: r.Date || ''
+    }));
+
     const data: ProfileDetailResponse = {
       id: profile.id,
       slug: nameToSlug(profile.name),
@@ -1030,7 +1039,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       groupHours,
-      entries: entryResponses
+      entries: entryResponses,
+      records: records.length > 0 ? records : undefined
     };
 
     res.json({ success: true, data } as ApiResponse<ProfileDetailResponse>);
@@ -1338,6 +1348,10 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
 
     let newProfiles = 0;
     let newEntries = 0;
+    let newRecords = 0;
+
+    // Load existing records for upsert
+    const allRecords = await recordsRepository.getAll();
 
     for (const session of liveSessions) {
       const attendees = await getAttendees(session.EventbriteEventID!);
@@ -1383,13 +1397,35 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
           existingProfileIds.add(profileId);
           newEntries++;
         }
+
+        // Upsert consent records from Eventbrite answers (one per profile+type)
+        if (recordsRepository.available && attendee.answers) {
+          const consentMap: Record<string, string> = {
+            '315115173': 'Privacy Consent',
+            '315115803': 'Photo Consent'
+          };
+          for (const ans of attendee.answers) {
+            const type = consentMap[ans.question_id];
+            if (!type) continue;
+            const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
+            const date = attendee.created || new Date().toISOString();
+            const existing = allRecords.find(r => r.ProfileLookupId === profileId && r.Type === type);
+            if (existing) {
+              await recordsRepository.update(existing.ID, { Status: status, Date: date });
+            } else {
+              const newId = await recordsRepository.create({ ProfileLookupId: profileId, Type: type, Status: status, Date: date });
+              allRecords.push({ ID: newId, ProfileLookupId: profileId, Type: type, Status: status, Date: date } as any);
+            }
+            newRecords++;
+          }
+        }
       }
     }
 
-    console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries`);
+    console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${newRecords} new records`);
     res.json({
       success: true,
-      data: { sessionsProcessed: liveSessions.length, newProfiles, newEntries }
+      data: { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords }
     });
   } catch (error: any) {
     console.error('Error syncing Eventbrite attendees:', error);

@@ -7,8 +7,15 @@
 
 const BASE_URL = 'https://www.eventbriteapi.com/v3';
 
+export interface EventbriteAnswer {
+  question_id: string;
+  question: string;
+  answer: string;
+}
+
 export interface EventbriteAttendee {
   id: string;
+  created: string;
   profile: {
     name: string;
     email: string;
@@ -18,6 +25,7 @@ export interface EventbriteAttendee {
   status: string;
   checked_in: boolean;
   ticket_class_name?: string;
+  answers?: EventbriteAnswer[];
 }
 
 async function fetchEventbrite<T>(path: string): Promise<T> {
@@ -48,7 +56,7 @@ export async function getAttendees(eventId: string): Promise<EventbriteAttendee[
     const data = await fetchEventbrite<{
       attendees: EventbriteAttendee[];
       pagination: { has_more_items: boolean; page_number: number };
-    }>(`/events/${eventId}/attendees/?status=attending&page=${page}`);
+    }>(`/events/${eventId}/attendees/?status=attending&expand=answers&page=${page}`);
 
     all.push(...(data.attendees || []));
     hasMore = data.pagination?.has_more_items || false;

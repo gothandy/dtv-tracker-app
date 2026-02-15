@@ -66,7 +66,9 @@
                 if (!res.ok || !data.success) throw new Error(data.error || 'Sync failed');
 
                 const d = data.data;
-                result.textContent = `${d.sessionsProcessed} sessions processed, ${d.newProfiles} new profiles, ${d.newEntries} new entries`;
+                let msg = `${d.sessionsProcessed} sessions, ${d.newProfiles} new profiles, ${d.newEntries} new entries`;
+                if (d.newRecords) msg += `, ${d.newRecords} consent records`;
+                result.textContent = msg;
             } catch (error) {
                 result.textContent = error.message || 'Sync failed';
                 result.className = 'sync-result error';

@@ -47,8 +47,8 @@ The new site is an opportunity to fix internal names to match what the app actua
 | `HoursThisFY` | Drop | App calculates from entries |
 | `MatchName` | `MatchName` | Keep |
 | `IsGroup` | `IsGroup` | Keep |
-| New: `DataConsent` | `DataConsent` | From Eventbrite custom question |
-| New: `PhotoConsent` | `PhotoConsent` | From Eventbrite custom question |
+| ~~`DataConsent`~~ | — | Moved to Records list (see below) |
+| ~~`PhotoConsent`~~ | — | Moved to Records list (see below) |
 
 ### Regulars List
 | Old Internal Name | New Internal Name | Notes |
@@ -101,7 +101,7 @@ Repositories use `SP.groupLookup` instead of hardcoded strings. Single codebase,
 ## Migration Steps
 
 1. **Create new SharePoint site** manually in SharePoint admin (`/sites/tracker`)
-2. **Run list creation scripts** to build all 5 lists with clean column names
+2. **Run list creation scripts** to build all 6 lists with clean column names
 3. **Paste generated GUIDs** into `.env.tracker`
 4. **Run data migration scripts** to copy data from Members → Tracker
 5. **Start Tracker instance** (`npm run dev:tracker`) and validate
@@ -116,16 +116,17 @@ Each script is standalone and can be run individually. They read credentials fro
 
 ### List Creation Scripts
 
-Create the 5 lists on the Tracker site with clean column names. **Order matters** because lookup columns require the target list to exist first.
+Create the 6 lists on the Tracker site with clean column names. **Order matters** because lookup columns require the target list to exist first.
 
 ```
 scripts/migration/
-├── create-lists.js          # Orchestrator — runs all 5 in order
-├── create-groups-list.js    # Step 1: Groups (no dependencies)
-├── create-profiles-list.js  # Step 2: Profiles (no dependencies)
-├── create-sessions-list.js  # Step 3: Sessions (lookup → Groups)
-├── create-entries-list.js   # Step 4: Entries (lookup → Sessions, Profiles)
-└── create-regulars-list.js  # Step 5: Regulars (lookup → Groups, Profiles)
+├── create-lists.js            # Orchestrator — runs all 6 in order
+├── create-groups-list.js      # Step 1: Groups (no dependencies)
+├── create-profiles-list.js    # Step 2: Profiles (no dependencies)
+├── create-sessions-list.js    # Step 3: Sessions (lookup → Groups)
+├── create-entries-list.js     # Step 4: Entries (lookup → Sessions, Profiles)
+├── create-regulars-list.js    # Step 5: Regulars (lookup → Groups, Profiles)
+└── create-records-list.js     # Step 6: Records (lookup → Profiles, choice Type)
 ```
 
 **Run all at once:**
@@ -165,8 +166,6 @@ Each script:
 | Email | text | |
 | MatchName | text | Eventbrite matching |
 | IsGroup | boolean | |
-| DataConsent | boolean | New — from Eventbrite |
-| PhotoConsent | boolean | New — from Eventbrite |
 
 **Sessions** — lookup to Groups:
 | Column | Type | Notes |
@@ -198,6 +197,14 @@ Each script:
 | Title | text | Built-in |
 | Group | lookup → Groups | Clean name (was "Crew") |
 | Profile | lookup → Profiles | Clean name (was "Volunteer") |
+
+**Records** — lookup to Profiles, choice Type:
+| Column | Type | Notes |
+|--------|------|-------|
+| Title | text | Built-in |
+| Profile | lookup → Profiles | Who |
+| Type | choice | Privacy Consent, Photo Consent (extensible via Graph API) |
+| Date | dateTime | When (from Eventbrite order timestamp) |
 
 #### Graph API Column Creation
 
@@ -283,13 +290,15 @@ Lists with lookups read these maps to translate references:
 
 **Groups**: Direct copy — Title, Name, Description, EventbriteSeriesID
 
-**Profiles**: Copy Title, Email, MatchName, IsGroup. Drop HoursLastFY/HoursThisFY. New consent fields start empty.
+**Profiles**: Copy Title, Email, MatchName, IsGroup. Drop HoursLastFY/HoursThisFY.
 
 **Sessions**: Copy Title, Name, Date, Registrations, Hours, EventbriteEventID, Url. Remap `CrewLookupId` → `GroupLookupId` via groups ID map. Rename `Description` → `Notes`. Drop `FinancialYearFlow`.
 
 **Entries**: Copy Title, Count, Checked, Hours, Notes. Remap `EventLookupId` → `SessionLookupId` via sessions ID map. Remap `VolunteerLookupId` → `ProfileLookupId` via profiles ID map. Drop `FinancialYearFlow`.
 
 **Regulars**: Copy Title. Remap `CrewLookupId` → `GroupLookupId` via groups ID map. Remap `VolunteerLookupId` → `ProfileLookupId` via profiles ID map.
+
+**Records**: New list — no migrated data. Backfilled from historic Eventbrite events via one-off import script.
 
 ## Parallel Running
 
@@ -301,7 +310,7 @@ During migration, two instances run side by side:
 | **Port** | 3000 | 3001 |
 | **Sync** | Power Automate flows | Node.js eventbrite-service |
 | **Field names** | Legacy (Crew, Event, Volunteer) | Clean (Group, Session, Profile) |
-| **Consent fields** | Not present | DataConsent, PhotoConsent |
+| **Records** | Not present | Consent tracking (Privacy, Photo) from Eventbrite |
 | **Calculated fields** | Some stale PA-maintained fields | All calculated from entries |
 
 ---

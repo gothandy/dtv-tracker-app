@@ -19,48 +19,60 @@ The SharePoint SVG on the homepage needs replacing with a better icon.
 
 ## Quick Fixes
 
-### IsGroup checkbox
-Add the "Is Group" checkbox to the profile edit modal on `profile-detail.html`.
+### ~~IsGroup checkbox~~ Done
+### ~~Admin page~~ Done
+### ~~Eventbrite attendee sync~~ Done
 
 ## Eventbrite Sync
-
-### Admin page
-Have ability to run sync tasks from the UI. A Settings or Admin page with buttons to trigger sync operations.
-
-### Attendees & questions
-Plan how to sync attendee data from Eventbrite into entries (create if not exists, update if changed). Also plan consent fields on Profiles — checkboxes vs dates for tracking when consent was given.
 
 ### Events & recurring series
 Plan how to match Eventbrite events to groups (via `EventbriteSeriesID`) and create/update sessions automatically.
 
-## Member Benefits
+### #NoPhoto tagging
+When Photo Consent is declined, add `#NoPhoto` tag to the entry Notes field.
 
-### Volunteer list filters
-Additional filters on the volunteers page:
+## Records list (new SharePoint list)
+
+Single list for tracking consents, benefits, and governance. Type column is a SharePoint choice field — new types added by updating the column choices via Graph API, no code changes needed.
+
+### Schema
+| Column | Internal Name | Type | Notes |
+|--------|---------------|------|-------|
+| Profile | Profile | lookup → Profiles | Who |
+| Type | Type | choice | Privacy Consent, Photo Consent |
+| Date | Date | dateTime | When (from Eventbrite order timestamp) |
+
+### Phase 1 (now)
+- Create the list with just two Type choices: Privacy Consent, Photo Consent
+- Wire into Eventbrite attendee sync — create records from custom question answers (#315115173, #315115803)
+- One-off import: backfill historic consent from past Eventbrite events
+- Display consent status on profile detail page
+
+### Phase 2 (future)
+- Add more Type choices: Discount Card, Bike Park Wales, Facebook Invite, Parking Permit, etc.
+- Add Expires (dateTime) and Notes (text) columns when needed for benefits
+- Volunteer list filters: "Needs card", "Nearly there", "At risk"
+- Denormalized CSV export from Admin page
+
+### Implementation steps (Phase 1)
+1. Create list creation script (`create-records-list.js`)
+2. Add TypeScript types and repository
+3. Add API endpoints (create record, get records by profile)
+4. Wire consent into Eventbrite attendee sync
+5. Build one-off historic import script
+6. Add consent display to profile detail page
+
+## Volunteer List Filters (future)
 
 - **"Nearly there"** — profiles not yet members but approaching 15h this FY
-- **"Needs card"** — profiles who meet membership criteria but haven't been issued a card yet
-- **"At risk"** — members who aren't on track to meet 15h this FY (may lapse next year)
+- **"Needs card"** — members who haven't been issued a card yet (requires Records)
+- **"At risk"** — members who aren't on track to meet 15h this FY
 
-### New profile columns
-Plan the best column types for member benefit tracking. Key question: checkboxes (simple yes/no) vs dates (when it happened) vs status enums.
+## Reporting (future)
 
-- Added To Facebook Group (No | Invited | Joined | Left)
-- Emailed Discount Codes (last date sent)
-- Discount Card Given Out (expiry date)
-- Parking Permit Code (text, unique per user)
-- Parking Permit Registration 1 (text)
-- Parking Permit Registration 2 (text)
-- Bike Park Wales (date)
+Need a way for non-technical users to do ad-hoc reporting. Options:
 
-These need new columns on the Profiles list in SharePoint. Run the create-profiles-list script approach — or add columns individually via Graph API.
-
-## Reporting
-
-### Mechanism
-Need a way for non-technical users to do ad-hoc reporting (pivot tables etc). Options:
-
-1. **CSV export** — denormalised dataset, open in Excel. Simple, already have session CSV export.
+1. **CSV export** — denormalized dataset, open in Excel. Simple, already have session CSV export.
 2. **Excel template** — pre-built pivot table that loads from CSV or API.
 3. **Power Pivot** — live data model connecting to an API endpoint.
 
