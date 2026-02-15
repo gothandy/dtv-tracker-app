@@ -27,7 +27,8 @@ import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_DISPLAY,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  SESSION_NOTES
+  SESSION_NOTES,
+  legacy
 } from '../services/field-names';
 import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
@@ -450,7 +451,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       hours: Math.round(totalHours * 10) / 10,
       financialYear: `FY${new Date(spSession.Date).getMonth() >= 3 ? new Date(spSession.Date).getFullYear() : new Date(spSession.Date).getFullYear() - 1}`,
       eventbriteEventId: spSession.EventbriteEventID,
-      eventbriteUrl: typeof spSession.Url === 'object' && spSession.Url ? (spSession.Url as any).Url : spSession.Url,
+      eventbriteUrl: typeof spSession.Url === 'object' && spSession.Url ? (spSession.Url as any).Url : (spSession.Url || undefined),
       entries: entryResponses
     };
 
@@ -475,7 +476,8 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
-    if (typeof eventbriteUrl === 'string') fields.Url = eventbriteUrl ? { Url: eventbriteUrl, Description: eventbriteUrl } : null;
+    // Url column only exists on legacy site (dropped from Tracker site)
+    if (legacy && typeof eventbriteUrl === 'string') fields.Url = eventbriteUrl ? { Url: eventbriteUrl, Description: eventbriteUrl } : null;
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -1293,6 +1295,15 @@ router.get('/cache/stats', (req: Request, res: Response) => {
       message: error.message
     });
   }
+});
+
+router.get('/config', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      sharepointSiteUrl: process.env.SHAREPOINT_SITE_URL || null
+    }
+  });
 });
 
 export = router;

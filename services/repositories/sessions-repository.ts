@@ -6,7 +6,7 @@
 
 import { SharePointSession } from '../../types/session';
 import { sharePointClient } from '../sharepoint-client';
-import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES } from '../field-names';
+import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, legacy } from '../field-names';
 
 class SessionsRepository {
   private listGuid: string;
@@ -16,7 +16,9 @@ class SessionsRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,Name,Date,${SESSION_NOTES},Registrations,Hours,FinancialYearFlow,EventbriteEventID,Url,${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
+    const base = `ID,Title,Name,Date,${SESSION_NOTES},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
+    // Legacy site has extra columns not on the Tracker site
+    return legacy ? `${base},Registrations,Hours,FinancialYearFlow,Url` : base;
   }
 
   async getAll(): Promise<SharePointSession[]> {
@@ -56,15 +58,10 @@ class SessionsRepository {
     const fyStartDate = new Date(Date.UTC(fyStartYear, 3, 1)); // April 1
     const fyEndDate = new Date(Date.UTC(fyEndYear, 2, 31, 23, 59, 59)); // March 31
 
-    // Filter with fallback: use FinancialYearFlow if set, otherwise use Date field
     const filteredData = allSessions.filter(session => {
-      if (session.FinancialYearFlow) {
-        return session.FinancialYearFlow === fy;
-      } else if (session.Date) {
-        const sessionDate = new Date(session.Date);
-        return sessionDate >= fyStartDate && sessionDate <= fyEndDate;
-      }
-      return false;
+      if (!session.Date) return false;
+      const sessionDate = new Date(session.Date);
+      return sessionDate >= fyStartDate && sessionDate <= fyEndDate;
     });
 
     console.log(`[SessionsByFY] Filtered ${filteredData.length} sessions for ${fy} from ${allSessions.length} total`);

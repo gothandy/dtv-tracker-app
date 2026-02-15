@@ -140,10 +140,6 @@
                 <label for="editEventbriteId">Eventbrite Event ID</label>
                 <input type="text" id="editEventbriteId">
             </div>
-            <div class="modal-field">
-                <label for="editEventbriteUrl">Eventbrite URL</label>
-                <input type="url" id="editEventbriteUrl">
-            </div>
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveSessionEdit()">Save</button>
@@ -177,7 +173,6 @@
             document.getElementById('editName').value = currentSession.displayName || '';
             document.getElementById('editDescription').value = currentSession.description || '';
             document.getElementById('editEventbriteId').value = currentSession.eventbriteEventId || '';
-            document.getElementById('editEventbriteUrl').value = currentSession.eventbriteUrl || '';
             document.getElementById('editModal').classList.add('visible');
             document.getElementById('editName').focus();
         }
@@ -190,8 +185,6 @@
             const displayName = document.getElementById('editName').value.trim();
             const description = document.getElementById('editDescription').value;
             const eventbriteEventId = document.getElementById('editEventbriteId').value.trim();
-            const eventbriteUrl = document.getElementById('editEventbriteUrl').value.trim();
-
             const btn = document.getElementById('confirmEditBtn');
             btn.disabled = true;
             btn.textContent = 'Saving...';
@@ -200,7 +193,7 @@
                 const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ displayName, description, eventbriteEventId, eventbriteUrl })
+                    body: JSON.stringify({ displayName, description, eventbriteEventId })
                 });
                 if (!res.ok) {
                     const data = await res.json();

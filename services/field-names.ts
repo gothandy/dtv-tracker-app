@@ -9,7 +9,7 @@
  * Once the Members site is retired, delete the ternaries and keep the clean names.
  */
 
-const legacy = process.env.SHAREPOINT_SITE_URL?.endsWith('/members') ?? true;
+export const legacy = process.env.SHAREPOINT_SITE_URL?.endsWith('/members') ?? true;
 
 // Lookup ID fields (the "LookupId" suffix is a SharePoint convention)
 export const GROUP_LOOKUP     = legacy ? 'CrewLookupId'      : 'GroupLookupId';
