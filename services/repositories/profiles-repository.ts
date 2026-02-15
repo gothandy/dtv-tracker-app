@@ -46,7 +46,7 @@ class ProfilesRepository {
     sharePointClient.cache.del('profiles');
   }
 
-  async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email'>>): Promise<void> {
+  async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email' | 'MatchName' | 'IsGroup'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, profileId, fields);
     sharePointClient.cache.del('profiles');
   }

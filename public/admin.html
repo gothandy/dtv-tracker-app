@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - DTV Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .container { max-width: 900px; margin: 1.5rem auto; padding: 0 1.5rem; }
+        .admin-section { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        .admin-section h2 { color: var(--green); font-size: 1.2rem; margin-bottom: 0.75rem; }
+        .admin-section h2 a { color: var(--green); text-decoration: none; }
+        .admin-section h2 a:hover { text-decoration: underline; }
+        .admin-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .admin-btn {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.7rem 1.2rem; border-radius: var(--radius);
+            font-size: 0.95rem; font-weight: 600; cursor: pointer;
+            border: 2px solid var(--green); background: var(--surface); color: var(--green);
+            min-height: 44px; transition: all 0.2s; text-decoration: none;
+        }
+        .admin-btn:hover { background: var(--green); color: white; }
+        .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .sync-result { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-mid); min-height: 1.2rem; }
+        .sync-result.error { color: var(--error); }
+    </style>
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <script>createHeader('Admin', true);</script>
+
+    <div class="container">
+        <div class="admin-section">
+            <h2><a href="https://dtv.eventbrite.co.uk/" target="_blank">Eventbrite</a></h2>
+            <div class="admin-actions">
+                <button class="admin-btn" id="syncAttendeesBtn" onclick="syncAttendees()">Fetch New Attendees</button>
+            </div>
+            <div class="sync-result" id="syncAttendeesResult"></div>
+        </div>
+
+        <div class="admin-section">
+            <h2>Exports</h2>
+            <div class="admin-actions">
+                <a class="admin-btn" href="/api/sessions/export">FE Hours Download</a>
+            </div>
+        </div>
+
+        <div class="admin-section" id="siteSection" style="display:none;">
+            <h2><a id="siteLink" href="#" target="_blank" id="siteName">Site</a></h2>
+        </div>
+    </div>
+
+    <script>createFooter();</script>
+    <script>
+        async function syncAttendees() {
+            const btn = document.getElementById('syncAttendeesBtn');
+            const result = document.getElementById('syncAttendeesResult');
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            result.textContent = '';
+            result.className = 'sync-result';
+
+            try {
+                const res = await apiFetch('/api/eventbrite/sync-attendees', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Sync failed');
+
+                const d = data.data;
+                result.textContent = `${d.sessionsProcessed} sessions processed, ${d.newProfiles} new profiles, ${d.newEntries} new entries`;
+            } catch (error) {
+                result.textContent = error.message || 'Sync failed';
+                result.className = 'sync-result error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Fetch New Attendees';
+            }
+        }
+
+        async function loadSiteLink() {
+            try {
+                const res = await apiFetch('/api/config');
+                const data = await res.json();
+                if (data.success && data.data.sharepointSiteUrl) {
+                    const url = data.data.sharepointSiteUrl;
+                    const isTracker = url.includes('/tracker');
+                    document.getElementById('siteLink').href = url;
+                    document.getElementById('siteLink').textContent = isTracker ? 'Tracker Site' : 'Members Site';
+                    document.getElementById('siteSection').style.display = '';
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        loadSiteLink();
+    </script>
+</body>
+</html>

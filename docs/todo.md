@@ -12,6 +12,7 @@ Once the Tracker site is validated and Eventbrite sync is working:
 - Clean up types (`SharePointSession.Registrations`, `Hours`, `Url`, `FinancialYearFlow`; `SharePointProfile.HoursLastFY`, `HoursThisFY`; `SharePointEntry.FinancialYearFlow`)
 - Delete `.env.members` and migration scripts
 - Update `CLAUDE.md` with new GUIDs and field names
+- Remove "manage" permissions in Azure.
 
 ### SharePoint button icon
 The SharePoint SVG on the homepage needs replacing with a better icon.

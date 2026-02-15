@@ -123,6 +123,10 @@
                 <label for="editMatchName">Eventbrite Match Name</label>
                 <input type="text" id="editMatchName">
             </div>
+            <div class="modal-field" style="display:flex; align-items:center; gap:0.75rem;">
+                <input type="checkbox" id="editIsGroup" style="width:20px; height:20px; accent-color:var(--green); cursor:pointer;">
+                <label for="editIsGroup" style="cursor:pointer; margin:0;">Is Group</label>
+            </div>
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveProfileEdit()">Save</button>
@@ -170,6 +174,7 @@
             document.getElementById('editName').value = currentProfile.name || '';
             document.getElementById('editEmail').value = currentProfile.email || '';
             document.getElementById('editMatchName').value = currentProfile.matchName || '';
+            document.getElementById('editIsGroup').checked = !!currentProfile.isGroup;
             document.getElementById('editModal').classList.add('visible');
             document.getElementById('editName').focus();
         }
@@ -197,6 +202,7 @@
             const name = document.getElementById('editName').value.trim();
             const email = document.getElementById('editEmail').value.trim();
             const matchName = document.getElementById('editMatchName').value.trim();
+            const isGroup = document.getElementById('editIsGroup').checked;
 
             if (!name) { alert('Name is required.'); return; }
 
@@ -208,7 +214,7 @@
                 const res = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, matchName })
+                    body: JSON.stringify({ name, email, matchName, isGroup })
                 });
                 if (!res.ok) {
                     const data = await res.json();

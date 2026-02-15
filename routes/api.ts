@@ -30,6 +30,7 @@ import {
   SESSION_NOTES,
   legacy
 } from '../services/field-names';
+import { getAttendees } from '../services/eventbrite-client';
 import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -1046,12 +1047,13 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 router.patch('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
-    const { name, email, matchName } = req.body;
+    const { name, email, matchName, isGroup } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof name === 'string' && name.trim()) fields.Title = name.trim();
     if (typeof email === 'string') fields.Email = email.trim();
     if (typeof matchName === 'string') fields.MatchName = matchName;
+    if (typeof isGroup === 'boolean') fields.IsGroup = isGroup;
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -1304,6 +1306,98 @@ router.get('/config', (req: Request, res: Response) => {
       sharepointSiteUrl: process.env.SHAREPOINT_SITE_URL || null
     }
   });
+});
+
+// ============================================================================
+// Eventbrite Sync
+// ============================================================================
+
+router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) => {
+  try {
+    const [sessionsRaw, entriesRaw, profilesRaw] = await Promise.all([
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const sessions = validateArray(sessionsRaw, validateSession, 'Session');
+    const entries = validateArray(entriesRaw, validateEntry, 'Entry');
+    const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
+
+    // Find sessions with EventbriteEventID that are today or future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const liveSessions = sessions.filter(s => {
+      if (!s.EventbriteEventID || !s.Date) return false;
+      const sessionDate = new Date(s.Date);
+      sessionDate.setHours(0, 0, 0, 0);
+      return sessionDate >= today;
+    });
+
+    console.log(`[Eventbrite Sync] ${liveSessions.length} live sessions with Eventbrite IDs`);
+
+    let newProfiles = 0;
+    let newEntries = 0;
+
+    for (const session of liveSessions) {
+      const attendees = await getAttendees(session.EventbriteEventID!);
+      console.log(`[Eventbrite Sync] Session ${session.ID} (${session.EventbriteEventID}): ${attendees.length} attendees`);
+
+      // Get existing entry profile IDs for this session
+      const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === session.ID);
+      const existingProfileIds = new Set(
+        sessionEntries.map(e => safeParseLookupId(e[PROFILE_LOOKUP])).filter(id => id !== undefined)
+      );
+
+      for (const attendee of attendees) {
+        const attendeeName = attendee.profile?.name;
+        const attendeeEmail = attendee.profile?.email;
+        if (!attendeeName) continue;
+
+        // Match to existing profile: MatchName first, then Title
+        const nameLower = attendeeName.toLowerCase();
+        let profile = profiles.find(p =>
+          p.MatchName && p.MatchName.toLowerCase() === nameLower
+        ) || profiles.find(p =>
+          p.Title && p.Title.toLowerCase() === nameLower
+        );
+
+        if (!profile) {
+          const newId = await profilesRepository.create({
+            Title: attendeeName,
+            Email: attendeeEmail || undefined
+          });
+          console.log(`[Eventbrite Sync] Created profile: ${attendeeName} (ID: ${newId})`);
+          profile = { ID: newId, Title: attendeeName, Email: attendeeEmail, MatchName: undefined, IsGroup: false } as any;
+          profiles.push(profile!);
+          newProfiles++;
+        }
+
+        // Create entry if not already registered
+        const profileId = profile!.ID;
+        if (!existingProfileIds.has(profileId)) {
+          await entriesRepository.create({
+            [SESSION_LOOKUP]: String(session.ID),
+            [PROFILE_LOOKUP]: String(profileId)
+          });
+          existingProfileIds.add(profileId);
+          newEntries++;
+        }
+      }
+    }
+
+    console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries`);
+    res.json({
+      success: true,
+      data: { sessionsProcessed: liveSessions.length, newProfiles, newEntries }
+    });
+  } catch (error: any) {
+    console.error('Error syncing Eventbrite attendees:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to sync attendees'
+    });
+  }
 });
 
 export = router;
