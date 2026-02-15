@@ -62,6 +62,31 @@ Directory (tenant) ID: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
 
 ---
 
+## 1b. Azure App Service Authentication (Login App)
+
+The deployed App Service uses a **separate** Entra ID app registration for user login (built-in authentication). This is distinct from the SharePoint API app above.
+
+### Current App Registrations
+
+| Purpose | App Name | Client ID | Used By |
+|---------|----------|-----------|---------|
+| SharePoint API access | DTV Volunteer Tracker | `267fb092-69c0-48ea-b197-67b79dd4bc92` | Express app (client credentials flow) |
+| User login (Azure built-in auth) | DTVTrackerApp (Login) | `806fc039-165d-40ff-b005-9122c26fb605` | Azure App Service authentication blade |
+
+### Setup
+
+1. In **Azure Portal** → **App registrations**, the login app (`806fc039...`) must be **enabled** (not disabled)
+2. The App Service authentication blade references this app for the OAuth login flow
+3. Redirect URI: `https://dtvtrackerapp-bhgjefb0acdwgqfx.uksouth-01.azurewebsites.net/.auth/login/aad/callback`
+
+### Troubleshooting
+
+**AADSTS7000112: Application is disabled**
+- Go to **Entra ID** → **Enterprise applications** → find DTVTrackerApp (Login)
+- Under **Properties**, ensure **Enabled for users to sign-in** is set to **Yes**
+
+---
+
 ## 2. Grant SharePoint API Permissions
 
 ### A. Add API Permission
@@ -110,7 +135,7 @@ Even with API-level permissions, SharePoint requires explicit site-level access 
 1. Open your browser
 2. Navigate to (replace with your site URL):
    ```
-   https://dtvolunteers.sharepoint.com/sites/members/_layouts/15/appinv.aspx
+   https://dtvolunteers.sharepoint.com/sites/tracker/_layouts/15/appinv.aspx
    ```
 
 **URL breakdown**:
@@ -156,7 +181,7 @@ To verify the app has access:
 
 **Alternative verification**:
 ```
-https://dtvolunteers.sharepoint.com/sites/members/_layouts/15/appprincipals.aspx
+https://dtvolunteers.sharepoint.com/sites/tracker/_layouts/15/appprincipals.aspx
 ```
 
 ### D. Permission Scopes Explained
@@ -184,7 +209,7 @@ https://dtvolunteers.sharepoint.com/sites/members/_layouts/15/appprincipals.aspx
 Create a `.env` file (git-ignored) with:
 
 ```bash
-SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/members
+SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
 SHAREPOINT_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 SHAREPOINT_CLIENT_SECRET=your_client_secret_value_here
 SHAREPOINT_TENANT_ID=yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
@@ -219,7 +244,7 @@ node test-auth.js
 Testing SharePoint authentication...
 
 Configuration:
-- Site URL: https://dtvolunteers.sharepoint.com/sites/members
+- Site URL: https://dtvolunteers.sharepoint.com/sites/tracker
 - Tenant ID: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
 - Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 - Client Secret: ***LcX8
@@ -351,5 +376,5 @@ For issues with this setup:
 
 ---
 
-*Last Updated: 2026-02-06*
+*Last Updated: 2026-02-15*
 *Maintained by: [Add admin contact]*
