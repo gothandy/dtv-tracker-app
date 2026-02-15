@@ -268,29 +268,35 @@
             }
         }
 
-        async function addRegulars() {
-            const btn = document.getElementById('addRegularsBtn');
+        async function refreshSession() {
+            const btn = document.getElementById('refreshBtn');
             btn.disabled = true;
+            btn.textContent = 'Refreshing...';
             try {
-                const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/add-regulars`, {
+                const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/refresh`, {
                     method: 'POST'
                 });
                 if (!res.ok) {
                     const data = await res.json();
-                    throw new Error(data.error || 'Failed to add regulars');
+                    throw new Error(data.error || 'Refresh failed');
                 }
                 const result = await res.json();
-                const added = result.data.added;
-                if (added > 0) {
-                    loadSessionDetail();
-                } else {
-                    alert('All regulars are already registered.');
+                const d = result.data;
+                const parts = [];
+                if (d.addedRegulars) parts.push(`${d.addedRegulars} regulars`);
+                if (d.addedFromEventbrite) parts.push(`${d.addedFromEventbrite} from Eventbrite`);
+                if (d.newProfiles) parts.push(`${d.newProfiles} new profiles`);
+                if (d.noPhotoTagged) parts.push(`${d.noPhotoTagged} #NoPhoto`);
+                loadSessionDetail();
+                if (parts.length > 0) {
+                    alert('Added: ' + parts.join(', '));
                 }
             } catch (error) {
-                console.error('Error adding regulars:', error);
-                alert(error.message || 'Failed to add regulars.');
+                console.error('Error refreshing session:', error);
+                alert(error.message || 'Failed to refresh session.');
             } finally {
                 btn.disabled = false;
+                btn.textContent = 'Refresh';
             }
         }
 
@@ -403,7 +409,7 @@
                     <div class="entries-header">
                         <h2 class="entries-heading">Entries (${entries.length})</h2>
                         <div class="header-buttons">
-                            <button class="btn-action" id="addRegularsBtn" onclick="addRegulars()">Regulars</button>
+                            <button class="btn-action" id="refreshBtn" onclick="refreshSession()">Refresh</button>
                             <button class="btn-action" onclick="openHoursModal()">Set Hours</button>
                             <a class="btn-action" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
                                 <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>

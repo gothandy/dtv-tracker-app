@@ -4,6 +4,7 @@ import { sessionsRepository } from '../services/repositories/sessions-repository
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
+import { recordsRepository } from '../services/repositories/records-repository';
 import {
   validateArray,
   validateSession,
@@ -23,6 +24,7 @@ import {
   SESSION_LOOKUP,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
+import { getAttendees } from '../services/eventbrite-client';
 import type { EntryDetailResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -246,16 +248,18 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
   }
 });
 
-router.post('/sessions/:group/:date/add-regulars', async (req: Request, res: Response) => {
+router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
 
-    const [rawGroups, rawSessions, rawEntries, rawRegulars] = await Promise.all([
+    const [rawGroups, rawSessions, rawEntries, rawProfiles, rawRegulars, rawRecords] = await Promise.all([
       groupsRepository.getAll(),
       sessionsRepository.getAll(),
       entriesRepository.getAll(),
-      regularsRepository.getAll()
+      profilesRepository.getAll(),
+      regularsRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
     ]);
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
@@ -271,31 +275,139 @@ router.post('/sessions/:group/:date/add-regulars', async (req: Request, res: Res
     }
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    let sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
     const existingVolunteerIds = new Set(
-      sessionEntries.map(e => safeParseLookupId(e[PROFILE_LOOKUP])).filter(id => id !== undefined)
+      sessionEntries.map(e => safeParseLookupId(e[PROFILE_LOOKUP])).filter((id): id is number => id !== undefined)
     );
 
-    const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
-    const toAdd = groupRegulars.filter(r => {
-      const vid = safeParseLookupId(r[PROFILE_LOOKUP]);
-      return vid !== undefined && !existingVolunteerIds.has(vid);
-    });
+    let addedRegulars = 0;
+    let addedFromEventbrite = 0;
+    let newProfiles = 0;
+    let updatedRecords = 0;
+    let noPhotoTagged = 0;
 
-    for (const regular of toAdd) {
-      await entriesRepository.create({
-        [SESSION_LOOKUP]: String(spSession.ID),
-        [PROFILE_LOOKUP]: String(safeParseLookupId(regular[PROFILE_LOOKUP])),
-        Notes: '#Regular'
-      });
+    // Step 1: Add missing regulars
+    const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
+    for (const regular of groupRegulars) {
+      const vid = safeParseLookupId(regular[PROFILE_LOOKUP]);
+      if (vid !== undefined && !existingVolunteerIds.has(vid)) {
+        await entriesRepository.create({
+          [SESSION_LOOKUP]: String(spSession.ID),
+          [PROFILE_LOOKUP]: String(vid),
+          Notes: '#Regular'
+        });
+        existingVolunteerIds.add(vid);
+        addedRegulars++;
+      }
     }
 
-    res.json({ success: true, data: { added: toAdd.length } } as ApiResponse<{ added: number }>);
+    // Step 2: Sync Eventbrite attendees (if session has an Eventbrite ID)
+    if (spSession.EventbriteEventID) {
+      const attendees = await getAttendees(spSession.EventbriteEventID);
+      console.log(`[Refresh] Session ${spSession.ID} (${spSession.EventbriteEventID}): ${attendees.length} attendees`);
+
+      for (const attendee of attendees) {
+        const attendeeName = attendee.profile?.name;
+        const attendeeEmail = attendee.profile?.email;
+        if (!attendeeName) continue;
+
+        // Match to existing profile: MatchName first, then Title
+        const nameLower = attendeeName.toLowerCase();
+        let profile = profiles.find(p =>
+          p.MatchName && p.MatchName.toLowerCase() === nameLower
+        ) || profiles.find(p =>
+          p.Title && p.Title.toLowerCase() === nameLower
+        );
+
+        if (!profile) {
+          const newId = await profilesRepository.create({
+            Title: attendeeName,
+            Email: attendeeEmail || undefined
+          });
+          console.log(`[Refresh] Created profile: ${attendeeName} (ID: ${newId})`);
+          profile = { ID: newId, Title: attendeeName, Email: attendeeEmail, MatchName: undefined, IsGroup: false } as any;
+          profiles.push(profile!);
+          newProfiles++;
+        }
+
+        // Create entry if not already registered
+        const profileId = profile!.ID;
+        if (!existingVolunteerIds.has(profileId)) {
+          await entriesRepository.create({
+            [SESSION_LOOKUP]: String(spSession.ID),
+            [PROFILE_LOOKUP]: String(profileId)
+          });
+          existingVolunteerIds.add(profileId);
+          addedFromEventbrite++;
+        }
+
+        // Upsert consent records from Eventbrite answers
+        if (recordsRepository.available && attendee.answers) {
+          const consentMap: Record<string, string> = {
+            '315115173': 'Privacy Consent',
+            '315115803': 'Photo Consent'
+          };
+          for (const ans of attendee.answers) {
+            const type = consentMap[ans.question_id];
+            if (!type) continue;
+            const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
+            const date = attendee.created || new Date().toISOString();
+            const existing = rawRecords.find(r =>
+              safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type
+            );
+            if (existing) {
+              await recordsRepository.update(existing.ID, { Status: status, Date: date });
+            } else {
+              const newId = await recordsRepository.create({ ProfileLookupId: profileId, Type: type, Status: status, Date: date });
+              rawRecords.push({ ID: newId, ProfileLookupId: profileId, Type: type, Status: status, Date: date } as any);
+            }
+            updatedRecords++;
+          }
+        }
+      }
+    }
+
+    // Step 3: Tag #NoPhoto on entries where volunteer lacks photo consent
+    // Build set of profile IDs with accepted Photo Consent
+    const photoConsentedIds = new Set<number>();
+    for (const r of rawRecords) {
+      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      if (pid !== undefined && r.Type === 'Photo Consent' && r.Status === 'Accepted') {
+        photoConsentedIds.add(pid);
+      }
+    }
+
+    // Re-fetch entries since steps 1+2 may have added new ones
+    const freshEntries = await entriesRepository.getAll();
+    const freshValidEntries = validateArray(freshEntries, validateEntry, 'Entry');
+    sessionEntries = freshValidEntries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+
+    for (const entry of sessionEntries) {
+      const vid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+      if (vid === undefined) continue;
+      // Skip groups
+      const profile = profiles.find(p => p.ID === vid);
+      if (profile?.IsGroup) continue;
+
+      const notes = entry.Notes || '';
+      if (!photoConsentedIds.has(vid) && !/\#NoPhoto\b/i.test(notes)) {
+        const updatedNotes = notes ? `${notes} #NoPhoto` : '#NoPhoto';
+        await entriesRepository.updateFields(entry.ID, { Notes: updatedNotes });
+        noPhotoTagged++;
+      }
+    }
+
+    console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto`);
+    res.json({
+      success: true,
+      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged }
+    });
   } catch (error: any) {
-    console.error('Error adding regulars:', error);
+    console.error('Error refreshing session:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to add regulars',
+      error: 'Failed to refresh session',
       message: error.message
     });
   }
