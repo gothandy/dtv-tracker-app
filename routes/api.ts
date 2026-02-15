@@ -389,11 +389,12 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
 
-    const [rawGroups, rawSessions, rawEntries, rawProfiles] = await Promise.all([
+    const [rawGroups, rawSessions, rawEntries, rawProfiles, rawSessionRecords] = await Promise.all([
       groupsRepository.getAll(),
       sessionsRepository.getAll(),
       entriesRepository.getAll(),
-      profilesRepository.getAll()
+      profilesRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
     ]);
 
     const groups = validateArray(rawGroups, validateGroup, 'Group');
@@ -424,6 +425,20 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
+    // Build membership and card status lookups from records
+    const sessionMemberIds = new Set<number>();
+    const sessionCardStatusMap = new Map<number, string>();
+    for (const r of rawSessionRecords) {
+      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      if (pid === undefined) continue;
+      if (r.Type === 'Charity Membership' && r.Status === 'Accepted') {
+        sessionMemberIds.add(pid);
+      }
+      if (r.Type === 'Discount Card' && r.Status) {
+        sessionCardStatusMap.set(pid, r.Status);
+      }
+    }
+
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
@@ -432,6 +447,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         volunteerName: e[PROFILE_DISPLAY],
         volunteerSlug: nameToSlug(e[PROFILE_DISPLAY]),
         isGroup: profile?.IsGroup || false,
+        isMember: volunteerId !== undefined ? sessionMemberIds.has(volunteerId) : false,
+        cardStatus: volunteerId !== undefined ? sessionCardStatusMap.get(volunteerId) : undefined,
         count: e.Count || 1,
         hours: e.Hours || 0,
         checkedIn: e.Checked || false,

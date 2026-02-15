@@ -93,11 +93,14 @@
 
         .entry-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
         .entry-name { font-weight: 600; font-size: 1.05rem; color: var(--text); }
-        .entry-name .group-badge {
+        .entry-name .group-badge, .entry-name .member-badge, .entry-name .card-badge {
             display: inline-block; font-size: 0.7rem; font-weight: 600;
-            background: var(--green); color: white; padding: 0.1rem 0.4rem;
+            color: white; padding: 0.1rem 0.4rem;
             border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
         }
+        .entry-name .group-badge, .entry-name .member-badge { background: var(--green); }
+        .entry-name .card-badge { background: var(--green); }
+        .entry-name .card-badge.invited { background: var(--orange, #e67e22); }
         .entry-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center; }
         .entry-tag { font-size: 1.1rem; cursor: default; }
 
@@ -345,6 +348,8 @@
                     ? entries.map(entry => {
                         const icons = notesToIcons(entry.notes);
                         const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+                        const memberBadge = entry.isMember && !entry.isGroup ? '<span class="member-badge">MEMBER</span>' : '';
+                        const cardBadge = entry.cardStatus ? `<span class="card-badge${entry.cardStatus === 'Invited' ? ' invited' : ''}">CARD</span>` : '';
                         const href = entry.volunteerSlug
                             ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/edit.html`
                             : '#';
@@ -362,7 +367,7 @@
                                 <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
                                     <div class="entry-name-row" style="flex:1">
                                         <div class="entry-name">
-                                            ${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}
+                                            ${escapeHtml(entry.volunteerName || 'Unknown')}${groupBadge}${memberBadge}${cardBadge}
                                         </div>
                                         ${icons ? `<div class="entry-tags">${icons}</div>` : ''}
                                     </div>

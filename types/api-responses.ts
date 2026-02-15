@@ -114,6 +114,8 @@ export interface EntryResponse {
   volunteerName?: string;
   volunteerSlug?: string;
   isGroup: boolean;
+  isMember: boolean;
+  cardStatus?: string;
   count: number;
   hours: number;
   checkedIn: boolean;
