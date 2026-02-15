@@ -14,6 +14,7 @@ import {
   SharePointProfile,
   SharePointEntry,
   SharePointRegular,
+  SharePointRecord,
   Profile,
   Entry,
   GroupLookupMap,
@@ -70,7 +71,7 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
     displayName: spSession.Name,
     description: spSession[SESSION_NOTES],
     sessionDate: sessionDate,
-    groupId: spSession[GROUP_LOOKUP] ? parseInt(spSession[GROUP_LOOKUP], 10) : undefined,
+    groupId: safeParseLookupId(spSession[GROUP_LOOKUP]),
     financialYear: calculateFinancialYear(sessionDate),
     eventbriteEventId: spSession.EventbriteEventID
   };
@@ -97,9 +98,9 @@ export function convertProfile(spProfile: SharePointProfile): Profile {
 export function convertEntry(spEntry: SharePointEntry): Entry {
   return {
     id: spEntry.ID,
-    sessionId: spEntry[SESSION_LOOKUP] ? parseInt(spEntry[SESSION_LOOKUP], 10) : 0,
+    sessionId: safeParseLookupId(spEntry[SESSION_LOOKUP]) || 0,
     sessionName: spEntry[SESSION_DISPLAY],
-    volunteerId: spEntry[PROFILE_LOOKUP] ? parseInt(spEntry[PROFILE_LOOKUP], 10) : 0,
+    volunteerId: safeParseLookupId(spEntry[PROFILE_LOOKUP]) || 0,
     volunteerName: spEntry[PROFILE_DISPLAY],
     count: spEntry.Count || 1,
     checkedIn: spEntry.Checked || false,
@@ -415,4 +416,63 @@ export function safeParseLookupId(lookupId: string | undefined): number | undefi
   if (!lookupId) return undefined;
   const parsed = parseInt(lookupId, 10);
   return isNaN(parsed) ? undefined : parsed;
+}
+
+/**
+ * Safely parses an Hours value from SharePoint (may be string or number)
+ */
+export function parseHours(value: any): number {
+  return parseFloat(String(value)) || 0;
+}
+
+// ============================================================================
+// Route Helpers — shared lookup logic used by multiple route files
+// ============================================================================
+
+/**
+ * Finds a group by its lowercase key (Title).
+ * Returns the raw SharePoint group or undefined.
+ */
+export function findGroupByKey(groups: SharePointGroup[], key: string): SharePointGroup | undefined {
+  const validated = validateArray(groups, validateGroup, 'Group');
+  return validated.find(g => (g.Title || '').toLowerCase() === key);
+}
+
+/**
+ * Finds a session by group ID and date string (YYYY-MM-DD).
+ * Returns the raw SharePoint session or undefined.
+ */
+export function findSessionByGroupAndDate(
+  sessions: SharePointSession[],
+  groupId: number,
+  date: string
+): SharePointSession | undefined {
+  const validated = validateArray(sessions, validateSession, 'Session');
+  return validated.find(s => {
+    if (safeParseLookupId(s[GROUP_LOOKUP]) !== groupId) return false;
+    return s.Date.substring(0, 10) === date;
+  });
+}
+
+/**
+ * Builds membership and card status lookups from Records list.
+ * Returns a Set of member profile IDs and a Map of profile ID → card status.
+ */
+export function buildBadgeLookups(records: SharePointRecord[]): {
+  memberIds: Set<number>;
+  cardStatusMap: Map<number, string>;
+} {
+  const memberIds = new Set<number>();
+  const cardStatusMap = new Map<number, string>();
+  for (const r of records) {
+    const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+    if (pid === undefined) continue;
+    if (r.Type === 'Charity Membership' && r.Status === 'Accepted') {
+      memberIds.add(pid);
+    }
+    if (r.Type === 'Discount Card' && r.Status) {
+      cardStatusMap.set(pid, r.Status);
+    }
+  }
+  return { memberIds, cardStatusMap };
 }
