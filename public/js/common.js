@@ -340,6 +340,50 @@ function renderTagButtons(textareaId, containerId, onToggle) {
 }
 
 /**
+ * Toggle a dropdown menu open/closed, closing any other open dropdowns.
+ * Also registers a one-time document click listener to close on outside click.
+ */
+function toggleDropdown(menuId) {
+    const menu = document.getElementById(menuId);
+    const wasOpen = menu.classList.contains('open');
+    document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+    if (!wasOpen) menu.classList.add('open');
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+    }
+});
+
+/**
+ * Check if a volunteer object qualifies as a member (15+ hours in either FY)
+ */
+function isMember(volunteer) {
+    if (volunteer.isGroup) return false;
+    return (volunteer.hoursLastFY >= 15 || volunteer.hoursThisFY >= 15);
+}
+
+/**
+ * Build an Eventbrite link button HTML string
+ */
+function buildEventbriteLink(url) {
+    return `<a class="btn-action btn-eventbrite" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="Eventbrite" style="background:#F05537;">
+        <svg viewBox="0 0 1000 1214" fill="white"><path d="M917 814.9L515.3 501.7c-6.7-5.1.2-15.4 7.5-11.3l156.9 87.9c71.1 39.9 161 16.8 204.1-52.4 45.4-73 21.4-169.1-53.2-212.2L600.4 180.6c-7.3-4.3-1.9-15.3 6-12.2l105.8 42.3c.2.1 2.7 1 3.7 1.3 11.2 3.9 23.3 6.1 35.9 6.1 57.4 0 104.5-45.4 108.6-99.4C865.5 48.9 812 0 748.2 0h-489c-62.8 0-115.5 51.3-114.7 113.9.4 33.3 15.3 63 38.7 83.4 17.6 15.3 76.9 62.8 105.1 85.3 5 4 2.2 12.1-4.3 12.1h-97.9C83.2 295.3 0 378.9 0 482c0 52.1 21.3 99.2 55.6 133.1l566.6 538.5c40.1 37.4 93.9 60.3 153.1 60.3 124.1 0 224.7-100.6 224.7-224.7 0-70.3-32.4-133.1-83-174.3z"/></svg>
+    </a>`;
+}
+
+/**
+ * Attach hover handlers to all Eventbrite buttons in a container
+ */
+function initEventbriteButtons(container) {
+    (container || document).querySelectorAll('.btn-eventbrite').forEach(btn => {
+        btn.addEventListener('mouseover', () => btn.style.background = '#D94425');
+        btn.addEventListener('mouseout', () => btn.style.background = '#F05537');
+    });
+}
+
+/**
  * Fetch wrapper that redirects to login on 401
  */
 async function apiFetch(url, options = {}) {
