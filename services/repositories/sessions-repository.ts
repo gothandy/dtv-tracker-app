@@ -6,7 +6,7 @@
 
 import { SharePointSession } from '../../types/session';
 import { sharePointClient } from '../sharepoint-client';
-import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, legacy } from '../field-names';
+import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES } from '../field-names';
 
 class SessionsRepository {
   private listGuid: string;
@@ -16,9 +16,7 @@ class SessionsRepository {
   }
 
   private get selectFields(): string {
-    const base = `ID,Title,Name,Date,${SESSION_NOTES},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
-    // Legacy site has extra columns not on the Tracker site
-    return legacy ? `${base},Registrations,Hours,FinancialYearFlow,Url` : base;
+    return `ID,Title,Name,Date,${SESSION_NOTES},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointSession[]> {

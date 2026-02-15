@@ -2,30 +2,20 @@
  * Session (Event) Entity Types
  *
  * Sessions represent volunteer events/sessions.
- * SharePoint List GUID: 857fc298-6eba-49ab-99bf-9712ef6b8448
  */
 
 import { SharePointBaseItem } from './group';
 
 /**
  * Raw Session entity as returned by SharePoint REST API
- */
-/**
- * Raw Session entity as returned by SharePoint REST API
- * Field names vary by site — use constants from services/field-names.ts with bracket notation
- * Members site: Crew/CrewLookupId, Description
- * Tracker site: Group/GroupLookupId, Notes
+ * Some field names use bracket access via constants from services/field-names.ts
  */
 export interface SharePointSession extends SharePointBaseItem {
   Title?: string;
   Name?: string;
   Date: string;
-  Registrations?: number;
-  Hours?: number;
-  FinancialYearFlow?: string;
   EventbriteEventID?: string;
-  Url?: string | { Url: string; Description?: string };
-  /** Allow bracket access for site-varying field names */
+  /** Allow bracket access for dynamic field names (GroupLookupId, Notes, etc.) */
   [key: string]: any;
 }
 
@@ -33,18 +23,16 @@ export interface SharePointSession extends SharePointBaseItem {
  * Clean Session domain type for use in application
  *
  * Transformations from SharePoint:
- * - ID → sharePointId (clarity)
+ * - ID → sharePointId
  * - Title → lookupKeyName (lookup key used in relationships)
  * - Name → displayName (UI display name)
- * - Date → sessionDate (converted to Date object, clarity)
- * - CrewLookupId → groupId (converted to number)
- * - Crew → groupName (enriched from Groups lookup)
- * - Registrations → registrations (calculated from Entries)
- * - Hours → hours (calculated from Entries)
- * - FinancialYearFlow → financialYear (calculated as number from sessionDate)
+ * - Date → sessionDate (converted to Date object)
+ * - GroupLookupId → groupId (converted to number)
+ * - Group → groupName (enriched from Groups lookup)
+ * - registrations (calculated from Entries)
+ * - hours (calculated from Entries)
+ * - financialYear (calculated from sessionDate)
  * - EventbriteEventID → eventbriteEventId (camelCase)
- * - Url → eventbriteUrl (camelCase)
- * - Created/Modified hidden (not needed at application layer yet)
  */
 export interface Session {
   sharePointId: number;
@@ -55,9 +43,9 @@ export interface Session {
   description?: string;
   /** Event date */
   sessionDate: Date;
-  /** Group/Crew ID (enriched - converted from CrewLookupId) */
+  /** Group ID (converted from GroupLookupId) */
   groupId?: number;
-  /** Group/Crew display name (enriched from Groups list) */
+  /** Group display name (enriched from Groups list) */
   groupName?: string;
   /** Calculated from Entries list */
   registrations: number;

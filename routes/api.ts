@@ -28,8 +28,7 @@ import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_DISPLAY,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  SESSION_NOTES,
-  legacy
+  SESSION_NOTES
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
 import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse, ConsentRecordResponse } from '../types/api-responses';
@@ -478,8 +477,6 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
-    // Url column only exists on legacy site (dropped from Tracker site)
-    if (legacy && typeof eventbriteUrl === 'string') fields.Url = eventbriteUrl ? { Url: eventbriteUrl, Description: eventbriteUrl } : null;
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -811,11 +808,12 @@ router.get('/profiles', async (req: Request, res: Response) => {
   try {
     const groupFilter = req.query.group ? String(req.query.group).toLowerCase() : undefined;
 
-    const [rawProfiles, rawEntries, rawSessions, rawGroups] = await Promise.all([
+    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
       entriesRepository.getAll(),
       sessionsRepository.getAll(),
-      groupFilter ? groupsRepository.getAll() : Promise.resolve([])
+      groupFilter ? groupsRepository.getAll() : Promise.resolve([]),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
     ]);
 
     const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -864,6 +862,20 @@ router.get('/profiles', async (req: Request, res: Response) => {
       }
     });
 
+    // Build membership and card status lookups from records
+    const memberIds = new Set<number>();
+    const cardStatusMap = new Map<number, string>();
+    for (const r of rawRecords) {
+      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      if (pid === undefined) continue;
+      if (r.Type === 'Charity Membership' && r.Status === 'Accepted') {
+        memberIds.add(pid);
+      }
+      if (r.Type === 'Discount Card' && r.Status) {
+        cardStatusMap.set(pid, r.Status);
+      }
+    }
+
     const data: ProfileResponse[] = validProfiles.map(spProfile => {
       const profile = convertProfile(spProfile);
       const ps = profileStats.get(spProfile.ID);
@@ -873,6 +885,8 @@ router.get('/profiles', async (req: Request, res: Response) => {
         name: profile.name,
         email: profile.email,
         isGroup: profile.isGroup,
+        isMember: memberIds.has(spProfile.ID),
+        cardStatus: cardStatusMap.get(spProfile.ID),
         hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
         hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
         sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
@@ -1409,7 +1423,7 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
             if (!type) continue;
             const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
             const date = attendee.created || new Date().toISOString();
-            const existing = allRecords.find(r => r.ProfileLookupId === profileId && r.Type === type);
+            const existing = allRecords.find(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type);
             if (existing) {
               await recordsRepository.update(existing.ID, { Status: status, Date: date });
             } else {

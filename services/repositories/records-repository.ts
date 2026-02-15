@@ -6,6 +6,7 @@
  */
 
 import { SharePointRecord } from '../../types/sharepoint';
+import { safeParseLookupId } from '../data-layer';
 import { sharePointClient } from '../sharepoint-client';
 
 class RecordsRepository {
@@ -42,7 +43,7 @@ class RecordsRepository {
 
   async getByProfile(profileId: number): Promise<SharePointRecord[]> {
     const all = await this.getAll();
-    return all.filter(r => r.ProfileLookupId === profileId);
+    return all.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId);
   }
 
   async create(fields: { ProfileLookupId: number; Type: string; Status: string; Date: string }): Promise<number> {

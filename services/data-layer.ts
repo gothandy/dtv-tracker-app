@@ -72,8 +72,7 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
     sessionDate: sessionDate,
     groupId: spSession[GROUP_LOOKUP] ? parseInt(spSession[GROUP_LOOKUP], 10) : undefined,
     financialYear: calculateFinancialYear(sessionDate),
-    eventbriteEventId: spSession.EventbriteEventID,
-    eventbriteUrl: typeof spSession.Url === 'object' && spSession.Url ? (spSession.Url as any).Url : spSession.Url
+    eventbriteEventId: spSession.EventbriteEventID
   };
 }
 
@@ -87,8 +86,6 @@ export function convertProfile(spProfile: SharePointProfile): Profile {
     email: spProfile.Email,
     matchName: spProfile.MatchName,
     isGroup: spProfile.IsGroup || false,
-    hoursLastFY: spProfile.HoursLastFY || 0,
-    hoursThisFY: spProfile.HoursThisFY || 0,
     created: new Date(spProfile.Created),
     modified: new Date(spProfile.Modified)
   };
@@ -108,7 +105,6 @@ export function convertEntry(spEntry: SharePointEntry): Entry {
     checkedIn: spEntry.Checked || false,
     hours: spEntry.Hours || 0,
     notes: spEntry.Notes,
-    financialYear: spEntry.FinancialYearFlow,
     created: new Date(spEntry.Created),
     modified: new Date(spEntry.Modified)
   };

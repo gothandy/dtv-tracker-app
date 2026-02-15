@@ -33,8 +33,6 @@ export interface SharePointProfile extends SharePointBaseItem {
   MatchName?: string;
   /** Flag indicating if this is a group profile */
   IsGroup?: boolean;
-  HoursLastFY?: number;
-  HoursThisFY?: number;
 }
 
 /**
@@ -46,8 +44,6 @@ export interface Profile {
   email?: string;
   matchName?: string;
   isGroup: boolean;
-  hoursLastFY: number;
-  hoursThisFY: number;
   created: Date;
   modified: Date;
 }
@@ -58,10 +54,7 @@ export interface Profile {
 
 /**
  * Raw Entry entity from SharePoint
- * GUID: 8a362810-15ea-4210-9ad0-a98196747866
- * Field names vary by site — use constants from services/field-names.ts with bracket notation
- * Members site: Event/EventLookupId, Volunteer/VolunteerLookupId
- * Tracker site: Session/SessionLookupId, Profile/ProfileLookupId
+ * Some field names use bracket access via constants from services/field-names.ts
  */
 export interface SharePointEntry extends SharePointBaseItem {
   Title?: string;
@@ -69,8 +62,7 @@ export interface SharePointEntry extends SharePointBaseItem {
   Checked?: boolean;
   Hours?: number;
   Notes?: string;
-  FinancialYearFlow?: string;
-  /** Allow bracket access for site-varying field names */
+  /** Allow bracket access for dynamic field names (SessionLookupId, ProfileLookupId, etc.) */
   [key: string]: any;
 }
 
@@ -87,7 +79,6 @@ export interface Entry {
   checkedIn: boolean;
   hours: number;
   notes?: string;
-  financialYear?: string;
   created: Date;
   modified: Date;
 }
@@ -98,14 +89,11 @@ export interface Entry {
 
 /**
  * Raw Regular entity from SharePoint
- * GUID: 34b535f1-34ec-4fe6-a887-3b8523e492e1
- * Field names vary by site — use constants from services/field-names.ts with bracket notation
- * Members site: Volunteer/VolunteerLookupId, Crew/CrewLookupId
- * Tracker site: Profile/ProfileLookupId, Group/GroupLookupId
+ * Some field names use bracket access via constants from services/field-names.ts
  */
 export interface SharePointRegular extends SharePointBaseItem {
   Title?: string;
-  /** Allow bracket access for site-varying field names */
+  /** Allow bracket access for dynamic field names (ProfileLookupId, GroupLookupId, etc.) */
   [key: string]: any;
 }
 

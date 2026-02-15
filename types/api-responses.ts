@@ -41,6 +41,8 @@ export interface ProfileResponse {
   name?: string;
   email?: string;
   isGroup: boolean;
+  isMember: boolean;
+  cardStatus?: string;
   hoursLastFY: number;
   hoursThisFY: number;
   sessionsLastFY: number;

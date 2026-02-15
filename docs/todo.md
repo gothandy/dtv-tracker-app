@@ -1,18 +1,8 @@
 # Todo
 
-## Site Migration
+## ~~Site Migration~~ Done
 
-### Update documentation
-Update `sharepoint-schema.md` and `site-migration.md` to reflect the actual Tracker site schema (dropped Registrations, Hours, Url, FinancialYearFlow on Sessions; dropped HoursLastFY/HoursThisFY on Profiles; renamed Url to EventbriteEventUrl then dropped).
-
-### Retire legacy site
-Once the Tracker site is validated and Eventbrite sync is working:
-- Remove legacy ternaries from `services/field-names.ts` — keep clean names only
-- Remove `legacy` conditionals from repositories and `api.ts`
-- Clean up types (`SharePointSession.Registrations`, `Hours`, `Url`, `FinancialYearFlow`; `SharePointProfile.HoursLastFY`, `HoursThisFY`; `SharePointEntry.FinancialYearFlow`)
-- Delete `.env.members` and migration scripts
-- Update `CLAUDE.md` with new GUIDs and field names
-- Remove "manage" permissions in Azure.
+Legacy Members site retired. Tracker site is the only site. Legacy ternaries, migration scripts, `.env.members`, `.env.tracker` all removed. Remaining: remove "manage" permissions in Azure, update `sharepoint-schema.md`.
 
 ### SharePoint button icon
 The SharePoint SVG on the homepage needs replacing with a better icon.
@@ -39,14 +29,24 @@ Single list for tracking consents, benefits, and governance. Type column is a Sh
 | Column | Internal Name | Type | Notes |
 |--------|---------------|------|-------|
 | Profile | Profile | lookup → Profiles | Who |
-| Type | Type | choice | Privacy Consent, Photo Consent |
-| Date | Date | dateTime | When (from Eventbrite order timestamp) |
+| Type | Type | choice | Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card |
+| Status | Status | choice | Invited, Accepted, Declined |
+| Date | Date | dateTime | When last updated (from source timestamp) |
 
-### Phase 1 (now)
-- Create the list with just two Type choices: Privacy Consent, Photo Consent
-- Wire into Eventbrite attendee sync — create records from custom question answers (#315115173, #315115803)
-- One-off import: backfill historic consent from past Eventbrite events
-- Display consent status on profile detail page
+### Phase 1 — Done
+- [x] Create the list with Type and Status columns
+- [x] Wire into Eventbrite attendee sync (upsert with Status)
+- [x] One-off import: backfill historic consent from Eventbrite (Wed sessions, Oct 2025+)
+- [x] Import privacy consent form CSV (Privacy, Photo, Newsletter Consent)
+- [x] Import membership application CSV (Charity Membership, Newsletter Consent)
+- [x] Import benefits CSV (Discount Card — Invited/Accepted)
+- [x] MEMBER badge based on Charity Membership record (not hours)
+- Display consent/records status on profile detail page
+- Backfill Discount Card Date from the date each volunteer first hit 15h
+
+### Unmatched names from CSV imports
+- 41 people from privacy consent form CSV have no matching profile in Tracker
+- 2 people from membership CSV: "Ben Herycz" (no profile), "Dave Rowley" (probably David Rowley)
 
 ### Phase 2 (future)
 - Add more Type choices: Discount Card, Bike Park Wales, Facebook Invite, Parking Permit, etc.

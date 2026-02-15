@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-14
+**Last Updated**: 2026-02-15
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
@@ -42,60 +42,63 @@ Feature-complete volunteer tracking application with:
 
 ## Data Model
 
-The application uses 5 SharePoint lists as the backend data store:
+The application uses 6 SharePoint lists on the Tracker site (`/sites/tracker`):
 
-### 1. Groups (Crews) List
-**GUID**: `68f9eb4a-1eea-4c1f-88e5-9211cf56e002`
+### 1. Groups List
+**GUID**: `6e86cef7-a855-41a4-93e8-6e01a80434a2`
 - Stores volunteer group/crew information
-- Key fields: Name, Description, EventbriteSeriesID
+- Key fields: Title (key), Name (display), Description, EventbriteSeriesID
 
-### 2. Sessions (Events) List
-**GUID**: `857fc298-6eba-49ab-99bf-9712ef6b8448`
+### 2. Sessions List
+**GUID**: `583867bd-e032-4940-89b5-aa2d5158c5d0`
 - Stores volunteer event/session information
-- Key fields: Title, Date (required), Crew (lookup to Groups), Registrations count, Hours, EventbriteEventID
-- Links to Groups via Crew lookup field
+- Key fields: Title, Date (required), Group (lookup to Groups), Notes, EventbriteEventID
+- Registrations and hours are calculated from Entries, not stored
 
 ### 3. Entries List
-**GUID**: `8a362810-15ea-4210-9ad0-a98196747866`
+**GUID**: `7146b950-94e3-4c94-a0d7-310cf2fbd325`
 - Junction table linking volunteers to sessions
-- Key fields: Event (indexed lookup to Sessions), Volunteer (lookup to Profiles), Checked (check-in status), Hours, Count
-- Tracks registrations, check-ins, and individual hours per volunteer per session
+- Key fields: Session (indexed lookup to Sessions), Profile (lookup to Profiles), Checked, Hours, Count
 - Notes field supports hashtags: #New #Child #DofE #DigLead #FirstAider #Regular
 - **Naming**: "Entry" is the preferred term in the UI. An entry starts as a registration (before the session) and becomes an attendance record (after check-in). Avoid "registration" or "attendee" as labels since the same record serves both purposes.
 
-### 4. Profiles (Volunteers) List
-**GUID**: `f3d3c40c-35cb-4167-8c83-c566edef6f29`
+### 4. Profiles List
+**GUID**: `84649143-9e10-42eb-b6ee-2e1f57033073`
 - Stores volunteer profile information
-- Key fields: Title (name), Email, MatchName (for Eventbrite matching), IsGroup, HoursLastFY, HoursThisFY
+- Key fields: Title (name), Email, MatchName (for Eventbrite matching), IsGroup
+- Hours are calculated from Entries, not stored
 
 ### 5. Regulars List
-**GUID**: `34b535f1-34ec-4fe6-a887-3b8523e492e1`
-- Junction table linking volunteers to crews they regularly attend
-- Links Volunteer (Profiles) to Crew (Groups)
-- Includes denormalized fields for quick access to email and hours
+**GUID**: `925c96fd-9b3a-4f55-b179-ed51fc279d39`
+- Junction table linking volunteers to groups they regularly attend
+- Key fields: Profile (lookup to Profiles), Group (lookup to Groups)
+
+### 6. Records List
+**GUID**: `2666a819-1275-4fce-83a3-5bb67b4da83a`
+- Tracks consents, benefits, and governance items per profile
+- Key fields: Profile (lookup to Profiles), Type (choice), Status (choice), Date
+- Type choices: Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card
 
 ## Entity Relationships
 
 ```
-Groups (Crews) 1:N Sessions (Events)
-Sessions 1:N Entries (Registrations) N:1 Profiles (Volunteers)
+Groups 1:N Sessions
+Sessions 1:N Entries N:1 Profiles
 Groups N:N Regulars N:N Profiles
+Profiles 1:N Records
 ```
 
 ## Membership Rules
 
-A volunteer becomes a **member** by completing 15 or more hours in a financial year. Groups cannot be members.
-
-- **Last FY membership carries forward**: Anyone who completed >=15h in the previous FY is a member for the whole of the current FY.
-- **Current FY achievement**: Anyone who reaches >=15h in the current FY becomes a member at that point.
-- **Overall member status**: A volunteer is a member if `hoursLastFY >= 15` OR `hoursThisFY >= 15`.
+A volunteer becomes a **member** when they have a "Charity Membership" record with Status "Accepted" in the Records list. Groups cannot be members.
 
 ### Member badge and highlighting
-- **MEMBER badge**: Always shows based on overall member status (either FY), regardless of filter. A member is a member.
-- **Card highlighting** (green background on volunteers list): Changes with the FY filter — only highlights if the volunteer meets 15h in the selected FY.
-- This separation makes at-risk members easy to spot: when filtering "This FY", a volunteer with a MEMBER badge but no green highlight hasn't yet reached 15h this year and may lose membership next FY.
+- **MEMBER badge**: Based on Charity Membership record status from the Records list (`isMember` field on ProfileResponse).
+- **CARD badge**: Shows discount card status — green if Accepted, orange if Invited (`cardStatus` field on ProfileResponse).
+- **Card highlighting** (green background on volunteers list): Hours-based — changes with the FY filter, highlights if the volunteer meets 15h in the selected FY.
+- This separation makes at-risk members easy to spot: when filtering "This FY", a volunteer with a MEMBER badge but no green highlight hasn't yet reached 15h this year.
 
-The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and entry detail pages use the literal `15`.
+The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and entry detail pages use the literal `15`.
 
 ## Key Workflows
 
@@ -110,10 +113,9 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 
 ### Eventbrite
 - Groups have `EventbriteSeriesID` for linking to Eventbrite series
-- Sessions have `EventbriteEventID` and `Url` for linking to specific events
+- Sessions have `EventbriteEventID` for linking to specific events
 - Profiles use `MatchName` field (lowercase name) to sync with Eventbrite registrations
-- Currently synced via Power Automate flows — see [docs/power-automate-flows.md](docs/power-automate-flows.md)
-- Migration to Node.js `eventbrite-service.ts` is planned
+- Attendee sync via Node.js `eventbrite-client.ts` — syncs registrations and consent records
 
 ### SharePoint
 - All data stored in SharePoint Online lists
@@ -140,15 +142,15 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 - Update [docs/sharepoint-schema.md](docs/sharepoint-schema.md) if SharePoint lists or fields change
 
 ### Calculated Fields Over Stored Fields
-- **Always calculate derived values** (hours totals, membership status, counts) from source entries at query time rather than reading denormalized SharePoint columns.
-- SharePoint lists contain legacy fields (e.g. `HoursLastFY`, `HoursThisFY` on Profiles) that were maintained by Power Automate flows. These are stale and unreliable — do not use them.
-- The goal is to retire all Power Automate flows that auto-update fields. The app should be the source of truth for all derived data.
+- **Always calculate derived values** (hours totals, counts) from source entries at query time rather than storing them.
+- The app is the source of truth for all derived data. No Power Automate flows update fields.
 - Cached data (5-minute TTL) keeps this performant despite recalculating on each request.
 
 ### SharePoint Integration
 - Use the documented GUIDs and internal field names from [docs/sharepoint-schema.md](docs/sharepoint-schema.md)
-- Remember SharePoint internal names are different from display names (e.g., "Crew" vs "Group")
-- Indexed fields: `Event` in Entries list for performance
+- Field name constants live in `services/field-names.ts` — use these instead of hardcoded strings
+- SharePoint returns lookup IDs as strings — always use `safeParseLookupId()` from `data-layer.ts` for comparisons
+- Indexed fields: `Session` in Entries list for performance
 
 ### Data Validation
 - Sessions require a Date field
@@ -193,7 +195,8 @@ dtv-tracker-app/
 │       ├── sessions-repository.ts
 │       ├── profiles-repository.ts
 │       ├── entries-repository.ts
-│       └── regulars-repository.ts
+│       ├── regulars-repository.ts
+│       └── records-repository.ts
 ├── routes/
 │   ├── api.ts                     # Express API route handlers (25 endpoints)
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
@@ -231,14 +234,14 @@ dtv-tracker-app/
 - [x] FY filtering on all list pages (This FY / Last FY / All)
 - [x] Group-filtered volunteer listing
 - [x] Regulars management (add/remove per group)
-- [x] Member status tracking (15h threshold with badge + highlight)
+- [x] Member status tracking (Charity Membership record + hours-based highlighting)
 - [x] CSV export of sessions
 - [x] Microsoft authentication (Entra ID OAuth)
 - [x] Mobile-first responsive design (44px touch targets)
 
 ## Planned Features
 
-- [ ] Eventbrite sync migration from Power Automate to Node.js ([docs/power-automate-flows.md](docs/power-automate-flows.md))
+- [ ] Consent/records display on profile detail page
 - [ ] Report generation (custom date ranges, exportable)
 
 ## Running the Application
@@ -259,7 +262,7 @@ npm start         # Start without auto-reload
 - Session lookup in Entries is indexed for performance
 - Standard SharePoint metadata fields (ID, Created, Modified, Author, Editor) are auto-managed
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
-- Legacy Power Automate flows exist that update `FinancialYearFlow`, `HoursLastFY`, `HoursThisFY` etc. — these are being retired. The app calculates all derived values from entries.
+- The app calculates all derived values (hours, registrations, membership) from source data at query time.
 
 ## Known Constraints
 
@@ -270,4 +273,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-14*
+*Last Updated: 2026-02-15*

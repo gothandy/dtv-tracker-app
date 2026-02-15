@@ -6,7 +6,6 @@
 
 import { SharePointProfile } from '../../types/sharepoint';
 import { sharePointClient } from '../sharepoint-client';
-import { legacy } from '../field-names';
 
 class ProfilesRepository {
   private listGuid: string;
@@ -23,8 +22,7 @@ class ProfilesRepository {
       return cached as SharePointProfile[];
     }
 
-    const base = 'ID,Title,Email,MatchName,IsGroup,Created,Modified';
-    const selectFields = legacy ? `${base},HoursLastFY,HoursThisFY` : base;
+    const selectFields = 'ID,Title,Email,MatchName,IsGroup,Created,Modified';
 
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
