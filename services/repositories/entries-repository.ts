@@ -6,12 +6,17 @@
 
 import { SharePointEntry } from '../../types/sharepoint';
 import { sharePointClient } from '../sharepoint-client';
+import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY } from '../field-names';
 
 class EntriesRepository {
   private listGuid: string;
 
   constructor() {
     this.listGuid = process.env.ENTRIES_LIST_GUID!;
+  }
+
+  private get selectFields(): string {
+    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,Created,Modified`;
   }
 
   async getAll(): Promise<SharePointEntry[]> {
@@ -25,7 +30,7 @@ class EntriesRepository {
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
       this.listGuid,
-      'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified'
+      this.selectFields
     );
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointEntry[];
@@ -36,15 +41,14 @@ class EntriesRepository {
       return [];
     }
 
-    // OData filter for multiple IDs: EventLookupId eq 1 or EventLookupId eq 2 or...
-    // Limit to first 100 for reasonable URL length
+    // OData filter for multiple IDs
     const idsToFetch = sessionIds.slice(0, 100);
-    const filterParts = idsToFetch.map(id => `fields/EventLookupId eq ${id}`);
+    const filterParts = idsToFetch.map(id => `fields/${SESSION_LOOKUP} eq ${id}`);
     const filter = filterParts.join(' or ');
 
     return await sharePointClient.getListItems(
       this.listGuid,
-      'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified',
+      this.selectFields,
       filter
     ) as SharePointEntry[];
   }
@@ -75,7 +79,7 @@ class EntriesRepository {
 
     return await sharePointClient.getListItems(
       this.listGuid,
-      'ID,Title,Event,EventLookupId,Volunteer,VolunteerLookupId,Count,Checked,Hours,Notes,Created,Modified',
+      this.selectFields,
       filter
     ) as SharePointEntry[];
   }
@@ -85,7 +89,7 @@ class EntriesRepository {
     sharePointClient.cache.del('entries');
   }
 
-  async create(fields: { EventLookupId: string; VolunteerLookupId: string; Notes?: string }): Promise<number> {
+  async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.cache.del('entries');
     return id;

@@ -59,27 +59,19 @@ export interface Profile {
 /**
  * Raw Entry entity from SharePoint
  * GUID: 8a362810-15ea-4210-9ad0-a98196747866
+ * Field names vary by site — use constants from services/field-names.ts with bracket notation
+ * Members site: Event/EventLookupId, Volunteer/VolunteerLookupId
+ * Tracker site: Session/SessionLookupId, Profile/ProfileLookupId
  */
 export interface SharePointEntry extends SharePointBaseItem {
   Title?: string;
-  /** Lookup to Sessions list - display value */
-  Event?: string;
-  /** Lookup to Sessions list - ID value (comes as string from SharePoint) */
-  EventLookupId?: string;
-  /** Lookup to Profiles list - display value */
-  Volunteer?: string;
-  /** Lookup to Profiles list - ID value (comes as string from SharePoint) */
-  VolunteerLookupId?: string;
-  /** For group registrations */
   Count?: number;
-  /** Check-in status */
   Checked?: boolean;
-  /** Hours worked at this session */
   Hours?: number;
-  /** Tags: #New #Child #DofE #DigLead #FirstAider #Regular */
   Notes?: string;
-  /** Financial year (updated via Power Automate) */
   FinancialYearFlow?: string;
+  /** Allow bracket access for site-varying field names */
+  [key: string]: any;
 }
 
 /**
@@ -107,23 +99,14 @@ export interface Entry {
 /**
  * Raw Regular entity from SharePoint
  * GUID: 34b535f1-34ec-4fe6-a887-3b8523e492e1
+ * Field names vary by site — use constants from services/field-names.ts with bracket notation
+ * Members site: Volunteer/VolunteerLookupId, Crew/CrewLookupId
+ * Tracker site: Profile/ProfileLookupId, Group/GroupLookupId
  */
 export interface SharePointRegular extends SharePointBaseItem {
   Title?: string;
-  /** Lookup to Profiles list - display value */
-  Volunteer?: string;
-  /** Lookup to Profiles list - ID value */
-  VolunteerLookupId?: string;
-  /** Lookup to Groups list - display value */
-  Crew?: string;
-  /** Lookup to Groups list - ID value */
-  CrewLookupId?: string;
-  /** Denormalized field from Volunteer profile */
-  Volunteer_x003a_Email?: string;
-  /** Denormalized field from Volunteer profile */
-  Volunteer_x003a_HoursLastFY?: number;
-  /** Denormalized field from Volunteer profile */
-  Volunteer_x003a_HoursThisFY?: number;
+  /** Allow bracket access for site-varying field names */
+  [key: string]: any;
 }
 
 /**

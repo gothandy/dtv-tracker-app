@@ -23,6 +23,12 @@ import {
   safeParseLookupId,
   nameToSlug
 } from '../services/data-layer';
+import {
+  GROUP_LOOKUP, GROUP_DISPLAY,
+  SESSION_LOOKUP, SESSION_DISPLAY,
+  PROFILE_LOOKUP, PROFILE_DISPLAY,
+  SESSION_NOTES
+} from '../services/field-names';
 import type { GroupResponse, GroupDetailResponse, SessionResponse, SessionDetailResponse, EntryResponse, EntryDetailResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, StatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -121,7 +127,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
 
     // Filter sessions for this group
     const groupSessions = validateArray(rawSessions, validateSession, 'Session')
-      .filter(s => safeParseLookupId(s.CrewLookupId) === groupId);
+      .filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === groupId);
 
     // FY sessions for stats
     const fyStart = new Date(Date.UTC(fy.startYear, 3, 1));
@@ -138,7 +144,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     // Get entries for this group's FY sessions
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
     const fyEntries = entries.filter(e => {
-      const sessionId = safeParseLookupId(e.EventLookupId);
+      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
       return sessionId !== undefined && fySessionIds.has(sessionId);
     });
 
@@ -147,7 +153,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     const children = fyEntries.filter(e => e.Notes && /\#child\b/i.test(e.Notes)).length;
     const uniqueVolunteers = new Set(
       fyEntries
-        .map(e => safeParseLookupId(e.VolunteerLookupId))
+        .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
         .filter((id): id is number => id !== undefined)
     ).size;
 
@@ -302,16 +308,16 @@ router.post('/sessions', async (req: Request, res: Response) => {
     const groupKey = (group.Title || '').toLowerCase();
     const title = `${dateStr} ${group.Title || ''}`.trim();
 
-    const fields: { Title: string; Date: string; CrewLookupId: string; Name?: string; Description?: string } = {
+    const fields: { Title: string; Date: string; [key: string]: any } = {
       Title: title,
       Date: dateStr,
-      CrewLookupId: String(groupId)
+      [GROUP_LOOKUP]: String(groupId)
     };
     if (typeof name === 'string' && name.trim()) {
       fields.Name = name.trim();
     }
     if (typeof description === 'string' && description.trim()) {
-      fields.Description = description.trim();
+      fields[SESSION_NOTES] = description.trim();
     }
 
     const id = await sessionsRepository.create(fields);
@@ -400,7 +406,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const spSession = sessions.find(s => {
-      if (safeParseLookupId(s.CrewLookupId) !== groupId) return false;
+      if (safeParseLookupId(s[GROUP_LOOKUP]) !== groupId) return false;
       const sessionDate = s.Date.substring(0, 10);
       return sessionDate === dateParam;
     });
@@ -411,18 +417,18 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     }
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const sessionEntries = entries.filter(e => safeParseLookupId(e.EventLookupId) === spSession.ID);
+    const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
-      const volunteerId = safeParseLookupId(e.VolunteerLookupId);
+      const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
       return {
         id: e.ID,
-        volunteerName: e.Volunteer,
-        volunteerSlug: nameToSlug(e.Volunteer),
+        volunteerName: e[PROFILE_DISPLAY],
+        volunteerSlug: nameToSlug(e[PROFILE_DISPLAY]),
         isGroup: profile?.IsGroup || false,
         count: e.Count || 1,
         hours: e.Hours || 0,
@@ -436,7 +442,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const data: SessionDetailResponse = {
       id: spSession.ID,
       displayName: spSession.Name || spSession.Title,
-      description: spSession.Description,
+      description: spSession[SESSION_NOTES],
       date: spSession.Date,
       groupId: groupId,
       groupName: group.displayName,
@@ -467,7 +473,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
-    if (typeof description === 'string') fields.Description = description;
+    if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
     if (typeof eventbriteUrl === 'string') fields.Url = eventbriteUrl ? { Url: eventbriteUrl, Description: eventbriteUrl } : null;
 
@@ -490,7 +496,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const spSession = sessions.find(s => {
-      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      if (safeParseLookupId(s[GROUP_LOOKUP]) !== spGroup.ID) return false;
       return s.Date.substring(0, 10) === dateParam;
     });
     if (!spSession) {
@@ -532,7 +538,7 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const spSession = sessions.find(s => {
-      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      if (safeParseLookupId(s[GROUP_LOOKUP]) !== spGroup.ID) return false;
       return s.Date.substring(0, 10) === dateParam;
     });
     if (!spSession) {
@@ -542,8 +548,8 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
     const spEntry = entries.find(e => {
-      if (safeParseLookupId(e.EventLookupId) !== spSession.ID) return false;
-      return nameToSlug(e.Volunteer) === slug;
+      if (safeParseLookupId(e[SESSION_LOOKUP]) !== spSession.ID) return false;
+      return nameToSlug(e[PROFILE_DISPLAY]) === slug;
     });
     if (!spEntry) {
       res.status(404).json({ success: false, error: 'Entry not found' });
@@ -551,7 +557,7 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     }
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const volunteerId = safeParseLookupId(spEntry.VolunteerLookupId);
+    const volunteerId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
     const profile = volunteerId !== undefined ? profiles.find(p => p.ID === volunteerId) : undefined;
 
     // Calculate FY hours from entries
@@ -561,10 +567,10 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     let calcThisFY = 0;
     let calcLastFY = 0;
     const volunteerEntries = volunteerId !== undefined
-      ? entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === volunteerId)
+      ? entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId)
       : [];
     volunteerEntries.forEach(e => {
-      const sid = safeParseLookupId(e.EventLookupId);
+      const sid = safeParseLookupId(e[SESSION_LOOKUP]);
       if (sid === undefined) return;
       const sess = sessionMap.get(sid);
       if (!sess) return;
@@ -578,8 +584,8 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
 
     const data: EntryDetailResponse = {
       id: spEntry.ID,
-      volunteerName: spEntry.Volunteer,
-      volunteerSlug: nameToSlug(spEntry.Volunteer),
+      volunteerName: spEntry[PROFILE_DISPLAY],
+      volunteerSlug: nameToSlug(spEntry[PROFILE_DISPLAY]),
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,
@@ -702,7 +708,7 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const spSession = sessions.find(s => {
-      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      if (safeParseLookupId(s[GROUP_LOOKUP]) !== spGroup.ID) return false;
       return s.Date.substring(0, 10) === dateParam;
     });
     if (!spSession) {
@@ -717,9 +723,9 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
       return;
     }
 
-    const fields: { EventLookupId: string; VolunteerLookupId: string; Notes?: string } = {
-      EventLookupId: String(spSession.ID),
-      VolunteerLookupId: String(profile.ID)
+    const fields: Record<string, any> = {
+      [SESSION_LOOKUP]: String(spSession.ID),
+      [PROFILE_LOOKUP]: String(profile.ID)
     };
     if (typeof notes === 'string' && notes.trim()) {
       fields.Notes = notes;
@@ -758,7 +764,7 @@ router.post('/sessions/:group/:date/add-regulars', async (req: Request, res: Res
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const spSession = sessions.find(s => {
-      if (safeParseLookupId(s.CrewLookupId) !== spGroup.ID) return false;
+      if (safeParseLookupId(s[GROUP_LOOKUP]) !== spGroup.ID) return false;
       return s.Date.substring(0, 10) === dateParam;
     });
     if (!spSession) {
@@ -767,21 +773,21 @@ router.post('/sessions/:group/:date/add-regulars', async (req: Request, res: Res
     }
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const sessionEntries = entries.filter(e => safeParseLookupId(e.EventLookupId) === spSession.ID);
+    const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
     const existingVolunteerIds = new Set(
-      sessionEntries.map(e => safeParseLookupId(e.VolunteerLookupId)).filter(id => id !== undefined)
+      sessionEntries.map(e => safeParseLookupId(e[PROFILE_LOOKUP])).filter(id => id !== undefined)
     );
 
-    const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r.CrewLookupId) === spGroup.ID);
+    const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
     const toAdd = groupRegulars.filter(r => {
-      const volunteerId = safeParseLookupId(r.VolunteerLookupId);
+      const volunteerId = safeParseLookupId(r[PROFILE_LOOKUP]);
       return volunteerId !== undefined && !existingVolunteerIds.has(volunteerId);
     });
 
     for (const regular of toAdd) {
       await entriesRepository.create({
-        EventLookupId: String(spSession.ID),
-        VolunteerLookupId: String(safeParseLookupId(regular.VolunteerLookupId)),
+        [SESSION_LOOKUP]: String(spSession.ID),
+        [PROFILE_LOOKUP]: String(safeParseLookupId(regular[PROFILE_LOOKUP])),
         Notes: '#Regular'
       });
     }
@@ -820,7 +826,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupFilter);
       if (spGroup) {
         groupSessionIds = new Set(
-          sessions.filter(s => safeParseLookupId(s.CrewLookupId) === spGroup.ID).map(s => s.ID)
+          sessions.filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === spGroup.ID).map(s => s.ID)
         );
       }
     }
@@ -831,9 +837,9 @@ router.get('/profiles', async (req: Request, res: Response) => {
     // Calculate hours and session counts per profile from entries
     const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number> }>();
     entries.forEach(e => {
-      const volunteerId = safeParseLookupId(e.VolunteerLookupId);
+      const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       if (volunteerId === undefined) return;
-      const sessionId = safeParseLookupId(e.EventLookupId);
+      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
       if (sessionId === undefined) return;
       if (groupSessionIds && !groupSessionIds.has(sessionId)) return;
       const session = sessionMap.get(sessionId);
@@ -903,7 +909,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     const profile = convertProfile(spProfile);
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const profileEntries = entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === spProfile.ID);
+    const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === spProfile.ID);
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const sessionMap = new Map(sessions.map(s => [s.ID, s]));
@@ -915,8 +921,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     // Build regulars lookup for this volunteer: crewId → regularId
     const regularsByCrewId = new Map<number, number>();
     rawRegulars.forEach(r => {
-      if (safeParseLookupId(r.VolunteerLookupId) === spProfile.ID) {
-        const crewId = safeParseLookupId(r.CrewLookupId);
+      if (safeParseLookupId(r[PROFILE_LOOKUP]) === spProfile.ID) {
+        const crewId = safeParseLookupId(r[GROUP_LOOKUP]);
         if (crewId !== undefined) regularsByCrewId.set(crewId, r.ID);
       }
     });
@@ -929,7 +935,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number }>();
 
     profileEntries.forEach(e => {
-      const sessionId = safeParseLookupId(e.EventLookupId);
+      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
       if (sessionId === undefined) return;
       const session = sessionMap.get(sessionId);
       if (!session) return;
@@ -942,7 +948,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
         calculatedLastFY += hours;
       }
 
-      const groupId = safeParseLookupId(session.CrewLookupId);
+      const groupId = safeParseLookupId(session[GROUP_LOOKUP]);
       if (groupId !== undefined && (sessionFY === fy.startYear || sessionFY === lastFYStart)) {
         const existing = groupHoursMap.get(groupId);
         if (existing) {
@@ -991,9 +997,9 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     // Build entry responses sorted by date desc
     const entryResponses: ProfileEntryResponse[] = profileEntries
       .map(e => {
-        const sessionId = safeParseLookupId(e.EventLookupId);
+        const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
         const session = sessionId !== undefined ? sessionMap.get(sessionId) : undefined;
-        const groupId = session ? safeParseLookupId(session.CrewLookupId) : undefined;
+        const groupId = session ? safeParseLookupId(session[GROUP_LOOKUP]) : undefined;
         const group = groupId !== undefined ? groupMap.get(groupId) : undefined;
         const date = session?.Date || '';
         const sessionFY = date ? calculateFinancialYear(new Date(date)) : 0;
@@ -1113,7 +1119,7 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
     }
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const profileEntries = entries.filter(e => safeParseLookupId(e.VolunteerLookupId) === spProfile.ID);
+    const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === spProfile.ID);
     if (profileEntries.length > 0) {
       res.status(400).json({ success: false, error: 'Cannot delete profile with existing entries' });
       return;
@@ -1163,8 +1169,8 @@ router.post('/profiles/:slug/regulars', async (req: Request, res: Response) => {
 
     // Check for existing regular to prevent duplicates
     const existing = rawRegulars.find(
-      r => safeParseLookupId(r.VolunteerLookupId) === spProfile.ID
-        && safeParseLookupId(r.CrewLookupId) === groupId
+      r => safeParseLookupId(r[PROFILE_LOOKUP]) === spProfile.ID
+        && safeParseLookupId(r[GROUP_LOOKUP]) === groupId
     );
     if (existing) {
       res.json({ success: true, data: { id: existing.ID } } as ApiResponse<{ id: number }>);
@@ -1172,8 +1178,8 @@ router.post('/profiles/:slug/regulars', async (req: Request, res: Response) => {
     }
 
     const id = await regularsRepository.create({
-      VolunteerLookupId: String(spProfile.ID),
-      CrewLookupId: String(group.ID),
+      [PROFILE_LOOKUP]: String(spProfile.ID),
+      [GROUP_LOOKUP]: String(group.ID),
       Title: spProfile.Title || ''
     });
 

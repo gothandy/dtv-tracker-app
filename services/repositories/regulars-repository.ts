@@ -6,6 +6,7 @@
 
 import { SharePointRegular } from '../../types/sharepoint';
 import { sharePointClient } from '../sharepoint-client';
+import { PROFILE_LOOKUP, PROFILE_DISPLAY, GROUP_LOOKUP, GROUP_DISPLAY } from '../field-names';
 
 class RegularsRepository {
   private listGuid: string;
@@ -14,7 +15,11 @@ class RegularsRepository {
     this.listGuid = process.env.REGULARS_LIST_GUID!;
   }
 
-  async create(fields: { VolunteerLookupId: string; CrewLookupId: string; Title?: string }): Promise<number> {
+  private get selectFields(): string {
+    return `ID,Title,${PROFILE_DISPLAY},${PROFILE_LOOKUP},${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
+  }
+
+  async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.cache.del('regulars');
     return id;
@@ -36,7 +41,7 @@ class RegularsRepository {
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
       this.listGuid,
-      'ID,Title,Volunteer,VolunteerLookupId,Crew,CrewLookupId,Created,Modified'
+      this.selectFields
     );
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointRegular[];

@@ -10,27 +10,23 @@ import { SharePointBaseItem } from './group';
 /**
  * Raw Session entity as returned by SharePoint REST API
  */
+/**
+ * Raw Session entity as returned by SharePoint REST API
+ * Field names vary by site — use constants from services/field-names.ts with bracket notation
+ * Members site: Crew/CrewLookupId, Description
+ * Tracker site: Group/GroupLookupId, Notes
+ */
 export interface SharePointSession extends SharePointBaseItem {
-  /** Session title - used for lookups (e.g., "2026-02-17 Sat") */
   Title?: string;
-  /** Event name - better for UI display */
   Name?: string;
-  /** Planning notes, work done, actions */
-  Description?: string;
-  /** Event date (ISO string from SharePoint) */
   Date: string;
-  /** Lookup to Groups list - display value */
-  Crew?: string;
-  /** Lookup to Groups list - ID value (comes as string from SharePoint) */
-  CrewLookupId?: string;
-  /** Registration count (stored on session, but calculated from Entries is more accurate) */
   Registrations?: number;
-  /** Total hours (stored on session, but calculated from Entries is more accurate) */
   Hours?: number;
-  /** Financial year classification (e.g., "FY2025") - deprecated, calculated instead */
   FinancialYearFlow?: string;
   EventbriteEventID?: string;
   Url?: string | { Url: string; Description?: string };
+  /** Allow bracket access for site-varying field names */
+  [key: string]: any;
 }
 
 /**

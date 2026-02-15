@@ -111,7 +111,9 @@ The threshold constant is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and 
 ### Eventbrite
 - Groups have `EventbriteSeriesID` for linking to Eventbrite series
 - Sessions have `EventbriteEventID` and `Url` for linking to specific events
-- Profiles use `MatchName` field to sync with Eventbrite registrations
+- Profiles use `MatchName` field (lowercase name) to sync with Eventbrite registrations
+- Currently synced via Power Automate flows — see [docs/power-automate-flows.md](docs/power-automate-flows.md)
+- Migration to Node.js `eventbrite-service.ts` is planned
 
 ### SharePoint
 - All data stored in SharePoint Online lists
@@ -173,6 +175,8 @@ dtv-tracker-app/
 │   ├── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
 │   ├── technical-debt.md          # Performance and optimization tracking
 │   ├── sharepoint-refactoring.md  # Legacy field cleanup tracking
+│   ├── power-automate-flows.md    # Eventbrite sync flow documentation
+│   ├── site-migration.md          # SharePoint Members → Tracker migration plan
 │   └── requirements.md            # Mobile & field usage requirements
 ├── types/
 │   ├── api-responses.ts           # API response types (HTTP contract)
@@ -234,7 +238,7 @@ dtv-tracker-app/
 
 ## Planned Features
 
-- [ ] Eventbrite sync for automatic registration import
+- [ ] Eventbrite sync migration from Power Automate to Node.js ([docs/power-automate-flows.md](docs/power-automate-flows.md))
 - [ ] Report generation (custom date ranges, exportable)
 
 ## Running the Application

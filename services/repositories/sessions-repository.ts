@@ -6,12 +6,17 @@
 
 import { SharePointSession } from '../../types/session';
 import { sharePointClient } from '../sharepoint-client';
+import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES } from '../field-names';
 
 class SessionsRepository {
   private listGuid: string;
 
   constructor() {
     this.listGuid = process.env.SESSIONS_LIST_GUID!;
+  }
+
+  private get selectFields(): string {
+    return `ID,Title,Name,Date,${SESSION_NOTES},Registrations,Hours,FinancialYearFlow,EventbriteEventID,Url,${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointSession[]> {
@@ -25,7 +30,7 @@ class SessionsRepository {
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
       this.listGuid,
-      'ID,Title,Name,Date,Description,Registrations,Hours,FinancialYearFlow,EventbriteEventID,Url,Crew,CrewLookupId,Created,Modified',
+      this.selectFields,
       null,
       null  // TODO: Graph API orderby on this list returns 400 - sorting done in data layer instead
     );
@@ -67,13 +72,13 @@ class SessionsRepository {
     return filteredData;
   }
 
-  async create(fields: { Title: string; Date: string; CrewLookupId: string; Name?: string; Description?: string }): Promise<number> {
+  async create(fields: { Title: string; Date: string; [key: string]: any }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.cache.del('sessions');
     return id;
   }
 
-  async updateFields(sessionId: number, fields: Partial<Pick<SharePointSession, 'Name' | 'Description'>>): Promise<void> {
+  async updateFields(sessionId: number, fields: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
     sharePointClient.cache.del('sessions');
   }

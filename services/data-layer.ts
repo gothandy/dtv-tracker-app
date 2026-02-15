@@ -19,6 +19,12 @@ import {
   GroupLookupMap,
   LookupMap
 } from '../types/sharepoint';
+import {
+  GROUP_LOOKUP, GROUP_DISPLAY,
+  SESSION_LOOKUP, SESSION_DISPLAY,
+  PROFILE_LOOKUP, PROFILE_DISPLAY,
+  SESSION_NOTES
+} from './field-names';
 
 // ============================================================================
 // Conversion Functions: SharePoint -> Domain Types
@@ -62,9 +68,9 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
     sharePointId: spSession.ID,
     lookupKeyName: spSession.Title,
     displayName: spSession.Name,
-    description: spSession.Description,
+    description: spSession[SESSION_NOTES],
     sessionDate: sessionDate,
-    groupId: spSession.CrewLookupId ? parseInt(spSession.CrewLookupId, 10) : undefined,
+    groupId: spSession[GROUP_LOOKUP] ? parseInt(spSession[GROUP_LOOKUP], 10) : undefined,
     financialYear: calculateFinancialYear(sessionDate),
     eventbriteEventId: spSession.EventbriteEventID,
     eventbriteUrl: typeof spSession.Url === 'object' && spSession.Url ? (spSession.Url as any).Url : spSession.Url
@@ -94,10 +100,10 @@ export function convertProfile(spProfile: SharePointProfile): Profile {
 export function convertEntry(spEntry: SharePointEntry): Entry {
   return {
     id: spEntry.ID,
-    sessionId: spEntry.EventLookupId ? parseInt(spEntry.EventLookupId, 10) : 0,
-    sessionName: spEntry.Event,
-    volunteerId: spEntry.VolunteerLookupId ? parseInt(spEntry.VolunteerLookupId, 10) : 0,
-    volunteerName: spEntry.Volunteer,
+    sessionId: spEntry[SESSION_LOOKUP] ? parseInt(spEntry[SESSION_LOOKUP], 10) : 0,
+    sessionName: spEntry[SESSION_DISPLAY],
+    volunteerId: spEntry[PROFILE_LOOKUP] ? parseInt(spEntry[PROFILE_LOOKUP], 10) : 0,
+    volunteerName: spEntry[PROFILE_DISPLAY],
     count: spEntry.Count || 1,
     checkedIn: spEntry.Checked || false,
     hours: spEntry.Hours || 0,
@@ -165,7 +171,7 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, S
   const statsMap = new Map<string, SessionStats>();
 
   entries.forEach(entry => {
-    const sessionId = entry.EventLookupId;
+    const sessionId = entry[SESSION_LOOKUP];
     if (!sessionId) return;
 
     if (!statsMap.has(sessionId)) {
@@ -211,7 +217,7 @@ export function enrichSessions(
       // Add calculated stats
       registrations: stats?.registrations || 0,
       hours: stats ? Math.round(stats.hours * 10) / 10 : 0, // Round to 1 decimal
-      groupName: spSession.CrewLookupId ? groupMap.get(spSession.CrewLookupId) : undefined
+      groupName: spSession[GROUP_LOOKUP] ? groupMap.get(spSession[GROUP_LOOKUP]) : undefined
     } as Session;
 
     return session;
@@ -322,7 +328,7 @@ export function calculateFYStats(
   const sessionIdsFY = new Set(sessionsFY.map(s => s.ID));
 
   const entriesFY = allEntries.filter(entry => {
-    const sessionId = safeParseLookupId(entry.EventLookupId);
+    const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
     return sessionId !== undefined && sessionIdsFY.has(sessionId);
   });
 
@@ -332,14 +338,14 @@ export function calculateFYStats(
 
   const activeGroupIds = new Set(
     sessionsFY
-      .filter(s => s.CrewLookupId)
-      .map(s => safeParseLookupId(s.CrewLookupId))
+      .filter(s => s[GROUP_LOOKUP])
+      .map(s => safeParseLookupId(s[GROUP_LOOKUP]))
       .filter((id): id is number => id !== undefined)
   );
 
   const uniqueVolunteers = new Set(
     entriesFY
-      .map(e => safeParseLookupId(e.VolunteerLookupId))
+      .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
       .filter((id): id is number => id !== undefined)
   );
 
@@ -361,10 +367,10 @@ export function calculateFYStats(
 export function groupRegularsByCrewId(regulars: SharePointRegular[]): Map<number, { name: string; slug: string }[]> {
   const map = new Map<number, { name: string; slug: string }[]>();
   regulars.forEach(regular => {
-    const crewId = safeParseLookupId(regular.CrewLookupId);
-    if (crewId === undefined || !regular.Volunteer) return;
+    const crewId = safeParseLookupId(regular[GROUP_LOOKUP]);
+    if (crewId === undefined || !regular[PROFILE_DISPLAY]) return;
 
-    const entry = { name: regular.Volunteer, slug: nameToSlug(regular.Volunteer) };
+    const entry = { name: regular[PROFILE_DISPLAY], slug: nameToSlug(regular[PROFILE_DISPLAY]) };
     const list = map.get(crewId);
     if (list) {
       list.push(entry);
