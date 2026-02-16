@@ -47,6 +47,51 @@ async function fetchEventbrite<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface EventbriteEvent {
+  id: string;
+  seriesId?: string;
+  name: string;
+  startDate: string;
+  description?: string;
+}
+
+export async function getOrgEvents(): Promise<EventbriteEvent[]> {
+  const orgId = process.env.EVENTBRITE_ORGANIZATION_ID;
+  if (!orgId) throw new Error('EVENTBRITE_ORGANIZATION_ID not configured');
+
+  const all: EventbriteEvent[] = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await fetchEventbrite<{
+      events: Array<{
+        id: string;
+        series_id?: string;
+        name?: { text?: string };
+        start?: { utc?: string };
+        description?: { text?: string };
+      }>;
+      pagination: { has_more_items: boolean };
+    }>(`/organizations/${orgId}/events/?status=live&page_size=100&page=${page}`);
+
+    for (const e of (data.events || [])) {
+      all.push({
+        id: e.id,
+        seriesId: e.series_id || undefined,
+        name: e.name?.text || '',
+        startDate: e.start?.utc || '',
+        description: e.description?.text || undefined
+      });
+    }
+
+    hasMore = data.pagination?.has_more_items || false;
+    page++;
+  }
+
+  return all;
+}
+
 export async function getAttendees(eventId: string): Promise<EventbriteAttendee[]> {
   const all: EventbriteAttendee[] = [];
   let page = 1;

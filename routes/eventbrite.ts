@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
@@ -8,10 +9,11 @@ import {
   validateSession,
   validateEntry,
   validateProfile,
+  validateGroup,
   safeParseLookupId
 } from '../services/data-layer';
-import { SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
-import { getAttendees } from '../services/eventbrite-client';
+import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
+import { getAttendees, getOrgEvents } from '../services/eventbrite-client';
 
 const router: Router = express.Router();
 
@@ -137,6 +139,108 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to sync attendees'
+    });
+  }
+});
+
+router.post('/eventbrite/sync-sessions', async (req: Request, res: Response) => {
+  try {
+    const [orgEvents, rawGroups, rawSessions] = await Promise.all([
+      getOrgEvents(),
+      groupsRepository.getAll(),
+      sessionsRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+
+    // Map EventbriteSeriesID → group
+    const seriesMap = new Map<string, typeof groups[0]>();
+    for (const g of groups) {
+      if (g.EventbriteSeriesID) seriesMap.set(g.EventbriteSeriesID, g);
+    }
+
+    // Set of existing EventbriteEventIDs for quick lookup
+    const existingEventIds = new Set(
+      sessions.filter(s => s.EventbriteEventID).map(s => s.EventbriteEventID!)
+    );
+
+    let newSessions = 0;
+    let matchedEvents = 0;
+
+    for (const event of orgEvents) {
+      if (!event.seriesId || !seriesMap.has(event.seriesId)) continue;
+      matchedEvents++;
+
+      if (existingEventIds.has(event.id)) continue;
+
+      const group = seriesMap.get(event.seriesId)!;
+      const dateStr = event.startDate ? event.startDate.substring(0, 10) : '';
+      if (!dateStr) continue;
+
+      const title = `${dateStr} ${group.Title || ''}`.trim();
+      const fields: { Title: string; Date: string; [key: string]: any } = {
+        Title: title,
+        Date: dateStr,
+        [GROUP_LOOKUP]: String(group.ID),
+        EventbriteEventID: event.id
+      };
+      if (event.name) fields.Name = event.name;
+
+      await sessionsRepository.create(fields);
+      existingEventIds.add(event.id);
+      newSessions++;
+    }
+
+    console.log(`[Eventbrite Sync] Sessions: ${orgEvents.length} total events, ${matchedEvents} matched, ${newSessions} new sessions`);
+    res.json({
+      success: true,
+      data: { totalEvents: orgEvents.length, matchedEvents, newSessions }
+    });
+  } catch (error: any) {
+    console.error('Error syncing Eventbrite sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to sync sessions'
+    });
+  }
+});
+
+router.get('/eventbrite/unmatched-events', async (req: Request, res: Response) => {
+  try {
+    const [orgEvents, rawGroups, rawSessions] = await Promise.all([
+      getOrgEvents(),
+      groupsRepository.getAll(),
+      sessionsRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+
+    const seriesMap = new Map<string, typeof groups[0]>();
+    for (const g of groups) {
+      if (g.EventbriteSeriesID) seriesMap.set(g.EventbriteSeriesID, g);
+    }
+
+    const existingEventIds = new Set(
+      sessions.filter(s => s.EventbriteEventID).map(s => s.EventbriteEventID!)
+    );
+
+    const unmatched = orgEvents
+      .filter(e => !e.seriesId || !seriesMap.has(e.seriesId))
+      .filter(e => !existingEventIds.has(e.id))
+      .map(e => ({
+        eventId: e.id,
+        name: e.name,
+        date: e.startDate ? e.startDate.substring(0, 10) : ''
+      }));
+
+    res.json({ success: true, data: unmatched });
+  } catch (error: any) {
+    console.error('Error fetching unmatched events:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch unmatched events'
     });
   }
 });

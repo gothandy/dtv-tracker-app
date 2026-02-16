@@ -160,8 +160,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       registrations: s.registrations,
       hours: s.hours,
       financialYear: `FY${s.financialYear}`,
-      eventbriteEventId: s.eventbriteEventId,
-      eventbriteUrl: s.eventbriteUrl
+      eventbriteEventId: s.eventbriteEventId
     }));
 
     const data: GroupDetailResponse = {

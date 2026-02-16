@@ -32,7 +32,6 @@ export interface SessionResponse {
   hours: number;
   financialYear: string;
   eventbriteEventId?: string;
-  eventbriteUrl?: string;
 }
 
 export interface ProfileResponse {
@@ -135,7 +134,6 @@ export interface SessionDetailResponse {
   hours: number;
   financialYear: string;
   eventbriteEventId?: string;
-  eventbriteUrl?: string;
   entries: EntryResponse[];
 }
 

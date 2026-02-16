@@ -60,8 +60,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
       registrations: s.registrations,
       hours: s.hours,
       financialYear: `FY${s.financialYear}`,
-      eventbriteEventId: s.eventbriteEventId,
-      eventbriteUrl: s.eventbriteUrl
+      eventbriteEventId: s.eventbriteEventId
     }));
 
     res.json({ success: true, count: data.length, data } as ApiResponse<SessionResponse[]>);
@@ -345,7 +344,6 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       hours: Math.round(totalHours * 10) / 10,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       eventbriteEventId: spSession.EventbriteEventID,
-      eventbriteUrl: undefined,
       entries: entryResponses
     };
 

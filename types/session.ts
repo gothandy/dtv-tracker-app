@@ -54,5 +54,4 @@ export interface Session {
   /** Financial year as number (e.g., 2025 for FY2025), calculated from sessionDate */
   financialYear: number;
   eventbriteEventId?: string;
-  eventbriteUrl?: string;
 }

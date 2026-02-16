@@ -23,6 +23,9 @@
         .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .sync-result { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-mid); min-height: 1.2rem; }
         .sync-result.error { color: var(--error); }
+        .unmatched-list { margin-top: 0.75rem; font-size: 0.9rem; }
+        .unmatched-item { display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+        .unmatched-item .event-id { color: var(--text-light); font-family: monospace; font-size: 0.85rem; }
     </style>
     <script src="/js/common.js"></script>
 </head>
@@ -33,9 +36,14 @@
         <div class="admin-section">
             <h2><a href="https://dtv.eventbrite.co.uk/" target="_blank">Eventbrite</a></h2>
             <div class="admin-actions">
+                <button class="admin-btn" id="runAllBtn" onclick="runAll()">Run All</button>
+                <button class="admin-btn" id="syncSessionsBtn" onclick="syncSessions()">Refresh Events</button>
                 <button class="admin-btn" id="syncAttendeesBtn" onclick="syncAttendees()">Fetch New Attendees</button>
+                <button class="admin-btn" id="unmatchedBtn" onclick="showUnmatched()">Unmatched Events</button>
             </div>
+            <div class="sync-result" id="syncSessionsResult"></div>
             <div class="sync-result" id="syncAttendeesResult"></div>
+            <div id="unmatchedList"></div>
         </div>
 
         <div class="admin-section">
@@ -53,6 +61,44 @@
 
     <script>createFooter();</script>
     <script>
+        async function runAll() {
+            const btn = document.getElementById('runAllBtn');
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            try {
+                await syncSessions();
+                await syncAttendees();
+                await showUnmatched();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run All';
+            }
+        }
+
+        async function syncSessions() {
+            const btn = document.getElementById('syncSessionsBtn');
+            const result = document.getElementById('syncSessionsResult');
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            result.textContent = '';
+            result.className = 'sync-result';
+
+            try {
+                const res = await apiFetch('/api/eventbrite/sync-sessions', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Sync failed');
+
+                const d = data.data;
+                result.textContent = `${d.totalEvents} events, ${d.matchedEvents} matched, ${d.newSessions} new sessions`;
+            } catch (error) {
+                result.textContent = error.message || 'Sync failed';
+                result.className = 'sync-result error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Refresh Events';
+            }
+        }
+
         async function syncAttendees() {
             const btn = document.getElementById('syncAttendeesBtn');
             const result = document.getElementById('syncAttendeesResult');
@@ -76,6 +122,34 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Fetch New Attendees';
+            }
+        }
+
+        async function showUnmatched() {
+            const btn = document.getElementById('unmatchedBtn');
+            const list = document.getElementById('unmatchedList');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            list.innerHTML = '';
+
+            try {
+                const res = await apiFetch('/api/eventbrite/unmatched-events');
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed to fetch');
+
+                if (data.data.length === 0) {
+                    list.innerHTML = '<div class="sync-result">No unmatched events</div>';
+                } else {
+                    list.innerHTML = '<div class="unmatched-list">' +
+                        data.data.map(e =>
+                            `<div class="unmatched-item"><span>${escapeHtml(e.date)}</span><span>${escapeHtml(e.name)}</span><span class="event-id">${escapeHtml(e.eventId)}</span></div>`
+                        ).join('') + '</div>';
+                }
+            } catch (error) {
+                list.innerHTML = `<div class="sync-result error">${escapeHtml(error.message || 'Failed to fetch')}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Unmatched Events';
             }
         }
 
