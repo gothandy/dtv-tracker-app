@@ -7,6 +7,13 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
+  // API key auth for scheduled sync calls
+  const apiKey = process.env.API_SYNC_KEY;
+  if (apiKey && req.headers['x-api-key'] === apiKey && req.path.startsWith('/api/eventbrite/')) {
+    next();
+    return;
+  }
+
   // API requests get 401 JSON
   if (req.path.startsWith('/api/')) {
     res.status(401).json({ success: false, error: 'Authentication required' });
