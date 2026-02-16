@@ -6,13 +6,17 @@ This document tracks known technical debt, optimization opportunities, and code 
 
 | # | Item | Priority | Status |
 |---|------|----------|--------|
+| # | Item | Priority | Status |
+|---|------|----------|--------|
 | 1 | Caching | - | ✅ Implemented (5-min TTL) |
 | 2 | SharePoint-side filtering | - | ✅ Implemented (hybrid) |
-| 3 | Modal HTML duplication | Medium | Open |
-| 4 | FY calculation duplication | Low | Open |
-| 5 | Automated tests | Medium | Open |
-| 6 | Tag icons duplication | Low | Open |
-| 7 | Graph API retry logic | Low | Open |
+| 3 | Power Automate migration | - | ✅ Migrated to Node.js (2026-02-16) |
+| 4 | Modal HTML duplication | Medium | Open |
+| 5 | FY calculation duplication | Low | Open |
+| 6 | Automated tests | Medium | Open |
+| 7 | Tag icons duplication | Low | Open |
+| 8 | Graph API retry logic | Low | Open |
+| 9 | Sync logging | Low | Open |
 
 ---
 
@@ -28,11 +32,16 @@ Server-side caching with 5-minute TTL via `node-cache` in `services/sharepoint-c
 
 Hybrid approach: Sessions filtered at SharePoint by FY field where possible, Entries fetched in full and filtered in Node.js (complex OData OR filters were slower than fetching all). Current approach is simple and performant with the caching layer.
 
+### 3. Power Automate Migration
+**Status**: ✅ Migrated (2026-02-16)
+
+All 8 Power Automate Eventbrite sync flows replaced by 4 Node.js API endpoints in `routes/eventbrite.ts`. Scheduled sync via Azure Logic App (Consumption plan) calling `POST /api/eventbrite/event-and-attendee-update` with API key auth. See [docs/power-automate-flows.md](power-automate-flows.md) for full details.
+
 ---
 
 ## Open Items
 
-### 3. Modal HTML Duplication
+### 4. Modal HTML Duplication
 **Priority**: Medium
 **Effort**: Medium
 
@@ -46,7 +55,7 @@ Modal markup (edit group, edit session, create session, edit profile, set hours)
 
 ---
 
-### 4. FY Calculation Duplication
+### 5. FY Calculation Duplication
 **Priority**: Low
 **Effort**: Low
 
@@ -60,7 +69,7 @@ Both implement the same April-March rule. Currently works fine, but a change to 
 
 ---
 
-### 5. Automated Tests
+### 6. Automated Tests
 **Priority**: Medium
 **Effort**: High
 
@@ -75,7 +84,7 @@ The `test/` directory contains manual verification scripts (`.js` files that hit
 
 ---
 
-### 6. Tag Icons Duplication
+### 7. Tag Icons Duplication
 **Priority**: Low
 **Effort**: Low
 
@@ -85,13 +94,28 @@ Not a real problem since the client controls which tags can be set via the tag b
 
 ---
 
-### 7. Graph API Retry Logic
+### 8. Graph API Retry Logic
 **Priority**: Low
 **Effort**: Medium
 
 `services/sharepoint-client.ts` has no retry logic for transient Graph API failures (429 rate limits, 503 service unavailable). Currently relies on the 5-minute cache to reduce request volume.
 
 **When to address**: If users report intermittent errors in production, especially during high-usage periods.
+
+---
+
+### 9. Sync Logging
+**Priority**: Low
+**Effort**: Medium
+
+The Eventbrite sync endpoints return structured results (event counts, new sessions, new profiles, etc.) but there's no persistent log. The Azure Logic App run history provides some visibility, but a SharePoint "Logs" list would allow viewing sync history from within the app.
+
+**Options**:
+- SharePoint Logs list with fields: Title (timestamp), Summary (text), Source (Manual/Scheduled)
+- Write to Logs list at the end of `event-and-attendee-update` endpoint
+- Display on admin page with last sync timestamp
+
+**When to address**: Once the scheduled sync is running reliably and there's a need to audit sync history.
 
 ---
 
@@ -117,4 +141,4 @@ Originally proposed adding a `FinancialYearFlow` column to the Entries list for 
 
 ---
 
-*Last Updated: 2026-02-14*
+*Last Updated: 2026-02-16*

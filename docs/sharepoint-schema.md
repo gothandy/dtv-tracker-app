@@ -1,156 +1,123 @@
 # SharePoint List Structure Documentation
 
-This document describes the SharePoint list schema for the Volunteer App backend.
+This document describes the SharePoint list schema for the Tracker site (`/sites/tracker`).
 
 ---
 
-## 1. Groups (Crews) List
+## 1. Groups List
 
-**Purpose**: Stores volunteer group/crew information
+**Purpose**: Stores volunteer group information
 
-**List GUID**: `68f9eb4a-1eea-4c1f-88e5-9211cf56e002`
+**List GUID**: `6e86cef7-a855-41a4-93e8-6e01a80434a2`
 
 ### Columns
 
-| Column Name | Internal Name | Type | Required | Max Length | Description |
-|------------|---------------|------|----------|------------|-------------|
-| **ID** | ID | Counter | Auto | - | Unique identifier (Primary Key) |
-| **Title** | Title | Single line of text | No | 255 | Shorthand identifier (e.g., "Sat") - used in lookups |
-| **Name** | Name | Single line of text | No | 255 | Full display name (e.g., "Saturday Dig") - use for UI |
-| **Description** | Description | Single line of text | No | 255 | Group description |
-| **EventbriteSeriesID** | EventbriteSeriesID | Single line of text | No | 255 | Eventbrite Series identifier for the group |
-| **Content Type ID** | ContentTypeId | Content Type Id | No | - | SharePoint content type (hidden) |
-| **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
-| **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
-| **Created By** | Author | Person or Group | Auto | - | User who created the item (read-only) |
-| **Modified By** | Editor | Person or Group | Auto | - | User who last modified the item (read-only) |
-
-### Key Fields
-- **Name**: Short identifier for the crew/group
-- **EventbriteSeriesID**: Links to Eventbrite for event management
+| Column Name | Internal Name | Type | Required | Description |
+|------------|---------------|------|----------|-------------|
+| **ID** | ID | Counter | Auto | Unique identifier (Primary Key) |
+| **Title** | Title | Single line of text | No | Shorthand identifier (e.g., "Sat") — used as lookup key |
+| **Name** | Name | Single line of text | No | Full display name (e.g., "Saturday Dig") — used in UI |
+| **Description** | Description | Single line of text | No | Group description |
+| **EventbriteSeriesID** | EventbriteSeriesID | Single line of text | No | Eventbrite Series identifier for the group |
+| **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
+| **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
 ---
 
-## 2. Sessions (Events) List
+## 2. Sessions List
 
-**Purpose**: Stores volunteer event/session information with dates, registrations, and hours tracking
+**Purpose**: Stores volunteer session information with dates and planning notes
 
-**List GUID**: `857fc298-6eba-49ab-99bf-9712ef6b8448`
+**List GUID**: `583867bd-e032-4940-89b5-aa2d5158c5d0`
 
 ### Columns
 
-| Column Name | Internal Name | Type | Required | Max Length | Description |
-|------------|---------------|------|----------|------------|-------------|
-| **ID** | ID | Counter | Auto | - | Unique identifier (Primary Key) |
-| **Title** | Title | Single line of text | No | 255 | Session/Event title |
-| **Group** | Crew | Lookup | No | - | Links to Groups list (shows Title) |
-| **Date** | Date | Date (Date only) | Yes | - | Event date |
-| **Name** | Name | Single line of text | No | 255 | Event name |
-| **Notes** | Description | Multiple lines of text | No | - | Planning notes, work done, and actions |
-| **Count** | Registrations | Number | No | - | Registration count for the event |
-| **Hours** | Hours | Number | No | - | Total hours recorded at event |
-| **Financial Year** | FinancialYearFlow | Single line of text | No | 255 | Financial year classification |
-| **EventbriteEventID** | EventbriteEventID | Single line of text | No | 255 | Eventbrite Event identifier |
-| **EventbriteUrl** | Url | Hyperlink | No | - | Link to Eventbrite event page |
-| **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
-| **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
-| **Created By** | Author | Person or Group | Auto | - | User who created the item (read-only) |
-| **Modified By** | Editor | Person or Group | Auto | - | User who last modified the item (read-only) |
+| Column Name | Internal Name | Type | Required | Description |
+|------------|---------------|------|----------|-------------|
+| **ID** | ID | Counter | Auto | Unique identifier (Primary Key) |
+| **Title** | Title | Single line of text | No | Lookup key (e.g., "2026-02-15 Sat") |
+| **Name** | Name | Single line of text | No | Display name for the session |
+| **Date** | Date | Date (Date only) | Yes | Session date |
+| **Notes** | Notes | Multiple lines of text | No | Planning notes, work done, and actions |
+| **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
+| **EventbriteEventID** | EventbriteEventID | Single line of text | No | Eventbrite Event identifier |
+| **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
+| **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
-### Key Relationships
-- **Group (Crew)**: Lookup to Groups list - associates the session with a volunteer crew/group
+### Lookup Fields
+- **Group** / **GroupLookupId**: Lookup to Groups list — associates the session with a volunteer group
 
-### Key Fields
-- **Date**: Required field for the event date
-- **Count (Registrations)**: Tracks how many people registered
-- **Hours**: Tracks total volunteer hours for the session
-- **EventbriteEventID**: Links to external Eventbrite system
+### Calculated Fields (not stored)
+- **Registrations**: Calculated from Entries list (count of entries for this session)
+- **Hours**: Calculated from Entries list (sum of entry hours)
+- **Financial Year**: Calculated from Date field (April–March rule)
 
 ---
 
-## 3. Entries (Registrations) List
+## 3. Entries List
 
-**Purpose**: Junction table linking volunteers to sessions - tracks registrations, check-ins, and hours per volunteer per session
+**Purpose**: Junction table linking volunteers to sessions — tracks registrations, check-ins, and hours per volunteer per session
 
-**List GUID**: `8a362810-15ea-4210-9ad0-a98196747866`
+**List GUID**: `7146b950-94e3-4c94-a0d7-310cf2fbd325`
 
 ### Columns
 
 | Column Name | Internal Name | Type | Required | Default | Description |
 |------------|---------------|------|----------|---------|-------------|
 | **ID** | ID | Counter | Auto | - | Unique identifier (Primary Key) |
-| **Title** | Title | Single line of text | No | - | Registration title |
-| **Session** | Event | Lookup (indexed) | No | - | Links to Sessions list (shows Title) |
-| **Profile** | Volunteer | Lookup | No | - | Links to Profiles list (shows Title) |
+| **Title** | Title | Single line of text | No | - | Entry title |
+| **Session** | Session | Lookup (indexed) | No | - | Links to Sessions list (shows Title) |
+| **Profile** | Profile | Lookup | No | - | Links to Profiles list (shows Title) |
 | **Count** | Count | Number | No | 1 | For group registrations |
-| **Check** | Checked | Yes/No | No | No | Check-in status for the volunteer |
+| **Checked** | Checked | Yes/No | No | No | Check-in status for the volunteer |
 | **Hours** | Hours | Number | No | - | Hours worked at this session |
-| **Notes** | Notes | Single line of text | No | - | Tags: #New #Child #DofE #DigLead #FirstAider #Regular |
-| **Financial Year** | FinancialYearFlow | Single line of text | No | - | Updated via Power Automate only |
+| **Notes** | Notes | Single line of text | No | - | Tags: #New #Child #DofE #DigLead #FirstAider #Regular #NoPhoto |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
-| **Created By** | Author | Person or Group | Auto | - | User who created the item (read-only) |
-| **Modified By** | Editor | Person or Group | Auto | - | User who last modified the item (read-only) |
 
-### Key Relationships
-- **Session (Event)**: Lookup to Sessions list - which event/session this registration is for (indexed for performance)
-- **Profile (Volunteer)**: Lookup to Profiles list - which volunteer is registered
-
-### Key Fields
-- **Session**: Indexed lookup for fast filtering by event
-- **Check (Checked)**: Boolean to track if volunteer showed up
-- **Count**: Defaults to 1, allows for group registrations
-- **Hours**: Individual hours worked at the session
-- **Notes**: Supports hashtags for categorization (#New, #Child, #DofE, etc.)
+### Lookup Fields
+- **Session** / **SessionLookupId**: Lookup to Sessions list (indexed for performance)
+- **Profile** / **ProfileLookupId**: Lookup to Profiles list
 
 ### Data Model Notes
 This is a **many-to-many junction table** that creates the relationship between:
-- One Session can have many Registrations (many volunteers)
-- One Profile can have many Registrations (attend many sessions)
+- One Session can have many Entries (many volunteers)
+- One Profile can have many Entries (attend many sessions)
 
 ---
 
-## 4. Profiles (Volunteers) List
+## 4. Profiles List
 
-**Purpose**: Stores volunteer profile information including contact details and hours tracking
+**Purpose**: Stores volunteer profile information including contact details
 
-**List GUID**: `f3d3c40c-35cb-4167-8c83-c566edef6f29`
+**List GUID**: `84649143-9e10-42eb-b6ee-2e1f57033073`
 
 ### Columns
 
 | Column Name | Internal Name | Type | Required | Default | Description |
 |------------|---------------|------|----------|---------|-------------|
 | **ID** | ID | Counter | Auto | - | Unique identifier (Primary Key) |
-| **Title** | Title | Single line of text | No | - | Profile title (typically volunteer name) |
-| **Full Name** | LinkTitle | Computed | Auto | - | Computed link field from Title (read-only) |
+| **Title** | Title | Single line of text | No | - | Volunteer name |
 | **Email** | Email | Single line of text | No | - | Volunteer email address |
-| **Eventbrite Attendee Name** | MatchName | Single line of text | No | - | Name matching for Eventbrite integration |
+| **MatchName** | MatchName | Single line of text | No | - | Lowercase name for Eventbrite matching |
 | **IsGroup** | IsGroup | Yes/No | No | No | Flag indicating if this is a group profile |
-| **HoursLastFY** | HoursLastFY | Number | No | - | Hours volunteered last financial year |
-| **HoursThisFY** | HoursThisFY | Number | No | - | Hours volunteered this financial year |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
-| **Created By** | Author | Person or Group | Auto | - | User who created the item (read-only) |
-| **Modified By** | Editor | Person or Group | Auto | - | User who last modified the item (read-only) |
 
-### Key Fields
-- **Title**: Volunteer's name or identifier
-- **Email**: Contact email for the volunteer
-- **Eventbrite Attendee Name (MatchName)**: Used to match with Eventbrite registrations
-- **IsGroup**: Boolean flag for group vs individual volunteers
-- **HoursLastFY/HoursThisFY**: Aggregate hours tracking by financial year
+### Calculated Fields (not stored)
+- **Hours**: Calculated from Entries list per financial year
+- **Membership**: Determined from Records list (Charity Membership record with Status "Accepted")
 
 ### Integration Points
-- **Eventbrite**: Uses MatchName field to sync with external Eventbrite registrations
-- **Hours Tracking**: Aggregated from Entries (Registrations) list
+- **Eventbrite**: Uses MatchName field (lowercase name) to sync with external Eventbrite registrations
 
 ---
 
 ## 5. Regulars List
 
-**Purpose**: Tracks which volunteers are regular members of specific crews/groups
+**Purpose**: Tracks which volunteers are regular members of specific groups
 
-**List GUID**: `34b535f1-34ec-4fe6-a887-3b8523e492e1`
+**List GUID**: `925c96fd-9b3a-4f55-b179-ed51fc279d39`
 
 ### Columns
 
@@ -158,32 +125,54 @@ This is a **many-to-many junction table** that creates the relationship between:
 |------------|---------------|------|----------|-------------|
 | **ID** | ID | Counter | Auto | Unique identifier (Primary Key) |
 | **Title** | Title | Single line of text | No | Regular membership title |
-| **Volunteer** | Volunteer | Lookup | No | Links to Profiles list (shows Title) |
-| **Crew** | Crew | Lookup | No | Links to Groups list (shows Title) |
-| **Email** | Volunteer_x003a_Email | Lookup (dependent) | Auto | Email from Volunteer profile (read-only) |
-| **Hours Last FY** | Volunteer_x003a_HoursLastFY | Lookup (dependent) | Auto | April 1st to last March 31st (read-only) |
-| **Hours This FY** | Volunteer_x003a_HoursThisFY | Lookup (dependent) | Auto | Last April 1st to next March 31st (read-only) |
+| **Profile** | Profile | Lookup | No | Links to Profiles list (shows Title) |
+| **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
-| **Created By** | Author | Person or Group | Auto | User who created the item (read-only) |
-| **Modified By** | Editor | Person or Group | Auto | User who last modified the item (read-only) |
 
-### Key Relationships
-- **Volunteer**: Lookup to Profiles list - which volunteer is a regular
-- **Crew**: Lookup to Groups list - which crew/group they're regular with
-
-### Dependent Lookup Fields
-The list includes denormalized fields from the Volunteer lookup:
-- **Email**: Shows volunteer's email address
-- **Hours Last FY**: Shows volunteer's hours from previous financial year
-- **Hours This FY**: Shows volunteer's hours from current financial year
+### Lookup Fields
+- **Profile** / **ProfileLookupId**: Lookup to Profiles list
+- **Group** / **GroupLookupId**: Lookup to Groups list
 
 ### Data Model Notes
 This is a **many-to-many junction table** that creates the relationship between:
-- One Volunteer can be a Regular of many Crews
-- One Crew can have many Regular volunteers
+- One Profile can be a Regular of many Groups
+- One Group can have many Regular volunteers
 
-**Purpose**: Used to identify and track core/regular volunteers for each group, with quick access to their contact info and hours totals.
+---
+
+## 6. Records List
+
+**Purpose**: Tracks consents, benefits, and governance items per volunteer profile
+
+**List GUID**: `2666a819-1275-4fce-83a3-5bb67b4da83a`
+
+### Columns
+
+| Column Name | Internal Name | Type | Required | Description |
+|------------|---------------|------|----------|-------------|
+| **ID** | ID | Counter | Auto | Unique identifier (Primary Key) |
+| **Title** | Title | Single line of text | No | Auto-generated or unused |
+| **Profile** | Profile | Lookup | No | Links to Profiles list (shows Title) |
+| **Type** | Type | Choice | No | Record type (see choices below) |
+| **Status** | Status | Choice | No | Record status (see choices below) |
+| **Date** | Date | Date (Date only) | No | Date of the record |
+| **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
+| **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
+
+### Choice Values
+
+**Type**: Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card
+
+**Status**: Accepted, Declined, Invited, Expired
+
+### Lookup Fields
+- **Profile** / **ProfileLookupId**: Lookup to Profiles list
+
+### Data Model Notes
+One profile can have multiple records of different types. Consent records (Privacy, Photo) are upserted during Eventbrite attendee sync — one per profile+type, latest answer wins.
+
+A volunteer becomes a **member** when they have a "Charity Membership" record with Status "Accepted".
 
 ---
 
@@ -194,73 +183,61 @@ This is a **many-to-many junction table** that creates the relationship between:
 ```
 ┌─────────────┐
 │   Groups    │
-│  (Crews)    │
 └──────┬──────┘
        │
        │ 1:N
        │
 ┌──────▼──────────┐           ┌──────────────┐
-│    Sessions     │◄──────────┤   Regulars   │
-│    (Events)     │    N:N    │              │
-└──────┬──────────┘           └──────┬───────┘
-       │                              │
-       │ 1:N                          │ N:1
-       │                              │
-┌──────▼──────────┐                  │
-│     Entries     │                  │
-│ (Registrations) │                  │
-└──────┬──────────┘                  │
-       │                              │
-       │ N:1                    N:1   │
-       │                              │
-       └──────────────┬───────────────┘
-                      │
+│    Sessions     │           │   Regulars   │
+└──────┬──────────┘           └──┬───────┬───┘
+       │                         │       │
+       │ 1:N                     │       │
+       │                         │       │
+┌──────▼──────────┐              │       │
+│     Entries     │              │       │
+└──────┬──────────┘              │       │
+       │                         │       │
+       │ N:1                N:1  │       │ N:1
+       │                         │       │
+       └──────────────┬──────────┘       │
+                      │                  │
+               ┌──────▼──────┐           │
+               │   Profiles  │───────────┘
+               └──────┬──────┘
+                      │ 1:N
                ┌──────▼──────┐
-               │   Profiles  │
-               │ (Volunteers)│
+               │   Records   │
                └─────────────┘
 ```
 
 ### Key Relationships
 
 1. **Groups → Sessions**: One group can have many sessions
-2. **Sessions → Entries**: One session can have many registrations
-3. **Profiles → Entries**: One volunteer can have many registrations
+2. **Sessions → Entries**: One session can have many entries
+3. **Profiles → Entries**: One volunteer can have many entries
 4. **Profiles → Regulars**: One volunteer can be regular for many groups
 5. **Groups → Regulars**: One group can have many regular volunteers
-
-### Workflow
-
-1. **Groups** are created (e.g., "Tree Planting Crew", "River Cleanup Crew")
-2. **Sessions** are scheduled for each group with dates
-3. **Profiles** store volunteer information
-4. **Entries** (Registrations) link volunteers to sessions when they sign up
-5. **Regulars** identifies core volunteers for each group
-6. **Eventbrite** integration syncs registrations via EventbriteEventID and MatchName fields
+6. **Profiles → Records**: One volunteer can have many consent/governance records
 
 ---
 
 ## Notes
 
-### Field Naming Conventions
-- All lists include standard SharePoint metadata fields (ID, Created, Modified, Created By, Modified By)
-- Field names with spaces are encoded in internal names (e.g., "Content Type" becomes "ContentType")
-- Auto-generated fields are read-only and managed by SharePoint
-- **Column names ending in "Flow"** (e.g., FinancialYearFlow) are auto-populated by Power Automate flows
+### Lookup Field Conventions
+- Graph API returns both display values and lookup IDs (e.g., `Group` and `GroupLookupId`). Use lookup IDs for joins and filtering.
+- Field name constants are defined in `services/field-names.ts` — use these instead of hardcoded strings.
 
-### Important Implementation Notes
-- **Pagination Required**: Microsoft Graph API returns a maximum of 999 items per request. Always follow `@odata.nextLink` to retrieve all items from large lists.
-- **Lookup Field IDs**: Graph API returns both display values and lookup IDs (e.g., `Crew` and `CrewLookupId`). Use lookup IDs for joins and filtering.
-- **Financial Year Filtering**: Use `Sessions.FinancialYearFlow` as the authoritative source. The `Entries.FinancialYearFlow` field is deprecated and should be deleted.
+### Calculated Fields
+- The app calculates all derived values (hours, registrations, financial year, membership) from source entries at query time.
+- No Power Automate flows update fields. The app is the sole source of truth for derived data.
+- Server-side caching (5-minute TTL) keeps this performant despite recalculating on each request.
 
-## Usage
+### Pagination
+- Microsoft Graph API returns a maximum of 999 items per request. Always follow `@odata.nextLink` to retrieve all items from large lists.
 
-This schema can be used to:
-- Build API integrations with SharePoint REST API
-- Design forms and UI components
-- Plan data migrations
-- Document relationships between lists
+### Single Line of Text Fields
+- 255 character max length.
 
 ---
 
-*Last Updated: 2026-02-08*
+*Last Updated: 2026-02-16*

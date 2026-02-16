@@ -774,3 +774,85 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 ---
 
 *Last Updated: 2026-02-14*
+
+---
+
+## Session: 2026-02-15 to 2026-02-16
+
+### Completed Tasks
+
+#### 1. CRUD Gaps — Groups and Sessions Delete ✓
+- Added `DELETE /api/groups/:key` endpoint in `routes/groups.ts`
+- Added `delete()` to `sessions-repository.ts` and `DELETE /api/sessions/:group/:date` endpoint
+- Added delete buttons to group-detail.html and session-detail.html edit modals
+- Added date field to session edit modal, with redirect on date change
+
+#### 2. Eventbrite Session Sync (Node.js Migration) ✓
+- Added `EventbriteEvent` interface and `getOrgEvents()` to `services/eventbrite-client.ts`
+  - Fetches all live events from `GET /organizations/{orgId}/events/?status=live&page_size=100`
+  - Handles pagination, maps to clean interface: `id`, `seriesId`, `name`, `startDate`, `description`
+  - New env var: `EVENTBRITE_ORGANIZATION_ID`
+- Added `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups via `EventbriteSeriesID`, creates missing sessions
+- Added `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records
+- Added `POST /api/eventbrite/event-and-attendee-update` — combined endpoint running both syncs, returns human-readable summary string
+- Added `GET /api/eventbrite/unmatched-events` — lists events with no matching group series
+- Refactored sync logic into reusable `runSyncSessions()` and `runSyncAttendees()` helper functions
+
+#### 3. Admin Page ✓
+- Added Eventbrite section to `public/admin.html` with 4 buttons:
+  - **Run All** — runs sync-sessions → sync-attendees → unmatched-events sequentially
+  - **Refresh Events** — calls sync-sessions, shows event/matched/new counts
+  - **Fetch New Attendees** — calls sync-attendees, shows session/profile/entry/record counts
+  - **Unmatched Events** — displays list of Eventbrite events with no matching group
+- Added Exports section with FE Hours Download and Records Download links
+
+#### 4. Cleaned Up eventbriteUrl References ✓
+- Removed `eventbriteUrl` from `SessionResponse` and `SessionDetailResponse` in `types/api-responses.ts`
+- Removed `eventbriteUrl` from `Session` interface in `types/session.ts`
+- Removed `eventbriteUrl` mappings in `routes/sessions.ts` and `routes/groups.ts`
+- Removed `eventbriteUrl` rendering in `public/session-detail.html`
+- The Tracker SharePoint site doesn't store this column on Sessions
+
+#### 5. API Key Auth for Scheduled Sync ✓
+- Added `API_SYNC_KEY` env var support to `middleware/require-auth.ts`
+- Requests with `X-Api-Key` header matching `API_SYNC_KEY` bypass session auth for `/api/eventbrite/` paths
+- Enables Azure Logic App to call sync endpoints without browser authentication
+
+#### 6. Scheduled Sync Setup (Azure Logic App) ✓
+- Designed Azure Logic App (Consumption plan) for daily scheduled sync
+- Single HTTP POST to `/api/eventbrite/event-and-attendee-update` with `X-Api-Key` header
+- Response `summary` field suitable for email notifications
+- Note: Azure App Service Easy Auth must be set to "Allow unauthenticated requests" for API key auth to work
+
+#### 7. Comprehensive Documentation Update ✓
+- Updated `readme.md` — full rewrite with all 40+ endpoints, deployment section, env vars, pages table, project structure
+- Updated `CLAUDE.md` — current state, file structure, features list, Eventbrite integration details
+- Updated `docs/progress.md` — this session entry
+- Updated `docs/power-automate-flows.md` — Node.js migration status
+- Updated `docs/sharepoint-schema.md` — removed EventbriteUrl, added Records list
+- Updated `docs/technical-debt.md` — current status
+
+### Key Technical Decisions
+- Homepage refresh button stays as cache clear only — Eventbrite sync is admin/scheduled only
+- No group auto-creation from Eventbrite — groups are rare and created manually
+- Combined `event-and-attendee-update` endpoint for scheduled use; individual endpoints for admin UI
+- Azure Logic App (Consumption) chosen over Power Automate Premium (HTTP connector licensing)
+- API key auth chosen for simplicity over Entra ID service-to-service tokens
+
+### Files Modified
+- `services/eventbrite-client.ts` — added `EventbriteEvent`, `getOrgEvents()`
+- `services/repositories/sessions-repository.ts` — added `delete()`
+- `routes/eventbrite.ts` — added 4 new endpoints, refactored to helper functions
+- `routes/groups.ts` — added DELETE endpoint, removed eventbriteUrl
+- `routes/sessions.ts` — added DELETE endpoint, date to PATCH, removed eventbriteUrl
+- `middleware/require-auth.ts` — added API key bypass
+- `types/api-responses.ts` — removed eventbriteUrl from session types
+- `types/session.ts` — removed eventbriteUrl from Session
+- `public/admin.html` — Eventbrite sync buttons, exports, Run All
+- `public/group-detail.html` — delete button in edit modal
+- `public/session-detail.html` — delete button, date field, removed eventbriteUrl
+- `public/index.html` — reverted to cache-clear-only refresh
+
+---
+
+*Last Updated: 2026-02-16*

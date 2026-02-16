@@ -196,60 +196,85 @@ Answers appear in each attendee's `answers` array:
 - If a profile has Photo/Video consent declined, entries for that volunteer get a `#NoPhoto` tag.
 - Ticket type comes through as `ticket_class_name` (e.g. `"Adult  with Free Parking"`) — check for `"Child"` substring to determine IsChild.
 
-## Migration to Node.js
+## Migration to Node.js — Complete
 
-### Mapping to Existing Architecture
+**Status**: ✅ Migrated (2026-02-16)
+
+All Eventbrite sync logic has been migrated from Power Automate to Node.js. The 8 PA child flows are replaced by 4 API endpoints and 2 helper functions.
+
+### Mapping
 
 ```
-Power Automate Flow              →  Node.js Equivalent
+Power Automate Flow              →  Node.js Implementation
 ─────────────────────────────────────────────────────────
-Eventbrite API calls             →  eventbrite-client.ts (new)
-New Groups and Sessions          →  syncGroupsAndSessions() — loop org events, create groups/sessions
-Entries from Future Sessions     →  syncAllEntries() — loop upcoming sessions, call syncEntriesFromSession
-Entries from Session             →  syncEntriesFromSession() — fetch attendees, create profiles/entries
-Profile Get or Create            →  profiles-repository.ts (findOrCreate by matchName)
-Entry Create or Update           →  entries-repository.ts (create if not exists)
-Group Get or Create              →  groups-repository.ts (findOrCreate by seriesId)
-Session Get or Create            →  sessions-repository.ts (findOrCreate by eventId)
-Run All and Email [Scheduled]    →  Scheduled task or manual API endpoint
+Run All and Email [Scheduled]    →  POST /api/eventbrite/event-and-attendee-update
+New Groups and Sessions          →  runSyncSessions() in routes/eventbrite.ts
+Entries from Future Sessions     →  runSyncAttendees() in routes/eventbrite.ts
+Entries from Session             →  (inline in runSyncAttendees loop)
+Profile Get or Create            →  Match by MatchName/Title, create if missing
+Entry Create or Update           →  Create if not exists (append-only)
+Group Get or Create              →  NOT migrated — groups created manually
+Session Get or Create            →  Create if EventbriteEventID not already used
+Eventbrite API calls             →  services/eventbrite-client.ts
 ```
 
-### Pseudo-code for Core Sync
+### Node.js Endpoints
 
-```typescript
-async function syncEntriesFromSession(eventbriteEventId: string, sessionId: number) {
-  const attendees = await eventbriteClient.getAttendees(eventbriteEventId);
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/eventbrite/event-and-attendee-update` | POST | Combined sync — sessions then attendees. Returns summary string. Used by scheduled task. |
+| `/api/eventbrite/sync-sessions` | POST | Fetches org events, creates sessions for events matching a group's EventbriteSeriesID |
+| `/api/eventbrite/sync-attendees` | POST | Fetches attendees for upcoming sessions, creates profiles/entries/consent records |
+| `/api/eventbrite/unmatched-events` | GET | Lists events with no matching group (admin UI only) |
 
-  for (const attendee of attendees) {
-    if (attendee.isInfoRequested) continue;
+### Key Differences from Power Automate
 
-    const matchName = attendee.name.toLowerCase();
-    const profile = await profilesRepo.findOrCreate(matchName, attendee.email);
-    const isChild = attendee.ticketClassName.includes('Child');
+| Aspect | Power Automate | Node.js |
+|---|---|---|
+| Group creation | Auto-created from Eventbrite series | Manual only — groups are rare |
+| Consent storage | Profile fields (overwrite latest) | Records list (upsert per profile+type) |
+| #New tag | Not set | Auto-set on first-time volunteers |
+| Standalone events | Created without group link | Skipped (no series = no group match) |
+| Scheduling | PA Recurrence trigger | Azure Logic App (Consumption) |
 
-    // Always overwrite consent fields with latest response
-    await profilesRepo.updateConsent(profile.id, {
-      dataConsent: attendee.answers.find(a => a.question_id === DATA_CONSENT_QID)?.answer,
-      photoConsent: attendee.answers.find(a => a.question_id === PHOTO_CONSENT_QID)?.answer,
-    });
+### Scheduled Sync — Azure Logic App
 
-    const existing = await entriesRepo.findBySessionAndVolunteer(sessionId, profile.id);
-    if (!existing) {
-      const tags = [isChild && '#Child', !profile.photoConsent && '#NoPhoto'].filter(Boolean);
-      await entriesRepo.create({
-        sessionId,
-        volunteerId: profile.id,
-        notes: tags.join(' '),
-        checked: false,
-        count: 1,
-        hours: 0,
-      });
-    }
+The Power Automate orchestrator flow ("Run All and Email") is replaced by an **Azure Logic App** (Consumption plan):
+
+1. **Trigger**: Recurrence — daily at configured time (e.g. 03:00 UTC)
+2. **Action**: HTTP POST
+   - URI: `https://<app-url>/api/eventbrite/event-and-attendee-update`
+   - Header: `X-Api-Key: <API_SYNC_KEY value>`
+3. **Optional action**: Send email (Office 365 Outlook connector) with the response `summary` field
+
+**Authentication**: The API key bypasses Entra ID session auth for `/api/eventbrite/` paths (handled in `middleware/require-auth.ts`). Azure App Service Easy Auth must be set to "Allow unauthenticated requests" for this to work.
+
+**Environment variables required**:
+- `API_SYNC_KEY` — shared secret for scheduled sync auth
+- `EVENTBRITE_API_KEY` — Eventbrite bearer token
+- `EVENTBRITE_ORGANIZATION_ID` — Eventbrite org ID for events API
+
+**Response format**:
+```json
+{
+  "success": true,
+  "data": {
+    "summary": "59 events, 59 matched, 0 new sessions / 59 sessions, 0 new profiles, 0 new entries, 18 consent records",
+    "sessions": { "totalEvents": 59, "matchedEvents": 59, "newSessions": 0 },
+    "attendees": { "sessionsProcessed": 59, "newProfiles": 0, "newEntries": 0, "newRecords": 18 }
   }
 }
 ```
 
+### Manual Sync — Admin Page
+
+The admin page (`/admin.html`) provides manual sync buttons:
+- **Run All** — runs sync-sessions → sync-attendees → unmatched-events sequentially
+- **Refresh Events** — sync-sessions only
+- **Fetch New Attendees** — sync-attendees only
+- **Unmatched Events** — shows events with no matching group (eventId, name, date)
+
 ---
 
 *Created: 2026-02-15*
-*Last Updated: 2026-02-15*
+*Last Updated: 2026-02-16*

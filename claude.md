@@ -14,28 +14,31 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-15
+**Last Updated**: 2026-02-16
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
 - Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
-- TypeScript API routes with clean domain naming ([routes/api.ts](routes/api.ts)) — 25 endpoints
+- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 8 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
+- Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts))
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
-- Auth middleware protecting all API and page routes ([middleware/require-auth.ts](middleware/require-auth.ts))
+- Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
 - Server-side caching with 5-minute TTL
+- Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
 
 ### Pages
 - Dashboard with FY stats, progress bar, next session card ([public/index.html](public/index.html))
+- Admin page with Eventbrite sync buttons, exports, site link ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
-- Group detail with stats, regulars, sessions, edit/create modals ([public/group-detail.html](public/group-detail.html))
+- Group detail with stats, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
 - Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
-- Session detail with entries, check-in, set hours, add regulars ([public/session-detail.html](public/session-detail.html))
+- Session detail with entries, check-in, set hours, edit/delete ([public/session-detail.html](public/session-detail.html))
 - Volunteers listing with FY filter, sort, group filter, search ([public/volunteers.html](public/volunteers.html))
-- Profile detail with FY stats, group hours, entries, regulars ([public/profile-detail.html](public/profile-detail.html))
+- Profile detail with FY stats, group hours, entries, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, delete ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
@@ -112,13 +115,28 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 ## External Integrations
 
 ### Eventbrite
-- Groups have `EventbriteSeriesID` for linking to Eventbrite series
+- Groups have `EventbriteSeriesID` for linking to Eventbrite recurring series
 - Sessions have `EventbriteEventID` for linking to specific events
 - Profiles use `MatchName` field (lowercase name) to sync with Eventbrite registrations
-- Attendee sync via Node.js `eventbrite-client.ts` — syncs registrations and consent records
+- Eventbrite client ([services/eventbrite-client.ts](services/eventbrite-client.ts)):
+  - `getOrgEvents()` — fetches all live events from the organisation, used to create new sessions
+  - `getAttendees()` — fetches attendees for a specific event, used to create profiles and entries
+- Sync endpoints ([routes/eventbrite.ts](routes/eventbrite.ts)):
+  - `POST /api/eventbrite/event-and-attendee-update` — combined sync (sessions + attendees), returns summary string
+  - `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups by SeriesID, creates missing sessions
+  - `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records
+  - `GET /api/eventbrite/unmatched-events` — lists events with no matching group (for admin UI)
+- Admin page ([public/admin.html](public/admin.html)) provides manual sync buttons
+- Scheduled daily sync via Azure Logic App calling `event-and-attendee-update` with API key auth
+
+### Scheduled Sync
+- **Azure Logic App** (Consumption plan) calls `POST /api/eventbrite/event-and-attendee-update` daily
+- Auth: `X-Api-Key` header checked in `middleware/require-auth.ts` for `/api/eventbrite/` paths
+- Env vars: `API_SYNC_KEY` (shared secret), `EVENTBRITE_ORGANIZATION_ID`, `EVENTBRITE_API_KEY`
+- Response includes `summary` field for email notifications
 
 ### SharePoint
-- All data stored in SharePoint Online lists
+- All data stored in SharePoint Online lists on the Tracker site (`/sites/tracker`)
 - Access via Microsoft Graph API
 - Lists have specific GUIDs for API access
 
@@ -189,6 +207,8 @@ dtv-tracker-app/
 ├── services/
 │   ├── auth-config.ts             # MSAL client configuration
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
+│   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
+│   ├── field-names.ts             # SharePoint field name constants
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   └── repositories/
 │       ├── groups-repository.ts
@@ -198,7 +218,14 @@ dtv-tracker-app/
 │       ├── regulars-repository.ts
 │       └── records-repository.ts
 ├── routes/
-│   ├── api.ts                     # Express API route handlers (25 endpoints)
+│   ├── api.ts                     # Router mounting all route modules
+│   ├── groups.ts                  # Groups CRUD endpoints
+│   ├── sessions.ts                # Sessions CRUD + CSV exports
+│   ├── entries.ts                 # Entries CRUD
+│   ├── profiles.ts                # Profiles CRUD + records + transfer
+│   ├── regulars.ts                # Regulars management
+│   ├── stats.ts                   # Dashboard stats, cache, config
+│   ├── eventbrite.ts              # Eventbrite sync endpoints
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
 │   └── require-auth.ts            # Auth guard middleware
@@ -212,6 +239,7 @@ dtv-tracker-app/
 │   ├── profile-detail.html        # Profile detail with FY stats and entries
 │   ├── entry-detail.html          # Entry edit page with tag buttons
 │   ├── add-entry.html             # Add entry (register volunteer to session)
+│   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet
 │   └── js/
@@ -223,25 +251,30 @@ dtv-tracker-app/
 
 ## Implemented Features
 
-- [x] View all volunteer crews/groups
-- [x] View upcoming sessions/events
-- [x] Create and edit groups, sessions, profiles
+- [x] Full CRUD for groups, sessions, profiles, entries, records
 - [x] Volunteer registration for sessions (add entry)
 - [x] Bulk add regulars to a session
 - [x] Check-in volunteers at events (checkbox per entry)
 - [x] Record volunteer hours (per-entry and bulk set hours)
 - [x] View volunteer profiles and hours history
 - [x] FY filtering on all list pages (This FY / Last FY / All)
-- [x] Group-filtered volunteer listing
+- [x] Group-filtered volunteer listing with search
 - [x] Regulars management (add/remove per group)
 - [x] Member status tracking (Charity Membership record + hours-based highlighting)
-- [x] CSV export of sessions
+- [x] Consent/records management on profile detail page
+- [x] CSV exports (sessions, profiles, records)
+- [x] Profile transfer (merge duplicate profiles)
 - [x] Microsoft authentication (Entra ID OAuth)
 - [x] Mobile-first responsive design (44px touch targets)
+- [x] Eventbrite session sync (org events → sessions via SeriesID matching)
+- [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)
+- [x] Admin page with manual sync buttons and unmatched events display
+- [x] API key auth for scheduled sync (Azure Logic App)
+- [x] Azure App Service deployment
 
 ## Planned Features
 
-- [ ] Consent/records display on profile detail page
+- [ ] Sync logging (SharePoint Logs list or similar)
 - [ ] Report generation (custom date ranges, exportable)
 
 ## Running the Application
@@ -273,4 +306,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-15*
+*Last Updated: 2026-02-16*

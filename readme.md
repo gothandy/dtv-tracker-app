@@ -45,6 +45,8 @@ npm install
 - SharePoint Client Secret
 - SharePoint Tenant ID
 - SharePoint Site URL
+- Eventbrite API Key
+- Eventbrite Organisation ID
 
 These are stored securely and shared via password manager or secure channel (never via email/Slack).
 
@@ -54,20 +56,31 @@ Create a `.env` file in the project root:
 
 ```bash
 # SharePoint Configuration
-SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/members
+SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
 SHAREPOINT_CLIENT_ID=your_client_id_here
 SHAREPOINT_CLIENT_SECRET=your_client_secret_here
 SHAREPOINT_TENANT_ID=your_tenant_id_here
 
 # SharePoint List GUIDs (these are the same for all developers)
-GROUPS_LIST_GUID=68f9eb4a-1eea-4c1f-88e5-9211cf56e002
-SESSIONS_LIST_GUID=857fc298-6eba-49ab-99bf-9712ef6b8448
-ENTRIES_LIST_GUID=8a362810-15ea-4210-9ad0-a98196747866
-PROFILES_LIST_GUID=f3d3c40c-35cb-4167-8c83-c566edef6f29
-REGULARS_LIST_GUID=34b535f1-34ec-4fe6-a887-3b8523e492e1
+GROUPS_LIST_GUID=6e86cef7-a855-41a4-93e8-6e01a80434a2
+SESSIONS_LIST_GUID=583867bd-e032-4940-89b5-aa2d5158c5d0
+ENTRIES_LIST_GUID=7146b950-94e3-4c94-a0d7-310cf2fbd325
+PROFILES_LIST_GUID=84649143-9e10-42eb-b6ee-2e1f57033073
+REGULARS_LIST_GUID=925c96fd-9b3a-4f55-b179-ed51fc279d39
+RECORDS_LIST_GUID=2666a819-1275-4fce-83a3-5bb67b4da83a
+
+# Eventbrite Configuration
+EVENTBRITE_API_KEY=your_eventbrite_api_key_here
+EVENTBRITE_ORGANIZATION_ID=your_org_id_here
+
+# Scheduled Sync (optional — for API key auth bypass on /api/eventbrite/ endpoints)
+API_SYNC_KEY=your_random_key_here
+
+# Session secret (change in production)
+SESSION_SECRET=your_session_secret_here
 ```
 
-Never commit the `.env` file to version control (already in `.gitignore`). The list GUIDs are the same for everyone - they identify the SharePoint lists.
+Never commit the `.env` file to version control (already in `.gitignore`). The list GUIDs are the same for everyone — they identify the SharePoint lists.
 
 ### 4. Verify Setup
 
@@ -88,35 +101,129 @@ npm run dev     # Start with nodemon (auto-restarts on changes)
 
 The server runs at http://localhost:3000.
 
+## Deployment
+
+The app is hosted on **Azure App Service** (Node.js, UK South region).
+
+All environment variables from `.env` must be configured in Azure App Service > Configuration > Application settings.
+
+### Scheduled Eventbrite Sync
+
+An **Azure Logic App** (Consumption plan) runs a daily scheduled sync:
+
+1. **Trigger**: Recurrence — daily at a configured time (e.g. 03:00 UTC)
+2. **Action**: HTTP POST to `/api/eventbrite/event-and-attendee-update`
+   - Header: `X-Api-Key: <API_SYNC_KEY value>`
+3. **Optional**: Send email action with the `summary` field from the response
+
+The API key bypasses the normal Entra ID session auth for `/api/eventbrite/` paths only (handled in `middleware/require-auth.ts`).
+
+The sync:
+- Fetches live events from Eventbrite, creates sessions for any new events matching a group's `EventbriteSeriesID`
+- Fetches attendees for upcoming sessions, creates profiles and entries for new registrations
+- Syncs consent records (privacy, photo) from Eventbrite custom questions
+
+Response includes a human-readable `summary` field, e.g.:
+```
+59 events, 59 matched, 0 new sessions / 59 sessions, 0 new profiles, 0 new entries, 18 consent records
+```
+
 ## API Endpoints
+
+### Stats & Config
 
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/health` | GET | Health check (unauthenticated) |
 | `/api/stats` | GET | Dashboard statistics (current + last FY) |
+| `/api/config` | GET | App configuration (SharePoint site URL) |
+| `/api/cache/clear` | POST | Clear server-side data cache |
+| `/api/cache/stats` | GET | Cache hit/miss statistics |
+
+### Groups
+
+| Endpoint | Method | Description |
+|---|---|---|
 | `/api/groups` | GET | All groups with regulars count |
 | `/api/groups` | POST | Create new group |
 | `/api/groups/:key` | GET | Group detail with sessions and stats |
 | `/api/groups/:key` | PATCH | Update group |
+| `/api/groups/:key` | DELETE | Delete group |
+
+### Sessions
+
+| Endpoint | Method | Description |
+|---|---|---|
 | `/api/sessions` | GET | All sessions with calculated hours and registrations |
 | `/api/sessions` | POST | Create new session |
 | `/api/sessions/export` | GET | Export this FY sessions as CSV |
 | `/api/sessions/:group/:date` | GET | Session detail with entries |
-| `/api/sessions/:group/:date` | PATCH | Update session |
+| `/api/sessions/:group/:date` | PATCH | Update session (name, description, date) |
+| `/api/sessions/:group/:date` | DELETE | Delete session |
 | `/api/sessions/:group/:date/entries` | POST | Create entry (register volunteer) |
 | `/api/sessions/:group/:date/add-regulars` | POST | Bulk add regulars as entries |
+| `/api/sessions/:group/:date/refresh` | POST | Refresh session entry data |
+
+### Entries
+
+| Endpoint | Method | Description |
+|---|---|---|
 | `/api/entries/:group/:date/:slug` | GET | Entry detail with FY hours |
 | `/api/entries/:id` | PATCH | Update entry (check-in, hours, notes) |
 | `/api/entries/:id` | DELETE | Delete entry |
+
+### Profiles
+
+| Endpoint | Method | Description |
+|---|---|---|
 | `/api/profiles` | GET | All profiles with FY stats (optional `?group=` filter) |
 | `/api/profiles` | POST | Create new profile |
+| `/api/profiles/export` | GET | Export profiles as CSV |
 | `/api/profiles/:slug` | GET | Profile detail with entries and group hours |
 | `/api/profiles/:slug` | PATCH | Update profile |
 | `/api/profiles/:slug` | DELETE | Delete profile (only if no entries) |
 | `/api/profiles/:slug/regulars` | POST | Add as regular to group |
+| `/api/profiles/:slug/transfer` | POST | Transfer entries between profiles |
+| `/api/profiles/:id/records` | POST | Create consent/governance record |
+
+### Records
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/records/options` | GET | Available record types and statuses |
+| `/api/records/export` | GET | Export records as CSV |
+| `/api/records/:id` | PATCH | Update record |
+| `/api/records/:id` | DELETE | Delete record |
+
+### Regulars
+
+| Endpoint | Method | Description |
+|---|---|---|
 | `/api/regulars/:id` | DELETE | Remove regular assignment |
-| `/api/cache/clear` | POST | Clear server-side data cache |
-| `/api/cache/stats` | GET | Cache hit/miss statistics |
+
+### Eventbrite Sync
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/eventbrite/event-and-attendee-update` | POST | Run full sync (sessions + attendees), returns summary |
+| `/api/eventbrite/sync-sessions` | POST | Sync Eventbrite events → sessions |
+| `/api/eventbrite/sync-attendees` | POST | Sync Eventbrite attendees → profiles/entries |
+| `/api/eventbrite/unmatched-events` | GET | List Eventbrite events with no matching group |
+
+## Pages
+
+| Page | URL | Description |
+|---|---|---|
+| Dashboard | `/` | FY stats, progress bar, next session |
+| Admin | `/admin.html` | Eventbrite sync buttons, exports, site link |
+| Groups | `/groups.html` | Groups listing with FY filter |
+| Group Detail | `/groups/:key/detail.html` | Stats, regulars, sessions, edit/delete |
+| Sessions | `/sessions.html` | Sessions listing with FY filter |
+| Session Detail | `/sessions/:group/:date/details.html` | Entries, check-in, set hours, edit/delete |
+| Volunteers | `/volunteers.html` | Profiles with FY filter, sort, group filter, search |
+| Profile Detail | `/profiles/:slug/details.html` | FY stats, group hours, entries, records |
+| Entry Edit | `/entries/:group/:date/:slug/edit.html` | Tag buttons, hours, notes, delete |
+| Add Entry | `/sessions/:group/:date/add-entry.html` | Volunteer search and create |
 
 ## Project Structure
 
@@ -125,9 +232,20 @@ dtv-tracker-app/
 ├── app.js              # Express server entry point
 ├── types/              # TypeScript type definitions (SharePoint + domain + API)
 ├── services/           # Data layer: Graph API client, repositories, enrichment
-├── routes/             # API endpoints (api.ts) and auth flow (auth.ts)
-├── middleware/          # Auth guard middleware
-├── public/             # Frontend HTML/CSS/JS (9 pages, served statically)
+│   ├── eventbrite-client.ts  # Eventbrite API client (attendees, org events)
+│   └── repositories/   # CRUD for each SharePoint list
+├── routes/             # API endpoints split by domain
+│   ├── api.ts          # Router mounting all route modules
+│   ├── groups.ts       # Groups CRUD
+│   ├── sessions.ts     # Sessions CRUD + exports
+│   ├── entries.ts      # Entries CRUD
+│   ├── profiles.ts     # Profiles CRUD + records + transfer
+│   ├── regulars.ts     # Regulars management
+│   ├── stats.ts        # Dashboard stats, cache, config
+│   ├── eventbrite.ts   # Eventbrite sync endpoints
+│   └── auth.ts         # Authentication (login, callback, logout)
+├── middleware/          # Auth guard middleware (session + API key)
+├── public/             # Frontend HTML/CSS/JS (10 pages, served statically)
 ├── docs/               # SharePoint schema, setup guides, progress notes
 └── test/               # Auth and data verification scripts
 ```
@@ -137,13 +255,18 @@ dtv-tracker-app/
 - **Backend**: Node.js with Express 5, TypeScript for services/types
 - **Frontend**: Vanilla HTML/CSS/JavaScript (mobile-first, served statically)
 - **Data**: SharePoint Online lists via Microsoft Graph API
-- **Integrations**: Eventbrite (event series linking)
+- **Integrations**: Eventbrite API (event sync, attendee sync, consent records)
+- **Hosting**: Azure App Service (UK South)
+- **Scheduled Tasks**: Azure Logic App (Consumption) for daily Eventbrite sync
+- **Authentication**: Microsoft Entra ID (OAuth) for browser sessions; API key for scheduled sync
 
 ## Documentation
 
 - **[CLAUDE.md](CLAUDE.md)** - Project context, data model, and development guidelines
 - **[docs/sharepoint-schema.md](docs/sharepoint-schema.md)** - SharePoint list schemas and field definitions
 - **[docs/sharepoint-setup.md](docs/sharepoint-setup.md)** - One-time SharePoint/Entra ID configuration (admin)
+- **[docs/power-automate-flows.md](docs/power-automate-flows.md)** - Eventbrite sync documentation (legacy PA flows + Node.js migration)
+- **[docs/technical-debt.md](docs/technical-debt.md)** - Performance and optimization tracking
 - **[docs/progress.md](docs/progress.md)** - Development session notes
 
 ## Development Guidelines
@@ -160,12 +283,10 @@ dtv-tracker-app/
 - Validate all user input
 - Prevent XSS when displaying user content (`escapeHtml()` in frontend)
 
-### Claude Code Usage
-- Track API usage at https://claude.ai/settings/usage
-
 ### SharePoint Integration
 - Always reference [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for field names
-- Use internal field names (e.g., `Crew` not `Group`)
+- Use field name constants from `services/field-names.ts`
+- Use `safeParseLookupId()` for lookup field comparisons
 
 ## Troubleshooting
 
