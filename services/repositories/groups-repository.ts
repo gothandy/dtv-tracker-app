@@ -25,6 +25,11 @@ class GroupsRepository {
     sharePointClient.cache.del('groups');
   }
 
+  async delete(groupId: number): Promise<void> {
+    await sharePointClient.deleteListItem(this.listGuid, groupId);
+    sharePointClient.cache.del('groups');
+  }
+
   async getAll(): Promise<SharePointGroup[]> {
     const cacheKey = 'groups';
     const cached = sharePointClient.cache.get(cacheKey);

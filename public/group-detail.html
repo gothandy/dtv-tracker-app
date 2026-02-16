@@ -18,6 +18,9 @@
         .regulars-list a { color: inherit; text-decoration: none; }
         .regulars-list a:hover { text-decoration: underline; color: var(--green); }
 
+        .modal-btn-delete { background: var(--error); color: white; }
+        .modal-btn-delete:hover { opacity: 0.85; }
+
         @media (max-width: 600px) {
             .group-detail { padding: 1.25rem; }
             .group-title-row { flex-wrap: wrap; }
@@ -50,9 +53,12 @@
                 <label for="editEventbriteId">Eventbrite Series ID</label>
                 <input type="text" id="editEventbriteId" placeholder="e.g. 123456789">
             </div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
-                <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveGroupEdit()">Save</button>
+            <div class="modal-buttons" style="justify-content: space-between;">
+                <button class="modal-btn modal-btn-delete" onclick="deleteGroup()">Delete</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveGroupEdit()">Save</button>
+                </div>
             </div>
         </div>
     </div>
@@ -200,6 +206,23 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Save';
+            }
+        }
+
+        async function deleteGroup() {
+            if (!currentGroup) return;
+            if (!confirm(`Delete "${currentGroup.displayName}"? This cannot be undone.`)) return;
+
+            try {
+                const res = await apiFetch(`/api/groups/${encodeURIComponent(groupKey)}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Delete failed');
+                }
+                window.location.href = '/groups.html';
+            } catch (error) {
+                console.error('Error deleting group:', error);
+                alert(error.message || 'Failed to delete group.');
             }
         }
 

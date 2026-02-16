@@ -364,12 +364,13 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId } = req.body;
+    const { displayName, description, eventbriteEventId, date } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) fields.Date = date;
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -394,12 +395,47 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     }
 
     await sessionsRepository.updateFields(spSession.ID, fields);
-    res.json({ success: true } as ApiResponse<void>);
+    const newDate = fields.Date || dateParam;
+    res.json({ success: true, data: { date: newDate } } as ApiResponse<{ date: string }>);
   } catch (error: any) {
     console.error('Error updating session:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to update session',
+      message: error.message
+    });
+  }
+});
+
+router.delete('/sessions/:group/:date', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+
+    const [rawGroups, rawSessions] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll()
+    ]);
+
+    const spGroup = findGroupByKey(rawGroups, groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    await sessionsRepository.delete(spSession.ID);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete session',
       message: error.message
     });
   }

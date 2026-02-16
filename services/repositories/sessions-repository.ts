@@ -77,6 +77,11 @@ class SessionsRepository {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
     sharePointClient.cache.del('sessions');
   }
+
+  async delete(sessionId: number): Promise<void> {
+    await sharePointClient.deleteListItem(this.listGuid, sessionId);
+    sharePointClient.cache.del('sessions');
+  }
 }
 
 export const sessionsRepository = new SessionsRepository();

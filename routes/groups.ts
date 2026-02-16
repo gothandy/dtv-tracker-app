@@ -227,4 +227,27 @@ router.patch('/groups/:key', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/groups/:key', async (req: Request, res: Response) => {
+  try {
+    const key = String(req.params.key).toLowerCase();
+
+    const rawGroups = await groupsRepository.getAll();
+    const spGroup = findGroupByKey(rawGroups, key);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    await groupsRepository.delete(spGroup.ID);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting group:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete group',
+      message: error.message
+    });
+  }
+});
+
 export = router;

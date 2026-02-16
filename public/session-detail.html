@@ -16,6 +16,8 @@
         .session-detail .group-name { color: var(--text-light); font-size: 1rem; margin-bottom: 1rem; }
         .session-detail .description { color: var(--text-mid); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-wrap; }
         .modal-field textarea { min-height: 120px; }
+        .modal-btn-delete { background: var(--error); color: white; }
+        .modal-btn-delete:hover { opacity: 0.85; }
 
         .entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .entries-heading { color: var(--green); font-size: 1.3rem; }
@@ -64,6 +66,10 @@
         <div class="modal modal-wide">
             <h3>Edit Session</h3>
             <div class="modal-field">
+                <label for="editDate">Date</label>
+                <input type="date" id="editDate">
+            </div>
+            <div class="modal-field">
                 <label for="editName">Display Name</label>
                 <input type="text" id="editName">
             </div>
@@ -75,9 +81,12 @@
                 <label for="editEventbriteId">Eventbrite Event ID</label>
                 <input type="text" id="editEventbriteId">
             </div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
-                <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveSessionEdit()">Save</button>
+            <div class="modal-buttons" style="justify-content: space-between;">
+                <button class="modal-btn modal-btn-delete" onclick="deleteSession()">Delete</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveSessionEdit()">Save</button>
+                </div>
             </div>
         </div>
     </div>
@@ -105,6 +114,7 @@
 
         function openEditModal() {
             if (!currentSession) return;
+            document.getElementById('editDate').value = currentSession.date ? currentSession.date.substring(0, 10) : '';
             document.getElementById('editName').value = currentSession.displayName || '';
             document.getElementById('editDescription').value = currentSession.description || '';
             document.getElementById('editEventbriteId').value = currentSession.eventbriteEventId || '';
@@ -117,6 +127,7 @@
         }
 
         async function saveSessionEdit() {
+            const date = document.getElementById('editDate').value;
             const displayName = document.getElementById('editName').value.trim();
             const description = document.getElementById('editDescription').value;
             const eventbriteEventId = document.getElementById('editEventbriteId').value.trim();
@@ -128,20 +139,42 @@
                 const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ displayName, description, eventbriteEventId })
+                    body: JSON.stringify({ displayName, description, eventbriteEventId, date: date || undefined })
                 });
                 if (!res.ok) {
                     const data = await res.json();
                     throw new Error(data.error || 'Save failed');
                 }
+                const result = await res.json();
                 closeEditModal();
-                loadSessionDetail();
+                if (result.data && result.data.date !== sessionDate) {
+                    window.location.href = `/sessions/${encodeURIComponent(groupKey)}/${result.data.date}/details.html`;
+                } else {
+                    loadSessionDetail();
+                }
             } catch (error) {
                 console.error('Error saving session:', error);
                 alert(error.message || 'Failed to save session.');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Save';
+            }
+        }
+
+        async function deleteSession() {
+            if (!currentSession) return;
+            if (!confirm('Delete this session? This cannot be undone.')) return;
+
+            try {
+                const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Delete failed');
+                }
+                window.location.href = `/groups/${encodeURIComponent(groupKey)}/detail.html`;
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                alert(error.message || 'Failed to delete session.');
             }
         }
 
