@@ -42,7 +42,10 @@
             background: var(--green-tint); padding: 0.35rem 0.75rem; border-radius: 6px;
             font-size: 0.85rem; color: var(--text);
         }
-        .consent-pill .consent-date { color: var(--text-light); font-size: 0.8rem; }
+        .consent-pill.status-accepted { background: var(--green-tint); color: var(--green); }
+        .consent-pill.status-invited { background: #fff3e0; color: #e67e00; }
+        .consent-pill.status-declined { background: #fdecea; color: var(--error); }
+        .consent-pill .consent-date { color: inherit; opacity: 0.7; font-size: 0.8rem; }
 
         #transferResults > div:hover { background: var(--green-bg); }
 
@@ -510,7 +513,7 @@
                         <div class="consent-section">
                             <h2>Records</h2>
                             <div class="consent-pills">
-                                ${profile.records.map(r => `<span class="consent-pill">${escapeHtml(r.type)} <span class="consent-date">${formatDate(r.date)}</span></span>`).join('')}
+                                ${profile.records.map(r => `<span class="consent-pill status-${(r.status || '').toLowerCase()}">${escapeHtml(r.type)} <span class="consent-date">${escapeHtml(r.status || '')}${r.date ? ' · ' + formatDate(r.date) : ''}</span></span>`).join('')}
                             </div>
                         </div>` : ''}
                     </div>
