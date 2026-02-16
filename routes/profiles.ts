@@ -128,6 +128,158 @@ router.get('/profiles', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/profiles/export', async (req: Request, res: Response) => {
+  try {
+    const fyParam = String(req.query.fy || 'thisFy');
+    const groupFilter = req.query.group ? String(req.query.group).toLowerCase() : undefined;
+    const searchFilter = req.query.search ? String(req.query.search).toLowerCase() : undefined;
+    const typeFilter = req.query.type ? String(req.query.type) : undefined;
+    const hoursFilter = req.query.hours ? String(req.query.hours) : undefined;
+    const recordTypeFilter = req.query.recordType ? String(req.query.recordType) : undefined;
+    const recordStatusFilter = req.query.recordStatus ? String(req.query.recordStatus) : undefined;
+
+    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRecords] = await Promise.all([
+      profilesRepository.getAll(),
+      entriesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+    ]);
+
+    const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+
+    // Group filter: restrict to sessions belonging to that group
+    let groupSessionIds: Set<number> | undefined;
+    if (groupFilter) {
+      const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupFilter);
+      if (spGroup) {
+        groupSessionIds = new Set(
+          sessions.filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === spGroup.ID).map(s => s.ID)
+        );
+      }
+    }
+
+    const fy = calculateCurrentFY();
+    const lastFYStart = fy.startYear - 1;
+
+    // Calculate hours and session counts per profile
+    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number> }>();
+    entries.forEach(e => {
+      const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (volunteerId === undefined) return;
+      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
+      if (sessionId === undefined) return;
+      if (groupSessionIds && !groupSessionIds.has(sessionId)) return;
+      const session = sessionMap.get(sessionId);
+      if (!session) return;
+      const hours = parseHours(e.Hours);
+      const sessionFY = calculateFinancialYear(new Date(session.Date));
+      if (!profileStats.has(volunteerId)) {
+        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set() });
+      }
+      const ps = profileStats.get(volunteerId)!;
+      if (sessionFY === fy.startYear) { ps.hoursThisFY += hours; ps.sessionsThisFY.add(sessionId); }
+      else if (sessionFY === lastFYStart) { ps.hoursLastFY += hours; ps.sessionsLastFY.add(sessionId); }
+    });
+
+    // Build records map
+    const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
+    for (const r of rawRecords) {
+      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      if (pid === undefined) continue;
+      if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
+      profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: r.Status || '' });
+    }
+
+    // Build profile list with stats
+    let profileList = validProfiles.map(spProfile => {
+      const profile = convertProfile(spProfile);
+      const ps = profileStats.get(spProfile.ID);
+      return {
+        name: profile.name || '',
+        email: profile.email || '',
+        isGroup: profile.isGroup,
+        hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
+        hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
+        sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
+        sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
+        records: profileRecordsMap.get(spProfile.ID) || []
+      };
+    });
+
+    // Apply filters
+    if (searchFilter) {
+      profileList = profileList.filter(p =>
+        p.name.toLowerCase().includes(searchFilter) ||
+        p.email.toLowerCase().includes(searchFilter)
+      );
+    }
+    if (typeFilter === 'individuals') profileList = profileList.filter(p => !p.isGroup);
+    else if (typeFilter === 'groups') profileList = profileList.filter(p => p.isGroup);
+
+    // Hours filter uses FY-appropriate hours
+    const getHours = (p: typeof profileList[0]) => {
+      if (fyParam === 'lastFy') return p.hoursLastFY;
+      if (fyParam === 'all') return p.hoursThisFY + p.hoursLastFY;
+      return p.hoursThisFY;
+    };
+    if (hoursFilter === '0') profileList = profileList.filter(p => getHours(p) === 0);
+    else if (hoursFilter === 'lt15') profileList = profileList.filter(p => { const h = getHours(p); return h > 0 && h < 15; });
+    else if (hoursFilter === '15plus') profileList = profileList.filter(p => getHours(p) >= 15);
+    else if (hoursFilter === '15to30') profileList = profileList.filter(p => { const h = getHours(p); return h >= 15 && h <= 30; });
+    else if (hoursFilter === '30plus') profileList = profileList.filter(p => getHours(p) > 30);
+
+    // Record filters
+    if (recordTypeFilter) {
+      profileList = profileList.filter(p => {
+        const recs = p.records.filter(r => r.type === recordTypeFilter);
+        if (recordStatusFilter === 'none') return recs.length === 0;
+        if (recordStatusFilter) return recs.some(r => r.status === recordStatusFilter);
+        return recs.length > 0;
+      });
+    } else if (recordStatusFilter === 'none') {
+      profileList = profileList.filter(p => p.records.length === 0);
+    }
+
+    // Filter out profiles with no activity unless explicitly showing 0h
+    if (fyParam === 'thisFy' && hoursFilter !== '0') {
+      profileList = profileList.filter(p => p.hoursThisFY > 0 || p.sessionsThisFY > 0 || hoursFilter === '0');
+    } else if (fyParam === 'lastFy' && hoursFilter !== '0') {
+      profileList = profileList.filter(p => p.hoursLastFY > 0 || p.sessionsLastFY > 0 || hoursFilter === '0');
+    }
+
+    // Sort by name
+    profileList.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Sessions/Hours based on FY
+    const getSessions = (p: typeof profileList[0]) => {
+      if (fyParam === 'lastFy') return p.sessionsLastFY;
+      if (fyParam === 'all') return p.sessionsThisFY + p.sessionsLastFY;
+      return p.sessionsThisFY;
+    };
+
+    const csvHeader = '"Name","Email","Sessions","Hours"';
+    const csvRows = profileList.map(p => {
+      const name = p.name.replace(/"/g, '""');
+      const email = p.email.replace(/"/g, '""');
+      return `"${name}","${email}",${getSessions(p)},${getHours(p)}`;
+    });
+
+    const csv = [csvHeader, ...csvRows].join('\n');
+    const todayStr = new Date().toISOString().substring(0, 10);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${todayStr} Profiles.csv"`);
+    res.send('\uFEFF' + csv);
+  } catch (error: any) {
+    console.error('Error exporting profiles CSV:', error);
+    res.status(500).json({ success: false, error: 'Failed to export profiles', message: error.message });
+  }
+});
+
 router.get('/records/options', async (req: Request, res: Response) => {
   try {
     if (!recordsRepository.available) {

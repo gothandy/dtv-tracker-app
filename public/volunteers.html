@@ -137,6 +137,9 @@
                         <option value="none">No Record</option>
                     </select>
                 </div>
+                <div class="advanced-row" style="justify-content: flex-end;">
+                    <button class="advanced-toggle" onclick="downloadCSV()">Download CSV</button>
+                </div>
             </div>
         </div>
         <div id="content">
@@ -359,6 +362,19 @@
         function setHoursFilter(val) { currentHoursFilter = val; displayVolunteers(); }
         function setRecordType(val) { currentRecordType = val; displayVolunteers(); }
         function setRecordStatus(val) { currentRecordStatus = val; displayVolunteers(); }
+
+        function downloadCSV() {
+            const params = new URLSearchParams();
+            params.set('fy', currentFilter);
+            if (currentGroup) params.set('group', currentGroup);
+            const searchTerm = document.getElementById('searchBox').value.trim();
+            if (searchTerm) params.set('search', searchTerm);
+            if (currentTypeFilter) params.set('type', currentTypeFilter);
+            if (currentHoursFilter) params.set('hours', currentHoursFilter);
+            if (currentRecordType) params.set('recordType', currentRecordType);
+            if (currentRecordStatus) params.set('recordStatus', currentRecordStatus);
+            window.location.href = '/api/profiles/export?' + params.toString();
+        }
 
         async function loadRecordOptions() {
             try {
