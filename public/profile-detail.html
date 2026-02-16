@@ -44,6 +44,8 @@
         }
         .consent-pill .consent-date { color: var(--text-light); font-size: 0.8rem; }
 
+        #transferResults > div:hover { background: var(--green-bg); }
+
         @media (max-width: 600px) {
             .profile-detail { padding: 1.5rem; }
             .profile-title-row { flex-wrap: wrap; }
@@ -84,6 +86,31 @@
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveProfileEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="transferModal">
+        <div class="modal modal-wide">
+            <h3>Transfer Profile</h3>
+            <p>Transfer all entries, regulars and records to another profile.</p>
+            <div class="modal-field">
+                <input type="text" id="transferSearch" placeholder="Search by name or email..." autocomplete="off" oninput="filterTransferProfiles(this.value)">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.3rem;">
+                    <span class="search-hint" id="transferHint" style="font-size:0.85rem; color:var(--text-faint);">Type at least 2 characters</span>
+                </div>
+            </div>
+            <div id="transferResults" style="max-height:200px; overflow-y:auto; margin-bottom:1rem;"></div>
+            <div id="transferSelected" style="display:none; background:var(--green-light); border-left:4px solid var(--green); padding:0.75rem 1rem; border-radius:var(--radius); margin-bottom:1rem;">
+                <strong id="transferTargetName"></strong>
+            </div>
+            <div class="modal-field" style="display:flex; align-items:center; gap:0.75rem;">
+                <input type="checkbox" id="transferDelete" checked style="width:20px; height:20px; accent-color:var(--green); cursor:pointer;">
+                <label for="transferDelete" style="cursor:pointer; margin:0;">Delete this profile after transfer</label>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeTransferModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmTransferBtn" onclick="confirmTransfer()" disabled>Transfer</button>
             </div>
         </div>
     </div>
@@ -136,6 +163,112 @@
             } catch (error) {
                 console.error('Error deleting profile:', error);
                 alert(error.message || 'Failed to delete profile.');
+            }
+        }
+
+        let transferProfiles = [];
+        let transferTargetId = null;
+
+        async function openTransferModal() {
+            transferTargetId = null;
+            document.getElementById('transferSearch').value = '';
+            document.getElementById('transferResults').innerHTML = '';
+            document.getElementById('transferHint').textContent = 'Type at least 2 characters';
+            document.getElementById('transferSelected').style.display = 'none';
+            document.getElementById('confirmTransferBtn').disabled = true;
+            document.getElementById('transferDelete').checked = true;
+            document.getElementById('transferModal').classList.add('visible');
+
+            if (transferProfiles.length === 0) {
+                document.getElementById('transferHint').textContent = 'Loading profiles...';
+                try {
+                    const res = await apiFetch('/api/profiles');
+                    const result = await res.json();
+                    if (result.success) transferProfiles = result.data;
+                } catch (e) { /* ignore */ }
+                document.getElementById('transferHint').textContent = 'Type at least 2 characters';
+            }
+            document.getElementById('transferSearch').focus();
+        }
+
+        function closeTransferModal() {
+            document.getElementById('transferModal').classList.remove('visible');
+        }
+
+        function filterTransferProfiles(query) {
+            const hint = document.getElementById('transferHint');
+            const results = document.getElementById('transferResults');
+            if (!query || query.length < 2) {
+                results.innerHTML = '';
+                hint.textContent = 'Type at least 2 characters';
+                return;
+            }
+            const q = query.toLowerCase();
+            const matches = transferProfiles.filter(p =>
+                p.id !== currentProfile.id &&
+                ((p.name && p.name.toLowerCase().includes(q)) ||
+                 (p.email && p.email.toLowerCase().includes(q)))
+            );
+            hint.textContent = matches.length ? `${matches.length} match${matches.length !== 1 ? 'es' : ''}` : 'No matches';
+            results.innerHTML = matches.slice(0, 30).map(p => `
+                <div class="result-card" onclick="selectTransferTarget(${p.id}, '${escapeHtml(p.name || '')}')" style="padding:0.5rem 0.75rem; cursor:pointer; border-bottom:1px solid var(--border);">
+                    <div style="font-weight:600;">${escapeHtml(p.name || 'Unknown')}</div>
+                    ${p.email ? `<div style="font-size:0.85rem; color:var(--text-faint);">${escapeHtml(p.email)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function selectTransferTarget(id, name) {
+            transferTargetId = id;
+            document.getElementById('transferTargetName').textContent = name;
+            document.getElementById('transferSelected').style.display = 'block';
+            document.getElementById('transferResults').innerHTML = '';
+            document.getElementById('transferSearch').value = '';
+            document.getElementById('transferHint').textContent = '';
+            document.getElementById('confirmTransferBtn').disabled = false;
+        }
+
+        async function confirmTransfer() {
+            if (!transferTargetId) return;
+            const deleteAfter = document.getElementById('transferDelete').checked;
+            const targetName = document.getElementById('transferTargetName').textContent;
+
+            if (!confirm(`Transfer all entries, regulars and records to "${targetName}"?${deleteAfter ? ' This profile will be deleted.' : ''}`)) return;
+
+            const btn = document.getElementById('confirmTransferBtn');
+            btn.disabled = true;
+            btn.textContent = 'Transferring...';
+
+            try {
+                const res = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}/transfer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetProfileId: transferTargetId, deleteAfter })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Transfer failed');
+                }
+                const result = await res.json();
+                const d = result.data;
+                const parts = [];
+                if (d.entriesTransferred) parts.push(`${d.entriesTransferred} entries`);
+                if (d.regularsTransferred) parts.push(`${d.regularsTransferred} regulars`);
+                if (d.recordsTransferred) parts.push(`${d.recordsTransferred} records`);
+
+                if (d.deleted) {
+                    alert(parts.length ? `Transferred: ${parts.join(', ')}` : 'Transfer complete');
+                    window.location.href = `/profiles/${encodeURIComponent(d.targetSlug)}/details.html`;
+                } else {
+                    closeTransferModal();
+                    if (parts.length) alert(`Transferred: ${parts.join(', ')}`);
+                    loadProfile();
+                }
+            } catch (error) {
+                console.error('Error transferring profile:', error);
+                alert(error.message || 'Failed to transfer profile.');
+                btn.disabled = false;
+                btn.textContent = 'Transfer';
             }
         }
 
@@ -391,10 +524,10 @@
                         </div>
                     </div>
                     <div id="entriesContainer"></div>
-                    ${allEntries.length === 0 ? `
                     <div class="delete-section">
-                        <button class="btn-delete" onclick="deleteProfile()">Delete Profile</button>
-                    </div>` : ''}
+                        <button class="btn-action" onclick="openTransferModal()">Transfer</button>
+                        ${allEntries.length === 0 ? '<button class="btn-delete" onclick="deleteProfile()" style="margin-left:0.5rem;">Delete Profile</button>' : ''}
+                    </div>
                 `;
 
                 displayStats();

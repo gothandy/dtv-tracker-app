@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+import { sharePointClient } from '../services/sharepoint-client';
 import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
@@ -338,6 +339,130 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update profile',
+      message: error.message
+    });
+  }
+});
+
+router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
+  try {
+    const slug = String(req.params.slug).toLowerCase();
+    const { targetProfileId, deleteAfter } = req.body;
+
+    if (!targetProfileId || typeof targetProfileId !== 'number') {
+      res.status(400).json({ success: false, error: 'targetProfileId is required and must be a number' });
+      return;
+    }
+
+    const [rawProfiles, rawEntries, rawRegulars, rawRecords] = await Promise.all([
+      profilesRepository.getAll(),
+      entriesRepository.getAll(),
+      regularsRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+    ]);
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const sourceProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    if (!sourceProfile) {
+      res.status(404).json({ success: false, error: 'Source profile not found' });
+      return;
+    }
+
+    const targetProfile = profiles.find(p => p.ID === targetProfileId);
+    if (!targetProfile) {
+      res.status(404).json({ success: false, error: 'Target profile not found' });
+      return;
+    }
+
+    if (sourceProfile.ID === targetProfile.ID) {
+      res.status(400).json({ success: false, error: 'Source and target profiles must be different' });
+      return;
+    }
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const sourceEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === sourceProfile.ID);
+    const entriesListGuid = process.env.ENTRIES_LIST_GUID!;
+
+    // Transfer entries
+    let entriesTransferred = 0;
+    for (const entry of sourceEntries) {
+      await sharePointClient.updateListItem(entriesListGuid, entry.ID, {
+        [PROFILE_LOOKUP]: String(targetProfile.ID)
+      });
+      entriesTransferred++;
+    }
+
+    // Transfer regulars (skip if target already has the same group)
+    const sourceRegulars = rawRegulars.filter(r => safeParseLookupId(r[PROFILE_LOOKUP]) === sourceProfile.ID);
+    const targetRegularGroups = new Set(
+      rawRegulars
+        .filter(r => safeParseLookupId(r[PROFILE_LOOKUP]) === targetProfile.ID)
+        .map(r => safeParseLookupId(r[GROUP_LOOKUP]))
+        .filter((id): id is number => id !== undefined)
+    );
+    const regularsListGuid = process.env.REGULARS_LIST_GUID!;
+
+    let regularsTransferred = 0;
+    for (const regular of sourceRegulars) {
+      const groupId = safeParseLookupId(regular[GROUP_LOOKUP]);
+      if (groupId !== undefined && !targetRegularGroups.has(groupId)) {
+        await sharePointClient.updateListItem(regularsListGuid, regular.ID, {
+          [PROFILE_LOOKUP]: String(targetProfile.ID)
+        });
+        regularsTransferred++;
+      } else {
+        await regularsRepository.delete(regular.ID);
+      }
+    }
+
+    // Transfer records (skip if target already has the same type)
+    let recordsTransferred = 0;
+    if (recordsRepository.available) {
+      const sourceRecords = rawRecords.filter(r =>
+        safeParseLookupId(r.ProfileLookupId as unknown as string) === sourceProfile.ID
+      );
+      const targetRecordTypes = new Set(
+        rawRecords
+          .filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === targetProfile.ID)
+          .map(r => r.Type)
+      );
+      const recordsListGuid = process.env.RECORDS_LIST_GUID!;
+
+      for (const record of sourceRecords) {
+        if (!targetRecordTypes.has(record.Type)) {
+          await sharePointClient.updateListItem(recordsListGuid, record.ID, {
+            ProfileLookupId: String(targetProfile.ID)
+          });
+          recordsTransferred++;
+        } else {
+          await sharePointClient.deleteListItem(recordsListGuid, record.ID);
+        }
+      }
+      sharePointClient.cache.del('records');
+    }
+
+    // Clear caches
+    sharePointClient.cache.del('entries');
+    sharePointClient.cache.del('regulars');
+
+    // Delete source profile if requested
+    const deleted = !!deleteAfter;
+    if (deleted) {
+      await profilesRepository.delete(sourceProfile.ID);
+    }
+
+    const targetSlug = nameToSlug(targetProfile.Title);
+    console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${deleted ? ', deleted source' : ''}`);
+
+    res.json({
+      success: true,
+      data: { entriesTransferred, regularsTransferred, recordsTransferred, deleted, targetSlug }
+    });
+  } catch (error: any) {
+    console.error('Error transferring profile:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to transfer profile',
       message: error.message
     });
   }
