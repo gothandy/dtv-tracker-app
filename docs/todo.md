@@ -81,3 +81,7 @@ Constraint: users may not have full Excel installed (online-only licences). Opti
 ## Is Group? Confusing
 
 We have two types of Group in the UI. Need another word ideally for the profile to cover "Not Individual" case. 
+
+## Use of #Tags??
+
+Many of the tags can be retired? Things like "#New" can be calculated, #Regulars comes from the lookup. Perhaps overtime gently retire each once possible. Leaving those that are required like dig lead, etc.

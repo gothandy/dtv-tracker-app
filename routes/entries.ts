@@ -30,6 +30,20 @@ import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
 
+function isNewVolunteer(allEntries: any[], profileId: number, currentSessionId: number): boolean {
+  return !allEntries.some(e => {
+    const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
+    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+    return vid === profileId && sid !== currentSessionId;
+  });
+}
+
+function appendNewTag(notes: string | undefined): string {
+  const base = notes || '';
+  if (/#New\b/i.test(base)) return base;
+  return base ? `${base} #New` : '#New';
+}
+
 router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
@@ -232,9 +246,13 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
       [SESSION_LOOKUP]: String(spSession.ID),
       [PROFILE_LOOKUP]: String(profile.ID)
     };
-    if (typeof notes === 'string' && notes.trim()) {
-      fields.Notes = notes;
+    let entryNotes = typeof notes === 'string' && notes.trim() ? notes : undefined;
+
+    const rawEntries = await entriesRepository.getAll();
+    if (isNewVolunteer(rawEntries, profile.ID, spSession.ID)) {
+      entryNotes = appendNewTag(entryNotes);
     }
+    if (entryNotes) fields.Notes = entryNotes;
 
     const id = await entriesRepository.create(fields);
     res.json({ success: true, data: { id } });
@@ -292,10 +310,12 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     for (const regular of groupRegulars) {
       const vid = safeParseLookupId(regular[PROFILE_LOOKUP]);
       if (vid !== undefined && !existingVolunteerIds.has(vid)) {
+        let notes = '#Regular';
+        if (isNewVolunteer(entries, vid, spSession.ID)) notes = appendNewTag(notes);
         await entriesRepository.create({
           [SESSION_LOOKUP]: String(spSession.ID),
           [PROFILE_LOOKUP]: String(vid),
-          Notes: '#Regular'
+          Notes: notes
         });
         existingVolunteerIds.add(vid);
         addedRegulars++;
@@ -334,10 +354,14 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         // Create entry if not already registered
         const profileId = profile!.ID;
         if (!existingVolunteerIds.has(profileId)) {
-          await entriesRepository.create({
+          const entryFields: Record<string, any> = {
             [SESSION_LOOKUP]: String(spSession.ID),
             [PROFILE_LOOKUP]: String(profileId)
-          });
+          };
+          if (isNewVolunteer(entries, profileId, spSession.ID)) {
+            entryFields.Notes = '#New';
+          }
+          await entriesRepository.create(entryFields);
           existingVolunteerIds.add(profileId);
           addedFromEventbrite++;
         }

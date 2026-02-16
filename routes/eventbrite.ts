@@ -15,6 +15,14 @@ import { getAttendees } from '../services/eventbrite-client';
 
 const router: Router = express.Router();
 
+function isNewVolunteer(allEntries: any[], profileId: number, currentSessionId: number): boolean {
+  return !allEntries.some(e => {
+    const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
+    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+    return vid === profileId && sid !== currentSessionId;
+  });
+}
+
 router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) => {
   try {
     const [sessionsRaw, entriesRaw, profilesRaw] = await Promise.all([
@@ -83,10 +91,14 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
         // Create entry if not already registered
         const profileId = profile!.ID;
         if (!existingProfileIds.has(profileId)) {
-          await entriesRepository.create({
+          const entryFields: Record<string, any> = {
             [SESSION_LOOKUP]: String(session.ID),
             [PROFILE_LOOKUP]: String(profileId)
-          });
+          };
+          if (isNewVolunteer(entries, profileId, session.ID)) {
+            entryFields.Notes = '#New';
+          }
+          await entriesRepository.create(entryFields);
           existingProfileIds.add(profileId);
           newEntries++;
         }
