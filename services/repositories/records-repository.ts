@@ -58,6 +58,12 @@ class RecordsRepository {
     await sharePointClient.updateListItem(this.listGuid, itemId, fields);
     sharePointClient.cache.del('records');
   }
+
+  async delete(itemId: number): Promise<void> {
+    if (!this.available) throw new Error('Records list not configured');
+    await sharePointClient.deleteListItem(this.listGuid, itemId);
+    sharePointClient.cache.del('records');
+  }
 }
 
 export const recordsRepository = new RecordsRepository();

@@ -146,6 +146,87 @@ router.get('/records/options', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/profiles/:id/records', async (req: Request, res: Response) => {
+  try {
+    const profileId = parseInt(String(req.params.id), 10);
+    if (isNaN(profileId)) {
+      res.status(400).json({ success: false, error: 'Invalid profile ID' });
+      return;
+    }
+    if (!recordsRepository.available) {
+      res.status(400).json({ success: false, error: 'Records list not configured' });
+      return;
+    }
+
+    const { type, status, date } = req.body;
+    if (!type || !status) {
+      res.status(400).json({ success: false, error: 'type and status are required' });
+      return;
+    }
+
+    const id = await recordsRepository.create({
+      ProfileLookupId: profileId,
+      Type: type,
+      Status: status,
+      Date: date || new Date().toISOString()
+    });
+    res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
+  } catch (error: any) {
+    console.error('Error creating record:', error);
+    res.status(500).json({ success: false, error: 'Failed to create record', message: error.message });
+  }
+});
+
+router.patch('/records/:id', async (req: Request, res: Response) => {
+  try {
+    const recordId = parseInt(String(req.params.id), 10);
+    if (isNaN(recordId)) {
+      res.status(400).json({ success: false, error: 'Invalid record ID' });
+      return;
+    }
+    if (!recordsRepository.available) {
+      res.status(400).json({ success: false, error: 'Records list not configured' });
+      return;
+    }
+
+    const { status, date } = req.body;
+    const fields: { Status?: string; Date?: string } = {};
+    if (typeof status === 'string') fields.Status = status;
+    if (typeof date === 'string') fields.Date = date;
+
+    if (Object.keys(fields).length === 0) {
+      res.status(400).json({ success: false, error: 'No valid fields to update' });
+      return;
+    }
+
+    await recordsRepository.update(recordId, fields);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error updating record:', error);
+    res.status(500).json({ success: false, error: 'Failed to update record', message: error.message });
+  }
+});
+
+router.delete('/records/:id', async (req: Request, res: Response) => {
+  try {
+    const recordId = parseInt(String(req.params.id), 10);
+    if (isNaN(recordId)) {
+      res.status(400).json({ success: false, error: 'Invalid record ID' });
+      return;
+    }
+    if (!recordsRepository.available) {
+      res.status(400).json({ success: false, error: 'Records list not configured' });
+      return;
+    }
+
+    await recordsRepository.delete(recordId);
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting record:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete record', message: error.message });
+  }
+});
+
 router.post('/profiles', async (req: Request, res: Response) => {
   try {
     const { name, email } = req.body;
@@ -305,6 +386,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     // Fetch consent records if available (one per profile+type)
     const profileRecords = await recordsRepository.getByProfile(spProfile.ID);
     const records: ConsentRecordResponse[] = profileRecords.map(r => ({
+      id: r.ID,
       type: r.Type || '',
       status: r.Status || '',
       date: r.Date || ''

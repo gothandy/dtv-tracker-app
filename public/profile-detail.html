@@ -40,12 +40,24 @@
         .consent-pill {
             display: inline-flex; align-items: center; gap: 0.4rem;
             background: var(--green-tint); padding: 0.35rem 0.75rem; border-radius: 6px;
-            font-size: 0.85rem; color: var(--text);
+            font-size: 0.85rem; color: var(--text); cursor: pointer; transition: opacity 0.2s;
         }
+        .consent-pill:hover { opacity: 0.8; }
         .consent-pill.status-accepted { background: var(--green-tint); color: var(--green); }
         .consent-pill.status-invited { background: #fff3e0; color: #e67e00; }
         .consent-pill.status-declined { background: #fdecea; color: var(--error); }
         .consent-pill .consent-date { color: inherit; opacity: 0.7; font-size: 0.8rem; }
+        .consent-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+        .consent-header h2 { margin-bottom: 0; }
+        .btn-add-record {
+            font-size: 0.85rem; font-weight: 600; padding: 0.3rem 0.7rem;
+            border: 2px solid var(--green); border-radius: 6px;
+            background: var(--surface); color: var(--green); cursor: pointer;
+            min-height: 32px; transition: all 0.2s;
+        }
+        .btn-add-record:hover { background: var(--green); color: white; }
+        .modal-btn-delete { background: var(--error); color: white; margin-right: auto; }
+        .modal-btn-delete:hover { opacity: 0.85; }
 
         #transferResults > div:hover { background: var(--green-bg); }
 
@@ -114,6 +126,47 @@
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeTransferModal()">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmTransferBtn" onclick="confirmTransfer()" disabled>Transfer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editRecordModal">
+        <div class="modal">
+            <h3 id="editRecordTitle">Edit Record</h3>
+            <div class="modal-field">
+                <label for="editRecordStatus">Status</label>
+                <select id="editRecordStatus"></select>
+            </div>
+            <div class="modal-field">
+                <label for="editRecordDate">Date</label>
+                <input type="date" id="editRecordDate">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-delete" id="deleteRecordBtn" onclick="deleteRecord()">Delete</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeRecordModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="saveRecordBtn" onclick="saveRecord()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addRecordModal">
+        <div class="modal">
+            <h3>Add Record</h3>
+            <div class="modal-field">
+                <label for="addRecordType">Type</label>
+                <select id="addRecordType"></select>
+            </div>
+            <div class="modal-field">
+                <label for="addRecordStatus">Status</label>
+                <select id="addRecordStatus"></select>
+            </div>
+            <div class="modal-field">
+                <label for="addRecordDate">Date</label>
+                <input type="date" id="addRecordDate">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeAddRecordModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="createRecordBtn" onclick="createRecord()">Add</button>
             </div>
         </div>
     </div>
@@ -509,13 +562,16 @@
                             </div>
                             <div class="group-hours-list" id="groupsContainer"></div>
                         </div>` : ''}
-                        ${profile.records && profile.records.length > 0 ? `
                         <div class="consent-section">
-                            <h2>Records</h2>
-                            <div class="consent-pills">
-                                ${profile.records.map(r => `<span class="consent-pill status-${(r.status || '').toLowerCase()}">${escapeHtml(r.type)} <span class="consent-date">${escapeHtml(r.status || '')}${r.date ? ' · ' + formatDate(r.date) : ''}</span></span>`).join('')}
+                            <div class="consent-header">
+                                <h2>Records</h2>
+                                <button class="btn-add-record" onclick="openAddRecord()">+ Add</button>
                             </div>
-                        </div>` : ''}
+                            <div class="consent-pills">
+                                ${(profile.records || []).map(r => `<span class="consent-pill status-${(r.status || '').toLowerCase()}" onclick="openEditRecord(${r.id}, '${escapeHtml(r.type).replace(/'/g, "\\'")}', '${escapeHtml(r.status || '').replace(/'/g, "\\'")}', '${r.date || ''}')">${escapeHtml(r.type)} <span class="consent-date">${escapeHtml(r.status || '')}${r.date ? ' · ' + formatDate(r.date) : ''}</span></span>`).join('')}
+                                ${(!profile.records || profile.records.length === 0) ? '<span style="color:var(--text-faint); font-size:0.85rem;">No records</span>' : ''}
+                            </div>
+                        </div>
                     </div>
 
                     <div class="filter-bar">
@@ -544,6 +600,121 @@
         }
 
         loadProfile();
+
+        // === Records management ===
+        let recordOptions = null;
+        let editingRecordId = null;
+
+        async function loadRecordOptions() {
+            if (recordOptions) return recordOptions;
+            try {
+                const res = await apiFetch('/api/records/options');
+                const data = await res.json();
+                if (data.success) recordOptions = data.data;
+            } catch (e) { console.error('Failed to load record options:', e); }
+            return recordOptions || { types: [], statuses: [] };
+        }
+
+        function populateSelect(selectEl, options, selected) {
+            selectEl.innerHTML = options.map(o =>
+                `<option value="${escapeHtml(o)}"${o === selected ? ' selected' : ''}>${escapeHtml(o)}</option>`
+            ).join('');
+        }
+
+        function toDateInputValue(isoStr) {
+            if (!isoStr) return '';
+            return new Date(isoStr).toISOString().substring(0, 10);
+        }
+
+        async function openEditRecord(id, type, status, date) {
+            editingRecordId = id;
+            const opts = await loadRecordOptions();
+            document.getElementById('editRecordTitle').textContent = type;
+            populateSelect(document.getElementById('editRecordStatus'), opts.statuses, status);
+            document.getElementById('editRecordDate').value = toDateInputValue(date);
+            document.getElementById('editRecordModal').classList.add('visible');
+        }
+
+        function closeRecordModal() {
+            document.getElementById('editRecordModal').classList.remove('visible');
+            editingRecordId = null;
+        }
+
+        async function saveRecord() {
+            if (!editingRecordId) return;
+            const btn = document.getElementById('saveRecordBtn');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const status = document.getElementById('editRecordStatus').value;
+                const dateVal = document.getElementById('editRecordDate').value;
+                const date = dateVal ? new Date(dateVal + 'T10:00:00.000Z').toISOString() : undefined;
+                const res = await apiFetch(`/api/records/${editingRecordId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, date })
+                });
+                if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Save failed'); }
+                closeRecordModal();
+                loadProfile();
+            } catch (error) {
+                alert(error.message || 'Failed to save record.');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save';
+            }
+        }
+
+        async function deleteRecord() {
+            if (!editingRecordId) return;
+            if (!confirm('Delete this record?')) return;
+            const btn = document.getElementById('deleteRecordBtn');
+            btn.disabled = true; btn.textContent = 'Deleting...';
+            try {
+                const res = await apiFetch(`/api/records/${editingRecordId}`, { method: 'DELETE' });
+                if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Delete failed'); }
+                closeRecordModal();
+                loadProfile();
+            } catch (error) {
+                alert(error.message || 'Failed to delete record.');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Delete';
+            }
+        }
+
+        async function openAddRecord() {
+            const opts = await loadRecordOptions();
+            populateSelect(document.getElementById('addRecordType'), opts.types, '');
+            populateSelect(document.getElementById('addRecordStatus'), opts.statuses, '');
+            document.getElementById('addRecordDate').value = new Date().toISOString().substring(0, 10);
+            document.getElementById('addRecordModal').classList.add('visible');
+        }
+
+        function closeAddRecordModal() {
+            document.getElementById('addRecordModal').classList.remove('visible');
+        }
+
+        async function createRecord() {
+            if (!currentProfile) return;
+            const btn = document.getElementById('createRecordBtn');
+            btn.disabled = true; btn.textContent = 'Adding...';
+            try {
+                const type = document.getElementById('addRecordType').value;
+                const status = document.getElementById('addRecordStatus').value;
+                const dateVal = document.getElementById('addRecordDate').value;
+                const date = dateVal ? new Date(dateVal + 'T10:00:00.000Z').toISOString() : new Date().toISOString();
+                const res = await apiFetch(`/api/profiles/${currentProfile.id}/records`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, status, date })
+                });
+                if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Create failed'); }
+                closeAddRecordModal();
+                loadProfile();
+            } catch (error) {
+                alert(error.message || 'Failed to create record.');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Add';
+            }
+        }
     </script>
 </body>
 </html>

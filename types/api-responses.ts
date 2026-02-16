@@ -73,6 +73,7 @@ export interface ProfileGroupHours {
 }
 
 export interface ConsentRecordResponse {
+  id: number;
   type: string;
   status: string;
   date: string;
