@@ -5,7 +5,7 @@
 Legacy Members site retired. Tracker site is the only site. Legacy ternaries, migration scripts, `.env.members`, `.env.tracker` all removed. Remaining: remove "manage" permissions in Azure, update `sharepoint-schema.md`.
 
 ### SharePoint button icon
-The SharePoint SVG on the homepage needs replacing with a better icon.
+~~The SharePoint SVG on the homepage needs replacing with a better icon.~~ Not Requried
 
 ## Quick Fixes
 
@@ -77,3 +77,7 @@ Need a way for non-technical users to do ad-hoc reporting. Options:
 3. **Power Pivot** — live data model connecting to an API endpoint.
 
 Constraint: users may not have full Excel installed (online-only licences). Option 1 is the safest starting point.
+
+## Is Group? Confusing
+
+We have two types of Group in the UI. Need another word ideally for the profile to cover "Not Individual" case. 

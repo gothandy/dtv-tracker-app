@@ -33,16 +33,35 @@
         .volunteer-meta span { white-space: nowrap; }
         .volunteer-meta strong { color: var(--text-mid); }
 
-        .group-select {
-            padding: 0.5rem 0.75rem; font-size: 0.9rem;
+        .advanced-toggle {
+            padding: 0.5rem 0.75rem; border: 2px solid var(--border-mid);
+            border-radius: var(--radius); background: var(--surface);
+            cursor: pointer; font-size: 0.9rem; color: var(--text-mid);
+            display: flex; align-items: center; gap: 0.3rem;
+            min-height: 38px; white-space: nowrap; font-family: var(--font);
+        }
+        .advanced-toggle:hover { border-color: var(--green); }
+        .advanced-toggle.active { border-color: var(--green); color: var(--green); }
+
+        .advanced-section {
+            max-height: 0; overflow: hidden; opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
+        }
+        .advanced-section.open { max-height: 200px; opacity: 1; margin-top: 0.75rem; }
+        .advanced-row { display: flex; gap: 0.5rem; align-items: center; }
+        .advanced-row + .advanced-row { margin-top: 0.5rem; }
+        .advanced-row select {
+            flex: 1; padding: 0.5rem 0.75rem; font-size: 0.9rem;
             border: 2px solid var(--border-mid); border-radius: var(--radius);
             font-family: var(--font); background: var(--surface); color: var(--text);
-            min-height: 38px; min-width: 0; max-width: 100%;
+            min-height: 38px; min-width: 0;
         }
-        .group-select:focus { outline: none; border-color: var(--green); }
+        .advanced-row select:focus { outline: none; border-color: var(--green); }
 
         @media (max-width: 600px) {
-            .group-select, .filter-search { width: 100%; }
+            .filter-search { width: 100%; }
+            .advanced-row { flex-direction: column; }
+            .advanced-row select { width: 100%; }
             .volunteer-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .volunteer-meta { width: 100%; justify-content: flex-start; }
         }
@@ -87,10 +106,37 @@
                 </div>
             </div>
             <div class="filter-row">
-                <select class="group-select" id="groupSelect" onchange="setGroup(this.value)">
-                    <option value="">All Groups</option>
-                </select>
                 <input type="text" class="filter-search" id="searchBox" placeholder="Search..." autocomplete="off">
+                <button class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">Advanced &#9662;</button>
+            </div>
+            <div class="advanced-section" id="advancedSection">
+                <div class="advanced-row">
+                    <select id="groupSelect" onchange="setGroup(this.value)">
+                        <option value="">All Groups</option>
+                    </select>
+                    <select id="typeSelect" onchange="setTypeFilter(this.value)">
+                        <option value="">All Profiles</option>
+                        <option value="individuals">Individuals</option>
+                        <option value="groups">Groups</option>
+                    </select>
+                    <select id="hoursSelect" onchange="setHoursFilter(this.value)">
+                        <option value="">All Hours</option>
+                        <option value="0">0h</option>
+                        <option value="lt15">&lt;15h</option>
+                        <option value="15plus">15h+</option>
+                        <option value="15to30">15-30h</option>
+                        <option value="30plus">30h+</option>
+                    </select>
+                </div>
+                <div class="advanced-row">
+                    <select id="recordTypeSelect" onchange="setRecordType(this.value)">
+                        <option value="">All Record Types</option>
+                    </select>
+                    <select id="recordStatusSelect" onchange="setRecordStatus(this.value)">
+                        <option value="">All Statuses</option>
+                        <option value="none">No Record</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div id="content">
@@ -103,20 +149,36 @@
         let currentFilter = 'thisFy';
         let currentSort = 'az';
         let currentGroup = '';
+        let currentTypeFilter = '';
+        let currentHoursFilter = '';
+        let currentRecordType = '';
+        let currentRecordStatus = '';
         const MEMBER_HOURS = 15;
 
-        function toggleDropdown(menuId) {
-            const menu = document.getElementById(menuId);
-            const wasOpen = menu.classList.contains('open');
-            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
-            if (!wasOpen) menu.classList.add('open');
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+        function toggleAdvanced() {
+            const section = document.getElementById('advancedSection');
+            const btn = document.getElementById('advancedToggle');
+            const isOpen = section.classList.toggle('open');
+            btn.classList.toggle('active', isOpen);
+            btn.innerHTML = isOpen ? 'Advanced &#9652;' : 'Advanced &#9662;';
+            if (!isOpen) {
+                currentTypeFilter = '';
+                currentHoursFilter = '';
+                currentRecordType = '';
+                currentRecordStatus = '';
+                document.getElementById('typeSelect').value = '';
+                document.getElementById('hoursSelect').value = '';
+                document.getElementById('recordTypeSelect').value = '';
+                document.getElementById('recordStatusSelect').value = '';
+                if (currentGroup) {
+                    currentGroup = '';
+                    document.getElementById('groupSelect').value = '';
+                    loadVolunteers();
+                } else {
+                    displayVolunteers();
+                }
             }
-        });
+        }
 
         function setFilter(filter) {
             currentFilter = filter;
@@ -173,6 +235,11 @@
             const searchTerm = document.getElementById('searchBox').value;
 
             let filtered = allVolunteers;
+            if (currentTypeFilter === 'individuals') {
+                filtered = filtered.filter(v => !v.isGroup);
+            } else if (currentTypeFilter === 'groups') {
+                filtered = filtered.filter(v => v.isGroup);
+            }
             if (currentFilter === 'thisFy') {
                 filtered = filtered.filter(v => v.hoursThisFY > 0);
             } else if (currentFilter === 'lastFy') {
@@ -181,6 +248,26 @@
             if (searchTerm && searchTerm.length >= 3) {
                 const term = searchTerm.toLowerCase();
                 filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
+            }
+            if (currentHoursFilter) {
+                const hFilters = {
+                    '0': v => getHours(v) === 0,
+                    'lt15': v => { const h = getHours(v); return h > 0 && h < 15; },
+                    '15plus': v => getHours(v) >= 15,
+                    '15to30': v => { const h = getHours(v); return h >= 15 && h <= 30; },
+                    '30plus': v => getHours(v) > 30
+                };
+                if (hFilters[currentHoursFilter]) filtered = filtered.filter(hFilters[currentHoursFilter]);
+            }
+            if (currentRecordType) {
+                filtered = filtered.filter(v => {
+                    const recs = (v.records || []).filter(r => r.type === currentRecordType);
+                    if (currentRecordStatus === 'none') return recs.length === 0;
+                    if (currentRecordStatus) return recs.some(r => r.status === currentRecordStatus);
+                    return recs.length > 0;
+                });
+            } else if (currentRecordStatus === 'none') {
+                filtered = filtered.filter(v => !v.records || v.records.length === 0);
             }
 
             // Sort
@@ -268,10 +355,41 @@
             }
         }
 
+        function setTypeFilter(val) { currentTypeFilter = val; displayVolunteers(); }
+        function setHoursFilter(val) { currentHoursFilter = val; displayVolunteers(); }
+        function setRecordType(val) { currentRecordType = val; displayVolunteers(); }
+        function setRecordStatus(val) { currentRecordStatus = val; displayVolunteers(); }
+
+        async function loadRecordOptions() {
+            try {
+                const res = await apiFetch('/api/records/options');
+                if (!res.ok) return;
+                const result = await res.json();
+                if (!result.success) return;
+                const typeSelect = document.getElementById('recordTypeSelect');
+                result.data.types.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    opt.textContent = t;
+                    typeSelect.appendChild(opt);
+                });
+                const statusSelect = document.getElementById('recordStatusSelect');
+                result.data.statuses.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    statusSelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Error loading record options:', e);
+            }
+        }
+
         document.getElementById('searchBox').addEventListener('input', displayVolunteers);
 
         loadVolunteers();
         loadGroups();
+        loadRecordOptions();
     </script>
 </body>
 </html>

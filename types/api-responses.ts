@@ -47,6 +47,7 @@ export interface ProfileResponse {
   hoursThisFY: number;
   sessionsLastFY: number;
   sessionsThisFY: number;
+  records?: Array<{ type: string; status: string }>;
 }
 
 export interface ProfileEntryResponse {

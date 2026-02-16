@@ -366,6 +366,31 @@ export class SharePointClient {
   }
 
   /**
+   * Get choice values for a column in a SharePoint list.
+   * Fetches all columns for the list (cached), then finds the named column.
+   */
+  async getColumnChoices(listGuid: string, columnName: string): Promise<string[]> {
+    const cacheKey = `columns-${listGuid}`;
+    let columns = this.cache.get(cacheKey) as any[] | undefined;
+
+    if (!columns) {
+      try {
+        const siteId = await this.getSiteId();
+        const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
+        columns = data.value || [];
+        this.cache.set(cacheKey, columns);
+      } catch (error: any) {
+        console.error(`Error fetching columns for list ${listGuid}:`, error.message);
+        return [];
+      }
+    }
+
+    if (!columns) return [];
+    const column = columns.find((c: any) => c.name === columnName || c.displayName === columnName);
+    return column?.choice?.choices || [];
+  }
+
+  /**
    * Clear all cached data
    */
   clearCache(): void {

@@ -90,6 +90,14 @@ router.get('/profiles', async (req: Request, res: Response) => {
 
     const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
 
+    const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
+    for (const r of rawRecords) {
+      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      if (pid === undefined) continue;
+      if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
+      profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: r.Status || '' });
+    }
+
     const data: ProfileResponse[] = validProfiles.map(spProfile => {
       const profile = convertProfile(spProfile);
       const ps = profileStats.get(spProfile.ID);
@@ -104,7 +112,8 @@ router.get('/profiles', async (req: Request, res: Response) => {
         hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
         hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
         sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
-        sessionsThisFY: ps ? ps.sessionsThisFY.size : 0
+        sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
+        records: profileRecordsMap.get(spProfile.ID) || []
       };
     });
 
@@ -116,6 +125,24 @@ router.get('/profiles', async (req: Request, res: Response) => {
       error: 'Failed to fetch profiles from SharePoint',
       message: error.message
     });
+  }
+});
+
+router.get('/records/options', async (req: Request, res: Response) => {
+  try {
+    if (!recordsRepository.available) {
+      res.json({ success: true, data: { types: [], statuses: [] } });
+      return;
+    }
+    const listGuid = process.env.RECORDS_LIST_GUID!;
+    const [types, statuses] = await Promise.all([
+      sharePointClient.getColumnChoices(listGuid, 'Type'),
+      sharePointClient.getColumnChoices(listGuid, 'Status')
+    ]);
+    res.json({ success: true, data: { types, statuses } });
+  } catch (error: any) {
+    console.error('Error fetching record options:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch record options' });
   }
 });
 
