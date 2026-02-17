@@ -1,8 +1,5 @@
 # Todo
 
-## Bulk Upsert On Records
-From the Volunteers Advanced screen have a button to do bulk updates of Volunteers based on the current filter. Used for annual reset of Membership, Digcards etc.
-
 ## Bulk Email to Volunteers?
 Both from filtered volunteers page, groups (regulars) and session page? Or provide emails to cut and paste into email client.
 
@@ -24,16 +21,19 @@ Need a way for non-technical users to do ad-hoc reporting. Options:
 3. **Power Pivot** — live data model connecting to an API endpoint.
 Constraint: users may not have full Excel installed (online-only licences). Option 1 is the safest starting point.
 
-## Is Group? Confusing
-We have two types of Group in the UI. Need another word ideally for the profile to cover "Not Individual" case. 
-
 ## Use of #Tags??
-Many of the tags can be retired? Things like "#New" can be calculated, #Regulars comes from the lookup. Perhaps overtime gently retire each once possible. Leaving those that are required like dig lead, etc.
+Many of the tags can be retired? Things like "#New" can be calculated, #Regulars comes from the lookup. Perhaps overtime gently retire each once possible. Leaving those that are required like dig lead, etc. All tags now use SVG icons configured in `public/js/tag-icons.js` — easy to add/remove/rename tags by editing this file.
 
 ## Timesheet functionality?
 Using same data model, have a more intutive interface for users to record timesheets?
 - Need a link between the teams login and the timesheets.
 - Decide what we store in timesheets? Monthly etc.
+
+## Sync Logging
+The Eventbrite sync endpoints return structured results but there's no persistent log. Azure Logic App run history provides some visibility, but a SharePoint "Logs" list would allow viewing sync history from within the app.
+- SharePoint Logs list with fields: Title (timestamp), Summary (text), Source (Manual/Scheduled)
+- Write to Logs list at the end of `event-and-attendee-update` endpoint
+- Display on admin page with last sync timestamp
 
 ## Import from Facebook events?
 Some groups use Facebook for registration. Maybe use an OCR to get the text, and match against the names in the profile list.

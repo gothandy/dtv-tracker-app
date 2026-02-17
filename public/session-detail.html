@@ -67,6 +67,10 @@
         <div class="modal modal-wide">
             <h3>Edit Session</h3>
             <div class="modal-field">
+                <label for="editGroup">Group</label>
+                <select id="editGroup" style="width:100%; padding:0.5rem; font-size:0.95rem; border:2px solid var(--border-mid); border-radius:var(--radius); font-family:var(--font);"></select>
+            </div>
+            <div class="modal-field">
                 <label for="editDate">Date</label>
                 <input type="date" id="editDate">
             </div>
@@ -112,9 +116,28 @@
 
         let sessionEntries = [];
         let currentSession = null;
+        let allGroups = [];
 
-        function openEditModal() {
+        async function loadEditGroups() {
+            if (allGroups.length > 0) return;
+            try {
+                const res = await apiFetch('/api/groups');
+                const result = await res.json();
+                if (result.success) {
+                    allGroups = result.data.sort((a, b) => (a.displayName || a.key).localeCompare(b.displayName || b.key));
+                    const select = document.getElementById('editGroup');
+                    select.innerHTML = allGroups.map(g =>
+                        `<option value="${g.id}" data-key="${escapeHtml(g.key)}">${escapeHtml(g.displayName || g.key)}</option>`
+                    ).join('');
+                }
+            } catch (e) { console.error('Error loading groups:', e); }
+        }
+
+        async function openEditModal() {
             if (!currentSession) return;
+            await loadEditGroups();
+            const select = document.getElementById('editGroup');
+            if (currentSession.groupId) select.value = String(currentSession.groupId);
             document.getElementById('editDate').value = currentSession.date ? currentSession.date.substring(0, 10) : '';
             document.getElementById('editName').value = currentSession.displayName || '';
             document.getElementById('editDescription').value = currentSession.description || '';
@@ -132,15 +155,29 @@
             const displayName = document.getElementById('editName').value.trim();
             const description = document.getElementById('editDescription').value;
             const eventbriteEventId = document.getElementById('editEventbriteId').value.trim();
+            const groupSelect = document.getElementById('editGroup');
+            const selectedGroupId = parseInt(groupSelect.value, 10);
+            const selectedOption = groupSelect.options[groupSelect.selectedIndex];
+            const selectedGroupKey = selectedOption ? selectedOption.dataset.key : groupKey;
+            const groupChanged = currentSession.groupId && selectedGroupId !== currentSession.groupId;
+
+            if (groupChanged) {
+                const groupName = selectedOption ? selectedOption.textContent : selectedGroupKey;
+                if (!confirm(`Move this session to "${groupName}"? All existing entries will remain attached.`)) return;
+            }
+
             const btn = document.getElementById('confirmEditBtn');
             btn.disabled = true;
             btn.textContent = 'Saving...';
 
             try {
+                const body = { displayName, description, eventbriteEventId, date: date || undefined };
+                if (groupChanged) body.groupId = selectedGroupId;
+
                 const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ displayName, description, eventbriteEventId, date: date || undefined })
+                    body: JSON.stringify(body)
                 });
                 if (!res.ok) {
                     const data = await res.json();
@@ -148,8 +185,10 @@
                 }
                 const result = await res.json();
                 closeEditModal();
-                if (result.data && result.data.date !== sessionDate) {
-                    window.location.href = `/sessions/${encodeURIComponent(groupKey)}/${result.data.date}/details.html`;
+                const newGroupKey = result.data.groupKey || groupKey;
+                const newDate = result.data.date || sessionDate;
+                if (newGroupKey !== groupKey || newDate !== sessionDate) {
+                    window.location.href = `/sessions/${encodeURIComponent(newGroupKey)}/${newDate}/details.html`;
                 } else {
                     loadSessionDetail();
                 }

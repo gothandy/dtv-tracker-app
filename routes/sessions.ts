@@ -362,13 +362,14 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId, date } = req.body;
+    const { displayName, description, eventbriteEventId, date, groupId } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) fields.Date = date;
+    if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -392,9 +393,19 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       return;
     }
 
+    let newGroupKey = groupKey;
+    if (fields[GROUP_LOOKUP]) {
+      const targetGroup = rawGroups.find(g => g.ID === groupId);
+      if (!targetGroup) {
+        res.status(404).json({ success: false, error: 'Target group not found' });
+        return;
+      }
+      newGroupKey = (targetGroup.Title || '').toLowerCase();
+    }
+
     await sessionsRepository.updateFields(spSession.ID, fields);
     const newDate = fields.Date || dateParam;
-    res.json({ success: true, data: { date: newDate } } as ApiResponse<{ date: string }>);
+    res.json({ success: true, data: { date: newDate, groupKey: newGroupKey } } as ApiResponse<{ date: string; groupKey: string }>);
   } catch (error: any) {
     console.error('Error updating session:', error);
     res.status(500).json({

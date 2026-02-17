@@ -43,9 +43,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Redirects to session detail / appears in list
 
 ### H6. Edit session
-- [ ] Session detail → pencil icon → modal with Date, Display Name, Description, Eventbrite Event ID
-- [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date? }`
+- [ ] Session detail → pencil icon → modal with Group dropdown, Date, Display Name, Description, Eventbrite Event ID
+- [ ] Group dropdown pre-selects current group
+- [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, groupId? }`
 - [ ] Changing date redirects to new URL
+- [ ] Changing group shows confirmation: "Move this session to [group]? All existing entries will remain attached."
+- [ ] Changing group redirects to new group/date URL
+- [ ] Changing both group and date redirects correctly
 
 ### H7. Delete session
 - [ ] Session detail → edit modal → Delete button → confirmation

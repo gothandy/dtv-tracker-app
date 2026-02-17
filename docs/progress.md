@@ -856,3 +856,73 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 ---
 
 *Last Updated: 2026-02-16*
+
+---
+
+## Session: 2026-02-17
+
+### Completed Tasks
+
+#### 1. SVG Badge & Tag Icons ✓
+- Replaced text-based badge pills (MEMBER, CARD, GROUP) with SVG icon images across all pages
+- Replaced emoji-based entry tag icons (#Child, #Regular, etc.) with SVG images from `public/svg/`
+- Added CSS filter-based coloring: green (default), orange (card invited), red (FirstAider, NoPhoto)
+- Icons are hot-swappable — replace the SVG file in `/public/svg/` and the change appears everywhere
+
+#### 2. Tag Icons Configuration File ✓
+- Extracted `TAG_ICONS` array, `notesToIcons()`, `renderTagButtons()`, and `tagIconImg()` into `public/js/tag-icons.js`
+- Unified config format: `{ icon, alt, tag?, type: "badge"|"tag", color? }`
+- Covers both profile badges (member, card, group) and entry tags (child, regular, new, etc.)
+- Loaded after `common.js` on all pages that use icons
+
+#### 3. Icon Legend on Admin Page ✓
+- Added "Icon Legend" section to admin.html showing all 12 icons with labels
+- Dynamically rendered from `TAG_ICONS` array
+- Respects color classes (orange for Card Invited, red for FirstAider/NoPhoto)
+
+#### 4. Bulk Add/Update Records ✓
+- Added `POST /api/records/bulk` endpoint in `routes/profiles.ts`
+- Accepts `{ profileIds, type, status, date }`, performs upsert (update existing record of same type, or create new)
+- Added "Add Records" button in volunteers advanced filters section
+- Modal with type/status/date dropdowns, filtered volunteer count, confirmation dialog
+- Groups excluded from bulk operations
+
+#### 5. Move Session Between Groups ✓
+- Added Group dropdown to session edit modal in `session-detail.html`
+- Updated `PATCH /api/sessions/:group/:date` to accept `groupId` parameter
+- Confirmation warning: "Move this session to [group]? All existing entries will remain attached."
+- Smart redirect to new group/date URL after move
+
+#### 6. Comprehensive Manual Test Script ✓
+- Created `docs/test-script.md` covering all app functionality
+- 26 HIGH priority items (SharePoint write operations)
+- 13 MEDIUM priority items (API read operations)
+- 15 LOW priority items (UI-only client-side features)
+
+#### 7. Documentation & Development Workflow Update ✓
+- Updated CLAUDE.md with strict documentation review rules: always plan first, review all docs after every change, archive outdated docs to `docs/legacy/`
+- Updated file structure to include `tag-icons.js`, `svg/`, `test-script.md`, `todo.md`, `legacy/`
+- Updated features list with SVG icons, bulk records, session move, test script
+- Updated `technical-debt.md` — marked tag icons duplication as resolved
+- Updated `todo.md` — marked bulk records as done, annotated tag and group items
+
+### Files Modified
+- `public/js/tag-icons.js` — New file (icon config + rendering functions)
+- `public/js/common.js` — Removed tag icon code (moved to tag-icons.js)
+- `public/css/styles.css` — SVG badge styles, icon color filter classes
+- `public/volunteers.html` — SVG badges, bulk records modal + JS
+- `public/session-detail.html` — SVG badges, group dropdown in edit modal
+- `public/profile-detail.html` — SVG badges, tag-icons.js script
+- `public/entry-detail.html` — SVG badges, tag-icons.js script
+- `public/add-entry.html` — tag-icons.js script
+- `public/admin.html` — Icon legend section, tag-icons.js script
+- `routes/profiles.ts` — `POST /api/records/bulk` endpoint
+- `routes/sessions.ts` — Group change support in PATCH
+- `docs/test-script.md` — New comprehensive test script
+- `CLAUDE.md` — Documentation workflow, file structure, features
+- `docs/technical-debt.md` — Tag icons resolved
+- `docs/todo.md` — Bulk records done, annotations
+
+---
+
+*Last Updated: 2026-02-17*

@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-16
+**Last Updated**: 2026-02-17
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
@@ -32,16 +32,18 @@ Feature-complete volunteer tracking application with:
 
 ### Pages
 - Dashboard with FY stats, progress bar, next session card ([public/index.html](public/index.html))
-- Admin page with Eventbrite sync buttons, exports, site link ([public/admin.html](public/admin.html))
+- Admin page with Eventbrite sync buttons, exports, site link, icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
 - Group detail with stats, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
 - Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
-- Session detail with entries, check-in, set hours, edit/delete ([public/session-detail.html](public/session-detail.html))
-- Volunteers listing with FY filter, sort, group filter, search ([public/volunteers.html](public/volunteers.html))
+- Session detail with entries, check-in, set hours, move group, edit/delete ([public/session-detail.html](public/session-detail.html))
+- Volunteers listing with FY filter, sort, group filter, search, bulk records ([public/volunteers.html](public/volunteers.html))
 - Profile detail with FY stats, group hours, entries, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, delete ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
+- Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
+- SVG icons for badges and tags ([public/svg/](public/svg/))
 
 ## Data Model
 
@@ -142,22 +144,28 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 
 ## Development Guidelines
 
+### Workflow
+- **Always plan first**: Use plan mode before implementing any non-trivial change. Explore the codebase, understand existing patterns, and get approval before writing code.
+- **Documentation review after every change**: After completing any update, review all relevant documentation and update it to reflect the current state:
+  - [CLAUDE.md](CLAUDE.md) — project context, file structure, features list
+  - [docs/test-script.md](docs/test-script.md) — manual test script (add/update test cases)
+  - [docs/technical-debt.md](docs/technical-debt.md) — code/architecture issues only (not functionality)
+  - [docs/todo.md](docs/todo.md) — planned functionality and feature ideas
+  - [docs/progress.md](docs/progress.md) — development session notes (resolved items tracked here)
+  - [docs/sharepoint-schema.md](docs/sharepoint-schema.md) — if SharePoint fields change
+  - [readme.md](readme.md) — if dependencies or configuration change
+- **Archive outdated docs**: Move superseded or no-longer-relevant documentation to `docs/legacy/` rather than deleting it.
+
 ### Comments and Documentation Philosophy
 - **Readable code over comments**: Use clear naming conventions so the code explains itself
 - **Comments explain why, not what**: Use comments for things developers need to know that aren't obvious from the code (SharePoint quirks, business rules, workarounds)
 - **Comments as a tech debt flag**: If you need a comment to explain what code does, consider whether the code itself could be clearer
-- **Keep readme/docs updated on commits**: Documentation should reflect the current state of the project
 
 ### Code Style
 - TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
 - Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)
 - Keep code simple and maintainable
 - Follow existing patterns in the codebase
-
-### Documentation
-- Keep [readme.md](readme.md) updated with setup instructions when dependencies or configuration change
-- Update [docs/progress.md](docs/progress.md) at the end of each development session
-- Update [docs/sharepoint-schema.md](docs/sharepoint-schema.md) if SharePoint lists or fields change
 
 ### Calculated Fields Over Stored Fields
 - **Always calculate derived values** (hours totals, counts) from source entries at query time rather than storing them.
@@ -194,10 +202,10 @@ dtv-tracker-app/
 │   ├── sharepoint-schema.md       # SharePoint list schemas and field names
 │   ├── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
 │   ├── technical-debt.md          # Performance and optimization tracking
-│   ├── sharepoint-refactoring.md  # Legacy field cleanup tracking
-│   ├── power-automate-flows.md    # Eventbrite sync flow documentation
-│   ├── site-migration.md          # SharePoint Members → Tracker migration plan
-│   └── requirements.md            # Mobile & field usage requirements
+│   ├── test-script.md             # Manual test script (prioritised)
+│   ├── todo.md                    # Planned work items
+│   ├── requirements.md            # Mobile & field usage requirements
+│   └── legacy/                    # Superseded documentation
 ├── types/
 │   ├── api-responses.ts           # API response types (HTTP contract)
 │   ├── group.ts                   # Group entity types (SharePoint + domain)
@@ -242,8 +250,10 @@ dtv-tracker-app/
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet
-│   └── js/
-│       └── common.js              # Shared header, footer, utilities
+│   ├── js/
+│   │   ├── common.js              # Shared header, footer, utilities
+│   │   └── tag-icons.js           # Tag/badge icon config and rendering
+│   └── svg/                       # SVG icons for badges and tags
 └── test/
     ├── test-auth.js               # Authentication verification
     └── test-*.js                  # Various data/integration tests
@@ -268,9 +278,13 @@ dtv-tracker-app/
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)
 - [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)
-- [x] Admin page with manual sync buttons and unmatched events display
+- [x] Admin page with manual sync buttons, unmatched events, icon legend
+- [x] SVG icons for badges (member, card, group) and entry tags
+- [x] Bulk add/update records from volunteers page
+- [x] Move session between groups
 - [x] API key auth for scheduled sync (Azure Logic App)
 - [x] Azure App Service deployment
+- [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
 
 ## Planned Features
 
@@ -306,4 +320,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-16*
+*Last Updated: 2026-02-17*
