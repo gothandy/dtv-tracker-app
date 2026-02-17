@@ -66,11 +66,11 @@
     <div class="modal-overlay" id="editModal">
         <div class="modal modal-wide">
             <h3>Edit Session</h3>
-            <div class="modal-field">
+            <div class="modal-field admin-only">
                 <label for="editGroup">Group</label>
                 <select id="editGroup" style="width:100%; padding:0.5rem; font-size:0.95rem; border:2px solid var(--border-mid); border-radius:var(--radius); font-family:var(--font);"></select>
             </div>
-            <div class="modal-field">
+            <div class="modal-field admin-only">
                 <label for="editDate">Date</label>
                 <input type="date" id="editDate">
             </div>
@@ -82,12 +82,12 @@
                 <label for="editDescription">Description</label>
                 <textarea id="editDescription"></textarea>
             </div>
-            <div class="modal-field">
+            <div class="modal-field admin-only">
                 <label for="editEventbriteId">Eventbrite Event ID</label>
                 <input type="text" id="editEventbriteId">
             </div>
             <div class="modal-buttons" style="justify-content: space-between;">
-                <button class="modal-btn modal-btn-delete" onclick="deleteSession()">Delete</button>
+                <button class="modal-btn modal-btn-delete admin-only" onclick="deleteSession()">Delete</button>
                 <div style="display:flex; gap:0.5rem;">
                     <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancel</button>
                     <button class="modal-btn modal-btn-confirm" id="confirmEditBtn" onclick="saveSessionEdit()">Save</button>
@@ -411,7 +411,7 @@
                     <div class="entries-header">
                         <h2 class="entries-heading">Entries (${entries.length})</h2>
                         <div class="header-buttons">
-                            <button class="btn-action" id="refreshBtn" onclick="refreshSession()">Refresh</button>
+                            <button class="btn-action admin-only" id="refreshBtn" onclick="refreshSession()">Refresh</button>
                             <button class="btn-action" onclick="openHoursModal()">Set Hours</button>
                             <a class="btn-action" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
                                 <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>

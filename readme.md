@@ -76,6 +76,9 @@ EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 # Scheduled Sync (optional — for API key auth bypass on /api/eventbrite/ endpoints)
 API_SYNC_KEY=your_random_key_here
 
+# Admin users (comma-separated emails — all other users get Check In Only access)
+ADMIN_USERS=andrew.davies@dtv.org.uk,benjamin.obonyo@dtv.org.uk
+
 # Session secret (change in production)
 SESSION_SECRET=your_session_secret_here
 ```

@@ -47,11 +47,16 @@ router.get('/callback', async (req: Request, res: Response) => {
     });
 
     const profile = graphResponse.data;
+    const email = profile.mail || profile.userPrincipalName;
+
+    const adminUsers = (process.env.ADMIN_USERS || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const role = adminUsers.includes(email.toLowerCase()) ? 'admin' : 'checkin';
 
     req.session.user = {
       id: profile.id,
       displayName: profile.displayName,
-      email: profile.mail || profile.userPrincipalName,
+      email,
+      role,
     };
 
     const returnTo = req.session.returnTo || '/';

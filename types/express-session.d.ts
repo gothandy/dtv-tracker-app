@@ -6,6 +6,7 @@ declare module 'express-session' {
       id: string;
       displayName: string;
       email: string;
+      role: 'admin' | 'checkin';
     } | undefined;
     returnTo: string | undefined;
   }

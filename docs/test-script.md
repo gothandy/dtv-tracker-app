@@ -11,7 +11,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ## HIGH PRIORITY — Write Operations
 
-### H1. Authentication
+### H1. Authentication & Permissions
 
 - [ ] Unauthenticated visit redirects to `/auth/login`
 - [ ] `/auth/login` redirects to Microsoft login page
@@ -20,6 +20,23 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] API key auth: `POST /api/eventbrite/event-and-attendee-update` with valid `X-Api-Key` succeeds without session
 - [ ] Invalid/missing API key returns 401
 - [ ] API key only works for `/api/eventbrite/` paths — rejected on other endpoints
+- [ ] **Admin user** (in `ADMIN_USERS` env var): all edit/create/delete buttons visible, all API calls succeed
+- [ ] **Check In Only user** (not in `ADMIN_USERS`): edit/create/delete buttons hidden across all pages
+- [ ] Check In Only: check-in checkbox on session detail works (PATCH `/api/entries/:id`)
+- [ ] Check In Only: Set Hours button on session detail works
+- [ ] Check In Only: session edit modal shows only Display Name and Description (Group, Date, Eventbrite ID, Delete hidden)
+- [ ] Check In Only: saving session edit with title/description works (PATCH succeeds)
+- [ ] Check In Only: regulars checkbox on profile detail works (add/remove)
+- [ ] Check In Only: Add Entry link visible on session detail, can add entry for existing volunteer
+- [ ] Check In Only: can create new profile from add-entry page ("+ Add New" button)
+- [ ] Check In Only: edit profile button visible, can update name/email
+- [ ] Check In Only: Add Record, Transfer, Delete still hidden on profile page
+- [ ] Check In Only: `POST /api/profiles/:slug/records` returns 403
+- [ ] Check In Only: `POST /api/groups` returns 403
+- [ ] Check In Only: `DELETE /api/sessions/:group/:date` returns 403
+- [ ] Check In Only: `GET /api/sessions/export` returns 403 (GDPR)
+- [ ] Check In Only: admin page shows only Icon Legend section
+- [ ] `/auth/me` returns `role: "admin"` or `role: "checkin"` based on env var
 
 ### H2. Create group
 - [ ] Groups page → "+" button → modal with Key (required), Display Name, Description

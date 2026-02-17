@@ -566,10 +566,10 @@
                         <div class="consent-section">
                             <div class="consent-header">
                                 <h2>Records</h2>
-                                <button class="btn-add-record" onclick="openAddRecord()">+ Add</button>
+                                <button class="btn-add-record admin-only" onclick="openAddRecord()">+ Add</button>
                             </div>
                             <div class="consent-pills">
-                                ${(profile.records || []).map(r => `<span class="consent-pill status-${(r.status || '').toLowerCase()}" onclick="openEditRecord(${r.id}, '${escapeHtml(r.type).replace(/'/g, "\\'")}', '${escapeHtml(r.status || '').replace(/'/g, "\\'")}', '${r.date || ''}')">${escapeHtml(r.type)} <span class="consent-date">${escapeHtml(r.status || '')}${r.date ? ' · ' + formatDate(r.date) : ''}</span></span>`).join('')}
+                                ${(profile.records || []).map(r => `<span class="consent-pill admin-clickable status-${(r.status || '').toLowerCase()}" onclick="openEditRecord(${r.id}, '${escapeHtml(r.type).replace(/'/g, "\\'")}', '${escapeHtml(r.status || '').replace(/'/g, "\\'")}', '${r.date || ''}')">${escapeHtml(r.type)} <span class="consent-date">${escapeHtml(r.status || '')}${r.date ? ' · ' + formatDate(r.date) : ''}</span></span>`).join('')}
                                 ${(!profile.records || profile.records.length === 0) ? '<span style="color:var(--text-faint); font-size:0.85rem;">No records</span>' : ''}
                             </div>
                         </div>
@@ -584,7 +584,7 @@
                         </div>
                     </div>
                     <div id="entriesContainer"></div>
-                    <div class="delete-section">
+                    <div class="delete-section admin-only">
                         <button class="btn-action" onclick="openTransferModal()">Transfer</button>
                         ${allEntries.length === 0 ? '<button class="btn-delete" onclick="deleteProfile()" style="margin-left:0.5rem;">Delete Profile</button>' : ''}
                     </div>

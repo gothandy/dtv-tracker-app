@@ -10,7 +10,7 @@ const TAG_ICONS = [
     { icon: "regular.svg", alt: "Regular", tag: "#Regular", type: "tag" },
     { icon: "new.svg", alt: "New", tag: "#New", type: "tag" },
     { icon: "diglead.svg", alt: "Digital Leader", tag: "#DigLead", type: "tag" },
-    { icon: "firstaider.svg", alt: "First Aider", tag: "#FirstAider", type: "tag", color: "red" },
+    { icon: "firstaider.svg", alt: "First Aider", tag: "#FirstAider", type: "tag" },
     { icon: "csr.svg", alt: "CSR", tag: "#CSR", type: "tag" },
     { icon: "late.svg", alt: "Late", tag: "#Late", type: "tag" },
     { icon: "nophoto.svg", alt: "No Photo", tag: "#NoPhoto", type: "tag", color: "red" }

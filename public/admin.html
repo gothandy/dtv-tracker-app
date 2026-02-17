@@ -37,7 +37,7 @@
     <script>createHeader('Admin', true);</script>
 
     <div class="container">
-        <div class="admin-section">
+        <div class="admin-section admin-only">
             <h2><a href="https://dtv.eventbrite.co.uk/" target="_blank">Eventbrite</a></h2>
             <div class="admin-actions">
                 <button class="admin-btn" id="runAllBtn" onclick="runAll()">Run All</button>
@@ -50,7 +50,7 @@
             <div id="unmatchedList"></div>
         </div>
 
-        <div class="admin-section">
+        <div class="admin-section admin-only">
             <h2>Exports</h2>
             <div class="admin-actions">
                 <a class="admin-btn" href="/api/sessions/export">FE Hours Download</a>
@@ -58,7 +58,7 @@
             </div>
         </div>
 
-        <div class="admin-section" id="siteSection" style="display:none;">
+        <div class="admin-section admin-only" id="siteSection" style="display:none;">
             <h2><a id="siteLink" href="#" target="_blank" id="siteName">Site</a></h2>
         </div>
 

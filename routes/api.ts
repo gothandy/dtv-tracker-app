@@ -3,6 +3,7 @@
  */
 
 import express, { Router } from 'express';
+import { requireAdmin } from '../middleware/require-admin';
 import groupsRoutes = require('./groups');
 import sessionsRoutes = require('./sessions');
 import entriesRoutes = require('./entries');
@@ -13,6 +14,7 @@ import eventbriteRoutes = require('./eventbrite');
 
 const router: Router = express.Router();
 
+router.use(requireAdmin);
 router.use(groupsRoutes);
 router.use(sessionsRoutes);
 router.use(entriesRoutes);

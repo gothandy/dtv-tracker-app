@@ -83,12 +83,15 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
     fetch('/auth/me')
         .then(r => r.json())
         .then(data => {
-            const el = document.getElementById('userInfo');
-            if (data.authenticated && el) {
-                el.innerHTML = `
-                    <span class="user-name">${escapeHtml(data.user.displayName)}</span>
-                    <a href="/auth/logout" class="logout-link">Logout</a>
-                `;
+            if (data.authenticated) {
+                document.body.dataset.role = data.user.role;
+                const el = document.getElementById('userInfo');
+                if (el) {
+                    el.innerHTML = `
+                        <span class="user-name">${escapeHtml(data.user.displayName)}</span>
+                        <a href="/auth/logout" class="logout-link">Logout</a>
+                    `;
+                }
             }
         })
         .catch(() => {});

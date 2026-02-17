@@ -186,7 +186,7 @@
                             <div class="form-label">Checked In</div>
                             <input type="checkbox" id="inputChecked" ${entry.checkedIn ? 'checked' : ''}>
                         </div>
-                        <div class="form-field" id="field-count">
+                        <div class="form-field admin-only" id="field-count">
                             <div class="form-label">Count</div>
                             <input type="number" id="inputCount" min="0" step="1" value="${entry.count}">
                         </div>
@@ -194,7 +194,7 @@
                             <div class="form-label">Hours</div>
                             <input type="number" id="inputHours" min="0" step="0.5" value="${entry.hours}">
                         </div>
-                        <div class="form-field" id="field-notes">
+                        <div class="form-field admin-only" id="field-notes">
                             <div class="form-label">Notes</div>
                             <div style="flex:1">
                                 <textarea id="inputNotes" style="width:100%">${escapeHtml(entry.notes || '')}</textarea>
@@ -203,7 +203,7 @@
                         </div>
                     </div>
 
-                    <div class="delete-section">
+                    <div class="delete-section admin-only">
                         <button class="btn-delete" onclick="deleteEntry()">Delete Entry</button>
                     </div>
                 `;

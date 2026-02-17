@@ -1,5 +1,23 @@
 # Development Progress
 
+## Session: 2026-02-17
+
+### Completed Tasks
+
+#### Role-Based Permissions ✓
+- Added Admin and Check In Only roles
+- Admin users configured via `ADMIN_USERS` env var (comma-separated emails)
+- Role computed at login, stored in session, exposed via `/auth/me`
+- Backend: `requireAdmin` middleware blocks writes for non-admin (except allowed Check In Only operations)
+- Check In Only allowed: check-in/hours, edit session title/description, edit profiles, manage regulars, add entries, create profiles
+- Export endpoints (`/sessions/export`, `/records/export`) blocked for non-admin (GDPR)
+- Session edit modal: Group, Date, Eventbrite ID, Delete hidden for non-admin; Title and Description editable by all
+- Frontend: CSS-based hiding with `admin-only` class and `body[data-role]` attribute
+- Applied across all pages: session-detail, group-detail, profile-detail, entry-detail, volunteers, admin, add-entry
+- Designed for future Entra ID app roles migration
+
+---
+
 ## Session: 2026-02-06
 
 ### Completed Tasks

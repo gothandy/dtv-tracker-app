@@ -26,6 +26,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
+- Role-based authorization: Admin (full access) and Check In Only (view + check-in/hours) ([middleware/require-admin.ts](middleware/require-admin.ts))
 - Server-side caching with 5-minute TTL
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
@@ -149,6 +150,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - **Documentation review after every change**: After completing any update, review all relevant documentation and update it to reflect the current state:
   - [CLAUDE.md](CLAUDE.md) — project context, file structure, features list
   - [docs/test-script.md](docs/test-script.md) — manual test script (add/update test cases)
+  - [docs/permissions.md](docs/permissions.md) — if roles or endpoint access change
   - [docs/technical-debt.md](docs/technical-debt.md) — code/architecture issues only (not functionality)
   - [docs/todo.md](docs/todo.md) — planned functionality and feature ideas
   - [docs/progress.md](docs/progress.md) — development session notes (resolved items tracked here)
@@ -183,6 +185,13 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Entries default Count to 1
 - Entries default Checked to false
 
+### Permissions / Authorization
+- Two roles: **Admin** (full access) and **Check In Only** (field-day operations)
+- Admin users set via `ADMIN_USERS` env var; role computed at login, stored in session
+- Backend: `requireAdmin` middleware in [middleware/require-admin.ts](middleware/require-admin.ts) enforces per-endpoint
+- Frontend: CSS hides `.admin-only` elements based on `body[data-role]`
+- Full reference: [docs/permissions.md](docs/permissions.md)
+
 ### Security Considerations
 - Validate all user input before SharePoint API calls
 - Prevent XSS when displaying user-generated content
@@ -198,6 +207,7 @@ dtv-tracker-app/
 ├── tsconfig.json                   # TypeScript configuration
 ├── CLAUDE.md                       # This file - project context for Claude
 ├── docs/
+│   ├── permissions.md             # Role-based permissions reference
 │   ├── progress.md                # Development session notes
 │   ├── sharepoint-schema.md       # SharePoint list schemas and field names
 │   ├── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
@@ -236,7 +246,8 @@ dtv-tracker-app/
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
-│   └── require-auth.ts            # Auth guard middleware
+│   ├── require-auth.ts            # Auth guard middleware
+│   └── require-admin.ts           # Role-based authorization (Admin vs Check In Only)
 ├── public/
 │   ├── index.html                 # Dashboard homepage
 │   ├── groups.html                # Groups listing with FY filter
@@ -275,6 +286,7 @@ dtv-tracker-app/
 - [x] CSV exports (sessions, profiles, records)
 - [x] Profile transfer (merge duplicate profiles)
 - [x] Microsoft authentication (Entra ID OAuth)
+- [x] Role-based permissions: Admin (full access) and Check In Only (view + check-in/hours)
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)
 - [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)
