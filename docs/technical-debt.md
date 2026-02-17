@@ -53,6 +53,17 @@ The `test/` directory contains manual verification scripts (`.js` files that hit
 
 ---
 
+## Permissions Mechanism
+**Priority**: Low | **Effort**: Medium?
+
+1. Use Azure Custom Roles. This is the most robust option, all managed in Entra ID with the other roles. However this requires an upgrade to our licence.
+
+2. Use Teams Permissions. If user has Owner access to the Tracker team they are admin, Members have standard access.
+
+3. Use our Profile entries to hold a "Role".
+
+---
+
 ## Notes
 
 - Prioritise based on actual pain points, not theoretical concerns
