@@ -137,7 +137,6 @@ Originally proposed adding a `FinancialYearFlow` column to the Entries list for 
 
 - Prioritise based on actual pain points, not theoretical concerns
 - The codebase is in good shape overall — most items here are polish, not architecture problems
-- "Calculated fields over stored fields" principle means legacy SharePoint columns (`HoursLastFY`, `HoursThisFY` on Profiles) should not be relied upon
 
 ---
 
