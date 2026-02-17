@@ -31,7 +31,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | **Groups list** | Full view | — |
 | **Group detail** | View group, stats, regulars, sessions | Edit button, Create Session button |
 | **Sessions list** | Full view | — |
-| **Session detail** | Check-in checkboxes, Set Hours, Add Entry, Edit (title + description only) | Refresh, Delete; edit modal hides Group, Date, Eventbrite ID |
+| **Session detail** | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal hides Group, Date, Eventbrite ID |
 | **Add entry** | Full access (search, select, create entry, add new profile) | — |
 | **Entry detail** | Checked In toggle, Hours field | Count, Notes, tag buttons, Delete Entry |
 | **Volunteers list** | View, search, filter, sort | Bulk Records, Download CSV |
@@ -54,6 +54,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | POST | `/profiles` | Create new profile |
 | POST | `/profiles/:slug/regulars` | Add regular |
 | DELETE | `/regulars/:id` | Remove regular |
+| POST | `/sessions/:group/:date/refresh` | Refresh session (regulars + Eventbrite) |
 
 ### Admin Only
 
@@ -67,7 +68,6 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | POST | `/sessions` | Create session |
 | DELETE | `/sessions/:group/:date` | Delete session |
 | DELETE | `/entries/:id` | Delete entry |
-| POST | `/sessions/:group/:date/refresh` | Refresh session (regulars + Eventbrite) |
 | POST | `/profiles/:slug/records` | Create record |
 | PATCH | `/records/:id` | Edit record |
 | DELETE | `/records/:id` | Delete record |

@@ -27,6 +27,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Check In Only: session edit modal shows only Display Name and Description (Group, Date, Eventbrite ID, Delete hidden)
 - [ ] Check In Only: saving session edit with title/description works (PATCH succeeds)
 - [ ] Check In Only: regulars checkbox on profile detail works (add/remove)
+- [ ] Check In Only: Refresh button visible on session detail, can refresh session
 - [ ] Check In Only: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In Only: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In Only: edit profile button visible, can update name/email

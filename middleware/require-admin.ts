@@ -7,6 +7,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular
   { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/entries$/ }, // add entry
+  { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/refresh$/ }, // refresh session
   { method: 'POST',  pattern: /^\/profiles$/ },               // create profile
   { method: 'PATCH', pattern: /^\/profiles\/[^/]+$/ },        // edit profile
 ];
