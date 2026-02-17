@@ -139,10 +139,33 @@
                     </select>
                 </div>
                 <div class="advanced-row" style="justify-content: flex-end;">
+                    <button class="advanced-toggle" onclick="openBulkRecords()">Add Records</button>
                     <button class="advanced-toggle" onclick="downloadCSV()">Download CSV</button>
                 </div>
             </div>
         </div>
+
+        <div class="modal-overlay" id="bulkRecordModal">
+            <div class="modal">
+                <h3>Add Records</h3>
+                <p id="bulkRecordCount"></p>
+                <div style="display:flex; flex-direction:column; gap:0.75rem; margin: 1rem 0;">
+                    <select id="bulkRecordType" style="padding:0.5rem; font-size:0.95rem; border:2px solid var(--border-mid); border-radius:var(--radius); font-family:var(--font);">
+                        <option value="">Select type...</option>
+                    </select>
+                    <select id="bulkRecordStatus" style="padding:0.5rem; font-size:0.95rem; border:2px solid var(--border-mid); border-radius:var(--radius); font-family:var(--font);">
+                        <option value="">Select status...</option>
+                    </select>
+                    <input type="date" id="bulkRecordDate" style="padding:0.5rem; font-size:0.95rem; border:2px solid var(--border-mid); border-radius:var(--radius); font-family:var(--font);">
+                </div>
+                <p id="bulkRecordSummary" style="font-weight:600; color:var(--text-mid); min-height:1.2rem;"></p>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-cancel" onclick="closeBulkRecords()">Cancel</button>
+                    <button class="modal-btn modal-btn-confirm" id="bulkRecordConfirm" onclick="submitBulkRecords()">Confirm</button>
+                </div>
+            </div>
+        </div>
+
         <div id="content">
             <div class="loading">Loading volunteers</div>
         </div>
@@ -399,6 +422,127 @@
                 });
             } catch (e) {
                 console.error('Error loading record options:', e);
+            }
+        }
+
+        function getFilteredIndividuals() {
+            let filtered = allVolunteers.filter(v => !v.isGroup);
+            if (currentTypeFilter === 'groups') return [];
+            if (currentFilter === 'thisFy') filtered = filtered.filter(v => v.hoursThisFY > 0);
+            else if (currentFilter === 'lastFy') filtered = filtered.filter(v => v.hoursLastFY > 0);
+            const searchTerm = document.getElementById('searchBox').value;
+            if (searchTerm && searchTerm.length >= 3) {
+                const term = searchTerm.toLowerCase();
+                filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
+            }
+            if (currentHoursFilter) {
+                const hFilters = {
+                    '0': v => getHours(v) === 0,
+                    'lt15': v => { const h = getHours(v); return h > 0 && h < 15; },
+                    '15plus': v => getHours(v) >= 15,
+                    '15to30': v => { const h = getHours(v); return h >= 15 && h <= 30; },
+                    '30plus': v => getHours(v) > 30
+                };
+                if (hFilters[currentHoursFilter]) filtered = filtered.filter(hFilters[currentHoursFilter]);
+            }
+            if (currentRecordType) {
+                filtered = filtered.filter(v => {
+                    const recs = (v.records || []).filter(r => r.type === currentRecordType);
+                    if (currentRecordStatus === 'none') return recs.length === 0;
+                    if (currentRecordStatus) return recs.some(r => r.status === currentRecordStatus);
+                    return recs.length > 0;
+                });
+            } else if (currentRecordStatus === 'none') {
+                filtered = filtered.filter(v => !v.records || v.records.length === 0);
+            }
+            return filtered;
+        }
+
+        let bulkRecordOptions = null;
+
+        async function openBulkRecords() {
+            const individuals = getFilteredIndividuals();
+            if (individuals.length === 0) {
+                alert('No individual volunteers in the current filter.');
+                return;
+            }
+            document.getElementById('bulkRecordCount').textContent =
+                `${individuals.length} individual volunteer${individuals.length === 1 ? '' : 's'} in current filter.`;
+            document.getElementById('bulkRecordSummary').textContent = '';
+
+            if (!bulkRecordOptions) {
+                try {
+                    const res = await apiFetch('/api/records/options');
+                    const result = await res.json();
+                    if (result.success) bulkRecordOptions = result.data;
+                } catch (e) { console.error(e); }
+            }
+            if (bulkRecordOptions) {
+                const typeSelect = document.getElementById('bulkRecordType');
+                typeSelect.innerHTML = '<option value="">Select type...</option>';
+                bulkRecordOptions.types.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    typeSelect.appendChild(opt);
+                });
+                const statusSelect = document.getElementById('bulkRecordStatus');
+                statusSelect.innerHTML = '<option value="">Select status...</option>';
+                bulkRecordOptions.statuses.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s; opt.textContent = s;
+                    statusSelect.appendChild(opt);
+                });
+            }
+            document.getElementById('bulkRecordDate').value = new Date().toISOString().substring(0, 10);
+            document.getElementById('bulkRecordModal').classList.add('visible');
+        }
+
+        function closeBulkRecords() {
+            document.getElementById('bulkRecordModal').classList.remove('visible');
+        }
+
+        async function submitBulkRecords() {
+            const type = document.getElementById('bulkRecordType').value;
+            const status = document.getElementById('bulkRecordStatus').value;
+            const dateVal = document.getElementById('bulkRecordDate').value;
+            if (!type || !status) {
+                alert('Please select a record type and status.');
+                return;
+            }
+
+            const individuals = getFilteredIndividuals();
+            const count = individuals.length;
+            if (!confirm(`You are about to update ${count} volunteer record${count === 1 ? '' : 's'} with "${type}: ${status}". Continue?`)) return;
+
+            const btn = document.getElementById('bulkRecordConfirm');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            const summary = document.getElementById('bulkRecordSummary');
+            summary.textContent = '';
+
+            try {
+                const date = dateVal ? new Date(dateVal + 'T10:00:00.000Z').toISOString() : new Date().toISOString();
+                const profileIds = individuals.map(v => v.id);
+                const res = await apiFetch('/api/records/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profileIds, type, status, date })
+                });
+                const result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.error || 'Bulk update failed');
+
+                const d = result.data;
+                summary.textContent = `Done: ${d.created} created, ${d.updated} updated.`;
+                setTimeout(() => {
+                    closeBulkRecords();
+                    loadVolunteers();
+                }, 1500);
+            } catch (error) {
+                summary.textContent = error.message || 'Failed';
+                summary.style.color = 'var(--error)';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Confirm';
             }
         }
 

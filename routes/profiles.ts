@@ -379,6 +379,52 @@ router.delete('/records/:id', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/records/bulk', async (req: Request, res: Response) => {
+  try {
+    if (!recordsRepository.available) {
+      res.status(400).json({ success: false, error: 'Records list not configured' });
+      return;
+    }
+
+    const { profileIds, type, status, date } = req.body;
+    if (!Array.isArray(profileIds) || profileIds.length === 0) {
+      res.status(400).json({ success: false, error: 'profileIds array is required' });
+      return;
+    }
+    if (!type || !status) {
+      res.status(400).json({ success: false, error: 'type and status are required' });
+      return;
+    }
+
+    const allRecords = await recordsRepository.getAll();
+    const recordDate = date || new Date().toISOString();
+    let created = 0;
+    let updated = 0;
+
+    for (const profileId of profileIds) {
+      const id = parseInt(String(profileId), 10);
+      if (isNaN(id)) continue;
+
+      const existing = allRecords.find(
+        r => safeParseLookupId(r.ProfileLookupId as unknown as string) === id && r.Type === type
+      );
+
+      if (existing) {
+        await recordsRepository.update(existing.ID, { Status: status, Date: recordDate });
+        updated++;
+      } else {
+        await recordsRepository.create({ ProfileLookupId: id, Type: type, Status: status, Date: recordDate });
+        created++;
+      }
+    }
+
+    res.json({ success: true, data: { created, updated } } as ApiResponse<{ created: number; updated: number }>);
+  } catch (error: any) {
+    console.error('Error bulk updating records:', error);
+    res.status(500).json({ success: false, error: 'Failed to bulk update records', message: error.message });
+  }
+});
+
 router.post('/profiles', async (req: Request, res: Response) => {
   try {
     const { name, email } = req.body;
