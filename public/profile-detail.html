@@ -69,6 +69,7 @@
         }
     </style>
     <script src="/js/common.js"></script>
+    <script src="/js/tag-icons.js"></script>
 </head>
 <body class="detail-page">
     <script>createHeader('Profile', true);</script>
@@ -523,8 +524,8 @@
 
                 allEntries = profile.entries || [];
 
-                const groupBadge = profile.isGroup ? '<span class="group-badge">GROUP</span>' : '';
-                const memberBadge = isMember(profile) ? '<span class="member-badge">MEMBER</span>' : '';
+                const groupBadge = profile.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+                const memberBadge = isMember(profile) ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
 
                 contentDiv.innerHTML = `
                     <div class="profile-detail">

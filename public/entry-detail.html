@@ -58,6 +58,7 @@
             transition: all 0.2s; line-height: 1;
         }
         .tag-btn.active { border-color: var(--green); background: var(--green-light); }
+        .tag-btn img { width: 22px; height: 22px; vertical-align: middle; }
 
         @media (max-width: 600px) {
             .entry-header { padding: 1.5rem; }
@@ -69,6 +70,7 @@
         }
     </style>
     <script src="/js/common.js"></script>
+    <script src="/js/tag-icons.js"></script>
 </head>
 <body class="detail-page">
     <script>createHeader('Entry', true);</script>
@@ -163,8 +165,8 @@
                 currentEntry = entry;
                 document.title = `${entry.volunteerName || 'Entry'} - DTV Tracker`;
 
-                const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
-                const memberBadge = isMember(entry) ? '<span class="member-badge">MEMBER</span>' : '';
+                const groupBadge = entry.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+                const memberBadge = isMember(entry) ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
                 const sessionUrl = `/sessions/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/details.html`;
                 const profileUrl = entry.volunteerSlug ? `/profiles/${encodeURIComponent(entry.volunteerSlug)}/details.html` : '#';
 

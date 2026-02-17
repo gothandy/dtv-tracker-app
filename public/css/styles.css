@@ -517,16 +517,22 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; }
 .entry-meta strong { color: var(--text-mid); }
 .entry-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center; }
 .entry-tag { font-size: 1.1rem; cursor: default; }
+.entry-tag img { width: 18px; height: 18px; vertical-align: middle; }
+
+/* === Icon colors (applied via icon-{color} class) === */
+.icon-red img { filter: invert(20%) sepia(95%) saturate(5000%) hue-rotate(0deg) brightness(90%) contrast(90%); }
+.icon-green img { filter: invert(49%) sepia(90%) saturate(400%) hue-rotate(103deg) brightness(92%) contrast(90%); }
+.icon-orange img { filter: invert(55%) sepia(80%) saturate(600%) hue-rotate(10deg) brightness(95%) contrast(90%); }
 
 /* === Badges === */
 .group-badge, .member-badge, .card-badge {
-    display: inline-block; font-size: 0.7rem; font-weight: 600;
-    color: white; padding: 0.1rem 0.4rem;
-    border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
+    display: inline-block; width: 16px; height: 16px;
+    vertical-align: middle; margin-left: 0.4rem;
+    filter: invert(49%) sepia(90%) saturate(400%) hue-rotate(103deg) brightness(92%) contrast(90%);
 }
-.group-badge, .member-badge { background: var(--green); }
-.card-badge { background: var(--green); }
-.card-badge.invited { background: var(--orange, #e67e22); }
+.card-badge.invited {
+    filter: invert(55%) sepia(80%) saturate(600%) hue-rotate(10deg) brightness(95%) contrast(90%);
+}
 
 /* === Delete section === */
 .delete-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }

@@ -23,11 +23,15 @@
         .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .sync-result { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-mid); min-height: 1.2rem; }
         .sync-result.error { color: var(--error); }
+        .legend-list { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-mid); }
+        .legend-item img { width: 20px; height: 20px; }
         .unmatched-list { margin-top: 0.75rem; font-size: 0.9rem; }
         .unmatched-item { display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
         .unmatched-item .event-id { color: var(--text-light); font-family: monospace; font-size: 0.85rem; }
     </style>
     <script src="/js/common.js"></script>
+    <script src="/js/tag-icons.js"></script>
 </head>
 <body>
     <script>createHeader('Admin', true);</script>
@@ -56,6 +60,11 @@
 
         <div class="admin-section" id="siteSection" style="display:none;">
             <h2><a id="siteLink" href="#" target="_blank" id="siteName">Site</a></h2>
+        </div>
+
+        <div class="admin-section">
+            <h2>Icon Legend</h2>
+            <div class="legend-list" id="iconLegend"></div>
         </div>
     </div>
 
@@ -168,6 +177,10 @@
         }
 
         loadSiteLink();
+
+        document.getElementById('iconLegend').innerHTML = TAG_ICONS.map(t =>
+            `<div class="legend-item${t.color ? ' icon-' + t.color : ''}">${tagIconImg(t)}<span>${escapeHtml(t.alt)}</span></div>`
+        ).join('');
     </script>
 </body>
 </html>

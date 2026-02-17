@@ -21,13 +21,13 @@
 
         .volunteer-name { flex: 1; font-weight: 600; font-size: 1.05rem; color: var(--text); }
         .volunteer-name .group-badge, .volunteer-name .member-badge, .volunteer-name .card-badge {
-            display: inline-block; font-size: 0.7rem; font-weight: 600;
-            color: white; padding: 0.1rem 0.4rem;
-            border-radius: 4px; vertical-align: middle; margin-left: 0.4rem;
+            display: inline-block; width: 16px; height: 16px;
+            vertical-align: middle; margin-left: 0.4rem;
+            filter: invert(49%) sepia(90%) saturate(400%) hue-rotate(103deg) brightness(92%) contrast(90%);
         }
-        .volunteer-name .group-badge, .volunteer-name .member-badge { background: var(--green); }
-        .volunteer-name .card-badge { background: var(--green); }
-        .volunteer-name .card-badge.invited { background: var(--orange, #e67e22); }
+        .volunteer-name .card-badge.invited {
+            filter: invert(55%) sepia(80%) saturate(600%) hue-rotate(10deg) brightness(95%) contrast(90%);
+        }
 
         .volunteer-meta { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-lighter); flex-shrink: 0; }
         .volunteer-meta span { white-space: nowrap; }
@@ -291,9 +291,9 @@
             const html = filtered.map(v => {
                 const member = isMember(v);
                 const memberForFY = isMemberForFY(v, currentFilter);
-                const groupBadge = v.isGroup ? '<span class="group-badge">GROUP</span>' : '';
-                const memberBadge = member && !v.isGroup ? '<span class="member-badge">MEMBER</span>' : '';
-                const cardBadge = v.cardStatus ? `<span class="card-badge${v.cardStatus === 'Invited' ? ' invited' : ''}">CARD</span>` : '';
+                const groupBadge = v.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+                const memberBadge = member && !v.isGroup ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
+                const cardBadge = v.cardStatus ? `<img src="/svg/card.svg" class="card-badge${v.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
                 const cardClass = memberForFY && !v.isGroup ? ' is-member' : '';
                 const href = v.slug ? `/profiles/${encodeURIComponent(v.slug)}/details.html` : '#';
                 const sessions = getSessions(v);

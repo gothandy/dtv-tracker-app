@@ -52,6 +52,7 @@
         }
     </style>
     <script src="/js/common.js"></script>
+    <script src="/js/tag-icons.js"></script>
 </head>
 <body class="detail-page">
     <script>createHeader('Session Details', true);</script>
@@ -318,9 +319,9 @@
                 const entriesHtml = entries.length > 0
                     ? entries.map(entry => {
                         const icons = notesToIcons(entry.notes);
-                        const groupBadge = entry.isGroup ? '<span class="group-badge">GROUP</span>' : '';
-                        const memberBadge = entry.isMember && !entry.isGroup ? '<span class="member-badge">MEMBER</span>' : '';
-                        const cardBadge = entry.cardStatus ? `<span class="card-badge${entry.cardStatus === 'Invited' ? ' invited' : ''}">CARD</span>` : '';
+                        const groupBadge = entry.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+                        const memberBadge = entry.isMember && !entry.isGroup ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
+                        const cardBadge = entry.cardStatus ? `<img src="/svg/card.svg" class="card-badge${entry.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
                         const href = entry.volunteerSlug
                             ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/edit.html`
                             : '#';
