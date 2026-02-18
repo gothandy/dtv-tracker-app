@@ -40,7 +40,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | **Add entry** | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
 | **Entry detail** | View only (controls disabled) | Checked In toggle, Hours field | Count, Notes, tag buttons, Delete Entry |
 | **Volunteers list** | View, search, filter, sort | — | Bulk Records, Download CSV |
-| **Profile detail** | View stats/entries/groups | Edit profile (name/email/match name), Regulars checkboxes | Username field in edit modal, Add Record, record pill editing, Transfer, Delete Profile |
+| **Profile detail** | View stats/entries/groups | Edit profile (name/email/match name), Regulars checkboxes, Inline hours editing (own profile only) | Username field in edit modal, Add Record, record pill editing, Inline hours editing (all profiles), Transfer, Delete Profile |
 | **Admin** | Icon Legend only | — | Eventbrite sync, Exports, Site link |
 
 ---

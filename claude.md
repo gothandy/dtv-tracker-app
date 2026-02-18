@@ -39,7 +39,7 @@ Feature-complete volunteer tracking application with:
 - Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
 - Session detail with entries, check-in, set hours, move group, edit/delete ([public/session-detail.html](public/session-detail.html))
 - Volunteers listing with FY filter, sort, group filter, search, bulk records ([public/volunteers.html](public/volunteers.html))
-- Profile detail with FY stats, group hours, entries, records, regulars ([public/profile-detail.html](public/profile-detail.html))
+- Profile detail with FY stats, group hours, entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, delete ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
@@ -256,7 +256,7 @@ dtv-tracker-app/
 │   ├── sessions.html              # Sessions listing with FY filter
 │   ├── session-detail.html        # Session detail with entries and check-in
 │   ├── volunteers.html            # Volunteers listing with filters and search
-│   ├── profile-detail.html        # Profile detail with FY stats and entries
+│   ├── profile-detail.html        # Profile detail with FY stats, inline hours, group filter
 │   ├── entry-detail.html          # Entry edit page with tag buttons
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)

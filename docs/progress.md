@@ -980,6 +980,36 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 - `public/js/common.js` — header template with logo image and brand wrapper
 - `public/img/logo.png` — New file (downloaded from website)
 
+#### 2. Profile Page Tidy-Up ✓
+
+**Entry card redesign:**
+- Single-row layout: Group name (Rubik Dirt font) | Date (green) | Icons | Hours (right)
+- On mobile (≤600px), group name wraps to its own line via `flex-basis: 100%`
+- Hours moved outside the `<a>` card into an inline `<input type="number">` or plain text
+
+**Inline hours editing:**
+- Admin users see editable hours inputs on all profiles
+- Check In users see inputs only on their own profile (`/auth/me` profileSlug match)
+- Read Only users always see plain text hours
+- `onchange` fires `PATCH /api/entries/:id` with `{ hours }`, reverts on failure
+- Auth check via `apiFetch('/auth/me')` at page load, awaited before rendering
+
+**Group filter on entries:**
+- `<select>` dropdown in the entries filter bar, right-aligned opposite "Entries" heading
+- Populated dynamically from the FY-filtered entries
+- Options update when FY filter changes; selection preserved across re-renders
+
+**Transfer button restyled:**
+- Changed from `btn-action` to `btn-delete` class (red danger styling)
+
+**Favicon links:**
+- Added `<link rel="icon">` tags (SVG + ICO fallback) to all 10 HTML pages
+- Files already existed (`public/img/favicon.svg`, `public/favicon.ico`) but were never referenced
+
+### Files Modified
+- `public/profile-detail.html` — entry card redesign, inline hours, group filter, transfer button, favicon
+- All 10 `public/*.html` files — added favicon link tags
+
 ---
 
 *Last Updated: 2026-02-18*

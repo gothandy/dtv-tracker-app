@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - DTV Tracker</title>
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="stylesheet" href="/css/styles.css">
     <style>
         .profile-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
@@ -29,10 +31,30 @@
         .regular-checkbox { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
         .regular-checkbox:disabled { opacity: 0.5; }
 
-        .entry-info { flex: 1; }
-        .entry-date { font-weight: 600; font-size: 1rem; color: var(--text); margin-bottom: 0.15rem; }
-        .entry-group { font-size: 0.9rem; color: var(--text-light); }
-        .entry-tags { margin-top: 0.3rem; }
+        .entry-info { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; flex-wrap: wrap; }
+        .entry-group { font-family: 'Rubik Dirt', cursive; font-size: 1rem; color: var(--dark); white-space: nowrap; }
+        .entry-date { font-size: 0.95rem; color: var(--green); font-weight: 600; white-space: nowrap; }
+        .entry-tags { display: flex; gap: 0.3rem; align-items: center; }
+        .entry-row { display: flex; align-items: center; gap: 0.75rem; }
+        .entry-row .entry-card { flex: 1; min-width: 0; }
+        .inline-hours {
+            width: 60px; min-height: 44px; text-align: center;
+            font-size: 0.95rem; font-weight: 600; font-family: inherit;
+            border: 2px solid var(--border); border-radius: 6px;
+            background: var(--surface); color: var(--text); flex-shrink: 0;
+        }
+        .inline-hours:focus { outline: none; border-color: var(--green); }
+        .inline-hours-display {
+            font-size: 0.95rem; font-weight: 600; color: var(--text-lighter);
+            flex-shrink: 0; min-width: 40px; text-align: center;
+        }
+        #groupSelect {
+            padding: 0.4rem 0.6rem; font-size: 0.85rem;
+            border: 2px solid var(--border-mid); border-radius: var(--radius);
+            font-family: var(--font); background: var(--surface); color: var(--text);
+            min-height: 36px;
+        }
+        #groupSelect:focus { outline: none; border-color: var(--green); }
 
         .consent-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
         .consent-section h2 { color: var(--dark); font-size: 1.1rem; margin-bottom: 0.75rem; }
@@ -65,7 +87,9 @@
             .profile-detail { padding: 1.5rem; }
             .profile-title-row { flex-wrap: wrap; }
             .profile-title-row h1 { font-size: 1.5rem; }
-            .entry-card { flex-direction: column; align-items: flex-start; }
+            .entry-info { gap: 0.5rem; }
+            .entry-group { flex-basis: 100%; }
+            .entry-meta { width: auto; }
         }
     </style>
     <script src="/js/common.js"></script>
@@ -183,7 +207,16 @@
 
         let allEntries = [];
         let currentFilter = 'thisFy';
+        let currentGroup = '';
         let currentProfile = null;
+        let canEditHours = false;
+
+        const authReady = apiFetch('/auth/me').then(r => r.json()).then(data => {
+            if (data.authenticated) {
+                canEditHours = data.user.role === 'admin' ||
+                    (data.user.role === 'checkin' && data.user.profileSlug === profileSlug);
+            }
+        }).catch(() => {});
 
         function filterByFY(filter) {
             currentFilter = filter;
@@ -195,6 +228,11 @@
             document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             displayStats();
             displayGroups();
+            displayEntries();
+        }
+
+        function setGroup(value) {
+            currentGroup = value;
             displayEntries();
         }
 
@@ -465,9 +503,22 @@
 
             let filtered = allEntries;
             if (currentFilter === 'thisFy') {
-                filtered = allEntries.filter(e => e.financialYear === thisFYKey);
+                filtered = filtered.filter(e => e.financialYear === thisFYKey);
             } else if (currentFilter === 'lastFy') {
-                filtered = allEntries.filter(e => e.financialYear === lastFYKey);
+                filtered = filtered.filter(e => e.financialYear === lastFYKey);
+            }
+
+            // Populate group select from FY-filtered entries
+            const groupSelect = document.getElementById('groupSelect');
+            if (groupSelect) {
+                const groups = [...new Set(filtered.map(e => e.groupName).filter(Boolean))].sort();
+                const prev = groupSelect.value;
+                groupSelect.innerHTML = '<option value="">All Groups</option>' +
+                    groups.map(g => `<option value="${escapeHtml(g)}"${g === prev ? ' selected' : ''}>${escapeHtml(g)}</option>`).join('');
+            }
+
+            if (currentGroup) {
+                filtered = filtered.filter(e => e.groupName === currentGroup);
             }
 
             countEl.textContent = filtered.length;
@@ -482,18 +533,23 @@
                 const detailUrl = entry.groupKey && entry.date
                     ? `/entries/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/${encodeURIComponent(profileSlug)}/edit.html`
                     : '#';
+                const hoursHtml = canEditHours
+                    ? `<input type="number" class="inline-hours" value="${entry.hours}" min="0" step="0.5"
+                           data-entry-id="${entry.id}" data-original="${entry.hours}"
+                           onchange="updateEntryHours(this)" onclick="event.stopPropagation()">`
+                    : `<span class="inline-hours-display">${entry.hours}h</span>`;
                 return `
-                    <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${detailUrl}">
-                        <div class="entry-info">
-                            <div class="entry-date">${formatDate(entry.date)}</div>
-                            ${entry.groupName ? `<div class="entry-group">${escapeHtml(entry.groupName)}</div>` : ''}
-                            ${icons ? `<div class="entry-tags">${icons}</div>` : ''}
-                        </div>
-                        <div class="entry-meta">
-                            ${entry.count > 1 ? `<span><strong>Count:</strong> ${entry.count}</span>` : ''}
-                            <span><strong>Hours:</strong> ${entry.hours}</span>
-                        </div>
-                    </a>
+                    <div class="entry-row">
+                        <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${detailUrl}">
+                            <div class="entry-info">
+                                ${entry.groupName ? `<span class="entry-group">${escapeHtml(entry.groupName)}</span>` : ''}
+                                <span class="entry-date">${formatDate(entry.date)}</span>
+                                ${icons ? `<span class="entry-tags">${icons}</span>` : ''}
+                            </div>
+                            ${entry.count > 1 ? `<div class="entry-meta"><span><strong>Count:</strong> ${entry.count}</span></div>` : ''}
+                        </a>
+                        ${hoursHtml}
+                    </div>
                 `;
             }).join('') + '</div>';
         }
@@ -512,6 +568,7 @@
             }
 
             try {
+                await authReady;
                 const response = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`);
 
                 if (!response.ok) {
@@ -587,11 +644,14 @@
                                 <h2>Entries</h2>
                                 <div class="count" id="entriesCount"></div>
                             </div>
+                            <select id="groupSelect" onchange="setGroup(this.value)">
+                                <option value="">All Groups</option>
+                            </select>
                         </div>
                     </div>
                     <div id="entriesContainer"></div>
                     <div class="delete-section admin-only">
-                        <button class="btn-action" onclick="openTransferModal()">Transfer</button>
+                        <button class="btn-delete" onclick="openTransferModal()">Transfer</button>
                         ${allEntries.length === 0 ? '<button class="btn-delete" onclick="deleteProfile()" style="margin-left:0.5rem;">Delete Profile</button>' : ''}
                     </div>
                 `;
@@ -607,6 +667,33 @@
         }
 
         loadProfile();
+
+        async function updateEntryHours(input) {
+            const entryId = input.dataset.entryId;
+            const original = parseFloat(input.dataset.original);
+            const hours = parseFloat(input.value);
+
+            if (isNaN(hours) || hours < 0) {
+                input.value = original;
+                return;
+            }
+
+            try {
+                const res = await apiFetch(`/api/entries/${entryId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hours })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Save failed');
+                }
+                input.dataset.original = hours;
+            } catch (error) {
+                input.value = original;
+                alert(error.message || 'Failed to update hours.');
+            }
+        }
 
         // === Records management ===
         let recordOptions = null;

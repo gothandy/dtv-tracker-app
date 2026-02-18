@@ -136,25 +136,33 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Entries, regulars, records transferred. Duplicates skipped.
 - [ ] Redirects to target profile
 
-### H18. Toggle regular
+### H18. Inline hours editing (profile detail)
+- [ ] Admin: hours input shown on all profiles, change value → `PATCH /api/entries/:id` → persists on reload
+- [ ] Check In: hours input shown only on own profile (profileSlug match)
+- [ ] Check In: hours displayed as plain text on other profiles
+- [ ] Read Only: hours always displayed as plain text
+- [ ] Invalid value (negative) → reverts to original
+- [ ] Clicking the entry card still navigates to entry detail
+
+### H19. Toggle regular
 - [ ] Profile detail → group hours section → check/uncheck regular checkbox
 - [ ] Check: `POST /api/profiles/:slug/regulars` — `{ groupId }`
 - [ ] Uncheck: `DELETE /api/regulars/:id`
 
-### H19. Create record
+### H20. Create record
 - [ ] Profile detail → Records → "+ Add" → modal with Type, Status, Date
 - [ ] `POST /api/profiles/:id/records` — `{ type, status, date? }`
 - [ ] Record appears in pills list
 
-### H20. Edit record
+### H21. Edit record
 - [ ] Profile detail → click record pill → modal with Status, Date
 - [ ] `PATCH /api/records/:id` — `{ status?, date? }`
 
-### H21. Delete record
+### H22. Delete record
 - [ ] Profile detail → edit record modal → Delete button → confirmation
 - [ ] `DELETE /api/records/:id`
 
-### H22. Bulk add records
+### H23. Bulk add records
 - [ ] Volunteers page → Advanced → "Add Records" → modal with Type, Status, Date
 - [ ] Shows count of filtered individuals (groups excluded)
 - [ ] Confirmation dialog: "You are about to update N records with Type: Status"
@@ -162,23 +170,23 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
-### H23. Eventbrite sync — sessions
+### H24. Eventbrite sync — sessions
 - [ ] Admin → "Refresh Events"
 - [ ] `POST /api/eventbrite/sync-sessions`
 - [ ] Shows "X events, Y matched, Z new sessions"
 
-### H24. Eventbrite sync — attendees
+### H25. Eventbrite sync — attendees
 - [ ] Admin → "Fetch New Attendees"
 - [ ] `POST /api/eventbrite/sync-attendees`
 - [ ] Shows "X sessions, Y new profiles, Z new entries, W consent records"
 - [ ] Creates profiles, entries, upserts consent records
 
-### H25. Eventbrite combined sync (scheduled)
+### H26. Eventbrite combined sync (scheduled)
 - [ ] `POST /api/eventbrite/event-and-attendee-update` with `X-Api-Key` header
 - [ ] Returns `{ summary: "..." }` suitable for email notification
 - [ ] Azure Logic App calls this daily
 
-### H26. Clear cache
+### H27. Clear cache
 - [ ] Dashboard → Refresh button
 - [ ] `POST /api/cache/clear`
 - [ ] Forces fresh data on next request
@@ -224,6 +232,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### M9. Profile detail
 - [ ] `GET /api/profiles/:slug` — entries, group hours, records, membership
 - [ ] `GET /api/records/options` — populate record dropdowns
+- [ ] `GET /auth/me` — determines inline hours editing permissions
 - [ ] Email shown as mailto link
 
 ### M10. Unmatched Eventbrite events
@@ -312,6 +321,16 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Cards and filter rows stack vertically on narrow screens
 - [ ] Modals fit small screens
 
-### L15. User info
+### L15. Profile entries group filter (client-side)
+- [ ] Group dropdown appears opposite "Entries" heading
+- [ ] Options populated from FY-filtered entries (changes with FY filter)
+- [ ] Selecting a group filters entries; "All Groups" shows all
+- [ ] Entry count updates with filter
+
+### L16. Favicon
+- [ ] SVG favicon shown in browser tab on all pages
+- [ ] ICO fallback works in older browsers
+
+### L17. User info
 - [ ] Header shows logged-in user name and Logout link
 - [ ] `/auth/me` returns user details (no session check)
