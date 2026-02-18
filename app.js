@@ -35,12 +35,15 @@ app.get('/api/health', (req, res) => {
 app.use('/auth', authRoutes);
 
 // Serve static assets that must be public (manifest, icons, CSS, JS)
-app.use('/site.webmanifest', express.static('public'));
+app.get('/site.webmanifest', (req, res) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.sendFile(path.join(__dirname, 'public', 'site.webmanifest'));
+});
 app.use('/img', express.static(path.join(__dirname, 'public', 'img')));
 app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 app.use('/svg', express.static(path.join(__dirname, 'public', 'svg')));
-app.use('/favicon.ico', express.static(path.join(__dirname, 'public', 'favicon.ico')));
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Everything below requires login
 app.use(requireAuth);
