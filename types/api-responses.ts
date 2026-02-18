@@ -84,6 +84,7 @@ export interface ProfileDetailResponse {
   name?: string;
   email?: string;
   matchName?: string;
+  user?: string;
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;

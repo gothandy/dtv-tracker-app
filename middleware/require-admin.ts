@@ -32,6 +32,16 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
+  // Read Only users: allow GETs (except exports), block all writes
+  if (role === 'readonly') {
+    if (req.method === 'GET' && !ADMIN_ONLY_GET_PATTERNS.some(p => p.test(req.path))) {
+      next();
+      return;
+    }
+    res.status(403).json({ success: false, error: 'Read only access' });
+    return;
+  }
+
   // Block admin-only GET endpoints
   if (req.method === 'GET') {
     if (ADMIN_ONLY_GET_PATTERNS.some(p => p.test(req.path))) {

@@ -5,48 +5,58 @@
 | Role | Description |
 |------|-------------|
 | **Admin** | Full access to all features |
-| **Check In Only** | Field-day operations: view data, check in volunteers, set hours, add entries, edit sessions/profiles, manage regulars |
+| **Check In** | Field-day operations: view data, check in volunteers, set hours, add entries, edit sessions/profiles, manage regulars |
+| **Read Only** | View all data, no editing |
 
 ## Configuration
 
-Admin users are set via the `ADMIN_USERS` environment variable — comma-separated email addresses, case-insensitive:
+**Admin** users are set via the `ADMIN_USERS` environment variable — comma-separated email addresses, case-insensitive:
 
 ```
 ADMIN_USERS=first.last@dtv.org.uk,another.email@dtv.org.uk
 ```
 
-All other authenticated users get the Check In Only role. Role is determined at login and stored in the session.
+**Check In** users are determined by matching the login email against the `User` field on Profiles. If a profile's `User` value matches the authenticated user's email, they get Check In access.
+
+**Read Only** is the default for any other authenticated DTV user.
+
+Role is determined at login and stored in the session.
 
 ### Future: Entra ID App Roles
 
-To migrate to Entra ID roles, configure App Roles in the Azure app registration and replace the env var check in `routes/auth.ts` (line ~52) with `tokenResponse.idTokenClaims?.roles?.includes('Admin')`. The middleware, frontend CSS, and `admin-only` class markers all stay the same.
+To migrate to Entra ID roles, configure App Roles in the Azure app registration and replace the env var check in `routes/auth.ts` (line ~52) with `tokenResponse.idTokenClaims?.roles?.includes('Admin')`. The middleware, frontend CSS, and class markers all stay the same.
 
 ---
 
 ## Per-Page Permissions
 
-| Page | Check In Only sees | Check In Only hidden |
-|------|-------------------|---------------------|
-| **Dashboard** | Full view | — |
-| **Groups list** | Full view | — |
-| **Group detail** | View group, stats, regulars, sessions | Edit button, Create Session button |
-| **Sessions list** | Full view | — |
-| **Session detail** | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal hides Group, Date, Eventbrite ID |
-| **Add entry** | Full access (search, select, create entry, add new profile) | — |
-| **Entry detail** | Checked In toggle, Hours field | Count, Notes, tag buttons, Delete Entry |
-| **Volunteers list** | View, search, filter, sort | Bulk Records, Download CSV |
-| **Profile detail** | View stats/entries/groups, Edit profile, Regulars checkboxes | Add Record, record pill editing, Transfer, Delete Profile |
-| **Admin** | Icon Legend only | Eventbrite sync, Exports, Site link |
+| Page | Read Only sees | Check In additionally sees | Admin additionally sees |
+|------|---------------|--------------------------|------------------------|
+| **Dashboard** | Full view | — | — |
+| **Groups list** | Full view | — | — |
+| **Group detail** | View group, stats, regulars, sessions | — | Edit button, Create Session button |
+| **Sessions list** | Full view | — | — |
+| **Session detail** | View entries and stats | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal: Group, Date, Eventbrite ID |
+| **Add entry** | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
+| **Entry detail** | View only (controls disabled) | Checked In toggle, Hours field | Count, Notes, tag buttons, Delete Entry |
+| **Volunteers list** | View, search, filter, sort | — | Bulk Records, Download CSV |
+| **Profile detail** | View stats/entries/groups | Edit profile (name/email/match name), Regulars checkboxes | Username field in edit modal, Add Record, record pill editing, Transfer, Delete Profile |
+| **Admin** | Icon Legend only | — | Eventbrite sync, Exports, Site link |
 
 ---
 
 ## API Endpoint Permissions
 
-### Everyone (Check In Only + Admin)
+### Everyone (all authenticated users)
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | GET | All endpoints (except exports) | View data |
+
+### Check In + Admin
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
 | PATCH | `/entries/:id` | Check-in toggle, set hours |
 | PATCH | `/sessions/:group/:date` | Edit session title/description |
 | PATCH | `/profiles/:slug` | Edit profile name/email |
@@ -83,21 +93,23 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 ### Backend
 
-1. **Role assignment** (`routes/auth.ts`): At login, the user's email is checked against `ADMIN_USERS`. Role is stored in `req.session.user.role` as `'admin'` or `'checkin'`.
+1. **Role assignment** (`routes/auth.ts`): At login, the user's email is checked against `ADMIN_USERS` (→ admin), then against Profile `User` fields (→ checkin), otherwise → readonly. Role is stored in `req.session.user.role`.
 
-2. **Enforcement** (`middleware/require-admin.ts`): A single middleware applied before all API routes in `routes/api.ts`. It uses pattern matching to allow specific endpoints for Check In Only users and blocks everything else with 403.
+2. **Enforcement** (`middleware/require-admin.ts`): A single middleware applied before all API routes in `routes/api.ts`. Read Only users are blocked from all non-GET requests. Check In users are allowed specific write endpoints via pattern matching. Everything else requires Admin.
 
 3. **`/auth/me`**: Returns the user object including `role`, so the frontend knows which role is active.
 
 ### Frontend
 
-1. **`common.js`**: After fetching `/auth/me`, sets `document.body.dataset.role` to the user's role.
+1. **`common.js`**: After fetching `/auth/me`, sets `document.body.dataset.role` to the user's role (`admin`, `checkin`, or `readonly`).
 
-2. **`styles.css`**: Two CSS rules handle visibility:
-   - `body:not([data-role="admin"]) .admin-only { display: none !important; }` — hides elements
-   - `body:not([data-role="admin"]) .admin-clickable { pointer-events: none; }` — disables clicks (used on record pills)
+2. **`styles.css`**: CSS rules handle visibility per role:
+   - `body:not([data-role="admin"]) .admin-only { display: none !important; }` — hides admin elements
+   - `body:not([data-role="admin"]) .admin-clickable { pointer-events: none; }` — disables clicks (record pills)
+   - `body[data-role="readonly"] .checkin-only { display: none !important; }` — hides check-in action buttons
+   - `body[data-role="readonly"] ...` — disables inline controls (checkboxes, inputs) with `pointer-events: none; opacity: 0.6`
 
-3. **HTML**: Admin-only buttons and form fields are marked with `class="admin-only"`.
+3. **HTML**: Elements marked with `class="admin-only"` (admin tier) or `class="checkin-only"` (check-in tier).
 
 ### API Key Auth
 

@@ -86,6 +86,7 @@ export function convertProfile(spProfile: SharePointProfile): Profile {
     name: spProfile.Title,
     email: spProfile.Email,
     matchName: spProfile.MatchName,
+    user: spProfile.User,
     isGroup: spProfile.IsGroup || false,
     created: new Date(spProfile.Created),
     modified: new Date(spProfile.Modified)

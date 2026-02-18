@@ -31,6 +31,8 @@ export interface SharePointProfile extends SharePointBaseItem {
   Email?: string;
   /** Name matching for Eventbrite integration */
   MatchName?: string;
+  /** DTV Entra ID username (e.g. andrew.davies@dtv.org.uk) */
+  User?: string;
   /** Flag indicating if this is a group profile */
   IsGroup?: boolean;
 }
@@ -43,6 +45,7 @@ export interface Profile {
   name?: string;
   email?: string;
   matchName?: string;
+  user?: string;
   isGroup: boolean;
   created: Date;
   modified: Date;

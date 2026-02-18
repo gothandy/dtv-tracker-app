@@ -596,6 +596,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       name: profile.name,
       email: profile.email,
       matchName: spProfile.MatchName,
+      user: spProfile.User,
       isGroup: profile.isGroup,
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
@@ -618,12 +619,13 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 router.patch('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
-    const { name, email, matchName, isGroup } = req.body;
+    const { name, email, matchName, user, isGroup } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof name === 'string' && name.trim()) fields.Title = name.trim();
     if (typeof email === 'string') fields.Email = email.trim();
     if (typeof matchName === 'string') fields.MatchName = matchName;
+    if (typeof user === 'string') fields.User = user.trim();
     if (typeof isGroup === 'boolean') fields.IsGroup = isGroup;
 
     if (Object.keys(fields).length === 0) {

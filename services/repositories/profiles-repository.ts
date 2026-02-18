@@ -22,7 +22,7 @@ class ProfilesRepository {
       return cached as SharePointProfile[];
     }
 
-    const selectFields = 'ID,Title,Email,MatchName,IsGroup,Created,Modified';
+    const selectFields = 'ID,Title,Email,MatchName,User,IsGroup,Created,Modified';
 
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
@@ -44,7 +44,7 @@ class ProfilesRepository {
     sharePointClient.cache.del('profiles');
   }
 
-  async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email' | 'MatchName' | 'IsGroup'>>): Promise<void> {
+  async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email' | 'MatchName' | 'User' | 'IsGroup'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, profileId, fields);
     sharePointClient.cache.del('profiles');
   }

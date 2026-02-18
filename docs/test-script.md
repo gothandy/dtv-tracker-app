@@ -21,19 +21,25 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Invalid/missing API key returns 401
 - [ ] API key only works for `/api/eventbrite/` paths — rejected on other endpoints
 - [ ] **Admin user** (in `ADMIN_USERS` env var): all edit/create/delete buttons visible, all API calls succeed
-- [ ] **Check In Only user** (not in `ADMIN_USERS`): edit/create/delete buttons hidden across all pages
-- [ ] Check In Only: check-in checkbox on session detail works (PATCH `/api/entries/:id`)
-- [ ] Check In Only: Set Hours button on session detail works
-- [ ] Check In Only: session edit modal shows only Display Name and Description (Group, Date, Eventbrite ID, Delete hidden)
-- [ ] Check In Only: saving session edit with title/description works (PATCH succeeds)
-- [ ] Check In Only: regulars checkbox on profile detail works (add/remove)
-- [ ] Check In Only: Refresh button visible on session detail, can refresh session
-- [ ] Check In Only: Add Entry link visible on session detail, can add entry for existing volunteer
-- [ ] Check In Only: can create new profile from add-entry page ("+ Add New" button)
-- [ ] Check In Only: edit profile button visible, can update name/email
-- [ ] Check In Only: Add Record, Transfer, Delete still hidden on profile page
-- [ ] Check In Only: `POST /api/profiles/:slug/records` returns 403
-- [ ] Check In Only: `POST /api/groups` returns 403
+- [ ] **Check In user** (profile has matching `User` field): admin buttons hidden, check-in controls visible
+- [ ] Check In: check-in checkbox on session detail works (PATCH `/api/entries/:id`)
+- [ ] Check In: Set Hours button on session detail works
+- [ ] Check In: session edit modal shows only Display Name and Description (Group, Date, Eventbrite ID, Delete hidden)
+- [ ] Check In: saving session edit with title/description works (PATCH succeeds)
+- [ ] Check In: regulars checkbox on profile detail works (add/remove)
+- [ ] Check In: Refresh button visible on session detail, can refresh session
+- [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
+- [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
+- [ ] Check In: edit profile button visible, can update name/email
+- [ ] Check In: Add Record, Transfer, Delete still hidden on profile page
+- [ ] Check In: `POST /api/profiles/:slug/records` returns 403
+- [ ] Check In: `POST /api/groups` returns 403
+- [ ] **Read Only user** (no matching profile `User` field, not in `ADMIN_USERS`): all action buttons hidden
+- [ ] Read Only: session detail — edit, refresh, set hours, add entry buttons all hidden
+- [ ] Read Only: session detail — check-in checkboxes visible but disabled (greyed out, not clickable)
+- [ ] Read Only: entry detail — checked in and hours controls visible but disabled
+- [ ] Read Only: profile detail — edit button hidden, regular checkboxes disabled
+- [ ] Read Only: any POST/PATCH/DELETE API call returns 403 "Read only access"
 - [ ] Check In Only: `DELETE /api/sessions/:group/:date` returns 403
 - [ ] Check In Only: `GET /api/sessions/export` returns 403 (GDPR)
 - [ ] Check In Only: admin page shows only Icon Legend section
@@ -114,8 +120,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Profile created and selected for entry creation
 
 ### H15. Edit profile
-- [ ] Profile detail → pencil icon → modal with Name, Email, Match Name, Is Group
-- [ ] `PATCH /api/profiles/:slug` — `{ name?, email?, matchName?, isGroup? }`
+- [ ] Profile detail → pencil icon → modal with Name, Email, Match Name, Username (admin-only), Is Group
+- [ ] `PATCH /api/profiles/:slug` — `{ name?, email?, matchName?, user?, isGroup? }`
+- [ ] Username field hidden for Check In Only users
+- [ ] Username value persists after save and reload
 
 ### H16. Delete profile
 - [ ] Profile detail → Delete button (only shown if no entries)

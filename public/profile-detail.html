@@ -95,6 +95,10 @@
                 <label for="editMatchName">Eventbrite Match Name</label>
                 <input type="text" id="editMatchName">
             </div>
+            <div class="modal-field admin-only">
+                <label for="editUser">Username</label>
+                <input type="text" id="editUser" placeholder="e.g. andrew.davies@dtv.org.uk">
+            </div>
             <div class="modal-field" style="display:flex; align-items:center; gap:0.75rem;">
                 <input type="checkbox" id="editIsGroup" style="width:20px; height:20px; accent-color:var(--green); cursor:pointer;">
                 <label for="editIsGroup" style="cursor:pointer; margin:0;">Is Group</label>
@@ -199,6 +203,7 @@
             document.getElementById('editName').value = currentProfile.name || '';
             document.getElementById('editEmail').value = currentProfile.email || '';
             document.getElementById('editMatchName').value = currentProfile.matchName || '';
+            document.getElementById('editUser').value = currentProfile.user || '';
             document.getElementById('editIsGroup').checked = !!currentProfile.isGroup;
             document.getElementById('editModal').classList.add('visible');
             document.getElementById('editName').focus();
@@ -333,6 +338,7 @@
             const name = document.getElementById('editName').value.trim();
             const email = document.getElementById('editEmail').value.trim();
             const matchName = document.getElementById('editMatchName').value.trim();
+            const user = document.getElementById('editUser').value.trim();
             const isGroup = document.getElementById('editIsGroup').checked;
 
             if (!name) { alert('Name is required.'); return; }
@@ -345,7 +351,7 @@
                 const res = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, matchName, isGroup })
+                    body: JSON.stringify({ name, email, matchName, user, isGroup })
                 });
                 if (!res.ok) {
                     const data = await res.json();
@@ -543,7 +549,7 @@
                                         <button id="btnThisFY" class="active" onclick="filterByFY('thisFy')">This FY</button>
                                     </div>
                                 </div>
-                                <button class="btn-action" onclick="openEditModal()" title="Edit profile">
+                                <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit profile">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                                         <path d="m15 5 4 4"/>

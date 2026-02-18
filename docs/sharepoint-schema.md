@@ -100,6 +100,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 | **Title** | Title | Single line of text | No | - | Volunteer name |
 | **Email** | Email | Single line of text | No | - | Volunteer email address |
 | **MatchName** | MatchName | Single line of text | No | - | Lowercase name for Eventbrite matching |
+| **User** | User | Single line of text | No | - | DTV Entra ID username (e.g. andrew.davies@dtv.org.uk) |
 | **IsGroup** | IsGroup | Yes/No | No | No | Flag indicating if this is a group profile |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |

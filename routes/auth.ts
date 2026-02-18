@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from 'express';
 import axios from 'axios';
 /// <reference path="../types/express-session.d.ts" />
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../services/auth-config';
+import { profilesRepository } from '../services/repositories/profiles-repository';
 
 const router: Router = express.Router();
 
@@ -50,7 +51,14 @@ router.get('/callback', async (req: Request, res: Response) => {
     const email = profile.mail || profile.userPrincipalName;
 
     const adminUsers = (process.env.ADMIN_USERS || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
-    const role = adminUsers.includes(email.toLowerCase()) ? 'admin' : 'checkin';
+    let role: 'admin' | 'checkin' | 'readonly' = 'readonly';
+    if (adminUsers.includes(email.toLowerCase())) {
+      role = 'admin';
+    } else {
+      const profiles = await profilesRepository.getAll();
+      const hasProfile = profiles.some(p => p.User?.toLowerCase() === email.toLowerCase());
+      role = hasProfile ? 'checkin' : 'readonly';
+    }
 
     req.session.user = {
       id: profile.id,

@@ -26,7 +26,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
-- Role-based authorization: Admin (full access) and Check In Only (view + check-in/hours) ([middleware/require-admin.ts](middleware/require-admin.ts))
+- Role-based authorization: Admin, Check In, and Read Only ([middleware/require-admin.ts](middleware/require-admin.ts))
 - Server-side caching with 5-minute TTL
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
@@ -71,7 +71,7 @@ The application uses 6 SharePoint lists on the Tracker site (`/sites/tracker`):
 ### 4. Profiles List
 **GUID**: `84649143-9e10-42eb-b6ee-2e1f57033073`
 - Stores volunteer profile information
-- Key fields: Title (name), Email, MatchName (for Eventbrite matching), IsGroup
+- Key fields: Title (name), Email, MatchName (for Eventbrite matching), User (DTV Entra ID username), IsGroup
 - Hours are calculated from Entries, not stored
 
 ### 5. Regulars List
@@ -186,8 +186,9 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Entries default Checked to false
 
 ### Permissions / Authorization
-- Two roles: **Admin** (full access) and **Check In Only** (field-day operations)
-- Admin users set via `ADMIN_USERS` env var; role computed at login, stored in session
+- Three roles: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view only)
+- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field; everyone else is Read Only
+- Role computed at login, stored in session
 - Backend: `requireAdmin` middleware in [middleware/require-admin.ts](middleware/require-admin.ts) enforces per-endpoint
 - Frontend: CSS hides `.admin-only` elements based on `body[data-role]`
 - Full reference: [docs/permissions.md](docs/permissions.md)
@@ -247,7 +248,7 @@ dtv-tracker-app/
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware
-│   └── require-admin.ts           # Role-based authorization (Admin vs Check In Only)
+│   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only)
 ├── public/
 │   ├── index.html                 # Dashboard homepage
 │   ├── groups.html                # Groups listing with FY filter
@@ -288,7 +289,7 @@ dtv-tracker-app/
 - [x] CSV exports (sessions, profiles, records)
 - [x] Profile transfer (merge duplicate profiles)
 - [x] Microsoft authentication (Entra ID OAuth)
-- [x] Role-based permissions: Admin (full access) and Check In Only (view + check-in/hours)
+- [x] Role-based permissions: Admin (full access), Check In (field-day operations), Read Only (view only)
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)
 - [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)
