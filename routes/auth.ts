@@ -3,6 +3,7 @@ import axios from 'axios';
 /// <reference path="../types/express-session.d.ts" />
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../services/auth-config';
 import { profilesRepository } from '../services/repositories/profiles-repository';
+import { nameToSlug } from '../services/data-layer';
 
 const router: Router = express.Router();
 
@@ -51,13 +52,14 @@ router.get('/callback', async (req: Request, res: Response) => {
     const email = profile.mail || profile.userPrincipalName;
 
     const adminUsers = (process.env.ADMIN_USERS || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const profiles = await profilesRepository.getAll();
+    const matchedProfile = profiles.find(p => p.User?.toLowerCase() === email.toLowerCase());
+
     let role: 'admin' | 'checkin' | 'readonly' = 'readonly';
     if (adminUsers.includes(email.toLowerCase())) {
       role = 'admin';
-    } else {
-      const profiles = await profilesRepository.getAll();
-      const hasProfile = profiles.some(p => p.User?.toLowerCase() === email.toLowerCase());
-      role = hasProfile ? 'checkin' : 'readonly';
+    } else if (matchedProfile) {
+      role = 'checkin';
     }
 
     req.session.user = {
@@ -65,6 +67,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       displayName: profile.displayName,
       email,
       role,
+      profileSlug: matchedProfile ? nameToSlug(matchedProfile.Title) : undefined,
     };
 
     const returnTo = req.session.returnTo || '/';

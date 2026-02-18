@@ -97,8 +97,11 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
                 document.body.dataset.role = data.user.role;
                 const el = document.getElementById('userInfo');
                 if (el) {
+                    const nameHtml = data.user.profileSlug
+                        ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="user-name">${escapeHtml(data.user.displayName)}</a>`
+                        : `<span class="user-name">${escapeHtml(data.user.displayName)}</span>`;
                     el.innerHTML = `
-                        <span class="user-name">${escapeHtml(data.user.displayName)}</span>
+                        ${nameHtml}
                         <a href="/auth/logout" class="logout-link">Logout</a>
                     `;
                 }
