@@ -34,6 +34,14 @@ app.get('/api/health', (req, res) => {
 // Auth routes (unprotected — login/callback/logout/me)
 app.use('/auth', authRoutes);
 
+// Serve static assets that must be public (manifest, icons, CSS, JS)
+app.use('/site.webmanifest', express.static('public'));
+app.use('/img', express.static(path.join(__dirname, 'public', 'img')));
+app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
+app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
+app.use('/svg', express.static(path.join(__dirname, 'public', 'svg')));
+app.use('/favicon.ico', express.static(path.join(__dirname, 'public', 'favicon.ico')));
+
 // Everything below requires login
 app.use(requireAuth);
 

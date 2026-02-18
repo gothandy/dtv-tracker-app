@@ -1020,3 +1020,41 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 ---
 
 *Last Updated: 2026-02-18*
+
+---
+
+## Session: 2026-02-18 (evening)
+
+### Completed Tasks
+
+#### 1. PWA Web Manifest & Add to Home Screen ✓
+
+- Created `public/site.webmanifest` with app name, theme colour (`#4FAF4A`), and icon references
+- Generated `public/img/icon-192.png` and `public/img/icon-512.png` from `logo-930.jpg` using PowerShell + System.Drawing (high-quality bicubic scaling, white background, centred)
+- Updated `common.js` to inject `<link rel="manifest" href="/site.webmanifest">` alongside the existing favicon link — all pages pick it up automatically
+- Chrome on Android will now offer "Add to Home Screen" with the DTV logo
+
+#### 2. Favicon Fixed ✓
+
+- Replaced bogus `favicon.ico` (which was WordPress HTML accidentally saved as a binary) with a real ICO file
+- Generated 32x32 PNG from `logo-930.jpg` (PowerShell), then wrapped in ICO container format (Node.js) — modern ICO with embedded PNG, works in all browsers
+- Source image for all icons is `public/img/logo-930.jpg` (930x924px) — use this for any future icon sizes
+
+#### 3. Static Assets Served Before Auth ✓
+
+- `public/site.webmanifest`, `/img`, `/css`, `/js`, `/svg`, and `/favicon.ico` are now served **before** `requireAuth` in `app.js`
+- Fixes 302 redirect Chrome was getting when fetching the manifest for an unauthenticated "Add to Home Screen" request
+- HTML pages still require auth; only assets are public
+
+### Files Modified
+- `app.js` — public static asset routes before `requireAuth`
+- `public/site.webmanifest` — New file
+- `public/favicon.ico` — Replaced with real 32x32 ICO
+- `public/img/logo-930.jpg` — New file (source for icon generation)
+- `public/img/icon-192.png` — New file (generated)
+- `public/img/icon-512.png` — New file (generated)
+- `public/js/common.js` — Added manifest link injection
+
+---
+
+*Last Updated: 2026-02-18 (evening)*

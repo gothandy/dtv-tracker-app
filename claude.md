@@ -17,7 +17,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 **Last Updated**: 2026-02-18
 
 Feature-complete volunteer tracking application with:
-- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
+- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
 - Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
 - TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 8 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
@@ -262,10 +262,15 @@ dtv-tracker-app/
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
+│   ├── favicon.ico                # 32x32 ICO (PNG embedded), generated from logo-930.jpg
+│   ├── site.webmanifest           # PWA manifest for Add to Home Screen
 │   ├── img/
-│   │   └── logo.png               # DTV logo (from website)
+│   │   ├── logo.png               # DTV logo (180x179, used in header)
+│   │   ├── logo-930.jpg           # High-res source logo (930x924) — use this for generating icons
+│   │   ├── icon-192.png           # Home screen icon 192x192 (generated from logo-930.jpg)
+│   │   └── icon-512.png           # Home screen icon 512x512 (generated from logo-930.jpg)
 │   ├── js/
-│   │   ├── common.js              # Shared header, footer, utilities
+│   │   ├── common.js              # Shared header, footer, utilities; injects favicon + manifest links
 │   │   └── tag-icons.js           # Tag/badge icon config and rendering
 │   └── svg/                       # SVG icons for badges and tags
 └── test/
@@ -300,6 +305,7 @@ dtv-tracker-app/
 - [x] API key auth for scheduled sync (Azure Logic App)
 - [x] Azure App Service deployment
 - [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
+- [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
 
 ## Planned Features
 
@@ -335,4 +341,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-18*
+*Last Updated: 2026-02-18 (evening)*
