@@ -2,6 +2,13 @@
  * Common UI components and utilities
  */
 
+// Inject favicon links into <head> (single source of truth)
+document.head.insertAdjacentHTML('beforeend',
+    '<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">' +
+    '<link rel="icon" type="image/x-icon" href="/favicon.ico">' +
+    '<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">'
+);
+
 /**
  * Build breadcrumb trail based on the current page's position in the hierarchy.
  * Each page has fixed parents — navigation always goes "up".
@@ -67,7 +74,10 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
     const headerHTML = `
         <header class="site-header${showBackLink ? ' compact' : ''}">
             <div class="header-top">
-                <h1>DTV Tracker</h1>
+                <div class="header-brand">
+                    <img src="/img/logo.png" alt="DTV" class="header-logo">
+                    <h1>DTV Tracker</h1>
+                </div>
                 <div class="user-info" id="userInfo"></div>
             </div>
             <p>${subtitle}</p>

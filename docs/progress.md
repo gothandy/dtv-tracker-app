@@ -944,3 +944,42 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 ---
 
 *Last Updated: 2026-02-17*
+
+---
+
+## Session: 2026-02-18
+
+### Completed Tasks
+
+#### 1. Brand Refresh — Website Visual Identity ✓
+
+Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk) to the tracker app in three stages.
+
+**Stage 1: Brand Colours**
+- Updated CSS variables to match website palette
+- Primary green: `#2c5f2d` → `#4FAF4A` (brighter, vibrant)
+- Added `--dark: #0f0e17` (near-black for header/footer)
+- Added `--accent: #f00069` (pink, for destructive actions)
+- Derived light/tint/bg shades updated to match new green
+
+**Stage 2: Header with Logo**
+- Downloaded DTV logo from website → `public/img/logo.png`
+- Header background changed from green to dark near-black (`--dark`)
+- Logo displayed inline with title (48px on desktop, 36px on mobile, smaller on compact)
+- Added Google Fonts import for "Rubik Dirt" display font on header title
+- Compact header (detail pages) scales logo and title appropriately
+
+**Stage 3: Design Refinements**
+- Border radius reduced from 8px to 6px for tighter look
+- Breadcrumb nav bar darkened slightly (#f8f8f8 → #eee)
+- Footer styled with dark background matching header (visual bookend)
+- Delete button uses brand accent colour (#f00069) instead of generic red
+
+### Files Modified
+- `public/css/styles.css` — colour variables, Google Font import, header/footer/nav/delete styles
+- `public/js/common.js` — header template with logo image and brand wrapper
+- `public/img/logo.png` — New file (downloaded from website)
+
+---
+
+*Last Updated: 2026-02-18*

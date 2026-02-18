@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-17
+**Last Updated**: 2026-02-18
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes
@@ -260,7 +260,9 @@ dtv-tracker-app/
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
-│   │   └── styles.css             # Global stylesheet
+│   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
+│   ├── img/
+│   │   └── logo.png               # DTV logo (from website)
 │   ├── js/
 │   │   ├── common.js              # Shared header, footer, utilities
 │   │   └── tag-icons.js           # Tag/badge icon config and rendering
@@ -332,4 +334,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-17*
+*Last Updated: 2026-02-18*
