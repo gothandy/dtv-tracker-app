@@ -77,7 +77,7 @@ EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 API_SYNC_KEY=your_random_key_here
 
 # Admin users (comma-separated emails — all other users get Check In Only access)
-ADMIN_USERS=andrew.davies@dtv.org.uk,benjamin.obonyo@dtv.org.uk
+ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
 
 # Session secret (change in production)
 SESSION_SECRET=your_session_secret_here
