@@ -1,6 +1,7 @@
 {
   "permissions": {
     "defaultMode": "plan"
+<<<<<<< HEAD
   },
   "hooks": {
     "PreToolUse": [
@@ -14,5 +15,7 @@
         ]
       }
     ]
+=======
+>>>>>>> 96e69859a4221fe1013483c117b77acba518edf3
   }
 }
