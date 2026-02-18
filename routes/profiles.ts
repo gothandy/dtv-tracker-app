@@ -106,6 +106,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
         slug: nameToSlug(profile.name),
         name: profile.name,
         email: profile.email,
+        user: profile.user,
         isGroup: profile.isGroup,
         isMember: memberIds.has(spProfile.ID),
         cardStatus: cardStatusMap.get(spProfile.ID),

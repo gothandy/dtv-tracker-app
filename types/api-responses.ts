@@ -39,6 +39,7 @@ export interface ProfileResponse {
   slug: string;
   name?: string;
   email?: string;
+  user?: string;
   isGroup: boolean;
   isMember: boolean;
   cardStatus?: string;

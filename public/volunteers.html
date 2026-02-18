@@ -119,6 +119,7 @@
                         <option value="">All Profiles</option>
                         <option value="individuals">Individuals</option>
                         <option value="groups">Groups</option>
+                        <option value="users">Users</option>
                     </select>
                     <select id="hoursSelect" onchange="setHoursFilter(this.value)">
                         <option value="">All Hours</option>
@@ -266,6 +267,8 @@
                 filtered = filtered.filter(v => !v.isGroup);
             } else if (currentTypeFilter === 'groups') {
                 filtered = filtered.filter(v => v.isGroup);
+            } else if (currentTypeFilter === 'users') {
+                filtered = filtered.filter(v => !v.isGroup && v.user);
             }
             if (currentFilter === 'thisFy') {
                 filtered = filtered.filter(v => v.hoursThisFY > 0);
