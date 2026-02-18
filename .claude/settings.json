@@ -1,21 +1,5 @@
 {
   "permissions": {
     "defaultMode": "plan"
-<<<<<<< HEAD
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/check-docs-before-commit.sh"
-          }
-        ]
-      }
-    ]
-=======
->>>>>>> 96e69859a4221fe1013483c117b77acba518edf3
   }
 }
