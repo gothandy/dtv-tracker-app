@@ -4,9 +4,7 @@
 
 // Inject favicon links into <head> (single source of truth)
 document.head.insertAdjacentHTML('beforeend',
-    '<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">' +
-    '<link rel="icon" type="image/x-icon" href="/favicon.ico">' +
-    '<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">'
+    '<link rel="icon" type="image/png" href="/img/logo.png">'
 );
 
 /**
