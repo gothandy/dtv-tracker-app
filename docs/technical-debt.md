@@ -64,6 +64,20 @@ The `test/` directory contains manual verification scripts (`.js` files that hit
 
 ---
 
+## Favicon — Proper SVG Needed
+**Priority**: Low | **Effort**: Low
+
+The favicon is currently using `logo.png` (a 500×500 PNG) as a stopgap.
+
+**What to do**:
+- Obtain the actual SVG favicon from the DTV website (`/wp-content/themes/dtv-hybrid/assets/images/favicon/favicon.svg`) or create a simple one using the DTV green (`#4FAF4A`)
+- Replace `public/img/logo.png` reference in `common.js` with the real `favicon.svg`
+- Optionally add `favicon.ico` and `apple-touch-icon.png` for broader browser support
+
+**Affected files**: `public/js/common.js`, `public/img/logo.png`
+
+---
+
 ## Notes
 
 - Prioritise based on actual pain points, not theoretical concerns
@@ -71,4 +85,4 @@ The `test/` directory contains manual verification scripts (`.js` files that hit
 
 ---
 
-*Last Updated: 2026-02-17*
+*Last Updated: 2026-02-18*

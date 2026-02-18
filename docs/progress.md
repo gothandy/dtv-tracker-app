@@ -1006,6 +1006,13 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 - Added `<link rel="icon">` tags (SVG + ICO fallback) to all 10 HTML pages
 - Files already existed (`public/img/favicon.svg`, `public/favicon.ico`) but were never referenced
 
+#### 3. Favicon Fix ✓
+- Discovered `favicon.svg`, `favicon.ico`, and `apple-touch-icon.png` were all WordPress 404 HTML pages saved as binary files (fetched from the website and got a 404 response)
+- Switched favicon to use `logo.png` (existing 500×500 PNG) as a stopgap
+- Updated `common.js` to reference `/img/logo.png` with `type="image/png"` — single source of truth
+- Removed redundant static `<link rel="icon">` tags from all 10 HTML pages (they duplicate what common.js injects)
+- Added tech debt item to get a proper SVG favicon
+
 ### Files Modified
 - `public/profile-detail.html` — entry card redesign, inline hours, group filter, transfer button, favicon
 - All 10 `public/*.html` files — added favicon link tags
