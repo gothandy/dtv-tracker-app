@@ -1,15 +1,15 @@
 const TAG_ICONS = [
     // Badges (profile-level indicators)
-    { icon: "member.svg", alt: "Member", type: "badge" },
+    { icon: "member.svg", alt: "Charity Member", type: "badge" },
     { icon: "card.svg", alt: "Benefits Card", type: "badge" },
-    { icon: "card.svg", alt: "Card Invited", type: "badge", color: "orange" },
+    { icon: "card.svg", alt: "Card In Container", type: "badge", color: "orange" },
     { icon: "group.svg", alt: "Group / Company", type: "badge" },
 
     // Entry tags (matched from notes)
     { icon: "child.svg", alt: "Child", tag: "#Child", type: "tag" },
     { icon: "regular.svg", alt: "Regular", tag: "#Regular", type: "tag" },
     { icon: "new.svg", alt: "New", tag: "#New", type: "tag" },
-    { icon: "diglead.svg", alt: "Digital Leader", tag: "#DigLead", type: "tag" },
+    { icon: "diglead.svg", alt: "Dig Lead", tag: "#DigLead", type: "tag" },
     { icon: "firstaider.svg", alt: "First Aider", tag: "#FirstAider", type: "tag" },
     { icon: "csr.svg", alt: "CSR", tag: "#CSR", type: "tag" },
     { icon: "late.svg", alt: "Late", tag: "#Late", type: "tag" },
