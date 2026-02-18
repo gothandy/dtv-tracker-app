@@ -2,9 +2,10 @@
  * Common UI components and utilities
  */
 
-// Inject favicon links into <head> (single source of truth)
+// Inject favicon and manifest links into <head> (single source of truth)
 document.head.insertAdjacentHTML('beforeend',
-    '<link rel="icon" type="image/png" href="/img/logo.png">'
+    '<link rel="icon" type="image/png" href="/img/logo.png">' +
+    '<link rel="manifest" href="/site.webmanifest">'
 );
 
 /**
