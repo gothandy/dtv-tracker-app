@@ -40,8 +40,11 @@
         .checkin-toggle input:checked + .checkin-box { background: var(--green); border-color: var(--green); }
         .checkin-toggle input:checked + .checkin-box::after { opacity: 1; }
 
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinning svg { animation: spin 0.7s linear infinite; }
+
         .entry-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
-        .entry-name { font-family: var(--font-heading); font-weight: normal; font-size: 1.05rem; color: var(--dark); }
+        .entry-name { font-size: 1.05rem; color: var(--dark); }
         .entry-count, .entry-hours { white-space: nowrap; }
         .entry-count strong, .entry-hours strong { color: var(--text-mid); }
 
@@ -276,7 +279,7 @@
         async function refreshSession() {
             const btn = document.getElementById('refreshBtn');
             btn.disabled = true;
-            btn.textContent = 'Refreshing...';
+            btn.classList.add('spinning');
             try {
                 const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/refresh`, {
                     method: 'POST'
@@ -301,7 +304,6 @@
                 alert(error.message || 'Failed to refresh session.');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Refresh';
             }
         }
 
@@ -411,7 +413,9 @@
                     <div class="entries-header">
                         <h2 class="entries-heading">Entries (${entries.length})</h2>
                         <div class="header-buttons">
-                            <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()">Refresh</button>
+                            <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
+                                <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
+                            </button>
                             <button class="btn-action checkin-only" onclick="openHoursModal()">Set Hours</button>
                             <a class="btn-action checkin-only" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
                                 <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>

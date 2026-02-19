@@ -33,9 +33,18 @@ function getBreadcrumbs() {
         return crumbs;
     }
 
-    // Profile detail: Home > Volunteers
+    // Profile detail: Home > Volunteers, or Home > Sessions > Session if navigated from a session/entry
     if (path.startsWith('/profiles/') && path.endsWith('/details.html')) {
-        crumbs.push({ href: '/volunteers.html', label: 'Volunteers' });
+        const ref = document.referrer;
+        const fromSession = ref.match(/\/sessions\/([^/]+)\/([^/]+)\/details\.html/);
+        const fromEntry = ref.match(/\/entries\/([^/]+)\/([^/]+)\//);
+        const match = fromSession || fromEntry;
+        if (match) {
+            crumbs.push({ href: '/sessions.html', label: 'Sessions' });
+            crumbs.push({ href: `/sessions/${match[1]}/${match[2]}/details.html`, label: 'Session' });
+        } else {
+            crumbs.push({ href: '/volunteers.html', label: 'Volunteers' });
+        }
         return crumbs;
     }
 

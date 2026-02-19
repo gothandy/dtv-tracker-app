@@ -1057,4 +1057,30 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 
 ---
 
-*Last Updated: 2026-02-18 (evening)*
+## Session: 2026-02-19
+
+### Completed Tasks
+
+#### 1. Eventbrite Consent Record Matching Fix ✓
+
+**Problem**: Consent records were not being created for attendees on Saturday and Tablesale events after forms were added to those events. Wednesday digs had been working fine as the original events with consent forms.
+
+**Root Cause**: The consent question mapping in `routes/eventbrite.ts` used hardcoded Eventbrite question IDs (`315115173`, `315115803`) specific to the Wednesday dig forms. When forms were added to other events, Eventbrite assigned new question IDs (`320634006`, `320634007`), so attendee answers never matched the map and no records were created.
+
+**Secondary Finding**: Attendees who registered before the form was added to an event receive empty answer stubs from the Eventbrite API (answer object present but no `answer` field). The old code would have incorrectly created `Declined` records for these attendees — now guarded with `if (!ans.answer) continue`.
+
+**Fix**: Replaced hardcoded question ID lookup with question text matching:
+- `"Personal Data Consent"` → `Privacy Consent`
+- `"Photo and Video Consent"` → `Photo Consent`
+
+This works across all events regardless of what question IDs Eventbrite assigns.
+
+**Investigation**: Added `test/test-event-questions.js` to inspect questions and attendee answers for a specific event ID. Confirmed Paul and Joseph Kelly (registered after forms were set up) have `"answer":"accepted"` on both questions; earlier attendees have no answer field.
+
+### Files Modified
+- `routes/eventbrite.ts` — question text matching, skip absent answers
+- `test/test-event-questions.js` — new diagnostic test script
+
+---
+
+*Last Updated: 2026-02-19*

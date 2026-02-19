@@ -47,6 +47,9 @@
 
         .refresh-message { text-align: center; margin-top: 0.5rem; font-size: 0.9rem; color: var(--green); min-height: 1.2rem; }
 
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinning svg { animation: spin 0.7s linear infinite; }
+
         @media (max-width: 600px) {
             .container { margin: 1.5rem auto; padding: 0 1rem; }
             .hours-progress-header { flex-direction: column-reverse; align-items: stretch; }
@@ -197,6 +200,8 @@
         }
 
         async function loadStats() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('spinning');
             try {
                 const response = await fetch('/api/stats');
                 if (!response.ok) throw new Error('Failed to fetch stats');
@@ -207,6 +212,8 @@
                 displayStats(currentFY);
             } catch (error) {
                 console.error('Error loading stats:', error);
+            } finally {
+                btn.classList.remove('spinning');
             }
         }
 
@@ -217,7 +224,7 @@
 
             try {
                 btn.disabled = true;
-                btn.style.opacity = '0.6';
+                btn.classList.add('spinning');
                 msg.textContent = 'Clearing cache...';
 
                 const clearResponse = await apiFetch('/api/cache/clear', { method: 'POST' });
@@ -236,7 +243,7 @@
                 setTimeout(() => { msg.textContent = ''; msg.style.color = ''; }, 3000);
             } finally {
                 btn.disabled = false;
-                btn.style.opacity = '';
+                btn.classList.remove('spinning');
             }
         }
 

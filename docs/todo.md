@@ -36,5 +36,12 @@ The Eventbrite sync endpoints return structured results but there's no persisten
 ## Import from Facebook events?
 Some groups use Facebook for registration. Maybe use an OCR to get the text, and match against the names in the profile list.
 
+## Breadcrumb / Back Navigation
+Current breadcrumb is static (path-based) and doesn't reflect where the user navigated from. Options:
+- **Back button**: Replace breadcrumb with a single context-aware "Back" button using `history.back()` or `document.referrer`. More mobile-friendly (large touch target, familiar UX).
+- **Context-sensitive breadcrumb**: Detect referrer to build the correct trail (e.g. entry page reached from session vs profile shows different parent). Started on profile detail page but incomplete.
+
+A back button is probably the right approach — simpler, works well on mobile, and avoids the complexity of reconstructing navigation history from the URL alone.
+
 ## Homepage spinner
 While the cache is building a spinner would help usability.

@@ -78,6 +78,23 @@ The favicon is currently using `logo.png` (a 500×500 PNG) as a stopgap.
 
 ---
 
+## Eventbrite Sync Logic
+**Priority**: Medium | **Effort**: Medium
+
+The Eventbrite sync logic is duplicated and fragile:
+
+1. **Duplicated sync logic**: Attendee processing (profile matching, entry creation, consent record upsert) is implemented in two separate places — `routes/eventbrite.ts` (`runSyncAttendees`) and `routes/entries.ts` (the session Refresh endpoint). Any change or fix needs applying to both, as demonstrated when the consent question ID fix was missed in the refresh path.
+
+2. **Consent question matching is a brittle integration point**: The mapping from Eventbrite question text to SharePoint record types is hardcoded. If Eventbrite changes the question wording on any form, consent records silently stop being created. There is no error or warning when an answer doesn't match.
+
+3. **No sync logging**: Sync runs (scheduled or manual) produce console output only. There's no persistent record of what was created/updated/skipped, making it hard to diagnose issues after the fact. (Also tracked in [todo.md](todo.md) as a planned feature.) Logging should include unmatched Eventbrite questions — i.e. questions that came back in attendee answers but didn't match any entry in the consent map — so that if Eventbrite changes question wording it surfaces immediately rather than silently dropping records.
+
+4. **No error recovery**: If an attendee sync fails partway through (e.g. SharePoint rate limit), there's no retry or partial-success handling. The whole sync attempt fails silently from the caller's perspective.
+
+**Recommended approach**: Extract a shared `syncAttendeeForSession()` function used by both the scheduled sync and the refresh endpoint, so consent mapping and entry creation logic live in one place.
+
+---
+
 ## Notes
 
 - Prioritise based on actual pain points, not theoretical concerns
@@ -85,4 +102,4 @@ The favicon is currently using `logo.png` (a 500×500 PNG) as a stopgap.
 
 ---
 
-*Last Updated: 2026-02-18*
+*Last Updated: 2026-02-19*

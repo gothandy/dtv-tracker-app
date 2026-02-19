@@ -161,9 +161,10 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
           [SESSION_LOOKUP]: String(session.ID),
           [PROFILE_LOOKUP]: String(profileId)
         };
-        if (isNewVolunteer(entries, profileId, session.ID)) {
-          entryFields.Notes = '#New';
-        }
+        const noteTags: string[] = [];
+        if (isNewVolunteer(entries, profileId, session.ID)) noteTags.push('#New');
+        if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
+        if (noteTags.length > 0) entryFields.Notes = noteTags.join(' ');
         await entriesRepository.create(entryFields);
         existingProfileIds.add(profileId);
         newEntries++;
@@ -171,12 +172,13 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
 
       // Upsert consent records from Eventbrite answers (one per profile+type)
       if (recordsRepository.available && attendee.answers) {
-        const consentMap: Record<string, string> = {
-          '315115173': 'Privacy Consent',
-          '315115803': 'Photo Consent'
-        };
         for (const ans of attendee.answers) {
-          const type = consentMap[ans.question_id];
+          if (!ans.answer) continue; // skip attendees who registered before the form was added
+          const consentMap: Record<string, string> = {
+            'Personal Data Consent': 'Privacy Consent',
+            'Photo and Video Consent': 'Photo Consent'
+          };
+          const type = consentMap[ans.question] ?? null;
           if (!type) continue;
           const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
           const date = attendee.created || new Date().toISOString();

@@ -358,9 +358,10 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
             [SESSION_LOOKUP]: String(spSession.ID),
             [PROFILE_LOOKUP]: String(profileId)
           };
-          if (isNewVolunteer(entries, profileId, spSession.ID)) {
-            entryFields.Notes = '#New';
-          }
+          const noteTags: string[] = [];
+          if (isNewVolunteer(entries, profileId, spSession.ID)) noteTags.push('#New');
+          if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
+          if (noteTags.length > 0) entryFields.Notes = noteTags.join(' ');
           await entriesRepository.create(entryFields);
           existingVolunteerIds.add(profileId);
           addedFromEventbrite++;
@@ -369,11 +370,12 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         // Upsert consent records from Eventbrite answers
         if (recordsRepository.available && attendee.answers) {
           const consentMap: Record<string, string> = {
-            '315115173': 'Privacy Consent',
-            '315115803': 'Photo Consent'
+            'Personal Data Consent': 'Privacy Consent',
+            'Photo and Video Consent': 'Photo Consent'
           };
           for (const ans of attendee.answers) {
-            const type = consentMap[ans.question_id];
+            if (!ans.answer) continue; // skip attendees who registered before the form was added
+            const type = consentMap[ans.question] ?? null;
             if (!type) continue;
             const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
             const date = attendee.created || new Date().toISOString();
