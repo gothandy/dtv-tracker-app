@@ -36,6 +36,7 @@ interface SyncAttendeesResult {
   newProfiles: number;
   newEntries: number;
   newRecords: number;
+  updatedRecords: number;
 }
 
 async function runSyncSessions(): Promise<SyncSessionsResult> {
@@ -116,6 +117,7 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   let newProfiles = 0;
   let newEntries = 0;
   let newRecords = 0;
+  let updatedRecords = 0;
 
   // Load existing records for upsert
   const allRecords = await recordsRepository.getAll();
@@ -184,19 +186,22 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
           const date = attendee.created || new Date().toISOString();
           const existing = allRecords.find(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type);
           if (existing) {
-            await recordsRepository.update(existing.ID, { Status: status, Date: date });
+            if (existing.Status !== status || existing.Date !== date) {
+              await recordsRepository.update(existing.ID, { Status: status, Date: date });
+              updatedRecords++;
+            }
           } else {
             const newId = await recordsRepository.create({ ProfileLookupId: profileId, Type: type, Status: status, Date: date });
             allRecords.push({ ID: newId, ProfileLookupId: profileId, Type: type, Status: status, Date: date } as any);
+            newRecords++;
           }
-          newRecords++;
         }
       }
     }
   }
 
-  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${newRecords} new records`);
-  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords };
+  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${newRecords} new records, ${updatedRecords} updated records`);
+  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords };
 }
 
 router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: Response) => {
@@ -206,7 +211,7 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
 
     const parts = [
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions`,
-      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} consent records`
+      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records`
     ];
     const summary = parts.join(' / ');
 
