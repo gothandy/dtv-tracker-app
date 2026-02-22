@@ -166,7 +166,8 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
         const noteTags: string[] = [];
         if (isNewVolunteer(entries, profileId, session.ID)) noteTags.push('#New');
         if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
-        if (noteTags.length > 0) entryFields.Notes = noteTags.join(' ');
+        noteTags.push('#Eventbrite');
+        entryFields.Notes = noteTags.join(' ');
         await entriesRepository.create(entryFields);
         existingProfileIds.add(profileId);
         newEntries++;

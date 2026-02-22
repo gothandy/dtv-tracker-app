@@ -361,7 +361,8 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
           const noteTags: string[] = [];
           if (isNewVolunteer(entries, profileId, spSession.ID)) noteTags.push('#New');
           if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
-          if (noteTags.length > 0) entryFields.Notes = noteTags.join(' ');
+          noteTags.push('#Eventbrite');
+          entryFields.Notes = noteTags.join(' ');
           await entriesRepository.create(entryFields);
           existingVolunteerIds.add(profileId);
           addedFromEventbrite++;
