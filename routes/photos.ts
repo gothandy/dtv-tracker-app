@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 import multer from 'multer';
 import path from 'path';
+import ExifReader from 'exifreader';
 import { sharePointClient } from '../services/sharepoint-client';
 
 const router: Router = express.Router();
@@ -12,48 +13,94 @@ function mediaDriveId(): string {
   return id;
 }
 
+// Extract DateTimeOriginal from EXIF. Returns null if not present or unreadable.
+// EXIF format: "2026:02:21 14:30:22"
+function exifDate(buffer: Buffer): Date | null {
+  try {
+    const tags = ExifReader.load(buffer, { expanded: false });
+    const raw = (tags['DateTimeOriginal'] as any)?.description as string | undefined;
+    if (!raw) return null;
+    const [datePart, timePart] = raw.split(' ');
+    const [y, mo, d] = datePart.split(':').map(Number);
+    const [h, mi, s] = timePart.split(':').map(Number);
+    const dt = new Date(y, mo - 1, d, h, mi, s);
+    return isNaN(dt.getTime()) ? null : dt;
+  } catch {
+    return null;
+  }
+}
+
 function uploadFilename(originalName: string, displayName: string, takenAt: Date): string {
   const hh = String(takenAt.getHours()).padStart(2, '0');
   const mm = String(takenAt.getMinutes()).padStart(2, '0');
   const ss = String(takenAt.getSeconds()).padStart(2, '0');
   const name = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const rand = Math.random().toString(36).slice(2, 6);
+  const stem = path.basename(originalName, path.extname(originalName));
+  const suffix = stem.replace(/[^a-z0-9]/gi, '').slice(-4).toLowerCase() || 'img';
   const ext = path.extname(originalName).toLowerCase() || '.jpg';
-  return `${hh}-${mm}-${ss}-${name}-${rand}${ext}`;
+  return `${hh}-${mm}-${ss}-${name}-${suffix}${ext}`;
 }
 
-// Upload photos to the Media library in SharePoint
-router.post('/photos/upload', upload.array('photos', 20), async (req: Request, res: Response) => {
-  const files = req.files as Express.Multer.File[];
-  if (!files || files.length === 0) {
-    res.status(400).json({ success: false, error: 'No files provided' });
+// List photos in a session folder. Returns names, webUrls, and thumbnail URLs.
+router.get('/photos', async (req: Request, res: Response) => {
+  const groupKey = (req.query.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
+  const date = (req.query.date as string || '').replace(/[^0-9-]/g, '');
+  if (!groupKey || !date) {
+    res.status(400).json({ success: false, error: 'groupKey and date are required' });
+    return;
+  }
+  try {
+    const driveId = mediaDriveId();
+    const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${date}`);
+    res.json({ success: true, data: photos });
+  } catch (error: any) {
+    console.error('Error listing photos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Upload a single photo to the Media library in SharePoint.
+// Frontend calls this once per file so it can show per-file progress.
+router.post('/photos/upload', (req: Request, res: Response, next) => {
+  upload.single('photo')(req, res, (err) => {
+    if (err) {
+      res.status(400).json({ success: false, error: err.message });
+      return;
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ success: false, error: 'No file provided' });
     return;
   }
 
-  const invalidFile = files.find(f => !f.mimetype.startsWith('image/'));
-  if (invalidFile) {
-    res.status(400).json({ success: false, error: `Not an image: ${invalidFile.originalname}` });
+  const { mimetype, buffer, originalname } = req.file;
+  if (!mimetype.startsWith('image/')) {
+    res.status(400).json({ success: false, error: 'Only image files are accepted' });
+    return;
+  }
+
+  const folderGroupKey = (req.body.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
+  const folderDate = (req.body.date as string || '').replace(/[^0-9-]/g, '');
+  if (!folderGroupKey || !folderDate) {
+    res.status(400).json({ success: false, error: 'groupKey and date are required' });
     return;
   }
 
   try {
     const driveId = mediaDriveId();
     const displayName = req.session.user?.displayName || 'unknown';
-    // takenAt values sent from browser (file.lastModified ms) — on mobile this is the photo capture time
-    const takenAtRaw = req.body.takenAt;
-    const takenAtList = Array.isArray(takenAtRaw) ? takenAtRaw : takenAtRaw ? [takenAtRaw] : [];
+    // Prefer EXIF DateTimeOriginal, fall back to file.lastModified from browser, then server time
+    const takenAt = exifDate(buffer)
+      ?? (req.body.takenAt ? new Date(parseInt(req.body.takenAt)) : new Date());
+    const filename = uploadFilename(originalname, displayName, takenAt);
+    const filePath = `${folderGroupKey}/${folderDate}/${filename}`;
 
-    const results = await Promise.all(files.map((file, i) => {
-      const takenAt = takenAtList[i] ? new Date(parseInt(takenAtList[i])) : new Date();
-      const filename = uploadFilename(file.originalname, displayName, takenAt);
-      // PoC: hardcoded folder — full version will derive from session groupKey + date
-      const filePath = `Sat/2026-02-21/${filename}`;
-      return sharePointClient.uploadFile(driveId, filePath, file.buffer, file.mimetype);
-    }));
-
-    res.json({ success: true, data: results.map(r => ({ name: r.name, webUrl: r.webUrl })) });
+    const result = await sharePointClient.uploadFile(driveId, filePath, buffer, mimetype);
+    res.json({ success: true, data: { name: result.name, webUrl: result.webUrl } });
   } catch (error: any) {
-    console.error('Error uploading photos:', error);
+    console.error('Error uploading photo:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

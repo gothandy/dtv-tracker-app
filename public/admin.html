@@ -64,17 +64,6 @@
             <h2><a id="siteLink" href="#" target="_blank" id="siteName">Site</a></h2>
         </div>
 
-        <div class="admin-section admin-only">
-            <h2>Media</h2>
-            <div class="admin-actions">
-                <label class="admin-btn" style="cursor:pointer;">
-                    Upload Test Photo
-                    <input type="file" accept="image/*" multiple id="photoFileInput" style="display:none;" onchange="uploadPhoto(this)">
-                </label>
-            </div>
-            <div class="sync-result" id="photoUploadResult"></div>
-        </div>
-
         <div class="admin-section">
             <h2>Icon Legend</h2>
             <div class="legend-list" id="iconLegend"></div>
@@ -226,31 +215,6 @@
                 btn.disabled = false;
                 btn.textContent = 'Check Config';
             }
-        }
-
-        async function uploadPhoto(input) {
-            const files = Array.from(input.files);
-            if (!files.length) return;
-            const result = document.getElementById('photoUploadResult');
-            result.textContent = `Uploading ${files.length} photo${files.length > 1 ? 's' : ''}...`;
-            result.className = 'sync-result';
-            const form = new FormData();
-            files.forEach(file => {
-                form.append('photos', file);
-                form.append('takenAt', file.lastModified.toString());
-            });
-            try {
-                const res = await fetch('/api/photos/upload', { method: 'POST', body: form });
-                const data = await res.json();
-                if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
-                result.innerHTML = data.data.map(f =>
-                    `<div>Uploaded: <a href="${escapeHtml(f.webUrl)}" target="_blank">${escapeHtml(f.name)}</a></div>`
-                ).join('');
-            } catch (e) {
-                result.textContent = e.message;
-                result.className = 'sync-result error';
-            }
-            input.value = '';
         }
 
         loadSiteLink();

@@ -430,6 +430,37 @@ export class SharePointClient {
   }
 
   /**
+   * List image files in a drive folder, returning names, webUrls, and medium thumbnail URLs.
+   * Returns an empty array if the folder doesn't exist yet.
+   */
+  async listFolderPhotos(
+    driveId: string,
+    folderPath: string
+  ): Promise<{ name: string; webUrl: string; thumbnailUrl: string }[]> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file&$expand=thumbnails`;
+
+      const response = await axios.get(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      return (response.data.value as any[])
+        .filter(item => item.file?.mimeType?.startsWith('image/'))
+        .map(item => ({
+          name: item.name as string,
+          webUrl: item.webUrl as string,
+          thumbnailUrl: (item.thumbnails?.[0]?.medium?.url ?? '') as string
+        }));
+    } catch (error: any) {
+      if (error.response?.status === 404) return [];
+      console.error(`Error listing folder photos at ${folderPath}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Clear all cached data
    */
   clearCache(): void {
