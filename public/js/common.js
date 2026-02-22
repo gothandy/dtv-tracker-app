@@ -248,9 +248,10 @@ function renderSessionList(container, sessions, options = {}) {
             <div class="title">${escapeHtml(session.displayName)}</div>
             ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
             ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
-            ${session.registrations || session.hours ? `<div class="meta">
+            ${session.registrations || session.hours || session.photoCount ? `<div class="meta">
                 ${session.registrations ? `<div class="meta-item"><strong>${new Date(session.date) >= new Date(new Date().toDateString()) ? 'Registrations' : 'Attendees'}:</strong> ${session.registrations}</div>` : ''}
                 ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
+                ${session.photoCount ? `<div class="meta-item"><strong>Media:</strong> ${session.photoCount}</div>` : ''}
             </div>` : ''}
         `;
         list.appendChild(card);
@@ -259,6 +260,31 @@ function renderSessionList(container, sessions, options = {}) {
     container.innerHTML = '';
     container.appendChild(list);
     clampDescriptions(list);
+}
+
+/**
+ * Fetch photo counts for a list of sessions and attach as session.photoCount.
+ * Makes one Graph API call per unique group key. Silently ignores errors.
+ */
+async function attachPhotoCounts(sessions) {
+    if (!sessions.length) return;
+    const paths = sessions
+        .filter(s => s.groupKey && s.date)
+        .map(s => `${s.groupKey}/${s.date.substring(0, 10)}`);
+    if (!paths.length) return;
+    try {
+        const res = await fetch(`/api/photos/counts?paths=${encodeURIComponent(paths.join(','))}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success) return;
+        const counts = data.data;
+        sessions.forEach(s => {
+            if (s.groupKey && s.date) {
+                const count = counts[`${s.groupKey}/${s.date.substring(0, 10)}`];
+                if (count) s.photoCount = count;
+            }
+        });
+    } catch { /* photo counts are optional */ }
 }
 
 /**

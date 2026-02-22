@@ -430,6 +430,35 @@ export class SharePointClient {
   }
 
   /**
+   * List all date subfolders under a group folder and return their child file counts.
+   * One Graph API call per group key — used for batch photo counts on session cards.
+   * Returns an empty Map if the group folder doesn't exist yet.
+   */
+  async listGroupDateCounts(driveId: string, groupKey: string): Promise<Map<string, number>> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedGroupKey = encodeURIComponent(groupKey);
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedGroupKey}:/children?$select=name,folder`;
+
+      const response = await axios.get(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const counts = new Map<string, number>();
+      for (const item of response.data.value as any[]) {
+        if (item.folder && item.name) {
+          counts.set(item.name as string, item.folder.childCount as number);
+        }
+      }
+      return counts;
+    } catch (error: any) {
+      if (error.response?.status === 404) return new Map();
+      console.error(`Error listing group folder counts for ${groupKey}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * List image files in a drive folder, returning names, webUrls, and medium thumbnail URLs.
    * Returns an empty array if the folder doesn't exist yet.
    */
