@@ -414,6 +414,7 @@ a.session-card { text-decoration: none; color: inherit; display: block; }
 div.session-card { display: block; color: inherit; cursor: pointer; }
 .session-card {
     min-width: 0;
+    overflow-x: hidden;
     background: var(--surface);
     border-radius: var(--radius);
     padding: 1.25rem;
