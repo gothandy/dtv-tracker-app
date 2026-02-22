@@ -748,12 +748,9 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
           await sharePointClient.deleteListItem(recordsListGuid, record.ID);
         }
       }
-      sharePointClient.cache.del('records');
     }
 
-    // Clear caches
-    sharePointClient.cache.del('entries');
-    sharePointClient.cache.del('regulars');
+    sharePointClient.clearCache();
 
     // Delete source profile if requested
     const deleted = !!deleteAfter;

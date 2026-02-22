@@ -69,18 +69,18 @@ class SessionsRepository {
 
   async create(fields: { Title: string; Date: string; [key: string]: any }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.cache.del('sessions');
+    sharePointClient.clearCache();
     return id;
   }
 
   async updateFields(sessionId: number, fields: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
-    sharePointClient.cache.del('sessions');
+    sharePointClient.clearCache();
   }
 
   async delete(sessionId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, sessionId);
-    sharePointClient.cache.del('sessions');
+    sharePointClient.clearCache();
   }
 }
 

@@ -134,6 +134,7 @@ router.post('/photos/upload', (req: Request, res: Response, next) => {
     const filePath = `${folderGroupKey}/${folderDate}/${filename}`;
 
     const result = await sharePointClient.uploadFile(driveId, filePath, buffer, mimetype);
+    sharePointClient.clearCache();
     res.json({ success: true, data: { name: result.name, webUrl: result.webUrl } });
   } catch (error: any) {
     console.error('Error uploading photo:', error);

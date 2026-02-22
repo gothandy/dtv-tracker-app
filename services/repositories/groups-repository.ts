@@ -16,18 +16,18 @@ class GroupsRepository {
 
   async create(fields: { Title: string; Name?: string; Description?: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.cache.del('groups');
+    sharePointClient.clearCache();
     return id;
   }
 
   async updateFields(groupId: number, fields: Partial<Pick<SharePointGroup, 'Title' | 'Name' | 'Description' | 'EventbriteSeriesID'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, groupId, fields);
-    sharePointClient.cache.del('groups');
+    sharePointClient.clearCache();
   }
 
   async delete(groupId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, groupId);
-    sharePointClient.cache.del('groups');
+    sharePointClient.clearCache();
   }
 
   async getAll(): Promise<SharePointGroup[]> {

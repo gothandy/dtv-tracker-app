@@ -86,18 +86,18 @@ class EntriesRepository {
 
   async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
-    sharePointClient.cache.del('entries');
+    sharePointClient.clearCache();
   }
 
   async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.cache.del('entries');
+    sharePointClient.clearCache();
     return id;
   }
 
   async delete(entryId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, entryId);
-    sharePointClient.cache.del('entries');
+    sharePointClient.clearCache();
   }
 }
 

@@ -21,13 +21,13 @@ class RegularsRepository {
 
   async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.cache.del('regulars');
+    sharePointClient.clearCache();
     return id;
   }
 
   async delete(regularId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, regularId);
-    sharePointClient.cache.del('regulars');
+    sharePointClient.clearCache();
   }
 
   async getAll(): Promise<SharePointRegular[]> {

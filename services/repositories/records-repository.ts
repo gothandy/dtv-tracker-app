@@ -49,20 +49,20 @@ class RecordsRepository {
   async create(fields: { ProfileLookupId: number; Type: string; Status: string; Date: string }): Promise<number> {
     if (!this.available) throw new Error('Records list not configured');
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.cache.del('records');
+    sharePointClient.clearCache();
     return id;
   }
 
   async update(itemId: number, fields: { Status?: string; Date?: string }): Promise<void> {
     if (!this.available) throw new Error('Records list not configured');
     await sharePointClient.updateListItem(this.listGuid, itemId, fields);
-    sharePointClient.cache.del('records');
+    sharePointClient.clearCache();
   }
 
   async delete(itemId: number): Promise<void> {
     if (!this.available) throw new Error('Records list not configured');
     await sharePointClient.deleteListItem(this.listGuid, itemId);
-    sharePointClient.cache.del('records');
+    sharePointClient.clearCache();
   }
 }
 

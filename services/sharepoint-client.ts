@@ -435,6 +435,13 @@ export class SharePointClient {
    * Returns an empty Map if the group folder doesn't exist yet.
    */
   async listGroupDateCounts(driveId: string, groupKey: string): Promise<Map<string, number>> {
+    const cacheKey = `media-counts-${groupKey}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached as Map<string, number>;
+    }
+
     try {
       const token = await this.getAccessToken();
       const encodedGroupKey = encodeURIComponent(groupKey);
@@ -450,6 +457,7 @@ export class SharePointClient {
           counts.set(item.name as string, item.folder.childCount as number);
         }
       }
+      this.cache.set(cacheKey, counts);
       return counts;
     } catch (error: any) {
       if (error.response?.status === 404) return new Map();
