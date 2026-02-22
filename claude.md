@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-18
+**Last Updated**: 2026-02-22
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
@@ -27,7 +27,7 @@ Feature-complete volunteer tracking application with:
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
 - Role-based authorization: Admin, Check In, and Read Only ([middleware/require-admin.ts](middleware/require-admin.ts))
-- Server-side caching with 5-minute TTL
+- Server-side caching with 5-minute TTL; all writes call `clearCache()` for immediate consistency
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
 
@@ -341,4 +341,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-18 (evening)*
+*Last Updated: 2026-02-22*

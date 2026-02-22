@@ -5,7 +5,7 @@ import ExifReader from 'exifreader';
 import { sharePointClient } from '../services/sharepoint-client';
 
 const router: Router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 
 function mediaDriveId(): string {
   const id = process.env.MEDIA_LIBRARY_DRIVE_ID;
@@ -112,8 +112,8 @@ router.post('/photos/upload', (req: Request, res: Response, next) => {
   }
 
   const { mimetype, buffer, originalname } = req.file;
-  if (!mimetype.startsWith('image/')) {
-    res.status(400).json({ success: false, error: 'Only image files are accepted' });
+  if (!mimetype.startsWith('image/') && !mimetype.startsWith('video/')) {
+    res.status(400).json({ success: false, error: 'Only image and video files are accepted' });
     return;
   }
 

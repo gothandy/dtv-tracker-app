@@ -473,7 +473,7 @@ export class SharePointClient {
   async listFolderPhotos(
     driveId: string,
     folderPath: string
-  ): Promise<{ name: string; webUrl: string; thumbnailUrl: string }[]> {
+  ): Promise<{ name: string; webUrl: string; thumbnailUrl: string; mimeType: string }[]> {
     try {
       const token = await this.getAccessToken();
       const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
@@ -484,11 +484,12 @@ export class SharePointClient {
       });
 
       return (response.data.value as any[])
-        .filter(item => item.file?.mimeType?.startsWith('image/'))
+        .filter(item => item.file?.mimeType?.startsWith('image/') || item.file?.mimeType?.startsWith('video/'))
         .map(item => ({
           name: item.name as string,
           webUrl: item.webUrl as string,
-          thumbnailUrl: (item.thumbnails?.[0]?.medium?.url ?? '') as string
+          thumbnailUrl: (item.thumbnails?.[0]?.medium?.url ?? '') as string,
+          mimeType: item.file.mimeType as string
         }));
     } catch (error: any) {
       if (error.response?.status === 404) return [];

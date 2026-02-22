@@ -1084,3 +1084,54 @@ This works across all events regardless of what question IDs Eventbrite assigns.
 ---
 
 *Last Updated: 2026-02-19*
+
+---
+
+## Session: 2026-02-22
+
+### Completed Tasks
+
+#### 1. Media Count Moved to API ✓
+
+**Problem**: Session cards showed "Media: N" by calling a separate `/api/photos/counts` endpoint client-side after the initial render. This caused a two-pass render (cards appear, then counts appear), and — critically — the dashboard (`index.html`) was missing the `attachPhotoCounts` call entirely so media counts never appeared there. On the sessions listing page, all sessions (hundreds) were being sent as one giant comma-separated URL, which was wasteful and close to URL length limits.
+
+**Fix**: Moved photo count fetching into the sessions and group detail API endpoints server-side.
+- `GET /api/sessions` and `GET /api/groups/:key` now call `listGroupDateCounts` for each unique group and attach `mediaCount` to each `SessionResponse`
+- Added `mediaCount?: number` to `SessionResponse` in `types/api-responses.ts`
+- Removed `attachPhotoCounts()` function from `session-cards.js` entirely
+- Removed two-pass render calls from `sessions.html`, `group-detail.html`
+- `index.html` gets counts automatically (no code change needed)
+- `listGroupDateCounts` in `sharepoint-client.ts` is now cached with `media-counts-${groupKey}` key
+
+#### 2. Consistent Cache Invalidation on All Writes ✓
+
+**Problem**: Repository write methods only cleared their own specific cache key (e.g. `entriesRepository` cleared `'entries'` but not `'sessions_FY*'` derived keys). Several write operations had no cache clearing at all: Eventbrite sync endpoints, the session `refresh` endpoint, all record endpoints in `routes/profiles.ts`.
+
+**Fix**: Replaced all targeted `cache.del('key')` calls in repository write methods with `clearCache()` (full flush). Any write now clears all cached data immediately.
+
+- All 6 repositories updated: `sessions`, `entries`, `groups`, `profiles`, `records`, `regulars`
+- `routes/profiles.ts` transfer endpoint: consolidated three separate `cache.del` calls into one `clearCache()`
+- `routes/photos.ts` upload: added `clearCache()` so media count updates are visible immediately after upload
+
+**Effect**: No more "wait 5 minutes" stale data after any create/update/delete operation.
+
+### Files Modified
+- `types/api-responses.ts` — added `mediaCount?: number` to `SessionResponse`
+- `services/sharepoint-client.ts` — `listGroupDateCounts` now cached (`media-counts-${groupKey}`)
+- `routes/sessions.ts` — attaches `mediaCount` to session responses; imports `sharePointClient`
+- `routes/groups.ts` — attaches `mediaCount` to group detail session responses; imports `sharePointClient`
+- `public/js/session-cards.js` — renamed `photoCount` → `mediaCount`, removed `attachPhotoCounts` function
+- `public/sessions.html` — removed two-pass render
+- `public/group-detail.html` — removed two-pass render
+- `services/repositories/sessions-repository.ts` — `clearCache()` on writes
+- `services/repositories/entries-repository.ts` — `clearCache()` on writes
+- `services/repositories/groups-repository.ts` — `clearCache()` on writes
+- `services/repositories/profiles-repository.ts` — `clearCache()` on writes
+- `services/repositories/records-repository.ts` — `clearCache()` on writes
+- `services/repositories/regulars-repository.ts` — `clearCache()` on writes
+- `routes/profiles.ts` — consolidated cache clearing in transfer endpoint
+- `routes/photos.ts` — added `clearCache()` after successful upload
+
+---
+
+*Last Updated: 2026-02-22*

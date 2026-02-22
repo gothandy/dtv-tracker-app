@@ -156,10 +156,13 @@ function renderSessionList(container, sessions, options = {}) {
  */
 function populatePhotoSlot(slot, photos) {
     slot.innerHTML = '<div class="photo-strip">' +
-        photos.map(p =>
-            `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">` +
-            `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy"></a>`
-        ).join('') + '</div>';
+        photos.map(p => {
+            const isVideo = p.mimeType && p.mimeType.startsWith('video/');
+            return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"${isVideo ? ' class="video-thumb"' : ''}>` +
+                `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
+                (isVideo ? '<span class="play-icon">&#9654;</span>' : '') +
+                `</a>`;
+        }).join('') + '</div>';
 }
 
 /**
