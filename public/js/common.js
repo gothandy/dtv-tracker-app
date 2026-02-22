@@ -206,6 +206,23 @@ function findNextSessionDate(sessions) {
 }
 
 /**
+ * Find the most recent past session date from a list.
+ * Returns the Date, or null if none are past.
+ */
+function findLastSessionDate(sessions) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    let latest = null;
+    for (const s of sessions) {
+        if (!s.date) continue;
+        const d = new Date(s.date);
+        d.setHours(0, 0, 0, 0);
+        if (d < now && (!latest || d > latest)) latest = d;
+    }
+    return latest;
+}
+
+/**
  * Build the URL for a session detail page from a session object
  */
 function buildSessionDetailUrl(session) {
@@ -226,40 +243,79 @@ function renderSessionList(container, sessions, options = {}) {
     }
 
     const nextDate = findNextSessionDate(sessions);
+    const lastDate = findLastSessionDate(sessions);
 
     const list = document.createElement('div');
     list.className = 'sessions-list';
 
     sessions.forEach((session, i) => {
         let isNext = false;
+        let isLast = false;
         if (nextDate && session.date) {
             const d = new Date(session.date);
             d.setHours(0, 0, 0, 0);
             isNext = d.getTime() === nextDate.getTime();
         }
+        if (lastDate && session.date) {
+            const d = new Date(session.date);
+            d.setHours(0, 0, 0, 0);
+            isLast = d.getTime() === lastDate.getTime();
+        }
         const countdown = isNext ? getCountdown(session.date) : null;
+        const url = buildSessionDetailUrl(session);
 
-        const card = document.createElement('a');
-        card.className = 'session-card' + (isNext ? ' next-session' : '');
-        card.href = buildSessionDetailUrl(session);
-        card.innerHTML = `
-            ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
-            <div class="date">${formatDate(session.date)}</div>
-            <div class="title">${escapeHtml(session.displayName)}</div>
-            ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
-            ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
-            ${session.registrations || session.hours || session.photoCount ? `<div class="meta">
-                ${session.registrations ? `<div class="meta-item"><strong>${new Date(session.date) >= new Date(new Date().toDateString()) ? 'Registrations' : 'Attendees'}:</strong> ${session.registrations}</div>` : ''}
-                ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
-                ${session.photoCount ? `<div class="meta-item"><strong>Media:</strong> ${session.photoCount}</div>` : ''}
-            </div>` : ''}
-        `;
+        let card;
+        if (isLast) {
+            card = document.createElement('div');
+            card.className = 'session-card last-session';
+            card.dataset.sessionIdx = String(i);
+            card.dataset.sessionPath = `${session.groupKey}/${(session.date || '').substring(0, 10)}`;
+            card.addEventListener('click', () => { window.location.href = url; });
+            card.innerHTML = `
+                <div class="last-session-label">Last session</div>
+                <div class="date">${formatDate(session.date)}</div>
+                <div class="title">${escapeHtml(session.displayName)}</div>
+                ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
+                <div class="photo-carousel-slot"></div>
+                ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
+                ${session.registrations || session.hours || session.photoCount ? `<div class="meta">
+                    ${session.registrations ? `<div class="meta-item"><strong>Attendees:</strong> ${session.registrations}</div>` : ''}
+                    ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
+                    ${session.photoCount ? `<div class="meta-item"><strong>Media:</strong> ${session.photoCount}</div>` : ''}
+                </div>` : ''}
+            `;
+        } else {
+            card = document.createElement('a');
+            card.className = 'session-card' + (isNext ? ' next-session' : '');
+            card.href = url;
+            card.innerHTML = `
+                ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
+                <div class="date">${formatDate(session.date)}</div>
+                <div class="title">${escapeHtml(session.displayName)}</div>
+                ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
+                ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
+                ${session.registrations || session.hours || session.photoCount ? `<div class="meta">
+                    ${session.registrations ? `<div class="meta-item"><strong>${new Date(session.date) >= new Date(new Date().toDateString()) ? 'Registrations' : 'Attendees'}:</strong> ${session.registrations}</div>` : ''}
+                    ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
+                    ${session.photoCount ? `<div class="meta-item"><strong>Media:</strong> ${session.photoCount}</div>` : ''}
+                </div>` : ''}
+            `;
+        }
         list.appendChild(card);
     });
 
     container.innerHTML = '';
     container.appendChild(list);
     clampDescriptions(list);
+
+    // Lazy-load photos for last-session cards
+    list.querySelectorAll('.session-card.last-session[data-session-idx]').forEach(card => {
+        const idx = parseInt(card.dataset.sessionIdx, 10);
+        const parts = (card.dataset.sessionPath || '').split('/');
+        const gk = parts[0];
+        const date = parts[1];
+        if (gk && date) loadCardPhotos(card, gk, date, sessions[idx]);
+    });
 }
 
 /**
@@ -285,6 +341,36 @@ async function attachPhotoCounts(sessions) {
             }
         });
     } catch { /* photo counts are optional */ }
+}
+
+/**
+ * Render photos into a carousel slot element inside a session card.
+ */
+function populatePhotoSlot(slot, photos) {
+    slot.innerHTML = '<div class="photo-strip">' +
+        photos.map(p =>
+            `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">` +
+            `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy"></a>`
+        ).join('') + '</div>';
+}
+
+/**
+ * Async photo loader for last-session cards. Caches results on session._photos.
+ */
+async function loadCardPhotos(card, groupKey, date, session) {
+    const slot = card.querySelector('.photo-carousel-slot');
+    if (!slot) return;
+    if (session && session._photos !== undefined) {
+        if (session._photos.length) populatePhotoSlot(slot, session._photos);
+        return;
+    }
+    try {
+        const res = await fetch(`/api/photos?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(date)}`);
+        const data = await res.json();
+        const photos = data.success ? data.data : [];
+        if (session) session._photos = photos;
+        if (photos.length) populatePhotoSlot(slot, photos);
+    } catch { if (session) session._photos = []; }
 }
 
 /**

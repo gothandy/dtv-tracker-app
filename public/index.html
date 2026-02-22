@@ -8,7 +8,7 @@
     <style>
         .container { max-width: 900px; margin: 3rem auto; padding: 0 2rem; }
 
-        #nextDigCard { display: none; margin-bottom: 1.5rem; }
+        #nextDigCard, #lastDigCard { display: none; margin-bottom: 1.5rem; }
 
         .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
         .nav-card {
@@ -122,6 +122,7 @@
         </div>
 
         <div id="nextDigCard"></div>
+        <div id="lastDigCard"></div>
 
         <div class="refresh-message" id="refreshMessage"></div>
 
@@ -259,23 +260,39 @@
                 const result = await response.json();
                 if (!result.success) return;
 
-                const nextDate = findNextSessionDate(result.data);
-                if (!nextDate) return;
+                const sessions = result.data;
 
-                const nextSessions = result.data.filter(s => {
-                    if (!s.date) return false;
-                    const d = new Date(s.date);
-                    d.setHours(0, 0, 0, 0);
-                    return d.getTime() === nextDate.getTime();
-                });
+                const nextDate = findNextSessionDate(sessions);
+                if (nextDate) {
+                    const nextSessions = sessions.filter(s => {
+                        if (!s.date) return false;
+                        const d = new Date(s.date);
+                        d.setHours(0, 0, 0, 0);
+                        return d.getTime() === nextDate.getTime();
+                    });
+                    if (nextSessions.length > 0) {
+                        const card = document.getElementById('nextDigCard');
+                        renderSessionList(card, nextSessions);
+                        card.style.display = 'block';
+                    }
+                }
 
-                if (nextSessions.length === 0) return;
-
-                const card = document.getElementById('nextDigCard');
-                renderSessionList(card, nextSessions);
-                card.style.display = 'block';
+                const lastDate = findLastSessionDate(sessions);
+                if (lastDate) {
+                    const lastSessions = sessions.filter(s => {
+                        if (!s.date) return false;
+                        const d = new Date(s.date);
+                        d.setHours(0, 0, 0, 0);
+                        return d.getTime() === lastDate.getTime();
+                    });
+                    if (lastSessions.length > 0) {
+                        const card = document.getElementById('lastDigCard');
+                        renderSessionList(card, lastSessions);
+                        card.style.display = 'block';
+                    }
+                }
             } catch (e) {
-                // Silently fail — next dig card stays hidden
+                // Silently fail — session cards stay hidden
             }
         }
 
