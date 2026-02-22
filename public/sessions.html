@@ -190,7 +190,6 @@
 
                 allSessions = data.data;
                 displaySessions(allSessions);
-                attachPhotoCounts(allSessions).then(() => displaySessions(allSessions));
 
             } catch (error) {
                 console.error('Error loading sessions:', error);

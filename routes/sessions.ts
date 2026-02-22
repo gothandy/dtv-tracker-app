@@ -29,6 +29,7 @@ import {
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
+import { sharePointClient } from '../services/sharepoint-client';
 
 const router: Router = express.Router();
 
@@ -62,6 +63,24 @@ router.get('/sessions', async (req: Request, res: Response) => {
       financialYear: `FY${s.financialYear}`,
       eventbriteEventId: s.eventbriteEventId
     }));
+
+    const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
+    if (mediaDriveId) {
+      try {
+        const groupKeys = [...new Set(data.filter(s => s.groupKey).map(s => s.groupKey!))];
+        const countsByGroup = new Map(
+          await Promise.all(groupKeys.map(gk =>
+            sharePointClient.listGroupDateCounts(mediaDriveId, gk).then(m => [gk, m] as const)
+          ))
+        );
+        for (const s of data) {
+          if (s.groupKey && s.date) {
+            const count = countsByGroup.get(s.groupKey)?.get(s.date.substring(0, 10)) ?? 0;
+            if (count > 0) s.mediaCount = count;
+          }
+        }
+      } catch { /* media counts are optional */ }
+    }
 
     res.json({ success: true, count: data.length, data } as ApiResponse<SessionResponse[]>);
   } catch (error: any) {

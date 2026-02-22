@@ -21,6 +21,7 @@ import {
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
 import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
+import { sharePointClient } from '../services/sharepoint-client';
 
 const router: Router = express.Router();
 
@@ -162,6 +163,17 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       financialYear: `FY${s.financialYear}`,
       eventbriteEventId: s.eventbriteEventId
     }));
+
+    const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
+    if (mediaDriveId) {
+      try {
+        const dateCounts = await sharePointClient.listGroupDateCounts(mediaDriveId, key);
+        for (const s of allSessionResponses) {
+          const count = dateCounts.get(s.date.substring(0, 10)) ?? 0;
+          if (count > 0) s.mediaCount = count;
+        }
+      } catch { /* media counts are optional */ }
+    }
 
     const data: GroupDetailResponse = {
       id: group.sharePointId,

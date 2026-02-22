@@ -30,6 +30,7 @@ export interface SessionResponse {
   groupName?: string;
   registrations: number;
   hours: number;
+  mediaCount?: number;
   financialYear: string;
   eventbriteEventId?: string;
 }
