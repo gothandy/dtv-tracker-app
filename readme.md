@@ -9,12 +9,12 @@ git clone <repository-url>
 cd dtv-tracker-app
 npm install
 
-# Create .env file with your credentials (see Setup section)
+# Create .env.tracker file with your credentials (see Setup section)
 
-npm run build   # Compile TypeScript
-npm run dev     # Start with auto-reload (development)
+npm run build           # Compile TypeScript
+npm run dev:tracker     # Start with auto-reload (development)
 # or
-npm start       # Start without auto-reload
+npm start               # Start without auto-reload
 
 # Visit http://localhost:3000
 ```
@@ -98,11 +98,13 @@ node test/test-auth.js
 ### 5. Build and Run
 
 ```bash
-npm run build   # Compile TypeScript services
-npm run dev     # Start with nodemon (auto-restarts on changes)
+npm run build           # Compile TypeScript
+npm run dev:tracker     # Start with nodemon using .env.tracker
 ```
 
 The server runs at http://localhost:3000.
+
+**Restarting after a code change**: nodemon watches the `dist/` folder, so run `npm run build` in a second terminal and nodemon will restart automatically. If you need a full restart, stop nodemon (Ctrl+C), run `npm run build`, then `npm run dev:tracker` again.
 
 ## Deployment
 
@@ -212,6 +214,7 @@ Response includes a human-readable `summary` field, e.g.:
 | `/api/eventbrite/sync-sessions` | POST | Sync Eventbrite events → sessions |
 | `/api/eventbrite/sync-attendees` | POST | Sync Eventbrite attendees → profiles/entries |
 | `/api/eventbrite/unmatched-events` | GET | List Eventbrite events with no matching group |
+| `/api/eventbrite/event-config-check` | GET | Check event config (child ticket, consent questions, per-attendee) |
 
 ## Pages
 

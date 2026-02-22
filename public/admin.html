@@ -44,10 +44,12 @@
                 <button class="admin-btn" id="syncSessionsBtn" onclick="syncSessions()">Refresh Events</button>
                 <button class="admin-btn" id="syncAttendeesBtn" onclick="syncAttendees()">Fetch New Attendees</button>
                 <button class="admin-btn" id="unmatchedBtn" onclick="showUnmatched()">Unmatched Events</button>
+                <button class="admin-btn" id="checkConfigBtn" onclick="checkEventConfig()">Check Config</button>
             </div>
             <div class="sync-result" id="syncSessionsResult"></div>
             <div class="sync-result" id="syncAttendeesResult"></div>
             <div id="unmatchedList"></div>
+            <div id="configCheckResult"></div>
         </div>
 
         <div class="admin-section admin-only">
@@ -174,6 +176,45 @@
                     document.getElementById('siteSection').style.display = '';
                 }
             } catch (e) { /* ignore */ }
+        }
+
+        async function checkEventConfig() {
+            const btn = document.getElementById('checkConfigBtn');
+            const result = document.getElementById('configCheckResult');
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            result.innerHTML = '';
+
+            try {
+                const res = await apiFetch('/api/eventbrite/event-config-check');
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Check failed');
+
+                if (data.data.length === 0) {
+                    result.innerHTML = '<div class="sync-result">No matched live events found</div>';
+                    return;
+                }
+
+                const rows = data.data.map(e => {
+                    const checks = [
+                        { label: 'Per Attendee', ok: e.consentQuestionsPerAttendee },
+                        { label: 'Child Ticket', ok: e.hasChildTicket },
+                        { label: 'Privacy Q', ok: e.hasPrivacyConsentQuestion },
+                        { label: 'Photo Q', ok: e.hasPhotoConsentQuestion }
+                    ];
+                    const badges = checks.map(c =>
+                        `<span style="color:${c.ok ? 'var(--green)' : 'var(--error)'}; margin-right:0.5rem">${c.ok ? '✓' : '✗'} ${escapeHtml(c.label)}</span>`
+                    ).join('');
+                    return `<div class="unmatched-item"><span>${escapeHtml(e.eventName)}</span><span>${badges}</span></div>`;
+                });
+
+                result.innerHTML = '<div class="unmatched-list">' + rows.join('') + '</div>';
+            } catch (error) {
+                result.innerHTML = `<div class="sync-result error">${escapeHtml(error.message || 'Check failed')}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Check Config';
+            }
         }
 
         loadSiteLink();

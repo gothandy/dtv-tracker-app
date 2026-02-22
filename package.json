@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "rm -rf dist && tsc",
+    "build": "tsc",
     "start": "node app.js",
     "dev": "nodemon app.js",
     "dev:members": "dotenv -e .env.members -- nodemon app.js",

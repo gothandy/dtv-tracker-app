@@ -13,7 +13,7 @@ import {
   safeParseLookupId
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
-import { getAttendees, getOrgEvents } from '../services/eventbrite-client';
+import { getAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
 
 const router: Router = express.Router();
 
@@ -288,6 +288,39 @@ router.get('/eventbrite/unmatched-events', async (req: Request, res: Response) =
       success: false,
       error: error.message || 'Failed to fetch unmatched events'
     });
+  }
+});
+
+router.get('/eventbrite/event-config-check', async (req: Request, res: Response) => {
+  try {
+    const [orgEvents, rawGroups] = await Promise.all([
+      getOrgEvents(),
+      groupsRepository.getAll()
+    ]);
+
+    const groups = validateArray(rawGroups, validateGroup, 'Group');
+
+    // Build seriesId → group map
+    const seriesMap = new Map(
+      groups.filter(g => g.EventbriteSeriesID).map(g => [g.EventbriteSeriesID!, g])
+    );
+
+    // One representative event per series (series config is shared across all events)
+    const seriesChecked = new Set<string>();
+    const results: EventbriteConfigCheck[] = [];
+    for (const event of orgEvents) {
+      if (!event.seriesId || !seriesMap.has(event.seriesId)) continue;
+      if (seriesChecked.has(event.seriesId)) continue;
+      seriesChecked.add(event.seriesId);
+      const group = seriesMap.get(event.seriesId)!;
+      const label = group.Name || group.Title;
+      results.push(await getEventConfigCheck(event.id, label));
+    }
+
+    res.json({ success: true, data: results });
+  } catch (error: any) {
+    console.error('Error checking event config:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to check event config' });
   }
 });
 

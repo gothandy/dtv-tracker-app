@@ -13,16 +13,13 @@
     "moduleResolution": "node",
     "allowJs": true,
     "checkJs": false,
-    "declaration": true,
-    "declarationMap": true,
     "sourceMap": true
   },
   "include": [
     "types/**/*",
     "services/**/*",
     "routes/**/*",
-    "middleware/**/*",
-    "app.js"
+    "middleware/**/*"
   ],
   "exclude": [
     "node_modules",

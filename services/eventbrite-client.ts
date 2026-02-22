@@ -110,3 +110,31 @@ export async function getAttendees(eventId: string): Promise<EventbriteAttendee[
 
   return all;
 }
+
+export interface EventbriteConfigCheck {
+  eventId: string;
+  eventName: string;
+  hasChildTicket: boolean;
+  hasPrivacyConsentQuestion: boolean;
+  hasPhotoConsentQuestion: boolean;
+  consentQuestionsPerAttendee: boolean;
+}
+
+export async function getEventConfigCheck(eventId: string, eventName: string): Promise<EventbriteConfigCheck> {
+  const [ticketData, questionData] = await Promise.all([
+    fetchEventbrite<{ ticket_classes: Array<{ name: string }> }>(`/events/${eventId}/ticket_classes/`),
+    fetchEventbrite<{ questions: Array<{ respondent: string; question: { text: string } }> }>(`/events/${eventId}/questions/`)
+  ]);
+
+  const tickets = ticketData.ticket_classes || [];
+  const questions = questionData.questions || [];
+
+  return {
+    eventId,
+    eventName,
+    hasChildTicket: tickets.some(t => t.name.toLowerCase().includes('child')),
+    hasPrivacyConsentQuestion: questions.some(q => q.question.text === 'Personal Data Consent'),
+    hasPhotoConsentQuestion: questions.some(q => q.question.text === 'Photo and Video Consent'),
+    consentQuestionsPerAttendee: questions.some(q => q.respondent === 'attendee')
+  };
+}
