@@ -50,6 +50,10 @@
                 <textarea id="editDescription"></textarea>
             </div>
             <div class="modal-field">
+                <label for="editKey">Key Name</label>
+                <input type="text" id="editKey" placeholder="e.g. sat">
+            </div>
+            <div class="modal-field">
                 <label for="editEventbriteId">Eventbrite Series ID</label>
                 <input type="text" id="editEventbriteId" placeholder="e.g. 123456789">
             </div>
@@ -170,6 +174,7 @@
             if (!currentGroup) return;
             document.getElementById('editName').value = currentGroup.displayName || '';
             document.getElementById('editDescription').value = currentGroup.description || '';
+            document.getElementById('editKey').value = currentGroup.key || '';
             document.getElementById('editEventbriteId').value = currentGroup.eventbriteSeriesId || '';
             document.getElementById('editModal').classList.add('visible');
             document.getElementById('editName').focus();
@@ -182,7 +187,17 @@
         async function saveGroupEdit() {
             const displayName = document.getElementById('editName').value.trim();
             const description = document.getElementById('editDescription').value;
+            const key = document.getElementById('editKey').value.trim();
             const eventbriteSeriesId = document.getElementById('editEventbriteId').value.trim();
+
+            if (!key) {
+                document.getElementById('editKey').focus();
+                return;
+            }
+
+            if (key.toLowerCase() !== (currentGroup.key || '').toLowerCase()) {
+                if (!confirm(`Changing the Key Name will update all session titles for this group and redirect you to the new URL. Continue?`)) return;
+            }
 
             const btn = document.getElementById('confirmEditBtn');
             btn.disabled = true;
@@ -192,14 +207,20 @@
                 const res = await apiFetch(`/api/groups/${encodeURIComponent(groupKey)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ displayName, description, eventbriteSeriesId })
+                    body: JSON.stringify({ key, displayName, description, eventbriteSeriesId })
                 });
                 if (!res.ok) {
                     const data = await res.json();
                     throw new Error(data.error || 'Save failed');
                 }
+                const result = await res.json();
                 closeEditModal();
-                loadGroupDetail();
+                const newKey = result.data?.key;
+                if (newKey && newKey !== groupKey) {
+                    window.location.href = `/groups/${encodeURIComponent(newKey)}/details.html`;
+                } else {
+                    loadGroupDetail();
+                }
             } catch (error) {
                 console.error('Error saving group:', error);
                 alert(error.message || 'Failed to save group.');

@@ -195,12 +195,19 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
 router.patch('/groups/:key', async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();
-    const { displayName, description, eventbriteSeriesId } = req.body;
+    const { displayName, description, eventbriteSeriesId, key: newKeyRaw } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields.Description = description;
     if (typeof eventbriteSeriesId === 'string') fields.EventbriteSeriesID = eventbriteSeriesId;
+    if (typeof newKeyRaw === 'string' && newKeyRaw.trim()) {
+      if (/\s/.test(newKeyRaw.trim())) {
+        res.status(400).json({ success: false, error: 'Key Name cannot contain spaces' });
+        return;
+      }
+      fields.Title = newKeyRaw.trim();
+    }
 
     if (Object.keys(fields).length === 0) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -215,7 +222,20 @@ router.patch('/groups/:key', async (req: Request, res: Response) => {
     }
 
     await groupsRepository.updateFields(spGroup.ID, fields);
-    res.json({ success: true } as ApiResponse<void>);
+
+    if (fields.Title) {
+      const rawSessions = await sessionsRepository.getAll();
+      const groupSessions = validateArray(rawSessions, validateSession, 'Session')
+        .filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === spGroup.ID);
+      await Promise.all(
+        groupSessions.map(s =>
+          sessionsRepository.updateFields(s.ID, { Title: `${s.Date.substring(0, 10)} ${fields.Title}` })
+        )
+      );
+    }
+
+    const resultKey = fields.Title ? fields.Title.toLowerCase() : key;
+    res.json({ success: true, data: { key: resultKey } } as ApiResponse<{ key: string }>);
   } catch (error: any) {
     console.error('Error updating group:', error);
     res.status(500).json({
