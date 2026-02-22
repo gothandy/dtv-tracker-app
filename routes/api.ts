@@ -11,6 +11,7 @@ import profilesRoutes = require('./profiles');
 import regularsRoutes = require('./regulars');
 import statsRoutes = require('./stats');
 import eventbriteRoutes = require('./eventbrite');
+import photosRoutes = require('./photos');
 
 const router: Router = express.Router();
 
@@ -22,5 +23,6 @@ router.use(profilesRoutes);
 router.use(regularsRoutes);
 router.use(statsRoutes);
 router.use(eventbriteRoutes);
+router.use(photosRoutes);
 
 export = router;

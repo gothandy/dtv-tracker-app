@@ -391,6 +391,45 @@ export class SharePointClient {
   }
 
   /**
+   * Upload a file to a SharePoint document library.
+   * Uses the simple PUT upload (suitable for files up to ~4 MB).
+   * Graph auto-creates intermediate folders in the path.
+   */
+  async uploadFile(
+    driveId: string,
+    filePath: string,
+    fileBuffer: Buffer,
+    mimeType: string
+  ): Promise<{ id: string; webUrl: string; name: string }> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/content`;
+
+      const response = await axios.put(url, fileBuffer, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': mimeType
+        },
+        maxBodyLength: Infinity
+      });
+
+      return {
+        id: response.data.id,
+        webUrl: response.data.webUrl,
+        name: response.data.name
+      };
+    } catch (error: any) {
+      const status = error.response?.status;
+      console.error(`Error uploading file to ${filePath}:`, error.response?.data || error.message);
+      if (status === 403) throw new Error('Access denied — check Files.ReadWrite permission on the app registration');
+      if (status === 401) throw new Error('Unauthorized — token may be invalid or expired');
+      if (status === 404) throw new Error('Media library or folder not found — check MEDIA_LIBRARY_DRIVE_ID');
+      throw error;
+    }
+  }
+
+  /**
    * Clear all cached data
    */
   clearCache(): void {
