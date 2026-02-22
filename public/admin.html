@@ -69,7 +69,7 @@
             <div class="admin-actions">
                 <label class="admin-btn" style="cursor:pointer;">
                     Upload Test Photo
-                    <input type="file" accept="image/*" id="photoFileInput" style="display:none;" onchange="uploadPhoto(this)">
+                    <input type="file" accept="image/*" multiple id="photoFileInput" style="display:none;" onchange="uploadPhoto(this)">
                 </label>
             </div>
             <div class="sync-result" id="photoUploadResult"></div>
@@ -229,19 +229,23 @@
         }
 
         async function uploadPhoto(input) {
-            const file = input.files[0];
-            if (!file) return;
+            const files = Array.from(input.files);
+            if (!files.length) return;
             const result = document.getElementById('photoUploadResult');
-            result.textContent = 'Uploading...';
+            result.textContent = `Uploading ${files.length} photo${files.length > 1 ? 's' : ''}...`;
             result.className = 'sync-result';
             const form = new FormData();
-            form.append('photo', file);
-            form.append('takenAt', file.lastModified.toString());
+            files.forEach(file => {
+                form.append('photos', file);
+                form.append('takenAt', file.lastModified.toString());
+            });
             try {
                 const res = await fetch('/api/photos/upload', { method: 'POST', body: form });
                 const data = await res.json();
                 if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
-                result.innerHTML = `Uploaded: <a href="${escapeHtml(data.data.webUrl)}" target="_blank">${escapeHtml(data.data.name)}</a>`;
+                result.innerHTML = data.data.map(f =>
+                    `<div>Uploaded: <a href="${escapeHtml(f.webUrl)}" target="_blank">${escapeHtml(f.name)}</a></div>`
+                ).join('');
             } catch (e) {
                 result.textContent = e.message;
                 result.className = 'sync-result error';
