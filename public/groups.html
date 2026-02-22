@@ -17,7 +17,7 @@
         .group-card .description { color: var(--text-mid); margin-bottom: 1rem; line-height: 1.5; }
         .group-card .meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-lighter); border-top: 1px solid var(--border); padding-top: 1rem; }
         .group-card .meta-item { display: flex; align-items: center; gap: 0.3rem; }
-        .group-card .meta-item strong { color: var(--text-mid); }
+        .group-card .meta-item strong { color: var(--green); }
 
         .modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -150,8 +150,9 @@
             const countDiv = document.getElementById('groupCount');
 
             let filteredGroups = allGroups;
+            let fyKey = null;
             if (currentFilter === 'thisFy' || currentFilter === 'lastFy') {
-                const fyKey = getFYKey(currentFilter === 'lastFy' ? -1 : 0);
+                fyKey = getFYKey(currentFilter === 'lastFy' ? -1 : 0);
                 const activeGroupIds = getActiveGroupIds(fyKey);
                 filteredGroups = allGroups.filter(g => activeGroupIds.has(g.id));
             }
@@ -171,24 +172,19 @@
                 card.className = 'group-card';
                 card.href = `/groups/${group.key}/detail.html`;
 
-                const eventbriteLink = group.eventbriteSeriesId
-                    ? `<a href="https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}" target="_blank" style="color: var(--green); text-decoration: none;" onclick="event.stopPropagation();">View on Eventbrite &rarr;</a>`
-                    : '';
+                const groupSessions = allSessions.filter(s =>
+                    s.groupId === group.id && (fyKey === null || s.financialYear === fyKey)
+                );
+                const sessionCount = groupSessions.length;
+                const totalHours = Math.round(groupSessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10;
 
                 card.innerHTML = `
                     <h3>${escapeHtml(group.displayName)}</h3>
                     ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
                     <div class="meta">
-                        ${group.regularsCount ? `
-                            <div class="meta-item">
-                                <strong>${group.regularsCount}</strong> ${group.regularsCount === 1 ? 'regular' : 'regulars'}
-                            </div>
-                        ` : ''}
-                        ${group.eventbriteSeriesId ? `
-                            <div class="meta-item">
-                                ${eventbriteLink}
-                            </div>
-                        ` : ''}
+                        <div class="meta-item"><strong>${group.regularsCount}</strong> regulars</div>
+                        <div class="meta-item"><strong>${sessionCount}</strong> sessions</div>
+                        <div class="meta-item"><strong>${totalHours}</strong> hrs</div>
                     </div>
                 `;
 

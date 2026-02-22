@@ -104,12 +104,12 @@
 
         function filterByFY(filter) {
             currentFilter = filter;
-            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY' };
+            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY', future: 'Future' };
             document.getElementById('filterLabel').textContent = labels[filter];
-            ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => {
+            ['btnAll', 'btnLastFY', 'btnThisFY', 'btnFuture'].forEach(id => {
                 document.getElementById(id).classList.remove('active');
             });
-            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
+            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY', future: 'btnFuture' };
             document.getElementById(btnMap[filter]).classList.add('active');
             document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             displayStats();
@@ -131,6 +131,15 @@
                 });
             } else if (currentFilter === 'lastFy') {
                 return allSessions.filter(s => s.financialYear === lastFYKey);
+            } else if (currentFilter === 'future') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return allSessions.filter(s => {
+                    if (!s.date) return false;
+                    const d = new Date(s.date);
+                    d.setHours(0, 0, 0, 0);
+                    return d >= today;
+                });
             }
             return allSessions;
         }
@@ -355,6 +364,7 @@
                                         <button id="btnAll" onclick="filterByFY('all')">All</button>
                                         <button id="btnLastFY" onclick="filterByFY('lastFy')">Last FY</button>
                                         <button id="btnThisFY" class="active" onclick="filterByFY('thisFy')">This FY</button>
+                                        <button id="btnFuture" onclick="filterByFY('future')">Future</button>
                                     </div>
                                 </div>
                                 ${eventbriteBtn}

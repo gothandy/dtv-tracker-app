@@ -45,3 +45,11 @@ A back button is probably the right approach — simpler, works well on mobile, 
 
 ## Homepage spinner
 While the cache is building a spinner would help usability.
+
+## Filters, Cards & Stats Consistency Review
+Review all list pages (groups, sessions, volunteers, group detail, profile detail) for consistency and usability:
+- Filter options and ordering (All / Last FY / This FY / Future where applicable)
+- Stats shown on cards vs detail pages — are they the right ones, do they reflect the active filter?
+- Card layouts — consistent use of meta items, green numbers, descriptions
+- Empty states when a filter returns no results
+- Default filter selection across pages

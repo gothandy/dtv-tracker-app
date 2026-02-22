@@ -167,12 +167,17 @@
 
             const hours = stats.hours || 0;
             const fyProgress = getFYProgress(stats.financialYear);
-            const predicted = fyProgress > 0 ? Math.round(hours / fyProgress) : 0;
             const pct = Math.min(100, fyProgress * 100);
 
             document.getElementById('hoursProgressLabel').textContent = `Hours ${fyText}`;
-            document.getElementById('hoursProgressValue').textContent =
-                `${Math.round(hours).toLocaleString()} actual / ${predicted.toLocaleString()} predicted`;
+            if (fy === 'thisFY') {
+                const predicted = fyProgress > 0 ? Math.round(hours / fyProgress) : 0;
+                document.getElementById('hoursProgressValue').textContent =
+                    `${Math.round(hours).toLocaleString()} actual / ${predicted.toLocaleString()} predicted`;
+            } else {
+                document.getElementById('hoursProgressValue').textContent =
+                    `${Math.round(hours).toLocaleString()} hours`;
+            }
             document.getElementById('hoursProgressFill').style.width = pct + '%';
         }
 
