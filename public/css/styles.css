@@ -413,6 +413,7 @@ a.user-name:hover {
 a.session-card { text-decoration: none; color: inherit; display: block; }
 div.session-card { display: block; color: inherit; cursor: pointer; }
 .session-card {
+    min-width: 0;
     background: var(--surface);
     border-radius: var(--radius);
     padding: 1.25rem;
@@ -518,7 +519,7 @@ div.session-card { display: block; color: inherit; cursor: pointer; }
 
 /* === Detail page layout === */
 body.detail-page { min-height: 100vh; display: flex; flex-direction: column; }
-body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; }
+body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-width: 0; }
 
 /* === Stats grid === */
 .stats-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
