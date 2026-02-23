@@ -108,7 +108,7 @@ function renderSessionList(container, sessions, options = {}) {
                 <div class="last-session-label">Last session</div>
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
-                ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
+                ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html">${escapeHtml(session.groupName)}</a></div>` : ''}
                 <div class="photo-carousel-slot"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${session.registrations || session.hours || session.mediaCount ? `<div class="meta">
@@ -125,7 +125,7 @@ function renderSessionList(container, sessions, options = {}) {
                 ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
-                ${showGroup && session.groupName ? `<div class="group">${escapeHtml(session.groupName)}</div>` : ''}
+                ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${session.registrations || session.hours || session.mediaCount ? `<div class="meta">
                     ${session.registrations ? `<div class="meta-item"><strong>${new Date(session.date) >= new Date(new Date().toDateString()) ? 'Registrations' : 'Attendees'}:</strong> ${session.registrations}</div>` : ''}
