@@ -199,7 +199,7 @@
                             <div style="font-size:0.8rem; color:var(--text-light); margin-bottom:0.4rem;">Share this link:</div>
                             <div style="display:flex; gap:0.5rem; align-items:center;">
                                 <input type="text" id="uploadUrl" readonly style="flex:1; font-size:0.8rem; padding:0.45rem 0.6rem; border:1px solid var(--border); border-radius:4px; background:var(--surface); color:var(--text);">
-                                <button onclick="copyUploadLink(event)" style="padding:0.45rem 0.75rem; background:var(--green); color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; white-space:nowrap;">Copy</button>
+                                <button onclick="shareOrCopyUploadLink(event)" style="padding:0.45rem 0.75rem; background:var(--green); color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; white-space:nowrap;">${navigator.share ? 'Share' : 'Copy'}</button>
                             </div>
                             <div style="font-size:0.78rem; color:var(--text-light); margin-top:0.5rem;">Valid for 7 days from session date</div>
                         </div>
@@ -285,15 +285,19 @@
             }
         }
 
-        function copyUploadLink(event) {
+        function shareOrCopyUploadLink(event) {
             const url = document.getElementById('uploadUrl').value;
             const btn = event.currentTarget;
-            navigator.clipboard.writeText(url).then(() => {
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy', 2000);
-            }).catch(() => {
-                document.getElementById('uploadUrl').select();
-            });
+            if (navigator.share) {
+                navigator.share({ title: 'Volunteer Photo Upload', url });
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = 'Copy', 2000);
+                }).catch(() => {
+                    document.getElementById('uploadUrl').select();
+                });
+            }
         }
 
         loadEntry();

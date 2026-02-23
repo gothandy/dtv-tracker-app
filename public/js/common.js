@@ -92,11 +92,23 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
         </header>
         ${breadcrumbHtml ? `
         <nav class="site-nav">
-            ${breadcrumbHtml}
+            <div class="nav-crumbs">${breadcrumbHtml}</div>
+            <button class="share-btn" id="shareBtn" style="display:none" title="Share this page">
+                <img src="/svg/share.svg" class="btn-icon" alt="" width="16" height="16">
+                <span class="btn-label">Share</span>
+            </button>
         </nav>
         ` : ''}
     `;
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
+
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn && navigator.share) {
+        shareBtn.style.display = '';
+        shareBtn.addEventListener('click', () => {
+            navigator.share({ title: document.title, url: window.location.href });
+        });
+    }
 
     fetch('/auth/me')
         .then(r => r.json())
@@ -105,12 +117,12 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
                 document.body.dataset.role = data.user.role;
                 const el = document.getElementById('userInfo');
                 if (el) {
-                    const nameHtml = data.user.profileSlug
-                        ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="user-name">${escapeHtml(data.user.displayName)}</a>`
-                        : `<span class="user-name">${escapeHtml(data.user.displayName)}</span>`;
+                    const profileBtn = data.user.profileSlug
+                        ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="header-btn" title="${escapeHtml(data.user.displayName)}"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></a>`
+                        : `<span class="header-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></span>`;
                     el.innerHTML = `
-                        ${nameHtml}
-                        <a href="/auth/logout" class="logout-link">Logout</a>
+                        ${profileBtn}
+                        <a href="/auth/logout" class="header-btn" title="Logout"><img src="/svg/logout.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Logout</span></a>
                     `;
                 }
             }

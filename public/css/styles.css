@@ -91,27 +91,31 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     gap: 0.75rem;
     font-size: 0.9rem;
 }
-.user-name {
-    opacity: 0.9;
-    color: inherit;
-    text-decoration: none;
-}
-a.user-name:hover {
-    opacity: 1;
-    text-decoration: underline;
-}
-.logout-link {
+.header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     color: white;
     opacity: 0.8;
     text-decoration: none;
-    padding: 0.3rem 0.6rem;
+    background: none;
     border: 1px solid rgba(255,255,255,0.4);
     border-radius: var(--radius);
+    padding: 0.3rem 0.6rem;
     font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
 }
-.logout-link:hover {
+.header-btn:hover {
     opacity: 1;
     background: rgba(255,255,255,0.1);
+}
+.btn-icon {
+    display: block;
+    flex-shrink: 0;
+}
+.user-info .btn-icon {
+    filter: invert(1);
 }
 .site-header.compact {
     padding: 1.5rem 2rem;
@@ -138,15 +142,20 @@ a.user-name:hover {
     font-size: 0.95rem;
 }
 
-/* === Site nav (back link) === */
+/* === Site nav (breadcrumbs + share) === */
 .site-nav {
     background-color: #eee;
     border-bottom: 1px solid var(--border-mid);
     padding: 0.8rem 2rem;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: space-between;
     font-size: 0.95rem;
+}
+.nav-crumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 .site-nav a {
     color: var(--green);
@@ -155,6 +164,22 @@ a.user-name:hover {
 }
 .site-nav a:hover { text-decoration: underline; }
 .site-nav .breadcrumb-sep { color: var(--text-faint); font-size: 0.8rem; }
+.share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: none;
+    border: none;
+    padding: 0.2rem 0;
+    cursor: pointer;
+    color: var(--green);
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 500;
+}
+.share-btn:hover { text-decoration: underline; }
+.share-btn .btn-icon { opacity: 0.55; }
+.share-btn:hover .btn-icon { opacity: 0.85; }
 
 /* === Site footer === */
 .site-footer {
@@ -620,6 +645,8 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     .header-logo { height: 36px; }
     .header-top { flex-direction: column-reverse; }
     .user-info { align-self: flex-end; margin-bottom: 0.25rem; }
+    .btn-label { display: none; }
+    .site-nav { padding: 0.6rem 1.25rem; }
     .site-header.compact { padding: 1rem 1.25rem; }
     .site-header.compact h1 { font-size: 1.3rem; margin-bottom: 0.15rem; }
     .site-header.compact .header-logo { height: 28px; }
