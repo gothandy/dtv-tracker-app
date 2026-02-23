@@ -25,7 +25,8 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
-import type { EntryDetailResponse } from '../types/api-responses';
+import { generateCode, storeCode } from '../services/upload-tokens';
+import type { EntryDetailResponse, UploadCodeResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -437,6 +438,33 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       error: 'Failed to refresh session',
       message: error.message
     });
+  }
+});
+
+router.post('/entries/:id/upload-code', async (req: Request, res: Response) => {
+  try {
+    const entryId = parseInt(String(req.params.id), 10);
+    if (isNaN(entryId) || entryId <= 0) {
+      res.status(400).json({ success: false, error: 'Invalid entry ID' });
+      return;
+    }
+
+    const rawEntries = await entriesRepository.getAll();
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const entry = entries.find(e => e.ID === entryId);
+    if (!entry) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+
+    const code = generateCode();
+    storeCode(code, entryId);
+
+    const url = `${req.protocol}://${req.get('host')}/upload/${code}`;
+    res.json({ success: true, data: { code, url } } as ApiResponse<UploadCodeResponse>);
+  } catch (error: any) {
+    console.error('Error generating upload code:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate upload code', message: error.message });
   }
 });
 

@@ -4,6 +4,7 @@ const session = require('express-session');
 const path = require('path');
 const apiRoutes = require('./dist/routes/api');
 const authRoutes = require('./dist/routes/auth');
+const uploadRoutes = require('./dist/routes/upload');
 const { requireAuth } = require('./dist/middleware/require-auth');
 
 const app = express();
@@ -44,6 +45,15 @@ app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 app.use('/svg', express.static(path.join(__dirname, 'public', 'svg')));
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
+
+// Upload page — public, code validates itself (handles /upload and /upload/AGHR)
+app.get('/upload', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+});
+app.get('/upload/:code', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+});
+app.use('/api', uploadRoutes);
 
 // Everything below requires login
 app.use(requireAuth);

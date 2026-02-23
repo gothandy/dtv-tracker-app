@@ -5,11 +5,11 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 ## Quick Start
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/gothandy/dtv-tracker-app
 cd dtv-tracker-app
 npm install
 
-# Create .env.tracker file with your credentials (see Setup section)
+# Create .env file with your credentials (see Setup section)
 
 npm run build           # Compile TypeScript
 npm run dev:tracker     # Start with auto-reload (development)
@@ -75,6 +75,9 @@ EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 
 # Scheduled Sync (optional — for API key auth bypass on /api/eventbrite/ endpoints)
 API_SYNC_KEY=your_random_key_here
+
+# Media Library (SharePoint document library for session photos)
+MEDIA_LIBRARY_DRIVE_ID=   # Graph API Drive ID — find via admin page "Discover Drives"
 
 # Admin users (comma-separated emails — all other users get Check In Only access)
 ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
@@ -176,6 +179,14 @@ Response includes a human-readable `summary` field, e.g.:
 | `/api/entries/:group/:date/:slug` | GET | Entry detail with FY hours |
 | `/api/entries/:id` | PATCH | Update entry (check-in, hours, notes) |
 | `/api/entries/:id` | DELETE | Delete entry |
+| `/api/entries/:id/upload-code` | POST | Generate volunteer upload code for entry (Admin only) |
+
+### Upload (Public — no authentication required)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/upload/validate` | POST | Validate a 4-letter upload code, returns session + volunteer context |
+| `/api/upload/files` | POST | Upload photos using a valid code (multipart/form-data) |
 
 ### Profiles
 
@@ -228,8 +239,10 @@ Response includes a human-readable `summary` field, e.g.:
 | Session Detail | `/sessions/:group/:date/details.html` | Entries, check-in, set hours, edit/delete |
 | Volunteers | `/volunteers.html` | Profiles with FY filter, sort, group filter, search |
 | Profile Detail | `/profiles/:slug/details.html` | FY stats, group hours, entries, records |
-| Entry Edit | `/entries/:group/:date/:slug/edit.html` | Tag buttons, hours, notes, delete |
+| Entry Edit | `/entries/:group/:date/:slug/edit.html` | Tag buttons, hours, notes, delete; admin upload link generator |
 | Add Entry | `/sessions/:group/:date/add-entry.html` | Volunteer search and create |
+| Upload | `/upload` | Public volunteer photo upload (code entry) — no auth required |
+| Upload | `/upload/:code` | Same page — pre-fills and auto-submits the code from the URL |
 
 ## Project Structure
 
@@ -249,6 +262,7 @@ dtv-tracker-app/
 │   ├── regulars.ts     # Regulars management
 │   ├── stats.ts        # Dashboard stats, cache, config
 │   ├── eventbrite.ts   # Eventbrite sync endpoints
+│   ├── upload.ts       # Public photo upload endpoints (validate + upload, no auth)
 │   └── auth.ts         # Authentication (login, callback, logout)
 ├── middleware/          # Auth guard middleware (session + API key)
 ├── public/             # Frontend HTML/CSS/JS (10 pages, served statically)

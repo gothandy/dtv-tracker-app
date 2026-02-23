@@ -38,7 +38,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | **Sessions list** | Full view | — | — |
 | **Session detail** | View entries and stats | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal: Group, Date, Eventbrite ID |
 | **Add entry** | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
-| **Entry detail** | View only (controls disabled) | Checked In toggle, Hours field, Count | Notes, tag buttons, Delete Entry |
+| **Entry detail** | View only (controls disabled) | Checked In toggle, Hours field, Count | Notes, tag buttons, Delete Entry, Get Upload Link button |
 | **Volunteers list** | View, search, filter, sort | — | Bulk Records, Download CSV |
 | **Profile detail** | View stats/entries/groups | Edit profile (name/email/match name), Regulars checkboxes, Inline hours editing (own profile only) | Username field in edit modal, Add Record, record pill editing, Inline hours editing (all profiles), Transfer, Delete Profile |
 | **Admin** | Icon Legend only | — | Eventbrite sync, Exports, Site link |
@@ -70,6 +70,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
+| POST | `/entries/:id/upload-code` | Generate volunteer upload code |
 | GET | `/sessions/export` | CSV export (GDPR) |
 | GET | `/records/export` | CSV export (GDPR) |
 | POST | `/groups` | Create group |
@@ -110,6 +111,19 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
    - `body[data-role="readonly"] ...` — disables inline controls (checkboxes, inputs) with `pointer-events: none; opacity: 0.6`
 
 3. **HTML**: Elements marked with `class="admin-only"` (admin tier) or `class="checkin-only"` (check-in tier).
+
+### Public (No Authentication)
+
+The following endpoints and pages require no authentication and are served before `requireAuth`:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/upload` | Volunteer photo upload page (code entry form) |
+| GET | `/upload/:code` | Same page — pre-fills the code from the URL |
+| POST | `/api/upload/validate` | Validate a 4-letter upload code |
+| POST | `/api/upload/files` | Upload photos using a valid code |
+
+The upload code is validated server-side on every request. Expiry is session date + 7 days. Upload path is derived from SharePoint data, not user input.
 
 ### API Key Auth
 

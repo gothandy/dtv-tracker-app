@@ -19,7 +19,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
 - Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
-- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 8 route modules
+- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 9 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
 - Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts))
@@ -229,6 +229,7 @@ dtv-tracker-app/
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── field-names.ts             # SharePoint field name constants
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
+│   ├── upload-tokens.ts           # In-memory store for volunteer upload codes (code → entryId)
 │   └── repositories/
 │       ├── groups-repository.ts
 │       ├── sessions-repository.ts
@@ -245,6 +246,7 @@ dtv-tracker-app/
 │   ├── regulars.ts                # Regulars management
 │   ├── stats.ts                   # Dashboard stats, cache, config
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
+│   ├── upload.ts                  # Public photo upload endpoints (validate code, upload files)
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware
@@ -257,8 +259,9 @@ dtv-tracker-app/
 │   ├── session-detail.html        # Session detail with entries and check-in
 │   ├── volunteers.html            # Volunteers listing with filters and search
 │   ├── profile-detail.html        # Profile detail with FY stats, inline hours, group filter
-│   ├── entry-detail.html          # Entry edit page with tag buttons
+│   ├── entry-detail.html          # Entry edit page with tag buttons; admin upload link generator
 │   ├── add-entry.html             # Add entry (register volunteer to session)
+│   ├── upload.html                # Public volunteer photo upload page (no auth required)
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
@@ -306,6 +309,8 @@ dtv-tracker-app/
 - [x] Azure App Service deployment
 - [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
+- [x] Volunteer photo upload via short code (admin generates 4-letter code from entry detail; volunteer uploads at `/upload` without an account)
+- [x] Session photo storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure)
 
 ## Planned Features
 
@@ -331,6 +336,8 @@ npm start         # Start without auto-reload
 - Standard SharePoint metadata fields (ID, Created, Modified, Author, Editor) are auto-managed
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
+- Upload codes are held in memory only — lost on server restart. Volunteers need a new code issued if the server restarts. Migration path: add `UploadCode`/`UploadExpiry` columns to the Entries list.
+- `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 
 ## Known Constraints
 
@@ -341,4 +348,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-22*
+*Last Updated: 2026-02-23*

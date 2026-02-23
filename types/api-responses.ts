@@ -171,3 +171,16 @@ export interface StatsResponse {
   thisFY: FYStatsResponse;
   lastFY: FYStatsResponse;
 }
+
+export interface UploadCodeResponse {
+  code: string;  // e.g. "MXKP"
+  url: string;   // full upload URL e.g. "https://tracker.dtv.org.uk/upload/MXKP"
+}
+
+export interface UploadContextResponse {
+  sessionName: string;
+  date: string;        // YYYY-MM-DD
+  groupKey: string;
+  groupName: string;
+  profileName: string;
+}

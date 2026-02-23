@@ -1,0 +1,195 @@
+import express, { Request, Response, Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import ExifReader from 'exifreader';
+import { sharePointClient } from '../services/sharepoint-client';
+import { entriesRepository } from '../services/repositories/entries-repository';
+import { sessionsRepository } from '../services/repositories/sessions-repository';
+import { groupsRepository } from '../services/repositories/groups-repository';
+import { profilesRepository } from '../services/repositories/profiles-repository';
+import { safeParseLookupId, convertGroup } from '../services/data-layer';
+import { SESSION_LOOKUP, PROFILE_LOOKUP, GROUP_LOOKUP, PROFILE_DISPLAY } from '../services/field-names';
+import { lookupCode } from '../services/upload-tokens';
+import type { UploadContextResponse } from '../types/api-responses';
+import type { ApiResponse } from '../types/sharepoint';
+
+const router: Router = express.Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 10 }
+});
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'
+]);
+
+function mediaDriveId(): string {
+  const id = process.env.MEDIA_LIBRARY_DRIVE_ID;
+  if (!id) throw new Error('MEDIA_LIBRARY_DRIVE_ID is not configured');
+  return id;
+}
+
+function exifDate(buffer: Buffer): Date | null {
+  try {
+    const tags = ExifReader.load(buffer, { expanded: false });
+    const raw = (tags['DateTimeOriginal'] as any)?.description as string | undefined;
+    if (!raw) return null;
+    const [datePart, timePart] = raw.split(' ');
+    const [y, mo, d] = datePart.split(':').map(Number);
+    const [h, mi, s] = timePart.split(':').map(Number);
+    const dt = new Date(y, mo - 1, d, h, mi, s);
+    return isNaN(dt.getTime()) ? null : dt;
+  } catch {
+    return null;
+  }
+}
+
+// Matches the naming convention used in routes/photos.ts
+function uploadFilename(originalName: string, groupName: string, takenAt: Date): string {
+  const hh = String(takenAt.getHours()).padStart(2, '0');
+  const mm = String(takenAt.getMinutes()).padStart(2, '0');
+  const ss = String(takenAt.getSeconds()).padStart(2, '0');
+  const name = groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const stem = path.basename(originalName, path.extname(originalName));
+  const suffix = stem.replace(/[^a-z0-9]/gi, '').slice(-4).toLowerCase() || 'img';
+  const ext = path.extname(originalName).toLowerCase() || '.jpg';
+  return `${hh}-${mm}-${ss}-${name}-${suffix}${ext}`;
+}
+
+interface ResolvedContext {
+  ok: true;
+  entryId: number;
+  groupKey: string;
+  groupName: string;
+  date: string;
+  profileName: string;
+}
+interface ResolveFailure { ok: false; reason: 'not-found' | 'expired' }
+type ResolveResult = ResolvedContext | ResolveFailure;
+
+async function resolveCode(code: string): Promise<ResolveResult> {
+  const entryId = lookupCode(code);
+  if (entryId === undefined) return { ok: false, reason: 'not-found' };
+
+  const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
+    entriesRepository.getAll(),
+    sessionsRepository.getAll(),
+    groupsRepository.getAll(),
+    profilesRepository.getAll()
+  ]);
+
+  const rawEntry = (rawEntries as any[]).find(e => e.ID === entryId);
+  if (!rawEntry) return { ok: false, reason: 'not-found' };
+
+  const sessionId = safeParseLookupId(rawEntry[SESSION_LOOKUP]);
+  const rawSession = sessionId !== undefined
+    ? (rawSessions as any[]).find(s => s.ID === sessionId)
+    : undefined;
+  if (!rawSession) return { ok: false, reason: 'not-found' };
+
+  // Expiry: session date + 7 days
+  const expiry = new Date(rawSession.Date);
+  expiry.setUTCDate(expiry.getUTCDate() + 7);
+  if (new Date() > expiry) return { ok: false, reason: 'expired' };
+
+  const groupId = safeParseLookupId(rawSession[GROUP_LOOKUP]);
+  const rawGroup = groupId !== undefined
+    ? (rawGroups as any[]).find(g => g.ID === groupId)
+    : undefined;
+  const group = rawGroup ? convertGroup(rawGroup) : null;
+
+  const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+  const rawProfile = profileId !== undefined
+    ? (rawProfiles as any[]).find(p => p.ID === profileId)
+    : undefined;
+
+  return {
+    ok: true,
+    entryId,
+    groupKey: group?.lookupKeyName || '',
+    groupName: group?.displayName || group?.lookupKeyName || '',
+    date: rawSession.Date.substring(0, 10),
+    profileName: rawProfile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer'
+  };
+}
+
+// Validate a code and return session/profile context.
+// Public — no session auth required (mounted before requireAuth in app.js).
+router.post('/upload/validate', async (req: Request, res: Response) => {
+  const code = String(req.body?.code || '').trim().toUpperCase();
+  if (!code) {
+    res.status(400).json({ success: false, error: 'Code is required' });
+    return;
+  }
+
+  try {
+    const result = await resolveCode(code);
+    if (!result.ok) {
+      const error = result.reason === 'expired' ? 'Code has expired' : 'Code not found';
+      res.status(404).json({ success: false, error, reason: result.reason });
+      return;
+    }
+
+    const data: UploadContextResponse = {
+      sessionName: `${result.groupName} — ${result.date}`,
+      date: result.date,
+      groupKey: result.groupKey,
+      groupName: result.groupName,
+      profileName: result.profileName
+    };
+    res.json({ success: true, data } as ApiResponse<UploadContextResponse>);
+  } catch (error: any) {
+    console.error('Error validating upload code:', error);
+    res.status(500).json({ success: false, error: 'Failed to validate code', message: error.message });
+  }
+});
+
+// Upload photos using a valid code.
+// Public — no session auth required (mounted before requireAuth in app.js).
+router.post('/upload/files', upload.array('photos', 10), async (req: Request, res: Response) => {
+  const code = String(req.body?.code || '').trim().toUpperCase();
+  if (!code) {
+    res.status(400).json({ success: false, error: 'Code is required' });
+    return;
+  }
+
+  try {
+    const context = await resolveCode(code);
+    if (!context.ok) {
+      const error = context.reason === 'expired' ? 'Code has expired' : 'Code not found';
+      res.status(404).json({ success: false, error, reason: context.reason });
+      return;
+    }
+
+    const driveId = mediaDriveId();
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      res.status(400).json({ success: false, error: 'No files provided' });
+      return;
+    }
+
+    const folderPath = `${context.groupKey}/${context.date}`;
+    let uploaded = 0;
+
+    for (const file of files) {
+      if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+        console.warn(`[Upload] Rejected ${file.originalname}: unsupported type ${file.mimetype}`);
+        continue;
+      }
+      const takenAt = exifDate(file.buffer) ?? new Date();
+      const filename = uploadFilename(file.originalname, context.groupName, takenAt);
+      await sharePointClient.uploadFile(driveId, `${folderPath}/${filename}`, file.buffer, file.mimetype);
+      uploaded++;
+    }
+
+    if (uploaded > 0) sharePointClient.clearCache();
+
+    res.json({ success: true, data: { uploaded } });
+  } catch (error: any) {
+    console.error('Error uploading files:', error);
+    res.status(500).json({ success: false, error: 'Upload failed', message: error.message });
+  }
+});
+
+export = router;

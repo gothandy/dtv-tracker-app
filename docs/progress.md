@@ -1087,6 +1087,48 @@ This works across all events regardless of what question IDs Eventbrite assigns.
 
 ---
 
+## Session: 2026-02-23
+
+### Completed Tasks
+
+#### 1. Volunteer Photo Upload — Method 3 (Upload Code) ✓
+
+Admins can generate a short 4-letter code from the entry detail page and share it with a volunteer. The volunteer visits `tracker.dtv.org.uk/upload`, enters the code, and uploads photos without needing an account.
+
+**Flow:**
+1. Admin opens entry detail page → clicks cloud **link** button (top-right, admin-only)
+2. A 4-letter code (e.g. `MXKP`) and shareable URL appear on screen
+3. Admin shares via WhatsApp (`/upload/MXKP` pre-fills the code) or reads it aloud
+4. Volunteer visits the page, code is validated, volunteer name and session are confirmed
+5. Volunteer selects photos and uploads — files land in `{groupKey}/{date}/` in the SharePoint Media Library
+
+**Technical design:**
+- Codes are 4 random uppercase letters — 26⁴ = 456,976 combinations
+- Held in a module-level `Map<string, number>` (code → entryId) in `services/upload-tokens.ts`
+- Expiry computed at validation time: session date + 7 days (not stored)
+- Resending a code replaces the previous code for that entry
+- Known limitation: codes are lost on server restart — migrate to `UploadCode`/`UploadExpiry` columns on Entries list if this proves problematic
+- Express 5 note: optional route params (`/upload/:code?`) not supported — two explicit routes used instead
+
+**New files:**
+- `services/upload-tokens.ts` — `generateCode`, `storeCode`, `lookupCode`
+- `routes/upload.ts` — `POST /api/upload/validate`, `POST /api/upload/files` (both public, mounted before `requireAuth`)
+- `public/upload.html` — standalone public upload page (three-step: code entry → upload → done)
+
+**Modified files:**
+- `routes/entries.ts` — added `POST /api/entries/:id/upload-code` (admin only)
+- `types/api-responses.ts` — added `UploadCodeResponse`, `UploadContextResponse`
+- `app.js` — serves `/upload` and `/upload/:code`; mounts upload API routes before `requireAuth`
+- `public/entry-detail.html` — cloud "link" button top-right (admin-only), code panel with copy button
+- `docs/media-upload.md` — added Method 3 section
+- `CLAUDE.md`, `readme.md`, `docs/permissions.md`, `docs/test-script.md` — updated for this feature
+
+---
+
+*Last Updated: 2026-02-23*
+
+---
+
 ## Session: 2026-02-22
 
 ### Completed Tasks

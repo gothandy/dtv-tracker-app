@@ -159,6 +159,36 @@ Add a **Photos** section below the entries list:
 
 ---
 
+### Method 3: Volunteer Upload Link
+
+Allows a logged-in admin to generate a short code from the entry detail page and share it with a volunteer. The volunteer visits `tracker.dtv.org.uk/upload`, enters the code, and uploads photos without needing an account.
+
+**Flow:**
+1. Admin opens an entry detail page and clicks **Get Upload Link** (admin-only)
+2. A 4-letter code (e.g. `MXKP`) and a shareable link appear on screen
+3. Admin shares via WhatsApp (`/upload/MXKP` auto-fills the code) or reads it aloud
+4. Volunteer visits the page, code is validated, volunteer name and session are confirmed
+5. Volunteer selects photos and uploads — files land in the same `{groupKey}/{date}/` folder as other methods
+
+**Code design:**
+- 4 random uppercase letters — 26⁴ = 456,976 combinations; negligible guessing risk with ≤20 active codes
+- Held in a module-level in-memory `Map<string, number>` (code → entryId) in `services/upload-tokens.ts`
+- Expiry is computed at validation time: session date + 7 days (no separate expiry stored)
+- Resending generates a new code and removes the old one for that entry
+- Known limitation: codes are lost on server restart. If this becomes a problem, migrate to `UploadCode` / `UploadExpiry` columns on the Entries SharePoint list
+
+**New files:**
+- `services/upload-tokens.ts` — code generation, storage, and lookup
+- `routes/upload.ts` — `POST /api/upload/validate` and `POST /api/upload/files` (both public, mounted before `requireAuth`)
+- `public/upload.html` — standalone public upload page (no auth required)
+
+**Modified files:**
+- `routes/entries.ts` — `POST /api/entries/:id/upload-code` (admin only, generates and returns code + URL)
+- `public/entry-detail.html` — Get Upload Link button and code panel (admin-only)
+- `app.js` — serves `/upload/:code?` and mounts upload API routes before `requireAuth`
+
+---
+
 ## Out of Scope
 
 - Automatic photo tagging or facial recognition

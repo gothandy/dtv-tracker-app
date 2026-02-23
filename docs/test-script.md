@@ -191,6 +191,28 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `POST /api/cache/clear`
 - [ ] Forces fresh data on next request
 
+### H28. Generate volunteer upload code (admin)
+- [ ] Entry detail → cloud "link" button visible for Admin, hidden for Check In and Read Only
+- [ ] Click button → `POST /api/entries/:id/upload-code`
+- [ ] Code panel appears showing 4-letter code (large text) + full URL input + Copy button
+- [ ] "Copy link" copies URL to clipboard
+- [ ] Clicking button again generates a new code (replaces old one)
+- [ ] Check In user: button not visible; `POST /api/entries/:id/upload-code` returns 403
+
+### H29. Volunteer photo upload (public page)
+- [ ] Visit `/upload` in incognito (no session) — page loads without redirect to login
+- [ ] Enter invalid code → "Code not found. Please check and try again."
+- [ ] Enter expired code (session date > 7 days ago) → "This code has expired. Please ask for a new one."
+- [ ] Enter valid code → Step 2 shows volunteer name and session name
+- [ ] Visit `/upload/AGHR` → code auto-fills and auto-submits; jumps straight to Step 2
+- [ ] Select 2–3 photos → Upload button shows correct count
+- [ ] Upload → each file shows "✓ Uploaded" status
+- [ ] Files appear in SharePoint Media Library at `{groupKey}/{date}/`
+- [ ] Session `mediaCount` increments on next page load (cache cleared after upload)
+- [ ] Step 3 "X photos uploaded" confirmation shown after upload
+- [ ] Non-image file (e.g. PDF) → rejected server-side, shows "✗ Failed"
+- [ ] WhatsApp: paste `/upload/AGHR` URL → tap link on mobile → upload page opens with code pre-filled
+
 ---
 
 ## MEDIUM PRIORITY — Read Operations
@@ -334,3 +356,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### L17. User info
 - [ ] Header shows logged-in user name and Logout link
 - [ ] `/auth/me` returns user details (no session check)
+
+### L18. Upload link button (entry detail)
+- [ ] Button positioned top-right of entry header card alongside h1
+- [ ] Displays cloud SVG icon + "link" label
+- [ ] Hidden for Check In and Read Only users (admin-only CSS class)
