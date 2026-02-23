@@ -535,6 +535,39 @@ div.session-card { display: block; color: inherit; cursor: pointer; }
 .photo-strip .video-thumb { position: relative; }
 .photo-strip .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; text-shadow: 0 1px 4px rgba(0,0,0,0.7); pointer-events: none; }
 
+/* === Lightbox media viewer === */
+.lightbox {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.88);
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+}
+.lightbox-img-wrap {
+    max-width: 90vw; max-height: 80vh;
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+}
+.lightbox-img-wrap img { max-width: 90vw; max-height: 80vh; object-fit: contain; border-radius: 4px; display: block; }
+.lightbox-close {
+    position: absolute; top: 1rem; right: 1.25rem;
+    background: none; border: none; color: #fff;
+    font-size: 2rem; line-height: 1; cursor: pointer; padding: 0.25rem;
+}
+.lightbox-prev, .lightbox-next {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.4); border: none; color: #fff;
+    font-size: 1.75rem; padding: 0.5rem 0.85rem; cursor: pointer;
+    border-radius: 4px;
+}
+.lightbox-prev { left: 0.5rem; }
+.lightbox-next { right: 0.5rem; }
+.lightbox-caption {
+    margin-top: 0.75rem; color: rgba(255,255,255,0.7);
+    font-size: 0.8rem; display: flex; gap: 1rem;
+    max-width: 90vw; text-align: center; cursor: default;
+}
+
 /* === Description truncation === */
 .description-clamped {
     display: -webkit-box;

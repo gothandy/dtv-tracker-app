@@ -60,6 +60,7 @@
     </style>
     <script src="/js/common.js"></script>
     <script src="/js/session-cards.js"></script>
+    <script src="/js/lightbox.js"></script>
     <script src="/js/tag-icons.js"></script>
 </head>
 <body class="detail-page">
@@ -312,22 +313,30 @@
             }
         }
 
+        let photoData = [];
+
         async function loadPhotos() {
             const carousel = document.getElementById('photoCarousel');
             if (!carousel) return;
             try {
                 const res = await apiFetch(`/api/media?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(sessionDate)}`);
                 const data = await res.json();
-                if (!data.success || !data.data.length) { carousel.innerHTML = ''; return; }
+                if (!data.success || !data.data.length) { carousel.innerHTML = ''; photoData = []; return; }
+                photoData = data.data;
                 carousel.innerHTML = '<div class="photo-strip">' +
-                    data.data.map(p => {
+                    data.data.map((p, i) => {
                         const isVideo = p.mimeType && p.mimeType.startsWith('video/');
-                        return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener"${isVideo ? ' class="video-thumb"' : ''}>` +
+                        if (isVideo) {
+                            return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" class="video-thumb">` +
+                                `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
+                                `<span class="play-icon">&#9654;</span>` +
+                                `</a>`;
+                        }
+                        return `<a href="#" onclick="openLightbox(${i},photoData);return false;">` +
                             `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
-                            (isVideo ? '<span class="play-icon">&#9654;</span>' : '') +
                             `</a>`;
                     }).join('') + '</div>';
-            } catch { carousel.innerHTML = ''; }
+            } catch { carousel.innerHTML = ''; photoData = []; }
         }
 
         async function uploadPhotos(input) {

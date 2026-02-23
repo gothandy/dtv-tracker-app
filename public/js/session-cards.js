@@ -75,6 +75,8 @@ function renderSessionList(container, sessions, options = {}) {
         return;
     }
 
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const nextDate = findNextSessionDate(sessions);
     const lastDate = findLastSessionDate(sessions);
 
@@ -84,31 +86,30 @@ function renderSessionList(container, sessions, options = {}) {
     sessions.forEach((session, i) => {
         let isNext = false;
         let isLast = false;
-        if (nextDate && session.date) {
+        let isPast = false;
+        if (session.date) {
             const d = new Date(session.date);
             d.setHours(0, 0, 0, 0);
-            isNext = d.getTime() === nextDate.getTime();
-        }
-        if (lastDate && session.date) {
-            const d = new Date(session.date);
-            d.setHours(0, 0, 0, 0);
-            isLast = d.getTime() === lastDate.getTime();
+            if (nextDate) isNext = d.getTime() === nextDate.getTime();
+            if (lastDate) isLast = d.getTime() === lastDate.getTime();
+            isPast = d < now;
         }
         const countdown = isNext ? getCountdown(session.date) : null;
         const url = buildSessionDetailUrl(session);
 
         let card;
-        if (isLast) {
+        if (isPast) {
+            // Past sessions use <div> so photo thumbnail links (nested <a>) are valid HTML
             card = document.createElement('div');
-            card.className = 'session-card last-session';
+            card.className = 'session-card' + (isLast ? ' last-session' : '');
             card.dataset.sessionIdx = String(i);
             card.dataset.sessionPath = `${session.groupKey}/${(session.date || '').substring(0, 10)}`;
             card.addEventListener('click', () => { window.location.href = url; });
             card.innerHTML = `
-                <div class="last-session-label">Last session</div>
+                ${isLast ? '<div class="last-session-label">Last session</div>' : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
-                ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html">${escapeHtml(session.groupName)}</a></div>` : ''}
+                ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 <div class="photo-carousel-slot"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${session.registrations || session.hours || session.mediaCount ? `<div class="meta">
@@ -128,7 +129,7 @@ function renderSessionList(container, sessions, options = {}) {
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${session.registrations || session.hours || session.mediaCount ? `<div class="meta">
-                    ${session.registrations ? `<div class="meta-item"><strong>${new Date(session.date) >= new Date(new Date().toDateString()) ? 'Registrations' : 'Attendees'}:</strong> ${session.registrations}</div>` : ''}
+                    ${session.registrations ? `<div class="meta-item"><strong>Registrations:</strong> ${session.registrations}</div>` : ''}
                     ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
                     ${session.mediaCount ? `<div class="meta-item"><strong>Media:</strong> ${session.mediaCount}</div>` : ''}
                 </div>` : ''}
@@ -141,13 +142,15 @@ function renderSessionList(container, sessions, options = {}) {
     container.appendChild(list);
     clampDescriptions(list);
 
-    // Lazy-load photos for last-session cards
-    list.querySelectorAll('.session-card.last-session[data-session-idx]').forEach(card => {
+    // Lazy-load photos for all past session cards that have media
+    list.querySelectorAll('.session-card[data-session-idx]').forEach(card => {
         const idx = parseInt(card.dataset.sessionIdx, 10);
+        const session = sessions[idx];
+        if (!session || !session.mediaCount) return;
         const parts = (card.dataset.sessionPath || '').split('/');
         const gk = parts[0];
         const date = parts[1];
-        if (gk && date) loadCardPhotos(card, gk, date, sessions[idx]);
+        if (gk && date) loadCardPhotos(card, gk, date, session);
     });
 }
 
@@ -156,17 +159,21 @@ function renderSessionList(container, sessions, options = {}) {
  */
 function populatePhotoSlot(slot, photos) {
     slot.innerHTML = '<div class="photo-strip">' +
-        photos.map(p => {
+        photos.map((p, i) => {
             const isVideo = p.mimeType && p.mimeType.startsWith('video/');
-            return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"${isVideo ? ' class="video-thumb"' : ''}>` +
-                `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
-                (isVideo ? '<span class="play-icon">&#9654;</span>' : '') +
-                `</a>`;
+            if (isVideo) {
+                return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="video-thumb">` +
+                    `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
+                    `<span class="play-icon">&#9654;</span></a>`;
+            }
+            return `<a href="#" onclick="openLightbox(${i},this.closest('.photo-carousel-slot')._lbPhotos);event.stopPropagation();return false;">` +
+                `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy"></a>`;
         }).join('') + '</div>';
+    slot._lbPhotos = photos;
 }
 
 /**
- * Async photo loader for last-session cards. Caches results on session._photos.
+ * Async photo loader for past session cards. Caches results on session._photos.
  */
 async function loadCardPhotos(card, groupKey, date, session) {
     const slot = card.querySelector('.photo-carousel-slot');
