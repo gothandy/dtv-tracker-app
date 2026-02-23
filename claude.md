@@ -19,7 +19,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
 - Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
-- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 9 route modules
+- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 10 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
 - Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts))
@@ -230,6 +230,7 @@ dtv-tracker-app/
 │   ├── field-names.ts             # SharePoint field name constants
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   ├── upload-tokens.ts           # In-memory store for volunteer upload codes (code → entryId)
+│   ├── media-upload.ts            # Shared media helpers: EXIF date extraction, filename generation
 │   └── repositories/
 │       ├── groups-repository.ts
 │       ├── sessions-repository.ts
@@ -246,7 +247,8 @@ dtv-tracker-app/
 │   ├── regulars.ts                # Regulars management
 │   ├── stats.ts                   # Dashboard stats, cache, config
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
-│   ├── upload.ts                  # Public photo upload endpoints (validate code, upload files)
+│   ├── media.ts                   # Authenticated media endpoints (list, upload — session detail page)
+│   ├── upload.ts                  # Public volunteer upload endpoints (validate code, upload files — no auth)
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware

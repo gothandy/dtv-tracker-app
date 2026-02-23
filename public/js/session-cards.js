@@ -176,7 +176,7 @@ async function loadCardPhotos(card, groupKey, date, session) {
         return;
     }
     try {
-        const res = await fetch(`/api/photos?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(date)}`);
+        const res = await fetch(`/api/media?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(date)}`);
         const data = await res.json();
         const photos = data.success ? data.data : [];
         if (session) session._photos = photos;

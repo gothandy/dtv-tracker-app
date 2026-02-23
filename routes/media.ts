@@ -1,49 +1,15 @@
 import express, { Request, Response, Router } from 'express';
 import multer from 'multer';
-import path from 'path';
-import ExifReader from 'exifreader';
 import { sharePointClient } from '../services/sharepoint-client';
+import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
+import { groupsRepository } from '../services/repositories/groups-repository';
 
 const router: Router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 
-function mediaDriveId(): string {
-  const id = process.env.MEDIA_LIBRARY_DRIVE_ID;
-  if (!id) throw new Error('MEDIA_LIBRARY_DRIVE_ID is not configured');
-  return id;
-}
-
-// Extract DateTimeOriginal from EXIF. Returns null if not present or unreadable.
-// EXIF format: "2026:02:21 14:30:22"
-function exifDate(buffer: Buffer): Date | null {
-  try {
-    const tags = ExifReader.load(buffer, { expanded: false });
-    const raw = (tags['DateTimeOriginal'] as any)?.description as string | undefined;
-    if (!raw) return null;
-    const [datePart, timePart] = raw.split(' ');
-    const [y, mo, d] = datePart.split(':').map(Number);
-    const [h, mi, s] = timePart.split(':').map(Number);
-    const dt = new Date(y, mo - 1, d, h, mi, s);
-    return isNaN(dt.getTime()) ? null : dt;
-  } catch {
-    return null;
-  }
-}
-
-function uploadFilename(originalName: string, displayName: string, takenAt: Date): string {
-  const hh = String(takenAt.getHours()).padStart(2, '0');
-  const mm = String(takenAt.getMinutes()).padStart(2, '0');
-  const ss = String(takenAt.getSeconds()).padStart(2, '0');
-  const name = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const stem = path.basename(originalName, path.extname(originalName));
-  const suffix = stem.replace(/[^a-z0-9]/gi, '').slice(-4).toLowerCase() || 'img';
-  const ext = path.extname(originalName).toLowerCase() || '.jpg';
-  return `${hh}-${mm}-${ss}-${name}-${suffix}${ext}`;
-}
-
-// Batch photo count by session folder. Accepts comma-separated groupKey/date paths;
+// Batch media count by session folder. Accepts comma-separated groupKey/date paths;
 // returns non-zero counts keyed by path. Makes one Graph call per unique group key.
-router.get('/photos/counts', async (req: Request, res: Response) => {
+router.get('/media/counts', async (req: Request, res: Response) => {
   const pathsParam = (req.query.paths as string || '').trim();
   if (!pathsParam) { res.json({ success: true, data: {} }); return; }
 
@@ -77,8 +43,8 @@ router.get('/photos/counts', async (req: Request, res: Response) => {
   }
 });
 
-// List photos in a session folder. Returns names, webUrls, and thumbnail URLs.
-router.get('/photos', async (req: Request, res: Response) => {
+// List media in a session folder. Returns names, webUrls, and thumbnail URLs.
+router.get('/media', async (req: Request, res: Response) => {
   const groupKey = (req.query.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
   const date = (req.query.date as string || '').replace(/[^0-9-]/g, '');
   if (!groupKey || !date) {
@@ -95,9 +61,9 @@ router.get('/photos', async (req: Request, res: Response) => {
   }
 });
 
-// Upload a single photo to the Media library in SharePoint.
+// Upload a single file to the Media library in SharePoint.
 // Frontend calls this once per file so it can show per-file progress.
-router.post('/photos/upload', (req: Request, res: Response, next) => {
+router.post('/media/upload', (req: Request, res: Response, next) => {
   upload.single('photo')(req, res, (err) => {
     if (err) {
       res.status(400).json({ success: false, error: err.message });
@@ -126,12 +92,16 @@ router.post('/photos/upload', (req: Request, res: Response, next) => {
 
   try {
     const driveId = mediaDriveId();
+    // Resolve original SharePoint casing for the folder name; req.body.groupKey is lowercased
+    const groups = await groupsRepository.getAll();
+    const matchedGroup = groups.find(g => (g.Title || '').toLowerCase() === folderGroupKey.toLowerCase());
+    const folderKey = matchedGroup?.Title || folderGroupKey;
     const displayName = req.session.user?.displayName || 'unknown';
     // Prefer EXIF DateTimeOriginal, fall back to file.lastModified from browser, then server time
     const takenAt = exifDate(buffer)
       ?? (req.body.takenAt ? new Date(parseInt(req.body.takenAt)) : new Date());
-    const filename = uploadFilename(originalname, displayName, takenAt);
-    const filePath = `${folderGroupKey}/${folderDate}/${filename}`;
+    const filename = mediaFilename(originalname, displayName, takenAt);
+    const filePath = `${folderKey}/${folderDate}/${filename}`;
 
     const result = await sharePointClient.uploadFile(driveId, filePath, buffer, mimetype);
     sharePointClient.clearCache();

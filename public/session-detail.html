@@ -316,7 +316,7 @@
             const carousel = document.getElementById('photoCarousel');
             if (!carousel) return;
             try {
-                const res = await apiFetch(`/api/photos?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(sessionDate)}`);
+                const res = await apiFetch(`/api/media?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(sessionDate)}`);
                 const data = await res.json();
                 if (!data.success || !data.data.length) { carousel.innerHTML = ''; return; }
                 carousel.innerHTML = '<div class="photo-strip">' +
@@ -352,7 +352,7 @@
                 form.append('groupKey', groupKey);
                 form.append('date', sessionDate);
                 try {
-                    const res = await fetch('/api/photos/upload', { method: 'POST', body: form });
+                    const res = await fetch('/api/media/upload', { method: 'POST', body: form });
                     const data = await res.json();
                     if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
                     succeeded.push(file.name);
