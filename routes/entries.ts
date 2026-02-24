@@ -19,6 +19,7 @@ import {
   parseHours,
   nameToSlug
 } from '../services/data-layer';
+import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
@@ -30,14 +31,6 @@ import type { EntryDetailResponse, UploadCodeResponse } from '../types/api-respo
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
-
-function isNewVolunteer(allEntries: any[], profileId: number, currentSessionId: number): boolean {
-  return !allEntries.some(e => {
-    const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
-    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-    return vid === profileId && sid !== currentSessionId;
-  });
-}
 
 function appendNewTag(notes: string | undefined): string {
   const base = notes || '';
@@ -333,66 +326,28 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         const attendeeEmail = attendee.profile?.email;
         if (!attendeeName) continue;
 
-        // Match to existing profile: MatchName first, then Title
-        const nameLower = attendeeName.toLowerCase();
-        let profile = profiles.find(p =>
-          p.MatchName && p.MatchName.toLowerCase() === nameLower
-        ) || profiles.find(p =>
-          p.Title && p.Title.toLowerCase() === nameLower
-        );
-
-        if (!profile) {
-          const newId = await profilesRepository.create({
-            Title: attendeeName,
-            Email: attendeeEmail || undefined
-          });
-          console.log(`[Refresh] Created profile: ${attendeeName} (ID: ${newId})`);
-          profile = { ID: newId, Title: attendeeName, Email: attendeeEmail, MatchName: undefined, IsGroup: false } as any;
-          profiles.push(profile!);
-          newProfiles++;
-        }
+        const { profile, isNew } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Refresh');
+        if (isNew) newProfiles++;
 
         // Create entry if not already registered
-        const profileId = profile!.ID;
+        const profileId = profile.ID;
         if (!existingVolunteerIds.has(profileId)) {
-          const entryFields: Record<string, any> = {
-            [SESSION_LOOKUP]: String(spSession.ID),
-            [PROFILE_LOOKUP]: String(profileId)
-          };
           const noteTags: string[] = [];
           if (isNewVolunteer(entries, profileId, spSession.ID)) noteTags.push('#New');
           if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
           noteTags.push('#Eventbrite');
-          entryFields.Notes = noteTags.join(' ');
-          await entriesRepository.create(entryFields);
+          await entriesRepository.create({
+            [SESSION_LOOKUP]: String(spSession.ID),
+            [PROFILE_LOOKUP]: String(profileId),
+            Notes: noteTags.join(' ')
+          });
           existingVolunteerIds.add(profileId);
           addedFromEventbrite++;
         }
 
         // Upsert consent records from Eventbrite answers
-        if (recordsRepository.available && attendee.answers) {
-          const consentMap: Record<string, string> = {
-            'Personal Data Consent': 'Privacy Consent',
-            'Photo and Video Consent': 'Photo Consent'
-          };
-          for (const ans of attendee.answers) {
-            if (!ans.answer) continue; // skip attendees who registered before the form was added
-            const type = consentMap[ans.question] ?? null;
-            if (!type) continue;
-            const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
-            const date = attendee.created || new Date().toISOString();
-            const existing = rawRecords.find(r =>
-              safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type
-            );
-            if (existing) {
-              await recordsRepository.update(existing.ID, { Status: status, Date: date });
-            } else {
-              const newId = await recordsRepository.create({ ProfileLookupId: profileId, Type: type, Status: status, Date: date });
-              rawRecords.push({ ID: newId, ProfileLookupId: profileId, Type: type, Status: status, Date: date } as any);
-            }
-            updatedRecords++;
-          }
-        }
+        const { created, updated } = await upsertConsentRecords(profileId, attendee, rawRecords);
+        updatedRecords += created + updated;
       }
     }
 

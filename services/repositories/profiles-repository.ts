@@ -33,7 +33,7 @@ class ProfilesRepository {
     return data as SharePointProfile[];
   }
 
-  async create(fields: { Title: string; Email?: string }): Promise<number> {
+  async create(fields: { Title: string; Email?: string; MatchName?: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.clearCache();
     return id;

@@ -410,6 +410,20 @@ export function nameToSlug(name: string | undefined): string {
 }
 
 /**
+ * Normalises a name for Eventbrite matching: lowercase and replace any
+ * non-letter/non-digit character (hyphens, apostrophes, etc.) with a space,
+ * then collapse runs of whitespace. Used both when storing MatchName and when
+ * comparing against Eventbrite attendee names.
+ */
+export function toMatchName(name: string | undefined): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
  * Safely converts a lookup ID to a number
  * Returns undefined if the ID is invalid
  */

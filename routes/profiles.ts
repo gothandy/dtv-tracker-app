@@ -18,7 +18,8 @@ import {
   buildBadgeLookups,
   safeParseLookupId,
   parseHours,
-  nameToSlug
+  nameToSlug,
+  toMatchName
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP,
@@ -435,7 +436,10 @@ router.post('/profiles', async (req: Request, res: Response) => {
       return;
     }
 
-    const fields: { Title: string; Email?: string } = { Title: name.trim() };
+    const fields: { Title: string; Email?: string; MatchName?: string } = {
+      Title: name.trim(),
+      MatchName: toMatchName(name.trim())
+    };
     if (typeof email === 'string' && email.trim()) {
       fields.Email = email.trim();
     }
@@ -623,7 +627,11 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
     const { name, email, matchName, user, isGroup } = req.body;
 
     const fields: Record<string, any> = {};
-    if (typeof name === 'string' && name.trim()) fields.Title = name.trim();
+    if (typeof name === 'string' && name.trim()) {
+      fields.Title = name.trim();
+      // Auto-derive MatchName from new name unless caller supplied one explicitly
+      if (typeof matchName !== 'string') fields.MatchName = toMatchName(name.trim());
+    }
     if (typeof email === 'string') fields.Email = email.trim();
     if (typeof matchName === 'string') fields.MatchName = matchName;
     if (typeof user === 'string') fields.User = user.trim();
