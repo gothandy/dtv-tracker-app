@@ -68,7 +68,7 @@ function buildSessionDetailUrl(session) {
  * Render a list of session cards into a container element.
  */
 function renderSessionList(container, sessions, options = {}) {
-    const { showGroup = true } = options;
+    const { showGroup = true, allSessions } = options;
 
     if (sessions.length === 0) {
         container.innerHTML = '<p class="no-sessions">No sessions</p>';
@@ -77,8 +77,11 @@ function renderSessionList(container, sessions, options = {}) {
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    const nextDate = findNextSessionDate(sessions);
-    const lastDate = findLastSessionDate(sessions);
+    // Use the full session list for next/last determination if provided,
+    // so selected-day cards are labelled correctly relative to all sessions.
+    const context = allSessions || sessions;
+    const nextDate = findNextSessionDate(context);
+    const lastDate = findLastSessionDate(context);
 
     const list = document.createElement('div');
     list.className = 'sessions-list';
