@@ -577,6 +577,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           date,
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: group?.Name || group?.Title,
+          sessionName: session?.Name || undefined,
           count: e.Count || 1,
           hours: parseHours(e.Hours),
           checkedIn: e.Checked || false,

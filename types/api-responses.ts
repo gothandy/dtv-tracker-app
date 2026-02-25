@@ -56,6 +56,7 @@ export interface ProfileEntryResponse {
   date: string;
   groupKey?: string;
   groupName?: string;
+  sessionName?: string;
   count: number;
   hours: number;
   checkedIn: boolean;

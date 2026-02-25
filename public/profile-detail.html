@@ -30,7 +30,8 @@
         .regular-checkbox:disabled { opacity: 0.5; }
 
         .entry-info { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; flex-wrap: wrap; }
-        .entry-group { font-size: 1.05rem; color: var(--dark); white-space: nowrap; }
+        .entry-session-name { font-size: 1.05rem; color: var(--dark); font-weight: 600; flex-basis: 100%; }
+        .entry-group { font-size: 0.85rem; color: var(--text-light); white-space: nowrap; }
         .entry-date { font-size: 0.95rem; color: var(--green); font-weight: 600; white-space: nowrap; }
         .entry-tags { display: flex; gap: 0.3rem; align-items: center; }
         .entry-row { display: flex; align-items: center; gap: 0.75rem; }
@@ -540,6 +541,7 @@
                     <div class="entry-row">
                         <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${detailUrl}">
                             <div class="entry-info">
+                                ${entry.sessionName ? `<span class="entry-session-name">${escapeHtml(entry.sessionName)}</span>` : ''}
                                 ${entry.groupName ? `<span class="entry-group">${escapeHtml(entry.groupName)}</span>` : ''}
                                 <span class="entry-date">${formatDate(entry.date)}</span>
                                 ${icons ? `<span class="entry-tags">${icons}</span>` : ''}
