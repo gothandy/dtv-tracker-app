@@ -39,6 +39,7 @@
             box-shadow: var(--shadow); margin-bottom: 1.5rem;
         }
         .fy-chart .cal-toolbar { margin-bottom: 0.75rem; }
+        .fy-chart.history-collapsed .fy-bar-row:not(.selected) { display: none; }
 .fy-bar-row {
             display: flex; align-items: center; gap: 0.75rem;
             padding: 0.35rem 0.5rem; border-radius: var(--radius);
@@ -84,7 +85,7 @@
     <div class="container">
      
 
-        <div class="fy-chart">
+        <div class="fy-chart history-collapsed">
             <div class="cal-toolbar">
                 <button class="cal-tb-btn" id="btnShowHistory" onclick="toggleHistory()">Show History</button>
                 <div style="display:flex; gap:0.5rem;">
@@ -96,8 +97,7 @@
                     </a>
                 </div>
             </div>
-            <div id="fyHistoryRows" style="display:none;"></div>
-            <div id="fyCurrentRow"></div>
+            <div id="fyAllRows"></div>
         </div>
 
         <div class="nav-grid">
@@ -157,15 +157,13 @@
         let currentSelectedKey = null;
 
         function renderChart() {
-            const histContainer = document.getElementById('fyHistoryRows');
-            const currContainer = document.getElementById('fyCurrentRow');
-            if (!historyData.length) { histContainer.innerHTML = ''; currContainer.innerHTML = ''; return; }
+            const container = document.getElementById('fyAllRows');
+            if (!historyData.length) { container.innerHTML = ''; return; }
 
             // Scale to max hours using predicted total (or actual for past years)
             const maxHours = Math.max(...historyData.map(d => d.predictedHours ?? d.hours), 1);
 
-            histContainer.innerHTML = '';
-            currContainer.innerHTML = '';
+            container.innerHTML = '';
 
             for (const d of historyData) {
                 const isSelected = d.financialYear === selectedFY;
@@ -193,27 +191,25 @@
                     </div>
                     <span class="fy-bar-hours">${hoursText}</span>`;
                 btn.addEventListener('click', () => selectFY(d.financialYear));
-
-                // Current FY (has predictedHours) always visible; past years in collapsible history
-                if (d.predictedHours !== undefined) {
-                    currContainer.appendChild(btn);
-                } else {
-                    histContainer.appendChild(btn);
-                }
+                container.appendChild(btn);
             }
         }
 
         function toggleHistory() {
-            const rows = document.getElementById('fyHistoryRows');
+            const chart = document.querySelector('.fy-chart');
             const btn = document.getElementById('btnShowHistory');
-            const isVisible = rows.style.display !== 'none';
-            rows.style.display = isVisible ? 'none' : 'block';
-            btn.textContent = isVisible ? 'Show History' : 'Hide History';
-            btn.classList.toggle('active', !isVisible);
+            const isCollapsed = chart.classList.toggle('history-collapsed');
+            btn.textContent = isCollapsed ? 'Show History' : 'Hide History';
+            btn.classList.toggle('active', !isCollapsed);
         }
+
+        // Convert between homepage format ('2025-2026') and cookie format ('FY2025')
+        function fyToCookieKey(fy) { return 'FY' + fy.split('-')[0]; }
+        function cookieKeyToFY(key) { const y = parseInt(key.replace('FY', '')); return `${y}-${y + 1}`; }
 
         function selectFY(fy) {
             selectedFY = fy;
+            persistFY(fyToCookieKey(fy));
             renderChart();
             const stats = historyData.find(d => d.financialYear === fy);
             if (stats) displayStats(stats);
@@ -246,11 +242,14 @@
 
                 historyData = result.data;
 
-                // Auto-select "This FY"
+                // Restore stored FY, falling back to This FY
+                const storedKey = getStoredFY(); // e.g. 'FY2025'
                 const thisFY = historyData.find(d => d.label === 'This FY') ?? historyData[historyData.length - 1];
-                if (thisFY) {
-                    selectedFY = thisFY.financialYear;
-                    displayStats(thisFY);
+                const storedFY = storedKey !== 'all' ? historyData.find(d => d.financialYear === cookieKeyToFY(storedKey)) : null;
+                const initial = storedFY ?? thisFY;
+                if (initial) {
+                    selectedFY = initial.financialYear;
+                    displayStats(initial);
                 }
                 renderChart();
             } catch (error) {

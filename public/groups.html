@@ -116,7 +116,7 @@
         function buildDropdown() {
             const fyKeys = [...new Set(allSessions.map(s => s.financialYear))]
                 .filter(k => k && k.startsWith('FY'))
-                .sort((a, b) => b.localeCompare(a)); // newest first
+                .sort((a, b) => a.localeCompare(b)); // oldest first
 
             const menu = document.getElementById('filterMenu');
             menu.innerHTML = '';

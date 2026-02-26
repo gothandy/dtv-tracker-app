@@ -21,6 +21,21 @@
         .modal-btn-delete { background: var(--error); color: white; }
         .modal-btn-delete:hover { opacity: 0.85; }
 
+        .fy-bar-row {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.35rem 0.5rem; border-radius: var(--radius);
+            cursor: pointer; border: none; background: none; width: 100%;
+            text-align: left; min-height: 44px;
+        }
+        .fy-bar-row.selected { background: var(--green-tint); }
+        .fy-bar-row:hover:not(.selected) { background: var(--bg); }
+        .fy-bar-label { font-size: 0.8rem; color: var(--text-light); width: 60px; flex-shrink: 0; }
+        .fy-bar-track { flex: 1; height: 12px; background: var(--bg); overflow: hidden; }
+        .fy-bar-actual { height: 100%; background: var(--green); }
+        .fy-bar-hours { font-size: 0.8rem; color: var(--text-light); width: 50px; text-align: right; flex-shrink: 0; }
+        .fy-bar-row.selected .fy-bar-label,
+        .fy-bar-row.selected .fy-bar-hours { color: var(--dark); font-weight: 600; }
+
         @media (max-width: 600px) {
             .group-detail { padding: 1.25rem; }
             .group-title-row { flex-wrap: wrap; }
@@ -102,81 +117,58 @@
 
         let currentGroup = null;
         let allSessions = [];
-        let currentFilter = 'thisFy';
-
-        function filterByFY(filter) {
-            currentFilter = filter;
-            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY', future: 'Future' };
-            document.getElementById('filterLabel').textContent = labels[filter];
-            ['btnAll', 'btnLastFY', 'btnThisFY', 'btnFuture'].forEach(id => {
-                document.getElementById(id).classList.remove('active');
-            });
-            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY', future: 'btnFuture' };
-            document.getElementById(btnMap[filter]).classList.add('active');
-            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
-            displayStats();
-            displaySessions();
-        }
+        let currentFilter = 'all';
 
         function getFilteredSessions() {
-            const thisFYKey = getFYKey(0);
-            const lastFYKey = getFYKey(-1);
-            const nextDate = findNextSessionDate(allSessions);
-
-            if (currentFilter === 'thisFy') {
-                return allSessions.filter(s => {
-                    if (s.financialYear !== thisFYKey) return false;
-                    if (!nextDate || !s.date) return true;
-                    const d = new Date(s.date);
-                    d.setHours(0, 0, 0, 0);
-                    return d <= nextDate;
-                });
-            } else if (currentFilter === 'lastFy') {
-                return allSessions.filter(s => s.financialYear === lastFYKey);
-            } else if (currentFilter === 'future') {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return allSessions.filter(s => {
-                    if (!s.date) return false;
-                    const d = new Date(s.date);
-                    d.setHours(0, 0, 0, 0);
-                    return d >= today;
-                });
-            }
-            return allSessions;
+            if (currentFilter === 'all') return allSessions;
+            return allSessions.filter(s => s.financialYear === currentFilter);
         }
 
-        function displayStats() {
-            const statsContainer = document.getElementById('statsContainer');
-            if (!statsContainer || !currentGroup) return;
+        function buildChart() {
+            const container = document.getElementById('fyChart');
+            if (!container) return;
 
-            const filtered = getFilteredSessions();
-            const sessions = filtered.length;
-            const hours = Math.round(filtered.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10;
-            const registrations = filtered.reduce((sum, s) => sum + (s.registrations || 0), 0);
+            // Group hours by FY key
+            const fyMap = {};
+            allSessions.forEach(s => {
+                if (!s.financialYear) return;
+                fyMap[s.financialYear] = (fyMap[s.financialYear] || 0) + (s.hours || 0);
+            });
 
-            statsContainer.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">${sessions}</div>
-                        <div class="stat-label">Sessions</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${hours}</div>
-                        <div class="stat-label">Hours</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${registrations}</div>
-                        <div class="stat-label">Entries</div>
-                    </div>
-                </div>
-            `;
+            const fyKeys = Object.keys(fyMap).filter(k => k.startsWith('FY')).sort();
+            const maxHours = Math.max(...Object.values(fyMap), 1);
+
+            container.innerHTML = '';
+            fyKeys.forEach(fyKey => {
+                const hours = Math.round(fyMap[fyKey] * 10) / 10;
+                const pct = Math.round((hours / maxHours) * 100);
+                const startYear = parseInt(fyKey.replace('FY', ''));
+                const barLabel = `${String(startYear).slice(2)}/${String(startYear + 1).slice(2)}`;
+
+                const btn = document.createElement('button');
+                btn.className = 'fy-bar-row' + (fyKey === currentFilter ? ' selected' : '');
+                btn.innerHTML = `
+                    <span class="fy-bar-label">${barLabel}</span>
+                    <div class="fy-bar-track"><div class="fy-bar-actual" style="width:${pct}%"></div></div>
+                    <span class="fy-bar-hours">${hours}h</span>`;
+                btn.addEventListener('click', () => selectFY(fyKey));
+                container.appendChild(btn);
+            });
+        }
+
+        function selectFY(fyKey) {
+            currentFilter = fyKey;
+            persistFY(fyKey);
+            buildChart();
+            displaySessions();
         }
 
         function displaySessions() {
             const container = document.getElementById('sessionsContainer');
+            const countEl = document.getElementById('sessionCount');
             if (!container) return;
             const filtered = getFilteredSessions();
+            if (countEl) countEl.textContent = filtered.length;
             renderSessionList(container, filtered, { showGroup: false });
         }
 
@@ -357,24 +349,12 @@
                         <div class="group-title-row">
                             <h2>${escapeHtml(group.displayName)}</h2>
                             <div style="display:flex; gap:0.5rem;">
-                                <div class="dropdown">
-                                    <button class="dropdown-btn" onclick="toggleDropdown('filterMenu')">
-                                        <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
-                                        <span id="filterLabel">This FY</span>
-                                    </button>
-                                    <div class="dropdown-menu" id="filterMenu">
-                                        <button id="btnAll" onclick="filterByFY('all')">All</button>
-                                        <button id="btnLastFY" onclick="filterByFY('lastFy')">Last FY</button>
-                                        <button id="btnThisFY" class="active" onclick="filterByFY('thisFy')">This FY</button>
-                                        <button id="btnFuture" onclick="filterByFY('future')">Future</button>
-                                    </div>
-                                </div>
                                 ${eventbriteBtn}
                                 ${editBtn}
                             </div>
                         </div>
                         ${group.description ? `<div class="description" style="margin-bottom:1.25rem;">${escapeHtml(group.description)}</div>` : ''}
-                        <div id="statsContainer"></div>
+                        <div id="fyChart"></div>
                     </div>
 
                     ${regularsSection}
@@ -383,6 +363,7 @@
                         <div class="title-row">
                             <div class="title-left">
                                 <h2>Sessions</h2>
+                                <div class="count" id="sessionCount">-</div>
                             </div>
                             <button class="btn-action admin-only" onclick="openNewSessionModal()">
                                 <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
@@ -394,7 +375,8 @@
 
                 clampDescriptions(contentDiv);
                 initEventbriteButtons(contentDiv);
-                displayStats();
+                currentFilter = getStoredFY();
+                buildChart();
                 displaySessions();
 
             } catch (error) {

@@ -229,8 +229,7 @@
                 btnAll.onclick = () => setFilter('all');
                 menu.appendChild(btnAll);
 
-                // history is oldest→newest; reverse for newest-first dropdown
-                [...result.data].reverse().forEach(d => {
+                result.data.forEach(d => {
                     const fyKey = `FY${d.financialYear.split('-')[0]}`;
                     const btn = document.createElement('button');
                     btn.id = `fyBtn_${fyKey}`;

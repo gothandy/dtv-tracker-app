@@ -172,9 +172,10 @@ function getFYKey(offset = 0) {
 /**
  * Cookie helpers for persisting filter state across pages
  */
-function setCookie(name, value, days = 365) {
-    const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/`;
+function setCookie(name, value, days = 0) {
+    let cookie = `${name}=${encodeURIComponent(value)};path=/`;
+    if (days > 0) cookie += `;expires=${new Date(Date.now() + days * 864e5).toUTCString()}`;
+    document.cookie = cookie;
 }
 function getCookie(name) {
     const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
