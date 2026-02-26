@@ -248,13 +248,13 @@
         function getHours(v) {
             if (currentFilter === 'thisFy') return v.hoursThisFY;
             if (currentFilter === 'lastFy') return v.hoursLastFY;
-            return v.hoursThisFY + v.hoursLastFY;
+            return v.hoursAll;
         }
 
         function getSessions(v) {
             if (currentFilter === 'thisFy') return v.sessionsThisFY;
             if (currentFilter === 'lastFy') return v.sessionsLastFY;
-            return v.sessionsThisFY + v.sessionsLastFY;
+            return v.sessionsAll;
         }
 
         function displayVolunteers() {
@@ -433,6 +433,7 @@
             if (currentTypeFilter === 'groups') return [];
             if (currentFilter === 'thisFy') filtered = filtered.filter(v => v.hoursThisFY > 0);
             else if (currentFilter === 'lastFy') filtered = filtered.filter(v => v.hoursLastFY > 0);
+            else if (currentFilter === 'all') filtered = filtered.filter(v => v.hoursAll > 0);
             const searchTerm = document.getElementById('searchBox').value;
             if (searchTerm && searchTerm.length >= 3) {
                 const term = searchTerm.toLowerCase();

@@ -64,7 +64,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
     const lastFYStart = fy.startYear - 1;
 
     // Calculate hours and session counts per profile from entries
-    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number> }>();
+    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; hoursAll: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number>; sessionsAll: Set<number> }>();
     entries.forEach(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       if (volunteerId === undefined) return;
@@ -77,9 +77,11 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const sessionFY = calculateFinancialYear(new Date(session.Date));
 
       if (!profileStats.has(volunteerId)) {
-        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set() });
+        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, hoursAll: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set(), sessionsAll: new Set() });
       }
       const ps = profileStats.get(volunteerId)!;
+      ps.hoursAll += hours;
+      ps.sessionsAll.add(sessionId);
       if (sessionFY === fy.startYear) {
         ps.hoursThisFY += hours;
         ps.sessionsThisFY.add(sessionId);
@@ -113,8 +115,10 @@ router.get('/profiles', async (req: Request, res: Response) => {
         cardStatus: cardStatusMap.get(spProfile.ID),
         hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
         hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
+        hoursAll: ps ? Math.round(ps.hoursAll * 10) / 10 : 0,
         sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
         sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
+        sessionsAll: ps ? ps.sessionsAll.size : 0,
         records: profileRecordsMap.get(spProfile.ID) || []
       };
     });
@@ -169,7 +173,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     const lastFYStart = fy.startYear - 1;
 
     // Calculate hours and session counts per profile
-    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number> }>();
+    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; hoursAll: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number>; sessionsAll: Set<number> }>();
     entries.forEach(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       if (volunteerId === undefined) return;
@@ -181,9 +185,11 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       const hours = parseHours(e.Hours);
       const sessionFY = calculateFinancialYear(new Date(session.Date));
       if (!profileStats.has(volunteerId)) {
-        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set() });
+        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, hoursAll: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set(), sessionsAll: new Set() });
       }
       const ps = profileStats.get(volunteerId)!;
+      ps.hoursAll += hours;
+      ps.sessionsAll.add(sessionId);
       if (sessionFY === fy.startYear) { ps.hoursThisFY += hours; ps.sessionsThisFY.add(sessionId); }
       else if (sessionFY === lastFYStart) { ps.hoursLastFY += hours; ps.sessionsLastFY.add(sessionId); }
     });
@@ -207,8 +213,10 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
         isGroup: profile.isGroup,
         hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
         hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
+        hoursAll: ps ? Math.round(ps.hoursAll * 10) / 10 : 0,
         sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
         sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
+        sessionsAll: ps ? ps.sessionsAll.size : 0,
         records: profileRecordsMap.get(spProfile.ID) || []
       };
     });
@@ -226,7 +234,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     // Hours filter uses FY-appropriate hours
     const getHours = (p: typeof profileList[0]) => {
       if (fyParam === 'lastFy') return p.hoursLastFY;
-      if (fyParam === 'all') return p.hoursThisFY + p.hoursLastFY;
+      if (fyParam === 'all') return p.hoursAll;
       return p.hoursThisFY;
     };
     if (hoursFilter === '0') profileList = profileList.filter(p => getHours(p) === 0);
@@ -260,7 +268,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     // Sessions/Hours based on FY
     const getSessions = (p: typeof profileList[0]) => {
       if (fyParam === 'lastFy') return p.sessionsLastFY;
-      if (fyParam === 'all') return p.sessionsThisFY + p.sessionsLastFY;
+      if (fyParam === 'all') return p.sessionsAll;
       return p.sessionsThisFY;
     };
 
@@ -501,7 +509,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     const lastFYStart = fy.startYear - 1;
     let calculatedThisFY = 0;
     let calculatedLastFY = 0;
-    const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number }>();
+    let calculatedAll = 0;
+    const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number; hoursAll: number }>();
 
     profileEntries.forEach(e => {
       const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
@@ -511,6 +520,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       const hours = parseHours(e.Hours);
       const sessionFY = calculateFinancialYear(new Date(session.Date));
 
+      calculatedAll += hours;
       if (sessionFY === fy.startYear) {
         calculatedThisFY += hours;
       } else if (sessionFY === lastFYStart) {
@@ -518,17 +528,19 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       }
 
       const groupId = safeParseLookupId(session[GROUP_LOOKUP]);
-      if (groupId !== undefined && (sessionFY === fy.startYear || sessionFY === lastFYStart)) {
+      if (groupId !== undefined) {
         const existing = groupHoursMap.get(groupId);
         if (existing) {
+          existing.hoursAll += hours;
           if (sessionFY === fy.startYear) existing.hoursThisFY += hours;
-          else existing.hoursLastFY += hours;
+          else if (sessionFY === lastFYStart) existing.hoursLastFY += hours;
         } else {
           const group = groupMap.get(groupId);
           groupHoursMap.set(groupId, {
             groupName: group?.Name || group?.Title || 'Unknown',
             hoursThisFY: sessionFY === fy.startYear ? hours : 0,
-            hoursLastFY: sessionFY === lastFYStart ? hours : 0
+            hoursLastFY: sessionFY === lastFYStart ? hours : 0,
+            hoursAll: hours
           });
         }
       }
@@ -542,14 +554,15 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           groupHoursMap.set(crewId, {
             groupName: group.Name || group.Title || 'Unknown',
             hoursThisFY: 0,
-            hoursLastFY: 0
+            hoursLastFY: 0,
+            hoursAll: 0
           });
         }
       }
     });
 
     const groupHours: ProfileGroupHours[] = [...groupHoursMap.entries()]
-      .map(([groupId, { groupName, hoursThisFY, hoursLastFY }]) => {
+      .map(([groupId, { groupName, hoursThisFY, hoursLastFY, hoursAll }]) => {
         const regularId = regularsByCrewId.get(groupId);
         return {
           groupId,
@@ -557,11 +570,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           groupName,
           hoursThisFY: Math.round(hoursThisFY * 10) / 10,
           hoursLastFY: Math.round(hoursLastFY * 10) / 10,
+          hoursAll: Math.round(hoursAll * 10) / 10,
           isRegular: regularId !== undefined,
           regularId
         };
       })
-      .sort((a, b) => (b.hoursThisFY + b.hoursLastFY) - (a.hoursThisFY + a.hoursLastFY));
+      .sort((a, b) => b.hoursAll - a.hoursAll);
 
     // Build entry responses sorted by date desc
     const entryResponses: ProfileEntryResponse[] = profileEntries
@@ -606,6 +620,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       isGroup: profile.isGroup,
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
+      hoursAll: Math.round(calculatedAll * 10) / 10,
       groupHours,
       entries: entryResponses,
       records: records.length > 0 ? records : undefined

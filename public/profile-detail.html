@@ -448,7 +448,7 @@
             if (!el || !currentProfile) return;
             const thisFYKey = getFYKey(0);
             const lastFYKey = getFYKey(-1);
-            let hours = currentProfile.hoursThisFY + currentProfile.hoursLastFY;
+            let hours = currentProfile.hoursAll;
             if (currentFilter === 'thisFy') hours = currentProfile.hoursThisFY;
             else if (currentFilter === 'lastFy') hours = currentProfile.hoursLastFY;
             el.innerHTML = `<div class="stats-grid">
@@ -477,7 +477,7 @@
                 return;
             }
             container.innerHTML = visible.map(gh => {
-                let hours = gh.hoursThisFY + gh.hoursLastFY;
+                let hours = gh.hoursAll;
                 if (currentFilter === 'thisFy') hours = gh.hoursThisFY;
                 else if (currentFilter === 'lastFy') hours = gh.hoursLastFY;
                 hours = Math.round(hours * 10) / 10;

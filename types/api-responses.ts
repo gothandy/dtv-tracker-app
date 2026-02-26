@@ -46,8 +46,10 @@ export interface ProfileResponse {
   cardStatus?: string;
   hoursLastFY: number;
   hoursThisFY: number;
+  hoursAll: number;
   sessionsLastFY: number;
   sessionsThisFY: number;
+  sessionsAll: number;
   records?: Array<{ type: string; status: string }>;
 }
 
@@ -70,6 +72,7 @@ export interface ProfileGroupHours {
   groupName: string;
   hoursThisFY: number;
   hoursLastFY: number;
+  hoursAll: number;
   isRegular: boolean;
   regularId?: number;
 }
@@ -91,6 +94,7 @@ export interface ProfileDetailResponse {
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
+  hoursAll: number;
   groupHours: ProfileGroupHours[];
   entries: ProfileEntryResponse[];
   records?: ConsentRecordResponse[];
