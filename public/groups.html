@@ -62,12 +62,9 @@
                     <div class="dropdown">
                         <button class="dropdown-btn" id="filterMenuBtn" onclick="toggleDropdown('filterMenu')">
                             <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
-                            <span id="filterLabel">This FY</span>
+                            <span id="filterLabel">Loading…</span>
                         </button>
                         <div class="dropdown-menu" id="filterMenu">
-                            <button id="btnAll" onclick="filterGroups('all')">All</button>
-                            <button id="btnLastFY" onclick="filterGroups('lastFy')">Last FY</button>
-                            <button id="btnThisFY" class="active" onclick="filterGroups('thisFy')">This FY</button>
                         </div>
                     </div>
                     <button class="btn-action" onclick="openNewGroupModal()">
@@ -107,7 +104,37 @@
     <script>
         let allGroups = [];
         let allSessions = [];
-        let currentFilter = 'thisFy';
+        let currentFilter = 'all';
+
+        function fyKeyToLabel(fyKey) {
+            const startYear = parseInt(fyKey.replace('FY', ''));
+            const endYear = startYear + 1;
+            return `FY ${String(startYear).slice(2)}/${String(endYear).slice(2)}`;
+        }
+
+
+        function buildDropdown() {
+            const fyKeys = [...new Set(allSessions.map(s => s.financialYear))]
+                .filter(k => k && k.startsWith('FY'))
+                .sort((a, b) => b.localeCompare(a)); // newest first
+
+            const menu = document.getElementById('filterMenu');
+            menu.innerHTML = '';
+
+            const btnAll = document.createElement('button');
+            btnAll.id = 'fyBtn_all';
+            btnAll.textContent = 'All';
+            btnAll.onclick = () => filterGroups('all');
+            menu.appendChild(btnAll);
+
+            fyKeys.forEach(fyKey => {
+                const btn = document.createElement('button');
+                btn.id = `fyBtn_${fyKey}`;
+                btn.textContent = fyKeyToLabel(fyKey);
+                btn.onclick = () => filterGroups(fyKey);
+                menu.appendChild(btn);
+            });
+        }
 
         function getActiveGroupIds(fyKey) {
             const activeGroupIds = new Set();
@@ -134,13 +161,12 @@
 
         function filterGroups(filter) {
             currentFilter = filter;
-            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY' };
-            document.getElementById('filterLabel').textContent = labels[filter];
-            ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => {
-                document.getElementById(id).classList.remove('active');
-            });
-            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
-            document.getElementById(btnMap[filter]).classList.add('active');
+            persistFY(filter);
+            const label = filter === 'all' ? 'All' : fyKeyToLabel(filter);
+            document.getElementById('filterLabel').textContent = label;
+            document.querySelectorAll('#filterMenu button').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`fyBtn_${filter}`);
+            if (activeBtn) activeBtn.classList.add('active');
             document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             displayGroups();
         }
@@ -151,8 +177,8 @@
 
             let filteredGroups = allGroups;
             let fyKey = null;
-            if (currentFilter === 'thisFy' || currentFilter === 'lastFy') {
-                fyKey = getFYKey(currentFilter === 'lastFy' ? -1 : 0);
+            if (currentFilter !== 'all') {
+                fyKey = currentFilter;
                 const activeGroupIds = getActiveGroupIds(fyKey);
                 filteredGroups = allGroups.filter(g => activeGroupIds.has(g.id));
             }
@@ -218,7 +244,8 @@
 
                 allGroups = groupsData.data;
                 allSessions = sessionsData.data;
-                displayGroups();
+                buildDropdown();
+                filterGroups(getStoredFY());
 
             } catch (error) {
                 console.error('Error loading groups:', error);

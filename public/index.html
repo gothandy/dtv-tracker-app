@@ -8,9 +8,9 @@
     <style>
         .container { max-width: 900px; margin: 3rem auto; padding: 0 2rem; }
 
-        #nextDigCard, #lastDigCard { display: none; margin-bottom: 1.5rem; }
+        #nextDigCard, #lastDigCard { display: none; }
 
-        .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
         .nav-card {
             background: var(--surface); border-radius: var(--radius); padding: 1.5rem 1rem;
             text-align: center; box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
@@ -26,33 +26,43 @@
         .info-box ul { list-style-position: inside; color: var(--text-mid); }
         .info-box li { margin-bottom: 0.5rem; }
 
-        .hours-progress {
-            background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem 1.75rem;
+        .session-section {
+            background: #e8e8e8;
+            margin: 0 -2rem 1.5rem;
+            padding: 1.5rem 2rem;
+            display: flex; flex-direction: column; gap: 1.5rem;
+        }
+        .session-section .cal-card,
+        .session-section .session-card { margin-bottom: 0; }
+        .fy-chart {
+            background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem 1rem;
             box-shadow: var(--shadow); margin-bottom: 1.5rem;
         }
-        .hours-progress-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem;
+        .fy-chart .cal-toolbar { margin-bottom: 0.75rem; }
+.fy-bar-row {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.35rem 0.5rem; border-radius: var(--radius);
+            cursor: pointer; border: none; background: none; width: 100%;
+            text-align: left; min-height: 44px;
         }
-        .hours-progress-left { display: flex; flex-direction: column; gap: 0.15rem; }
-        .hours-progress-label { font-size: 0.9rem; font-weight: 600; color: var(--green); }
-        .hours-progress-value { font-size: 0.85rem; color: var(--text-light); }
-        .hours-progress-track {
-            height: 12px; background: var(--bg); border-radius: 6px;
-            position: relative;
-        }
-        .hours-progress-fill {
-            height: 100%; background: var(--green); border-radius: 6px;
-            transition: width 0.6s ease; width: 0%;
-        }
+        .fy-bar-row.selected { background: var(--green-tint); }
+        .fy-bar-row:hover:not(.selected) { background: var(--bg); }
+        .fy-bar-label { font-size: 0.8rem; color: var(--text-light); width: 60px; flex-shrink: 0; }
+        .fy-bar-track { flex: 1; height: 12px; background: var(--bg); overflow: hidden; display: flex; }
+        .fy-bar-actual { height: 100%; background: var(--green); flex-shrink: 0; transition: width 0.4s ease; }
+        .fy-bar-predicted { height: 100%; background: rgba(79,175,74,0.28); flex-shrink: 0; transition: width 0.4s ease; }
+        .fy-bar-hours { font-size: 0.8rem; color: var(--text-light); width: 50px; text-align: right; flex-shrink: 0; }
+        .fy-bar-row.selected .fy-bar-label,
+        .fy-bar-row.selected .fy-bar-hours { color: var(--dark); font-weight: 600; }
 
-        .refresh-message { text-align: center; margin-top: 0.5rem; font-size: 0.9rem; color: var(--green); min-height: 1.2rem; }
+        .refresh-message { text-align: center; font-size: 0.9rem; color: var(--green); margin-bottom: 1.5rem; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinning svg { animation: spin 0.7s linear infinite; }
 
         @media (max-width: 600px) {
             .container { margin: 1.5rem auto; padding: 0 1rem; }
-            .hours-progress-header { flex-direction: column-reverse; align-items: stretch; }
+            .session-section { margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; padding-right: 1rem; margin-bottom: 1.5rem; }
             .nav-grid { grid-template-columns: 1fr; }
             .nav-card {
                 display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto;
@@ -74,23 +84,10 @@
     <div class="container">
      
 
-        <div class="hours-progress" id="hoursProgress">
-            <div class="hours-progress-header">
-                <div class="hours-progress-left">
-                    <span class="hours-progress-label" id="hoursProgressLabel">Hours This FY</span>
-                    <span class="hours-progress-value" id="hoursProgressValue"></span>
-                </div>
+        <div class="fy-chart">
+            <div class="cal-toolbar">
+                <button class="cal-tb-btn" id="btnShowHistory" onclick="toggleHistory()">Show History</button>
                 <div style="display:flex; gap:0.5rem;">
-                    <div class="dropdown">
-                        <button class="dropdown-btn" onclick="toggleDropdown('fyMenu')">
-                            <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
-                            <span id="fyFilterLabel">This FY</span>
-                        </button>
-                        <div class="dropdown-menu" id="fyMenu">
-                            <button id="btnLastFY" onclick="switchFY('lastFY')">Last FY</button>
-                            <button id="btnThisFY" class="active" onclick="switchFY('thisFY')">This FY</button>
-                        </div>
-                    </div>
                     <button class="btn-action" id="refreshBtn" onclick="refreshData()" title="Refresh data">
                         <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
                     </button>
@@ -99,44 +96,45 @@
                     </a>
                 </div>
             </div>
-            <div class="hours-progress-track">
-                <div class="hours-progress-fill" id="hoursProgressFill"></div>
-            </div>
+            <div id="fyHistoryRows" style="display:none;"></div>
+            <div id="fyCurrentRow"></div>
         </div>
 
         <div class="nav-grid">
-            <a href="/groups.html" class="nav-card">
+            <a href="/groups.html" class="nav-card" id="navGroups">
                 <div class="label">Groups</div>
                 <div class="number" id="activeGroupsFY">-</div>
-                <div class="sublabel" id="fyLabel">This FY</div>
+                <div class="sublabel" id="fyLabel">-</div>
             </a>
 
-            <a href="/sessions.html" class="nav-card">
+            <a href="/sessions.html" class="nav-card" id="navSessions">
                 <div class="label">Sessions</div>
                 <div class="number" id="sessionsFY">-</div>
-                <div class="sublabel" id="fyLabel2">This FY</div>
+                <div class="sublabel" id="fyLabel2">-</div>
             </a>
 
-            <a href="/volunteers.html" class="nav-card">
+            <a href="/volunteers.html" class="nav-card" id="navVolunteers">
                 <div class="label">Volunteers</div>
                 <div class="number" id="volunteersFY">-</div>
-                <div class="sublabel" id="fyLabel3">This FY</div>
+                <div class="sublabel" id="fyLabel3">-</div>
             </a>
         </div>
 
-        <div class="cal-card">
-            <div class="cal-toolbar" id="calToolbar">
-                <button class="cal-tb-btn" id="btnShowCal" onclick="toggleCalendar()">Show Calendar</button>
-                <div class="cal-tb-right">
-                    <button class="cal-tb-btn" id="btnNext" onclick="jumpToNext()">Next</button>
-                    <button class="cal-tb-btn" id="btnLast" onclick="jumpToLast()">Last</button>
+        <div class="session-section">
+            <div class="cal-card">
+                <div class="cal-toolbar" id="calToolbar">
+                    <button class="cal-tb-btn" id="btnShowCal" onclick="toggleCalendar()">Show Calendar</button>
+                    <div class="cal-tb-right">
+                        <button class="cal-tb-btn" id="btnNext" onclick="jumpToNext()">Next</button>
+                        <button class="cal-tb-btn" id="btnLast" onclick="jumpToLast()">Last</button>
+                    </div>
                 </div>
+                <div id="sessionCalendar" style="display:none;"></div>
             </div>
-            <div id="sessionCalendar" style="display:none;"></div>
-        </div>
 
-        <div id="nextDigCard"></div>
-        <div id="lastDigCard"></div>
+            <div id="nextDigCard"></div>
+            <div id="lastDigCard"></div>
+        </div>
 
         <div class="refresh-message" id="refreshMessage"></div>
 
@@ -153,93 +151,115 @@
 
     <script>createFooter();</script>
     <script>
-        let allStats = null;
+        let historyData = [];
+        let selectedFY = null;
         let allSessions = [];
-        let currentFY = 'thisFY';
         let currentSelectedKey = null;
 
-        function getFYProgress(financialYear) {
-            const parts = financialYear.split('-');
-            const startYear = parseInt(parts[0]);
-            const fyStart = new Date(startYear, 3, 1);
-            const fyEnd = new Date(startYear + 1, 2, 31);
-            const now = new Date();
-            const totalDays = (fyEnd - fyStart) / (1000 * 60 * 60 * 24);
-            const elapsed = (now - fyStart) / (1000 * 60 * 60 * 24);
-            return Math.max(0, Math.min(1, elapsed / totalDays));
+        function renderChart() {
+            const histContainer = document.getElementById('fyHistoryRows');
+            const currContainer = document.getElementById('fyCurrentRow');
+            if (!historyData.length) { histContainer.innerHTML = ''; currContainer.innerHTML = ''; return; }
+
+            // Scale to max hours using predicted total (or actual for past years)
+            const maxHours = Math.max(...historyData.map(d => d.predictedHours ?? d.hours), 1);
+
+            histContainer.innerHTML = '';
+            currContainer.innerHTML = '';
+
+            for (const d of historyData) {
+                const isSelected = d.financialYear === selectedFY;
+                // For current FY: solid bar = completed full months only
+                const solidHours = d.completedHours ?? d.hours;
+                const actualPct = Math.round((solidHours / maxHours) * 100);
+                let predictedAdditionalPct = 0;
+
+                if (d.predictedHours !== undefined && d.predictedHours > solidHours) {
+                    const predictedPct = Math.min(100, Math.round((d.predictedHours / maxHours) * 100));
+                    if (predictedPct > actualPct) predictedAdditionalPct = predictedPct - actualPct;
+                }
+
+                const [sy, ey] = d.financialYear.split('-');
+                const barLabel = `${sy.slice(2)}/${ey.slice(2)}`;
+                const hoursText = `${Math.round(solidHours).toLocaleString()}h`;
+
+                const btn = document.createElement('button');
+                btn.className = 'fy-bar-row' + (isSelected ? ' selected' : '');
+                btn.innerHTML = `
+                    <span class="fy-bar-label">${barLabel}</span>
+                    <div class="fy-bar-track">
+                        <div class="fy-bar-actual" style="width:${actualPct}%"></div>
+                        ${predictedAdditionalPct > 0 ? `<div class="fy-bar-predicted" style="width:${predictedAdditionalPct}%"></div>` : ''}
+                    </div>
+                    <span class="fy-bar-hours">${hoursText}</span>`;
+                btn.addEventListener('click', () => selectFY(d.financialYear));
+
+                // Current FY (has predictedHours) always visible; past years in collapsible history
+                if (d.predictedHours !== undefined) {
+                    currContainer.appendChild(btn);
+                } else {
+                    histContainer.appendChild(btn);
+                }
+            }
         }
 
-        function displayStats(fy) {
-            if (!allStats) return;
-            const stats = allStats[fy];
+        function toggleHistory() {
+            const rows = document.getElementById('fyHistoryRows');
+            const btn = document.getElementById('btnShowHistory');
+            const isVisible = rows.style.display !== 'none';
+            rows.style.display = isVisible ? 'none' : 'block';
+            btn.textContent = isVisible ? 'Show History' : 'Hide History';
+            btn.classList.toggle('active', !isVisible);
+        }
 
+        function selectFY(fy) {
+            selectedFY = fy;
+            renderChart();
+            const stats = historyData.find(d => d.financialYear === fy);
+            if (stats) displayStats(stats);
+        }
+
+        function displayStats(stats) {
             document.getElementById('activeGroupsFY').textContent = stats.activeGroups;
             document.getElementById('sessionsFY').textContent = stats.sessions;
             document.getElementById('volunteersFY').textContent = stats.volunteers;
-
-            const fyText = `FY ${stats.financialYear}`;
+            const [sy, ey] = stats.financialYear.split('-');
+            const fyText = `FY ${sy.slice(2)}/${ey.slice(2)}`;
             document.getElementById('fyLabel').textContent = fyText;
             document.getElementById('fyLabel2').textContent = fyText;
             document.getElementById('fyLabel3').textContent = fyText;
-
-            const hours = stats.hours || 0;
-            const fyProgress = getFYProgress(stats.financialYear);
-            const pct = Math.min(100, fyProgress * 100);
-
-            document.getElementById('hoursProgressLabel').textContent = `Hours ${fyText}`;
-            if (fy === 'thisFY') {
-                const predicted = fyProgress > 0 ? Math.round(hours / fyProgress) : 0;
-                document.getElementById('hoursProgressValue').textContent =
-                    `${Math.round(hours).toLocaleString()} actual / ${predicted.toLocaleString()} predicted`;
-            } else {
-                document.getElementById('hoursProgressValue').textContent =
-                    `${Math.round(hours).toLocaleString()} hours`;
-            }
-            document.getElementById('hoursProgressFill').style.width = pct + '%';
+            // Pass selected FY through to list pages
+            const fyParam = `fy=${stats.financialYear}`;
+            document.getElementById('navGroups').href = `/groups.html?${fyParam}`;
+            document.getElementById('navSessions').href = `/sessions.html?${fyParam}`;
+            document.getElementById('navVolunteers').href = `/volunteers.html?${fyParam}`;
         }
 
-        function toggleDropdown(menuId) {
-            const menu = document.getElementById(menuId);
-            const wasOpen = menu.classList.contains('open');
-            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
-            if (!wasOpen) menu.classList.add('open');
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
-            }
-        });
-
-        function switchFY(fy) {
-            currentFY = fy;
-            const labels = { lastFY: 'Last FY', thisFY: 'This FY' };
-            document.getElementById('fyFilterLabel').textContent = labels[fy];
-            document.getElementById('btnLastFY').classList.toggle('active', fy === 'lastFY');
-            document.getElementById('btnThisFY').classList.toggle('active', fy === 'thisFY');
-            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
-            displayStats(fy);
-        }
-
-        async function loadStats() {
+        async function loadHistory() {
             const btn = document.getElementById('refreshBtn');
             btn.classList.add('spinning');
             try {
-                const response = await fetch('/api/stats');
-                if (!response.ok) throw new Error('Failed to fetch stats');
+                const response = await fetch('/api/stats/history');
+                if (!response.ok) throw new Error('Failed to fetch history');
                 const result = await response.json();
-                if (!result.success) throw new Error(result.error || 'Failed to fetch stats');
+                if (!result.success) throw new Error(result.error || 'Failed to fetch history');
 
-                allStats = result.data;
-                displayStats(currentFY);
+                historyData = result.data;
+
+                // Auto-select "This FY"
+                const thisFY = historyData.find(d => d.label === 'This FY') ?? historyData[historyData.length - 1];
+                if (thisFY) {
+                    selectedFY = thisFY.financialYear;
+                    displayStats(thisFY);
+                }
+                renderChart();
             } catch (error) {
-                console.error('Error loading stats:', error);
+                console.error('Error loading history:', error);
             } finally {
                 btn.classList.remove('spinning');
             }
         }
 
-        // Refresh data by clearing cache and reloading
         async function refreshData() {
             const btn = document.getElementById('refreshBtn');
             const msg = document.getElementById('refreshMessage');
@@ -253,7 +273,7 @@
                 if (!clearResponse.ok) throw new Error('Failed to clear cache');
 
                 msg.textContent = 'Loading fresh data...';
-                await loadStats();
+                await loadHistory();
 
                 msg.textContent = 'Data refreshed';
                 setTimeout(() => { msg.textContent = ''; }, 3000);
@@ -296,6 +316,7 @@
             document.getElementById('btnNext').classList.toggle('active', selectedKey === getGlobalNextKey());
             document.getElementById('btnLast').classList.toggle('active', selectedKey === getGlobalLastKey());
             document.getElementById('btnShowCal').classList.toggle('active', calVisible);
+            document.getElementById('btnShowCal').textContent = calVisible ? 'Hide Calendar' : 'Show Calendar';
         }
 
         function jumpToNext() {
@@ -336,8 +357,7 @@
             }
         }
 
-        // Load stats and next dig when page loads
-        loadStats();
+        loadHistory();
         loadNextDig();
     </script>
 </body>

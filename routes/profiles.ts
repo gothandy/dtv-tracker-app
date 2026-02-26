@@ -61,7 +61,9 @@ router.get('/profiles', async (req: Request, res: Response) => {
     }
 
     const fy = calculateCurrentFY();
-    const lastFYStart = fy.startYear - 1;
+    const fyParam = req.query.fy ? String(req.query.fy) : null;
+    const thisFYStart = (fyParam && fyParam.startsWith('FY')) ? parseInt(fyParam.replace('FY', '')) : fy.startYear;
+    const lastFYStart = thisFYStart - 1;
 
     // Calculate hours and session counts per profile from entries
     const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; hoursAll: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number>; sessionsAll: Set<number> }>();
@@ -82,7 +84,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const ps = profileStats.get(volunteerId)!;
       ps.hoursAll += hours;
       ps.sessionsAll.add(sessionId);
-      if (sessionFY === fy.startYear) {
+      if (sessionFY === thisFYStart) {
         ps.hoursThisFY += hours;
         ps.sessionsThisFY.add(sessionId);
       } else if (sessionFY === lastFYStart) {
@@ -136,7 +138,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
 
 router.get('/profiles/export', async (req: Request, res: Response) => {
   try {
-    const fyParam = String(req.query.fy || 'thisFy');
+    const fyParam = String(req.query.fy || '');
     const groupFilter = req.query.group ? String(req.query.group).toLowerCase() : undefined;
     const searchFilter = req.query.search ? String(req.query.search).toLowerCase() : undefined;
     const typeFilter = req.query.type ? String(req.query.type) : undefined;
@@ -170,7 +172,8 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     }
 
     const fy = calculateCurrentFY();
-    const lastFYStart = fy.startYear - 1;
+    const thisFYStart = (fyParam && fyParam.startsWith('FY')) ? parseInt(fyParam.replace('FY', '')) : fy.startYear;
+    const lastFYStart = thisFYStart - 1;
 
     // Calculate hours and session counts per profile
     const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; hoursAll: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number>; sessionsAll: Set<number> }>();
@@ -190,7 +193,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       const ps = profileStats.get(volunteerId)!;
       ps.hoursAll += hours;
       ps.sessionsAll.add(sessionId);
-      if (sessionFY === fy.startYear) { ps.hoursThisFY += hours; ps.sessionsThisFY.add(sessionId); }
+      if (sessionFY === thisFYStart) { ps.hoursThisFY += hours; ps.sessionsThisFY.add(sessionId); }
       else if (sessionFY === lastFYStart) { ps.hoursLastFY += hours; ps.sessionsLastFY.add(sessionId); }
     });
 
@@ -233,7 +236,6 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
 
     // Hours filter uses FY-appropriate hours
     const getHours = (p: typeof profileList[0]) => {
-      if (fyParam === 'lastFy') return p.hoursLastFY;
       if (fyParam === 'all') return p.hoursAll;
       return p.hoursThisFY;
     };
@@ -255,11 +257,9 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       profileList = profileList.filter(p => p.records.length === 0);
     }
 
-    // Filter out profiles with no activity unless explicitly showing 0h
-    if (fyParam === 'thisFy' && hoursFilter !== '0') {
-      profileList = profileList.filter(p => p.hoursThisFY > 0 || p.sessionsThisFY > 0 || hoursFilter === '0');
-    } else if (fyParam === 'lastFy' && hoursFilter !== '0') {
-      profileList = profileList.filter(p => p.hoursLastFY > 0 || p.sessionsLastFY > 0 || hoursFilter === '0');
+    // Filter out profiles with no activity unless showing all or explicitly requesting 0h
+    if (fyParam !== 'all' && hoursFilter !== '0') {
+      profileList = profileList.filter(p => p.hoursThisFY > 0 || p.sessionsThisFY > 0);
     }
 
     // Sort by name
@@ -267,7 +267,6 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
 
     // Sessions/Hours based on FY
     const getSessions = (p: typeof profileList[0]) => {
-      if (fyParam === 'lastFy') return p.sessionsLastFY;
       if (fyParam === 'all') return p.sessionsAll;
       return p.sessionsThisFY;
     };

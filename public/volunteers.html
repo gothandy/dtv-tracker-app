@@ -83,12 +83,9 @@
                     <div class="dropdown">
                         <button class="dropdown-btn" onclick="toggleDropdown('filterMenu')">
                             <svg viewBox="0 0 16 16"><path d="M1.5 1.5h13L10 7.5V13l-4 2V7.5z"/></svg>
-                            <span id="filterLabel">This FY</span>
+                            <span id="filterLabel">Loading…</span>
                         </button>
                         <div class="dropdown-menu" id="filterMenu">
-                            <button id="btnAll" onclick="setFilter('all')">All</button>
-                            <button id="btnLastFY" onclick="setFilter('lastFy')">Last FY</button>
-                            <button id="btnThisFY" class="active" onclick="setFilter('thisFy')">This FY</button>
                         </div>
                     </div>
                     <div class="dropdown">
@@ -174,7 +171,7 @@
 
     <script>
         let allVolunteers = [];
-        let currentFilter = 'thisFy';
+        let currentFilter = getFYKey(0); // FY key e.g. "FY2025", or "all"
         let currentSort = 'az';
         let currentGroup = '';
         let currentTypeFilter = '';
@@ -201,22 +198,136 @@
                 if (currentGroup) {
                     currentGroup = '';
                     document.getElementById('groupSelect').value = '';
+                    persistFilters();
                     loadVolunteers();
                 } else {
+                    persistFilters();
                     displayVolunteers();
                 }
             }
         }
 
+        function fyKeyToLabel(fyKey) {
+            const startYear = parseInt(fyKey.replace('FY', ''));
+            const endYear = startYear + 1;
+            return `FY ${String(startYear).slice(2)}/${String(endYear).slice(2)}`;
+        }
+
+        async function loadFYOptions() {
+            try {
+                const res = await fetch('/api/stats/history');
+                if (!res.ok) return;
+                const result = await res.json();
+                if (!result.success) return;
+
+                const menu = document.getElementById('filterMenu');
+                menu.innerHTML = '';
+
+                const btnAll = document.createElement('button');
+                btnAll.id = 'fyBtn_all';
+                btnAll.textContent = 'All';
+                btnAll.onclick = () => setFilter('all');
+                menu.appendChild(btnAll);
+
+                // history is oldest→newest; reverse for newest-first dropdown
+                [...result.data].reverse().forEach(d => {
+                    const fyKey = `FY${d.financialYear.split('-')[0]}`;
+                    const btn = document.createElement('button');
+                    btn.id = `fyBtn_${fyKey}`;
+                    btn.textContent = fyKeyToLabel(fyKey);
+                    btn.onclick = () => setFilter(fyKey);
+                    menu.appendChild(btn);
+                });
+            } catch (e) {
+                console.error('Error loading FY options:', e);
+            }
+        }
+
+        function applyURLParams() {
+            const params = new URLSearchParams(window.location.search);
+
+            const group = params.get('group');
+            if (group) currentGroup = group;
+
+            const sort = params.get('sort');
+            if (sort === 'hours') {
+                currentSort = 'hours';
+                document.getElementById('sortLabel').textContent = 'Hours';
+                document.getElementById('btnSortAZ').classList.remove('active');
+                document.getElementById('btnSortHours').classList.add('active');
+            }
+
+            const search = params.get('search');
+            if (search) document.getElementById('searchBox').value = search;
+
+            const type = params.get('type');
+            if (type) { currentTypeFilter = type; document.getElementById('typeSelect').value = type; }
+
+            const hours = params.get('hours');
+            if (hours) { currentHoursFilter = hours; document.getElementById('hoursSelect').value = hours; }
+
+            const recordType = params.get('recordType');
+            if (recordType) currentRecordType = recordType;
+
+            const recordStatus = params.get('recordStatus');
+            if (recordStatus) currentRecordStatus = recordStatus;
+
+            if (type || hours || recordType || recordStatus || group) {
+                document.getElementById('advancedSection').classList.add('open');
+                const btn = document.getElementById('advancedToggle');
+                btn.classList.add('active');
+                btn.innerHTML = 'Advanced &#9652;';
+            }
+        }
+
+        function persistFilters() {
+            const url = new URL(window.location.href);
+
+            if (currentFilter === getFYKey(0)) {
+                url.searchParams.delete('fy');
+            } else if (currentFilter === 'all') {
+                url.searchParams.set('fy', 'all');
+            } else {
+                const startYear = parseInt(currentFilter.replace('FY', ''));
+                if (!isNaN(startYear)) url.searchParams.set('fy', `${startYear}-${startYear + 1}`);
+            }
+
+            if (currentGroup) url.searchParams.set('group', currentGroup);
+            else url.searchParams.delete('group');
+
+            if (currentSort !== 'az') url.searchParams.set('sort', currentSort);
+            else url.searchParams.delete('sort');
+
+            const searchTerm = document.getElementById('searchBox').value.trim();
+            if (searchTerm) url.searchParams.set('search', searchTerm);
+            else url.searchParams.delete('search');
+
+            if (currentTypeFilter) url.searchParams.set('type', currentTypeFilter);
+            else url.searchParams.delete('type');
+
+            if (currentHoursFilter) url.searchParams.set('hours', currentHoursFilter);
+            else url.searchParams.delete('hours');
+
+            if (currentRecordType) url.searchParams.set('recordType', currentRecordType);
+            else url.searchParams.delete('recordType');
+
+            if (currentRecordStatus) url.searchParams.set('recordStatus', currentRecordStatus);
+            else url.searchParams.delete('recordStatus');
+
+            history.replaceState(null, '', url);
+        }
+
         function setFilter(filter) {
             currentFilter = filter;
-            const labels = { all: 'All', lastFy: 'Last FY', thisFy: 'This FY' };
-            document.getElementById('filterLabel').textContent = labels[filter];
-            ['btnAll', 'btnLastFY', 'btnThisFY'].forEach(id => document.getElementById(id).classList.remove('active'));
-            const btnMap = { all: 'btnAll', lastFy: 'btnLastFY', thisFy: 'btnThisFY' };
-            document.getElementById(btnMap[filter]).classList.add('active');
+            setCookie('fyFilter', filter);
+            const label = filter === 'all' ? 'All' : fyKeyToLabel(filter);
+            document.getElementById('filterLabel').textContent = label;
+            document.querySelectorAll('#filterMenu button').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`fyBtn_${filter}`);
+            if (activeBtn) activeBtn.classList.add('active');
             document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
-            displayVolunteers();
+            persistFilters();
+            loadVolunteers();
         }
 
         function setSort(sort) {
@@ -227,11 +338,13 @@
             const btnMap = { az: 'btnSortAZ', hours: 'btnSortHours' };
             document.getElementById(btnMap[sort]).classList.add('active');
             document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+            persistFilters();
             displayVolunteers();
         }
 
         function setGroup(groupKey) {
             currentGroup = groupKey;
+            persistFilters();
             loadVolunteers();
         }
 
@@ -239,22 +352,17 @@
             return !!v.isMember;
         }
 
-        function isMemberForFY(v, fyFilter) {
-            if (fyFilter === 'thisFy') return v.hoursThisFY >= MEMBER_HOURS;
-            if (fyFilter === 'lastFy') return v.hoursLastFY >= MEMBER_HOURS;
-            return isMember(v);
+        function isMemberForFY(v) {
+            if (currentFilter === 'all') return isMember(v);
+            return v.hoursThisFY >= MEMBER_HOURS;
         }
 
         function getHours(v) {
-            if (currentFilter === 'thisFy') return v.hoursThisFY;
-            if (currentFilter === 'lastFy') return v.hoursLastFY;
-            return v.hoursAll;
+            return currentFilter === 'all' ? v.hoursAll : v.hoursThisFY;
         }
 
         function getSessions(v) {
-            if (currentFilter === 'thisFy') return v.sessionsThisFY;
-            if (currentFilter === 'lastFy') return v.sessionsLastFY;
-            return v.sessionsAll;
+            return currentFilter === 'all' ? v.sessionsAll : v.sessionsThisFY;
         }
 
         function displayVolunteers() {
@@ -270,10 +378,8 @@
             } else if (currentTypeFilter === 'users') {
                 filtered = filtered.filter(v => !v.isGroup && v.user);
             }
-            if (currentFilter === 'thisFy') {
-                filtered = filtered.filter(v => v.hoursThisFY > 0);
-            } else if (currentFilter === 'lastFy') {
-                filtered = filtered.filter(v => v.hoursLastFY > 0);
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
             }
             if (searchTerm && searchTerm.length >= 3) {
                 const term = searchTerm.toLowerCase();
@@ -316,7 +422,7 @@
 
             const html = filtered.map(v => {
                 const member = isMember(v);
-                const memberForFY = isMemberForFY(v, currentFilter);
+                const memberForFY = isMemberForFY(v);
                 const groupBadge = v.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
                 const memberBadge = member && !v.isGroup ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
                 const cardBadge = v.cardStatus ? `<img src="/svg/card.svg" class="card-badge${v.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
@@ -342,9 +448,10 @@
             const contentDiv = document.getElementById('content');
 
             try {
-                const url = currentGroup
-                    ? `/api/profiles?group=${encodeURIComponent(currentGroup)}`
+                let url = currentFilter !== 'all'
+                    ? `/api/profiles?fy=${encodeURIComponent(currentFilter)}`
                     : '/api/profiles';
+                if (currentGroup) url += `${url.includes('?') ? '&' : '?'}group=${encodeURIComponent(currentGroup)}`;
                 const response = await apiFetch(url);
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}: ${response.statusText}`);
@@ -380,19 +487,20 @@
                         opt.textContent = g.displayName || g.key;
                         select.appendChild(opt);
                     });
+                if (currentGroup) select.value = currentGroup;
             } catch (e) {
                 console.error('Error loading groups:', e);
             }
         }
 
-        function setTypeFilter(val) { currentTypeFilter = val; displayVolunteers(); }
-        function setHoursFilter(val) { currentHoursFilter = val; displayVolunteers(); }
-        function setRecordType(val) { currentRecordType = val; displayVolunteers(); }
-        function setRecordStatus(val) { currentRecordStatus = val; displayVolunteers(); }
+        function setTypeFilter(val) { currentTypeFilter = val; persistFilters(); displayVolunteers(); }
+        function setHoursFilter(val) { currentHoursFilter = val; persistFilters(); displayVolunteers(); }
+        function setRecordType(val) { currentRecordType = val; persistFilters(); displayVolunteers(); }
+        function setRecordStatus(val) { currentRecordStatus = val; persistFilters(); displayVolunteers(); }
 
         function downloadCSV() {
             const params = new URLSearchParams();
-            params.set('fy', currentFilter);
+            params.set('fy', currentFilter); // "FY2025" or "all"
             if (currentGroup) params.set('group', currentGroup);
             const searchTerm = document.getElementById('searchBox').value.trim();
             if (searchTerm) params.set('search', searchTerm);
@@ -423,6 +531,8 @@
                     opt.textContent = s;
                     statusSelect.appendChild(opt);
                 });
+                if (currentRecordType) typeSelect.value = currentRecordType;
+                if (currentRecordStatus) statusSelect.value = currentRecordStatus;
             } catch (e) {
                 console.error('Error loading record options:', e);
             }
@@ -431,9 +541,8 @@
         function getFilteredIndividuals() {
             let filtered = allVolunteers.filter(v => !v.isGroup);
             if (currentTypeFilter === 'groups') return [];
-            if (currentFilter === 'thisFy') filtered = filtered.filter(v => v.hoursThisFY > 0);
-            else if (currentFilter === 'lastFy') filtered = filtered.filter(v => v.hoursLastFY > 0);
-            else if (currentFilter === 'all') filtered = filtered.filter(v => v.hoursAll > 0);
+            if (currentFilter === 'all') filtered = filtered.filter(v => v.hoursAll > 0);
+            else filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
             const searchTerm = document.getElementById('searchBox').value;
             if (searchTerm && searchTerm.length >= 3) {
                 const term = searchTerm.toLowerCase();
@@ -550,9 +659,13 @@
             }
         }
 
-        document.getElementById('searchBox').addEventListener('input', displayVolunteers);
+        document.getElementById('searchBox').addEventListener('input', () => { persistFilters(); displayVolunteers(); });
 
-        loadVolunteers();
+        applyURLParams();
+        loadFYOptions().then(() => {
+            currentFilter = getStoredFY();
+            setFilter(currentFilter);
+        });
         loadGroups();
         loadRecordOptions();
     </script>

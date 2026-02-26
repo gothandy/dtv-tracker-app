@@ -170,12 +170,18 @@ export interface FYStatsResponse {
   volunteers: number;
   financialYear: string;
   label: string;
+  /** Hours from fully-completed months only (excludes current partial month) */
+  completedHours?: number;
+  /** Predicted full-year total: completedHours + prev year's remaining months */
+  predictedHours?: number;
 }
 
 export interface StatsResponse {
   thisFY: FYStatsResponse;
   lastFY: FYStatsResponse;
 }
+
+export type StatsHistoryResponse = FYStatsResponse[];
 
 export interface UploadCodeResponse {
   code: string;  // e.g. "MXKP"

@@ -170,6 +170,61 @@ function getFYKey(offset = 0) {
 }
 
 /**
+ * Cookie helpers for persisting filter state across pages
+ */
+function setCookie(name, value, days = 365) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/`;
+}
+function getCookie(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+}
+
+/**
+ * Convert FY key (e.g. "FY2025") to URL param value (e.g. "2025-2026")
+ */
+function fyKeyToParam(fyKey) {
+    if (fyKey === 'all') return null;
+    const startYear = parseInt(fyKey.replace('FY', ''));
+    return `${startYear}-${startYear + 1}`;
+}
+
+/**
+ * Read FY selection: URL param takes priority (link sharing), then cookie, then current FY
+ */
+function getStoredFY(fallback) {
+    const params = new URLSearchParams(window.location.search);
+    const fy = params.get('fy');
+    if (fy === 'all') return 'all';
+    if (fy) {
+        const startYear = parseInt(fy.split('-')[0]);
+        if (!isNaN(startYear)) return `FY${startYear}`;
+    }
+    const cookie = getCookie('fyFilter');
+    if (cookie) return cookie;
+    return fallback || getFYKey(0);
+}
+
+/**
+ * Persist FY selection to cookie and update URL.
+ * Current FY (default) omits the param for a clean URL.
+ */
+function persistFY(fyKey) {
+    setCookie('fyFilter', fyKey);
+    const url = new URL(window.location.href);
+    if (fyKey === getFYKey(0)) {
+        url.searchParams.delete('fy');
+    } else if (fyKey === 'all') {
+        url.searchParams.set('fy', 'all');
+    } else {
+        const startYear = parseInt(fyKey.replace('FY', ''));
+        if (!isNaN(startYear)) url.searchParams.set('fy', `${startYear}-${startYear + 1}`);
+    }
+    history.replaceState(null, '', url);
+}
+
+/**
  * Show an error message in a container
  */
 function showError(container, title, message) {
