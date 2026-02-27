@@ -29,16 +29,16 @@
         .code-label {
             font-size: 1rem; color: var(--text-light); margin-bottom: 1.25rem; text-align: center;
         }
-        .code-input-row { display: flex; gap: 0.75rem; align-items: center; }
         #codeInput {
-            flex: 1; font-size: 2rem; font-weight: 700; text-align: center;
-            letter-spacing: 0.6rem; text-transform: uppercase;
+            display: block; width: 100%; box-sizing: border-box;
+            font-size: 2.5rem; font-weight: 700; text-align: center;
+            letter-spacing: 0.75rem; text-transform: uppercase;
             border: 2px solid var(--border-mid); border-radius: var(--radius);
             padding: 0.6rem 0.5rem; background: var(--bg); color: var(--text);
-            min-height: 44px;
+            min-height: 56px; margin-bottom: 0.75rem;
         }
         #codeInput:focus { outline: none; border-color: var(--green); }
-        #codeError { color: var(--error, #e74c3c); margin-top: 0.75rem; font-size: 0.95rem; display: none; }
+        #codeError { color: var(--error, #e74c3c); margin-bottom: 0.75rem; font-size: 0.95rem; display: none; }
 
         /* Step 2 — upload */
         .context-info { margin-bottom: 1.5rem; }
@@ -93,15 +93,13 @@
             <!-- Step 1: Code entry -->
             <div id="step-code">
                 <p class="code-label">Enter your 4-letter upload code</p>
-                <div class="code-input-row">
-                    <input type="text" id="codeInput" maxlength="4" autocomplete="off"
-                        autocapitalize="characters" spellcheck="false"
-                        placeholder="ABCD"
-                        oninput="this.value = this.value.toUpperCase()"
-                        onkeydown="if(event.key==='Enter') validateCode()">
-                    <button class="btn-primary" style="width:auto; padding: 0.9rem 1.5rem;" onclick="validateCode()">Go</button>
-                </div>
+                <input type="text" id="codeInput" maxlength="4" autocomplete="off"
+                    autocapitalize="characters" spellcheck="false"
+                    placeholder="ABCD"
+                    oninput="onCodeInput(this)"
+                    onkeydown="if(event.key==='Enter') validateCode()">
                 <div id="codeError"></div>
+                <button class="btn-primary" id="codeBtn" onclick="validateCode()" disabled>Continue</button>
             </div>
 
             <!-- Step 2: Upload -->
@@ -145,11 +143,23 @@
             if (parts.length >= 2) {
                 const code = parts[1].toUpperCase();
                 if (/^[A-Z]{4}$/.test(code)) {
-                    document.getElementById('codeInput').value = code;
+                    const input = document.getElementById('codeInput');
+                    input.value = code;
+                    document.getElementById('codeBtn').disabled = false;
                     validateCode();
                 }
             }
         })();
+
+        function onCodeInput(input) {
+            input.value = input.value.toUpperCase();
+            const errorEl = document.getElementById('codeError');
+            errorEl.style.display = 'none';
+            const btn = document.getElementById('codeBtn');
+            const ready = input.value.length === 4;
+            btn.disabled = !ready;
+            if (ready) validateCode();
+        }
 
         async function validateCode() {
             const code = document.getElementById('codeInput').value.trim().toUpperCase();

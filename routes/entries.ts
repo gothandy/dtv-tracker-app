@@ -26,7 +26,7 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
-import { generateCode, storeCode } from '../services/upload-tokens';
+
 import type { EntryDetailResponse, UploadCodeResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -412,8 +412,18 @@ router.post('/entries/:id/upload-code', async (req: Request, res: Response) => {
       return;
     }
 
-    const code = generateCode();
-    storeCode(code, entryId);
+    // Reuse the existing code if one was already assigned
+    const existingCode = entry.Code as string | undefined;
+    if (existingCode) {
+      const url = `${req.protocol}://${req.get('host')}/upload/${existingCode}`;
+      res.json({ success: true, data: { code: existingCode, url } } as ApiResponse<UploadCodeResponse>);
+      return;
+    }
+
+    // Generate a new 4-letter code and persist it to SharePoint
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const code = Array.from({ length: 4 }, () => CHARS[Math.floor(Math.random() * 26)]).join('');
+    await entriesRepository.updateCode(entryId, code);
 
     const url = `${req.protocol}://${req.get('host')}/upload/${code}`;
     res.json({ success: true, data: { code, url } } as ApiResponse<UploadCodeResponse>);

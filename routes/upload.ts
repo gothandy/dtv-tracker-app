@@ -8,7 +8,7 @@ import { groupsRepository } from '../services/repositories/groups-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { safeParseLookupId, convertGroup } from '../services/data-layer';
 import { SESSION_LOOKUP, PROFILE_LOOKUP, GROUP_LOOKUP, PROFILE_DISPLAY } from '../services/field-names';
-import { lookupCode } from '../services/upload-tokens';
+
 import type { UploadContextResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -36,44 +36,41 @@ interface ResolveFailure { ok: false; reason: 'not-found' | 'expired' }
 type ResolveResult = ResolvedContext | ResolveFailure;
 
 async function resolveCode(code: string): Promise<ResolveResult> {
-  const entryId = lookupCode(code);
-  if (entryId === undefined) return { ok: false, reason: 'not-found' };
+  // Look up the entry directly from SharePoint by Code field
+  const rawEntry = await entriesRepository.getByCode(code);
+  if (!rawEntry) return { ok: false, reason: 'not-found' };
 
-  const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
-    entriesRepository.getAll(),
+  const [rawSessions, rawGroups, rawProfiles] = await Promise.all([
     sessionsRepository.getAll(),
     groupsRepository.getAll(),
     profilesRepository.getAll()
   ]);
 
-  const rawEntry = (rawEntries as any[]).find(e => e.ID === entryId);
-  if (!rawEntry) return { ok: false, reason: 'not-found' };
-
   const sessionId = safeParseLookupId(rawEntry[SESSION_LOOKUP]);
   const rawSession = sessionId !== undefined
-    ? (rawSessions as any[]).find(s => s.ID === sessionId)
+    ? (rawSessions as any[]).find((s: any) => s.ID === sessionId)
     : undefined;
   if (!rawSession) return { ok: false, reason: 'not-found' };
 
-  // Expiry: session date + 7 days
-  const expiry = new Date(rawSession.Date);
-  expiry.setUTCDate(expiry.getUTCDate() + 7);
-  if (new Date() > expiry) return { ok: false, reason: 'expired' };
+  // Only accept codes from sessions within the last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+  if (new Date(rawSession.Date) < sevenDaysAgo) return { ok: false, reason: 'expired' };
 
   const groupId = safeParseLookupId(rawSession[GROUP_LOOKUP]);
   const rawGroup = groupId !== undefined
-    ? (rawGroups as any[]).find(g => g.ID === groupId)
+    ? (rawGroups as any[]).find((g: any) => g.ID === groupId)
     : undefined;
   const group = rawGroup ? convertGroup(rawGroup) : null;
 
   const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
   const rawProfile = profileId !== undefined
-    ? (rawProfiles as any[]).find(p => p.ID === profileId)
+    ? (rawProfiles as any[]).find((p: any) => p.ID === profileId)
     : undefined;
 
   return {
     ok: true,
-    entryId,
+    entryId: rawEntry.ID,
     groupKey: group?.lookupKeyName || '',
     groupName: group?.displayName || group?.lookupKeyName || '',
     date: rawSession.Date.substring(0, 10),

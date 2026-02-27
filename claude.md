@@ -229,7 +229,6 @@ dtv-tracker-app/
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── field-names.ts             # SharePoint field name constants
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
-│   ├── upload-tokens.ts           # In-memory store for volunteer upload codes (code → entryId)
 │   ├── media-upload.ts            # Shared media helpers: EXIF date extraction, filename generation
 │   └── repositories/
 │       ├── groups-repository.ts
@@ -338,7 +337,7 @@ npm start         # Start without auto-reload
 - Standard SharePoint metadata fields (ID, Created, Modified, Author, Editor) are auto-managed
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
-- Upload codes are held in memory only — lost on server restart. Volunteers need a new code issued if the server restarts. Migration path: add `UploadCode`/`UploadExpiry` columns to the Entries list.
+- Upload codes are persisted in the `Code` field on the Entries list — they survive server restarts and are reused for the same entry. A code is valid while the session date is within the last 7 days.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 
 ## Known Constraints

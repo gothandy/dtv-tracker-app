@@ -1,5 +1,19 @@
 # Development Progress
 
+## Session: 2026-02-27
+
+### Completed Tasks
+
+#### Persist upload codes to SharePoint ✓
+- Added `Code` column to the Entries SharePoint list (single line of text)
+- `services/upload-tokens.ts` (in-memory store) removed — no longer needed
+- `entries-repository.ts`: `Code` added to `selectFields`; new `getByCode(code)` method queries SP directly (bypasses cache); new `updateCode(entryId, code)` persists to SharePoint
+- `POST /entries/:id/upload-code`: reuses existing code if already set; generates and persists a new one otherwise
+- `resolveCode` in `upload.ts`: replaced in-memory lookup with `entriesRepository.getByCode()`; expiry now checks session date is within last 7 days (same logic, simpler query scope)
+- Codes survive server restarts; volunteers can reuse the same link within the 7-day window
+
+---
+
 ## Session: 2026-02-17
 
 ### Completed Tasks
