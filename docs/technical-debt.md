@@ -178,11 +178,11 @@ The tagging system uses inconsistent terminology across layers:
 - **Internal / SharePoint**: "Metadata" — the actual SharePoint column name (`SESSION_METADATA`, `updateManagedMetadataField`)
 - **Term store**: "taxonomy" / "terms" (`TaxonomyClient`, `getTermSetTree`, `termGuid`)
 
-The inconsistency is `session.metadata` in `SessionResponse` — the API contract exposes the SharePoint column name rather than the logical concept ("tags"). The field-name constant `SESSION_METADATA` is correctly named (it refers to the SharePoint column). The fix would be renaming `session.metadata` → `session.tags` in the API response type and all consumers (`data-layer.ts`, `session-detail.html`, `session-tags.js`, `sessions.ts`, the SharePoint schema docs).
+**Agreed vocabulary** (for future cleanup):
+- **Tags** — session/photo taxonomy terms from the Managed Metadata Term Store (`session.metadata` → should be `session.tags`)
+- **Hashtags** — entry flags stored as `#New`, `#Child`, `#DofE` etc. in the Entry `Notes` field and rendered as icons (`tag-icons.js`, `.entry-tag` CSS)
 
-A further complication: "tags" is also used for entry hashtags (`#New`, `#Child`, `#DofE`, etc.) — the `tag-icons.js` file, `.entry-tag` / `.entry-tags` CSS classes, and "Entry tags (matched from notes)" comment all use the same word for a completely different concept. A cleaner vocabulary would be:
-- **Labels** or **flags** — entry hashtags stored in the Notes field and rendered as icons
-- **Tags** — session taxonomy terms from the Managed Metadata column
+The immediate inconsistency is `session.metadata` in `SessionDetailResponse` — the API contract exposes the SharePoint column name. Renaming to `session.tags` would touch `sessions.ts`, `api-responses.ts`, `session-tags.js`, `session-detail.js`/`html`, and the SharePoint schema docs.
 
 **When to address**: When the API contract is being reviewed, or if a second page needs to consume session tags.
 
