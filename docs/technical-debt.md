@@ -4,26 +4,15 @@ Code and architecture items only. Functionality lives in [todo.md](todo.md). Res
 
 ---
 
-## Inline JavaScript in HTML pages
-**Priority**: Medium | **Effort**: Medium
+## ~~Inline JavaScript in HTML pages~~ ✓ Resolved 2026-02-27
 
-The largest pages contain massive inline `<script>` blocks that mix API calls, DOM rendering, state management, modal logic, and business rules in a single file with no natural extraction boundary:
+Extracted all inline `<script>` and `<style>` blocks from the four large HTML pages:
+- `profile-detail.html` (~600 lines JS) → `public/js/profile-detail.js`
+- `volunteers.html` (~500 lines JS) → `public/js/volunteers.js`
+- `session-detail.html` (~400 lines JS) → `public/js/session-detail.js`
+- `group-detail.html` (~275 lines JS) → `public/js/group-detail.js`
 
-| File | Total lines | Inline JS (approx) |
-|---|---|---|
-| `profile-detail.html` | 839 | ~600 lines |
-| `volunteers.html` | 672 | ~500 lines |
-| `session-detail.html` | 554 | ~400 lines |
-
-Business rules are also embedded inline — e.g. `MEMBER_HOURS = 15` in `volunteers.html`, rather than referenced from a shared location. As further features are added, these files grow in place because there is no natural extraction point.
-
-**Contrast**: Recently-added features (calendar, tags, lightbox, session-cards) were correctly extracted to separate `.js` files. The original page logic was never moved to follow suit.
-
-**Options**:
-- Extract each page's `<script>` block to a `profile-detail.js`, `volunteers.js`, `session-detail.js` loaded with `<script src="..." defer>`. No build step required — just a file move.
-- Move page-specific inline `<style>` blocks to `styles.css` at the same time.
-
-**Affected files**: `profile-detail.html`, `volunteers.html`, `session-detail.html`, `group-detail.html`
+All page-specific CSS moved to `styles.css` under named section comments. FY bar chart CSS merged into a single shared section. `volunteers.html` body given `class="detail-page"` (removing duplicated body/container overrides). HTML files reduced to ~120 lines each.
 
 ---
 

@@ -286,7 +286,11 @@ dtv-tracker-app/
 │   │   ├── session-cards.js       # Shared session card rendering (used by sessions.html, index.html)
 │   │   ├── session-tags.js        # Session taxonomy tag UI: term tree picker, tag pills
 │   │   ├── calendar.js            # Calendar widget for sessions listing
-│   │   └── lightbox.js            # Lightbox photo viewer for session galleries
+│   │   ├── lightbox.js            # Lightbox photo viewer for session galleries
+│   │   ├── profile-detail.js      # Profile detail page logic (FY filter, bar chart, entries, records, transfer)
+│   │   ├── volunteers.js          # Volunteers listing logic (filters, sort, bulk records, CSV download)
+│   │   ├── session-detail.js      # Session detail logic (entries, check-in, hours, photos, edit/delete)
+│   │   └── group-detail.js        # Group detail logic (bar chart, sessions, edit/delete, new session)
 │   └── svg/                       # SVG icons for badges and tags
 └── test/
     ├── test-auth.js               # Authentication verification

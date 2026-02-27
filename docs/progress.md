@@ -1,5 +1,22 @@
 # Development Progress
 
+## Session: 2026-02-27 (JS extraction)
+
+### Completed Tasks
+
+#### Extract inline JS/CSS from HTML pages ✓
+
+Resolved the "Inline JavaScript in HTML pages" technical debt item. All four large pages now load their logic from separate `.js` files:
+
+- `profile-detail.html` (839 → 120 lines) → `public/js/profile-detail.js`
+- `volunteers.html` (672 → 115 lines) → `public/js/volunteers.js`
+- `session-detail.html` (554 → 75 lines) → `public/js/session-detail.js`
+- `group-detail.html` (391 → 80 lines) → `public/js/group-detail.js`
+
+Page-specific CSS moved to `styles.css` under named section comments. FY bar chart CSS merged from both `profile-detail` and `group-detail` into a shared `/* === FY Bar Chart === */` section. Scripts loaded at bottom of `<body>` (no `defer`) so global functions remain accessible to inline `onclick` attributes.
+
+---
+
 ## Session: 2026-02-27 (Codebase review)
 
 ### Completed Tasks
