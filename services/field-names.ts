@@ -15,4 +15,5 @@ export const SESSION_DISPLAY  = 'Session';
 export const PROFILE_DISPLAY  = 'Profile';
 
 // Other fields
-export const SESSION_NOTES    = 'Notes';
+export const SESSION_NOTES     = 'Notes';
+export const SESSION_METADATA  = 'Metadata';

@@ -300,6 +300,7 @@ export class SharePointClient {
       });
     } catch (error: any) {
       const status = error.response?.status;
+      const spError = error.response?.data?.error?.message;
       console.error(`Error updating list item ${itemId} in ${listGuid}:`, error.response?.data || error.message);
 
       if (status === 404) {
@@ -309,7 +310,7 @@ export class SharePointClient {
       } else if (status === 401) {
         throw new Error('Unauthorized - token may be invalid or expired');
       }
-      throw error;
+      throw new Error(spError || error.message);
     }
   }
 
@@ -376,7 +377,7 @@ export class SharePointClient {
     if (!columns) {
       try {
         const siteId = await this.getSiteId();
-        const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
+        const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns?$expand=termColumn`);
         columns = data.value || [];
         this.cache.set(cacheKey, columns);
       } catch (error: any) {
@@ -524,6 +525,7 @@ export class SharePointClient {
   getCacheStats() {
     return this.cache.getStats();
   }
+
 }
 
 // Export singleton instance

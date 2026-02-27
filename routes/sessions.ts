@@ -24,12 +24,26 @@ import {
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP,
-  SESSION_LOOKUP, SESSION_NOTES,
+  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
+
+// Normalise SharePoint Managed Metadata field values to a plain string array.
+// Handles single-value objects, multi-value arrays, and plain text strings.
+function extractMetadataTags(raw: any): string[] {
+  if (!raw) return [];
+  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean);
+  if (Array.isArray(raw)) return raw.map((t: any) => t.Label || t.label || String(t)).filter(Boolean);
+  if (typeof raw === 'object') {
+    const label = raw.Label || raw.label;
+    return label ? [label] : [];
+  }
+  return [];
+}
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
+import { taxonomyClient } from '../services/taxonomy-client';
 
 const router: Router = express.Router();
 
@@ -352,6 +366,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const totalHours = sessionEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
 
+    const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
+
     const data: SessionDetailResponse = {
       id: spSession.ID,
       displayName: spSession.Name || spSession.Title,
@@ -363,6 +379,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       hours: Math.round(totalHours * 10) / 10,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       eventbriteEventId: spSession.EventbriteEventID,
+      metadata: metadata.length ? metadata : undefined,
       entries: entryResponses
     };
 
@@ -381,7 +398,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId, date, groupId } = req.body;
+    const { displayName, description, eventbriteEventId, date, groupId, metadata } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
@@ -390,7 +407,15 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) fields.Date = date;
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
 
-    if (Object.keys(fields).length === 0) {
+    // Metadata is a Managed Metadata column — handled separately via the hidden companion field.
+    // Graph API rejects direct writes to taxonomy fields but accepts writes to the hidden "_0" field.
+    // Tags arrive as {label, termGuid}[] from the tree picker.
+    const metadataTags: Array<{ label: string; termGuid: string }> | null =
+      Array.isArray(metadata)
+        ? metadata.map((t: any) => ({ label: t.label ?? t, termGuid: t.termGuid ?? '' })).filter(t => t.label)
+        : null;
+
+    if (Object.keys(fields).length === 0 && metadataTags === null) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
@@ -422,7 +447,15 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       newGroupKey = (targetGroup.Title || '').toLowerCase();
     }
 
-    await sessionsRepository.updateFields(spSession.ID, fields);
+    // Update regular fields via Graph API, then taxonomy via its hidden companion field
+    if (Object.keys(fields).length > 0) {
+      await sessionsRepository.updateFields(spSession.ID, fields);
+    }
+    if (metadataTags !== null) {
+      await taxonomyClient.updateManagedMetadataField(
+        process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
+      );
+    }
     const newDate = fields.Date || dateParam;
     res.json({ success: true, data: { date: newDate, groupKey: newGroupKey } } as ApiResponse<{ date: string; groupKey: string }>);
   } catch (error: any) {

@@ -847,3 +847,27 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
 @media (max-width: 600px) {
     .cal-widget { padding: 1rem; }
 }
+
+/* ─── Session Tags ───────────────────────────────────────────────────────────── */
+.section-card { background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+.tags-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.tags-header h2 { color: var(--dark); font-size: 1.1rem; margin: 0; }
+.btn-add-tag { font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0.65rem; border: 2px solid var(--green); border-radius: 6px; color: var(--green); background: transparent; cursor: pointer; min-height: 32px; transition: all 0.2s; }
+.btn-add-tag:hover { background: var(--green); color: white; }
+.tag-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tag-pill { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--green-tint); padding: 0.35rem 0.5rem 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; color: var(--green); }
+.tag-pill-delete { background: none; border: none; cursor: pointer; color: inherit; opacity: 0.55; font-size: 1.1rem; line-height: 1; padding: 0 0.15rem; display: flex; align-items: center; }
+.tag-pill-delete:hover { opacity: 1; }
+.tag-tree { list-style: none; padding: 0; margin: 0 0 0.5rem; max-height: 380px; overflow-y: auto; border: 1px solid var(--border-mid); border-radius: var(--radius); }
+.tag-tree ul { list-style: none; padding: 0; margin: 0; }
+.tag-tree-row { display: flex; align-items: center; gap: 0.1rem; padding: 0.35rem 0.5rem; cursor: pointer; user-select: none; }
+.tag-tree-row:hover { background: var(--green-tint); }
+.tag-tree-row.selected { background: var(--green); color: white; }
+.tag-tree-row.selected .tag-tree-label { color: white; }
+.tag-tree-row.selected .tag-tree-toggle { color: white; }
+.tag-tree-toggle { width: 22px; height: 22px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--text-mid); background: none; border: none; cursor: pointer; border-radius: 3px; }
+.tag-tree-toggle:hover { background: var(--border-mid); }
+.tag-tree-indent { width: 22px; flex-shrink: 0; }
+.tag-tree-label { font-size: 0.9rem; color: var(--dark); flex: 1; padding: 0 0.25rem; }
+.tag-tree-children { display: none; }
+.tag-tree-children.open { display: block; }

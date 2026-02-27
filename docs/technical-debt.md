@@ -95,6 +95,25 @@ The Eventbrite sync logic is duplicated and fragile:
 
 ---
 
+## Tag/Metadata Naming Inconsistency
+**Priority**: Low | **Effort**: Low
+
+The tagging system uses inconsistent terminology across layers:
+- **UI / JS**: "tags" (`session-tags.js`, `renderTagsSection`, `removeTag`, `openAddTagModal`)
+- **API response**: `session.metadata` — leaks the SharePoint column name into the public contract
+- **Internal / SharePoint**: "Metadata" — the actual SharePoint column name (`SESSION_METADATA`, `updateManagedMetadataField`)
+- **Term store**: "taxonomy" / "terms" (`TaxonomyClient`, `getTermSetTree`, `termGuid`)
+
+The inconsistency is `session.metadata` in `SessionResponse` — the API contract exposes the SharePoint column name rather than the logical concept ("tags"). The field-name constant `SESSION_METADATA` is correctly named (it refers to the SharePoint column). The fix would be renaming `session.metadata` → `session.tags` in the API response type and all consumers (`data-layer.ts`, `session-detail.html`, `session-tags.js`, `sessions.ts`, the SharePoint schema docs).
+
+A further complication: "tags" is also used for entry hashtags (`#New`, `#Child`, `#DofE`, etc.) — the `tag-icons.js` file, `.entry-tag` / `.entry-tags` CSS classes, and "Entry tags (matched from notes)" comment all use the same word for a completely different concept. A cleaner vocabulary would be:
+- **Labels** or **flags** — entry hashtags stored in the Notes field and rendered as icons
+- **Tags** — session taxonomy terms from the Managed Metadata column
+
+**When to address**: When the API contract is being reviewed, or if a second page needs to consume session tags.
+
+---
+
 ## Notes
 
 - Prioritise based on actual pain points, not theoretical concerns
@@ -102,4 +121,4 @@ The Eventbrite sync logic is duplicated and fragile:
 
 ---
 
-*Last Updated: 2026-02-19*
+*Last Updated: 2026-02-27*
