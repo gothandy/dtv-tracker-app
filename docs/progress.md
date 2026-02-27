@@ -1,8 +1,36 @@
 # Development Progress
 
-## Session: 2026-02-27
+## Session: 2026-02-27 (Codebase review)
 
 ### Completed Tasks
+
+#### Full codebase review — technical debt, architecture, CSS ✓
+Comprehensive review of all files now the taxonomy tags, calendar, bar charts, and photo upload features are in place.
+
+**Key findings** (full detail in [technical-debt.md](technical-debt.md)):
+
+- **Inline JS in HTML pages** is the main growing risk: `profile-detail.html`, `volunteers.html`, and `session-detail.html` each have 400–600 lines of inline JS mixing rendering, state, API calls, and business rules. Recently added features (calendar, tags, lightbox) were correctly extracted as separate JS files — the original page logic should follow the same pattern.
+- **`profiles.ts`** (836 lines) handles profiles + records + regulars. Could be split when next touched.
+- **CSS button duplication**: `.btn-action` and `.dropdown-btn` are near-identical — could share a base.
+- **CSS green variables**: Five variants including two nearly identical light-tint backgrounds (`--green-light` / `--green-tint`). Audit and consolidate.
+- **Session tags CSS naming** at bottom of `styles.css` uses a different convention from the rest.
+- **`common.js` Eventbrite helpers**: `buildEventbriteLink()` / `initEventbriteButtons()` are specific to two pages but live in shared common.js.
+
+**Architecture in good shape**:
+- Backend route → repository → sharepoint-client chain is clean and consistent
+- `data-layer.ts`, `sharepoint-client.ts`, `field-names.ts`, type system all holding up well
+- Cache invalidation strategy (write → clearCache) is correct
+- New JS modules (calendar, session-tags, session-cards, lightbox) correctly separated
+
+**New items added to technical-debt.md**:
+- Inline JavaScript in HTML pages (highest priority new item)
+- `profiles.ts` route over-responsibility
+- CSS button class duplication
+- CSS green variable proliferation
+- CSS session tags naming inconsistency
+- `common.js` Eventbrite helpers misplacement
+
+---
 
 #### Persist upload codes to SharePoint ✓
 - Added `Code` column to the Entries SharePoint list (single line of text)

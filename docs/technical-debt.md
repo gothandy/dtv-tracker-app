@@ -4,14 +4,36 @@ Code and architecture items only. Functionality lives in [todo.md](todo.md). Res
 
 ---
 
+## Inline JavaScript in HTML pages
+**Priority**: Medium | **Effort**: Medium
+
+The largest pages contain massive inline `<script>` blocks that mix API calls, DOM rendering, state management, modal logic, and business rules in a single file with no natural extraction boundary:
+
+| File | Total lines | Inline JS (approx) |
+|---|---|---|
+| `profile-detail.html` | 839 | ~600 lines |
+| `volunteers.html` | 672 | ~500 lines |
+| `session-detail.html` | 554 | ~400 lines |
+
+Business rules are also embedded inline — e.g. `MEMBER_HOURS = 15` in `volunteers.html`, rather than referenced from a shared location. As further features are added, these files grow in place because there is no natural extraction point.
+
+**Contrast**: Recently-added features (calendar, tags, lightbox, session-cards) were correctly extracted to separate `.js` files. The original page logic was never moved to follow suit.
+
+**Options**:
+- Extract each page's `<script>` block to a `profile-detail.js`, `volunteers.js`, `session-detail.js` loaded with `<script src="..." defer>`. No build step required — just a file move.
+- Move page-specific inline `<style>` blocks to `styles.css` at the same time.
+
+**Affected files**: `profile-detail.html`, `volunteers.html`, `session-detail.html`, `group-detail.html`
+
+---
+
 ## Modal HTML Duplication
 **Priority**: Medium | **Effort**: Medium
 
-Modal markup (edit group, edit session, create session, edit profile, set hours, bulk records) is duplicated across pages. Each page has its own inline `<style>` for modal styling.
+Modal markup (edit group, edit session, create session, edit profile, set hours, bulk records) is duplicated across pages. This is partially addressed by shared modal CSS now in `styles.css`, but the HTML structure is still repeated.
 
 **Options**:
-- Extract shared modal CSS to `styles.css` (quick win, reduces style duplication)
-- Create a `modal.js` helper that generates modal HTML from a config object (reduces HTML duplication too)
+- Create a `modal.js` helper that generates modal HTML from a config object (reduces HTML duplication)
 
 **Affected files**: `group-detail.html`, `groups.html`, `sessions.html`, `session-detail.html`, `profile-detail.html`, `volunteers.html`
 
@@ -95,6 +117,69 @@ The Eventbrite sync logic is duplicated and fragile:
 
 ---
 
+## `profiles.ts` Route — Too Many Responsibilities
+**Priority**: Low | **Effort**: Low
+
+At 836 lines, `profiles.ts` is the largest route file and handles three distinct domains:
+- Profile CRUD (create, read, update, delete, transfer/merge)
+- Consent records (GET/POST/PATCH/DELETE on `/profiles/:slug/records`)
+- Regulars management (GET/POST/DELETE on `/profiles/:slug/regulars`)
+
+Records and regulars each already have their own repository files. Their route logic could be extracted to `records.ts` and folded into the existing `regulars.ts`, making each file smaller and more focused.
+
+**When to address**: When next touching profiles, records, or regulars logic — do the split as part of that work.
+
+---
+
+## CSS: Button Class Duplication
+**Priority**: Low | **Effort**: Low
+
+`.btn-action` and `.dropdown-btn` share nearly identical CSS — both are green, `inline-flex`, `min-height: 44px`, same border-radius and font-weight. The only meaningful differences are `dropdown-btn` has `white-space: nowrap` and `btn-action` has `transition: all 0.2s; justify-content: center`.
+
+These could share a base class, reducing the risk of the two diverging over time.
+
+**Affected files**: `public/css/styles.css`
+
+---
+
+## CSS: Green Variable Proliferation
+**Priority**: Low | **Effort**: Low
+
+Five green variants exist in `:root`:
+```
+--green: #4FAF4A
+--green-dark: #3d9a3d
+--green-light: #eef8ee   (light tinted background)
+--green-tint: #e8f5e8    (slightly darker light background)
+--green-bg: #f2faf2      (lightest background)
+```
+
+`--green-light` and `--green-tint` are visually nearly identical (8 hex steps apart) and both serve as "tinted green background". Worth auditing which elements use each — likely collapsible to two: one for hover/available states, one for selected/active fills.
+
+**Affected files**: `public/css/styles.css`
+
+---
+
+## CSS: Session Tags Naming Inconsistency
+**Priority**: Low | **Effort**: Low
+
+The session tags styles (added at the bottom of `styles.css`) use a different naming convention from the rest of the file: `.section-card`, `.tags-header`, `.tag-pills`, `.tag-tree`. The rest of the stylesheet uses patterns like `.session-card`, `.filter-bar`, `.filter-btn`, `.entry-card`.
+
+`.section-card` is a generic container class that overlaps with the card patterns used by `.session-card` and `.cal-card`. No immediate action needed, but if a third component needs a similar card wrapper it would be worth deciding whether there should be a shared `.card` base.
+
+**Affected files**: `public/css/styles.css`
+
+---
+
+## `common.js` Contains Eventbrite-Specific Helpers
+**Priority**: Low | **Effort**: Low
+
+`buildEventbriteLink()` and `initEventbriteButtons()` are Eventbrite-specific UI helpers that live in `common.js`. They're only used on `admin.html` and `session-detail.html`. Common.js already covers ~10 distinct concerns (auth, breadcrumbs, FY logic, cookies, error display, DOM helpers). These functions would sit more naturally alongside the Eventbrite sync UI, e.g. in a small `eventbrite-ui.js`.
+
+**Affected files**: `public/js/common.js`
+
+---
+
 ## Tag/Metadata Naming Inconsistency
 **Priority**: Low | **Effort**: Low
 
@@ -121,4 +206,4 @@ A further complication: "tags" is also used for entry hashtags (`#New`, `#Child`
 
 ---
 
-*Last Updated: 2026-02-27*
+*Last Updated: 2026-02-27 (codebase review session)*

@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-22
+**Last Updated**: 2026-02-27
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
@@ -35,15 +35,19 @@ Feature-complete volunteer tracking application with:
 - Dashboard with FY stats, progress bar, next session card ([public/index.html](public/index.html))
 - Admin page with Eventbrite sync buttons, exports, site link, icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
-- Group detail with stats, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
-- Sessions listing with FY filtering ([public/sessions.html](public/sessions.html))
-- Session detail with entries, check-in, set hours, move group, edit/delete ([public/session-detail.html](public/session-detail.html))
+- Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
+- Sessions listing with FY filter and calendar view ([public/sessions.html](public/sessions.html))
+- Session detail with entries, check-in, set hours, move group, session taxonomy tags, session photo gallery, edit/delete ([public/session-detail.html](public/session-detail.html))
 - Volunteers listing with FY filter, sort, group filter, search, bulk records ([public/volunteers.html](public/volunteers.html))
-- Profile detail with FY stats, group hours, entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
+- Profile detail with FY stats, FY bar chart, group hours, entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, delete ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
+- Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
+- Session taxonomy tag UI: term tree picker, tag pills ([public/js/session-tags.js](public/js/session-tags.js))
+- Calendar widget for sessions listing ([public/js/calendar.js](public/js/calendar.js))
+- Lightbox photo viewer for session galleries ([public/js/lightbox.js](public/js/lightbox.js))
 - SVG icons for badges and tags ([public/svg/](public/svg/))
 
 ## Data Model
@@ -227,6 +231,8 @@ dtv-tracker-app/
 │   ├── auth-config.ts             # MSAL client configuration
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
+│   ├── eventbrite-sync.ts         # Shared attendee sync logic and consent question mapping
+│   ├── taxonomy-client.ts         # SharePoint Term Store client for session tagging (Graph beta)
 │   ├── field-names.ts             # SharePoint field name constants
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   ├── media-upload.ts            # Shared media helpers: EXIF date extraction, filename generation
@@ -242,10 +248,11 @@ dtv-tracker-app/
 │   ├── groups.ts                  # Groups CRUD endpoints
 │   ├── sessions.ts                # Sessions CRUD + CSV exports
 │   ├── entries.ts                 # Entries CRUD
-│   ├── profiles.ts                # Profiles CRUD + records + transfer
+│   ├── profiles.ts                # Profiles CRUD + records + transfer (+ regulars via sub-routes)
 │   ├── regulars.ts                # Regulars management
 │   ├── stats.ts                   # Dashboard stats, cache, config
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
+│   ├── tags.ts                    # Session taxonomy tag read/write endpoints
 │   ├── media.ts                   # Authenticated media endpoints (list, upload — session detail page)
 │   ├── upload.ts                  # Public volunteer upload endpoints (validate code, upload files — no auth)
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
@@ -275,7 +282,11 @@ dtv-tracker-app/
 │   │   └── icon-512.png           # Home screen icon 512x512 (generated from logo-930.jpg)
 │   ├── js/
 │   │   ├── common.js              # Shared header, footer, utilities; injects favicon + manifest links
-│   │   └── tag-icons.js           # Tag/badge icon config and rendering
+│   │   ├── tag-icons.js           # Tag/badge icon config and rendering
+│   │   ├── session-cards.js       # Shared session card rendering (used by sessions.html, index.html)
+│   │   ├── session-tags.js        # Session taxonomy tag UI: term tree picker, tag pills
+│   │   ├── calendar.js            # Calendar widget for sessions listing
+│   │   └── lightbox.js            # Lightbox photo viewer for session galleries
 │   └── svg/                       # SVG icons for badges and tags
 └── test/
     ├── test-auth.js               # Authentication verification
@@ -311,7 +322,12 @@ dtv-tracker-app/
 - [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
 - [x] Volunteer photo upload via short code (admin generates 4-letter code from entry detail; volunteer uploads at `/upload` without an account)
+- [x] Upload codes persisted in Entries list `Code` field — survive server restarts, reusable within 7-day window
 - [x] Session photo storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure)
+- [x] Session photo gallery with lightbox viewer on session detail page
+- [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
+- [x] Calendar view on sessions listing page (month navigation, clickable session dates)
+- [x] FY bar charts on group detail and profile detail pages
 
 ## Planned Features
 
@@ -351,4 +367,4 @@ npm start         # Start without auto-reload
 
 ---
 
-*Last Updated: 2026-02-23*
+*Last Updated: 2026-02-27*
