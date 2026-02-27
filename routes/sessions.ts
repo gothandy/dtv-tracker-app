@@ -28,15 +28,19 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
 
-// Normalise SharePoint Managed Metadata field values to a plain string array.
+// Normalise SharePoint Managed Metadata field values to {label, termGuid}[] objects.
 // Handles single-value objects, multi-value arrays, and plain text strings.
-function extractMetadataTags(raw: any): string[] {
+function extractMetadataTags(raw: any): { label: string; termGuid: string }[] {
   if (!raw) return [];
-  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean);
-  if (Array.isArray(raw)) return raw.map((t: any) => t.Label || t.label || String(t)).filter(Boolean);
+  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean).map(s => ({ label: s, termGuid: '' }));
+  if (Array.isArray(raw)) return raw.map((t: any) => ({
+    label: t.Label || t.label || String(t),
+    termGuid: t.TermGuid || t.termGuid || ''
+  })).filter(t => t.label);
   if (typeof raw === 'object') {
     const label = raw.Label || raw.label;
-    return label ? [label] : [];
+    const termGuid = raw.TermGuid || raw.termGuid || '';
+    return label ? [{ label, termGuid }] : [];
   }
   return [];
 }

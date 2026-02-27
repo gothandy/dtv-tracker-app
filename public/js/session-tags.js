@@ -64,12 +64,6 @@
         return map;
     }
 
-    function labelsToTagObjects(labels) {
-        return labels.map(function (label) {
-            return { label: label, termGuid: _termGuidMap[label] || '' };
-        });
-    }
-
     function buildTagTree(nodes, path, depth) {
         const currentSession = _getSession();
         depth = depth || 0;
@@ -85,7 +79,10 @@
             const children = hasChildren
                 ? '<ul class="tag-tree-children open" id="' + nodeId + '">' + buildTagTree(node.children, nodePath, depth + 1) + '</ul>'
                 : '';
-            const alreadyAdded = currentSession && currentSession.metadata && currentSession.metadata.includes(pathStr);
+            const alreadyAdded = currentSession && currentSession.metadata &&
+                currentSession.metadata.some(function(t) {
+                    return (t.termGuid && t.termGuid === node.id) || t.label === pathStr;
+                });
             const rowStyle = alreadyAdded ? ' style="opacity:0.4;pointer-events:none;"' : '';
             const escapedPath = pathStr.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             return '<li>' +
@@ -133,7 +130,7 @@
     async function confirmTagSelection() {
         if (!_selectedTag) return;
         try {
-            const existing = labelsToTagObjects(_getSession().metadata || []);
+            const existing = _getSession().metadata || [];
             await patchSessionMetadata([...existing, _selectedTag]);
             closeAddTagModal();
         } catch (error) {
@@ -142,8 +139,8 @@
     }
 
     async function removeTag(tag) {
-        const remaining = (_getSession().metadata || []).filter(t => t !== tag);
-        await patchSessionMetadata(labelsToTagObjects(remaining));
+        const remaining = (_getSession().metadata || []).filter(t => t.label !== tag);
+        await patchSessionMetadata(remaining);
     }
 
     async function patchSessionMetadata(tags) {
@@ -161,8 +158,9 @@
 
     function renderTagsSection(session) {
         const pills = (session.metadata || []).map(function (t) {
-            const ep = t.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            return '<span class="tag-pill">' + escapeHtml(t) +
+            const label = t.label || t;
+            const ep = label.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return '<span class="tag-pill">' + escapeHtml(label) +
                 '<button class="tag-pill-delete admin-only" onclick="removeTag(\'' + ep + '\')" title="Remove tag">&times;</button>' +
                 '</span>';
         }).join('');

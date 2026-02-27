@@ -142,7 +142,7 @@ export interface SessionDetailResponse {
   hours: number;
   financialYear: string;
   eventbriteEventId?: string;
-  metadata?: string[];
+  metadata?: Array<{ label: string; termGuid: string }>;
   entries: EntryResponse[];
 }
 
