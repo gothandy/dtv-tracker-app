@@ -95,21 +95,23 @@ function renderSessionList(container, sessions, options = {}) {
             d.setHours(0, 0, 0, 0);
             if (nextDate) isNext = d.getTime() === nextDate.getTime();
             if (lastDate) isLast = d.getTime() === lastDate.getTime();
-            isPast = d < now;
+            // Include today so same-day sessions show the photo carousel
+            isPast = d <= now;
         }
         const countdown = isNext ? getCountdown(session.date) : null;
         const url = buildSessionDetailUrl(session);
 
         let card;
         if (isPast) {
-            // Past sessions use <div> so photo thumbnail links (nested <a>) are valid HTML
+            // Past (and today's) sessions use <div> so photo thumbnail links (nested <a>) are valid HTML
             card = document.createElement('div');
-            card.className = 'session-card' + (isLast ? ' last-session' : '');
+            card.className = 'session-card' + (isNext ? ' next-session' : isLast ? ' last-session' : '');
             card.dataset.sessionIdx = String(i);
             card.dataset.sessionPath = `${session.groupKey}/${(session.date || '').substring(0, 10)}`;
             card.addEventListener('click', () => { window.location.href = url; });
             card.innerHTML = `
-                ${isLast ? '<div class="last-session-label">Last session</div>' : ''}
+                ${isNext && countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
+                ${isLast && !isNext ? '<div class="last-session-label">Last session</div>' : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
