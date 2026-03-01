@@ -91,12 +91,21 @@ Never commit the `.env` file to version control (already in `.gitignore`). The l
 ### 4. Verify Setup
 
 ```bash
-node test/test-auth.js
-
-# Expected output:
-# ✓ Access token obtained successfully
-# ✓ Success! Retrieved X group(s)
+npm run test:live
 ```
+
+Expected output (all green, no SharePoint errors):
+
+```
+  ✓ test-auth.js
+  ✓ test-records.js  —  16 passed, 0 failed
+  ✓ test-data-contracts.js  —  22 passed, 0 failed
+  ✓ test-fy-calc.js  —  14 passed, 0 failed
+
+All tests passed.
+```
+
+The tests hit live SharePoint — they verify auth, list access, field shapes, and FY calculation logic. Any failure prints the failing assertion lines only, with log noise stripped.
 
 ### 5. Build and Run
 
@@ -326,10 +335,10 @@ Credentials in `.env` are incorrect or expired. Contact your team lead for updat
 
 SharePoint site permissions issue (admin-level). See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3.
 
-### Test script fails
+### Tests fail
 
 ```bash
-node test/test-auth.js
+npm run test:live
 ```
 
-The error message will indicate whether it's authentication, permission, or network related.
+Failing assertions are shown with `✗` alongside the detail. Authentication errors surface from `test-auth.js` and indicate whether the problem is credentials, permissions, or network.
