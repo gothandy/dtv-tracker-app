@@ -1,11 +1,8 @@
 import express, { Request, Response, Router } from 'express';
-import multer from 'multer';
 import { sharePointClient } from '../services/sharepoint-client';
-import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
-import { groupsRepository } from '../services/repositories/groups-repository';
+import { mediaDriveId } from '../services/media-upload';
 
 const router: Router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 
 // Batch media count by session folder. Accepts comma-separated groupKey/date paths;
 // returns non-zero counts keyed by path. Makes one Graph call per unique group key.
@@ -57,57 +54,6 @@ router.get('/media', async (req: Request, res: Response) => {
     res.json({ success: true, data: photos });
   } catch (error: any) {
     console.error('Error listing photos:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Upload a single file to the Media library in SharePoint.
-// Frontend calls this once per file so it can show per-file progress.
-router.post('/media/upload', (req: Request, res: Response, next) => {
-  upload.single('photo')(req, res, (err) => {
-    if (err) {
-      res.status(400).json({ success: false, error: err.message });
-      return;
-    }
-    next();
-  });
-}, async (req: Request, res: Response) => {
-  if (!req.file) {
-    res.status(400).json({ success: false, error: 'No file provided' });
-    return;
-  }
-
-  const { mimetype, buffer, originalname } = req.file;
-  if (!mimetype.startsWith('image/') && !mimetype.startsWith('video/')) {
-    res.status(400).json({ success: false, error: 'Only image and video files are accepted' });
-    return;
-  }
-
-  const folderGroupKey = (req.body.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
-  const folderDate = (req.body.date as string || '').replace(/[^0-9-]/g, '');
-  if (!folderGroupKey || !folderDate) {
-    res.status(400).json({ success: false, error: 'groupKey and date are required' });
-    return;
-  }
-
-  try {
-    const driveId = mediaDriveId();
-    // Resolve original SharePoint casing for the folder name; req.body.groupKey is lowercased
-    const groups = await groupsRepository.getAll();
-    const matchedGroup = groups.find(g => (g.Title || '').toLowerCase() === folderGroupKey.toLowerCase());
-    const folderKey = matchedGroup?.Title || folderGroupKey;
-    const displayName = req.session.user?.displayName || 'unknown';
-    // Prefer EXIF DateTimeOriginal, fall back to file.lastModified from browser, then server time
-    const takenAt = exifDate(buffer)
-      ?? (req.body.takenAt ? new Date(parseInt(req.body.takenAt)) : new Date());
-    const filename = mediaFilename(originalname, displayName, takenAt);
-    const filePath = `${folderKey}/${folderDate}/${filename}`;
-
-    const result = await sharePointClient.uploadFile(driveId, filePath, buffer, mimetype);
-    sharePointClient.clearCache();
-    res.json({ success: true, data: { name: result.name, webUrl: result.webUrl } });
-  } catch (error: any) {
-    console.error('Error uploading photo:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

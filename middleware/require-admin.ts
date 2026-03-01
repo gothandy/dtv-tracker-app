@@ -10,6 +10,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/refresh$/ }, // refresh session
   { method: 'POST',  pattern: /^\/profiles$/ },               // create profile
   { method: 'PATCH', pattern: /^\/profiles\/[^/]+$/ },        // edit profile
+  { method: 'POST',  pattern: /^\/entries\/\d+\/upload-code$/ }, // generate upload code
 ];
 
 const ADMIN_ONLY_GET_PATTERNS = [

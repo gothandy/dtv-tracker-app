@@ -35,7 +35,7 @@ interface ResolvedContext {
 interface ResolveFailure { ok: false; reason: 'not-found' | 'expired' }
 type ResolveResult = ResolvedContext | ResolveFailure;
 
-async function resolveCode(code: string): Promise<ResolveResult> {
+async function resolveCode(code: string, bypassExpiry = false): Promise<ResolveResult> {
   // Look up the entry directly from SharePoint by Code field
   const rawEntry = await entriesRepository.getByCode(code);
   if (!rawEntry) return { ok: false, reason: 'not-found' };
@@ -52,10 +52,12 @@ async function resolveCode(code: string): Promise<ResolveResult> {
     : undefined;
   if (!rawSession) return { ok: false, reason: 'not-found' };
 
-  // Only accept codes from sessions within the last 7 days
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
-  if (new Date(rawSession.Date) < sevenDaysAgo) return { ok: false, reason: 'expired' };
+  // Only accept codes from sessions within the last 7 days (bypassed for authenticated users)
+  if (!bypassExpiry) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+    if (new Date(rawSession.Date) < sevenDaysAgo) return { ok: false, reason: 'expired' };
+  }
 
   const groupId = safeParseLookupId(rawSession[GROUP_LOOKUP]);
   const rawGroup = groupId !== undefined
@@ -88,7 +90,7 @@ router.post('/upload/validate', async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await resolveCode(code);
+    const result = await resolveCode(code, !!req.session.user);
     if (!result.ok) {
       const error = result.reason === 'expired' ? 'Code has expired' : 'Code not found';
       res.status(404).json({ success: false, error, reason: result.reason });
@@ -119,7 +121,7 @@ router.post('/upload/files', upload.array('photos', 10), async (req: Request, re
   }
 
   try {
-    const context = await resolveCode(code);
+    const context = await resolveCode(code, !!req.session.user);
     if (!context.ok) {
       const error = context.reason === 'expired' ? 'Code has expired' : 'Code not found';
       res.status(404).json({ success: false, error, reason: context.reason });

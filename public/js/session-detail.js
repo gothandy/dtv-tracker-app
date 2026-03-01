@@ -226,47 +226,6 @@ async function loadPhotos() {
     } catch { carousel.innerHTML = ''; photoData = []; }
 }
 
-async function uploadPhotos(input) {
-    const files = Array.from(input.files);
-    if (!files.length) return;
-    const carousel = document.getElementById('photoCarousel');
-
-    const setStatus = (msg, isError = false) => {
-        if (!carousel) return;
-        carousel.innerHTML = `<div class="photo-status${isError ? ' error' : ''}">${escapeHtml(msg)}</div>`;
-    };
-
-    const succeeded = [];
-    const failed = [];
-
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        setStatus(`Uploading ${i + 1} of ${files.length}: ${file.name}`);
-        const form = new FormData();
-        form.append('photo', file);
-        form.append('takenAt', file.lastModified.toString());
-        form.append('groupKey', groupKey);
-        form.append('date', sessionDate);
-        try {
-            const res = await fetch('/api/media/upload', { method: 'POST', body: form });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
-            succeeded.push(file.name);
-        } catch (e) {
-            failed.push(`${file.name}: ${e.message}`);
-        }
-    }
-
-    input.value = '';
-    if (failed.length) {
-        const parts = [];
-        if (succeeded.length) parts.push(`${succeeded.length} uploaded`);
-        parts.push(`${failed.length} failed`);
-        setStatus(parts.join(', '), true);
-    }
-    loadPhotos();
-}
-
 async function loadSessionDetail() {
     const contentDiv = document.getElementById('content');
 
@@ -358,11 +317,6 @@ async function loadSessionDetail() {
                 <div class="session-title-row">
                     <h1>${escapeHtml(session.displayName || 'Session')}</h1>
                     <div class="session-title-buttons">
-                        <button type="button" class="btn-action checkin-only" onclick="openMediaPicker()" title="Upload photos or videos">
-                            <svg viewBox="0 0 24 24" fill="none">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M8 10C8 7.79086 9.79086 6 12 6C14.2091 6 16 7.79086 16 10V11H17C18.933 11 20.5 12.567 20.5 14.5C20.5 16.433 18.933 18 17 18H16C15.4477 18 15 18.4477 15 19C15 19.5523 15.4477 20 16 20H17C20.0376 20 22.5 17.5376 22.5 14.5C22.5 11.7793 20.5245 9.51997 17.9296 9.07824C17.4862 6.20213 15.0003 4 12 4C8.99974 4 6.51381 6.20213 6.07036 9.07824C3.47551 9.51997 1.5 11.7793 1.5 14.5C1.5 17.5376 3.96243 20 7 20H8C8.55228 20 9 19.5523 9 19C9 18.4477 8.55228 18 8 18H7C5.067 18 3.5 16.433 3.5 14.5C3.5 12.567 5.067 11 7 11H8V10ZM15.7071 13.2929L12.7071 10.2929C12.3166 9.90237 11.6834 9.90237 11.2929 10.2929L8.29289 13.2929C7.90237 13.6834 7.90237 14.3166 8.29289 14.7071C8.68342 15.0976 9.31658 15.0976 9.70711 14.7071L11 13.4142V19C11 19.5523 11.4477 20 12 20C12.5523 20 13 19.5523 13 19V13.4142L14.2929 14.7071C14.6834 15.0976 15.3166 15.0976 15.7071 14.7071C16.0976 14.3166 16.0976 13.6834 15.7071 13.2929Z" fill="currentColor"/>
-                            </svg>
-                        </button>
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit session">
                             <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -404,26 +358,3 @@ async function loadSessionDetail() {
 }
 
 loadSessionDetail();
-
-async function openMediaPicker() {
-    if (window.showOpenFilePicker) {
-        try {
-            const handles = await window.showOpenFilePicker({
-                multiple: true,
-                types: [{
-                    description: 'Media files',
-                    accept: {
-                        'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.bmp'],
-                        'video/*': ['.mp4', '.mov', '.avi', '.mkv', '.m4v', '.wmv']
-                    }
-                }]
-            });
-            const files = await Promise.all(handles.map(h => h.getFile()));
-            await uploadPhotos({ files });
-        } catch (e) {
-            if (e.name !== 'AbortError') console.error('Media picker error:', e);
-        }
-    } else {
-        document.getElementById('mediaFileInput').click();
-    }
-}

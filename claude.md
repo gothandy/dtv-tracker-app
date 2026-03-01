@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-02-27
+**Last Updated**: 2026-03-01
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
@@ -260,7 +260,7 @@ dtv-tracker-app/
 │   ├── stats.ts                   # Dashboard stats, cache, config
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
-│   ├── media.ts                   # Authenticated media endpoints (list, upload — session detail page)
+│   ├── media.ts                   # Authenticated media endpoints (list photos, batch counts)
 │   ├── upload.ts                  # Public volunteer upload endpoints (validate code, upload files — no auth)
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
@@ -274,7 +274,7 @@ dtv-tracker-app/
 │   ├── session-detail.html        # Session detail with entries and check-in
 │   ├── volunteers.html            # Volunteers listing with filters and search
 │   ├── profile-detail.html        # Profile detail with FY stats, inline hours, group filter
-│   ├── entry-detail.html          # Entry edit page with tag buttons; admin upload link generator
+│   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── upload.html                # Public volunteer photo upload page (no auth required)
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
@@ -332,8 +332,8 @@ dtv-tracker-app/
 - [x] Azure App Service deployment
 - [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
-- [x] Volunteer photo upload via short code (admin generates 4-letter code from entry detail; volunteer uploads at `/upload` without an account)
-- [x] Upload codes persisted in Entries list `Code` field — survive server restarts, reusable within 7-day window
+- [x] Volunteer photo upload via short code (check-in+ clicks Upload on entry detail; navigates directly to `/upload/{CODE}`; volunteer uploads without an account)
+- [x] Upload codes persisted in Entries list `Code` field — survive server restarts, reusable for the same entry; public expiry is session date + 7 days; authenticated users bypass expiry
 - [x] Session photo storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure)
 - [x] Session photo gallery with lightbox viewer on session detail page
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
@@ -366,7 +366,7 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - Standard SharePoint metadata fields (ID, Created, Modified, Author, Editor) are auto-managed
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
-- Upload codes are persisted in the `Code` field on the Entries list — they survive server restarts and are reused for the same entry. A code is valid while the session date is within the last 7 days.
+- Upload codes are persisted in the `Code` field on the Entries list — they survive server restarts and are reused for the same entry. Public/volunteer access: valid while the session date is within the last 7 days. Authenticated users (admin/check-in) bypass this check and can upload to any session.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. Also auto-discovered from the `Metadata` column definition if configured as Managed Metadata.
 - Term Store access requires `TermStore.ReadWrite.All` application permission on the Azure app registration (admin consent required). Uses the Graph API **beta** endpoint — see [docs/tagging.md](docs/tagging.md) for full implementation notes.
@@ -380,4 +380,4 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 
 ---
 
-*Last Updated: 2026-02-27*
+*Last Updated: 2026-03-01*

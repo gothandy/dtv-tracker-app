@@ -25,25 +25,17 @@
             padding: 2rem; box-shadow: var(--shadow);
         }
 
-        /* Step 1 — code entry */
-        .code-label {
-            font-size: 1rem; color: var(--text-light); margin-bottom: 1.25rem; text-align: center;
-        }
-        #codeInput {
-            display: block; width: 100%; box-sizing: border-box;
-            font-size: 2.5rem; font-weight: 700; text-align: center;
-            letter-spacing: 0.75rem; text-transform: uppercase;
-            border: 2px solid var(--border-mid); border-radius: var(--radius);
-            padding: 0.6rem 0.5rem; background: var(--bg); color: var(--text);
-            min-height: 56px; margin-bottom: 0.75rem;
-        }
-        #codeInput:focus { outline: none; border-color: var(--green); }
-        #codeError { color: var(--error, #e74c3c); margin-bottom: 0.75rem; font-size: 0.95rem; display: none; }
-
-        /* Step 2 — upload */
+        /* Context info (step 2) */
         .context-info { margin-bottom: 1.5rem; }
+        .context-info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
         .context-info .volunteer-name { font-size: 1.4rem; font-weight: 700; color: var(--dark); }
         .context-info .session-name { color: var(--text-light); margin-top: 0.25rem; }
+        .share-btn {
+            background: none; border: none; cursor: pointer; padding: 0.25rem;
+            color: var(--text-light); flex-shrink: 0;
+        }
+        .share-btn:hover { color: var(--green); }
+        .share-btn svg { width: 22px; height: 22px; display: block; }
 
         .file-zone {
             border: 2px dashed var(--border-mid); border-radius: 8px;
@@ -79,6 +71,11 @@
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .loading-text { text-align: center; color: var(--text-light); padding: 1rem 0; }
+
+        .error-message {
+            text-align: center; padding: 1rem 0;
+            color: var(--error, #e74c3c); font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
@@ -90,23 +87,29 @@
     <div class="upload-container">
         <div class="upload-card">
 
-            <!-- Step 1: Code entry -->
-            <div id="step-code">
-                <p class="code-label">Enter your 4-letter upload code</p>
-                <input type="text" id="codeInput" maxlength="4" autocomplete="off"
-                    autocapitalize="characters" spellcheck="false"
-                    placeholder="ABCD"
-                    oninput="onCodeInput(this)"
-                    onkeydown="if(event.key==='Enter') validateCode()">
-                <div id="codeError"></div>
-                <button class="btn-primary" id="codeBtn" onclick="validateCode()" disabled>Continue</button>
+            <!-- Loading -->
+            <div id="step-loading" class="loading-text">Checking code&hellip;</div>
+
+            <!-- Error -->
+            <div id="step-error" style="display:none">
+                <div class="error-message" id="errorMessage"></div>
             </div>
 
             <!-- Step 2: Upload -->
             <div id="step-upload" style="display:none">
                 <div class="context-info">
-                    <div class="volunteer-name" id="ctxName"></div>
-                    <div class="session-name" id="ctxSession"></div>
+                    <div class="context-info-row">
+                        <div>
+                            <div class="volunteer-name" id="ctxName"></div>
+                            <div class="session-name" id="ctxSession"></div>
+                        </div>
+                        <button class="share-btn" onclick="shareLink()" title="Share this link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="file-zone" id="fileZone" onclick="document.getElementById('fileInput').click()">
@@ -137,38 +140,18 @@
         let activeCode = null;
         let selectedFiles = [];
 
-        // Auto-fill from URL: /upload/AGHR
-        (function init() {
-            const parts = window.location.pathname.split('/').filter(Boolean);
-            if (parts.length >= 2) {
-                const code = parts[1].toUpperCase();
-                if (/^[A-Z]{4}$/.test(code)) {
-                    const input = document.getElementById('codeInput');
-                    input.value = code;
-                    document.getElementById('codeBtn').disabled = false;
-                    validateCode();
-                }
-            }
-        })();
-
-        function onCodeInput(input) {
-            input.value = input.value.toUpperCase();
-            const errorEl = document.getElementById('codeError');
-            errorEl.style.display = 'none';
-            const btn = document.getElementById('codeBtn');
-            const ready = input.value.length === 4;
-            btn.disabled = !ready;
-            if (ready) validateCode();
+        function showError(message) {
+            document.getElementById('step-loading').style.display = 'none';
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('step-error').style.display = 'block';
         }
 
-        async function validateCode() {
-            const code = document.getElementById('codeInput').value.trim().toUpperCase();
-            const errorEl = document.getElementById('codeError');
-            errorEl.style.display = 'none';
+        async function init() {
+            const parts = window.location.pathname.split('/').filter(Boolean);
+            const code = parts.length >= 2 ? parts[1].toUpperCase() : '';
 
-            if (code.length !== 4) {
-                errorEl.textContent = 'Please enter a 4-letter code.';
-                errorEl.style.display = 'block';
+            if (!code || !/^[A-Z]{4}$/.test(code)) {
+                showError('No upload code found. Please use the link provided by your session admin.');
                 return;
             }
 
@@ -182,26 +165,30 @@
 
                 if (!res.ok || !data.success) {
                     const reason = data.reason;
-                    errorEl.textContent = reason === 'expired'
+                    showError(reason === 'expired'
                         ? 'This code has expired. Please ask for a new one.'
-                        : 'Code not found. Please check and try again.';
-                    errorEl.style.display = 'block';
+                        : 'Code not found. Please check and try again.');
                     return;
                 }
 
                 activeCode = code;
                 showUploadStep(data.data);
-            } catch (err) {
-                errorEl.textContent = 'Could not connect. Please try again.';
-                errorEl.style.display = 'block';
+            } catch {
+                showError('Could not connect. Please try again.');
             }
         }
 
         function showUploadStep(context) {
-            document.getElementById('step-code').style.display = 'none';
+            document.getElementById('step-loading').style.display = 'none';
             document.getElementById('ctxName').textContent = context.profileName;
             document.getElementById('ctxSession').textContent = context.sessionName;
             document.getElementById('step-upload').style.display = 'block';
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            if (new Date(context.date) < sevenDaysAgo) {
+                document.querySelector('.share-btn').style.display = 'none';
+            }
 
             const fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', function() {
@@ -216,6 +203,19 @@
                 zone.classList.remove('dragover');
                 handleFiles(Array.from(e.dataTransfer.files));
             });
+        }
+
+        function shareLink() {
+            const url = window.location.href;
+            if (navigator.share) {
+                navigator.share({ title: 'DTV Photo Upload', url });
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = document.querySelector('.share-btn');
+                    btn.title = 'Copied!';
+                    setTimeout(() => btn.title = 'Share this link', 2000);
+                });
+            }
         }
 
         function handleFiles(files) {
@@ -245,7 +245,7 @@
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const statusEl = document.getElementById(`status-${i}`);
-                statusEl.textContent = 'Uploading…';
+                statusEl.textContent = 'Uploading\u2026';
                 statusEl.className = 'file-status pending';
 
                 try {
@@ -257,20 +257,19 @@
                     const data = await res.json();
 
                     if (res.ok && data.success && data.data.uploaded > 0) {
-                        statusEl.textContent = '✓ Uploaded';
+                        statusEl.textContent = '\u2713 Uploaded';
                         statusEl.className = 'file-status ok';
                         uploaded++;
                     } else {
                         throw new Error(data.error || 'Upload failed');
                     }
-                } catch (err) {
-                    statusEl.textContent = '✗ Failed';
+                } catch {
+                    statusEl.textContent = '\u2717 Failed';
                     statusEl.className = 'file-status err';
                     failed++;
                 }
             }
 
-            // Show done step after a brief pause
             setTimeout(() => {
                 document.getElementById('step-upload').style.display = 'none';
                 document.getElementById('doneCount').textContent =
@@ -289,6 +288,8 @@
             d.textContent = text;
             return d.innerHTML;
         }
+
+        init();
     </script>
 </body>
 </html>

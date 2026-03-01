@@ -45,18 +45,32 @@ Filename format: `{HHMMSS}-{4-char-random}.{ext}` — e.g. `143022-a3f4.jpg`
 
 ## Upload Methods
 
-### Method 1: Session Detail Page
+### Method 1: Volunteer Upload Link
 
-A photo upload section on the session detail page. Two buttons for different workflows:
+The primary upload path. A logged-in admin or check-in user opens an entry detail page and clicks **Upload**. A 4-letter code is generated and the user is navigated directly to the upload page at `/upload/{CODE}`.
 
-- **"Take photo"** — `<input type="file" accept="image/*" capture="environment">` — opens camera directly (back-facing)
-- **"Upload from gallery"** — `<input type="file" accept="image/*" multiple>` — opens camera roll, allows selecting multiple
+**Flow:**
+1. Admin/Check In opens an entry detail page and clicks **Upload** (check-in visible)
+2. `POST /api/entries/:id/upload-code` generates a code; the response includes the full URL
+3. Browser navigates directly to `/upload/{CODE}` — no intermediate step
+4. Upload page validates the code, shows volunteer name and session
+5. For recent sessions (≤ 7 days old): a share icon lets the user share the URL via the native share sheet or copy to clipboard — so they can pass the link to the volunteer via WhatsApp/text
+6. Volunteer (or staff) selects photos and uploads — files land in `{groupKey}/{date}/`
 
-After selecting, photos are **resized client-side** before upload (see below), then uploaded to the session's folder. A simple progress indicator shows status.
+**Code design:**
+- 4 random uppercase letters — 26⁴ = 456,976 combinations; negligible guessing risk with ≤20 active codes
+- Persisted in the `Code` field on the Entries SharePoint list — survive server restarts, reusable for the same entry
+- Expiry is computed at validation time: session date + 7 days (public/volunteer access only)
+- Authenticated users (admin/check-in) bypass the 7-day expiry — they can upload to any session regardless of age
+- The share icon on the upload page is hidden for sessions older than 7 days (sharing an expired link is pointless)
 
-Permissions: visible to **Admin** and **Check In** roles. Gallery visible to all roles.
+**Files:**
+- `routes/upload.ts` — `POST /api/upload/validate` and `POST /api/upload/files` (public, mounted before `requireAuth`)
+- `routes/entries.ts` — `POST /api/entries/:id/upload-code` (check-in+, generates and returns code + URL)
+- `public/upload.html` — standalone public upload page (no auth required)
+- `public/entry-detail.html` — Upload button (check-in+); click generates code and navigates directly
 
-### Method 2: PWA Share Target
+### Method 2: PWA Share Target (Not yet implemented)
 
 Register the app as a share target in `site.webmanifest`. Users take photos in their native camera app, tap **Share**, and select "DTV Tracker" from the share sheet.
 
@@ -73,31 +87,26 @@ Register the app as a share target in `site.webmanifest`. Users take photos in t
 
 A new `/share-target.html` page receives the shared image(s) and shows **today's sessions** for the user to pick from. Since there are typically 2–3 sessions on any given day this is a low-friction step.
 
-The page fetches sessions filtered to today's date, presents them as large tap targets, and on selection uploads to that session's folder.
-
 **Only works when installed as a PWA** (Add to Home Screen). The existing `site.webmanifest` makes this straightforward to add.
-
----
-
-## Client-Side Resize
-
-Mobile photos are typically 10–20 MB. Before upload, resize using the Canvas API:
-
-- Max dimension: **1500px** (preserves enough detail for viewing)
-- Target file size: **~500 KB**
-- Convert HEIC to JPEG (Canvas output)
-
-This keeps uploads fast over mobile data and reduces SharePoint storage usage. The resize happens in the browser before the file is sent to the server.
 
 ---
 
 ## API Endpoints
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| `POST` | `/api/sessions/:id/media` | Upload one or more files (multipart/form-data) | Admin, Check In |
-| `GET` | `/api/sessions/:id/media` | List files — returns name, URL, thumbnail URL | All roles |
-| `DELETE` | `/api/sessions/:id/media/:fileId` | Delete a file | Admin only |
+### Authenticated (Check In + Admin)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/entries/:id/upload-code` | Generate a 4-letter upload code; returns `{ code, url }` |
+| `GET` | `/api/media` | List media files in a session folder — `?groupKey=&date=` |
+| `GET` | `/api/media/counts` | Batch photo counts by session folder — `?paths=gk/date,...` |
+
+### Public (No authentication required)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/upload/validate` | Validate a code; returns session/profile context. Expiry bypassed for authenticated sessions. |
+| `POST` | `/api/upload/files` | Upload photos using a valid code (multipart/form-data, `code` + `photos` fields) |
 
 ### Folder Path Construction
 
@@ -115,37 +124,39 @@ function sessionMediaPath(session: SessionResponse): string {
 - **Upload**: `PUT /drives/{driveId}/root:/{path}/{filename}:/content` — Graph auto-creates intermediate folders
 - **List**: `GET /drives/{driveId}/root:/{path}:/children`
 - **Thumbnails**: `GET /drives/{driveId}/items/{itemId}/thumbnails` — Graph generates these natively for images
-- **Delete**: `DELETE /drives/{driveId}/items/{itemId}`
 
 For files under ~4 MB (after client-side resize), the simple PUT upload is sufficient. No upload session needed.
 
 ### Configuration
 
-Add to environment variables:
 ```
 MEDIA_LIBRARY_DRIVE_ID=   # Graph API Drive ID of the Media document library (not a GUID)
 ```
 
 ---
 
-## Frontend Changes
+## Frontend
 
 ### Session Detail Page
 
-Add a **Photos** section below the entries list:
+A **Photos** carousel below the session title shows thumbnails for any photos in the session's folder. Tap a thumbnail to open the lightbox viewer.
 
-- Gallery grid of thumbnail images (tap to view full size)
-- "Add Photos" area (Admin/Check In only): Take photo + Upload from gallery buttons
-- Upload progress shown inline
-- Delete button on each photo (Admin only, shown on hover/long-press)
+The upload button has been moved to the **entry detail page** — staff navigate there for the specific volunteer and click Upload. This keeps session-detail lightweight and avoids a multi-step "generate → share → wait" flow. Photos taken by any volunteer or staff member for the same session all land in the same folder.
 
-### Share Target Page (`/share-target.html`)
+### Upload Page (`/upload/:code`)
 
-- Simple page, no nav required
-- Heading: "Which session is this for?"
-- Lists today's sessions as large tap targets (group name + time)
-- On tap: uploads photo(s) to that session, shows confirmation
-- "Wrong day?" fallback link to sessions list
+- No manual code entry — the code must be present in the URL. Navigating to `/upload` with no code shows an error.
+- After successful validation: shows volunteer name, session name, and (for recent sessions) a share icon
+- Share icon: uses `navigator.share` (native share sheet on mobile) or falls back to clipboard copy
+- Share icon hidden if session is older than 7 days (the public expiry would reject the link anyway)
+- File zone with drag-and-drop + file picker (up to 10 files, 10 MB each)
+- Per-file upload progress; done screen with count after completion
+
+### Entry Detail Page
+
+- **Upload button** (check-in+): cloud-upload SVG icon + "Upload" label; visible to Admin and Check In roles
+- Click: calls `POST /api/entries/:id/upload-code`, then navigates directly to the returned URL
+- Works for sessions of any age — authenticated users bypass the 7-day public expiry
 
 ---
 
@@ -154,38 +165,6 @@ Add a **Photos** section below the entries list:
 1. Create the **"Media"** document library in the SharePoint Tracker site ✓ (already done)
 2. Find the library's Drive ID — use "Discover Drives" on the admin page, or call `GET /api/photos/drives`
 3. Add `MEDIA_LIBRARY_DRIVE_ID` to env vars (local `.env` and Azure App Service config)
-4. Add `share_target` to `site.webmanifest`
-5. Add `/share-target.html` to `public/`
-
----
-
-### Method 3: Volunteer Upload Link
-
-Allows a logged-in admin to generate a short code from the entry detail page and share it with a volunteer. The volunteer visits `tracker.dtv.org.uk/upload`, enters the code, and uploads photos without needing an account.
-
-**Flow:**
-1. Admin opens an entry detail page and clicks **Get Upload Link** (admin-only)
-2. A 4-letter code (e.g. `MXKP`) and a shareable link appear on screen
-3. Admin shares via WhatsApp (`/upload/MXKP` auto-fills the code) or reads it aloud
-4. Volunteer visits the page, code is validated, volunteer name and session are confirmed
-5. Volunteer selects photos and uploads — files land in the same `{groupKey}/{date}/` folder as other methods
-
-**Code design:**
-- 4 random uppercase letters — 26⁴ = 456,976 combinations; negligible guessing risk with ≤20 active codes
-- Held in a module-level in-memory `Map<string, number>` (code → entryId) in `services/upload-tokens.ts`
-- Expiry is computed at validation time: session date + 7 days (no separate expiry stored)
-- Resending generates a new code and removes the old one for that entry
-- Known limitation: codes are lost on server restart. If this becomes a problem, migrate to `UploadCode` / `UploadExpiry` columns on the Entries SharePoint list
-
-**New files:**
-- `services/upload-tokens.ts` — code generation, storage, and lookup
-- `routes/upload.ts` — `POST /api/upload/validate` and `POST /api/upload/files` (both public, mounted before `requireAuth`)
-- `public/upload.html` — standalone public upload page (no auth required)
-
-**Modified files:**
-- `routes/entries.ts` — `POST /api/entries/:id/upload-code` (admin only, generates and returns code + URL)
-- `public/entry-detail.html` — Get Upload Link button and code panel (admin-only)
-- `app.js` — serves `/upload/:code?` and mounts upload API routes before `requireAuth`
 
 ---
 
@@ -198,29 +177,4 @@ Allows a logged-in admin to generate a short code from the entry detail page and
 
 ---
 
-*Created: 2026-02-22*
-
----
-
-## Planned Simplification (2026-03-01)
-
-Photos are typically received via WhatsApp/Facebook by admin/check-in staff, who do the final upload themselves. The multi-step "generate link → copy → navigate" workflow on entry-detail is unnecessary friction. Plan: "Upload Media" button navigates directly to the upload page; the share icon moves onto the upload page itself.
-
-### Changes required
-
-| File | Change |
-|------|--------|
-| `public/session-detail.html` | Remove hidden `<input type="file" id="mediaFileInput">` |
-| `public/js/session-detail.js` | Remove upload `<button onclick="openMediaPicker()">` from title buttons; remove `uploadPhotos()` and `openMediaPicker()` functions. Keep all gallery/lightbox code. |
-| `public/entry-detail.html` | Replace "link" button + `uploadCodePanel` div with a single `checkin-only` **"Upload"** button. Replace `getUploadCode()` + `shareOrCopyUploadLink()` with `openUploadPage()` that calls the API then does `window.location.href = result.data.url`. |
-| `middleware/require-admin.ts` | Add `{ method: 'POST', pattern: /^\/entries\/\d+\/upload-code$/ }` to `CHECKIN_ALLOWED_PATTERNS` so check-in users can generate codes. |
-| `public/upload.html` | Remove `<div id="step-code">` form entirely. Simplify `init()` to extract code from URL, validate immediately, show error state if missing/invalid. Remove `onCodeInput()`. Add share icon button in `context-info` div (`navigator.share` or clipboard copy of `window.location.href`). |
-| `routes/media.ts` | Remove `POST /api/media/upload` endpoint and its multer setup. Keep `GET /api/media`. |
-
-### Verification
-1. Entry detail → "Upload" button visible (checkin+) → click → navigates directly to `/upload/{CODE}`
-2. Upload page → share icon → share sheet or clipboard copy
-3. `/upload` with no code → error message shown
-4. Session detail → no upload button → photo gallery still works
-5. Check-in user can use the Upload button (not blocked by 403)
-6. `POST /api/media/upload` returns 404
+*Created: 2026-02-22 | Last Updated: 2026-03-01*
