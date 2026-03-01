@@ -9,7 +9,7 @@
     "dev": "nodemon app.js",
     "dev:members": "dotenv -e .env.members -- nodemon app.js",
     "dev:tracker": "dotenv -e .env.tracker -- nodemon app.js",
-    "test": "echo \"No tests configured\""
+    "test": "node test/test-auth.js && node test/test-records.js"
   },
   "nodemonConfig": {
     "ignore": [

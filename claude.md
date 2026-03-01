@@ -197,6 +197,13 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Frontend: CSS hides `.admin-only` elements based on `body[data-role]`
 - Full reference: [docs/permissions.md](docs/permissions.md)
 
+### Error Handling
+- **Propagate errors by default** — do not catch exceptions in service methods and return empty results. Let errors surface to the route handler where they can be logged and returned as a proper HTTP error response.
+- **No silent empty returns** — returning `[]` or `null` from a catch block is only acceptable when the feature is genuinely optional and the empty state is indistinguishable from "not configured". Always add a comment explaining the deliberate choice.
+- **API endpoints must return non-2xx on failure** — a route that fetches required data and fails must return 4xx/5xx, not `{ success: true, data: [] }`. The frontend cannot distinguish a real empty result from a failed fetch if the status is always 200.
+- **Frontend fetch handlers must log on failure** — every `if (!res.ok) return;` is a bug waiting to happen. At minimum call `console.error` with the status and URL. For user-facing features, call `showError()` so the failure is visible.
+- **When adding try/catch, ask**: *does swallowing this error hide a misconfiguration or a broken API call?* If yes, re-throw or log prominently rather than returning empty data.
+
 ### Security Considerations
 - Validate all user input before SharePoint API calls
 - Prevent XSS when displaying user-generated content

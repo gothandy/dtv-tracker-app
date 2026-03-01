@@ -22,7 +22,7 @@ export class TaxonomyClient {
    * Returns null if the column doesn't exist or isn't a Managed Metadata column.
    */
   async getTermSetIdForColumn(listGuid: string, columnName: string): Promise<string | null> {
-    const cacheKey = `columns-${listGuid}`;
+    const cacheKey = `columns-expanded-${listGuid}`;
     let columns = this.sp.cache.get(cacheKey) as any[] | undefined;
 
     if (!columns) {
@@ -30,7 +30,7 @@ export class TaxonomyClient {
         const siteId = await this.sp.getSiteId();
         const data = await this.sp.get(`sites/${siteId}/lists/${listGuid}/columns?$expand=termColumn`);
         columns = data.value || [];
-        this.sp.cache.set(cacheKey, columns);
+        this.sp.cache.set(cacheKey, columns); // expanded cache — separate from getColumnChoices
       } catch (error: any) {
         console.error(`Error fetching columns for list ${listGuid}:`, error.message);
         return null;

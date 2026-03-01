@@ -16,6 +16,35 @@ All page-specific CSS moved to `styles.css` under named section comments. FY bar
 
 ---
 
+## Silent Failure Pattern
+**Priority**: High | **Effort**: Medium
+
+Errors are routinely swallowed at multiple layers, making bugs invisible to both users and developers. The records filter bug (March 2026) is a clear example: a broken Graph API call returned nothing to the user and logged only to the server console — invisible during browser testing.
+
+**Where it happens:**
+
+*Service layer* — `getColumnChoices` catches all exceptions and returns `[]`. A bad query parameter, a permissions error, or a network failure all produce the same silent empty result. Other service methods follow the same pattern.
+
+*API layer* — endpoints return `{ success: true, data: [] }` when the underlying fetch fails, so the HTTP status is 200 but the data is wrong. The frontend cannot distinguish "no data exists" from "fetch failed".
+
+*Frontend layer* — `if (!res.ok) return;` without logging appears in several fetch handlers. When an API call fails, nothing is shown to the user and nothing is logged to the browser console. The feature simply doesn't work, with no indication why.
+
+**The risk** — this pattern means:
+- Bugs can exist undetected for weeks (the records filter broke in the Taxonomy tags commit and was only noticed much later)
+- A single change to a shared utility (e.g. adding a Graph API parameter) can silently break an unrelated feature
+- Integration tests are the only reliable safety net, but only if they assert on actual data, not just structure
+
+**What to do:**
+
+- Service methods should let errors propagate by default. Catch-and-return-empty should be a deliberate, documented choice for genuinely optional features — not the default.
+- API endpoints should return a non-2xx status when a required data fetch fails, so the frontend can distinguish error from empty.
+- Frontend fetch handlers should log to console on `!res.ok` at minimum, even if no UI error is shown. Prefer calling `showError()` for user-facing failures.
+- When adding `try/catch` to a service method, ask: *does swallowing this error hide a misconfiguration or a broken API call?* If yes, re-throw or log prominently.
+
+**Affected files** (current examples): `services/sharepoint-client.ts` → `getColumnChoices`, `services/taxonomy-client.ts` → `getTermSetIdForColumn`, `routes/profiles.ts` → `/records/options`, `public/js/volunteers.js` → `loadRecordOptions`
+
+---
+
 ## Modal HTML Duplication
 **Priority**: Medium | **Effort**: Medium
 
@@ -42,16 +71,22 @@ Both implement the same April-March rule. Currently works fine, but a change to 
 ---
 
 ## Automated Tests
-**Priority**: Medium | **Effort**: High
+**Priority**: Medium | **Effort**: Medium
 
-The `test/` directory contains manual verification scripts (`.js` files that hit the live API). There are no automated unit or integration tests.
+The `test/` directory contains verification scripts that hit the live SharePoint API directly (no mocks). `npm test` now runs `test-auth.js` and `test-records.js` as a baseline suite.
 
-**What would benefit most from tests**:
-- `data-layer.ts` — FY calculations, session enrichment, validation functions
-- `routes/api.ts` — endpoint logic with mocked repositories
-- `common.js` — `getFYKey()`, `getCountdown()`, `formatDate()`
+**Why no mocks** — the records filter bug was introduced by a query parameter change (`?$expand=termColumn`) that mocks would have missed entirely. Integration tests against real SharePoint catch this class of error; unit tests with mocked responses do not.
 
-**Blockers**: Would need a test framework (Jest/Vitest), mock layer for SharePoint client, and test data fixtures.
+**What's covered so far**:
+- Auth + site connectivity (`test-auth.js`)
+- Records list: column choices (Type, Status) and list access (`test-records.js`)
+
+**What still needs coverage** (in priority order):
+- `getColumnChoices` for any future lists added to the filter (same failure mode as records)
+- Key data contracts: profiles endpoint returns `records[]`, sessions endpoint returns expected fields
+- FY calculation correctness in `data-layer.ts` — pure functions, no SharePoint needed, good candidate for unit tests without a framework (just `assert`)
+
+**Guidance**: Every new SharePoint API call added to the service layer should have a corresponding test that asserts on actual returned data, not just structure. Empty arrays passing a `Array.isArray()` check is not a passing test.
 
 ---
 
@@ -195,4 +230,4 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
-*Last Updated: 2026-02-27 (codebase review session)*
+*Last Updated: 2026-03-01*
