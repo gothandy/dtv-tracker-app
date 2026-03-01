@@ -7,14 +7,16 @@ let currentHoursFilter = '';
 let currentRecordType = '';
 let currentRecordStatus = '';
 const MEMBER_HOURS = 15;
+let advancedOpen = false;
+let selectedVolunteers = new Set();
 
 function toggleAdvanced() {
     const section = document.getElementById('advancedSection');
     const btn = document.getElementById('advancedToggle');
-    const isOpen = section.classList.toggle('open');
-    btn.classList.toggle('active', isOpen);
-    btn.innerHTML = isOpen ? 'Advanced &#9652;' : 'Advanced &#9662;';
-    if (!isOpen) {
+    advancedOpen = section.classList.toggle('open');
+    btn.classList.toggle('active', advancedOpen);
+    btn.innerHTML = advancedOpen ? 'Advanced &#9652;' : 'Advanced &#9662;';
+    if (!advancedOpen) {
         currentTypeFilter = '';
         currentHoursFilter = '';
         currentRecordType = '';
@@ -23,6 +25,9 @@ function toggleAdvanced() {
         document.getElementById('hoursSelect').value = '';
         document.getElementById('recordTypeSelect').value = '';
         document.getElementById('recordStatusSelect').value = '';
+        selectedVolunteers.clear();
+        updateSelectAllLink();
+        updateAddRecordsButton();
         if (currentGroup) {
             currentGroup = '';
             document.getElementById('groupSelect').value = '';
@@ -32,7 +37,91 @@ function toggleAdvanced() {
             persistFilters();
             displayVolunteers();
         }
+    } else {
+        updateSelectAllLink();
+        updateSelectionButtons();
+        displayVolunteers();
     }
+}
+
+function getVisibleVolunteerIds() {
+    const searchTerm = document.getElementById('searchBox').value;
+    let filtered = allVolunteers;
+    if (currentTypeFilter === 'individuals') filtered = filtered.filter(v => !v.isGroup);
+    else if (currentTypeFilter === 'groups') filtered = filtered.filter(v => v.isGroup);
+    else if (currentTypeFilter === 'users') filtered = filtered.filter(v => !v.isGroup && v.user);
+    if (currentFilter !== 'all') filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
+    if (searchTerm && searchTerm.length >= 3) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
+    }
+    if (currentHoursFilter) {
+        const hFilters = {
+            '0': v => getHours(v) === 0,
+            'lt15': v => { const h = getHours(v); return h > 0 && h < 15; },
+            '15plus': v => getHours(v) >= 15,
+            '15to30': v => { const h = getHours(v); return h >= 15 && h <= 30; },
+            '30plus': v => getHours(v) > 30
+        };
+        if (hFilters[currentHoursFilter]) filtered = filtered.filter(hFilters[currentHoursFilter]);
+    }
+    if (currentRecordType) {
+        filtered = filtered.filter(v => {
+            const recs = (v.records || []).filter(r => r.type === currentRecordType);
+            if (currentRecordStatus === 'none') return recs.length === 0;
+            if (currentRecordStatus) return recs.some(r => r.status === currentRecordStatus);
+            return recs.length > 0;
+        });
+    } else if (currentRecordStatus === 'none') {
+        filtered = filtered.filter(v => !v.records || v.records.length === 0);
+    }
+    return filtered.map(v => v.id);
+}
+
+function updateSelectAllLink() {
+    const link = document.getElementById('selectAllLink');
+    if (!link) return;
+    link.style.display = advancedOpen ? '' : 'none';
+    const visibleIds = getVisibleVolunteerIds();
+    const allChecked = visibleIds.length > 0 && visibleIds.every(id => selectedVolunteers.has(id));
+    link.textContent = allChecked ? 'Deselect all' : 'Select all';
+}
+
+function updateSelectionButtons() {
+    const addBtn = document.getElementById('addRecordsBtn');
+    const csvBtn = document.getElementById('downloadCsvBtn');
+    const count = selectedVolunteers.size;
+    if (addBtn) {
+        addBtn.textContent = count > 0 ? `Add Records (${count})` : 'Add Records';
+        addBtn.disabled = count === 0;
+    }
+    if (csvBtn) {
+        csvBtn.disabled = count === 0;
+    }
+}
+
+function updateAddRecordsButton() {
+    updateSelectionButtons();
+}
+
+function toggleSelectAll() {
+    const visibleIds = getVisibleVolunteerIds();
+    const allChecked = visibleIds.length > 0 && visibleIds.every(id => selectedVolunteers.has(id));
+    if (allChecked) {
+        visibleIds.forEach(id => selectedVolunteers.delete(id));
+    } else {
+        visibleIds.forEach(id => selectedVolunteers.add(id));
+    }
+    updateSelectAllLink();
+    updateAddRecordsButton();
+    displayVolunteers();
+}
+
+function onVolunteerCheck(id, checked) {
+    if (checked) selectedVolunteers.add(id);
+    else selectedVolunteers.delete(id);
+    updateSelectAllLink();
+    updateAddRecordsButton();
 }
 
 function fyKeyToLabel(fyKey) {
@@ -100,10 +189,12 @@ function applyURLParams() {
     if (recordStatus) currentRecordStatus = recordStatus;
 
     if (type || hours || recordType || recordStatus || group) {
+        advancedOpen = true;
         document.getElementById('advancedSection').classList.add('open');
         const btn = document.getElementById('advancedToggle');
         btn.classList.add('active');
         btn.innerHTML = 'Advanced &#9652;';
+        updateSelectAllLink();
     }
 }
 
@@ -257,7 +348,7 @@ function displayVolunteers() {
         const href = v.slug ? `/profiles/${encodeURIComponent(v.slug)}/details.html` : '#';
         const sessions = getSessions(v);
         const hours = getHours(v);
-        return `
+        const card = `
             <a class="volunteer-card${cardClass}" href="${href}">
                 <div class="volunteer-name">${escapeHtml(v.name || 'Unknown')}${groupBadge}${memberBadge}${cardBadge}</div>
                 <div class="volunteer-meta">
@@ -266,6 +357,16 @@ function displayVolunteers() {
                 </div>
             </a>
         `;
+        if (advancedOpen) {
+            const checked = selectedVolunteers.has(v.id) ? ' checked' : '';
+            return `<div class="card-selectable">
+                <input type="checkbox" class="card-checkbox" data-id="${v.id}"${checked}
+                    onclick="event.stopPropagation()"
+                    onchange="onVolunteerCheck(${v.id}, this.checked)">
+                ${card}
+            </div>`;
+        }
+        return card;
     }).join('');
 
     contentDiv.innerHTML = `<div class="volunteer-list">${html}</div>`;
@@ -326,6 +427,10 @@ function setRecordType(val) { currentRecordType = val; persistFilters(); display
 function setRecordStatus(val) { currentRecordStatus = val; persistFilters(); displayVolunteers(); }
 
 function downloadCSV() {
+    if (selectedVolunteers.size > 0) {
+        window.location.href = '/api/profiles/export?profileIds=' + [...selectedVolunteers].join(',');
+        return;
+    }
     const params = new URLSearchParams();
     params.set('fy', currentFilter); // "FY2025" or "all"
     if (currentGroup) params.set('group', currentGroup);
@@ -404,13 +509,19 @@ function getFilteredIndividuals() {
 let bulkRecordOptions = null;
 
 async function openBulkRecords() {
-    const individuals = getFilteredIndividuals();
-    if (individuals.length === 0) {
-        alert('No individual volunteers in the current filter.');
+    const selectedIndividuals = selectedVolunteers.size > 0
+        ? allVolunteers.filter(v => !v.isGroup && selectedVolunteers.has(v.id))
+        : getFilteredIndividuals();
+    if (selectedIndividuals.length === 0) {
+        alert(selectedVolunteers.size > 0
+            ? 'No individual volunteers in your selection.'
+            : 'No individual volunteers in the current filter.');
         return;
     }
-    document.getElementById('bulkRecordCount').textContent =
-        `${individuals.length} individual volunteer${individuals.length === 1 ? '' : 's'} in current filter.`;
+    const countDesc = selectedVolunteers.size > 0
+        ? `${selectedIndividuals.length} selected volunteer${selectedIndividuals.length === 1 ? '' : 's'}.`
+        : `${selectedIndividuals.length} individual volunteer${selectedIndividuals.length === 1 ? '' : 's'} in current filter.`;
+    document.getElementById('bulkRecordCount').textContent = countDesc;
     document.getElementById('bulkRecordSummary').textContent = '';
 
     if (!bulkRecordOptions) {
@@ -453,8 +564,10 @@ async function submitBulkRecords() {
         return;
     }
 
-    const individuals = getFilteredIndividuals();
-    const count = individuals.length;
+    const profileIds = selectedVolunteers.size > 0
+        ? allVolunteers.filter(v => !v.isGroup && selectedVolunteers.has(v.id)).map(v => v.id)
+        : getFilteredIndividuals().map(v => v.id);
+    const count = profileIds.length;
     if (!confirm(`You are about to update ${count} volunteer record${count === 1 ? '' : 's'} with "${type}: ${status}". Continue?`)) return;
 
     const btn = document.getElementById('bulkRecordConfirm');
@@ -465,7 +578,6 @@ async function submitBulkRecords() {
 
     try {
         const date = dateVal ? new Date(dateVal + 'T10:00:00.000Z').toISOString() : new Date().toISOString();
-        const profileIds = individuals.map(v => v.id);
         const res = await apiFetch('/api/records/bulk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -33,9 +33,29 @@
         .modal-btn-confirm { background: var(--green); color: white; }
         .modal-btn-confirm:hover { background: var(--green-dark); }
         .modal-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+        .tag-filter-wrap { position: relative; flex: 1; }
+        .tag-filter-btn {
+            width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;
+            padding: 0.5rem 0.75rem; border: 2px solid var(--border-mid); border-radius: 6px;
+            background: var(--surface); font-size: 1rem; font-family: inherit; color: var(--text);
+            cursor: pointer; min-height: 38px;
+        }
+        .tag-filter-btn:hover { border-color: var(--green); }
+        .tag-filter-btn.active { border-color: var(--green); }
+        .tag-filter-panel {
+            position: absolute; left: 0; top: calc(100% + 2px); z-index: 50;
+            background: var(--surface); border: 2px solid var(--border-mid);
+            border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            min-width: 100%;
+        }
+        .tag-filter-tree { max-height: 280px; overflow-y: auto; border: none; margin: 0; }
+        .tag-filter-panel .tag-tree-row.selected { background: var(--green); color: white; }
+        .tag-filter-panel .tag-tree-row.selected .tag-tree-label { color: white; }
+        .tag-filter-panel .tag-tree-row.selected .tag-tree-toggle { color: white; }
     </style>
     <script src="/js/common.js"></script>
     <script src="/js/session-cards.js"></script>
+    <script src="/js/session-tags.js"></script>
     <script src="/js/lightbox.js"></script>
 </head>
 <body class="detail-page">
@@ -71,9 +91,15 @@
                     <select id="groupSelect" onchange="setGroup(this.value)">
                         <option value="">All Groups</option>
                     </select>
-                    <select id="tagSelect" onchange="setTag(this.value)">
-                        <option value="">All Tags</option>
-                    </select>
+                    <div class="tag-filter-wrap" id="tagFilterWrap">
+                        <button class="tag-filter-btn" id="tagFilterBtn" onclick="toggleTagFilter()">
+                            <span id="tagFilterLabel">All Tags</span>
+                            <span>&#9662;</span>
+                        </button>
+                        <div class="tag-filter-panel" id="tagFilterPanel" style="display:none;">
+                            <ul class="tag-tree tag-filter-tree" id="tagFilterTree"></ul>
+                        </div>
+                    </div>
                 </div>
                 <div class="advanced-row" style="justify-content: space-between;">
                     <a href="#" id="selectAllLink" class="select-all-link" onclick="toggleSelectAll(); return false;" style="display:none;">Select all</a>
@@ -138,7 +164,7 @@
             if (currentGroup || currentTag) {
                 advancedOpen = true;
                 document.getElementById('advancedSection').classList.add('open');
-                document.getElementById('advancedToggle').innerHTML = 'Advanced &#9650;';
+                document.getElementById('advancedToggle').innerHTML = 'Advanced &#9652;';
                 updateSelectAllLink();
             }
         }
@@ -174,43 +200,142 @@
             });
         }
 
-        function buildFilterDropdowns() {
-            // Groups
+        function refreshGroupDropdown(sessions) {
             const groupSelect = document.getElementById('groupSelect');
-            groupSelect.innerHTML = '<option value="">All Groups</option>';
             const groups = [...new Map(
-                allSessions.filter(s => s.groupName && s.groupId != null)
-                           .map(s => [s.groupId, s.groupName])
+                sessions.filter(s => s.groupName && s.groupId != null)
+                        .map(s => [s.groupId, s.groupName])
             ).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+            groupSelect.innerHTML = '<option value="">All Groups</option>';
             groups.forEach(([id, name]) => {
                 const opt = document.createElement('option');
                 opt.value = String(id);
                 opt.textContent = name;
                 groupSelect.appendChild(opt);
             });
-            if (currentGroup) groupSelect.value = currentGroup;
+            if (currentGroup && !groups.some(([id]) => String(id) === currentGroup)) {
+                currentGroup = '';
+                persistFilters();
+            }
+            groupSelect.value = currentGroup;
+        }
 
-            // Tags
-            const tagSelect = document.getElementById('tagSelect');
-            tagSelect.innerHTML = '<option value="">All Tags</option>';
-            const tagMap = new Map();
-            allSessions.forEach(s => (s.metadata || []).forEach(t => {
-                if (t.termGuid && !tagMap.has(t.termGuid)) tagMap.set(t.termGuid, t.label);
-            }));
-            [...tagMap.entries()]
-                .sort((a, b) => tagShortLabel(a[1]).localeCompare(tagShortLabel(b[1])))
-                .forEach(([guid, label]) => {
-                    const opt = document.createElement('option');
-                    opt.value = guid;
-                    opt.textContent = tagShortLabel(label);
-                    tagSelect.appendChild(opt);
-                });
-            if (currentTag) tagSelect.value = currentTag;
+        function buildFilterDropdowns() {
+            refreshGroupDropdown(allSessions);
+            // Restore tag filter button label from session metadata when loading from URL
+            if (currentTag) {
+                for (const s of allSessions) {
+                    const tag = (s.metadata || []).find(t => t.termGuid === currentTag);
+                    if (tag) {
+                        const labelEl = document.getElementById('tagFilterLabel');
+                        if (labelEl) labelEl.textContent = tagShortLabel(tag.label);
+                        break;
+                    }
+                }
+            }
         }
 
         function tagShortLabel(label) {
-            const parts = label.split('>');
-            return parts[parts.length - 1].trim();
+            return label.split(' > ').map(s => s.trim()).join(': ');
+        }
+
+        // Tag filter tree dropdown
+        let tagTaxonomy = null;
+        let tagFilterOpen = false;
+        let _tagFilterCounter = 0;
+        let availableTagGuids = null; // null = no constraint; Set = restrict to these GUIDs
+
+        function refreshTagFilter(sessions) {
+            const guids = new Set();
+            sessions.forEach(s => (s.metadata || []).forEach(t => { if (t.termGuid) guids.add(t.termGuid); }));
+            if (currentTag && !guids.has(currentTag)) {
+                currentTag = '';
+                const labelEl = document.getElementById('tagFilterLabel');
+                if (labelEl) labelEl.textContent = 'All Tags';
+                persistFilters();
+            }
+            availableTagGuids = guids;
+            if (tagFilterOpen) renderTagFilterTree();
+        }
+
+        async function toggleTagFilter() {
+            tagFilterOpen = !tagFilterOpen;
+            const panel = document.getElementById('tagFilterPanel');
+            const btn = document.getElementById('tagFilterBtn');
+            if (tagFilterOpen) {
+                btn.classList.add('active');
+                panel.style.display = '';
+                if (!tagTaxonomy) {
+                    const treeEl = document.getElementById('tagFilterTree');
+                    if (treeEl) treeEl.innerHTML = '<li style="padding:0.5rem 0.75rem;color:var(--text-mid);font-size:0.9rem;">Loading…</li>';
+                    try {
+                        const res = await fetch('/api/tags/taxonomy');
+                        const data = await res.json();
+                        tagTaxonomy = (data.success && data.data) ? data.data : [];
+                    } catch (e) { tagTaxonomy = []; }
+                }
+                renderTagFilterTree();
+            } else {
+                closeTagFilter();
+            }
+        }
+
+        function closeTagFilter() {
+            tagFilterOpen = false;
+            const panel = document.getElementById('tagFilterPanel');
+            const btn = document.getElementById('tagFilterBtn');
+            if (panel) panel.style.display = 'none';
+            if (btn) btn.classList.remove('active');
+        }
+
+        function buildTagFilterTreeHTML(nodes, path) {
+            const parts = [];
+            for (const node of nodes) {
+                const nodePath = (path || []).concat([node.label]);
+                const pathStr = nodePath.join(' > ');
+                const hasChildren = node.children && node.children.length;
+                // Build children first to know whether any are visible
+                const childrenHTML = hasChildren ? buildTagFilterTreeHTML(node.children, nodePath) : '';
+                const hasVisibleChildren = childrenHTML.length > 0;
+                // Skip node if its GUID is not in the available set and no children are visible
+                if (availableTagGuids && !availableTagGuids.has(node.id) && !hasVisibleChildren) continue;
+                const nodeId = 'tfnode-' + (++_tagFilterCounter);
+                const depth = path ? path.length : 0;
+                const indent = Array(depth).fill('<span class="tag-tree-indent"></span>').join('');
+                const toggle = hasVisibleChildren
+                    ? `<button class="tag-tree-toggle" onclick="toggleTagNode('${nodeId}', event)">−</button>`
+                    : '<span class="tag-tree-indent"></span>';
+                const isSelected = node.id && node.id === currentTag;
+                const escapedPath = pathStr.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                parts.push(`<li>
+                    <div class="tag-tree-row${isSelected ? ' selected' : ''}" onclick="selectTagFilter('${escapeHtml(node.id || '')}', '${escapedPath}')">
+                        ${indent}${toggle}<span class="tag-tree-label">${escapeHtml(node.label)}</span>
+                    </div>
+                    ${hasVisibleChildren ? `<ul class="tag-tree-children open" id="${nodeId}">${childrenHTML}</ul>` : ''}
+                </li>`);
+            }
+            return parts.join('');
+        }
+
+        function renderTagFilterTree() {
+            const tree = document.getElementById('tagFilterTree');
+            if (!tree) return;
+            _tagFilterCounter = 0;
+            const allRow = `<li><div class="tag-tree-row${!currentTag ? ' selected' : ''}" onclick="selectTagFilter('', 'All Tags')" style="font-style:italic;">
+                <span class="tag-tree-indent"></span><span class="tag-tree-indent"></span><span class="tag-tree-label">All Tags</span>
+            </div></li>`;
+            tree.innerHTML = allRow + (tagTaxonomy && tagTaxonomy.length
+                ? buildTagFilterTreeHTML(tagTaxonomy, [])
+                : '<li style="padding:0.5rem 0.75rem;color:var(--text-mid);font-size:0.9rem;">No tags available</li>');
+        }
+
+        function selectTagFilter(termGuid, label) {
+            currentTag = termGuid;
+            const labelEl = document.getElementById('tagFilterLabel');
+            if (labelEl) labelEl.textContent = termGuid ? tagShortLabel(label) : 'All Tags';
+            closeTagFilter();
+            persistFilters();
+            displaySessions(allSessions);
         }
 
         function toggleDropdown(menuId) {
@@ -224,6 +349,9 @@
             if (!e.target.closest('.dropdown')) {
                 document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
             }
+            if (!e.target.closest('#tagFilterWrap')) {
+                closeTagFilter();
+            }
         });
 
         function toggleAdvanced() {
@@ -231,7 +359,7 @@
             const section = document.getElementById('advancedSection');
             const btn = document.getElementById('advancedToggle');
             section.classList.toggle('open', advancedOpen);
-            btn.innerHTML = advancedOpen ? 'Advanced &#9650;' : 'Advanced &#9662;';
+            btn.innerHTML = advancedOpen ? 'Advanced &#9652;' : 'Advanced &#9662;';
             if (!advancedOpen) {
                 selectedSessions.clear();
                 updateBulkTagButton();
@@ -286,7 +414,28 @@
         }
 
         function openBulkTagModal() {
-            // Implemented in Step 5
+            const count = selectedSessions.size;
+            if (count === 0) return;
+            const h3 = document.querySelector('#addTagModal h3');
+            if (h3) h3.textContent = `Add Tag to ${count} session${count === 1 ? '' : 's'}`;
+            openAddTagModal();
+        }
+
+        async function handleBulkTagConfirm(tag) {
+            const res = await apiFetch('/api/sessions/bulk-tag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionIds: [...selectedSessions],
+                    tags: [{ label: tag.label, termGuid: tag.termGuid }]
+                })
+            });
+            const result = await res.json();
+            if (!res.ok || !result.success) throw new Error(result.error || 'Bulk tag failed');
+            selectedSessions.clear();
+            updateBulkTagButton();
+            updateSelectAllLink();
+            loadSessions();
         }
 
         function setGroup(value) {
@@ -295,13 +444,7 @@
             displaySessions(allSessions);
         }
 
-        function setTag(value) {
-            currentTag = value;
-            persistFilters();
-            displaySessions(allSessions);
-        }
-
-        function filterSessions(filter) {
+function filterSessions(filter) {
             currentFilter = filter;
             persistFY(filter);
             persistFilters();
@@ -323,20 +466,33 @@
             if (currentFilter !== 'all') {
                 filtered = filtered.filter(s => s.financialYear === currentFilter);
             }
-            if (currentGroup) {
-                filtered = filtered.filter(s => String(s.groupId) === currentGroup);
-            }
-            if (currentTag) {
-                filtered = filtered.filter(s =>
-                    (s.metadata || []).some(t => t.termGuid === currentTag)
-                );
-            }
             if (currentSearch.length >= 3) {
                 const term = currentSearch.toLowerCase();
                 filtered = filtered.filter(s =>
                     (s.displayName || '').toLowerCase().includes(term) ||
                     (s.description  || '').toLowerCase().includes(term)
                 );
+            }
+
+            // Base for cascades: FY + search (no tag or group filter yet)
+            const base = filtered;
+
+            // Cascade tags: sessions matching FY + search + group (not tag)
+            // refreshTagFilter may clear currentTag if it's no longer available
+            refreshTagFilter(currentGroup
+                ? base.filter(s => String(s.groupId) === currentGroup)
+                : base);
+
+            // Cascade groups: sessions matching FY + search + tag (not group)
+            refreshGroupDropdown(currentTag
+                ? base.filter(s => (s.metadata || []).some(t => t.termGuid === currentTag))
+                : base);
+
+            if (currentTag) {
+                filtered = base.filter(s => (s.metadata || []).some(t => t.termGuid === currentTag));
+            }
+            if (currentGroup) {
+                filtered = filtered.filter(s => String(s.groupId) === currentGroup);
             }
 
             countDiv.textContent = filtered.length;
@@ -361,6 +517,7 @@
         async function loadSessions() {
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('sessionCount');
+            tagTaxonomy = null; // always re-fetch taxonomy on next dropdown open
 
             try {
                 const response = await fetch('/api/sessions');
@@ -454,6 +611,14 @@
                 btn.textContent = 'Create';
             }
         }
+
+        initSessionTags({
+            groupKey: null,
+            sessionDate: null,
+            getSession: () => null,
+            onUpdate: () => {},
+            onConfirm: handleBulkTagConfirm
+        });
 
         applyURLParams();
         loadSessions();

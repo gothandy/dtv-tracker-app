@@ -74,9 +74,12 @@
                         <option value="none">No Record</option>
                     </select>
                 </div>
-                <div class="advanced-row" style="justify-content: flex-end;">
-                    <button class="advanced-toggle admin-only" onclick="openBulkRecords()">Add Records</button>
-                    <button class="advanced-toggle admin-only" onclick="downloadCSV()">Download CSV</button>
+                <div class="advanced-row" style="justify-content: space-between;">
+                    <a href="#" id="selectAllLink" class="select-all-link" onclick="toggleSelectAll(); return false;" style="display:none;">Select all</a>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="advanced-toggle admin-only" id="addRecordsBtn" onclick="openBulkRecords()">Add Records</button>
+                        <button class="advanced-toggle admin-only" id="downloadCsvBtn" onclick="downloadCSV()">Download CSV</button>
+                    </div>
                 </div>
             </div>
         </div>

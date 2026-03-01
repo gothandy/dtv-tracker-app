@@ -145,6 +145,9 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     const hoursFilter = req.query.hours ? String(req.query.hours) : undefined;
     const recordTypeFilter = req.query.recordType ? String(req.query.recordType) : undefined;
     const recordStatusFilter = req.query.recordStatus ? String(req.query.recordStatus) : undefined;
+    const profileIdsFilter = req.query.profileIds
+      ? new Set(String(req.query.profileIds).split(',').map(Number).filter(n => !isNaN(n) && n > 0))
+      : undefined;
 
     const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
@@ -211,6 +214,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       const profile = convertProfile(spProfile);
       const ps = profileStats.get(spProfile.ID);
       return {
+        id: spProfile.ID,
         name: profile.name || '',
         email: profile.email || '',
         isGroup: profile.isGroup,
@@ -260,6 +264,11 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     // Filter out profiles with no activity unless showing all or explicitly requesting 0h
     if (fyParam !== 'all' && hoursFilter !== '0') {
       profileList = profileList.filter(p => p.hoursThisFY > 0 || p.sessionsThisFY > 0);
+    }
+
+    // Explicit ID selection (from checkbox selection on the volunteers page)
+    if (profileIdsFilter && profileIdsFilter.size > 0) {
+      profileList = profileList.filter(p => profileIdsFilter.has(p.id));
     }
 
     // Sort by name

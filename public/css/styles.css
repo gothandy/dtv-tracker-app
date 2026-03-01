@@ -939,10 +939,10 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     flex-shrink: 0; min-width: 40px; text-align: center;
 }
 #groupSelect {
-    padding: 0.4rem 0.6rem; font-size: 0.85rem;
+    padding: 0.5rem 0.75rem; font-size: 0.9rem;
     border: 2px solid var(--border-mid); border-radius: var(--radius);
     font-family: var(--font); background: var(--surface); color: var(--text);
-    min-height: 36px;
+    min-height: 38px;
 }
 #groupSelect:focus { outline: none; border-color: var(--green); }
 
@@ -996,7 +996,7 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     flex-shrink: 0; cursor: pointer; accent-color: var(--green);
 }
 .select-all-link {
-    font-size: 0.85rem; color: var(--green); text-decoration: none;
+    font-size: 0.9rem; color: var(--green); text-decoration: none;
     white-space: nowrap; align-self: center; padding: 0 0.25rem;
 }
 .select-all-link:hover { text-decoration: underline; }
@@ -1034,14 +1034,15 @@ a.volunteer-card { text-decoration: none; color: inherit; }
     display: flex; align-items: center; gap: 0.3rem;
     min-height: 38px; white-space: nowrap; font-family: var(--font);
 }
-.advanced-toggle:hover { border-color: var(--green); }
+.advanced-toggle:hover:not(:disabled) { border-color: var(--green); }
 .advanced-toggle.active { border-color: var(--green); color: var(--green); }
+.advanced-toggle:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .advanced-section {
     max-height: 0; overflow: hidden; opacity: 0;
     transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
 }
-.advanced-section.open { max-height: 300px; opacity: 1; margin-top: 0.75rem; }
+.advanced-section.open { max-height: 300px; opacity: 1; margin-top: 0.75rem; overflow: visible; }
 .advanced-row { display: flex; gap: 0.5rem; align-items: center; }
 .advanced-row + .advanced-row { margin-top: 0.5rem; }
 .advanced-row select {
@@ -1054,7 +1055,9 @@ a.volunteer-card { text-decoration: none; color: inherit; }
 
 @media (max-width: 600px) {
     .filter-search { width: 100%; }
-    .advanced-section.open { max-height: 600px; }
+    .advanced-section.open { max-height: 600px; overflow: visible; }
+    .tag-filter-wrap { width: 100%; }
+    .tag-filter-panel { width: 100%; }
     .advanced-row { flex-direction: column; }
     .advanced-row select { width: 100%; }
     .volunteer-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }

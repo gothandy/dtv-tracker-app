@@ -12,8 +12,8 @@
     let _sessionDate = null;
     let _getSession = null;
     let _onUpdate = null;
+    let _onConfirm = null;
 
-    let _cachedTaxonomy = null;
     let _treeIdCounter = 0;
     let _selectedTag = null;
     let _termGuidMap = {};
@@ -23,6 +23,7 @@
         _sessionDate = opts.sessionDate;
         _getSession = opts.getSession;
         _onUpdate = opts.onUpdate;
+        _onConfirm = opts.onConfirm || null;
 
         // Inject the Add Tag modal into the DOM if not already present
         if (!document.getElementById('addTagModal')) {
@@ -43,12 +44,10 @@
     }
 
     async function loadTaxonomy() {
-        if (_cachedTaxonomy) return _cachedTaxonomy;
         const res = await apiFetch('/api/tags/taxonomy');
         const data = await res.json();
-        _cachedTaxonomy = (data.success && data.data) ? data.data : [];
-        _termGuidMap = buildTermGuidMap(_cachedTaxonomy);
-        return _cachedTaxonomy;
+        _termGuidMap = buildTermGuidMap((data.success && data.data) ? data.data : []);
+        return (data.success && data.data) ? data.data : [];
     }
 
     function buildTermGuidMap(nodes, pathParts) {
@@ -129,12 +128,25 @@
 
     async function confirmTagSelection() {
         if (!_selectedTag) return;
+        const okBtn = document.getElementById('addTagOkBtn');
+        if (okBtn) okBtn.disabled = true;
+        if (_onConfirm) {
+            try {
+                await _onConfirm(_selectedTag);
+                closeAddTagModal();
+            } catch (error) {
+                alert(error.message || 'Failed to add tag.');
+                if (okBtn) okBtn.disabled = false;
+            }
+            return;
+        }
         try {
             const existing = _getSession().metadata || [];
             await patchSessionMetadata([...existing, _selectedTag]);
             closeAddTagModal();
         } catch (error) {
             alert(error.message || 'Failed to add tag.');
+            if (okBtn) okBtn.disabled = false;
         }
     }
 
