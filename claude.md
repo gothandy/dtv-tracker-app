@@ -355,6 +355,8 @@ npm run dev       # Start with auto-reload (development)
 npm start         # Start without auto-reload
 
 # Visit http://localhost:3000
+
+npm run test:live # Integration tests — require live SharePoint credentials, run locally only
 ```
 
 ## Important Notes

@@ -73,7 +73,7 @@ Both implement the same April-March rule. Currently works fine, but a change to 
 ## Automated Tests
 **Priority**: Medium | **Effort**: Medium
 
-The `test/` directory contains verification scripts that hit the live SharePoint API directly (no mocks). `npm test` now runs `test-auth.js` and `test-records.js` as a baseline suite.
+The `test/` directory contains verification scripts that hit the live SharePoint API directly (no mocks). Run with `npm run test:live` — these require live credentials and are not part of the deployment pipeline.
 
 **Why no mocks** — the records filter bug was introduced by a query parameter change (`?$expand=termColumn`) that mocks would have missed entirely. Integration tests against real SharePoint catch this class of error; unit tests with mocked responses do not.
 
