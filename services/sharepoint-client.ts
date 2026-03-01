@@ -377,7 +377,7 @@ export class SharePointClient {
     if (!columns) {
       try {
         const siteId = await this.getSiteId();
-        const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns?$expand=termColumn`);
+        const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
         columns = data.value || [];
         this.cache.set(cacheKey, columns);
       } catch (error: any) {

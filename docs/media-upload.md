@@ -199,3 +199,28 @@ Allows a logged-in admin to generate a short code from the entry detail page and
 ---
 
 *Created: 2026-02-22*
+
+---
+
+## Planned Simplification (2026-03-01)
+
+Photos are typically received via WhatsApp/Facebook by admin/check-in staff, who do the final upload themselves. The multi-step "generate link → copy → navigate" workflow on entry-detail is unnecessary friction. Plan: "Upload Media" button navigates directly to the upload page; the share icon moves onto the upload page itself.
+
+### Changes required
+
+| File | Change |
+|------|--------|
+| `public/session-detail.html` | Remove hidden `<input type="file" id="mediaFileInput">` |
+| `public/js/session-detail.js` | Remove upload `<button onclick="openMediaPicker()">` from title buttons; remove `uploadPhotos()` and `openMediaPicker()` functions. Keep all gallery/lightbox code. |
+| `public/entry-detail.html` | Replace "link" button + `uploadCodePanel` div with a single `checkin-only` **"Upload"** button. Replace `getUploadCode()` + `shareOrCopyUploadLink()` with `openUploadPage()` that calls the API then does `window.location.href = result.data.url`. |
+| `middleware/require-admin.ts` | Add `{ method: 'POST', pattern: /^\/entries\/\d+\/upload-code$/ }` to `CHECKIN_ALLOWED_PATTERNS` so check-in users can generate codes. |
+| `public/upload.html` | Remove `<div id="step-code">` form entirely. Simplify `init()` to extract code from URL, validate immediately, show error state if missing/invalid. Remove `onCodeInput()`. Add share icon button in `context-info` div (`navigator.share` or clipboard copy of `window.location.href`). |
+| `routes/media.ts` | Remove `POST /api/media/upload` endpoint and its multer setup. Keep `GET /api/media`. |
+
+### Verification
+1. Entry detail → "Upload" button visible (checkin+) → click → navigates directly to `/upload/{CODE}`
+2. Upload page → share icon → share sheet or clipboard copy
+3. `/upload` with no code → error message shown
+4. Session detail → no upload button → photo gallery still works
+5. Check-in user can use the Upload button (not blocked by 403)
+6. `POST /api/media/upload` returns 404
