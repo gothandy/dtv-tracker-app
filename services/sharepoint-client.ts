@@ -375,19 +375,13 @@ export class SharePointClient {
     let columns = this.cache.get(cacheKey) as any[] | undefined;
 
     if (!columns) {
-      try {
-        const siteId = await this.getSiteId();
-        const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
-        columns = data.value || [];
-        this.cache.set(cacheKey, columns);
-      } catch (error: any) {
-        console.error(`Error fetching columns for list ${listGuid}:`, error.message);
-        return [];
-      }
+      const siteId = await this.getSiteId();
+      const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
+      columns = data.value || [];
+      this.cache.set(cacheKey, columns);
     }
 
-    if (!columns) return [];
-    const column = columns.find((c: any) => c.name === columnName || c.displayName === columnName);
+    const column = (columns as any[]).find((c: any) => c.name === columnName || c.displayName === columnName);
     return column?.choice?.choices || [];
   }
 

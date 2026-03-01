@@ -4,18 +4,6 @@ Code and architecture items only. Functionality lives in [todo.md](todo.md). Res
 
 ---
 
-## ~~Inline JavaScript in HTML pages~~ ✓ Resolved 2026-02-27
-
-Extracted all inline `<script>` and `<style>` blocks from the four large HTML pages:
-- `profile-detail.html` (~600 lines JS) → `public/js/profile-detail.js`
-- `volunteers.html` (~500 lines JS) → `public/js/volunteers.js`
-- `session-detail.html` (~400 lines JS) → `public/js/session-detail.js`
-- `group-detail.html` (~275 lines JS) → `public/js/group-detail.js`
-
-All page-specific CSS moved to `styles.css` under named section comments. FY bar chart CSS merged into a single shared section. `volunteers.html` body given `class="detail-page"` (removing duplicated body/container overrides). HTML files reduced to ~120 lines each.
-
----
-
 ## Silent Failure Pattern
 **Priority**: High | **Effort**: Medium
 
@@ -41,7 +29,9 @@ Errors are routinely swallowed at multiple layers, making bugs invisible to both
 - Frontend fetch handlers should log to console on `!res.ok` at minimum, even if no UI error is shown. Prefer calling `showError()` for user-facing failures.
 - When adding `try/catch` to a service method, ask: *does swallowing this error hide a misconfiguration or a broken API call?* If yes, re-throw or log prominently.
 
-**Affected files** (current examples): `services/sharepoint-client.ts` → `getColumnChoices`, `services/taxonomy-client.ts` → `getTermSetIdForColumn`, `routes/profiles.ts` → `/records/options`, `public/js/volunteers.js` → `loadRecordOptions`
+**Affected files** (remaining): `services/taxonomy-client.ts` → `getTermSetIdForColumn` (intentional — null is documented, env var is working fallback, error is logged)
+
+**Fixed** (2026-03-01): `services/sharepoint-client.ts` → `getColumnChoices` (try/catch removed; errors now propagate to route handler); `public/js/volunteers.js` → `loadRecordOptions` (added `console.error` on `!res.ok`)
 
 ---
 
@@ -80,11 +70,11 @@ The `test/` directory contains verification scripts that hit the live SharePoint
 **What's covered so far**:
 - Auth + site connectivity (`test-auth.js`)
 - Records list: column choices (Type, Status) and list access (`test-records.js`)
+- Data contracts for all five lists: field shapes and non-empty results (`test-data-contracts.js`) — catches silent empty returns and field renames
+- FY calculation: `calculateFinancialYear` and `calculateCurrentFY` — pure unit tests, no SharePoint (`test-fy-calc.js`)
 
-**What still needs coverage** (in priority order):
-- `getColumnChoices` for any future lists added to the filter (same failure mode as records)
-- Key data contracts: profiles endpoint returns `records[]`, sessions endpoint returns expected fields
-- FY calculation correctness in `data-layer.ts` — pure functions, no SharePoint needed, good candidate for unit tests without a framework (just `assert`)
+**What still needs coverage**:
+- `getColumnChoices` for any future lists added to the filter (same failure mode as records; adding a list means adding it to `test-records.js` or a similar test)
 
 **Guidance**: Every new SharePoint API call added to the service layer should have a corresponding test that asserts on actual returned data, not just structure. Empty arrays passing a `Array.isArray()` check is not a passing test.
 
@@ -230,4 +220,4 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
-*Last Updated: 2026-03-01*
+*Last Updated: 2026-03-01 (silent failure fixes; data contracts + FY calc tests added)*

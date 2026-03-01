@@ -10,7 +10,7 @@
     "dev:members": "dotenv -e .env.members -- nodemon app.js",
     "dev:tracker": "dotenv -e .env.tracker -- nodemon app.js",
     "test": "echo \"No automated tests (run npm run test:live for integration tests)\"",
-    "test:live": "node test/test-auth.js && node test/test-records.js"
+    "test:live": "node test/run-tests.js"
   },
   "nodemonConfig": {
     "ignore": [

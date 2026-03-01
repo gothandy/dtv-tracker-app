@@ -341,7 +341,10 @@ function downloadCSV() {
 async function loadRecordOptions() {
     try {
         const res = await apiFetch('/api/records/options');
-        if (!res.ok) return;
+        if (!res.ok) {
+            console.error('Failed to load record options:', res.status, res.url);
+            return;
+        }
         const result = await res.json();
         if (!result.success) return;
         const typeSelect = document.getElementById('recordTypeSelect');
