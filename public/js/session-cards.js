@@ -66,9 +66,16 @@ function buildSessionDetailUrl(session) {
 
 /**
  * Render a list of session cards into a container element.
+ *
+ * options:
+ *   showGroup     — show group name on each card (default true)
+ *   allSessions   — full session list for next/last determination
+ *   checkboxMode  — prepend a checkbox to each card (default false)
+ *   checkedIds    — Set of session IDs that should start checked
+ *   onCheckChange — callback(id, checked) called on checkbox change
  */
 function renderSessionList(container, sessions, options = {}) {
-    const { showGroup = true, allSessions } = options;
+    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange } = options;
 
     if (sessions.length === 0) {
         container.innerHTML = '<p class="no-sessions">No sessions</p>';
@@ -140,7 +147,28 @@ function renderSessionList(container, sessions, options = {}) {
                 </div>` : ''}
             `;
         }
-        list.appendChild(card);
+        if (checkboxMode) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'card-selectable';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'card-checkbox';
+            checkbox.dataset.id = String(session.id);
+            checkbox.checked = checkedIds ? checkedIds.has(session.id) : false;
+            // Stop click propagation so the checkbox doesn't trigger card navigation
+            checkbox.addEventListener('click', e => e.stopPropagation());
+            checkbox.addEventListener('change', function(e) {
+                e.stopPropagation();
+                if (onCheckChange) onCheckChange(session.id, this.checked);
+            });
+
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(card);
+            list.appendChild(wrapper);
+        } else {
+            list.appendChild(card);
+        }
     });
 
     container.innerHTML = '';

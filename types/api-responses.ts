@@ -33,6 +33,7 @@ export interface SessionResponse {
   mediaCount?: number;
   financialYear: string;
   eventbriteEventId?: string;
+  metadata?: Array<{ label: string; termGuid: string }>;
 }
 
 export interface ProfileResponse {

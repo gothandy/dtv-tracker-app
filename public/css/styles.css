@@ -987,6 +987,20 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     .entry-meta { width: auto; }
 }
 
+/* === Card selection mode (sessions + volunteers) ============================ */
+.card-selectable { display: flex; align-items: flex-start; gap: 0.75rem; }
+.card-selectable .session-card,
+.card-selectable .volunteer-card { flex: 1; min-width: 0; }
+.card-checkbox {
+    margin-top: 1rem; width: 1.25rem; height: 1.25rem;
+    flex-shrink: 0; cursor: pointer; accent-color: var(--green);
+}
+.select-all-link {
+    font-size: 0.85rem; color: var(--green); text-decoration: none;
+    white-space: nowrap; align-self: center; padding: 0 0.25rem;
+}
+.select-all-link:hover { text-decoration: underline; }
+
 /* === Volunteers ============================================================= */
 /* body/container sizing provided by body.detail-page (see base styles above) */
 .volunteer-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -1027,7 +1041,7 @@ a.volunteer-card { text-decoration: none; color: inherit; }
     max-height: 0; overflow: hidden; opacity: 0;
     transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
 }
-.advanced-section.open { max-height: 200px; opacity: 1; margin-top: 0.75rem; }
+.advanced-section.open { max-height: 300px; opacity: 1; margin-top: 0.75rem; }
 .advanced-row { display: flex; gap: 0.5rem; align-items: center; }
 .advanced-row + .advanced-row { margin-top: 0.5rem; }
 .advanced-row select {

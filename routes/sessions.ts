@@ -67,20 +67,25 @@ router.get('/sessions', async (req: Request, res: Response) => {
     const sortedSessions = sortSessionsByDate(enrichedSessions);
 
     const groupKeyMap = new Map(groups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+    const metadataMap = new Map(sessions.map(s => [s.ID, extractMetadataTags(s[SESSION_METADATA])]));
 
-    const data: SessionResponse[] = sortedSessions.map(s => ({
-      id: s.sharePointId,
-      displayName: s.displayName,
-      description: s.description,
-      date: s.sessionDate.toISOString(),
-      groupId: s.groupId,
-      groupKey: s.groupId ? groupKeyMap.get(s.groupId) : undefined,
-      groupName: s.groupName,
-      registrations: s.registrations,
-      hours: s.hours,
-      financialYear: `FY${s.financialYear}`,
-      eventbriteEventId: s.eventbriteEventId
-    }));
+    const data: SessionResponse[] = sortedSessions.map(s => {
+      const tags = metadataMap.get(s.sharePointId);
+      return {
+        id: s.sharePointId,
+        displayName: s.displayName,
+        description: s.description,
+        date: s.sessionDate.toISOString(),
+        groupId: s.groupId,
+        groupKey: s.groupId ? groupKeyMap.get(s.groupId) : undefined,
+        groupName: s.groupName,
+        registrations: s.registrations,
+        hours: s.hours,
+        financialYear: `FY${s.financialYear}`,
+        eventbriteEventId: s.eventbriteEventId,
+        metadata: tags && tags.length ? tags : undefined
+      };
+    });
 
     const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
     if (mediaDriveId) {
@@ -310,6 +315,64 @@ router.get('/records/export', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to export records',
+      message: error.message
+    });
+  }
+});
+
+router.post('/sessions/bulk-tag', async (req: Request, res: Response) => {
+  try {
+    const { sessionIds, tags } = req.body;
+
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+      res.status(400).json({ success: false, error: 'sessionIds array is required' });
+      return;
+    }
+    if (!Array.isArray(tags) || tags.length === 0) {
+      res.status(400).json({ success: false, error: 'tags array is required' });
+      return;
+    }
+
+    const listGuid = process.env.SESSIONS_LIST_GUID;
+    if (!listGuid) {
+      res.status(400).json({ success: false, error: 'Sessions list not configured' });
+      return;
+    }
+
+    const newTags: Array<{ label: string; termGuid: string }> = tags
+      .map((t: any) => ({ label: t.label ?? '', termGuid: t.termGuid ?? '' }))
+      .filter(t => t.label);
+
+    if (newTags.length === 0) {
+      res.status(400).json({ success: false, error: 'No valid tags provided' });
+      return;
+    }
+
+    const rawSessions = await sessionsRepository.getAll();
+    let updated = 0;
+
+    for (const rawId of sessionIds) {
+      const id = parseInt(String(rawId), 10);
+      if (isNaN(id)) continue;
+
+      const spSession = rawSessions.find(s => s.ID === id);
+      if (!spSession) continue;
+
+      // Merge new tags with existing — deduplicate by termGuid
+      const existing = extractMetadataTags(spSession[SESSION_METADATA]);
+      const existingGuids = new Set(existing.map(t => t.termGuid));
+      const merged = [...existing, ...newTags.filter(t => !existingGuids.has(t.termGuid))];
+
+      await taxonomyClient.updateManagedMetadataField(listGuid, id, SESSION_METADATA, merged);
+      updated++;
+    }
+
+    res.json({ success: true, data: { updated } } as ApiResponse<{ updated: number }>);
+  } catch (error: any) {
+    console.error('Error bulk tagging sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to bulk tag sessions',
       message: error.message
     });
   }

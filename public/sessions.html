@@ -32,12 +32,13 @@
         .modal-btn-cancel { background: var(--bg); color: var(--text-light); }
         .modal-btn-confirm { background: var(--green); color: white; }
         .modal-btn-confirm:hover { background: var(--green-dark); }
+        .modal-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
     <script src="/js/common.js"></script>
     <script src="/js/session-cards.js"></script>
     <script src="/js/lightbox.js"></script>
 </head>
-<body>
+<body class="detail-page">
     <script>createHeader('Volunteer Sessions', true);</script>
 
     <div class="container">
@@ -56,9 +57,27 @@
                         <div class="dropdown-menu" id="filterMenu">
                         </div>
                     </div>
-                    <button class="btn-action" onclick="openNewSessionModal()">
+                    <button class="btn-action admin-only" onclick="openNewSessionModal()">
                         <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
                     </button>
+                </div>
+            </div>
+            <div class="filter-row">
+                <input type="text" class="filter-search" id="searchBox" placeholder="Search sessions…" autocomplete="off">
+                <button class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">Advanced &#9662;</button>
+            </div>
+            <div class="advanced-section" id="advancedSection">
+                <div class="advanced-row">
+                    <select id="groupSelect" onchange="setGroup(this.value)">
+                        <option value="">All Groups</option>
+                    </select>
+                    <select id="tagSelect" onchange="setTag(this.value)">
+                        <option value="">All Tags</option>
+                    </select>
+                </div>
+                <div class="advanced-row" style="justify-content: space-between;">
+                    <a href="#" id="selectAllLink" class="select-all-link" onclick="toggleSelectAll(); return false;" style="display:none;">Select all</a>
+                    <button class="advanced-toggle admin-only" id="addTagsBtn" onclick="openBulkTagModal()" disabled>Add Tags</button>
                 </div>
             </div>
         </div>
@@ -98,6 +117,11 @@
         let allSessions = [];
         let allGroups = [];
         let currentFilter = 'all';
+        let currentSearch = '';
+        let currentGroup = '';
+        let currentTag = '';
+        let advancedOpen = false;
+        let selectedSessions = new Set();
 
         function fyKeyToLabel(fyKey) {
             const startYear = parseInt(fyKey.replace('FY', ''));
@@ -105,11 +129,32 @@
             return `FY ${String(startYear).slice(2)}/${String(endYear).slice(2)}`;
         }
 
+        function applyURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            currentSearch = params.get('search') || '';
+            currentGroup  = params.get('group')  || '';
+            currentTag    = params.get('tag')    || '';
+            if (currentSearch) document.getElementById('searchBox').value = currentSearch;
+            if (currentGroup || currentTag) {
+                advancedOpen = true;
+                document.getElementById('advancedSection').classList.add('open');
+                document.getElementById('advancedToggle').innerHTML = 'Advanced &#9650;';
+                updateSelectAllLink();
+            }
+        }
+
+        function persistFilters() {
+            const url = new URL(window.location.href);
+            currentSearch ? url.searchParams.set('search', currentSearch) : url.searchParams.delete('search');
+            currentGroup  ? url.searchParams.set('group',  currentGroup)  : url.searchParams.delete('group');
+            currentTag    ? url.searchParams.set('tag',    currentTag)    : url.searchParams.delete('tag');
+            history.replaceState(null, '', url);
+        }
 
         function buildDropdown() {
             const fyKeys = [...new Set(allSessions.map(s => s.financialYear))]
                 .filter(k => k && k.startsWith('FY'))
-                .sort((a, b) => a.localeCompare(b)); // oldest first
+                .sort((a, b) => a.localeCompare(b));
 
             const menu = document.getElementById('filterMenu');
             menu.innerHTML = '';
@@ -129,6 +174,45 @@
             });
         }
 
+        function buildFilterDropdowns() {
+            // Groups
+            const groupSelect = document.getElementById('groupSelect');
+            groupSelect.innerHTML = '<option value="">All Groups</option>';
+            const groups = [...new Map(
+                allSessions.filter(s => s.groupName && s.groupId != null)
+                           .map(s => [s.groupId, s.groupName])
+            ).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+            groups.forEach(([id, name]) => {
+                const opt = document.createElement('option');
+                opt.value = String(id);
+                opt.textContent = name;
+                groupSelect.appendChild(opt);
+            });
+            if (currentGroup) groupSelect.value = currentGroup;
+
+            // Tags
+            const tagSelect = document.getElementById('tagSelect');
+            tagSelect.innerHTML = '<option value="">All Tags</option>';
+            const tagMap = new Map();
+            allSessions.forEach(s => (s.metadata || []).forEach(t => {
+                if (t.termGuid && !tagMap.has(t.termGuid)) tagMap.set(t.termGuid, t.label);
+            }));
+            [...tagMap.entries()]
+                .sort((a, b) => tagShortLabel(a[1]).localeCompare(tagShortLabel(b[1])))
+                .forEach(([guid, label]) => {
+                    const opt = document.createElement('option');
+                    opt.value = guid;
+                    opt.textContent = tagShortLabel(label);
+                    tagSelect.appendChild(opt);
+                });
+            if (currentTag) tagSelect.value = currentTag;
+        }
+
+        function tagShortLabel(label) {
+            const parts = label.split('>');
+            return parts[parts.length - 1].trim();
+        }
+
         function toggleDropdown(menuId) {
             const menu = document.getElementById(menuId);
             const wasOpen = menu.classList.contains('open');
@@ -142,9 +226,85 @@
             }
         });
 
+        function toggleAdvanced() {
+            advancedOpen = !advancedOpen;
+            const section = document.getElementById('advancedSection');
+            const btn = document.getElementById('advancedToggle');
+            section.classList.toggle('open', advancedOpen);
+            btn.innerHTML = advancedOpen ? 'Advanced &#9650;' : 'Advanced &#9662;';
+            if (!advancedOpen) {
+                selectedSessions.clear();
+                updateBulkTagButton();
+            }
+            updateSelectAllLink();
+            displaySessions(allSessions);
+        }
+
+        function getVisibleSessionIds() {
+            let filtered = allSessions;
+            if (currentFilter !== 'all') filtered = filtered.filter(s => s.financialYear === currentFilter);
+            if (currentGroup) filtered = filtered.filter(s => String(s.groupId) === currentGroup);
+            if (currentTag) filtered = filtered.filter(s => (s.metadata || []).some(t => t.termGuid === currentTag));
+            if (currentSearch.length >= 3) {
+                const term = currentSearch.toLowerCase();
+                filtered = filtered.filter(s =>
+                    (s.displayName || '').toLowerCase().includes(term) ||
+                    (s.description  || '').toLowerCase().includes(term)
+                );
+            }
+            return filtered.map(s => s.id);
+        }
+
+        function updateBulkTagButton() {
+            const btn = document.getElementById('addTagsBtn');
+            if (!btn) return;
+            const count = selectedSessions.size;
+            btn.disabled = count === 0;
+            btn.textContent = count > 0 ? `Add Tags (${count})` : 'Add Tags';
+        }
+
+        function updateSelectAllLink() {
+            const link = document.getElementById('selectAllLink');
+            if (!link) return;
+            link.style.display = advancedOpen ? '' : 'none';
+            const visibleIds = getVisibleSessionIds();
+            const allChecked = visibleIds.length > 0 && visibleIds.every(id => selectedSessions.has(id));
+            link.textContent = allChecked ? 'Deselect all' : 'Select all';
+        }
+
+        function toggleSelectAll() {
+            const visibleIds = getVisibleSessionIds();
+            const allChecked = visibleIds.length > 0 && visibleIds.every(id => selectedSessions.has(id));
+            if (allChecked) {
+                visibleIds.forEach(id => selectedSessions.delete(id));
+            } else {
+                visibleIds.forEach(id => selectedSessions.add(id));
+            }
+            updateSelectAllLink();
+            updateBulkTagButton();
+            displaySessions(allSessions);
+        }
+
+        function openBulkTagModal() {
+            // Implemented in Step 5
+        }
+
+        function setGroup(value) {
+            currentGroup = value;
+            persistFilters();
+            displaySessions(allSessions);
+        }
+
+        function setTag(value) {
+            currentTag = value;
+            persistFilters();
+            displaySessions(allSessions);
+        }
+
         function filterSessions(filter) {
             currentFilter = filter;
             persistFY(filter);
+            persistFilters();
             const label = filter === 'all' ? 'All' : fyKeyToLabel(filter);
             document.getElementById('filterLabel').textContent = label;
             document.querySelectorAll('#filterMenu button').forEach(btn => btn.classList.remove('active'));
@@ -158,13 +318,45 @@
             const contentDiv = document.getElementById('content');
             const countDiv = document.getElementById('sessionCount');
 
-            const filteredSessions = currentFilter === 'all'
-                ? sessions
-                : sessions.filter(s => s.financialYear === currentFilter);
+            let filtered = sessions;
 
-            countDiv.textContent = filteredSessions.length;
-            renderSessionList(contentDiv, filteredSessions);
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(s => s.financialYear === currentFilter);
+            }
+            if (currentGroup) {
+                filtered = filtered.filter(s => String(s.groupId) === currentGroup);
+            }
+            if (currentTag) {
+                filtered = filtered.filter(s =>
+                    (s.metadata || []).some(t => t.termGuid === currentTag)
+                );
+            }
+            if (currentSearch.length >= 3) {
+                const term = currentSearch.toLowerCase();
+                filtered = filtered.filter(s =>
+                    (s.displayName || '').toLowerCase().includes(term) ||
+                    (s.description  || '').toLowerCase().includes(term)
+                );
+            }
+
+            countDiv.textContent = filtered.length;
+            renderSessionList(contentDiv, filtered, {
+                checkboxMode: advancedOpen,
+                checkedIds: selectedSessions,
+                onCheckChange: (id, checked) => {
+                    if (checked) selectedSessions.add(id);
+                    else selectedSessions.delete(id);
+                    updateSelectAllLink();
+                    updateBulkTagButton();
+                }
+            });
         }
+
+        document.getElementById('searchBox').addEventListener('input', function() {
+            currentSearch = this.value.trim();
+            persistFilters();
+            displaySessions(allSessions);
+        });
 
         async function loadSessions() {
             const contentDiv = document.getElementById('content');
@@ -183,6 +375,7 @@
 
                 allSessions = data.data;
                 buildDropdown();
+                buildFilterDropdowns();
                 filterSessions(getStoredFY());
 
             } catch (error) {
@@ -262,6 +455,7 @@
             }
         }
 
+        applyURLParams();
         loadSessions();
         loadGroups();
     </script>
