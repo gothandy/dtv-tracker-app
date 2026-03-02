@@ -29,7 +29,18 @@ Errors are routinely swallowed at multiple layers, making bugs invisible to both
 - Frontend fetch handlers should log to console on `!res.ok` at minimum, even if no UI error is shown. Prefer calling `showError()` for user-facing failures.
 - When adding `try/catch` to a service method, ask: *does swallowing this error hide a misconfiguration or a broken API call?* If yes, re-throw or log prominently.
 
-**Affected files** (remaining): `services/taxonomy-client.ts` → `getTermSetIdForColumn` (intentional — null is documented, env var is working fallback, error is logged)
+**Remaining instances** (to fix as encountered):
+
+| File | Line(s) | Pattern | Risk |
+|---|---|---|---|
+| `public/js/sessions.js` | ~133 | `catch (e) { tagTaxonomy = []; }` | Tag filter fails silently |
+| `public/js/sessions.js` | ~406 | `if (!response.ok) return;` | Group filter dropdown fails silently |
+| `public/js/volunteers.js` | ~147 | `if (!res.ok) return;` | FY filter options fail silently |
+| `public/js/volunteers.js` | ~381 | `if (!response.ok) return;` | Group filter dropdown fails silently |
+| `public/js/profile-detail.js` | ~119 | `catch (e) { /* ignore */ }` | Transfer profile search fails silently |
+| `public/js/session-detail.js` | ~167 | `catch { checkbox.checked = !... }` | Check-in failure has no logging (data loss risk) |
+
+**Fixed** (2026-03-02): `services/taxonomy-client.ts` → removed `getTermSetIdForColumn` (column discovery via `$expand=termColumn` is not supported by Graph API; tag route now uses `TAXONOMY_TERM_SET_ID` env var directly)
 
 **Fixed** (2026-03-01): `services/sharepoint-client.ts` → `getColumnChoices` (try/catch removed; errors now propagate to route handler); `public/js/volunteers.js` → `loadRecordOptions` (added `console.error` on `!res.ok`)
 
@@ -225,4 +236,4 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
-*Last Updated: 2026-03-01 (filter duplication fixed; sessions.html JS extracted to sessions.js)*
+*Last Updated: 2026-03-02 (taxonomy env var simplified; remaining silent failure instances catalogued)*

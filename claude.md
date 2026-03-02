@@ -374,7 +374,7 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
 - Upload codes are persisted in the `Code` field on the Entries list — they survive server restarts and are reused for the same entry. Public/volunteer access: valid while the session date is within the last 7 days. Authenticated users (admin/check-in) bypass this check and can upload to any session.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
-- `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. Also auto-discovered from the `Metadata` column definition if configured as Managed Metadata.
+- `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - Term Store access requires `TermStore.ReadWrite.All` application permission on the Azure app registration (admin consent required). Uses the Graph API **beta** endpoint — see [docs/tagging.md](docs/tagging.md) for full implementation notes.
 
 ## Known Constraints
