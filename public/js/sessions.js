@@ -4,6 +4,7 @@ let currentFilter = 'all';
 let currentSearch = '';
 let currentGroup = '';
 let currentTag = '';
+let currentTagGuids = new Set(); // tag + all descendant GUIDs for filtering
 let advancedOpen = false;
 let selectedSessions = new Set();
 
@@ -80,21 +81,62 @@ function refreshGroupDropdown(sessions) {
 
 function buildFilterDropdowns() {
     refreshGroupDropdown(allSessions);
-    // Restore tag filter button label from session metadata when loading from URL
+    // Restore tag filter button label from session metadata or taxonomy when loading from URL
     if (currentTag) {
+        let label = null;
         for (const s of allSessions) {
             const tag = (s.metadata || []).find(t => t.termGuid === currentTag);
-            if (tag) {
-                const labelEl = document.getElementById('tagFilterLabel');
-                if (labelEl) labelEl.textContent = tagShortLabel(tag.label);
-                break;
-            }
+            if (tag) { label = tag.label; break; }
+        }
+        // Branch nodes won't appear in session metadata — fall back to taxonomy tree
+        if (!label && tagTaxonomy) {
+            label = findTagNodePath(tagTaxonomy, currentTag, []);
+        }
+        if (label) {
+            const labelEl = document.getElementById('tagFilterLabel');
+            if (labelEl) labelEl.textContent = tagShortLabel(label);
         }
     }
 }
 
 function tagShortLabel(label) {
     return label.split(' > ').map(s => s.trim()).join(': ');
+}
+
+function collectDescendantGuids(node) {
+    const guids = new Set();
+    if (node.id) guids.add(node.id);
+    (node.children || []).forEach(c => collectDescendantGuids(c).forEach(g => guids.add(g)));
+    return guids;
+}
+
+function findTagNode(nodes, targetGuid) {
+    for (const node of nodes) {
+        if (node.id === targetGuid) return node;
+        const found = findTagNode(node.children || [], targetGuid);
+        if (found) return found;
+    }
+    return null;
+}
+
+function findTagNodePath(nodes, targetGuid, path) {
+    for (const node of nodes) {
+        const nodePath = (path || []).concat([node.label]);
+        if (node.id === targetGuid) return nodePath.join(' > ');
+        const found = findTagNodePath(node.children || [], targetGuid, nodePath);
+        if (found) return found;
+    }
+    return null;
+}
+
+function updateCurrentTagGuids() {
+    if (!currentTag) { currentTagGuids = new Set(); return; }
+    if (tagTaxonomy) {
+        const node = findTagNode(tagTaxonomy, currentTag);
+        currentTagGuids = node ? collectDescendantGuids(node) : new Set([currentTag]);
+    } else {
+        currentTagGuids = new Set([currentTag]);
+    }
 }
 
 // Tag filter tree dropdown
@@ -106,8 +148,10 @@ let availableTagGuids = null; // null = no constraint; Set = restrict to these G
 function refreshTagFilter(sessions) {
     const guids = new Set();
     sessions.forEach(s => (s.metadata || []).forEach(t => { if (t.termGuid) guids.add(t.termGuid); }));
-    if (currentTag && !guids.has(currentTag)) {
+    // Clear tag filter if none of the matched GUIDs (self + descendants) appear in available sessions
+    if (currentTag && ![...currentTagGuids].some(g => guids.has(g))) {
         currentTag = '';
+        currentTagGuids = new Set();
         const labelEl = document.getElementById('tagFilterLabel');
         if (labelEl) labelEl.textContent = 'All Tags';
         persistFilters();
@@ -130,6 +174,7 @@ async function toggleTagFilter() {
                 const res = await fetch('/api/tags/taxonomy');
                 const data = await res.json();
                 tagTaxonomy = (data.success && data.data) ? data.data : [];
+                updateCurrentTagGuids();
             } catch (e) { tagTaxonomy = []; }
         }
         renderTagFilterTree();
@@ -189,6 +234,8 @@ function renderTagFilterTree() {
 
 function selectTagFilter(termGuid, label) {
     currentTag = termGuid;
+    updateCurrentTagGuids();
+    selectedSessions.clear();
     const labelEl = document.getElementById('tagFilterLabel');
     if (labelEl) labelEl.textContent = termGuid ? tagShortLabel(label) : 'All Tags';
     closeTagFilter();
@@ -230,7 +277,7 @@ function getVisibleSessionIds() {
     let filtered = allSessions;
     if (currentFilter !== 'all') filtered = filtered.filter(s => s.financialYear === currentFilter);
     if (currentGroup) filtered = filtered.filter(s => String(s.groupId) === currentGroup);
-    if (currentTag) filtered = filtered.filter(s => (s.metadata || []).some(t => t.termGuid === currentTag));
+    if (currentTag) filtered = filtered.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)));
     if (currentSearch.length >= 3) {
         const term = currentSearch.toLowerCase();
         filtered = filtered.filter(s =>
@@ -247,6 +294,21 @@ function updateBulkTagButton() {
     const count = selectedSessions.size;
     btn.disabled = count === 0;
     btn.textContent = count > 0 ? `Add Tags (${count})` : 'Add Tags';
+    updateSelectionStats();
+}
+
+function updateSelectionStats() {
+    const el = document.getElementById('selectionStats');
+    if (!el) return;
+    if (selectedSessions.size === 0) {
+        el.style.display = 'none';
+        return;
+    }
+    const selected = allSessions.filter(s => selectedSessions.has(s.id));
+    const totalHours = selected.reduce((sum, s) => sum + (s.hours || 0), 0);
+    const count = selectedSessions.size;
+    el.textContent = `${count} session${count === 1 ? '' : 's'} selected \u2014 ${totalHours.toFixed(1).replace(/\.0$/, '')} hours`;
+    el.style.display = '';
 }
 
 function updateSelectAllLink() {
@@ -298,6 +360,7 @@ async function handleBulkTagConfirm(tag) {
 
 function setGroup(value) {
     currentGroup = value;
+    selectedSessions.clear();
     persistFilters();
     displaySessions(allSessions);
 }
@@ -312,6 +375,7 @@ function filterSessions(filter) {
     const activeBtn = document.getElementById(`fyBtn_${filter}`);
     if (activeBtn) activeBtn.classList.add('active');
     document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+    selectedSessions.clear();
     displaySessions(allSessions);
 }
 
@@ -343,11 +407,11 @@ function displaySessions(sessions) {
 
     // Cascade groups: sessions matching FY + search + tag (not group)
     refreshGroupDropdown(currentTag
-        ? base.filter(s => (s.metadata || []).some(t => t.termGuid === currentTag))
+        ? base.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)))
         : base);
 
     if (currentTag) {
-        filtered = base.filter(s => (s.metadata || []).some(t => t.termGuid === currentTag));
+        filtered = base.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)));
     }
     if (currentGroup) {
         filtered = filtered.filter(s => String(s.groupId) === currentGroup);
@@ -364,6 +428,7 @@ function displaySessions(sessions) {
             updateBulkTagButton();
         }
     });
+    updateBulkTagButton();
 }
 
 document.getElementById('searchBox').addEventListener('input', function() {
@@ -375,15 +440,28 @@ document.getElementById('searchBox').addEventListener('input', function() {
 async function loadSessions() {
     const contentDiv = document.getElementById('content');
     const countDiv = document.getElementById('sessionCount');
-    tagTaxonomy = null; // always re-fetch taxonomy on next dropdown open
+    tagTaxonomy = null;
 
     try {
-        const response = await fetch('/api/sessions');
-        if (!response.ok) {
-            throw new Error(`API returned ${response.status}: ${response.statusText}`);
-        }
+        const [sessionsRes, taxonomyRes] = await Promise.all([
+            fetch('/api/sessions'),
+            fetch('/api/tags/taxonomy').catch(() => null)
+        ]);
 
-        const data = await response.json();
+        try {
+            if (taxonomyRes && taxonomyRes.ok) {
+                const taxData = await taxonomyRes.json();
+                tagTaxonomy = (taxData.success && taxData.data) ? taxData.data : [];
+            } else {
+                tagTaxonomy = [];
+            }
+        } catch { tagTaxonomy = []; }
+        updateCurrentTagGuids();
+
+        if (!sessionsRes.ok) {
+            throw new Error(`API returned ${sessionsRes.status}: ${sessionsRes.statusText}`);
+        }
+        const data = await sessionsRes.json();
         if (!data.success) {
             throw new Error(data.error || 'Failed to fetch sessions');
         }
