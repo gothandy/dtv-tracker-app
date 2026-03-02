@@ -74,6 +74,18 @@ function buildSessionDetailUrl(session) {
  *   checkedIds    — Set of session IDs that should start checked
  *   onCheckChange — callback(id, checked) called on checkbox change
  */
+function buildCardTagsHTML(metadata) {
+    if (!metadata || !metadata.length) return '';
+    const items = metadata
+        .filter(t => t.label)
+        .map(t => {
+            const label = t.label.split(' > ').map(s => s.trim()).join(': ');
+            return `<span class="session-card-tag">${escapeHtml(label)}</span>`;
+        })
+        .join('');
+    return items ? `<div class="session-card-tags">${items}</div>` : '';
+}
+
 function renderSessionList(container, sessions, options = {}) {
     const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange } = options;
 
@@ -129,6 +141,7 @@ function renderSessionList(container, sessions, options = {}) {
                     ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
                     ${session.mediaCount ? `<div class="meta-item"><strong>Media:</strong> ${session.mediaCount}</div>` : ''}
                 </div>` : ''}
+                ${buildCardTagsHTML(session.metadata)}
             `;
         } else {
             card = document.createElement('a');
@@ -145,6 +158,7 @@ function renderSessionList(container, sessions, options = {}) {
                     ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
                     ${session.mediaCount ? `<div class="meta-item"><strong>Media:</strong> ${session.mediaCount}</div>` : ''}
                 </div>` : ''}
+                ${buildCardTagsHTML(session.metadata)}
             `;
         }
         if (checkboxMode) {

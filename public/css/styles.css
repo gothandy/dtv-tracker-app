@@ -519,6 +519,8 @@ div.session-card { display: block; color: inherit; cursor: pointer; }
 .session-card .meta-item strong {
     color: var(--text-mid);
 }
+.session-card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.session-card-tag { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 100px; color: var(--text-mid); border: 1px solid var(--border-mid); line-height: 1.5; white-space: nowrap; }
 .no-sessions {
     color: var(--text-faint);
     text-align: center;
