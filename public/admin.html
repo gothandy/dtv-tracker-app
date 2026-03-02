@@ -185,7 +185,7 @@
                         { name: 'Regulars', path: '/Lists/Regulars/AllItems.aspx' },
                         { name: 'Records', path: '/Lists/Records/AllItems.aspx' },
                     ];
-                    const termStoreUrl = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/termstoremanager.aspx?SiteUrlAndTermSetId=d907181c-5bd7-4166-b194-2c51e0e84301|583867bd-e032-4940-89b5-aa2d5158c5d0|14c7dfc2-ee1e-4c30-80f3-0d9149045311';
+                    const termStoreUrl = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/SiteAdmin.aspx#/termStoreAdminCenter';
                     document.getElementById('siteShortcuts').innerHTML =
                         lists.map(l => `<a class="admin-btn" href="${url}${l.path}" target="_blank">${escapeHtml(l.name)}</a>`).join('') +
                         `<a class="admin-btn" href="${termStoreUrl}" target="_blank">Term Store</a>` +
