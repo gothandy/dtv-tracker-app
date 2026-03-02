@@ -476,12 +476,13 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
 
-    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRegulars] = await Promise.all([
+    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRegulars, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
       entriesRepository.getAll(),
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
-      regularsRepository.getAll()
+      regularsRepository.getAll(),
+      recordsRepository.getAll()
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -609,8 +610,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
-    // Fetch consent records if available (one per profile+type)
-    const profileRecords = await recordsRepository.getByProfile(spProfile.ID);
+    // Filter consent records for this profile from the already-fetched batch
+    const profileRecords = rawRecords.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === spProfile.ID);
     const records: ConsentRecordResponse[] = profileRecords.map(r => ({
       id: r.ID,
       type: r.Type || '',

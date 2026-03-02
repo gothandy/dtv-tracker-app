@@ -379,8 +379,9 @@ async function loadProfile() {
     }
 
     try {
+        const profileFetch = apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`);
         await authReady;
-        const response = await apiFetch(`/api/profiles/${encodeURIComponent(profileSlug)}`);
+        const response = await profileFetch;
 
         if (!response.ok) {
             throw new Error(`API returned ${response.status}: ${response.statusText}`);
