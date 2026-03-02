@@ -27,6 +27,26 @@ Many of the tags can be retired? Things like "#New" can be calculated, #Regulars
 ## Timesheet functionality?
 it is possible to fir users to edit the hours directly im people's profile it needs checking for usability.
 
+## Change Attribution / Audit Logging
+Track which user made each change, for accountability and audit purposes. Three options in increasing complexity:
+
+1. **"Changed by" field on each list** *(simplest)* — Add a `ChangedBy` text field to key SharePoint lists (Entries, Sessions, etc.) and populate it from the logged-in user's session on every write. No history — overwrites on each change — but attribution is visible on the item. Schema change + a few lines in the repository update methods.
+
+2. **Custom audit log list** *(medium)* — Keep app-level SharePoint access but write to a SharePoint Logs list on every mutation, storing: user (from session), action, entity ID, and timestamp. Queryable history without touching the auth model. Doesn't appear in SharePoint's native audit trail but gives full control over the schema.
+
+3. **Delegated permissions / On-Behalf-Of flow** *(hardest, most "correct")*  — Use each user's own Entra ID access token for Graph API calls instead of the app's service account. Changes appear in SharePoint's native audit logs under the user's name. Requires: storing/refreshing per-user tokens in sessions, granting each user SharePoint site permissions, and significant rework of the auth and Graph client layers. Worth it for compliance requirements; otherwise Option 2 gives most of the benefit at a fraction of the cost.
+
+## Nightly CSV Backup
+Export all six SharePoint lists to CSV nightly as a safety net against accidental bulk deletion or data corruption.
+
+**Implementation approach** (mirrors Eventbrite sync pattern):
+1. Add a `POST /api/backup/export-all` endpoint that fetches all items from each list and writes the raw JSON response to the `Backups` folder in the Shared Documents library on the Tracker site (`/sites/Tracker/Shared Documents/Backups/`). No transformation needed — just `JSON.stringify` the raw SharePoint response. Will need the Drive ID for the Shared Documents library (separate from `MEDIA_LIBRARY_DRIVE_ID` which is the Media library used for photos).
+2. ~~Add a manual "Export Backup" button to the admin page~~ ✓ Done — `POST /api/backup/export-all` endpoint and admin button implemented
+3. Once validated, schedule via Azure Logic App (same as Eventbrite sync) for nightly automated runs; use API key auth
+4. Overwrite the same fixed filenames each run (e.g. `groups.json`, `entries.json`) and rely on SharePoint document library version history for older snapshots; configure version retention limit in library settings
+
+**Lists to cover**: Groups, Sessions, Entries, Profiles, Regulars, Records — all fetched directly via the Graph API list items endpoint, no existing export logic needed
+
 ## Sync Logging
 The Eventbrite sync endpoints return structured results but there's no persistent log. Azure Logic App run history provides some visibility, but a SharePoint "Logs" list would allow viewing sync history from within the app.
 - SharePoint Logs list with fields: Title (timestamp), Summary (text), Source (Manual/Scheduled)

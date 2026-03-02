@@ -14,12 +14,12 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-03-01
+**Last Updated**: 2026-03-02
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
 - Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
-- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 10 route modules
+- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 11 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
 - Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts))
@@ -33,7 +33,7 @@ Feature-complete volunteer tracking application with:
 
 ### Pages
 - Dashboard with FY stats, progress bar, next session card ([public/index.html](public/index.html))
-- Admin page with Eventbrite sync buttons, exports, site link, icon legend ([public/admin.html](public/admin.html))
+- Admin page with Eventbrite sync buttons, exports, backup export, site link, icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
 - Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection and bulk tagging ([public/sessions.html](public/sessions.html))
@@ -262,6 +262,7 @@ dtv-tracker-app/
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
 │   ├── media.ts                   # Authenticated media endpoints (list photos, batch counts)
 │   ├── upload.ts                  # Public volunteer upload endpoints (validate code, upload files — no auth)
+│   ├── backup.ts                  # Backup endpoint: exports all 6 lists as JSON to SharePoint Shared Documents
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware
@@ -345,6 +346,7 @@ dtv-tracker-app/
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
 - [x] Calendar view on sessions listing page (month navigation, clickable session dates)
 - [x] FY bar charts on group detail and profile detail pages
+- [x] Manual backup export: admin button calls `POST /api/backup/export-all`, writes all 6 lists as JSON to `Tracker Archive/` folder in SharePoint Shared Documents (requires `BACKUP_DRIVE_ID` env var)
 
 ## Planned Features
 
@@ -375,6 +377,7 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - Upload codes are persisted in the `Code` field on the Entries list — they survive server restarts and are reused for the same entry. Public/volunteer access: valid while the session date is within the last 7 days. Authenticated users (admin/check-in) bypass this check and can upload to any session.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
+- `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".
 - Term Store access requires `TermStore.ReadWrite.All` application permission on the Azure app registration (admin consent required). Uses the Graph API **beta** endpoint — see [docs/tagging.md](docs/tagging.md) for full implementation notes.
 
 ## Known Constraints

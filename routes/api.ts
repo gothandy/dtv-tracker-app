@@ -13,6 +13,7 @@ import statsRoutes = require('./stats');
 import eventbriteRoutes = require('./eventbrite');
 import mediaRoutes = require('./media');
 import tagsRoutes = require('./tags');
+import backupRoutes = require('./backup');
 
 const router: Router = express.Router();
 
@@ -26,5 +27,6 @@ router.use(statsRoutes);
 router.use(eventbriteRoutes);
 router.use(mediaRoutes);
 router.use(tagsRoutes);
+router.use(backupRoutes);
 
 export = router;

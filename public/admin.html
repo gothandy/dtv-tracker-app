@@ -15,7 +15,7 @@
         .admin-btn {
             display: inline-flex; align-items: center; gap: 0.5rem;
             padding: 0.7rem 1.2rem; border-radius: var(--radius);
-            font-size: 0.95rem; font-weight: 600; cursor: pointer;
+            font-size: 0.95rem; font-weight: 600; font-family: inherit; cursor: pointer;
             border: 2px solid var(--green); background: var(--surface); color: var(--green);
             min-height: 44px; transition: all 0.2s; text-decoration: none;
         }
@@ -61,8 +61,9 @@
         </div>
 
         <div class="admin-section admin-only" id="siteSection" style="display:none;">
-            <h2><a id="siteLink" href="#" target="_blank">Site</a></h2>
+            <h2><a id="siteLink" href="#" target="_blank">Tracker SharePoint Site</a></h2>
             <div class="admin-actions" id="siteShortcuts"></div>
+            <div class="sync-result" id="exportBackupResult"></div>
         </div>
 
         <div class="admin-section">
@@ -187,7 +188,8 @@
                     const termStoreUrl = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/termstoremanager.aspx?SiteUrlAndTermSetId=d907181c-5bd7-4166-b194-2c51e0e84301|583867bd-e032-4940-89b5-aa2d5158c5d0|14c7dfc2-ee1e-4c30-80f3-0d9149045311';
                     document.getElementById('siteShortcuts').innerHTML =
                         lists.map(l => `<a class="admin-btn" href="${url}${l.path}" target="_blank">${escapeHtml(l.name)}</a>`).join('') +
-                        `<a class="admin-btn" href="${termStoreUrl}" target="_blank">Term Store</a>`;
+                        `<a class="admin-btn" href="${termStoreUrl}" target="_blank">Term Store</a>` +
+                        `<button class="admin-btn" id="exportBackupBtn" onclick="exportBackup()">Backup</button>`;
                 }
             } catch (e) { /* ignore */ }
         }
@@ -228,6 +230,29 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Check Config';
+            }
+        }
+
+        async function exportBackup() {
+            const btn = document.getElementById('exportBackupBtn');
+            const result = document.getElementById('exportBackupResult');
+            btn.disabled = true;
+            btn.textContent = 'Exporting...';
+            result.textContent = '';
+            result.className = 'sync-result';
+
+            try {
+                const res = await apiFetch('/api/backup/export-all', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Export failed');
+                const summary = data.data.exported.map(e => `${e.list}: ${e.count}`).join(', ');
+                result.textContent = `Exported at ${new Date(data.data.timestamp).toLocaleTimeString()} — ${summary}`;
+            } catch (error) {
+                result.textContent = error.message || 'Export failed';
+                result.className = 'sync-result error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Export Backup';
             }
         }
 
