@@ -213,6 +213,11 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
+## Filter Logic Duplication
+**Fixed** (2026-03-01): `volunteers.js` filter pipeline extracted into `applyCommonFilters()` (search, hours, records) and `applyVolunteerFilters()` (type, FY) helpers. All three callers (`getVisibleVolunteerIds`, `displayVolunteers`, `getFilteredIndividuals`) now delegate to these. Sessions.html inline JS (~485 lines) extracted to `public/js/sessions.js`; page-specific CSS moved to `styles.css` under `/* === Sessions Listing === */`.
+
+---
+
 ## Notes
 
 - Prioritise based on actual pain points, not theoretical concerns
@@ -220,4 +225,4 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
-*Last Updated: 2026-03-01 (silent failure fixes; data contracts + FY calc tests added)*
+*Last Updated: 2026-03-01 (filter duplication fixed; sessions.html JS extracted to sessions.js)*

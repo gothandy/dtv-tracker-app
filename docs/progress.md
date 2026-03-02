@@ -1,5 +1,52 @@
 # Development Progress
 
+## Session: 2026-03-01 (Search, bulk tagging, volunteer selection, documentation)
+
+### Completed Tasks
+
+#### Sessions listing — search, advanced filters, cascading dropdowns ✓
+- Text search (min 3 chars) across session title and description
+- Advanced filter section (toggle) with group and tag dropdowns
+- Tag dropdown is a tree-picker widget matching the Add Tag modal style (reuses `session-tags.js` CSS/JS)
+- Cascading: group dropdown shows only groups with sessions matching FY + search + active tag; tag dropdown shows only tags in sessions matching FY + search + active group
+- Both dropdowns auto-clear their active filter if it becomes unavailable after the other changes
+- Tag label format: `"DH > Sheepskull > Top"` displayed as `"DH: Sheepskull: Top"` in the filter button
+- URL params persist all filters across page reloads (`?search=`, `?group=`, `?tag=`)
+
+#### Bulk session tagging ✓
+- Checkboxes appear on session cards when Advanced is open
+- "Select all / Deselect all" link respects current filter results
+- "Add Tags (N)" button enabled when ≥1 session selected; label shows count
+- Reuses the shared `session-tags.js` tag picker modal; `initSessionTags` extended with `onConfirm` callback for non-session-detail contexts
+- `POST /api/sessions/bulk-tag` endpoint: merges tags into each session's existing metadata, deduplicates by `termGuid`
+- Sessions reload after bulk tag; selection cleared
+
+#### Volunteer checkbox selection ✓
+- Checkboxes appear on volunteer cards when Advanced is open
+- "Select all / Deselect all" link respects all active filters (type, hours, records, search)
+- "Add Records (N)" and "Download CSV" buttons enabled only when ≥1 selected; both show count
+- `openBulkRecords()` applies to selected volunteers (or all filtered if none selected)
+- `downloadCSV()` exports `?profileIds=...` for selected volunteers; `/api/profiles/export` extended with `profileIds` query param
+- Closing Advanced clears selection
+
+#### Frontend taxonomy cache removed ✓
+- `_cachedTaxonomy` removed from `session-tags.js`; taxonomy now fetched fresh on every modal open
+- `tagTaxonomy` in `sessions.html` reset on every `loadSessions()` call
+- Server-side cache (NodeCache, 5-min TTL) provides the performance; homepage Refresh button now correctly clears the full taxonomy cache end-to-end
+
+#### CSS / style fixes ✓
+- `#groupSelect` padding and font-size aligned with `.advanced-row select` (was 0.85rem/0.4rem; now 0.9rem/0.5rem matching all other advanced dropdowns)
+- `.select-all-link` font-size raised from 0.85rem to 0.9rem
+- Consistent up-arrow character (`&#9652;`) across both sessions and volunteers Advanced toggles
+
+#### Documentation ✓
+- CLAUDE.md: updated page and file descriptions; added bulk tagging, volunteer selection, cascading filters, and CSV export to Implemented Features
+- technical-debt.md: added filter logic duplication item (volunteers.js ×3, sessions.html ×2) and noted sessions.html inline JS still outstanding
+- test-script.md: updated H23 (bulk records now mentions checkbox path), added H30 (bulk tag sessions), updated L2 (volunteer checkboxes), added L3 sessions search, added L19 (sessions advanced filters), updated M5 (sessions listing)
+- progress.md: this entry
+
+---
+
 ## Session: 2026-02-27 (JS extraction)
 
 ### Completed Tasks

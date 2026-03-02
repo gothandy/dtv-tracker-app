@@ -700,6 +700,7 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     .stat-item .stat-number { font-size: 1.5rem; }
     .entry-card { flex-wrap: wrap; gap: 0.5rem; }
     .entry-meta { width: 100%; justify-content: flex-start; }
+    .dropdown-menu { left: 0; right: auto; }
 }
 
 /* === Calendar card === */
@@ -1058,11 +1059,32 @@ a.volunteer-card { text-decoration: none; color: inherit; }
     .advanced-section.open { max-height: 600px; overflow: visible; }
     .tag-filter-wrap { width: 100%; }
     .tag-filter-panel { width: 100%; }
-    .advanced-row { flex-direction: column; }
+    .advanced-row { flex-direction: column; align-items: stretch; }
     .advanced-row select { width: 100%; }
     .volunteer-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
     .volunteer-meta { width: 100%; justify-content: flex-start; }
 }
+
+/* === Sessions Listing ======================================================== */
+.tag-filter-wrap { position: relative; flex: 1; }
+.tag-filter-btn {
+    width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;
+    padding: 0.5rem 0.75rem; border: 2px solid var(--border-mid); border-radius: 6px;
+    background: var(--surface); font-size: 1rem; font-family: inherit; color: var(--text);
+    cursor: pointer; min-height: 38px;
+}
+.tag-filter-btn:hover { border-color: var(--green); }
+.tag-filter-btn.active { border-color: var(--green); }
+.tag-filter-panel {
+    position: absolute; left: 0; top: calc(100% + 2px); z-index: 50;
+    background: var(--surface); border: 2px solid var(--border-mid);
+    border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    min-width: 100%;
+}
+.tag-filter-tree { max-height: 280px; overflow-y: auto; border: none; margin: 0; }
+.tag-filter-panel .tag-tree-row.selected { background: var(--green); color: white; }
+.tag-filter-panel .tag-tree-row.selected .tag-tree-label { color: white; }
+.tag-filter-panel .tag-tree-row.selected .tag-tree-toggle { color: white; }
 
 /* === Session Detail ========================================================= */
 .session-detail { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }

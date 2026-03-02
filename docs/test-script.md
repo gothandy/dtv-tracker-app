@@ -165,12 +165,21 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `DELETE /api/records/:id`
 
 ### H23. Bulk add records
-- [ ] Volunteers page → Advanced → "Add Records" → modal with Type, Status, Date
-- [ ] Shows count of filtered individuals (groups excluded)
+- [ ] Volunteers page → Advanced → no checkboxes ticked → "Add Records" → modal shows count of filtered individuals (groups excluded)
+- [ ] With checkboxes ticked → "Add Records (N)" → modal shows count of selected individuals only
 - [ ] Confirmation dialog: "You are about to update N records with Type: Status"
 - [ ] `POST /api/records/bulk` — `{ profileIds, type, status, date? }`
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
+
+### H30. Bulk tag sessions
+- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" button becomes enabled
+- [ ] Click "Add Tags (N)" → tag tree picker opens (same modal as session detail)
+- [ ] Modal title reads "Add Tag to N sessions"
+- [ ] Select a tag → OK → `POST /api/sessions/bulk-tag` — `{ sessionIds: [...], tags: [{ label, termGuid }] }`
+- [ ] Tags are merged with existing (not replaced); duplicate termGuids not added twice
+- [ ] Sessions reload after; selected sessions now show the new tag
+- [ ] Already-tagged sessions have that tag grayed out in the picker (opacity 0.4, non-clickable)
 
 ### H24. Eventbrite sync — sessions
 - [ ] Admin → "Refresh Events"
@@ -237,9 +246,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Stats: Sessions, Hours, Entries
 
 ### M5. Sessions listing
-- [ ] `GET /api/sessions` — all sessions
+- [ ] `GET /api/sessions` — all sessions (includes `metadata` tags array)
 - [ ] Cards show date, group, registrations, hours
 - [ ] Next session highlighted with countdown
+- [ ] Text search (min 3 chars) filters by session title and description
+- [ ] Calendar view shows sessions as dots; clicking navigates to that date range
 
 ### M6. Session detail
 - [ ] `GET /api/sessions/:group/:date` — entries with badges, tags, check-in status
@@ -290,12 +301,28 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Hours: All / 0h / <15h / 15h+ / 15-30h / 30h+
 - [ ] Record Type + Status combination
 - [ ] Filters combine with AND logic
-- [ ] Closing advanced section resets all filters
+- [ ] Closing advanced section resets all filters and clears selection
+- [ ] Opening Advanced shows checkboxes on all volunteer cards
+- [ ] Checkbox toggles selection; "Add Records (N)" and "Download CSV" enable only when ≥1 selected
+- [ ] "Select all" checks all visible volunteers; "Deselect all" clears; label toggles correctly
+- [ ] Download CSV with selection → exports only selected volunteers (`?profileIds=...`)
 
 ### L3. Search
+- [ ] Sessions page: min 3 chars, filters by title and description
 - [ ] Volunteers page: min 3 chars, filters by name
 - [ ] Add entry page: min 2 chars, filters by name/email
 - [ ] Profile transfer modal: min 2 chars
+
+### L19. Sessions advanced filters (client-side)
+- [ ] Opening Advanced shows checkboxes on all session cards
+- [ ] Group dropdown: shows only groups with sessions matching current FY + search + tag
+- [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group
+- [ ] Selecting a group narrows the tag options; selecting a tag narrows the group options
+- [ ] Clearing one filter re-expands the other's options
+- [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
+- [ ] "Select all" / "Deselect all" respects current visible sessions
+- [ ] "Add Tags (N)" enabled only when ≥1 session checked; label shows count
+- [ ] Closing Advanced clears selection and hides checkboxes
 
 ### L4. Sort
 - [ ] Volunteers: A-Z / Hours (descending)

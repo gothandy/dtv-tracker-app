@@ -36,16 +36,16 @@ Feature-complete volunteer tracking application with:
 - Admin page with Eventbrite sync buttons, exports, site link, icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
-- Sessions listing with FY filter and calendar view ([public/sessions.html](public/sessions.html))
+- Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection and bulk tagging ([public/sessions.html](public/sessions.html))
 - Session detail with entries, check-in, set hours, move group, session taxonomy tags, session photo gallery, edit/delete ([public/session-detail.html](public/session-detail.html))
-- Volunteers listing with FY filter, sort, group filter, search, bulk records ([public/volunteers.html](public/volunteers.html))
+- Volunteers listing with FY filter, sort, group filter, search, advanced filters (type/hours/records), checkbox selection, bulk records, CSV download ([public/volunteers.html](public/volunteers.html))
 - Profile detail with FY stats, FY bar chart, group hours, entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, delete ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
 - Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
-- Session taxonomy tag UI: term tree picker, tag pills ([public/js/session-tags.js](public/js/session-tags.js))
+- Session taxonomy tag UI: term tree picker, tag pills; supports `onConfirm` callback for bulk tagging from sessions listing ([public/js/session-tags.js](public/js/session-tags.js))
 - Calendar widget for sessions listing ([public/js/calendar.js](public/js/calendar.js))
 - Lightbox photo viewer for session galleries ([public/js/lightbox.js](public/js/lightbox.js))
 - SVG icons for badges and tags ([public/svg/](public/svg/))
@@ -270,7 +270,7 @@ dtv-tracker-app/
 │   ├── index.html                 # Dashboard homepage
 │   ├── groups.html                # Groups listing with FY filter
 │   ├── group-detail.html          # Group detail with stats and regulars
-│   ├── sessions.html              # Sessions listing with FY filter
+│   ├── sessions.html              # Sessions listing with FY filter, search, cascading filters, bulk tag
 │   ├── session-detail.html        # Session detail with entries and check-in
 │   ├── volunteers.html            # Volunteers listing with filters and search
 │   ├── profile-detail.html        # Profile detail with FY stats, inline hours, group filter
@@ -292,10 +292,11 @@ dtv-tracker-app/
 │   │   ├── tag-icons.js           # Tag/badge icon config and rendering
 │   │   ├── session-cards.js       # Shared session card rendering (used by sessions.html, index.html)
 │   │   ├── session-tags.js        # Session taxonomy tag UI: term tree picker, tag pills
+│   │   ├── sessions.js            # Sessions listing logic (filters, search, cascading dropdowns, bulk tagging)
 │   │   ├── calendar.js            # Calendar widget for sessions listing
 │   │   ├── lightbox.js            # Lightbox photo viewer for session galleries
 │   │   ├── profile-detail.js      # Profile detail page logic (FY filter, bar chart, entries, records, transfer)
-│   │   ├── volunteers.js          # Volunteers listing logic (filters, sort, bulk records, CSV download)
+│   │   ├── volunteers.js          # Volunteers listing logic (filters, sort, checkbox selection, bulk records, CSV download)
 │   │   ├── session-detail.js      # Session detail logic (entries, check-in, hours, photos, edit/delete)
 │   │   └── group-detail.js        # Group detail logic (bar chart, sessions, edit/delete, new session)
 │   └── svg/                       # SVG icons for badges and tags
@@ -326,7 +327,12 @@ dtv-tracker-app/
 - [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)
 - [x] Admin page with manual sync buttons, unmatched events, icon legend
 - [x] SVG icons for badges (member, card, group) and entry tags
-- [x] Bulk add/update records from volunteers page
+- [x] Bulk add/update records from volunteers page (with optional checkbox selection of specific volunteers)
+- [x] CSV export filtered to selected volunteers (`?profileIds=` param on `/api/profiles/export`)
+- [x] Volunteer checkbox selection on listing page (Advanced mode; Select all/Deselect all respects active filters)
+- [x] Sessions listing: text search (title/description, min 3 chars)
+- [x] Sessions listing: advanced filter section with cascading group and tag dropdowns (each dropdown shows only options present in the other filter's result set)
+- [x] Sessions listing: bulk tagging (checkbox selection + `POST /api/sessions/bulk-tag`; merges tags, deduplicates by termGuid)
 - [x] Move session between groups
 - [x] API key auth for scheduled sync (Azure Logic App)
 - [x] Azure App Service deployment

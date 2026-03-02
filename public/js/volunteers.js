@@ -44,21 +44,19 @@ function toggleAdvanced() {
     }
 }
 
-function getVisibleVolunteerIds() {
+// Shared filter helpers — used by getVisibleVolunteerIds, displayVolunteers, and getFilteredIndividuals
+
+function applyCommonFilters(volunteers) {
+    let filtered = volunteers;
     const searchTerm = document.getElementById('searchBox').value;
-    let filtered = allVolunteers;
-    if (currentTypeFilter === 'individuals') filtered = filtered.filter(v => !v.isGroup);
-    else if (currentTypeFilter === 'groups') filtered = filtered.filter(v => v.isGroup);
-    else if (currentTypeFilter === 'users') filtered = filtered.filter(v => !v.isGroup && v.user);
-    if (currentFilter !== 'all') filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
     if (searchTerm && searchTerm.length >= 3) {
         const term = searchTerm.toLowerCase();
         filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
     }
     if (currentHoursFilter) {
         const hFilters = {
-            '0': v => getHours(v) === 0,
-            'lt15': v => { const h = getHours(v); return h > 0 && h < 15; },
+            '0':      v => getHours(v) === 0,
+            'lt15':   v => { const h = getHours(v); return h > 0 && h < 15; },
             '15plus': v => getHours(v) >= 15,
             '15to30': v => { const h = getHours(v); return h >= 15 && h <= 30; },
             '30plus': v => getHours(v) > 30
@@ -75,7 +73,20 @@ function getVisibleVolunteerIds() {
     } else if (currentRecordStatus === 'none') {
         filtered = filtered.filter(v => !v.records || v.records.length === 0);
     }
-    return filtered.map(v => v.id);
+    return filtered;
+}
+
+function applyVolunteerFilters(volunteers) {
+    let filtered = volunteers;
+    if (currentTypeFilter === 'individuals') filtered = filtered.filter(v => !v.isGroup);
+    else if (currentTypeFilter === 'groups')  filtered = filtered.filter(v => v.isGroup);
+    else if (currentTypeFilter === 'users')   filtered = filtered.filter(v => !v.isGroup && v.user);
+    if (currentFilter !== 'all') filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
+    return applyCommonFilters(filtered);
+}
+
+function getVisibleVolunteerIds() {
+    return applyVolunteerFilters(allVolunteers).map(v => v.id);
 }
 
 function updateSelectAllLink() {
@@ -286,43 +297,8 @@ function getSessions(v) {
 function displayVolunteers() {
     const contentDiv = document.getElementById('content');
     const countDiv = document.getElementById('volunteerCount');
-    const searchTerm = document.getElementById('searchBox').value;
 
-    let filtered = allVolunteers;
-    if (currentTypeFilter === 'individuals') {
-        filtered = filtered.filter(v => !v.isGroup);
-    } else if (currentTypeFilter === 'groups') {
-        filtered = filtered.filter(v => v.isGroup);
-    } else if (currentTypeFilter === 'users') {
-        filtered = filtered.filter(v => !v.isGroup && v.user);
-    }
-    if (currentFilter !== 'all') {
-        filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
-    }
-    if (searchTerm && searchTerm.length >= 3) {
-        const term = searchTerm.toLowerCase();
-        filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
-    }
-    if (currentHoursFilter) {
-        const hFilters = {
-            '0': v => getHours(v) === 0,
-            'lt15': v => { const h = getHours(v); return h > 0 && h < 15; },
-            '15plus': v => getHours(v) >= 15,
-            '15to30': v => { const h = getHours(v); return h >= 15 && h <= 30; },
-            '30plus': v => getHours(v) > 30
-        };
-        if (hFilters[currentHoursFilter]) filtered = filtered.filter(hFilters[currentHoursFilter]);
-    }
-    if (currentRecordType) {
-        filtered = filtered.filter(v => {
-            const recs = (v.records || []).filter(r => r.type === currentRecordType);
-            if (currentRecordStatus === 'none') return recs.length === 0;
-            if (currentRecordStatus) return recs.some(r => r.status === currentRecordStatus);
-            return recs.length > 0;
-        });
-    } else if (currentRecordStatus === 'none') {
-        filtered = filtered.filter(v => !v.records || v.records.length === 0);
-    }
+    let filtered = applyVolunteerFilters(allVolunteers);
 
     // Sort
     if (currentSort === 'hours') {
@@ -474,36 +450,12 @@ async function loadRecordOptions() {
 }
 
 function getFilteredIndividuals() {
-    let filtered = allVolunteers.filter(v => !v.isGroup);
     if (currentTypeFilter === 'groups') return [];
-    if (currentFilter === 'all') filtered = filtered.filter(v => v.hoursAll > 0);
-    else filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
-    const searchTerm = document.getElementById('searchBox').value;
-    if (searchTerm && searchTerm.length >= 3) {
-        const term = searchTerm.toLowerCase();
-        filtered = filtered.filter(v => (v.name || '').toLowerCase().includes(term));
-    }
-    if (currentHoursFilter) {
-        const hFilters = {
-            '0': v => getHours(v) === 0,
-            'lt15': v => { const h = getHours(v); return h > 0 && h < 15; },
-            '15plus': v => getHours(v) >= 15,
-            '15to30': v => { const h = getHours(v); return h >= 15 && h <= 30; },
-            '30plus': v => getHours(v) > 30
-        };
-        if (hFilters[currentHoursFilter]) filtered = filtered.filter(hFilters[currentHoursFilter]);
-    }
-    if (currentRecordType) {
-        filtered = filtered.filter(v => {
-            const recs = (v.records || []).filter(r => r.type === currentRecordType);
-            if (currentRecordStatus === 'none') return recs.length === 0;
-            if (currentRecordStatus) return recs.some(r => r.status === currentRecordStatus);
-            return recs.length > 0;
-        });
-    } else if (currentRecordStatus === 'none') {
-        filtered = filtered.filter(v => !v.records || v.records.length === 0);
-    }
-    return filtered;
+    let filtered = allVolunteers.filter(v => !v.isGroup);
+    filtered = currentFilter === 'all'
+        ? filtered.filter(v => v.hoursAll > 0)
+        : filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
+    return applyCommonFilters(filtered);
 }
 
 let bulkRecordOptions = null;
