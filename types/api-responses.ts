@@ -185,6 +185,17 @@ export interface StatsResponse {
 
 export type StatsHistoryResponse = FYStatsResponse[];
 
+export interface RecentSignupResponse {
+  id: number;
+  volunteerName: string;
+  volunteerSlug: string;
+  date: string;
+  groupKey: string;
+  groupName: string;
+  notes?: string;
+  checkedIn: boolean;
+}
+
 export interface UploadCodeResponse {
   code: string;  // e.g. "MXKP"
   url: string;   // full upload URL e.g. "https://tracker.dtv.org.uk/upload/MXKP"

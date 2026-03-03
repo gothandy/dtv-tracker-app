@@ -27,7 +27,7 @@ import {
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
 
-import type { EntryDetailResponse, UploadCodeResponse } from '../types/api-responses';
+import type { EntryDetailResponse, RecentSignupResponse, UploadCodeResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -37,6 +37,57 @@ function appendNewTag(notes: string | undefined): string {
   if (/#New\b/i.test(base)) return base;
   return base ? `${base} #New` : '#New';
 }
+
+router.get('/entries/recent', async (req: Request, res: Response) => {
+  try {
+    const since = String(req.query.since || '24h');
+    const hoursMap: Record<string, number> = { '24h': 24, '48h': 48, '7d': 168 };
+    const hours = hoursMap[since] ?? 24;
+    const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+    const [rawEntries, rawSessions, rawGroups] = await Promise.all([
+      entriesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll()
+    ]);
+
+    const sessionMap = new Map(rawSessions.map(s => [s.ID, s]));
+    const groupMap = new Map(rawGroups.map(g => [g.ID, g]));
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+
+    const recent: RecentSignupResponse[] = entries
+      .filter(e => !/#Regular\b/i.test(e.Notes || '') && new Date(e.Created) >= cutoff)
+      .sort((a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime())
+      .slice(0, 50)
+      .flatMap(e => {
+        const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
+        if (sessionId === undefined) return [];
+        const session = sessionMap.get(sessionId);
+        if (!session) return [];
+        const groupId = safeParseLookupId(session[GROUP_LOOKUP]);
+        if (groupId === undefined) return [];
+        const group = groupMap.get(groupId);
+        if (!group) return [];
+        const name = e[PROFILE_DISPLAY] || 'Unknown';
+        return [{
+          id: e.ID,
+          volunteerName: name,
+          volunteerSlug: nameToSlug(name),
+          date: session.Date.substring(0, 10),
+          groupKey: group.Title,
+          groupName: group.Name || group.Title,
+          notes: e.Notes,
+          checkedIn: e.Checked || false
+        }];
+      });
+
+    res.json({ success: true, data: recent } as ApiResponse<RecentSignupResponse[]>);
+  } catch (error: any) {
+    console.error('Error fetching recent entries:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch recent entries', message: error.message });
+  }
+});
 
 router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) => {
   try {
