@@ -1101,6 +1101,10 @@ a.volunteer-card { text-decoration: none; color: inherit; }
 .session-detail .description { color: var(--text-mid); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-wrap; }
 .modal-field textarea { min-height: 120px; }
 
+.info-card { background: var(--surface); border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+.info-card-title { font-family: var(--font-heading); font-size: 1.05rem; color: var(--dark); margin-bottom: 0.35rem; }
+.info-card-body { color: var(--text-mid); font-size: 0.95rem; line-height: 1.6; }
+
 .entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .entries-heading { color: var(--dark); font-size: 1.3rem; }
 .header-buttons { display: flex; gap: 0.5rem; align-items: center; }

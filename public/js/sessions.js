@@ -273,7 +273,14 @@ function toggleAdvanced() {
     btn.innerHTML = advancedOpen ? 'Advanced &#9652;' : 'Advanced &#9662;';
     if (!advancedOpen) {
         selectedSessions.clear();
+        currentGroup = '';
+        currentTag = '';
+        currentTagGuids = new Set();
+        document.getElementById('groupSelect').value = '';
+        const labelEl = document.getElementById('tagFilterLabel');
+        if (labelEl) labelEl.textContent = 'All Tags';
         updateBulkTagButton();
+        persistFilters();
     }
     updateSelectAllLink();
     displaySessions(allSessions);
@@ -440,6 +447,7 @@ function displaySessions(sessions) {
         }
     });
     updateBulkTagButton();
+    updateSelectAllLink();
 }
 
 document.getElementById('searchBox').addEventListener('input', function() {

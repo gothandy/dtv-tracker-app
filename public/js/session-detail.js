@@ -331,6 +331,10 @@ async function loadSessionDetail() {
                 ${statsSection}
             </div>
             ${renderTagsSection(session)}
+            <div class="info-card">
+                <div class="info-card-title">Free Parking</div>
+                <div class="info-card-body">Ask Forestry England for the Parking Tablet, if not available then email <a href="mailto:fodtrails@forestryengland.uk">fodtrails@forestryengland.uk</a> with a list of vehicle registrations.</div>
+            </div>
             <div class="entries-header">
                 <h2 class="entries-heading">Entries (${entries.length})</h2>
                 <div class="header-buttons">
