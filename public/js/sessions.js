@@ -82,7 +82,10 @@ function refreshGroupDropdown(sessions) {
 function buildFilterDropdowns() {
     refreshGroupDropdown(allSessions);
     // Restore tag filter button label from session metadata or taxonomy when loading from URL
-    if (currentTag) {
+    if (currentTag === '__none__') {
+        const labelEl = document.getElementById('tagFilterLabel');
+        if (labelEl) labelEl.textContent = 'No Tags';
+    } else if (currentTag) {
         let label = null;
         for (const s of allSessions) {
             const tag = (s.metadata || []).find(t => t.termGuid === currentTag);
@@ -149,7 +152,7 @@ function refreshTagFilter(sessions) {
     const guids = new Set();
     sessions.forEach(s => (s.metadata || []).forEach(t => { if (t.termGuid) guids.add(t.termGuid); }));
     // Clear tag filter if none of the matched GUIDs (self + descendants) appear in available sessions
-    if (currentTag && ![...currentTagGuids].some(g => guids.has(g))) {
+    if (currentTag && currentTag !== '__none__' && ![...currentTagGuids].some(g => guids.has(g))) {
         currentTag = '';
         currentTagGuids = new Set();
         const labelEl = document.getElementById('tagFilterLabel');
@@ -227,7 +230,10 @@ function renderTagFilterTree() {
     const allRow = `<li><div class="tag-tree-row${!currentTag ? ' selected' : ''}" onclick="selectTagFilter('', 'All Tags')" style="font-style:italic;">
         <span class="tag-tree-indent"></span><span class="tag-tree-indent"></span><span class="tag-tree-label">All Tags</span>
     </div></li>`;
-    tree.innerHTML = allRow + (tagTaxonomy && tagTaxonomy.length
+    const noTagsRow = `<li><div class="tag-tree-row${currentTag === '__none__' ? ' selected' : ''}" onclick="selectTagFilter('__none__', 'No Tags')" style="font-style:italic;">
+        <span class="tag-tree-indent"></span><span class="tag-tree-indent"></span><span class="tag-tree-label">No Tags</span>
+    </div></li>`;
+    tree.innerHTML = allRow + noTagsRow + (tagTaxonomy && tagTaxonomy.length
         ? buildTagFilterTreeHTML(tagTaxonomy, [])
         : '<li style="padding:0.5rem 0.75rem;color:var(--text-mid);font-size:0.9rem;">No tags available</li>');
 }
@@ -277,7 +283,8 @@ function getVisibleSessionIds() {
     let filtered = allSessions;
     if (currentFilter !== 'all') filtered = filtered.filter(s => s.financialYear === currentFilter);
     if (currentGroup) filtered = filtered.filter(s => String(s.groupId) === currentGroup);
-    if (currentTag) filtered = filtered.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)));
+    if (currentTag === '__none__') filtered = filtered.filter(s => !s.metadata || s.metadata.length === 0);
+    else if (currentTag) filtered = filtered.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)));
     if (currentSearch.length >= 3) {
         const term = currentSearch.toLowerCase();
         filtered = filtered.filter(s =>
@@ -406,11 +413,15 @@ function displaySessions(sessions) {
         : base);
 
     // Cascade groups: sessions matching FY + search + tag (not group)
-    refreshGroupDropdown(currentTag
-        ? base.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)))
-        : base);
+    refreshGroupDropdown(currentTag === '__none__'
+        ? base.filter(s => !s.metadata || s.metadata.length === 0)
+        : currentTag
+            ? base.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)))
+            : base);
 
-    if (currentTag) {
+    if (currentTag === '__none__') {
+        filtered = base.filter(s => !s.metadata || s.metadata.length === 0);
+    } else if (currentTag) {
         filtered = base.filter(s => (s.metadata || []).some(t => currentTagGuids.has(t.termGuid)));
     }
     if (currentGroup) {
