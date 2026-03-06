@@ -48,12 +48,16 @@ body[data-role="readonly"] #inputHours { pointer-events: none; opacity: 0.6; }
 /* Hidden for unauthenticated visitors; shown once data-role is set by common.js auth check */
 .auth-only { display: none !important; }
 body[data-role] .auth-only { display: revert !important; }
+/* Visible only for unauthenticated visitors; hidden once data-role is set */
+body[data-role] .unauth-only { display: none !important; }
 /* Visible but non-clickable for unauthenticated visitors */
 .auth-link { pointer-events: none; opacity: 0.5; cursor: default; }
 body[data-role] .auth-link { pointer-events: auto; opacity: 1; cursor: pointer; }
 
 /* === Base === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+a { color: var(--green-dark); }
+a:hover { color: var(--green); }
 body {
     font-family: var(--font);
     line-height: 1.6;

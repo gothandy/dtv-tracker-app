@@ -10,6 +10,10 @@ const router: Router = express.Router();
 // GET /auth/login — redirect to Microsoft login
 router.get('/login', async (req: Request, res: Response) => {
   try {
+    const returnTo = req.query.returnTo as string | undefined;
+    if (returnTo && returnTo.startsWith('/')) {
+      req.session.returnTo = returnTo;
+    }
     const authCodeUrl = await msalClient.getAuthCodeUrl({
       scopes: AUTH_SCOPES,
       redirectUri: getRedirectUri(req),

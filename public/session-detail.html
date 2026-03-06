@@ -18,6 +18,10 @@
         <div id="content">
             <div class="loading">Loading session details</div>
         </div>
+        <div class="info-card unauth-only" style="margin-top: 1rem;">
+            <div class="info-card-title">Privacy Protection</div>
+            <div class="info-card-body">Users are required to <a id="loginLink" href="/auth/login">log in</a> to access volunteer registrations.</div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="editModal">
@@ -66,5 +70,9 @@
     </div>
 
     <script src="/js/session-detail.js"></script>
+    <script>
+        const loginLink = document.getElementById('loginLink');
+        if (loginLink) loginLink.href = '/auth/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search);
+    </script>
 </body>
 </html>

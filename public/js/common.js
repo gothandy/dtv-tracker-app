@@ -128,7 +128,8 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
                 }
             } else {
                 if (el) {
-                    el.innerHTML = `<a href="/auth/login" class="header-btn login-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
+                    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+                    el.innerHTML = `<a href="/auth/login?returnTo=${returnTo}" class="header-btn login-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
                 }
             }
         })
@@ -321,7 +322,7 @@ function initEventbriteButtons(container) {
 async function apiFetch(url, options = {}) {
     const response = await fetch(url, options);
     if (response.status === 401) {
-        window.location.href = '/auth/login';
+        window.location.href = '/auth/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search);
         throw new Error('Authentication required');
     }
     return response;
