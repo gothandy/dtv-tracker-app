@@ -116,6 +116,20 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     opacity: 1;
     background: rgba(255,255,255,0.1);
 }
+.header-btn.login-btn {
+    background: white;
+    color: var(--green-dark);
+    border-color: white;
+    opacity: 1;
+    font-weight: 600;
+}
+.header-btn.login-btn:hover {
+    background: var(--green-light);
+    border-color: var(--green-light);
+}
+.header-btn.login-btn .btn-icon {
+    filter: none;
+}
 .btn-icon {
     display: block;
     flex-shrink: 0;
@@ -695,6 +709,7 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     .header-top { flex-direction: column-reverse; }
     .user-info { align-self: flex-end; margin-bottom: 0.25rem; }
     .btn-label { display: none; }
+    .login-btn .btn-label { display: inline; }
     .site-nav { padding: 0.6rem 1.25rem; }
     .site-header.compact { padding: 1rem 1.25rem; }
     .site-header.compact h1 { font-size: 1.3rem; margin-bottom: 0.15rem; }

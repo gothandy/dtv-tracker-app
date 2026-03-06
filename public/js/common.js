@@ -79,8 +79,9 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
     const breadcrumbHtml = crumbs
         ? crumbs.map(c => `<a href="${c.href}">${c.label}</a>`).join('<span class="breadcrumb-sep">/</span>')
         : '';
+    const isCompact = showBackLink && breadcrumbHtml.length > 0;
     const headerHTML = `
-        <header class="site-header${showBackLink ? ' compact' : ''}">
+        <header class="site-header${isCompact ? ' compact' : ''}">
             <div class="header-top">
                 <div class="header-brand">
                     <img src="/img/logo.png" alt="DTV" class="header-logo">
@@ -90,7 +91,7 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
             </div>
             <p>${subtitle}</p>
         </header>
-        ${breadcrumbHtml ? `
+        ${showBackLink ? `
         <nav class="site-nav">
             <div class="nav-crumbs">${breadcrumbHtml}</div>
             <button class="share-btn" id="shareBtn" style="display:none" title="Share this page">
@@ -127,7 +128,7 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
                 }
             } else {
                 if (el) {
-                    el.innerHTML = `<a href="/auth/login" class="header-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
+                    el.innerHTML = `<a href="/auth/login" class="header-btn login-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
                 }
             }
         })
