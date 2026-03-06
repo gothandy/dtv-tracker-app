@@ -92,8 +92,10 @@ export async function upsertConsentRecords(
       safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type
     );
     if (existing) {
-      if (existing.Status !== status || existing.Date !== date) {
-        await recordsRepository.update(existing.ID, { Status: status, Date: date });
+      // Only update if status changed — date comparison is unreliable because
+      // SharePoint's date-only field strips the time component from attendee.created.
+      if (existing.Status !== status) {
+        await recordsRepository.update(existing.ID, { Status: status });
         updated++;
       }
     } else {
