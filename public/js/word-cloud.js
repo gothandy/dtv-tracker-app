@@ -2,7 +2,7 @@
  * Word Cloud Component
  *
  * Renders a word cloud from tag-hours data returned by GET /api/tags/hours-by-taxonomy.
- * Font size scales with sqrt(hours) for visual balance.
+ * Font size scales linearly with hours. Tags with 0 hours are excluded.
  * Ancestor nodes (depth 0) appear largest/darkest; children progressively smaller.
  *
  * Usage:
@@ -46,17 +46,19 @@ function createWordCloud(container, options = {}) {
     function render(items) {
         if (!card) buildCard();
 
-        if (!items || items.length < minItems) {
+        const visibleItems = (items || []).filter(i => i.hours > 0);
+
+        if (visibleItems.length < minItems) {
             card.style.display = 'none';
             return;
         }
 
-        const maxHours = Math.max(...items.map(i => i.hours), 1);
+        const maxHours = Math.max(...visibleItems.map(i => i.hours), 1);
 
         bodyEl.innerHTML = '';
-        const shuffled = [...items].sort(() => Math.random() - 0.5);
+        const shuffled = [...visibleItems].sort(() => Math.random() - 0.5);
         for (const item of shuffled) {
-            const size = BASE_SIZE + (MAX_SIZE - BASE_SIZE) * Math.sqrt(item.hours / maxHours);
+            const size = BASE_SIZE + (MAX_SIZE - BASE_SIZE) * (item.hours / maxHours);
             const short = shortLabel(item.label);
             const url = getLinkUrl ? getLinkUrl(item) : null;
             const el = document.createElement(url ? 'a' : 'span');
