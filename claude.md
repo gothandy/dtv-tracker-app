@@ -293,6 +293,7 @@ dtv-tracker-app/
 │   │   ├── tag-icons.js           # Tag/badge icon config and rendering
 │   │   ├── session-cards.js       # Shared session card rendering (used by sessions.html, index.html)
 │   │   ├── session-tags.js        # Session taxonomy tag UI: term tree picker, tag pills
+│   │   ├── word-cloud.js          # Reusable word cloud component (hours by taxonomy tag); used on homepage, group detail, profile detail
 │   │   ├── sessions.js            # Sessions listing logic (filters, search, cascading dropdowns, bulk tagging)
 │   │   ├── calendar.js            # Calendar widget for sessions listing
 │   │   ├── lightbox.js            # Lightbox photo viewer for session galleries
@@ -347,6 +348,7 @@ dtv-tracker-app/
 - [x] Calendar view on sessions listing page (month navigation, clickable session dates)
 - [x] FY bar charts on group detail and profile detail pages
 - [x] Manual backup export: admin button calls `POST /api/backup/export-all`, writes all 6 lists as JSON to `Tracker Archive/` folder in SharePoint Shared Documents (requires `BACKUP_DRIVE_ID` env var)
+- [x] Taxonomy tag word cloud on homepage, group detail, and profile detail — `GET /api/tags/hours-by-taxonomy` aggregates hours by tag with ancestor rollup; reusable `word-cloud.js` component; respects all FY/group/profile filters; CSV download
 
 ## Planned Features
 

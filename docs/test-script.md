@@ -295,6 +295,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Sessions: Past / Last FY / This FY / Future
 - [ ] Volunteers: All / Last FY / This FY
 - [ ] Profile detail: All / Last FY / This FY
+- [ ] Homepage nav cards (Sessions, Groups, Volunteers) link with `?fy=YYYY-YYYY` — clicking through applies the correct FY filter on the destination page
 
 ### L2. Volunteers advanced filters (client-side)
 - [ ] Type: All / Individuals / Groups
@@ -326,6 +327,17 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### L4. Sort
 - [ ] Volunteers: A-Z / Hours (descending)
+
+### L20. Taxonomy tag word cloud
+- [ ] **Homepage**: Word cloud card appears below FY stats (requires sessions tagged with taxonomy tags); font sizes vary by hours; selecting a different FY from the bar chart updates the cloud
+- [ ] **Group detail**: Word cloud card appears between FY bar chart and sessions list; selecting a different FY updates the cloud; selecting "All" hides the FY param (shows all-time for that group)
+- [ ] **Profile detail**: Word cloud card appears between Groups card and Records card; FY filter change updates the cloud; selecting a group from the group dropdown updates the cloud (scoped to that group)
+- [ ] **Hierarchy**: A parent tag (e.g. "DH") appears larger/darker than its children (e.g. "Sheepskull"), which appear larger than grandchildren — depth shown via colour and size
+- [ ] **Tooltips**: Hovering a word shows the full path label and hours (e.g. "DH > Sheepskull — 45h")
+- [ ] **Empty state**: If no sessions have taxonomy tags for the selected scope/FY, no word cloud card is rendered (not even an empty card)
+- [ ] **Randomised order**: Reloading the page renders the word cloud in a different order each time (font size still reflects hours)
+- [ ] **CSV download**: Clicking "Download CSV" button downloads a `.csv` file with Tag and Hours columns; all rows (not just visible ones) included
+- [ ] **API endpoint**: `GET /api/tags/hours-by-taxonomy?group=xc&fy=FY2025` returns `{ success: true, data: [...] }` with correct aggregated hours per label
 
 ### L5. SVG badge icons
 - [ ] Member: green medal — shown for charity members

@@ -467,6 +467,23 @@ export function parseHours(value: any): number {
   return parseFloat(String(value)) || 0;
 }
 
+// Normalise SharePoint Managed Metadata field values to {label, termGuid}[] objects.
+// Handles single-value objects, multi-value arrays, and plain text strings.
+export function extractMetadataTags(raw: any): { label: string; termGuid: string }[] {
+  if (!raw) return [];
+  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean).map(s => ({ label: s, termGuid: '' }));
+  if (Array.isArray(raw)) return raw.map((t: any) => ({
+    label: t.Label || t.label || String(t),
+    termGuid: t.TermGuid || t.termGuid || ''
+  })).filter(t => t.label);
+  if (typeof raw === 'object') {
+    const label = raw.Label || raw.label;
+    const termGuid = raw.TermGuid || raw.termGuid || '';
+    return label ? [{ label, termGuid }] : [];
+  }
+  return [];
+}
+
 // ============================================================================
 // Route Helpers — shared lookup logic used by multiple route files
 // ============================================================================

@@ -1,5 +1,23 @@
 # Development Progress
 
+## Session: 2026-03-06 (Bug fixes and minor UI)
+
+### Completed Tasks
+
+#### Sessions page FY querystring fix ✓
+- `sessions.js` was reading `?fy=` directly from `URLSearchParams`, bypassing `getStoredFY()` in `common.js`
+- Raw value `2024-2025` was passed to `filterSessions()` which expects `FY2024` format — filter silently did nothing
+- Fix: replaced duplicate URL param read with `getStoredFY()`, which already handles format conversion, cookie fallback, and default FY
+
+#### Word cloud randomised order ✓
+- `word-cloud.js` `render()` now shuffles items with Fisher-Yates (`.sort(() => Math.random() - 0.5)`) before rendering
+- Font size still scales with hours; CSV export order is unaffected (uses `lastItems` pre-shuffle)
+
+#### Homepage heading rename ✓
+- "About This System" → "About the DTV Tracker App" in `public/index.html`
+
+---
+
 ## Session: 2026-03-01 (Search, bulk tagging, volunteer selection, documentation)
 
 ### Completed Tasks

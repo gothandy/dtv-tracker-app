@@ -1,5 +1,6 @@
 let historyData = [];
 let selectedFY = null;
+let wordCloudController = null;
 
 function renderChart() {
     const container = document.getElementById('fyAllRows');
@@ -54,6 +55,32 @@ function selectFY(fy) {
     renderChart();
     const stats = historyData.find(d => d.financialYear === fy);
     if (stats) displayStats(stats);
+    refreshWordCloud();
+}
+
+async function refreshWordCloud() {
+    const fy = selectedFY ? fyToCookieKey(selectedFY) : null;  // e.g. "FY2024"
+    const url = '/api/tags/hours-by-taxonomy' + (fy ? `?fy=${encodeURIComponent(fy)}` : '');
+    try {
+        const res = await fetch(url);
+        if (!res.ok) { console.error('[WordCloud] fetch failed', res.status, url); return; }
+        const result = await res.json();
+        if (!result.success) { console.error('[WordCloud] API error', result.error); return; }
+        if (!wordCloudController) {
+            wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), {
+                title: 'Hours by Area',
+                getLinkUrl(item) {
+                    if (!item.termGuid) return null;
+                    const p = new URLSearchParams({ tag: item.termGuid });
+                    if (selectedFY) p.set('fy', fyToCookieKey(selectedFY));
+                    return `/sessions.html?${p}`;
+                }
+            });
+        }
+        wordCloudController.update(result.data);
+    } catch (err) {
+        console.error('[WordCloud] error', err);
+    }
 }
 
 function displayStats(stats) {
@@ -91,6 +118,7 @@ async function loadHistory() {
             displayStats(initial);
         }
         renderChart();
+        refreshWordCloud();
     } catch (error) {
         console.error('Error loading history:', error);
     } finally {

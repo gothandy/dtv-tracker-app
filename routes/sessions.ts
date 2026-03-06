@@ -20,30 +20,14 @@ import {
   buildBadgeLookups,
   safeParseLookupId,
   parseHours,
-  nameToSlug
+  nameToSlug,
+  extractMetadataTags
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
-
-// Normalise SharePoint Managed Metadata field values to {label, termGuid}[] objects.
-// Handles single-value objects, multi-value arrays, and plain text strings.
-function extractMetadataTags(raw: any): { label: string; termGuid: string }[] {
-  if (!raw) return [];
-  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean).map(s => ({ label: s, termGuid: '' }));
-  if (Array.isArray(raw)) return raw.map((t: any) => ({
-    label: t.Label || t.label || String(t),
-    termGuid: t.TermGuid || t.termGuid || ''
-  })).filter(t => t.label);
-  if (typeof raw === 'object') {
-    const label = raw.Label || raw.label;
-    const termGuid = raw.TermGuid || raw.termGuid || '';
-    return label ? [{ label, termGuid }] : [];
-  }
-  return [];
-}
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';

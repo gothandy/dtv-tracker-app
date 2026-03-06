@@ -7,6 +7,7 @@ let currentFilter = 'all';
 let currentGroup = '';
 let currentProfile = null;
 let canEditHours = false;
+let wordCloudController = null;
 
 const authReady = apiFetch('/auth/me').then(r => r.json()).then(data => {
     if (data.authenticated) {
@@ -60,11 +61,36 @@ function selectFY(fyKey) {
     buildChart();
     displayGroups();
     displayEntries();
+    refreshWordCloud();
 }
 
 function setGroup(value) {
     currentGroup = value;
     displayEntries();
+    refreshWordCloud();
+}
+
+async function refreshWordCloud() {
+    const params = new URLSearchParams({ profile: profileSlug });
+    if (currentFilter && currentFilter !== 'all') params.set('fy', currentFilter);
+    if (currentGroup) {
+        // Find the group key for the selected group name by looking in profile data
+        const gh = (currentProfile?.groupHours || []).find(g => g.groupName === currentGroup);
+        if (gh?.groupKey) params.set('group', gh.groupKey);
+    }
+    const url = `/api/tags/hours-by-taxonomy?${params}`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) { console.error('[WordCloud] fetch failed', res.status, url); return; }
+        const result = await res.json();
+        if (!result.success) { console.error('[WordCloud] API error', result.error); return; }
+        if (!wordCloudController) {
+            wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), { title: 'Hours by Area' });
+        }
+        wordCloudController.update(result.data);
+    } catch (err) {
+        console.error('[WordCloud] error', err);
+    }
 }
 
 function openEditModal() {
@@ -426,6 +452,8 @@ async function loadProfile() {
                 <div class="group-hours-list" id="groupsContainer"></div>
             </div>
 
+            <div id="wordCloudSection"></div>
+
             <div class="section-card">
                 <div class="consent-header">
                     <h2>Records</h2>
@@ -456,10 +484,12 @@ async function loadProfile() {
             </div>
         `;
 
+        wordCloudController = null;
         currentFilter = getStoredFY();
         buildChart();
         displayGroups();
         displayEntries();
+        refreshWordCloud();
 
     } catch (error) {
         console.error('Error loading profile:', error);

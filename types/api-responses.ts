@@ -196,6 +196,15 @@ export interface RecentSignupResponse {
   checkedIn: boolean;
 }
 
+export interface TagHoursItem {
+  label: string;      // full colon-path e.g. "DH:Corkscrew:Top"
+  hours: number;      // aggregated hours (includes all descendant tags)
+  depth: number;      // 0 = root, 1 = first child, etc.
+  termGuid?: string;  // SharePoint Term Store GUID (used for sessions page ?tag= filter)
+}
+
+export type TagHoursResponse = TagHoursItem[];
+
 export interface UploadCodeResponse {
   code: string;  // e.g. "MXKP"
   url: string;   // full upload URL e.g. "https://tracker.dtv.org.uk/upload/MXKP"

@@ -4,6 +4,7 @@ const groupKey = pathParts[2];
 let currentGroup = null;
 let allSessions = [];
 let currentFilter = 'all';
+let wordCloudController = null;
 
 function getFilteredSessions() {
     if (currentFilter === 'all') return allSessions;
@@ -47,6 +48,35 @@ function selectFY(fyKey) {
     persistFY(fyKey);
     buildChart();
     displaySessions();
+    refreshWordCloud();
+}
+
+async function refreshWordCloud() {
+    const fy = currentFilter !== 'all' ? currentFilter : null;
+    const params = new URLSearchParams({ group: groupKey });
+    if (fy) params.set('fy', fy);
+    const url = `/api/tags/hours-by-taxonomy?${params}`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) { console.error('[WordCloud] fetch failed', res.status, url); return; }
+        const result = await res.json();
+        if (!result.success) { console.error('[WordCloud] API error', result.error); return; }
+        if (!wordCloudController) {
+            wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), {
+                title: 'Hours by Area',
+                getLinkUrl(item) {
+                    if (!item.termGuid) return null;
+                    const p = new URLSearchParams({ tag: item.termGuid });
+                    if (currentFilter && currentFilter !== 'all') p.set('fy', currentFilter);
+                    if (currentGroup?.id) p.set('group', String(currentGroup.id));
+                    return `/sessions.html?${p}`;
+                }
+            });
+        }
+        wordCloudController.update(result.data);
+    } catch (err) {
+        console.error('[WordCloud] error', err);
+    }
 }
 
 function displaySessions() {
@@ -245,6 +275,8 @@ async function loadGroupDetail() {
 
             ${regularsSection}
 
+            <div id="wordCloudSection"></div>
+
             <div class="filter-bar">
                 <div class="title-row">
                     <div class="title-left">
@@ -261,9 +293,11 @@ async function loadGroupDetail() {
 
         clampDescriptions(contentDiv);
         initEventbriteButtons(contentDiv);
+        wordCloudController = null;
         currentFilter = getStoredFY();
         buildChart();
         displaySessions();
+        refreshWordCloud();
 
     } catch (error) {
         console.error('Error loading group detail:', error);
