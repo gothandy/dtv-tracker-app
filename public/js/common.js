@@ -113,9 +113,9 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
     fetch('/auth/me')
         .then(r => r.json())
         .then(data => {
+            const el = document.getElementById('userInfo');
             if (data.authenticated) {
                 document.body.dataset.role = data.user.role;
-                const el = document.getElementById('userInfo');
                 if (el) {
                     const profileBtn = data.user.profileSlug
                         ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="header-btn" title="${escapeHtml(data.user.displayName)}"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></a>`
@@ -124,6 +124,10 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
                         ${profileBtn}
                         <a href="/auth/logout" class="header-btn" title="Logout"><img src="/svg/logout.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Logout</span></a>
                     `;
+                }
+            } else {
+                if (el) {
+                    el.innerHTML = `<a href="/auth/login" class="header-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
                 }
             }
         })
@@ -192,7 +196,7 @@ function fyKeyToParam(fyKey) {
 }
 
 /**
- * Read FY selection: URL param takes priority (link sharing), then cookie, then current FY
+ * Read FY selection: URL param takes priority, then current FY default.
  */
 function getStoredFY(fallback) {
     const params = new URLSearchParams(window.location.search);
@@ -202,17 +206,14 @@ function getStoredFY(fallback) {
         const startYear = parseInt(fy.split('-')[0]);
         if (!isNaN(startYear)) return `FY${startYear}`;
     }
-    const cookie = getCookie('fyFilter');
-    if (cookie) return cookie;
     return fallback || getFYKey(0);
 }
 
 /**
- * Persist FY selection to cookie and update URL.
+ * Update URL to reflect FY selection.
  * Current FY (default) omits the param for a clean URL.
  */
 function persistFY(fyKey) {
-    setCookie('fyFilter', fyKey);
     const url = new URL(window.location.href);
     if (fyKey === getFYKey(0)) {
         url.searchParams.delete('fy');

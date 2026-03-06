@@ -50,8 +50,12 @@ function fyToCookieKey(fy) { return 'FY' + fy.split('-')[0]; }
 function cookieKeyToFY(key) { const y = parseInt(key.replace('FY', '')); return `${y}-${y + 1}`; }
 
 function selectFY(fy) {
+    const prevFY = selectedFY;
     selectedFY = fy;
     persistFY(fyToCookieKey(fy));
+    const chart = document.querySelector('.fy-chart');
+    if (chart && chart.classList.contains('history-collapsed')) toggleHistory();
+    else if (chart && fy === prevFY) { toggleHistory(); return; }
     renderChart();
     const stats = historyData.find(d => d.financialYear === fy);
     if (stats) displayStats(stats);
@@ -72,7 +76,7 @@ async function refreshWordCloud() {
                 getLinkUrl(item) {
                     if (!item.termGuid) return null;
                     const p = new URLSearchParams({ tag: item.termGuid });
-                    if (selectedFY) p.set('fy', fyToCookieKey(selectedFY));
+                    if (selectedFY) p.set('fy', selectedFY);
                     return `/sessions.html?${p}`;
                 }
             });
@@ -163,7 +167,7 @@ function initStatsSection() {
                     <button class="btn-action" id="refreshBtn" onclick="refreshData()" title="Refresh data">
                         <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
                     </button>
-                    <a class="btn-action" href="/admin.html" title="Admin">
+                    <a class="btn-action admin-only" href="/admin.html" title="Admin">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.279 2.152C13.909 2 13.439 2 12.5 2s-1.409 0-1.779.152a2.008 2.008 0 0 0-1.09 1.083c-.094.223-.13.484-.144.863a1.615 1.615 0 0 1-.796 1.353 1.614 1.614 0 0 1-1.579-.008c-.338-.178-.583-.276-.825-.308a2.026 2.026 0 0 0-1.49.396c-.318.242-.553.646-1.022 1.453-.47.807-.704 1.21-.757 1.605-.066.526.078 1.058.403 1.479.149.192.357.353.681.555a1.615 1.615 0 0 1 .001 2.722c-.324.202-.533.363-.681.555a2.02 2.02 0 0 0-.404 1.479c.053.394.287.798.757 1.605.47.807.704 1.21 1.022 1.453a2.026 2.026 0 0 0 1.49.396c.242-.032.487-.13.825-.308a1.615 1.615 0 0 1 1.58-.008c.486.28.774.795.795 1.353.015.38.051.64.144.863.205.49.597.879 1.091 1.083.37.152.84.152 1.779.152s1.409 0 1.779-.152a2.008 2.008 0 0 0 1.09-1.083c.094-.224.13-.484.144-.863a1.615 1.615 0 0 1 .797-1.353 1.614 1.614 0 0 1 1.578.008c.338.178.584.276.826.308a2.026 2.026 0 0 0 1.49-.396c.318-.242.553-.646 1.022-1.453.47-.807.704-1.21.757-1.605a2.02 2.02 0 0 0-.404-1.479 2.2 2.2 0 0 0-.68-.555 1.615 1.615 0 0 1-.001-2.722c.324-.202.532-.363.681-.555a2.02 2.02 0 0 0 .403-1.479c-.052-.394-.287-.798-.757-1.605-.469-.807-.704-1.21-1.022-1.453a2.026 2.026 0 0 0-1.49-.396c-.242.032-.487.13-.825.309a1.614 1.614 0 0 1-1.579.007 1.615 1.615 0 0 1-.796-1.353c-.015-.38-.051-.64-.144-.863a2.007 2.007 0 0 0-1.09-1.083ZM12.5 15c1.67 0 3.023-1.343 3.023-3S14.169 9 12.5 9 9.477 10.343 9.477 12s1.354 3 3.023 3Z"/></svg>
                     </a>
                 </div>
@@ -182,7 +186,7 @@ function initStatsSection() {
                 <div class="number" id="sessionsFY">-</div>
                 <div class="sublabel" id="fyLabel2">-</div>
             </a>
-            <a href="/volunteers.html" class="nav-card" id="navVolunteers">
+            <a href="/volunteers.html" class="nav-card auth-link" id="navVolunteers">
                 <div class="label">Volunteers</div>
                 <div class="number" id="volunteersFY">-</div>
                 <div class="sublabel" id="fyLabel3">-</div>

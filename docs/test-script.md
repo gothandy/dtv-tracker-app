@@ -13,7 +13,14 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H1. Authentication & Permissions
 
-- [ ] Unauthenticated visit redirects to `/auth/login`
+- [ ] Unauthenticated visit to `/` (homepage) loads without redirect — stats, sessions, groups nav cards visible; volunteers nav card hidden; admin button hidden; header shows "Log in" button
+- [ ] Unauthenticated visit to `/sessions.html` loads without redirect
+- [ ] Unauthenticated visit to `/groups.html` loads without redirect; regulars count shows 0
+- [ ] Unauthenticated visit to `/groups/:key/detail.html` loads without redirect; regulars section hidden
+- [ ] Unauthenticated visit to `/sessions/:group/:date/details.html` loads; entries section and free parking card hidden
+- [ ] Unauthenticated visit to `/volunteers.html` redirects to `/auth/login`
+- [ ] Unauthenticated visit to `/profiles/:slug/details.html` redirects to `/auth/login`
+- [ ] Unauthenticated `GET /api/entries/recent` returns 401
 - [ ] `/auth/login` redirects to Microsoft login page
 - [ ] Successful login redirects back to `/` (or originally requested page)
 - [ ] Click Logout — session cleared, redirected to Microsoft logout

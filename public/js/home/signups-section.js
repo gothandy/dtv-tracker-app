@@ -2,7 +2,7 @@ async function loadRecentSignups() {
     const since = document.getElementById('signupsSince')?.value || '24h';
     const list = document.getElementById('recentSignupsList');
     try {
-        const res = await apiFetch(`/api/entries/recent?since=${encodeURIComponent(since)}`);
+        const res = await fetch(`/api/entries/recent?since=${encodeURIComponent(since)}`);
         if (!res.ok) { console.error('Recent signups fetch failed:', res.status); return; }
         const result = await res.json();
         if (!result.success) { console.error('Recent signups error:', result.error); return; }

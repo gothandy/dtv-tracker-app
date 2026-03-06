@@ -55,6 +55,13 @@ app.get('/upload/:code', (req, res) => {
 });
 app.use('/api', uploadRoutes);
 
+// Public pages — served before auth so unauthenticated visitors can browse
+app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/sessions.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sessions.html')));
+app.get('/groups.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'groups.html')));
+app.get('/groups/:key/detail.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'group-detail.html')));
+app.get('/sessions/:group/:date/details.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'session-detail.html')));
+
 // Everything below requires login
 app.use(requireAuth);
 

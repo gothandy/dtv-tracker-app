@@ -79,12 +79,10 @@ router.get('/callback', async (req: Request, res: Response) => {
   }
 });
 
-// GET /auth/logout — clear session and redirect to Microsoft logout
+// GET /auth/logout — clear app session and return to homepage (no Microsoft logout)
 router.get('/logout', (req: Request, res: Response) => {
-  const postLogoutRedirect = `${req.protocol}://${req.get('host')}/`;
   req.session.destroy(() => {
-    const logoutUrl = `https://login.microsoftonline.com/${process.env.SHAREPOINT_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirect)}`;
-    res.redirect(logoutUrl);
+    res.redirect('/');
   });
 });
 

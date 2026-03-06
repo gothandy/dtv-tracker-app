@@ -331,24 +331,26 @@ async function loadSessionDetail() {
                 ${statsSection}
             </div>
             ${renderTagsSection(session)}
-            <div class="info-card">
-                <div class="info-card-title">Free Parking</div>
-                <div class="info-card-body">Ask Forestry England for the Parking Tablet, if not available then email <a href="mailto:fodtrails@forestryengland.uk">fodtrails@forestryengland.uk</a> with a list of vehicle registrations.</div>
-            </div>
-            <div class="entries-header">
-                <h2 class="entries-heading">Entries (${entries.length})</h2>
-                <div class="header-buttons">
-                    <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
-                        <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
-                    </button>
-                    <button class="btn-action checkin-only" onclick="openHoursModal()">Set Hours</button>
-                    <a class="btn-action checkin-only" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
-                        <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-                    </a>
+            <div class="auth-only">
+                <div class="info-card">
+                    <div class="info-card-title">Free Parking</div>
+                    <div class="info-card-body">Ask Forestry England for the Parking Tablet, if not available then email <a href="mailto:fodtrails@forestryengland.uk">fodtrails@forestryengland.uk</a> with a list of vehicle registrations.</div>
                 </div>
-            </div>
-            <div class="entries-list">
-                ${entriesHtml}
+                <div class="entries-header">
+                    <h2 class="entries-heading">Entries (${entries.length})</h2>
+                    <div class="header-buttons">
+                        <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
+                        </button>
+                        <button class="btn-action checkin-only" onclick="openHoursModal()">Set Hours</button>
+                        <a class="btn-action checkin-only" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
+                            <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="entries-list">
+                    ${entriesHtml}
+                </div>
             </div>
         `;
         initEventbriteButtons(contentDiv);

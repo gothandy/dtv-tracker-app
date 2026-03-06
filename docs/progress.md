@@ -1,6 +1,6 @@
 # Development Progress
 
-## Session: 2026-03-06 (Bug fixes and minor UI)
+## Session: 2026-03-06 (Bug fixes, partial public access)
 
 ### Completed Tasks
 
@@ -15,6 +15,18 @@
 
 #### Homepage heading rename ✓
 - "About This System" → "About the DTV Tracker App" in `public/index.html`
+
+#### Partial public access ✓
+- Homepage, sessions listing, groups listing, group detail, and session detail pages are now accessible without login
+- `middleware/require-auth.ts` — added `PUBLIC_GET_PATHS` whitelist (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/tags`, `/api/media`) before the session check; whitelisted handlers still receive `req.session.user` for conditional data stripping
+- `app.js` — added public HTML page routes before `app.use(requireAuth)` for the five public pages; all other pages (volunteers, profiles, entries, admin, add-entry) remain behind auth
+- `routes/groups.ts` — both GET handlers check `isAuthenticated`; unauthenticated requests receive `regulars: []` and `regularsCount: 0`
+- `routes/sessions.ts` — GET `/:group/:date` strips `entries: []` for unauthenticated requests (registrations/hours totals still returned)
+- `public/css/styles.css` — added `.auth-only` / `body[data-role] .auth-only` rule (mirrors existing `.admin-only` pattern)
+- `public/js/common.js` — unauthenticated `/auth/me` response now renders a "Log in" button in the header
+- `public/js/home/stats-section.js` — volunteers nav card gets `auth-only` class; admin gear button gets `admin-only` class
+- `public/js/home/signups-section.js` — changed `apiFetch` → plain `fetch` so a 401 silently hides the section without redirecting to login
+- `public/js/session-detail.js` — free parking card and entries section wrapped in `<div class="auth-only">` so they hide for unauthenticated visitors; group detail regulars already hidden when `regulars.length === 0` (no change needed)
 
 ---
 

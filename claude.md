@@ -324,6 +324,7 @@ dtv-tracker-app/
 - [x] Profile transfer (merge duplicate profiles)
 - [x] Microsoft authentication (Entra ID OAuth)
 - [x] Role-based permissions: Admin (full access), Check In (field-day operations), Read Only (view only)
+- [x] Partial public access: homepage, sessions listing, groups listing, group detail, and session detail accessible without login; volunteer names, profiles, entries, free parking, and recent signups require auth; login button shown in header for unauthenticated visitors
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)
 - [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)

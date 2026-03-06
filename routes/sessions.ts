@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+/// <reference path="../types/express-session.d.ts" />
 import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
@@ -419,6 +420,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
 
+    const isAuthenticated = !!req.session.user;
     const data: SessionDetailResponse = {
       id: spSession.ID,
       displayName: spSession.Name || spSession.Title,
@@ -431,7 +433,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       eventbriteEventId: spSession.EventbriteEventID,
       metadata: metadata.length ? metadata : undefined,
-      entries: entryResponses
+      entries: isAuthenticated ? entryResponses : []
     };
 
     res.json({ success: true, data } as ApiResponse<SessionDetailResponse>);

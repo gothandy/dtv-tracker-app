@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+/// <reference path="../types/express-session.d.ts" />
 import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
@@ -34,6 +35,7 @@ router.get('/groups', async (req: Request, res: Response) => {
     const groups = validateArray(rawGroups, validateGroup, 'Group');
     const regularsMap = groupRegularsByCrewId(rawRegulars);
 
+    const isAuthenticated = !!req.session.user;
     const data: GroupResponse[] = groups.map(spGroup => {
       const group = convertGroup(spGroup);
       const regulars = regularsMap.get(group.sharePointId) || [];
@@ -43,8 +45,8 @@ router.get('/groups', async (req: Request, res: Response) => {
         displayName: group.displayName,
         description: group.description,
         eventbriteSeriesId: group.eventbriteSeriesId,
-        regularsCount: regulars.length,
-        regulars
+        regularsCount: isAuthenticated ? regulars.length : 0,
+        regulars: isAuthenticated ? regulars : []
       };
     });
 
@@ -175,13 +177,14 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       } catch { /* media counts are optional */ }
     }
 
+    const isAuthenticated = !!req.session.user;
     const data: GroupDetailResponse = {
       id: group.sharePointId,
       key: (group.lookupKeyName || '').toLowerCase(),
       displayName: group.displayName,
       description: group.description,
       eventbriteSeriesId: group.eventbriteSeriesId,
-      regulars,
+      regulars: isAuthenticated ? regulars : [],
       financialYear: `${fy.startYear}-${fy.endYear}`,
       stats: {
         sessions: fySessionIds.size,
