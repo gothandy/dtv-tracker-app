@@ -26,7 +26,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
-- Role-based authorization: Admin, Check In, and Read Only ([middleware/require-admin.ts](middleware/require-admin.ts))
+- Role-based authorization: Admin, Check In, Read Only, and Public ([middleware/require-admin.ts](middleware/require-admin.ts))
 - Server-side caching with 5-minute TTL; all writes call `clearCache()` for immediate consistency
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
@@ -190,11 +190,11 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Entries default Checked to false
 
 ### Permissions / Authorization
-- Three roles: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view only)
-- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field; everyone else is Read Only
-- Role computed at login, stored in session
+- Four access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Public** (unauthenticated — limited non-privacy view)
+- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field; everyone else logged in is Read Only; unauthenticated visitors are Public
+- Role computed at login, stored in session; Public has no session role (`body[data-role]` not set)
 - Backend: `requireAdmin` middleware in [middleware/require-admin.ts](middleware/require-admin.ts) enforces per-endpoint
-- Frontend: CSS hides `.admin-only` elements based on `body[data-role]`
+- Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.auth-only` (any logged-in user), `.unauth-only` (Public only)
 - Full reference: [docs/permissions.md](docs/permissions.md)
 
 ### Error Handling
@@ -266,7 +266,7 @@ dtv-tracker-app/
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware
-│   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only)
+│   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only / Public)
 ├── public/
 │   ├── index.html                 # Dashboard homepage
 │   ├── groups.html                # Groups listing with FY filter
@@ -323,7 +323,7 @@ dtv-tracker-app/
 - [x] CSV exports (sessions, profiles, records)
 - [x] Profile transfer (merge duplicate profiles)
 - [x] Microsoft authentication (Entra ID OAuth)
-- [x] Role-based permissions: Admin (full access), Check In (field-day operations), Read Only (view only)
+- [x] Role-based permissions: Admin (full access), Check In (field-day operations), Read Only (view all data), Public (unauthenticated, limited non-privacy view)
 - [x] Partial public access: homepage, sessions listing, groups listing, group detail, and session detail accessible without login; volunteer names, profiles, entries, free parking, and recent signups require auth; login button shown in header for unauthenticated visitors
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)

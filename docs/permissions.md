@@ -2,11 +2,14 @@
 
 ## Roles
 
-| Role | Description |
-|------|-------------|
-| **Admin** | Full access to all features |
-| **Check In** | Field-day operations: view data, check in volunteers, set hours, add entries, edit sessions/profiles, manage regulars |
-| **Read Only** | View all data, no editing |
+There are four access levels, two of which require login:
+
+| Role | Auth required | Description |
+|------|--------------|-------------|
+| **Admin** | Yes | Full access to all features |
+| **Check In** | Yes | Field-day operations: view all data, check in volunteers, set hours, add entries, edit sessions/profiles, manage regulars |
+| **Read Only** | Yes | View all volunteer data (profiles, entries, hours) — no editing |
+| **Public** | No | Limited read-only access to non-privacy data only (sessions, groups, stats) |
 
 ## Configuration
 
@@ -18,7 +21,9 @@ ADMIN_USERS=first.last@dtv.org.uk,another.email@dtv.org.uk
 
 **Check In** users are determined by matching the login email against the `User` field on Profiles. If a profile's `User` value matches the authenticated user's email, they get Check In access.
 
-**Read Only** is the default for any other authenticated DTV user.
+**Read Only** is the default for any other authenticated DTV user (logged in but not in `ADMIN_USERS` and no matched Profile).
+
+**Public** is any unauthenticated visitor — no login required, but volunteer names, profiles, entries, and parking info are hidden.
 
 Role is determined at login and stored in the session.
 
@@ -30,18 +35,18 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 ## Per-Page Permissions
 
-| Page | Read Only sees | Check In additionally sees | Admin additionally sees |
-|------|---------------|--------------------------|------------------------|
-| **Dashboard** | Full view | — | — |
-| **Groups list** | Full view | — | — |
-| **Group detail** | View group, stats, regulars, sessions | — | Edit button, Create Session button |
-| **Sessions list** | Full view | — | — |
-| **Session detail** | View entries and stats | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal: Group, Date, Eventbrite ID |
-| **Add entry** | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
-| **Entry detail** | View only (controls disabled) | Checked In toggle, Hours field, Count, Upload button | Notes, tag buttons, Delete Entry |
-| **Volunteers list** | View, search, filter, sort | — | Bulk Records, Download CSV |
-| **Profile detail** | View stats/entries/groups | Edit profile (name/email/match name), Regulars checkboxes, Inline hours editing (own profile only) | Username field in edit modal, Add Record, record pill editing, Inline hours editing (all profiles), Transfer, Delete Profile |
-| **Admin** | Icon Legend only | — | Eventbrite sync, Exports, Site link |
+| Page | Public sees | Read Only additionally sees | Check In additionally sees | Admin additionally sees |
+|------|------------|----------------------------|--------------------------|------------------------|
+| **Dashboard** | Stats, word cloud | — | — | — |
+| **Groups list** | Full view | — | — | — |
+| **Group detail** | Group info, stats, sessions | — | — | Edit button, Create Session button |
+| **Sessions list** | Full view | — | — | — |
+| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal: Group, Date, Eventbrite ID |
+| **Add entry** | Redirected (auth required) | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
+| **Entry detail** | Redirected (auth required) | View only (controls disabled) | Checked In toggle, Hours field, Count, Upload button | Notes, tag buttons, Delete Entry |
+| **Volunteers list** | Redirected (auth required) | View, search, filter, sort | — | Bulk Records, Download CSV |
+| **Profile detail** | Redirected (auth required) | View stats/entries/groups | Edit profile (name/email/match name), Regulars checkboxes, Inline hours editing (own profile only) | Username field in edit modal, Add Record, record pill editing, Inline hours editing (all profiles), Transfer, Delete Profile |
+| **Admin** | Redirected (auth required) | Icon Legend only | — | Eventbrite sync, Exports, Site link |
 
 ---
 
@@ -94,7 +99,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 ### Backend
 
-1. **Role assignment** (`routes/auth.ts`): At login, the user's email is checked against `ADMIN_USERS` (→ admin), then against Profile `User` fields (→ checkin), otherwise → readonly. Role is stored in `req.session.user.role`.
+1. **Role assignment** (`routes/auth.ts`): At login, the user's email is checked against `ADMIN_USERS` (→ `admin`), then against Profile `User` fields (→ `checkin`), otherwise → `readonly`. Role is stored in `req.session.user.role`. Unauthenticated visitors have no role (Public).
 
 2. **Enforcement** (`middleware/require-admin.ts`): A single middleware applied before all API routes in `routes/api.ts`. Read Only users are blocked from all non-GET requests. Check In users are allowed specific write endpoints via pattern matching. Everything else requires Admin.
 
@@ -102,15 +107,18 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 ### Frontend
 
-1. **`common.js`**: After fetching `/auth/me`, sets `document.body.dataset.role` to the user's role (`admin`, `checkin`, or `readonly`).
+1. **`common.js`**: After fetching `/auth/me`, sets `document.body.dataset.role` to the user's role (`admin`, `checkin`, or `readonly`). For Public (unauthenticated), `data-role` is never set.
 
 2. **`styles.css`**: CSS rules handle visibility per role:
-   - `body:not([data-role="admin"]) .admin-only { display: none !important; }` — hides admin elements
+   - `body:not([data-role="admin"]) .admin-only { display: none !important; }` — hides admin elements for all non-admins (including Public)
    - `body:not([data-role="admin"]) .admin-clickable { pointer-events: none; }` — disables clicks (record pills)
-   - `body[data-role="readonly"] .checkin-only { display: none !important; }` — hides check-in action buttons
+   - `body:not([data-role]) .checkin-only { display: none !important; }` — hides check-in action buttons for Public
+   - `body[data-role="readonly"] .checkin-only { display: none !important; }` — hides check-in action buttons for Read Only
    - `body[data-role="readonly"] ...` — disables inline controls (checkboxes, inputs) with `pointer-events: none; opacity: 0.6`
+   - `.auth-only { display: none !important; }` / `body[data-role] .auth-only { display: revert !important; }` — hides auth-gated content from Public
+   - `body[data-role] .unauth-only { display: none !important; }` — shows Public-only content (e.g. Privacy Protection card) only to unauthenticated visitors
 
-3. **HTML**: Elements marked with `class="admin-only"` (admin tier) or `class="checkin-only"` (check-in tier).
+3. **HTML**: Elements marked with `class="admin-only"` (admin tier), `class="checkin-only"` (check-in tier), `class="auth-only"` (any logged-in user), or `class="unauth-only"` (Public only).
 
 ### Public (No Authentication)
 

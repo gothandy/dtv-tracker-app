@@ -40,6 +40,7 @@
 /* === Permissions === */
 body:not([data-role="admin"]) .admin-only { display: none !important; }
 body:not([data-role="admin"]) .admin-clickable { pointer-events: none; cursor: default; }
+body:not([data-role]) .checkin-only,
 body[data-role="readonly"] .checkin-only { display: none !important; }
 body[data-role="readonly"] .checkin-toggle input,
 body[data-role="readonly"] .regular-checkbox,
