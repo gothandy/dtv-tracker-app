@@ -264,6 +264,9 @@ async function loadSessionDetail() {
         const session = result.data;
         currentSession = session;
         document.title = `${session.displayName || formatDate(session.date)} - DTV Tracker`;
+        const sessionTitle = session.displayName || formatDate(session.date);
+        const sessionDesc = session.description || `${sessionTitle} — ${session.groupName}, ${formatDate(session.date)}`;
+        setPageMeta({ description: sessionDesc, ogTitle: `${sessionTitle} - DTV Tracker` });
 
         const isPast = new Date(session.date) < new Date(new Date().toDateString());
         const countdown = getCountdown(session.date);
@@ -318,7 +321,7 @@ async function loadSessionDetail() {
 
         contentDiv.innerHTML = `
             <div class="session-detail${countdown ? ' next-session' : ''}">
-                ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
+                ${countdown ? `<div class="countdown">${countdown === 'Today' ? "Today's Session" : `Next session &middot; ${countdown}`}</div>` : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="session-title-row">
                     <h1>${escapeHtml(session.displayName || 'Session')}</h1>

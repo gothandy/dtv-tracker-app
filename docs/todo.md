@@ -53,6 +53,23 @@ The Eventbrite sync endpoints return structured results but there's no persisten
 - Write to Logs list at the end of `event-and-attendee-update` endpoint
 - Display on admin page with last sync timestamp
 
+## Post sessions to Facebook Page
+Auto-post session summaries (text + photos) to a Facebook Page after a session. Facebook's Graph API supports posting to Pages you manage with a long-lived Page Access Token.
+
+**What a post would include:**
+- Session name, date, group
+- Stats: attendees, hours volunteered, new volunteers
+- Session description/notes
+- Photos from the SharePoint media library
+
+**Implementation sketch:**
+- `POST /api/sessions/:group/:date/share-facebook` — admin-only endpoint; fetches session + photos, posts to Facebook Graph API
+- Admin button on session detail page (admin-only)
+- Store returned `post_id` on the session (new SharePoint field) to prevent double-posting and link back to the post
+- `FACEBOOK_PAGE_ID` and `FACEBOOK_PAGE_TOKEN` env vars (Page token doesn't expire if refreshed properly)
+
+**Setup cost:** Register a Facebook App, request `pages_manage_posts` permission, generate a long-lived Page Access Token.
+
 ## Import from Facebook events?
 Some groups use Facebook for registration. Maybe use an OCR to get the text, and match against the names in the profile list.
 

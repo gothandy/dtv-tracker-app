@@ -237,6 +237,8 @@ async function loadGroupDetail() {
         currentGroup = group;
         allSessions = group.sessions || [];
         document.title = `${group.displayName} - DTV Tracker`;
+        const groupDesc = group.description || `${group.displayName} volunteer crew`;
+        setPageMeta({ description: groupDesc, ogTitle: `${group.displayName} - DTV Tracker` });
 
         const eventbriteBtn = group.eventbriteSeriesId
             ? buildEventbriteLink(`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`)

@@ -146,7 +146,7 @@ function renderSessionList(container, sessions, options = {}) {
             card.dataset.sessionPath = `${session.groupKey}/${(session.date || '').substring(0, 10)}`;
             card.addEventListener('click', () => { window.location.href = url; });
             card.innerHTML = `
-                ${isNext && countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
+                ${isNext && countdown ? `<div class="countdown">${countdown === 'Today' ? "Today's Session" : `Next session &middot; ${countdown}`}</div>` : ''}
                 ${isLast && !isNext ? '<div class="last-session-label">Last session</div>' : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
@@ -161,7 +161,7 @@ function renderSessionList(container, sessions, options = {}) {
             card.className = 'session-card' + (isNext ? ' next-session' : '');
             card.href = url;
             card.innerHTML = `
-                ${countdown ? `<div class="countdown">Next session &middot; ${countdown}</div>` : ''}
+                ${countdown ? `<div class="countdown">${countdown === 'Today' ? "Today's Session" : `Next session &middot; ${countdown}`}</div>` : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}

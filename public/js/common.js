@@ -8,6 +8,23 @@ document.head.insertAdjacentHTML('beforeend',
     '<link rel="manifest" href="/site.webmanifest">'
 );
 
+// Update or create meta tags by name/property (used by detail pages after data loads)
+function setPageMeta({ description, ogTitle, ogDescription } = {}) {
+    const setMeta = (attr, key, value) => {
+        if (!value) return;
+        let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+            el = document.createElement('meta');
+            el.setAttribute(attr, key);
+            document.head.appendChild(el);
+        }
+        el.setAttribute('content', value);
+    };
+    setMeta('name', 'description', description);
+    setMeta('property', 'og:title', ogTitle);
+    setMeta('property', 'og:description', ogDescription || description);
+}
+
 /**
  * Build breadcrumb trail based on the current page's position in the hierarchy.
  * Each page has fixed parents — navigation always goes "up".
