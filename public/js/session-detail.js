@@ -153,6 +153,14 @@ async function applyDefaultHours() {
     }
 }
 
+function updateEntriesHeading() {
+    const heading = document.querySelector('.entries-heading');
+    if (!heading) return;
+    const total = document.querySelectorAll('.entry-row').length;
+    const checked = document.querySelectorAll('.checkin-toggle input:checked').length;
+    heading.textContent = `Entries (${checked} from ${total})`;
+}
+
 async function toggleCheckin(entryId, checkbox) {
     const row = checkbox.closest('.entry-row');
     const card = row.querySelector('.entry-card');
@@ -164,6 +172,7 @@ async function toggleCheckin(entryId, checkbox) {
         });
         if (!res.ok) throw new Error();
         card.classList.toggle('checked-in', checkbox.checked);
+        updateEntriesHeading();
     } catch {
         checkbox.checked = !checkbox.checked;
     }
