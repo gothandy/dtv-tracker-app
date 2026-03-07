@@ -268,20 +268,17 @@ async function loadSessionDetail() {
         const isPast = new Date(session.date) < new Date(new Date().toDateString());
         const countdown = getCountdown(session.date);
 
-        const statsSection = `
-            <div class="stats-section">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">${session.registrations}</div>
-                        <div class="stat-label">${isPast ? 'Attendees' : 'Registrations'}</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${session.hours}</div>
-                        <div class="stat-label">Hours</div>
-                    </div>
-                </div>
-            </div>
-        `;
+        const statItems = [
+            session.registrations ? `<div class="stat-item"><div class="stat-number">${session.registrations}</div><div class="stat-label">${isPast ? 'Attendees' : 'Registrations'}</div></div>` : '',
+            session.hours ? `<div class="stat-item"><div class="stat-number">${session.hours}</div><div class="stat-label">Hours</div></div>` : '',
+            session.newCount ? `<div class="stat-item"><div class="stat-number">${session.newCount}</div><div class="stat-label">New</div></div>` : '',
+            session.childCount ? `<div class="stat-item"><div class="stat-number">${session.childCount}</div><div class="stat-label">Child</div></div>` : '',
+            session.regularCount ? `<div class="stat-item"><div class="stat-number">${session.regularCount}</div><div class="stat-label">Regular</div></div>` : '',
+            session.eventbriteCount ? `<div class="stat-item"><div class="stat-number">${session.eventbriteCount}</div><div class="stat-label">Eventbrite</div></div>` : ''
+        ].filter(Boolean).join('');
+        const statsSection = statItems
+            ? `<div class="stats-section"><div class="stats-grid">${statItems}</div></div>`
+            : '';
 
         const entries = session.entries || [];
         sessionEntries = entries;

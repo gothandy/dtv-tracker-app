@@ -60,10 +60,10 @@ export function convertGroup(spGroup: SharePointGroup): Group {
 
 /**
  * Converts SharePoint Session to clean domain type
- * Note: Does NOT include enriched fields (groupName, registrations, hours)
+ * Note: Does NOT include enriched fields (groupName, registrations, hours, newCount, childCount, regularCount)
  * Use enrichSessions() to add those
  */
-export function convertSession(spSession: SharePointSession): Omit<Session, 'registrations' | 'hours' | 'groupName'> {
+export function convertSession(spSession: SharePointSession): Omit<Session, 'registrations' | 'hours' | 'newCount' | 'childCount' | 'regularCount' | 'eventbriteCount' | 'groupName'> {
   const sessionDate = new Date(spSession.Date);
   return {
     sharePointId: spSession.ID,
@@ -159,6 +159,10 @@ export function buildLookupMap<T, V>(
 interface SessionStats {
   registrations: number;
   hours: number;
+  newCount: number;
+  childCount: number;
+  regularCount: number;
+  eventbriteCount: number;
 }
 
 /**
@@ -175,13 +179,22 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, S
     if (!statsMap.has(sessionId)) {
       statsMap.set(sessionId, {
         registrations: 0,
-        hours: 0
+        hours: 0,
+        newCount: 0,
+        childCount: 0,
+        regularCount: 0,
+        eventbriteCount: 0
       });
     }
 
     const stats = statsMap.get(sessionId)!;
     stats.registrations++;
     stats.hours += parseFloat(String(entry.Hours)) || 0;
+    const notes = String(entry.Notes || '');
+    if (/#New\b/i.test(notes)) stats.newCount++;
+    if (/#Child\b/i.test(notes)) stats.childCount++;
+    if (/#Regular\b/i.test(notes)) stats.regularCount++;
+    if (/#Eventbrite\b/i.test(notes)) stats.eventbriteCount++;
   });
 
   return statsMap;
@@ -215,6 +228,10 @@ export function enrichSessions(
       // Add calculated stats
       registrations: stats?.registrations || 0,
       hours: stats ? Math.round(stats.hours * 10) / 10 : 0, // Round to 1 decimal
+      newCount: stats?.newCount || 0,
+      childCount: stats?.childCount || 0,
+      regularCount: stats?.regularCount || 0,
+      eventbriteCount: stats?.eventbriteCount || 0,
       groupName: spSession[GROUP_LOOKUP] ? groupMap.get(spSession[GROUP_LOOKUP]) : undefined
     } as Session;
 

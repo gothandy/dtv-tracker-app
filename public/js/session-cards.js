@@ -86,6 +86,23 @@ function buildCardTagsHTML(metadata) {
     return items ? `<div class="session-card-tags">${items}</div>` : '';
 }
 
+/**
+ * Build the meta stats bar for a session card.
+ * isPast controls the label for the attendance count.
+ * Each stat is hidden if zero/falsy.
+ */
+function buildSessionMetaHTML(session, isPast) {
+    const items = [
+        session.registrations ? `<div class="meta-item"><strong>${isPast ? 'Attendees' : 'Registrations'}:</strong> ${session.registrations}</div>` : '',
+        session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : '',
+        session.newCount ? `<div class="meta-item"><strong>New:</strong> ${session.newCount}</div>` : '',
+        session.childCount ? `<div class="meta-item"><strong>Child:</strong> ${session.childCount}</div>` : '',
+        session.regularCount ? `<div class="meta-item"><strong>Regular:</strong> ${session.regularCount}</div>` : '',
+        session.eventbriteCount ? `<div class="meta-item"><strong>Eventbrite:</strong> ${session.eventbriteCount}</div>` : ''
+    ].filter(Boolean).join('');
+    return items ? `<div class="meta">${items}</div>` : '';
+}
+
 function renderSessionList(container, sessions, options = {}) {
     const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange } = options;
 
@@ -136,11 +153,7 @@ function renderSessionList(container, sessions, options = {}) {
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 <div class="photo-carousel-slot"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
-                ${session.registrations || session.hours || session.mediaCount ? `<div class="meta">
-                    ${session.registrations ? `<div class="meta-item"><strong>Attendees:</strong> ${session.registrations}</div>` : ''}
-                    ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
-                    ${session.mediaCount ? `<div class="meta-item"><strong>Media:</strong> ${session.mediaCount}</div>` : ''}
-                </div>` : ''}
+                ${buildSessionMetaHTML(session, true)}
                 ${buildCardTagsHTML(session.metadata)}
             `;
         } else {
@@ -153,11 +166,7 @@ function renderSessionList(container, sessions, options = {}) {
                 <div class="title">${escapeHtml(session.displayName)}</div>
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
-                ${session.registrations || session.hours || session.mediaCount ? `<div class="meta">
-                    ${session.registrations ? `<div class="meta-item"><strong>Registrations:</strong> ${session.registrations}</div>` : ''}
-                    ${session.hours ? `<div class="meta-item"><strong>Hours:</strong> ${session.hours}</div>` : ''}
-                    ${session.mediaCount ? `<div class="meta-item"><strong>Media:</strong> ${session.mediaCount}</div>` : ''}
-                </div>` : ''}
+                ${buildSessionMetaHTML(session, false)}
                 ${buildCardTagsHTML(session.metadata)}
             `;
         }

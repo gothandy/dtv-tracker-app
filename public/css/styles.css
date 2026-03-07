@@ -724,7 +724,7 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     .filter-bar .filter-row { flex-wrap: wrap; }
     .filter-buttons { width: 100%; }
     .filter-btn { flex: 1; }
-    .session-card .meta { flex-direction: column; gap: 0.5rem; }
+    .session-card .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1rem; }
     .stat-item .stat-number { font-size: 1.5rem; }
     .entry-card { flex-wrap: wrap; gap: 0.5rem; }
     .entry-meta { width: 100%; justify-content: flex-start; }

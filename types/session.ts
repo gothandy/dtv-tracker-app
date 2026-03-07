@@ -51,6 +51,10 @@ export interface Session {
   registrations: number;
   /** Calculated from Entries list (rounded to 1 decimal) */
   hours: number;
+  newCount: number;
+  childCount: number;
+  regularCount: number;
+  eventbriteCount: number;
   /** Financial year as number (e.g., 2025 for FY2025), calculated from sessionDate */
   financialYear: number;
   eventbriteEventId?: string;

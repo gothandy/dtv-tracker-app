@@ -66,6 +66,10 @@ router.get('/sessions', async (req: Request, res: Response) => {
         groupName: s.groupName,
         registrations: s.registrations,
         hours: s.hours,
+        newCount: s.newCount || undefined,
+        childCount: s.childCount || undefined,
+        regularCount: s.regularCount || undefined,
+        eventbriteCount: s.eventbriteCount || undefined,
         financialYear: `FY${s.financialYear}`,
         eventbriteEventId: s.eventbriteEventId,
         metadata: tags && tags.length ? tags : undefined
@@ -417,6 +421,10 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     });
 
     const totalHours = sessionEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
+    const newCount = sessionEntries.filter(e => /#New\b/i.test(String(e.Notes || ''))).length;
+    const childCount = sessionEntries.filter(e => /#Child\b/i.test(String(e.Notes || ''))).length;
+    const regularCount = sessionEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
+    const eventbriteCount = sessionEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
 
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
 
@@ -430,6 +438,10 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupName: group.displayName,
       registrations: sessionEntries.length,
       hours: Math.round(totalHours * 10) / 10,
+      newCount: newCount || undefined,
+      childCount: childCount || undefined,
+      regularCount: regularCount || undefined,
+      eventbriteCount: eventbriteCount || undefined,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       eventbriteEventId: spSession.EventbriteEventID,
       metadata: metadata.length ? metadata : undefined,

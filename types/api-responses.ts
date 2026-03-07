@@ -30,6 +30,10 @@ export interface SessionResponse {
   groupName?: string;
   registrations: number;
   hours: number;
+  newCount?: number;
+  childCount?: number;
+  regularCount?: number;
+  eventbriteCount?: number;
   mediaCount?: number;
   financialYear: string;
   eventbriteEventId?: string;
@@ -141,6 +145,10 @@ export interface SessionDetailResponse {
   groupName?: string;
   registrations: number;
   hours: number;
+  newCount?: number;
+  childCount?: number;
+  regularCount?: number;
+  eventbriteCount?: number;
   financialYear: string;
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
