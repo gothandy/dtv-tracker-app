@@ -15,5 +15,6 @@ export const SESSION_DISPLAY  = 'Session';
 export const PROFILE_DISPLAY  = 'Profile';
 
 // Other fields
-export const SESSION_NOTES     = 'Notes';
-export const SESSION_METADATA  = 'Metadata';
+export const SESSION_NOTES       = 'Notes';
+export const SESSION_METADATA    = 'Metadata';
+export const SESSION_COVER_MEDIA = 'CoverMediaLookupId'; // Lookup to Media library (ID field, consistent with GROUP_LOOKUP pattern)

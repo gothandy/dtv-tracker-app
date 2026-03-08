@@ -1,6 +1,10 @@
 // === Shared lightbox ===
 let _lbPhotos = [];
 let _lbIndex = 0;
+let _lbMetaRenderer = null;
+
+function setLightboxMetaRenderer(fn) { _lbMetaRenderer = fn; }
+function refreshLightbox() { _showLightboxPhoto(); }
 
 function openLightbox(index, photos) {
     _lbPhotos = photos;
@@ -13,6 +17,7 @@ function openLightbox(index, photos) {
             `<button class="lightbox-next" onclick="nextPhoto();event.stopPropagation()" aria-label="Next">&#8594;</button>` +
             `<div class="lightbox-img-wrap" onclick="event.stopPropagation()"><img id="lightboxImg" src="" alt=""></div>` +
             `<div class="lightbox-caption" onclick="event.stopPropagation()"><span id="lightboxCaption"></span><span id="lightboxCounter"></span></div>` +
+            `<div class="lightbox-meta" id="lightboxMeta" onclick="event.stopPropagation()"></div>` +
             `</div>`
         );
     }
@@ -39,13 +44,20 @@ function nextPhoto() {
 
 function _showLightboxPhoto() {
     const p = _lbPhotos[_lbIndex];
-    document.getElementById('lightboxImg').src = p.largeUrl || p.thumbnailUrl;
-    document.getElementById('lightboxImg').alt = escapeHtml(p.name);
-    document.getElementById('lightboxCaption').textContent = p.name;
-    document.getElementById('lightboxCounter').textContent = `${_lbIndex + 1} / ${_lbPhotos.length}`;
+    const imgEl = document.getElementById('lightboxImg');
+    imgEl.src = p.largeUrl || p.thumbnailUrl;
+    imgEl.alt = escapeHtml(p.title || p.name);
+    // Combine caption and counter into one text: "Caption text (5 / 14)" or just "5 / 14"
+    // Admin (meta renderer set): show filename; Public: show title if set, blank if not
+    const _caption = _lbMetaRenderer ? p.name : (p.title || '');
+    const _counter = `${_lbIndex + 1} / ${_lbPhotos.length}`;
+    document.getElementById('lightboxCaption').textContent = _caption ? `${_caption} (${_counter})` : _counter;
+    document.getElementById('lightboxCounter').textContent = '';
     const showNav = _lbPhotos.length > 1;
     document.querySelector('.lightbox-prev').style.display = showNav ? '' : 'none';
     document.querySelector('.lightbox-next').style.display = showNav ? '' : 'none';
+    const metaEl = document.getElementById('lightboxMeta');
+    if (metaEl) metaEl.innerHTML = _lbMetaRenderer ? _lbMetaRenderer(p, _lbIndex) : '';
 }
 
 function _lightboxKeyHandler(e) {

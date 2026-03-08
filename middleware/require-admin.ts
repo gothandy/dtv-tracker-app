@@ -11,6 +11,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'POST',  pattern: /^\/profiles$/ },               // create profile
   { method: 'PATCH', pattern: /^\/profiles\/[^/]+$/ },        // edit profile
   { method: 'POST',  pattern: /^\/entries\/\d+\/upload-code$/ }, // generate upload code
+  { method: 'PATCH', pattern: /^\/media\/[^/]+$/ },            // update media item metadata (title, isPublic)
 ];
 
 const ADMIN_ONLY_GET_PATTERNS = [

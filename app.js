@@ -10,9 +10,10 @@ const { requireAuth } = require('./dist/middleware/require-auth');
 const { groupsRepository } = require('./dist/services/repositories/groups-repository');
 const { sessionsRepository } = require('./dist/services/repositories/sessions-repository');
 const { findGroupByKey, findSessionByGroupAndDate, convertGroup } = require('./dist/services/data-layer');
-const { SESSION_NOTES } = require('./dist/services/field-names');
+const { SESSION_NOTES, SESSION_COVER_MEDIA } = require('./dist/services/field-names');
 const { mediaDriveId } = require('./dist/services/media-upload');
 const { sharePointClient } = require('./dist/services/sharepoint-client');
+const axios = require('axios');
 
 // Cache the session-detail HTML template in memory (read once, reuse across requests)
 let _sessionDetailHtml = null;
@@ -96,12 +97,12 @@ app.get('/sessions/:group/:date/details.html', async (req, res) => {
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const canonicalUrl = `${baseUrl}${req.path}`;
 
-        // Default to DTV logo; use first session photo if available
+        // Use stable proxy URL if any media exists; proxy handles cover selection internally
         let imageUrl = `${baseUrl}/img/logo-930.jpg`;
         try {
             const driveId = mediaDriveId();
             const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
-            if (photos.length > 0 && photos[0].largeUrl) imageUrl = photos[0].largeUrl;
+            if (photos.length > 0) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg`;
         } catch { /* media library not configured or folder missing */ }
 
         let title = 'Session Details - DTV Tracker';
@@ -128,6 +129,42 @@ app.get('/sessions/:group/:date/details.html', async (req, res) => {
     } catch (err) {
         console.error(`Error rendering session meta tags for ${groupKey}/${dateParam}:`, err);
         res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
+    }
+});
+
+// Public cover image proxy — stable URL for og:image in social share previews
+// Serves the CoverMedia item (or first public item, or first item) for the session
+app.get('/media/:group/:date/cover.jpg', async (req, res) => {
+    const groupKey = req.params.group.toLowerCase();
+    const dateParam = req.params.date;
+    try {
+        const driveId = mediaDriveId();
+        const [photos, rawGroups, rawSessions] = await Promise.all([
+            sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`),
+            groupsRepository.getAll(),
+            sessionsRepository.getAll()
+        ]);
+        if (photos.length === 0) return res.redirect('/img/logo-930.jpg');
+
+        const spGroup = findGroupByKey(rawGroups, groupKey);
+        const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
+        // CoverMedia is a lookup field: { LookupId: integer, LookupValue: "filename" }
+        const coverMediaId = spSession?.[SESSION_COVER_MEDIA] ? parseInt(String(spSession[SESSION_COVER_MEDIA]), 10) || null : null;
+        const photo = (coverMediaId && photos.find(p => p.listItemId === coverMediaId))
+            || photos.find(p => p.isPublic !== false)
+            || photos[0];
+
+        // largeUrl is a pre-signed Graph API thumbnail URL (works for both images and videos)
+        const imageUrl = photo.largeUrl || photo.thumbnailUrl;
+        if (!imageUrl) return res.redirect('/img/logo-930.jpg');
+
+        const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=3600');
+        imageResponse.data.pipe(res);
+    } catch (err) {
+        console.error(`Error serving cover image for ${groupKey}/${dateParam}:`, err);
+        res.redirect('/img/logo-930.jpg');
     }
 });
 

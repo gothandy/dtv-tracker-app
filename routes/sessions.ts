@@ -26,7 +26,7 @@ import {
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP,
-  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA,
+  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
@@ -445,6 +445,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       eventbriteEventId: spSession.EventbriteEventID,
       metadata: metadata.length ? metadata : undefined,
+      coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
       entries: isAuthenticated ? entryResponses : []
     };
 
@@ -463,7 +464,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId, date, groupId, metadata } = req.body;
+    const { displayName, description, eventbriteEventId, date, groupId, metadata, coverMediaId } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
@@ -471,6 +472,8 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) fields.Date = date;
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
+    if (typeof coverMediaId === 'number') fields[SESSION_COVER_MEDIA] = String(coverMediaId);
+    if (coverMediaId === null) fields[SESSION_COVER_MEDIA] = null;
 
     // Metadata is a Managed Metadata column — handled separately via the hidden companion field.
     // Graph API rejects direct writes to taxonomy fields but accepts writes to the hidden "_0" field.

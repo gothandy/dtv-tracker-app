@@ -6,7 +6,7 @@
 
 import { SharePointSession } from '../../types/session';
 import { sharePointClient } from '../sharepoint-client';
-import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA } from '../field-names';
+import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA } from '../field-names';
 
 class SessionsRepository {
   private listGuid: string;
@@ -16,7 +16,7 @@ class SessionsRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
+    return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${SESSION_COVER_MEDIA},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointSession[]> {

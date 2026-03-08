@@ -145,7 +145,9 @@ router.post('/upload/files', upload.array('photos', 10), async (req: Request, re
       }
       const takenAt = exifDate(file.buffer) ?? new Date();
       const filename = mediaFilename(file.originalname, context.profileName, takenAt);
-      await sharePointClient.uploadFile(driveId, `${folderPath}/${filename}`, file.buffer, file.mimetype);
+      const uploaded_item = await sharePointClient.uploadFile(driveId, `${folderPath}/${filename}`, file.buffer, file.mimetype);
+      // New uploads default to not public — admin must explicitly mark IsPublic to show in public gallery
+      await sharePointClient.updateMediaItemFields(driveId, uploaded_item.id, { IsPublic: false });
       uploaded++;
     }
 

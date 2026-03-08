@@ -189,6 +189,7 @@
                     document.getElementById('siteShortcuts').innerHTML =
                         lists.map(l => `<a class="admin-btn" href="${url}${l.path}" target="_blank">${escapeHtml(l.name)}</a>`).join('') +
                         `<a class="admin-btn" href="${termStoreUrl}" target="_blank">Term Store</a>` +
+                        `<a class="admin-btn" href="https://dtvolunteers.sharepoint.com/sites/Tracker/Media/Forms/AllItems.aspx" target="_blank">Media</a>` +
                         `<button class="admin-btn" id="exportBackupBtn" onclick="exportBackup()">Backup</button>`;
                 }
             } catch (e) { /* ignore */ }

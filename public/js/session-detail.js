@@ -219,20 +219,91 @@ async function loadPhotos() {
         const data = await res.json();
         if (!data.success || !data.data.length) { carousel.innerHTML = ''; photoData = []; return; }
         photoData = data.data;
+
+        // Render cover media above the carousel
+        const coverEl = document.getElementById('sessionCover');
+        if (coverEl) {
+            const coverMediaId = currentSession && currentSession.coverMediaId;
+            const cover = (coverMediaId && photoData.find(p => p.listItemId === coverMediaId))
+                || photoData.find(p => p.isPublic !== false)
+                || photoData[0];
+            const coverIndex = photoData.indexOf(cover);
+            const isVideo = cover.mimeType && cover.mimeType.startsWith('video/');
+            if (isVideo) {
+                coverEl.innerHTML = `<div class="session-cover"><a href="${escapeHtml(cover.webUrl)}" target="_blank" rel="noopener" class="session-cover-video">` +
+                    `<img src="${escapeHtml(cover.largeUrl || cover.thumbnailUrl)}" alt="${escapeHtml(cover.title || cover.name)}">` +
+                    `<span class="play-icon">&#9654;</span></a></div>`;
+            } else {
+                coverEl.innerHTML = `<div class="session-cover"><a href="#" onclick="openLightbox(${coverIndex},photoData);return false;">` +
+                    `<img src="${escapeHtml(cover.largeUrl || cover.thumbnailUrl)}" alt="${escapeHtml(cover.title || cover.name)}">` +
+                    `</a></div>`;
+            }
+        }
+
+        // Register lightbox edit controls for admin/check-in users
+        const isAdmin = ['admin', 'checkin'].includes(document.body.dataset.role);
+        if (isAdmin) {
+            setLightboxMetaRenderer((p, i) => {
+                const isCover = currentSession && currentSession.coverMediaId === p.listItemId;
+                return `<div class="lightbox-edit">` +
+                    `<label><input type="checkbox" ${p.isPublic !== false ? 'checked' : ''} onchange="setMediaPublic(${i},this.checked)"> Public gallery</label>` +
+                    `<label><input type="checkbox" ${isCover ? 'checked' : ''} onchange="setMediaCover(${i},this.checked)"> Cover</label>` +
+                    `<input type="text" class="lightbox-title-input" value="${escapeHtml(p.title || '')}" placeholder="Alt text / title" onblur="setMediaTitle(${i},this.value)" maxlength="255">` +
+                    `</div>`;
+            });
+        } else {
+            setLightboxMetaRenderer(null);
+        }
+
         carousel.innerHTML = '<div class="photo-strip">' +
             data.data.map((p, i) => {
                 const isVideo = p.mimeType && p.mimeType.startsWith('video/');
                 if (isVideo) {
                     return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" class="video-thumb">` +
-                        `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
+                        `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.title || p.name)}" loading="lazy">` +
                         `<span class="play-icon">&#9654;</span>` +
                         `</a>`;
                 }
                 return `<a href="#" onclick="openLightbox(${i},photoData);return false;">` +
-                    `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.name)}" loading="lazy">` +
+                    `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.title || p.name)}" loading="lazy">` +
                     `</a>`;
             }).join('') + '</div>';
     } catch { carousel.innerHTML = ''; photoData = []; }
+}
+
+async function setMediaCover(index, checked) {
+    const photo = photoData[index];
+    const newId = checked ? photo.listItemId : null;
+    const res = await apiFetch(`/api/sessions/${groupKey}/${sessionDate}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverMediaId: newId })
+    });
+    if (!res.ok) { showError('Failed to update cover'); return; }
+    currentSession.coverMediaId = newId;
+    await loadPhotos();   // re-renders cover image above carousel
+    refreshLightbox();    // re-renders lightbox checkboxes to reflect new cover state
+}
+
+async function setMediaPublic(index, value) {
+    const photo = photoData[index];
+    const res = await apiFetch(`/api/media/${photo.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic: value })
+    });
+    if (!res.ok) { showError('Failed to update visibility'); return; }
+    photoData[index].isPublic = value;
+}
+
+async function setMediaTitle(index, value) {
+    const photo = photoData[index];
+    if (value === (photo.title || '')) return; // no change
+    const res = await apiFetch(`/api/media/${photo.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: value })
+    });
+    if (!res.ok) { showError('Failed to update alt text'); return; }
+    photoData[index].title = value || null;
+    // Caption stays as filename in admin mode; no update needed
 }
 
 async function loadSessionDetail() {
@@ -335,6 +406,7 @@ async function loadSessionDetail() {
                     </div>
                 </div>
                 ${session.groupName ? `<div class="group-name">${escapeHtml(session.groupName)}</div>` : ''}
+                <div id="sessionCover"></div>
                 <div id="photoCarousel"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${statsSection}

@@ -468,11 +468,12 @@ export class SharePointClient {
   async listFolderPhotos(
     driveId: string,
     folderPath: string
-  ): Promise<{ name: string; webUrl: string; thumbnailUrl: string; largeUrl: string; mimeType: string }[]> {
+  ): Promise<{ id: string; listItemId: number; name: string; webUrl: string; thumbnailUrl: string; largeUrl: string; mimeType: string; isPublic: boolean; title: string | null }[]> {
     try {
       const token = await this.getAccessToken();
       const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
-      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file&$expand=thumbnails`;
+      // Include listItem to get SharePoint list item ID (for CoverMedia lookup) and custom columns
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file&$expand=thumbnails,listItem($select=id;$expand=fields($select=Title,IsPublic))`;
 
       const response = await axios.get(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -481,17 +482,35 @@ export class SharePointClient {
       return (response.data.value as any[])
         .filter(item => item.file?.mimeType?.startsWith('image/') || item.file?.mimeType?.startsWith('video/'))
         .map(item => ({
+          id: item.id as string,
+          listItemId: parseInt(item.listItem?.id ?? '0', 10),
           name: item.name as string,
           webUrl: item.webUrl as string,
           thumbnailUrl: (item.thumbnails?.[0]?.medium?.url ?? '') as string,
           largeUrl: (item.thumbnails?.[0]?.large?.url ?? item.thumbnails?.[0]?.medium?.url ?? '') as string,
-          mimeType: item.file.mimeType as string
+          mimeType: item.file.mimeType as string,
+          isPublic: item.listItem?.fields?.IsPublic !== false,  // default true if absent/null
+          title: (item.listItem?.fields?.Title as string | undefined) || null,
         }));
     } catch (error: any) {
       if (error.response?.status === 404) return [];
       console.error(`Error listing folder photos at ${folderPath}:`, error.response?.data || error.message);
       throw error;
     }
+  }
+
+  /**
+   * Update custom metadata columns on a Media library item via its SharePoint list item.
+   * Used to set Title (alt text) and IsPublic on individual photos/videos.
+   */
+  async updateMediaItemFields(driveId: string, itemId: string, fields: Record<string, any>): Promise<void> {
+    const token = await this.getAccessToken();
+    await axios.patch(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/listItem/fields`,
+      fields,
+      { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
+    );
+    this.clearCache();
   }
 
   /**

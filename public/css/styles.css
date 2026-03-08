@@ -594,6 +594,32 @@ div.session-card { display: block; color: inherit; cursor: pointer; }
     font-size: 0.8rem; display: flex; gap: 1rem;
     max-width: 90vw; text-align: center; cursor: default;
 }
+/* === Session cover image (above carousel) === */
+.session-cover { margin-bottom: 0.75rem; }
+.session-cover a { display: block; }
+.session-cover img { width: 100%; max-height: 60vh; object-fit: cover; border-radius: 6px; display: block; }
+.session-cover-video { position: relative; display: block; }
+.session-cover-video .play-icon {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 3rem; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.6); pointer-events: none;
+}
+
+.lightbox-meta { max-width: 90vw; width: 100%; }
+.lightbox-edit {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+    margin-top: 0.5rem; padding: 0.5rem 0.75rem;
+    background: rgba(255,255,255,0.08); border-radius: 6px;
+    font-size: 0.82rem; color: rgba(255,255,255,0.85);
+}
+.lightbox-edit label { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; white-space: nowrap; }
+.lightbox-edit input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.lightbox-title-input {
+    flex: 1 1 100%; padding: 0.25rem 0.5rem;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 4px; color: white; font-size: 0.82rem;
+}
+.lightbox-title-input::placeholder { color: rgba(255,255,255,0.4); }
+.lightbox-title-input:focus { outline: none; border-color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.18); }
 
 /* === Description truncation === */
 .description-clamped {

@@ -1,6 +1,8 @@
 import express, { Request, Response, Router } from 'express';
+/// <reference path="../types/express-session.d.ts" />
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId } from '../services/media-upload';
+import { requireAdmin } from '../middleware/require-admin';
 
 const router: Router = express.Router();
 
@@ -40,7 +42,8 @@ router.get('/media/counts', async (req: Request, res: Response) => {
   }
 });
 
-// List media in a session folder. Returns names, webUrls, and thumbnail URLs.
+// List media in a session folder. Returns names, webUrls, thumbnail URLs, and metadata.
+// Unauthenticated (public) users only see items where isPublic is true.
 router.get('/media', async (req: Request, res: Response) => {
   const groupKey = (req.query.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
   const date = (req.query.date as string || '').replace(/[^0-9-]/g, '');
@@ -51,9 +54,31 @@ router.get('/media', async (req: Request, res: Response) => {
   try {
     const driveId = mediaDriveId();
     const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${date}`);
-    res.json({ success: true, data: photos });
+    const isAuthenticated = !!req.session?.user;
+    const data = isAuthenticated ? photos : photos.filter(p => p.isPublic !== false);
+    res.json({ success: true, data });
   } catch (error: any) {
     console.error('Error listing photos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update metadata (title, isPublic) on a Media library item. Admin/Check-in only.
+router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response) => {
+  const { title, isPublic } = req.body;
+  const fields: Record<string, any> = {};
+  if (typeof title === 'string') fields.Title = title;
+  if (typeof isPublic === 'boolean') fields.IsPublic = isPublic;
+  if (!Object.keys(fields).length) {
+    res.status(400).json({ success: false, error: 'No fields to update' });
+    return;
+  }
+  try {
+    const driveId = mediaDriveId();
+    await sharePointClient.updateMediaItemFields(driveId, String(req.params.itemId), fields);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error updating media item:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
