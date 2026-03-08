@@ -2,10 +2,30 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs').promises;
 const apiRoutes = require('./dist/routes/api');
 const authRoutes = require('./dist/routes/auth');
 const uploadRoutes = require('./dist/routes/upload');
 const { requireAuth } = require('./dist/middleware/require-auth');
+const { groupsRepository } = require('./dist/services/repositories/groups-repository');
+const { sessionsRepository } = require('./dist/services/repositories/sessions-repository');
+const { findGroupByKey, findSessionByGroupAndDate, convertGroup } = require('./dist/services/data-layer');
+const { SESSION_NOTES } = require('./dist/services/field-names');
+const { mediaDriveId } = require('./dist/services/media-upload');
+const { sharePointClient } = require('./dist/services/sharepoint-client');
+
+// Cache the session-detail HTML template in memory (read once, reuse across requests)
+let _sessionDetailHtml = null;
+async function getSessionDetailTemplate() {
+    if (!_sessionDetailHtml) {
+        _sessionDetailHtml = await fs.readFile(path.join(__dirname, 'public', 'session-detail.html'), 'utf8');
+    }
+    return _sessionDetailHtml;
+}
+
+function escapeHtmlAttr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 const app = express();
 
@@ -60,7 +80,56 @@ app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'p
 app.get('/sessions.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sessions.html')));
 app.get('/groups.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'groups.html')));
 app.get('/groups/:key/detail.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'group-detail.html')));
-app.get('/sessions/:group/:date/details.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'session-detail.html')));
+// Session detail: server-side OG meta tag injection so social crawlers (Facebook etc.) get real content
+app.get('/sessions/:group/:date/details.html', async (req, res) => {
+    const groupKey = req.params.group.toLowerCase();
+    const dateParam = req.params.date;
+    try {
+        const [rawGroups, rawSessions] = await Promise.all([
+            groupsRepository.getAll(),
+            sessionsRepository.getAll()
+        ]);
+
+        const spGroup = findGroupByKey(rawGroups, groupKey);
+        const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const canonicalUrl = `${baseUrl}${req.path}`;
+
+        // Default to DTV logo; use first session photo if available
+        let imageUrl = `${baseUrl}/img/logo-930.jpg`;
+        try {
+            const driveId = mediaDriveId();
+            const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
+            if (photos.length > 0 && photos[0].largeUrl) imageUrl = photos[0].largeUrl;
+        } catch { /* media library not configured or folder missing */ }
+
+        let title = 'Session Details - DTV Tracker';
+        let description = 'DTV volunteer session';
+
+        if (spGroup && spSession) {
+            const group = convertGroup(spGroup);
+            const sessionName = spSession.Name || spSession.Title || group.displayName;
+            const date = new Date(dateParam);
+            const formattedDate = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+            title = `${sessionName} — ${formattedDate}`;
+            description = spSession[SESSION_NOTES] || `${group.displayName} volunteer session on ${formattedDate}`;
+        }
+
+        let html = await getSessionDetailTemplate();
+        html = html
+            .replace('<title>Session Details - DTV Tracker</title>', `<title>${escapeHtmlAttr(title)}</title>`)
+            .replace('property="og:title" content=""', `property="og:title" content="${escapeHtmlAttr(title)}"`)
+            .replace('property="og:description" content=""', `property="og:description" content="${escapeHtmlAttr(description)}"`)
+            .replace('property="og:url" content=""', `property="og:url" content="${canonicalUrl}"`)
+            .replace('property="og:image" content=""', `property="og:image" content="${escapeHtmlAttr(imageUrl)}"`);
+
+        res.set('Content-Type', 'text/html').send(html);
+    } catch (err) {
+        console.error(`Error rendering session meta tags for ${groupKey}/${dateParam}:`, err);
+        res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
+    }
+});
 
 // Everything below requires login
 app.use(requireAuth);
