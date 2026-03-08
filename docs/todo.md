@@ -53,6 +53,23 @@ The Eventbrite sync endpoints return structured results but there's no persisten
 - Write to Logs list at the end of `event-and-attendee-update` endpoint
 - Display on admin page with last sync timestamp
 
+## PWA Push Notifications
+Send a session update notification to all subscribed devices (users who have installed the app) after a session is completed.
+
+**Trigger**: Manual "Send update" button on session detail page, check-in+ only.
+**Audience**: Anyone who has installed the PWA and granted notification permission (device-level, not tied to accounts).
+
+**Implementation sketch:**
+- **Service worker** (`public/sw.js`) — receives push events, shows notification, handles click → opens session URL
+- **VAPID keys** — generate once with `npx web-push generate-vapid-keys`; store as `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` env vars
+- **`web-push` npm package** — server-side push sending
+- **SharePoint "PushSubscriptions" list** — stores device subscriptions: `Endpoint` (multi-line text), `P256dh` (text), `Auth` (text). Env var: `PUSH_SUBSCRIPTIONS_LIST_GUID`
+- **`POST /api/push/subscribe`** — public (no auth), saves device subscription
+- **`POST /api/push/send`** — check-in+, sends notification to all subscribers with session name, group, date, and link
+- **Client-side** — register service worker on all pages; prompt for permission once; "Send update" button on session detail (check-in+)
+
+**Notification content**: Session name, date, group, volunteer count. Tapping opens the session detail page.
+
 ## Post sessions to Facebook Page
 Auto-post session summaries (text + photos) to a Facebook Page after a session. Facebook's Graph API supports posting to Pages you manage with a long-lived Page Access Token.
 
