@@ -151,6 +151,7 @@ export interface SessionDetailResponse {
   eventbriteCount?: number;
   financialYear: string;
   eventbriteEventId?: string;
+  groupEventbriteSeriesId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
   coverMediaId: number | null;
   entries: EntryResponse[];

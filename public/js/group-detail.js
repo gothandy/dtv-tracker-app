@@ -240,8 +240,9 @@ async function loadGroupDetail() {
         const groupDesc = group.description || `${group.displayName} volunteer crew`;
         setPageMeta({ description: groupDesc, ogTitle: `${group.displayName} - DTV Tracker` });
 
-        const eventbriteBtn = group.eventbriteSeriesId
-            ? buildEventbriteLink(`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`)
+        const isPublicView = !document.body.dataset.role;
+        const eventbriteBtn = group.eventbriteSeriesId && !isPublicView
+            ? buildEventbriteLink(`https://www.eventbrite.co.uk/e/${encodeURIComponent(group.eventbriteSeriesId)}`)
             : '';
 
         const editBtn = `
@@ -274,6 +275,8 @@ async function loadGroupDetail() {
                 ${group.description ? `<div class="description" style="margin-bottom:1.25rem;">${escapeHtml(group.description)}</div>` : ''}
                 <div id="fyChart"></div>
             </div>
+
+            ${group.eventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(group.displayName)}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(group.eventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}
 
             ${regularsSection}
 

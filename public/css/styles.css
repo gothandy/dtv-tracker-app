@@ -594,6 +594,23 @@ div.session-card { display: block; color: inherit; cursor: pointer; }
     font-size: 0.8rem; display: flex; gap: 1rem;
     max-width: 90vw; text-align: center; cursor: default;
 }
+/* === Eventbrite CTA === */
+.btn-eventbrite-cta {
+    display: inline-block; background: #F05537; color: white;
+    padding: 0.6rem 1.25rem; border-radius: 6px;
+    font-weight: 600; font-size: 0.95rem; text-decoration: none; white-space: nowrap;
+}
+.btn-eventbrite-cta:hover { background: #D94425; color: white; }
+.session-eventbrite-cta {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem;
+    background: rgba(240, 85, 55, 0.08); border: 1px solid rgba(240, 85, 55, 0.3); border-radius: 8px;
+}
+.session-eventbrite-cta p { margin: 0; font-size: 0.95rem; }
+.session-card-cta { margin-top: 0.5rem; }
+.eventbrite-series-link { display: inline-flex; align-items: center; gap: 0.5rem; }
+.eventbrite-series-label { font-size: 0.85rem; color: #F05537; font-weight: 500; }
+
 /* === Session cover image (above carousel) === */
 .session-cover { margin-bottom: 0.75rem; }
 .session-cover a { display: block; }

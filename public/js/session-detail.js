@@ -390,6 +390,7 @@ async function loadSessionDetail() {
             }).join('')
             : '<p class="no-sessions">No registrations yet</p>';
 
+        const isPublicView = !document.body.dataset.role;
         contentDiv.innerHTML = `
             <div class="session-detail${countdown ? ' next-session' : ''}">
                 ${countdown ? `<div class="countdown">${countdown === 'Today' ? "Today's Session" : `Next session &middot; ${countdown}`}</div>` : ''}
@@ -397,6 +398,7 @@ async function loadSessionDetail() {
                 <div class="session-title-row">
                     <h1>${escapeHtml(session.displayName || 'Session')}</h1>
                     <div class="session-title-buttons">
+                        ${!isPublicView && session.groupEventbriteSeriesId ? buildEventbriteLink(`https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}`) : ''}
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit session">
                             <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -412,6 +414,7 @@ async function loadSessionDetail() {
                 ${statsSection}
             </div>
             ${renderTagsSection(session)}
+            ${session.groupEventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(session.groupName || 'Dean Trail Volunteers')}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}
             <div class="auth-only">
                 <div class="info-card">
                     <div class="info-card-title">Free Parking</div>

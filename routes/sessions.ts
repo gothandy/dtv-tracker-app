@@ -444,6 +444,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       eventbriteCount: eventbriteCount || undefined,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       eventbriteEventId: spSession.EventbriteEventID,
+      groupEventbriteSeriesId: spGroup.EventbriteSeriesID || undefined,
       metadata: metadata.length ? metadata : undefined,
       coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
       entries: isAuthenticated ? entryResponses : []
