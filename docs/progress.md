@@ -1,5 +1,33 @@
 # Development Progress
 
+## Session: 2026-03-09 (Media upload improvements, video support)
+
+### Completed Tasks
+
+#### Upload page — session link on completion ✓
+- After successful upload, authenticated users see a "View session gallery" link back to the session detail page
+- Public/unauthenticated users do not see the link (photos are `IsPublic: false` until reviewed, so the gallery would appear empty)
+- `routes/upload.ts` — `sessionId` and `isAuthenticated` added to `UploadContextResponse`; `resolveCode` returns `sessionId`
+- `types/api-responses.ts` — `sessionId` and `isAuthenticated` added to `UploadContextResponse`
+
+#### Upload page — thank-you message copy ✓
+- "Thank you for sharing your photos!" → "Thanks for sharing your media! It'll be reviewed by a volunteer coordinator and may be used in our gallery."
+
+#### Media upload — video support ✓
+- Upload page now accepts MP4, MOV, M4V in addition to images; 10 MB limit retained (suitable for short-form video)
+- `routes/upload.ts` — `video/mp4`, `video/quicktime`, `video/x-m4v` added to `ALLOWED_MIME_TYPES`
+- `public/upload.html` — `accept` attribute, hint text, button text, titles updated to reflect media (not photos only)
+- `services/media-upload.ts` — `exifDate()` extended to try `CreationDate`/`CreateDate` tags for MP4/MOV container metadata; falls back to upload time if not found
+
+#### Session gallery — native inline video player ✓
+- Videos in the session photo strip and cover now open in the lightbox instead of linking out to SharePoint
+- `public/js/lightbox.js` — lightbox now renders `<video controls autoplay playsinline>` for video MIME types; pauses video on close/prev/next to prevent audio bleed
+- `public/js/session-detail.js` — video carousel items and video cover now call `openLightbox()` like images
+- `services/sharepoint-client.ts` — new `getMediaItemDownloadUrl()` method: fetches item metadata (for `IsPublic`) then uses Graph API `/content` endpoint (which returns a 302 redirect to a pre-authenticated stream URL)
+- `routes/media.ts` — new `GET /api/media/:itemId/stream` endpoint: validates public access for unauthenticated users, then redirects to the pre-auth stream URL; lightbox uses `/api/media/{id}/stream` as video `src`
+
+---
+
 ## Session: 2026-03-06 (Bug fixes, partial public access)
 
 ### Completed Tasks

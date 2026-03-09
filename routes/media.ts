@@ -63,6 +63,27 @@ router.get('/media', async (req: Request, res: Response) => {
   }
 });
 
+// Stream a media item by redirecting to its pre-authenticated Graph download URL.
+// Public users can only stream items where isPublic is true.
+router.get('/media/:itemId/stream', async (req: Request, res: Response) => {
+  try {
+    const driveId = mediaDriveId();
+    const { downloadUrl, isPublic } = await sharePointClient.getMediaItemDownloadUrl(driveId, String(req.params.itemId));
+    if (!req.session?.user && !isPublic) {
+      res.status(403).json({ success: false, error: 'Not public' });
+      return;
+    }
+    if (!downloadUrl) {
+      res.status(404).json({ success: false, error: 'Download URL not available' });
+      return;
+    }
+    res.redirect(downloadUrl);
+  } catch (error: any) {
+    console.error('Error streaming media item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Update metadata (title, isPublic) on a Media library item. Admin/Check-in only.
 router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response) => {
   const { title, isPublic } = req.body;

@@ -500,6 +500,34 @@ export class SharePointClient {
   }
 
   /**
+   * Fetch the IsPublic flag and a streaming redirect URL for a single drive item.
+   * Uses the /content endpoint which returns a 302 to a pre-authenticated download URL.
+   */
+  async getMediaItemDownloadUrl(driveId: string, itemId: string): Promise<{ downloadUrl: string; isPublic: boolean }> {
+    const token = await this.getAccessToken();
+
+    // Fetch metadata to check IsPublic
+    const metaResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}?$expand=listItem($expand=fields($select=IsPublic))`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    const isPublic = metaResponse.data.listItem?.fields?.IsPublic !== false;
+
+    // Fetch the 302 redirect from the /content endpoint — location header is the pre-auth stream URL
+    const contentResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`,
+      {
+        headers: { 'Authorization': `Bearer ${token}` },
+        maxRedirects: 0,
+        validateStatus: (s) => s >= 200 && s < 400,
+      }
+    );
+    const downloadUrl = (contentResponse.headers['location'] as string) ?? '';
+
+    return { downloadUrl, isPublic };
+  }
+
+  /**
    * Update custom metadata columns on a Media library item via its SharePoint list item.
    * Used to set Title (alt text) and IsPublic on individual photos/videos.
    */

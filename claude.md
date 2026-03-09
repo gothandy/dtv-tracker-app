@@ -260,7 +260,7 @@ dtv-tracker-app/
 │   ├── stats.ts                   # Dashboard stats, cache, config
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
-│   ├── media.ts                   # Authenticated media endpoints (list photos, batch counts)
+│   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
 │   ├── upload.ts                  # Public volunteer upload endpoints (validate code, upload files — no auth)
 │   ├── backup.ts                  # Backup endpoint: exports all 6 lists as JSON to SharePoint Shared Documents
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
@@ -341,10 +341,11 @@ dtv-tracker-app/
 - [x] Azure App Service deployment
 - [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
-- [x] Volunteer photo upload via short code (check-in+ clicks Upload on entry detail; navigates directly to `/upload/{CODE}`; volunteer uploads without an account)
+- [x] Volunteer media upload via short code (check-in+ clicks Upload on entry detail; navigates directly to `/upload/{CODE}`; volunteer uploads without an account); accepts photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV); max 10 files, 10 MB each
 - [x] Upload codes persisted in Entries list `Code` field — survive server restarts, reusable for the same entry; public expiry is session date + 7 days; authenticated users bypass expiry
-- [x] Session photo storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure)
-- [x] Session photo gallery with lightbox viewer on session detail page
+- [x] Upload completion screen: shows file count, review notice; authenticated users see "View session gallery" link
+- [x] Session media storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure); capture date extracted from EXIF (images) or MP4/MOV container metadata (videos)
+- [x] Session gallery with lightbox viewer on session detail page; videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect); public users restricted to `IsPublic` items
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
 - [x] Calendar view on sessions listing page (month navigation, clickable session dates)
 - [x] FY bar charts on group detail and profile detail pages

@@ -15,7 +15,7 @@ function openLightbox(index, photos) {
             `<button class="lightbox-close" onclick="closeLightbox();event.stopPropagation()" aria-label="Close">&times;</button>` +
             `<button class="lightbox-prev" onclick="prevPhoto();event.stopPropagation()" aria-label="Previous">&#8592;</button>` +
             `<button class="lightbox-next" onclick="nextPhoto();event.stopPropagation()" aria-label="Next">&#8594;</button>` +
-            `<div class="lightbox-img-wrap" onclick="event.stopPropagation()"><img id="lightboxImg" src="" alt=""></div>` +
+            `<div class="lightbox-img-wrap" id="lightboxMediaWrap" onclick="event.stopPropagation()"></div>` +
             `<div class="lightbox-caption" onclick="event.stopPropagation()"><span id="lightboxCaption"></span><span id="lightboxCounter"></span></div>` +
             `<div class="lightbox-meta" id="lightboxMeta" onclick="event.stopPropagation()"></div>` +
             `</div>`
@@ -27,26 +27,40 @@ function openLightbox(index, photos) {
 }
 
 function closeLightbox() {
+    _pauseLightboxVideo();
     const lb = document.getElementById('lightbox');
     if (lb) lb.style.display = 'none';
     document.removeEventListener('keydown', _lightboxKeyHandler);
 }
 
+function _pauseLightboxVideo() {
+    const v = document.querySelector('#lightboxMediaWrap video');
+    if (v) { v.pause(); v.src = ''; }
+}
+
 function prevPhoto() {
+    _pauseLightboxVideo();
     _lbIndex = (_lbIndex - 1 + _lbPhotos.length) % _lbPhotos.length;
     _showLightboxPhoto();
 }
 
 function nextPhoto() {
+    _pauseLightboxVideo();
     _lbIndex = (_lbIndex + 1) % _lbPhotos.length;
     _showLightboxPhoto();
 }
 
 function _showLightboxPhoto() {
     const p = _lbPhotos[_lbIndex];
-    const imgEl = document.getElementById('lightboxImg');
-    imgEl.src = p.largeUrl || p.thumbnailUrl;
-    imgEl.alt = escapeHtml(p.title || p.name);
+    const wrap = document.getElementById('lightboxMediaWrap');
+    const isVideo = p.mimeType && p.mimeType.startsWith('video/');
+    if (isVideo) {
+        wrap.innerHTML = `<video controls autoplay playsinline style="max-width:100%;max-height:80vh;">` +
+            `<source src="/api/media/${encodeURIComponent(p.id)}/stream" type="${escapeHtml(p.mimeType)}">` +
+            `</video>`;
+    } else {
+        wrap.innerHTML = `<img src="${escapeHtml(p.largeUrl || p.thumbnailUrl)}" alt="${escapeHtml(p.title || p.name)}" style="max-width:100%;max-height:80vh;">`;
+    }
     // Combine caption and counter into one text: "Caption text (5 / 14)" or just "5 / 14"
     // Admin (meta renderer set): show filename; Public: show title if set, blank if not
     const _caption = _lbMetaRenderer ? p.name : (p.title || '');

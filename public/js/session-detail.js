@@ -229,15 +229,10 @@ async function loadPhotos() {
                 || photoData[0];
             const coverIndex = photoData.indexOf(cover);
             const isVideo = cover.mimeType && cover.mimeType.startsWith('video/');
-            if (isVideo) {
-                coverEl.innerHTML = `<div class="session-cover"><a href="${escapeHtml(cover.webUrl)}" target="_blank" rel="noopener" class="session-cover-video">` +
-                    `<img src="${escapeHtml(cover.largeUrl || cover.thumbnailUrl)}" alt="${escapeHtml(cover.title || cover.name)}">` +
-                    `<span class="play-icon">&#9654;</span></a></div>`;
-            } else {
-                coverEl.innerHTML = `<div class="session-cover"><a href="#" onclick="openLightbox(${coverIndex},photoData);return false;">` +
-                    `<img src="${escapeHtml(cover.largeUrl || cover.thumbnailUrl)}" alt="${escapeHtml(cover.title || cover.name)}">` +
-                    `</a></div>`;
-            }
+            coverEl.innerHTML = `<div class="session-cover"><a href="#" onclick="openLightbox(${coverIndex},photoData);return false;" ${isVideo ? 'class="session-cover-video"' : ''}>` +
+                `<img src="${escapeHtml(cover.largeUrl || cover.thumbnailUrl)}" alt="${escapeHtml(cover.title || cover.name)}">` +
+                (isVideo ? `<span class="play-icon">&#9654;</span>` : '') +
+                `</a></div>`;
         }
 
         // Register lightbox edit controls for admin/check-in users
@@ -258,14 +253,9 @@ async function loadPhotos() {
         carousel.innerHTML = '<div class="photo-strip">' +
             data.data.map((p, i) => {
                 const isVideo = p.mimeType && p.mimeType.startsWith('video/');
-                if (isVideo) {
-                    return `<a href="${escapeHtml(p.webUrl)}" target="_blank" rel="noopener" class="video-thumb">` +
-                        `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.title || p.name)}" loading="lazy">` +
-                        `<span class="play-icon">&#9654;</span>` +
-                        `</a>`;
-                }
-                return `<a href="#" onclick="openLightbox(${i},photoData);return false;">` +
+                return `<a href="#" onclick="openLightbox(${i},photoData);return false;" ${isVideo ? 'class="video-thumb"' : ''}>` +
                     `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.title || p.name)}" loading="lazy">` +
+                    (isVideo ? `<span class="play-icon">&#9654;</span>` : '') +
                     `</a>`;
             }).join('') + '</div>';
     } catch { carousel.innerHTML = ''; photoData = []; }
