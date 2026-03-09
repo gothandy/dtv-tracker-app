@@ -198,6 +198,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `POST /api/eventbrite/sync-attendees`
 - [ ] Shows "X sessions, Y new profiles, Z new entries, W consent records"
 - [ ] Creates profiles, entries, upserts consent records
+- [ ] Two attendees with same name but different emails → two separate profiles created; entry for the new profile has `#Duplicate` (red warning badge) on session detail
+- [ ] Attendee name matches existing profile with no stored email → email is backfilled on the existing profile, no duplicate created
+- [ ] Attendee email matches an existing profile's email but name differs (e.g. child registered under parent email with different name) → name match used, not email; behaves by name logic
+- [ ] If any duplicates flagged, sync summary includes "X duplicate warning(s) — check session entries"
 
 ### H26. Eventbrite combined sync (scheduled)
 - [ ] `POST /api/eventbrite/event-and-attendee-update` with `X-Api-Key` header

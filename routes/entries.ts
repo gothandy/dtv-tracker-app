@@ -377,7 +377,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         const attendeeEmail = attendee.profile?.email;
         if (!attendeeName) continue;
 
-        const { profile, isNew } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Refresh');
+        const { profile, isNew, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Refresh');
         if (isNew) newProfiles++;
 
         // Create entry if not already registered
@@ -387,6 +387,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
           if (isNewVolunteer(entries, profileId, spSession.ID)) noteTags.push('#New');
           if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
           noteTags.push('#Eventbrite');
+          if (clash) noteTags.push('#Duplicate');
           await entriesRepository.create({
             [SESSION_LOOKUP]: String(spSession.ID),
             [PROFILE_LOOKUP]: String(profileId),

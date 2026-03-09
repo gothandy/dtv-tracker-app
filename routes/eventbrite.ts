@@ -23,6 +23,7 @@ interface SyncAttendeesResult {
   newEntries: number;
   newRecords: number;
   updatedRecords: number;
+  duplicateWarnings: number;
 }
 
 async function runSyncSessions(): Promise<SyncSessionsResult> {
@@ -104,6 +105,7 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   let newEntries = 0;
   let newRecords = 0;
   let updatedRecords = 0;
+  let duplicateWarnings = 0;
 
   // Load existing records for upsert
   const allRecords = await recordsRepository.getAll();
@@ -123,8 +125,9 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       const attendeeEmail = attendee.profile?.email;
       if (!attendeeName) continue;
 
-      const { profile, isNew } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Eventbrite Sync');
+      const { profile, isNew, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Eventbrite Sync');
       if (isNew) newProfiles++;
+      if (clash) duplicateWarnings++;
 
       // Create entry if not already registered
       const profileId = profile.ID;
@@ -133,6 +136,7 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
         if (isNewVolunteer(entries, profileId, session.ID)) noteTags.push('#New');
         if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
         noteTags.push('#Eventbrite');
+        if (clash) noteTags.push('#Duplicate');
         await entriesRepository.create({
           [SESSION_LOOKUP]: String(session.ID),
           [PROFILE_LOOKUP]: String(profileId),
@@ -149,8 +153,8 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
     }
   }
 
-  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${newRecords} new records, ${updatedRecords} updated records`);
-  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords };
+  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${newRecords} new records, ${updatedRecords} updated records, ${duplicateWarnings} duplicate warnings`);
+  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, duplicateWarnings };
 }
 
 router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: Response) => {
@@ -160,7 +164,7 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
 
     const parts = [
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions`,
-      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records`
+      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`
     ];
     const summary = parts.join(' / ');
 

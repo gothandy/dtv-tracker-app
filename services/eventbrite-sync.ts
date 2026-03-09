@@ -27,8 +27,10 @@ export function isNewVolunteer(
 }
 
 /**
- * Finds an existing profile matching the attendee name (normalised MatchName
- * first, then Title), or creates a new one with MatchName set.
+ * Finds an existing profile by name match (normalised). If the name matches
+ * but both sides have different emails, a new profile is created and
+ * clash=true is returned so the caller can tag the entry with #Duplicate
+ * for admin review. Email is never matched alone — name is always required.
  * Mutates `profiles` by pushing any newly-created profile so subsequent
  * lookups within the same batch stay consistent.
  */
@@ -37,28 +39,48 @@ export async function findOrCreateProfile(
   attendeeEmail: string | undefined,
   profiles: SharePointProfile[],
   logPrefix: string
-): Promise<{ profile: SharePointProfile; isNew: boolean }> {
-  const nameMatch = toMatchName(attendeeName);
-  const existing = profiles.find(p =>
-    p.MatchName && toMatchName(p.MatchName) === nameMatch
-  ) || profiles.find(p =>
-    p.Title && toMatchName(p.Title) === nameMatch
-  );
-  if (existing) return { profile: existing, isNew: false };
+): Promise<{ profile: SharePointProfile; isNew: boolean; clash?: boolean }> {
+  const normalizedEmail = attendeeEmail?.toLowerCase();
 
+  // Step 1: Name + email match — high confidence
+  const nameKey = toMatchName(attendeeName);
+  const byName = profiles.find(p =>
+    p.MatchName && toMatchName(p.MatchName) === nameKey
+  ) || profiles.find(p =>
+    p.Title && toMatchName(p.Title) === nameKey
+  );
+
+  if (byName) {
+    const profileEmail = byName.Email?.toLowerCase();
+    if (normalizedEmail && profileEmail && normalizedEmail !== profileEmail) {
+      // Same name, different emails — likely a different person; create new profile and flag
+      console.warn(`[${logPrefix}] Name clash: "${attendeeName}" matches profile ID ${byName.ID} but emails differ. Creating new profile.`);
+    } else {
+      // Same name, emails match or one/both are absent — treat as the same person
+      if (normalizedEmail && !profileEmail) {
+        // Backfill email on the existing profile
+        await profilesRepository.updateFields(byName.ID, { Email: attendeeEmail });
+        byName.Email = attendeeEmail;
+      }
+      return { profile: byName, isNew: false };
+    }
+  }
+
+  // Step 3: No confident match — create new profile
   const matchName = toMatchName(attendeeName);
   const newId = await profilesRepository.create({
     Title: attendeeName,
     Email: attendeeEmail || undefined,
     MatchName: matchName
   });
-  console.log(`[${logPrefix}] Created profile: ${attendeeName} (ID: ${newId})`);
+  const clash = !!byName; // true if we found a name match but emails differed
+  console.log(`[${logPrefix}] Created profile: ${attendeeName} (ID: ${newId})${clash ? ' [duplicate warning]' : ''}`);
   const newProfile = {
     ID: newId, Title: attendeeName, Email: attendeeEmail,
     MatchName: matchName, IsGroup: false
   } as SharePointProfile;
   profiles.push(newProfile);
-  return { profile: newProfile, isNew: true };
+  return { profile: newProfile, isNew: true, clash };
 }
 
 const CONSENT_MAP: Record<string, string> = {

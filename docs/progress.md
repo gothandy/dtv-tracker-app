@@ -1,5 +1,18 @@
 # Development Progress
 
+## Session: 2026-03-09 (Eventbrite name-clash detection & safer profile matching)
+
+### Completed Tasks
+
+#### Eventbrite sync — name-clash detection ✓
+- Two attendees with the same name but different emails now create separate profiles rather than being merged onto one. A `#Duplicate` (red warning) badge is added to the new entry so admins can spot and resolve it using the existing profile transfer function.
+- `services/eventbrite-sync.ts` — `findOrCreateProfile()` updated: name match with differing emails creates new profile and returns `clash: true`; name match with no email on the stored profile backfills the email; email is never matched alone (name always required)
+- `routes/eventbrite.ts` — destructures `clash`, adds `#Duplicate` to `noteTags`, tracks `duplicateWarnings` count, includes in sync summary string
+- `routes/entries.ts` — same `#Duplicate` tag handling for per-session refresh endpoint
+- `public/js/tag-icons.js` — `#Duplicate` registered as red `warning.svg` badge ("Duplicate Warning")
+
+---
+
 ## Session: 2026-03-09 (Media upload improvements, video support)
 
 ### Completed Tasks

@@ -131,7 +131,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Sync endpoints ([routes/eventbrite.ts](routes/eventbrite.ts)):
   - `POST /api/eventbrite/event-and-attendee-update` — combined sync (sessions + attendees), returns summary string
   - `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups by SeriesID, creates missing sessions
-  - `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records
+  - `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records; detects name clashes (same name + different email = different person) and tags the new entry `#Duplicate` for admin review
   - `GET /api/eventbrite/unmatched-events` — lists events with no matching group (for admin UI)
 - Admin page ([public/admin.html](public/admin.html)) provides manual sync buttons
 - Scheduled daily sync via Azure Logic App calling `event-and-attendee-update` with API key auth
@@ -327,7 +327,7 @@ dtv-tracker-app/
 - [x] Partial public access: homepage, sessions listing, groups listing, group detail, and session detail accessible without login; volunteer names, profiles, entries, free parking, and recent signups require auth; login button shown in header for unauthenticated visitors
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)
-- [x] Eventbrite attendee sync (attendees → profiles/entries/consent records)
+- [x] Eventbrite attendee sync (attendees → profiles/entries/consent records); name-clash detection flags `#Duplicate` entries when same name + different email; backfills email on existing profiles without one
 - [x] Admin page with manual sync buttons, unmatched events, icon legend
 - [x] SVG icons for badges (member, card, group) and entry tags
 - [x] Bulk add/update records from volunteers page (with optional checkbox selection of specific volunteers)

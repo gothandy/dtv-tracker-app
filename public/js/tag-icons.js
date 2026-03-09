@@ -14,7 +14,8 @@ const TAG_ICONS = [
     { icon: "csr.svg", alt: "CSR", tag: "#CSR", type: "tag" },
     { icon: "late.svg", alt: "Late", tag: "#Late", type: "tag" },
     { icon: "nophoto.svg", alt: "No Photo", tag: "#NoPhoto", type: "tag", color: "red" },
-    { icon: "eventbrite.svg", alt: "Eventbrite", tag: "#Eventbrite", type: "tag" }
+    { icon: "eventbrite.svg", alt: "Eventbrite", tag: "#Eventbrite", type: "tag" },
+    { icon: "warning.svg", alt: "Duplicate Warning", tag: "#Duplicate", type: "tag", color: "red" }
 ];
 
 function tagIconImg(entry) {
