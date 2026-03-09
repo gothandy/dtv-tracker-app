@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Photos - DTV</title>
+    <title>Upload Media - DTV</title>
     <link rel="stylesheet" href="/css/styles.css">
     <style>
         body { background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
@@ -81,7 +81,7 @@
 <body>
     <div class="upload-header">
         <img src="/img/logo.png" alt="DTV">
-        <h1>DTV Photo Upload</h1>
+        <h1>DTV Media Upload</h1>
     </div>
 
     <div class="upload-container">
@@ -113,15 +113,15 @@
                 </div>
 
                 <div class="file-zone" id="fileZone" onclick="document.getElementById('fileInput').click()">
-                    <div class="file-zone-label">Tap to choose photos</div>
-                    <div class="file-zone-hint">JPG, PNG, WebP, HEIC &middot; up to 10 files &middot; max 10 MB each</div>
+                    <div class="file-zone-label">Tap to choose photos or short videos</div>
+                    <div class="file-zone-hint">JPG, PNG, WebP, HEIC, MP4, MOV &middot; up to 10 files &middot; max 10 MB each</div>
                 </div>
-                <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none">
+                <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.mp4,.mov,.m4v" multiple style="display:none">
 
                 <div class="file-list" id="fileList"></div>
 
                 <button class="btn-primary" id="uploadBtn" onclick="uploadFiles()" disabled>
-                    Select photos to upload
+                    Select files to upload
                 </button>
             </div>
 
@@ -129,8 +129,8 @@
             <div id="step-done" style="display:none">
                 <div class="done-message">
                     <div class="done-count" id="doneCount"></div>
-                    <p>Thanks for sharing your photos! They'll be reviewed by a volunteer coordinator and may be used in our gallery.</p>
-                    <a id="sessionLink" href="#" style="display:none;margin-top:1rem;color:var(--green);font-weight:600;">View session photos</a>
+                    <p>Thanks for sharing your media! It'll be reviewed by a volunteer coordinator and may be used in our gallery.</p>
+                    <a id="sessionLink" href="#" style="display:none;margin-top:1rem;color:var(--green);font-weight:600;">View session gallery</a>
                 </div>
             </div>
 
@@ -213,7 +213,7 @@
         function shareLink() {
             const url = window.location.href;
             if (navigator.share) {
-                navigator.share({ title: 'DTV Photo Upload', url });
+                navigator.share({ title: 'DTV Media Upload', url });
             } else {
                 navigator.clipboard.writeText(url).then(() => {
                     const btn = document.querySelector('.share-btn');
@@ -235,8 +235,8 @@
             const btn = document.getElementById('uploadBtn');
             btn.disabled = selectedFiles.length === 0;
             btn.textContent = selectedFiles.length === 0
-                ? 'Select photos to upload'
-                : `Upload ${selectedFiles.length} photo${selectedFiles.length !== 1 ? 's' : ''}`;
+                ? 'Select files to upload'
+                : `Upload ${selectedFiles.length} file${selectedFiles.length !== 1 ? 's' : ''}`;
         }
 
         async function uploadFiles() {
@@ -278,7 +278,7 @@
             setTimeout(() => {
                 document.getElementById('step-upload').style.display = 'none';
                 document.getElementById('doneCount').textContent =
-                    `${uploaded} photo${uploaded !== 1 ? 's' : ''} uploaded`;
+                    `${uploaded} file${uploaded !== 1 ? 's' : ''} uploaded`;
                 if (activeSessionId && activeIsAuthenticated) {
                     const link = document.getElementById('sessionLink');
                     link.href = `/session-detail.html?id=${activeSessionId}`;
