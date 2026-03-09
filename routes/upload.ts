@@ -27,6 +27,7 @@ const ALLOWED_MIME_TYPES = new Set([
 interface ResolvedContext {
   ok: true;
   entryId: number;
+  sessionId: number;
   groupKey: string;
   groupName: string;
   date: string;
@@ -73,6 +74,7 @@ async function resolveCode(code: string, bypassExpiry = false): Promise<ResolveR
   return {
     ok: true,
     entryId: rawEntry.ID,
+    sessionId: sessionId!,
     groupKey: group?.lookupKeyName || '',
     groupName: group?.displayName || group?.lookupKeyName || '',
     date: rawSession.Date.substring(0, 10),
@@ -102,7 +104,9 @@ router.post('/upload/validate', async (req: Request, res: Response) => {
       date: result.date,
       groupKey: result.groupKey,
       groupName: result.groupName,
-      profileName: result.profileName
+      profileName: result.profileName,
+      sessionId: result.sessionId,
+      isAuthenticated: !!req.session.user
     };
     res.json({ success: true, data } as ApiResponse<UploadContextResponse>);
   } catch (error: any) {

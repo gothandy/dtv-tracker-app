@@ -130,6 +130,7 @@
                 <div class="done-message">
                     <div class="done-count" id="doneCount"></div>
                     <p>Thank you for sharing your photos!</p>
+                    <a id="sessionLink" href="#" style="display:none;margin-top:1rem;color:var(--green);font-weight:600;">View session photos</a>
                 </div>
             </div>
 
@@ -138,6 +139,8 @@
 
     <script>
         let activeCode = null;
+        let activeSessionId = null;
+        let activeIsAuthenticated = false;
         let selectedFiles = [];
 
         function showError(message) {
@@ -172,6 +175,8 @@
                 }
 
                 activeCode = code;
+                activeSessionId = data.data.sessionId;
+                activeIsAuthenticated = data.data.isAuthenticated;
                 showUploadStep(data.data);
             } catch {
                 showError('Could not connect. Please try again.');
@@ -274,6 +279,11 @@
                 document.getElementById('step-upload').style.display = 'none';
                 document.getElementById('doneCount').textContent =
                     `${uploaded} photo${uploaded !== 1 ? 's' : ''} uploaded`;
+                if (activeSessionId && activeIsAuthenticated) {
+                    const link = document.getElementById('sessionLink');
+                    link.href = `/session-detail.html?id=${activeSessionId}`;
+                    link.style.display = 'inline-block';
+                }
                 document.getElementById('step-done').style.display = 'block';
             }, 800);
         }

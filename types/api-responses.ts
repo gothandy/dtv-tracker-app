@@ -226,4 +226,6 @@ export interface UploadContextResponse {
   groupKey: string;
   groupName: string;
   profileName: string;
+  sessionId: number;
+  isAuthenticated: boolean;
 }
