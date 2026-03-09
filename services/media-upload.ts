@@ -7,18 +7,31 @@ export function mediaDriveId(): string {
   return id;
 }
 
-// Extract DateTimeOriginal from EXIF. Returns null if not present or unreadable.
-// EXIF format: "2026:02:21 14:30:22"
+// Extract capture/creation date from media file metadata.
+// For images: reads EXIF DateTimeOriginal (format: "2026:02:21 14:30:22")
+// For videos: reads CreationDate or CreateDate from MP4/MOV container metadata
 export function exifDate(buffer: Buffer): Date | null {
   try {
     const tags = ExifReader.load(buffer, { expanded: false });
-    const raw = (tags['DateTimeOriginal'] as any)?.description as string | undefined;
-    if (!raw) return null;
-    const [datePart, timePart] = raw.split(' ');
-    const [y, mo, d] = datePart.split(':').map(Number);
-    const [h, mi, s] = timePart.split(':').map(Number);
-    const dt = new Date(y, mo - 1, d, h, mi, s);
-    return isNaN(dt.getTime()) ? null : dt;
+
+    // Images: EXIF DateTimeOriginal
+    const exifRaw = (tags['DateTimeOriginal'] as any)?.description as string | undefined;
+    if (exifRaw) {
+      const [datePart, timePart] = exifRaw.split(' ');
+      const [y, mo, d] = datePart.split(':').map(Number);
+      const [h, mi, s] = timePart.split(':').map(Number);
+      const dt = new Date(y, mo - 1, d, h, mi, s);
+      if (!isNaN(dt.getTime())) return dt;
+    }
+
+    // Videos: MP4/MOV container creation date (already a JS Date string or ISO string)
+    const videoRaw = ((tags['CreationDate'] ?? tags['CreateDate']) as any)?.description as string | undefined;
+    if (videoRaw) {
+      const dt = new Date(videoRaw);
+      if (!isNaN(dt.getTime())) return dt;
+    }
+
+    return null;
   } catch {
     return null;
   }
