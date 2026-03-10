@@ -36,7 +36,7 @@ Feature-complete volunteer tracking application with:
 - Admin page with Eventbrite sync buttons, exports, backup export, site link, icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
-- Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection and bulk tagging ([public/sessions.html](public/sessions.html))
+- Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection, bulk tagging, and CSV download of selected sessions ([public/sessions.html](public/sessions.html))
 - Session detail with entries, check-in, set hours, move group, session taxonomy tags, session photo gallery, edit/delete ([public/session-detail.html](public/session-detail.html))
 - Volunteers listing with FY filter, sort, group filter, search, advanced filters (type/hours/records), checkbox selection, bulk records, CSV download ([public/volunteers.html](public/volunteers.html))
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
@@ -130,7 +130,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
   - `getAttendees()` — fetches attendees for a specific event, used to create profiles and entries
 - Sync endpoints ([routes/eventbrite.ts](routes/eventbrite.ts)):
   - `POST /api/eventbrite/event-and-attendee-update` — combined sync (sessions + attendees), returns summary string
-  - `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups by SeriesID, creates missing sessions
+  - `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups by SeriesID, creates missing sessions; group-matched sessions are created with a blank `Name` (display title falls back to group name + date)
   - `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records; detects name clashes (same name + different email = different person) and tags the new entry `#Duplicate` for admin review
   - `GET /api/eventbrite/unmatched-events` — lists events with no matching group (for admin UI)
 - Admin page ([public/admin.html](public/admin.html)) provides manual sync buttons
@@ -294,7 +294,7 @@ dtv-tracker-app/
 │   │   ├── session-cards.js       # Shared session card rendering (used by sessions.html, index.html)
 │   │   ├── session-tags.js        # Session taxonomy tag UI: term tree picker, tag pills
 │   │   ├── word-cloud.js          # Reusable word cloud component (hours by taxonomy tag); used on homepage, group detail, profile detail
-│   │   ├── sessions.js            # Sessions listing logic (filters, search, cascading dropdowns, bulk tagging)
+│   │   ├── sessions.js            # Sessions listing logic (filters, search, cascading dropdowns, bulk tagging, CSV download)
 │   │   ├── calendar.js            # Calendar widget for sessions listing
 │   │   ├── lightbox.js            # Lightbox photo viewer for session galleries
 │   │   ├── profile-detail.js      # Profile detail page logic (FY filter, bar chart, entries, records, transfer)
@@ -336,6 +336,7 @@ dtv-tracker-app/
 - [x] Sessions listing: text search (title/description, min 3 chars)
 - [x] Sessions listing: advanced filter section with cascading group and tag dropdowns (each dropdown shows only options present in the other filter's result set)
 - [x] Sessions listing: bulk tagging (checkbox selection + `POST /api/sessions/bulk-tag`; merges tags, deduplicates by termGuid)
+- [x] Sessions listing: CSV download of selected sessions (Advanced mode; columns: Date, Group, Name, Registrations, Hours, New, Children, Regulars, Financial Year; public-accessible)
 - [x] Move session between groups
 - [x] API key auth for scheduled sync (Azure Logic App)
 - [x] Azure App Service deployment

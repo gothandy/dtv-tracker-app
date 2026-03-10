@@ -304,10 +304,13 @@ function getVisibleSessionIds() {
 
 function updateBulkTagButton() {
     const btn = document.getElementById('addTagsBtn');
-    if (!btn) return;
+    const csvBtn = document.getElementById('downloadCsvBtn');
     const count = selectedSessions.size;
-    btn.disabled = count === 0;
-    btn.textContent = count > 0 ? `Add Tags (${count})` : 'Add Tags';
+    if (btn) {
+        btn.disabled = count === 0;
+        btn.textContent = count > 0 ? `Add Tags (${count})` : 'Add Tags';
+    }
+    if (csvBtn) csvBtn.disabled = count === 0;
     updateSelectionStats();
 }
 
@@ -448,6 +451,40 @@ function displaySessions(sessions) {
     });
     updateBulkTagButton();
     updateSelectAllLink();
+}
+
+function downloadSessionsCSV() {
+    const filtered = allSessions.filter(s => selectedSessions.has(s.id));
+
+    const headers = ['Date', 'Group', 'Name', 'Registrations', 'Hours', 'New', 'Children', 'Regulars', 'Financial Year'];
+    const rows = filtered.map(s => [
+        s.date ? s.date.substring(0, 10) : '',
+        s.groupName || '',
+        s.displayName || '',
+        s.registrations || 0,
+        s.hours || 0,
+        s.newCount || 0,
+        s.childCount || 0,
+        s.regularCount || 0,
+        s.financialYear || ''
+    ]);
+
+    const csv = [headers, ...rows]
+        .map(row => row.map(cell => {
+            const str = String(cell);
+            return /[,"\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+        }).join(','))
+        .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sessions.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 document.getElementById('searchBox').addEventListener('input', function() {

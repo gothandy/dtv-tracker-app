@@ -59,7 +59,10 @@
                 </div>
                 <div class="advanced-row" style="justify-content: space-between;">
                     <a href="#" id="selectAllLink" class="select-all-link" onclick="toggleSelectAll(); return false;" style="display:none;">Select all</a>
-                    <button class="advanced-toggle admin-only" id="addTagsBtn" onclick="openBulkTagModal()" disabled>Add Tags</button>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button class="advanced-toggle admin-only" id="addTagsBtn" onclick="openBulkTagModal()" disabled>Add Tags</button>
+                        <button class="advanced-toggle" id="downloadCsvBtn" onclick="downloadSessionsCSV()" disabled>Download CSV</button>
+                    </div>
                 </div>
                 <p id="selectionStats" class="advanced-selection-stats" style="display:none;"></p>
             </div>

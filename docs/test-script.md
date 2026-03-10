@@ -181,19 +181,23 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
-### H30. Bulk tag sessions
-- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" button becomes enabled
+### H30. Bulk tag sessions / CSV download
+- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" and "Download CSV" buttons become enabled
 - [ ] Click "Add Tags (N)" → tag tree picker opens (same modal as session detail)
 - [ ] Modal title reads "Add Tag to N sessions"
 - [ ] Select a tag → OK → `POST /api/sessions/bulk-tag` — `{ sessionIds: [...], tags: [{ label, termGuid }] }`
 - [ ] Tags are merged with existing (not replaced); duplicate termGuids not added twice
 - [ ] Sessions reload after; selected sessions now show the new tag
 - [ ] Already-tagged sessions have that tag grayed out in the picker (opacity 0.4, non-clickable)
+- [ ] Click "Download CSV" → downloads `sessions.csv` with columns: Date, Group, Name, Registrations, Hours, New, Children, Regulars, Financial Year
+- [ ] CSV contains only the selected sessions (not all visible sessions)
+- [ ] "Download CSV" button is disabled when no sessions are selected
 
 ### H24. Eventbrite sync — sessions
 - [ ] Admin → "Refresh Events"
 - [ ] `POST /api/eventbrite/sync-sessions`
 - [ ] Shows "X events, Y matched, Z new sessions"
+- [ ] Newly created sessions matched to a group have a blank Name (display title falls back to group name + date; no Eventbrite event title imported)
 
 ### H25. Eventbrite sync — attendees
 - [ ] Admin → "Fetch New Attendees"

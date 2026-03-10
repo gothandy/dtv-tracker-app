@@ -61,15 +61,12 @@ async function runSyncSessions(): Promise<SyncSessionsResult> {
     if (!dateStr) continue;
 
     const title = `${dateStr} ${group.Title || ''}`.trim();
-    const fields: { Title: string; Date: string; [key: string]: any } = {
+    await sessionsRepository.create({
       Title: title,
       Date: dateStr,
       [GROUP_LOOKUP]: String(group.ID),
       EventbriteEventID: event.id
-    };
-    if (event.name) fields.Name = event.name;
-
-    await sessionsRepository.create(fields);
+    });
     existingEventIds.add(event.id);
     newSessions++;
   }

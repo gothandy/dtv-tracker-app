@@ -1,5 +1,24 @@
 # Development Progress
 
+## Session: 2026-03-10 (Sessions CSV download, Eventbrite session name fix)
+
+### Completed Tasks
+
+#### Sessions listing — CSV download of selected sessions ✓
+- "Download CSV" button added to the Advanced section alongside "Add Tags"
+- Button is disabled until sessions are selected (checkbox mode); enables/disables in sync with Add Tags
+- Exports only the selected sessions; columns: Date, Group, Name, Registrations, Hours, New, Children, Regulars, Financial Year
+- No authentication required (public-accessible)
+- `public/sessions.html` — button added to advanced-row
+- `public/js/sessions.js` — `downloadSessionsCSV()` function; `updateBulkTagButton` updated to sync CSV button state
+
+#### Eventbrite session sync — blank Name for group-matched sessions ✓
+- New sessions created by `sync-sessions` are no longer given the Eventbrite event name as their display title
+- Sessions matched to a group fall back to group name + date, consistent with manually-created sessions
+- `routes/eventbrite.ts` — removed `fields.Name = event.name` from `runSyncSessions()`
+
+---
+
 ## Session: 2026-03-10 (Profile slug disambiguation, entry detail email, profile page UX)
 
 ### Completed Tasks
