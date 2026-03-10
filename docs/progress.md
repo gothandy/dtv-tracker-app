@@ -1,5 +1,41 @@
 # Development Progress
 
+## Session: 2026-03-10 (Profile slug disambiguation, entry detail email, profile page UX)
+
+### Completed Tasks
+
+#### Profile slug now includes SharePoint ID ✓
+- Profile URLs changed from `/profiles/gary-downs/` to `/profiles/gary-downs-42/` to prevent name collisions (e.g. two "Gary Downs" profiles)
+- `services/data-layer.ts` — added `profileSlug(name, id)` and `profileIdFromSlug(slug)` helpers
+- `routes/profiles.ts` — all slug generation uses `profileSlug`; all lookups extract ID from slug and find by `p.ID` (with legacy name-only fallback for old bookmarks)
+- `routes/auth.ts` — session `profileSlug` updated to include ID (used for header link and check-in self-edit permission)
+- `routes/entries.ts` — `volunteerSlug` generation and entry lookup both use ID-based slug; legacy fallback retained
+- `routes/sessions.ts` — `volunteerSlug` generation updated
+- `services/data-layer.ts` `groupRegularsByCrewId` — regulars slugs on group detail page updated
+
+#### Entry detail — volunteer email ✓
+- Email shown as a `mailto:` link on the entry detail page
+- Visible to any authenticated user (`auth-only`); hidden from public visitors
+- `types/api-responses.ts` — `volunteerEmail?` added to `EntryDetailResponse`
+- `routes/entries.ts` — `volunteerEmail: profile?.Email` populated in response
+- `public/entry-detail.html` — email field rendered above Checked In if present
+
+#### Profile detail — bar chart toggle selection ✓
+- Chart now loads with no year selected (all entries shown by default)
+- Clicking a bar selects that FY; clicking the selected bar again deselects back to all
+- `persistFY`/`getStoredFY` no longer used on profile detail (state not persisted across page loads)
+
+#### Profile detail — groups card always visible ✓
+- Groups card previously disappeared when a FY was selected and the volunteer had no hours in that year
+- Now always shows all groups the volunteer belongs to; hours figure updates for the selected FY (shows 0 if none that year)
+
+#### Profile detail — Transfer / Delete Profile button logic ✓
+- Transfer button hidden when profile has no entries (nothing to transfer)
+- Delete Profile button shown only when profile has no entries
+- Previously both could appear simultaneously
+
+---
+
 ## Session: 2026-03-09 (Eventbrite name-clash detection & safer profile matching)
 
 ### Completed Tasks

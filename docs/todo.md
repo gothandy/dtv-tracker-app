@@ -1,5 +1,17 @@
 # Todo
 
+## Microsoft Planner Integration — Flag Issues from Sessions
+Allow check-in users to create a task in Microsoft Planner directly from the session detail page. Useful for flagging issues noticed during a dig (equipment running low, machinery broken, etc.) so they reach the wider team.
+
+- "Flag Issue" button (check-in+) on session detail → modal with title + optional notes → creates task in Planner via Graph API
+- Session context (group, date) prepended to task title automatically
+- Reuses existing client-credentials Graph API token
+- Requires `Tasks.ReadWrite.All` application permission on Azure app registration
+- New env vars: `PLANNER_PLAN_ID` (required), `PLANNER_BUCKET_ID` (optional)
+- No task display in-app — team views/manages tasks in Teams/Planner
+
+---
+
 ## Bulk Email to Volunteers?
 Both from filtered volunteers page, groups (regulars) and session page? Or provide emails to cut and paste into email client.
 

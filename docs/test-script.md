@@ -135,15 +135,17 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Username value persists after save and reload
 
 ### H16. Delete profile
-- [ ] Profile detail → Delete button (only shown if no entries)
+- [ ] Profile detail → Delete button (only shown if profile has no entries)
+- [ ] Transfer button hidden when profile has no entries
 - [ ] `DELETE /api/profiles/:slug`
 - [ ] Redirects to volunteers listing
 
 ### H17. Transfer profile
-- [ ] Profile detail → "Transfer" button → search target → select → confirm
+- [ ] Profile detail → "Transfer" button → only visible when profile has entries
+- [ ] Search target → select → confirm
 - [ ] `POST /api/profiles/:slug/transfer` — `{ targetProfileId, deleteAfter? }`
 - [ ] Entries, regulars, records transferred. Duplicates skipped.
-- [ ] Redirects to target profile
+- [ ] Redirects to target profile (new ID-appended slug)
 
 ### H18. Inline hours editing (profile detail)
 - [ ] Admin: hours input shown on all profiles, change value → `PATCH /api/entries/:id` → persists on reload
@@ -269,6 +271,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M7. Entry detail
 - [ ] `GET /api/entries/:group/:date/:slug` — entry with volunteer info, hours, notes
+- [ ] Email shown as `mailto:` link for authenticated users; hidden from public
 
 ### M8. Volunteers listing
 - [ ] `GET /api/profiles` — all volunteers with hours, records, membership status
@@ -277,7 +280,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `GET /api/records/options` — populate record type/status dropdowns
 
 ### M9. Profile detail
-- [ ] `GET /api/profiles/:slug` — entries, group hours, records, membership
+- [ ] `GET /api/profiles/:slug` — slug format is `name-id` (e.g. `gary-downs-42`); resolves correctly even when two profiles share a name
 - [ ] `GET /api/records/options` — populate record dropdowns
 - [ ] `GET /auth/me` — determines inline hours editing permissions
 - [ ] Email shown as mailto link
@@ -305,7 +308,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Groups: All / Last FY / This FY
 - [ ] Sessions: Past / Last FY / This FY / Future
 - [ ] Volunteers: All / Last FY / This FY
-- [ ] Profile detail: All / Last FY / This FY
+- [ ] Profile detail: bar chart loads with no year selected (all entries shown); click a bar to select that FY; click selected bar again to deselect back to all
+- [ ] Profile detail: Groups card remains visible when a FY is selected; hours figure updates to show hours for that FY (0 if none)
 - [ ] Homepage nav cards (Sessions, Groups, Volunteers) link with `?fy=YYYY-YYYY` — clicking through applies the correct FY filter on the destination page
 
 ### L2. Volunteers advanced filters (client-side)
