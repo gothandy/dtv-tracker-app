@@ -19,6 +19,8 @@ import {
   safeParseLookupId,
   parseHours,
   nameToSlug,
+  profileSlug,
+  profileIdFromSlug,
   toMatchName
 } from '../services/data-layer';
 import {
@@ -108,7 +110,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const ps = profileStats.get(spProfile.ID);
       return {
         id: profile.id,
-        slug: nameToSlug(profile.name),
+        slug: profileSlug(profile.name, profile.id),
         name: profile.name,
         email: profile.email,
         user: profile.user,
@@ -486,7 +488,10 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    const profileId = profileIdFromSlug(slug);
+    const spProfile = profileId !== undefined
+      ? profiles.find(p => p.ID === profileId)
+      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;
@@ -669,7 +674,10 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
 
     const rawProfiles = await profilesRepository.getAll();
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    const profileId = profileIdFromSlug(slug);
+    const spProfile = profileId !== undefined
+      ? profiles.find(p => p.ID === profileId)
+      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;
@@ -705,7 +713,10 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const sourceProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    const profileId = profileIdFromSlug(slug);
+    const sourceProfile = profileId !== undefined
+      ? profiles.find(p => p.ID === profileId)
+      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
     if (!sourceProfile) {
       res.status(404).json({ success: false, error: 'Source profile not found' });
       return;
@@ -791,7 +802,7 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       await profilesRepository.delete(sourceProfile.ID);
     }
 
-    const targetSlug = nameToSlug(targetProfile.Title);
+    const targetSlug = profileSlug(targetProfile.Title, targetProfile.ID);
     console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${deleted ? ', deleted source' : ''}`);
 
     res.json({
@@ -818,7 +829,10 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    const profileId = profileIdFromSlug(slug);
+    const spProfile = profileId !== undefined
+      ? profiles.find(p => p.ID === profileId)
+      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;

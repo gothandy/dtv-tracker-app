@@ -161,6 +161,7 @@ export interface EntryDetailResponse {
   id: number;
   volunteerName?: string;
   volunteerSlug?: string;
+  volunteerEmail?: string;
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;

@@ -17,7 +17,9 @@ import {
   findSessionByGroupAndDate,
   safeParseLookupId,
   parseHours,
-  nameToSlug
+  nameToSlug,
+  profileSlug,
+  profileIdFromSlug
 } from '../services/data-layer';
 import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import {
@@ -70,10 +72,11 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
         const group = groupMap.get(groupId);
         if (!group) return [];
         const name = e[PROFILE_DISPLAY] || 'Unknown';
+        const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
         return [{
           id: e.ID,
           volunteerName: name,
-          volunteerSlug: nameToSlug(name),
+          volunteerSlug: vid !== undefined ? profileSlug(name, vid) : nameToSlug(name),
           date: session.Date.substring(0, 10),
           groupKey: group.Title,
           groupName: group.Name || group.Title,
@@ -115,9 +118,11 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     }
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const slugProfileId = profileIdFromSlug(slug);
     const spEntry = entries.find(e => {
       if (safeParseLookupId(e[SESSION_LOOKUP]) !== spSession.ID) return false;
-      return nameToSlug(e[PROFILE_DISPLAY]) === slug;
+      if (slugProfileId !== undefined) return safeParseLookupId(e[PROFILE_LOOKUP]) === slugProfileId;
+      return nameToSlug(e[PROFILE_DISPLAY]) === slug; // legacy: slug without ID
     });
     if (!spEntry) {
       res.status(404).json({ success: false, error: 'Entry not found' });
@@ -154,7 +159,8 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
-      volunteerSlug: nameToSlug(spEntry[PROFILE_DISPLAY]),
+      volunteerSlug: volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]),
+      volunteerEmail: profile?.Email,
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,

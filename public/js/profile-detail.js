@@ -56,8 +56,7 @@ function buildChart() {
 }
 
 function selectFY(fyKey) {
-    currentFilter = fyKey;
-    persistFY(fyKey);
+    currentFilter = (fyKey === currentFilter) ? 'all' : fyKey;
     buildChart();
     displayGroups();
     displayEntries();
@@ -314,15 +313,12 @@ function displayGroups() {
     });
 
     const groupMeta = currentProfile.groupHours || [];
-    const visible = currentFilter === 'all'
-        ? groupMeta
-        : groupMeta.filter(gh => groupHoursMap[gh.groupName] > 0);
 
-    if (card) card.style.display = visible.length > 0 ? '' : 'none';
-    if (visible.length === 0) { container.innerHTML = ''; return; }
+    if (card) card.style.display = groupMeta.length > 0 ? '' : 'none';
+    if (groupMeta.length === 0) { container.innerHTML = ''; return; }
 
-    container.innerHTML = visible.map(gh => {
-        const hours = Math.round((groupHoursMap[gh.groupName] ?? gh.hoursAll) * 10) / 10;
+    container.innerHTML = groupMeta.map(gh => {
+        const hours = Math.round((groupHoursMap[gh.groupName] ?? 0) * 10) / 10;
         return `<label class="group-hours-item">
             <input type="checkbox" class="regular-checkbox"
                 data-group-id="${gh.groupId}"
@@ -479,13 +475,13 @@ async function loadProfile() {
             </div>
             <div id="entriesContainer"></div>
             <div class="delete-section admin-only">
-                <button class="btn-delete" onclick="openTransferModal()">Transfer</button>
-                ${allEntries.length === 0 ? '<button class="btn-delete" onclick="deleteProfile()" style="margin-left:0.5rem;">Delete Profile</button>' : ''}
+                ${allEntries.length > 0 ? '<button class="btn-delete" onclick="openTransferModal()">Transfer</button>' : ''}
+                ${allEntries.length === 0 ? '<button class="btn-delete" onclick="deleteProfile()">Delete Profile</button>' : ''}
             </div>
         `;
 
         wordCloudController = null;
-        currentFilter = getStoredFY();
+        currentFilter = 'all';
         buildChart();
         displayGroups();
         displayEntries();

@@ -22,6 +22,7 @@ import {
   safeParseLookupId,
   parseHours,
   nameToSlug,
+  profileSlug,
   extractMetadataTags
 } from '../services/data-layer';
 import {
@@ -409,7 +410,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       return {
         id: e.ID,
         volunteerName: e[PROFILE_DISPLAY],
-        volunteerSlug: nameToSlug(e[PROFILE_DISPLAY]),
+        volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
         isGroup: profile?.IsGroup || false,
         isMember: volunteerId !== undefined ? memberIds.has(volunteerId) : false,
         cardStatus: volunteerId !== undefined ? cardStatusMap.get(volunteerId) : undefined,

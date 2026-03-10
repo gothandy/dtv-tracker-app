@@ -197,6 +197,11 @@
                     </div>
 
                     <div class="edit-form">
+                        ${entry.volunteerEmail ? `
+                        <div class="form-field auth-only">
+                            <div class="form-label">Email</div>
+                            <div><a href="mailto:${encodeURIComponent(entry.volunteerEmail)}">${escapeHtml(entry.volunteerEmail)}</a></div>
+                        </div>` : ''}
                         <div class="form-field" id="field-checked">
                             <div class="form-label">Checked In</div>
                             <input type="checkbox" id="inputChecked" ${entry.checkedIn ? 'checked' : ''}>

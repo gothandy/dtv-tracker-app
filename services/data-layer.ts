@@ -411,8 +411,9 @@ export function groupRegularsByCrewId(regulars: SharePointRegular[]): Map<number
   regulars.forEach(regular => {
     const crewId = safeParseLookupId(regular[GROUP_LOOKUP]);
     if (crewId === undefined || !regular[PROFILE_DISPLAY]) return;
+    const profileId = safeParseLookupId(regular[PROFILE_LOOKUP]);
 
-    const entry = { name: regular[PROFILE_DISPLAY], slug: nameToSlug(regular[PROFILE_DISPLAY]) };
+    const entry = { name: regular[PROFILE_DISPLAY], slug: profileId !== undefined ? profileSlug(regular[PROFILE_DISPLAY], profileId) : nameToSlug(regular[PROFILE_DISPLAY]) };
     const list = map.get(crewId);
     if (list) {
       list.push(entry);
@@ -451,6 +452,24 @@ export function nameToSlug(name: string | undefined): string {
     .replace(/[\u2018\u2019']/g, '') // strip apostrophes and smart quotes
     .replace(/[^a-z0-9]+/g, '-')     // non-alphanumeric to hyphens
     .replace(/^-+|-+$/g, '');        // trim leading/trailing hyphens
+}
+
+/**
+ * Builds a profile URL slug that includes the SharePoint ID to avoid
+ * collisions when two profiles share the same name.
+ * "Gary Downs", 42 -> "gary-downs-42"
+ */
+export function profileSlug(name: string | undefined, id: number): string {
+  return `${nameToSlug(name)}-${id}`;
+}
+
+/**
+ * Extracts the SharePoint ID embedded at the end of a profile slug.
+ * "gary-downs-42" -> 42, returns undefined if not found.
+ */
+export function profileIdFromSlug(slug: string): number | undefined {
+  const match = slug.match(/-(\d+)$/);
+  return match ? parseInt(match[1], 10) : undefined;
 }
 
 /**

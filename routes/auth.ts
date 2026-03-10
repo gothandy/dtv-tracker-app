@@ -3,7 +3,7 @@ import axios from 'axios';
 /// <reference path="../types/express-session.d.ts" />
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../services/auth-config';
 import { profilesRepository } from '../services/repositories/profiles-repository';
-import { nameToSlug } from '../services/data-layer';
+import { profileSlug } from '../services/data-layer';
 
 const router: Router = express.Router();
 
@@ -71,7 +71,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       displayName: profile.displayName,
       email,
       role,
-      profileSlug: matchedProfile ? nameToSlug(matchedProfile.Title) : undefined,
+      profileSlug: matchedProfile ? profileSlug(matchedProfile.Title, matchedProfile.ID) : undefined,
     };
 
     const returnTo = req.session.returnTo || '/';
