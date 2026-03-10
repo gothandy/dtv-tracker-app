@@ -189,12 +189,6 @@
             document.getElementById('ctxSession').textContent = context.sessionName;
             document.getElementById('step-upload').style.display = 'block';
 
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            if (new Date(context.date) < sevenDaysAgo) {
-                document.querySelector('.share-btn').style.display = 'none';
-            }
-
             const fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', function() {
                 handleFiles(Array.from(this.files));

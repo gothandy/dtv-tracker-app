@@ -54,11 +54,11 @@ async function resolveCode(code: string, bypassExpiry = false): Promise<ResolveR
     : undefined;
   if (!rawSession) return { ok: false, reason: 'not-found' };
 
-  // Only accept codes from sessions within the last 7 days (bypassed for authenticated users)
+  // Only accept codes from sessions within the last 28 days (bypassed for authenticated users)
   if (!bypassExpiry) {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
-    if (new Date(rawSession.Date) < sevenDaysAgo) return { ok: false, reason: 'expired' };
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - 28);
+    if (new Date(rawSession.Date) < cutoff) return { ok: false, reason: 'expired' };
   }
 
   const groupId = safeParseLookupId(rawSession[GROUP_LOOKUP]);
