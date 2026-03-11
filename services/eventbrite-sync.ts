@@ -41,9 +41,21 @@ export async function findOrCreateProfile(
   logPrefix: string
 ): Promise<{ profile: SharePointProfile; isNew: boolean; clash?: boolean }> {
   const normalizedEmail = attendeeEmail?.toLowerCase();
-
-  // Step 1: Name + email match — high confidence
   const nameKey = toMatchName(attendeeName);
+
+  // Step 1: Name + email match — highest confidence. Scans all profiles so that
+  // a clash profile created in a prior sync run is found even when an older
+  // same-name profile with a different email appears first in the list.
+  if (normalizedEmail) {
+    const byNameAndEmail = profiles.find(p => {
+      const nameMatches = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+                          (p.Title && toMatchName(p.Title) === nameKey);
+      return nameMatches && p.Email?.toLowerCase() === normalizedEmail;
+    });
+    if (byNameAndEmail) return { profile: byNameAndEmail, isNew: false };
+  }
+
+  // Step 2: Name-only match — use if emails are compatible, otherwise flag clash
   const byName = profiles.find(p =>
     p.MatchName && toMatchName(p.MatchName) === nameKey
   ) || profiles.find(p =>
@@ -66,7 +78,7 @@ export async function findOrCreateProfile(
     }
   }
 
-  // Step 3: No confident match — create new profile
+  // Step 3: No name+email or name-only match — create new profile
   const matchName = toMatchName(attendeeName);
   const newId = await profilesRepository.create({
     Title: attendeeName,

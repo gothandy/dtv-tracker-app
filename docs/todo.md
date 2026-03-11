@@ -1,5 +1,33 @@
 # Todo
 
+## Email Handling & GDPR — Requirements Gaps
+
+The current model (one email per profile, email used as matching key for Eventbrite
+sync) works for the common case but has unmet requirements:
+
+- **Email changes**: a volunteer can update their email in Tracker, but this silently
+  breaks future Eventbrite matching — the new email won't match their existing
+  Eventbrite registration. There's no defined process for updating an email safely.
+  Consent records are attached to the profile (not the email), so re-collection
+  shouldn't be needed — but the workflow needs to be explicit.
+
+- **Children registered by parents**: children don't have their own email address.
+  They're booked on Eventbrite by a parent, so their profile picks up whichever
+  parent's email was used that day. A different parent books the same child next time
+  → different email → false name clash → duplicate profile. The current model treats
+  email as identity, which breaks for dependent registrants.
+
+- **Multi-account volunteers**: some people have registered on Eventbrite with
+  different email addresses (personal vs. work, old vs. new). Each different email
+  currently risks creating a duplicate profile.
+
+These are requirements gaps in the matching model, not bugs. A future solution will
+need to decide whether email is identity (current) or contact detail (separating
+matching from communication), and how consents and email updates interact with GDPR
+obligations.
+
+---
+
 ## Microsoft Planner Integration — Flag Issues from Sessions
 Allow check-in users to create a task in Microsoft Planner directly from the session detail page. Useful for flagging issues noticed during a dig (equipment running low, machinery broken, etc.) so they reach the wider team.
 
