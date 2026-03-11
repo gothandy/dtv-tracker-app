@@ -32,6 +32,9 @@
     --error: #c00;
     --error-bg: #fee;
     --error-border: #fcc;
+    --orange: #c76b00;
+    --orange-bg: #fff4e5;
+    --orange-border: #f5c07a;
     --radius: 6px;
     --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --font-heading: 'Momo Trust Display', var(--font);
@@ -1042,6 +1045,22 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
 .btn-add-record:hover { background: var(--green); color: white; }
 
 #transferResults > div:hover { background: var(--green-bg); }
+
+/* ─── Duplicate Profile Warning Card ─────────────────────────────────────────── */
+.duplicate-card { border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.duplicate-card.severity-green { background: var(--green-light); border: 1px solid var(--green); }
+.duplicate-card.severity-orange { background: var(--orange-bg); border: 1px solid var(--orange-border); }
+.duplicate-card.severity-red { background: var(--error-bg); border: 1px solid var(--error-border); }
+.duplicate-card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; }
+.duplicate-card.severity-green h3 { color: var(--green-dark); }
+.duplicate-card.severity-orange h3 { color: var(--orange); }
+.duplicate-card.severity-red h3 { color: var(--error); }
+.duplicate-card ul { list-style: none; padding: 0; margin: 0; }
+.duplicate-card li { font-size: 0.85rem; line-height: 1.7; }
+.duplicate-card a { font-weight: 500; }
+.duplicate-card.severity-green a { color: var(--green-dark); }
+.duplicate-card.severity-orange a { color: var(--orange); }
+.duplicate-card.severity-red a { color: var(--error); }
 
 /* .section-card base rule is in Session Tags section above; child selectors below */
 .section-card h2 { color: var(--dark); font-size: 1.1rem; margin-bottom: 0.75rem; }

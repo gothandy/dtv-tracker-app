@@ -103,6 +103,15 @@ export interface ProfileDetailResponse {
   groupHours: ProfileGroupHours[];
   entries: ProfileEntryResponse[];
   records?: ConsentRecordResponse[];
+  duplicates?: ProfileDuplicateResponse[];
+}
+
+export interface ProfileDuplicateResponse {
+  id: number;
+  name: string;
+  slug: string;
+  email?: string;
+  severity: 'green' | 'orange' | 'red';
 }
 
 export interface GroupDetailResponse {

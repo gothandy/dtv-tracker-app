@@ -28,7 +28,7 @@ import {
   SESSION_LOOKUP,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
-import type { ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../types/api-responses';
+import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -615,6 +615,28 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
+    // Find other profiles sharing the same match name (potential duplicates)
+    const currentMatchKey = toMatchName(spProfile.MatchName || spProfile.Title);
+    const currentTitleKey = toMatchName(spProfile.Title);
+    const currentEmail = spProfile.Email?.toLowerCase();
+    const duplicates = currentMatchKey
+      ? profiles
+          .filter(p => p.ID !== spProfile.ID && toMatchName(p.MatchName || p.Title) === currentMatchKey)
+          .map(p => {
+            const pEmail = p.Email?.toLowerCase();
+            const severity =
+              pEmail && currentEmail && pEmail === currentEmail ? 'red' :
+              toMatchName(p.Title) === currentTitleKey ? 'orange' : 'green';
+            return {
+              id: p.ID,
+              name: p.Title || '',
+              slug: profileSlug(p.Title, p.ID),
+              email: p.Email,
+              severity: severity as 'green' | 'orange' | 'red'
+            };
+          })
+      : [];
+
     // Filter consent records for this profile from the already-fetched batch
     const profileRecords = rawRecords.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === spProfile.ID);
     const records: ConsentRecordResponse[] = profileRecords.map(r => ({
@@ -637,7 +659,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       hoursAll: Math.round(calculatedAll * 10) / 10,
       groupHours,
       entries: entryResponses,
-      records: records.length > 0 ? records : undefined
+      records: records.length > 0 ? records : undefined,
+      duplicates: duplicates.length > 0 ? duplicates : undefined
     };
 
     res.json({ success: true, data } as ApiResponse<ProfileDetailResponse>);

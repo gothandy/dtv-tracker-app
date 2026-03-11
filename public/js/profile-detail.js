@@ -16,6 +16,30 @@ const authReady = apiFetch('/auth/me').then(r => r.json()).then(data => {
     }
 }).catch(() => {});
 
+function buildDuplicatesCards(duplicates) {
+    if (!duplicates || duplicates.length === 0) return '';
+    const labels = {
+        green: 'Similar profile — distinguished by display name',
+        orange: 'Possible duplicate — same name, different email',
+        red: 'Likely duplicate — same name and email'
+    };
+    // Group by severity so each gets its own coloured card
+    const bySeverity = { red: [], orange: [], green: [] };
+    duplicates.forEach(d => bySeverity[d.severity]?.push(d));
+    return ['red', 'orange', 'green']
+        .filter(s => bySeverity[s].length > 0)
+        .map(s => `
+            <div class="duplicate-card severity-${s}">
+                <h3>${labels[s]}</h3>
+                <ul>
+                    ${bySeverity[s].map(d => `<li>
+                        <a href="/profiles/${encodeURIComponent(d.slug)}/details.html">${escapeHtml(d.name)}</a>
+                        ${d.email ? `<span class="auth-only"> · ${escapeHtml(d.email)}</span>` : ''}
+                    </li>`).join('')}
+                </ul>
+            </div>`).join('');
+}
+
 function buildChart() {
     const container = document.getElementById('fyChart');
     if (!container) return;
@@ -439,6 +463,8 @@ async function loadProfile() {
                 </div>
                 ${profile.email ? `<div class="subtitle"><a href="mailto:${encodeURIComponent(profile.email)}">${escapeHtml(profile.email)}</a></div>` : ''}
             </div>
+
+            ${buildDuplicatesCards(profile.duplicates)}
 
             <div class="section-card" id="groupsCard" style="display:none;">
                 <div class="section-header">
