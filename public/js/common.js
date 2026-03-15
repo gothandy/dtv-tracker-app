@@ -44,9 +44,10 @@ function getBreadcrumbs() {
         return crumbs;
     }
 
-    // Session detail: Home > Sessions
+    // Session detail: Home > [Group] (display name updated by page script after load)
     if (path.startsWith('/sessions/') && path.endsWith('/details.html')) {
-        crumbs.push({ href: '/sessions.html', label: 'Sessions' });
+        const group = path.split('/')[2];
+        crumbs.push({ href: `/groups/${group}/detail.html`, label: group });
         return crumbs;
     }
 
@@ -75,13 +76,19 @@ function getBreadcrumbs() {
         return crumbs;
     }
 
-    // Entry detail: Home > Sessions > Session
+    // Entry detail: Home > [Group] > [Session] (both updated by page script after load)
     if (path.startsWith('/entries/') && path.endsWith('/edit.html')) {
-        const parts = path.split('/');
-        const group = parts[2];
-        const date = parts[3];
-        crumbs.push({ href: '/sessions.html', label: 'Sessions' });
-        crumbs.push({ href: `/sessions/${group}/${date}/details.html`, label: 'Session' });
+        return crumbs; // page script fills in group + session after API load
+    }
+
+    // Upload: Home > Sessions > Session (from referrer if available)
+    if (path === '/upload.html') {
+        const ref = document.referrer;
+        const fromSession = ref.match(/\/sessions\/([^/]+)\/([^/]+)\/details\.html/);
+        if (fromSession) {
+            crumbs.push({ href: '/sessions.html', label: 'Sessions' });
+            crumbs.push({ href: `/sessions/${fromSession[1]}/${fromSession[2]}/details.html`, label: 'Session' });
+        }
         return crumbs;
     }
 
@@ -133,7 +140,9 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
         .then(data => {
             const el = document.getElementById('userInfo');
             if (data.authenticated) {
+                window.currentUser = data.user;
                 document.body.dataset.role = data.user.role;
+                document.dispatchEvent(new CustomEvent('authReady', { detail: data.user }));
                 if (el) {
                     const profileBtn = data.user.profileSlug
                         ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="header-btn" title="${escapeHtml(data.user.displayName)}"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></a>`
@@ -146,7 +155,7 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
             } else {
                 if (el) {
                     const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-                    el.innerHTML = `<a href="/auth/login?returnTo=${returnTo}" class="header-btn login-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
+                    el.innerHTML = `<a href="/login.html?returnTo=${returnTo}" class="header-btn login-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
                 }
             }
         })

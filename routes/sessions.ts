@@ -409,6 +409,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
       return {
         id: e.ID,
+        profileId: volunteerId,
         volunteerName: e[PROFILE_DISPLAY],
         volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
         isGroup: profile?.IsGroup || false,
@@ -429,7 +430,20 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
 
-    const isAuthenticated = !!req.session.user;
+    // Self-service users see only their own entry (not the full list) to protect other
+    // volunteers' personal data. Public (unauthenticated) users see no entries at all.
+    const role = req.session.user?.role;
+    const selfProfileId = req.session.user?.profileId;
+    let visibleEntries: EntryResponse[];
+    if (!req.session.user) {
+      visibleEntries = [];
+    } else if (role === 'selfservice') {
+      const ownIds = req.session.user?.profileIds?.length ? req.session.user.profileIds : (selfProfileId !== undefined ? [selfProfileId] : []);
+      visibleEntries = ownIds.length ? entryResponses.filter(e => e.profileId !== undefined && ownIds.includes(e.profileId)) : [];
+    } else {
+      visibleEntries = entryResponses;
+    }
+
     const data: SessionDetailResponse = {
       id: spSession.ID,
       displayName: spSession.Name || spSession.Title,
@@ -448,7 +462,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupEventbriteSeriesId: spGroup.EventbriteSeriesID || undefined,
       metadata: metadata.length ? metadata : undefined,
       coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
-      entries: isAuthenticated ? entryResponses : []
+      entries: visibleEntries
     };
 
     res.json({ success: true, data } as ApiResponse<SessionDetailResponse>);

@@ -4,8 +4,77 @@ const groupKey = pathParts[2];
 const sessionDate = pathParts[3];
 
 let sessionEntries = [];
+let sessionDataLoaded = false;
 let currentSession = null;
 let allGroups = [];
+
+async function registerForSession() {
+    const user = window.currentUser;
+    const ownIds = user?.profileIds?.length ? user.profileIds : (user?.profileId ? [user.profileId] : []);
+    if (!ownIds.length) return;
+    const btn = document.querySelector('#registerBtn button');
+    if (btn) btn.disabled = true;
+    try {
+        const registeredIds = sessionEntries.filter(e => e.profileId !== undefined).map(e => e.profileId);
+        const toRegister = ownIds.filter(id => !registeredIds.includes(id));
+        for (const profileId of toRegister) {
+            const res = await fetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/entries`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ volunteerId: profileId })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Registration failed');
+        }
+        await loadSessionDetail();
+    } catch (error) {
+        console.error('Registration error:', error);
+        alert(error.message || 'Failed to register. Please try again.');
+        if (btn) btn.disabled = false;
+    }
+}
+
+function updateUserActionButtons() {
+    if (!sessionDataLoaded) return;
+    const container = document.getElementById('userActionButtons');
+    if (!container) return;
+    const user = window.currentUser;
+    if (!user) { container.innerHTML = ''; return; }
+
+    const ownIds = user.profileIds?.length ? user.profileIds : (user.profileId ? [user.profileId] : []);
+    const myEntries = ownIds.length ? sessionEntries.filter(e => e.profileId !== undefined && ownIds.includes(e.profileId)) : [];
+    const allRegistered = ownIds.length > 0 && myEntries.length === ownIds.length;
+
+    const isPast = currentSession && new Date(currentSession.date) < new Date(new Date().toDateString());
+
+    let html = '';
+
+    const registerBtnEl = document.getElementById('registerBtn');
+    if (registerBtnEl) {
+        if (user.role === 'selfservice' && !isPast && !allRegistered) {
+            registerBtnEl.innerHTML = `<button class="btn-action" onclick="registerForSession()" title="Register for this session">
+                <img src="/svg/register.svg" style="width:1em;height:1em;filter:brightness(0) invert(1);vertical-align:middle;">
+                Register
+            </button>`;
+        } else {
+            registerBtnEl.innerHTML = '';
+        }
+    }
+
+    const uploadBtn = document.getElementById('uploadPhotoBtn');
+    if (uploadBtn) {
+        if (myEntries.length > 0) {
+            uploadBtn.innerHTML = `<a href="/upload.html?entryId=${myEntries[0].id}" class="btn-action" title="Upload photos" style="text-decoration:none;">
+                <img src="/svg/uploadphoto.svg" style="width:1em;height:1em;filter:brightness(0) invert(1);vertical-align:middle;">
+                Upload
+            </a>`;
+        } else {
+            uploadBtn.innerHTML = '';
+        }
+    }
+
+    container.innerHTML = html;
+}
 
 initSessionTags({
     groupKey,
@@ -324,6 +393,15 @@ async function loadSessionDetail() {
 
         const session = result.data;
         currentSession = session;
+
+        // Update breadcrumb: Home > [Group Display Name]
+        const crumbsEl = document.querySelector('.nav-crumbs');
+        if (crumbsEl && session.groupName) {
+            crumbsEl.innerHTML =
+                `<a href="/">Home</a><span class="breadcrumb-sep">/</span>` +
+                `<a href="/groups/${encodeURIComponent(groupKey)}/detail.html">${escapeHtml(session.groupName)}</a>`;
+        }
+
         document.title = `${session.displayName || formatDate(session.date)} - DTV Tracker`;
         const sessionTitle = session.displayName || formatDate(session.date);
         const sessionDesc = session.description || `${sessionTitle} — ${session.groupName}, ${formatDate(session.date)}`;
@@ -331,6 +409,8 @@ async function loadSessionDetail() {
 
         const isPast = new Date(session.date) < new Date(new Date().toDateString());
         const countdown = getCountdown(session.date);
+        const isPublicView = !document.body.dataset.role;
+        const isSelfService = document.body.dataset.role === 'selfservice';
 
         const statItems = [
             session.registrations ? `<div class="stat-item"><div class="stat-number">${session.registrations}</div><div class="stat-label">${isPast ? 'Attendees' : 'Registrations'}</div></div>` : '',
@@ -338,7 +418,7 @@ async function loadSessionDetail() {
             session.newCount ? `<div class="stat-item"><div class="stat-number">${session.newCount}</div><div class="stat-label">New</div></div>` : '',
             session.childCount ? `<div class="stat-item"><div class="stat-number">${session.childCount}</div><div class="stat-label">Child</div></div>` : '',
             session.regularCount ? `<div class="stat-item"><div class="stat-number">${session.regularCount}</div><div class="stat-label">Regular</div></div>` : '',
-            session.eventbriteCount ? `<div class="stat-item"><div class="stat-number">${session.eventbriteCount}</div><div class="stat-label">Eventbrite</div></div>` : ''
+            session.eventbriteCount && !isSelfService ? `<div class="stat-item"><div class="stat-number">${session.eventbriteCount}</div><div class="stat-label">Eventbrite</div></div>` : ''
         ].filter(Boolean).join('');
         const statsSection = statItems
             ? `<div class="stats-section"><div class="stats-grid">${statItems}</div></div>`
@@ -346,26 +426,27 @@ async function loadSessionDetail() {
 
         const entries = session.entries || [];
         sessionEntries = entries;
+        sessionDataLoaded = true;
         const entriesHtml = entries.length > 0
             ? entries.map(entry => {
                 const icons = notesToIcons(entry.notes);
                 const groupBadge = entry.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
                 const memberBadge = entry.isMember && !entry.isGroup ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
                 const cardBadge = entry.cardStatus ? `<img src="/svg/card.svg" class="card-badge${entry.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
-                const href = entry.volunteerSlug
-                    ? `/entries/${encodeURIComponent(groupKey)}/${sessionDate}/${encodeURIComponent(entry.volunteerSlug)}/edit.html`
-                    : '#';
+                const href = entry.id ? `/entries/${entry.id}/edit.html` : '#';
                 const metaItems = [
                     entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : '',
                     entry.hours ? `<span class="entry-hours"><strong>Hours:</strong> ${entry.hours}</span>` : ''
                 ].filter(Boolean).join('');
                 return `
                     <div class="entry-row">
-                        <label class="checkin-toggle">
+                        ${isSelfService
+                            ? `<span class="checkin-box${entry.checkedIn ? ' checkin-box--checked' : ''}"></span>`
+                            : `<label class="checkin-toggle">
                             <input type="checkbox" ${entry.checkedIn ? 'checked' : ''}
                                    onchange="toggleCheckin(${entry.id}, this)">
                             <span class="checkin-box"></span>
-                        </label>
+                        </label>`}
                         <a class="entry-card${entry.checkedIn ? ' checked-in' : ''}" href="${href}">
                             <div class="entry-name-row" style="flex:1">
                                 <div class="entry-name">
@@ -380,7 +461,6 @@ async function loadSessionDetail() {
             }).join('')
             : '<p class="no-sessions">No registrations yet</p>';
 
-        const isPublicView = !document.body.dataset.role;
         contentDiv.innerHTML = `
             <div class="session-detail${countdown ? ' next-session' : ''}">
                 ${countdown ? `<div class="countdown">${countdown === 'Today' ? "Today's Session" : `Next session &middot; ${countdown}`}</div>` : ''}
@@ -388,7 +468,9 @@ async function loadSessionDetail() {
                 <div class="session-title-row">
                     <h1>${escapeHtml(session.displayName || 'Session')}</h1>
                     <div class="session-title-buttons">
-                        ${!isPublicView && session.groupEventbriteSeriesId ? buildEventbriteLink(`https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}`) : ''}
+                        ${!isPublicView && !isSelfService && session.groupEventbriteSeriesId ? buildEventbriteLink(`https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}`) : ''}
+                        <div id="registerBtn"></div>
+                        <div id="uploadPhotoBtn"></div>
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit session">
                             <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -406,12 +488,13 @@ async function loadSessionDetail() {
             ${renderTagsSection(session)}
             ${session.groupEventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(session.groupName || 'Dean Trail Volunteers')}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}
             <div class="auth-only">
-                <div class="info-card">
+                <div id="userActionButtons" style="margin-bottom:0.75rem;"></div>
+                <div class="info-card checkin-only">
                     <div class="info-card-title">Free Parking</div>
                     <div class="info-card-body">Ask Forestry England for the Parking Tablet, if not available then email <a href="mailto:fodtrails@forestryengland.uk">fodtrails@forestryengland.uk</a> with a list of vehicle registrations.</div>
                 </div>
                 <div class="entries-header">
-                    <h2 class="entries-heading">Entries (${entries.filter(e => e.checkedIn).length} from ${entries.length})</h2>
+                    <h2 class="entries-heading">${isSelfService ? 'Your Entries' : `Entries (${entries.filter(e => e.checkedIn).length} from ${entries.length})`}</h2>
                     <div class="header-buttons">
                         <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
                             <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
@@ -429,6 +512,7 @@ async function loadSessionDetail() {
         `;
         initEventbriteButtons(contentDiv);
         loadPhotos();
+        updateUserActionButtons();
 
     } catch (error) {
         console.error('Error loading session detail:', error);
@@ -437,3 +521,4 @@ async function loadSessionDetail() {
 }
 
 loadSessionDetail();
+document.addEventListener('authReady', updateUserActionButtons);

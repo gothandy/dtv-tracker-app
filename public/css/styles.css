@@ -57,6 +57,13 @@ body[data-role] .unauth-only { display: none !important; }
 /* Visible but non-clickable for unauthenticated visitors */
 .auth-link { pointer-events: none; opacity: 0.5; cursor: default; }
 body[data-role] .auth-link { pointer-events: auto; opacity: 1; cursor: pointer; }
+/* Self-service role: hide coordinator-only UI */
+body[data-role="selfservice"] .checkin-only { display: none !important; }
+body[data-role="selfservice"] .admin-only { display: none !important; }
+body[data-role="selfservice"] .auth-link { pointer-events: none; opacity: 0.5; cursor: default; }
+/* Self-service only: hidden by default, shown only for selfservice role */
+.selfservice-only { display: none !important; }
+body[data-role="selfservice"] .selfservice-only { display: revert !important; }
 
 /* === Base === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -989,7 +996,16 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
 .group-hours-item {
     background: var(--green-tint); padding: 0.4rem 0.9rem; border-radius: 6px;
     font-size: 0.95rem; color: var(--text); display: inline-flex; align-items: center;
-    gap: 0.4rem; cursor: pointer;
+    gap: 0.4rem;
+}
+label.group-hours-item { cursor: pointer; }
+.group-hours-item--regular {
+    background: var(--green-bg, #e8f5e9); border: 1.5px solid var(--green);
+}
+.regular-badge {
+    font-size: 0.75rem; font-weight: 700; color: var(--green);
+    background: white; border: 1px solid var(--green);
+    padding: 0.1rem 0.4rem; border-radius: 4px; letter-spacing: 0.02em;
 }
 .group-hours-item strong { color: var(--green); }
 .regular-checkbox { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
@@ -1213,6 +1229,8 @@ a.entry-card { flex: 1; min-width: 0; }
 }
 .checkin-toggle input:checked + .checkin-box { background: var(--green); border-color: var(--green); }
 .checkin-toggle input:checked + .checkin-box::after { opacity: 1; }
+.checkin-box--checked { background: var(--green); border-color: var(--green); }
+.checkin-box--checked::after { opacity: 1; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinning svg { animation: spin 0.7s linear infinite; }

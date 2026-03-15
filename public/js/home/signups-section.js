@@ -13,7 +13,7 @@ async function loadRecentSignups() {
             list.innerHTML = result.data.map(e => {
                 const date = formatDate(e.date);
                 const icons = notesToIcons(e.notes || '');
-                const href = `/entries/${encodeURIComponent(e.groupKey)}/${e.date}/${encodeURIComponent(e.volunteerSlug)}/edit.html`;
+                const href = `/entries/${e.id}/edit.html`;
                 return `<a class="signup-row" href="${escapeHtml(href)}">
                     <div class="signup-name">
                         ${escapeHtml(e.volunteerName)}

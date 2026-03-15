@@ -40,6 +40,17 @@ function buildDuplicatesCards(duplicates) {
             </div>`).join('');
 }
 
+function buildLinkedProfilesCard(linkedProfiles) {
+    if (!linkedProfiles || linkedProfiles.length === 0) return '';
+    const links = linkedProfiles
+        .map(lp => `<a href="/profiles/${encodeURIComponent(lp.slug)}/details.html">${escapeHtml(lp.name)}</a>`)
+        .join(', ');
+    return `<div class="info-card">
+        <div class="info-card-title">Linked profiles</div>
+        <div class="info-card-body">This email is also used by: ${links}</div>
+    </div>`;
+}
+
 function buildChart() {
     const container = document.getElementById('fyChart');
     if (!container) return;
@@ -341,8 +352,16 @@ function displayGroups() {
     if (card) card.style.display = groupMeta.length > 0 ? '' : 'none';
     if (groupMeta.length === 0) { container.innerHTML = ''; return; }
 
+    const isSelfService = window.currentUser?.role === 'selfservice';
+
     container.innerHTML = groupMeta.map(gh => {
         const hours = Math.round((groupHoursMap[gh.groupName] ?? 0) * 10) / 10;
+        if (isSelfService) {
+            // Read-only view: highlight regular groups, no checkbox interaction
+            return `<div class="group-hours-item${gh.isRegular ? ' group-hours-item--regular' : ''}">
+                ${escapeHtml(gh.groupName)} <strong>${hours}h</strong>${gh.isRegular ? ' <span class="regular-badge">Regular</span>' : ''}
+            </div>`;
+        }
         return `<label class="group-hours-item">
             <input type="checkbox" class="regular-checkbox"
                 data-group-id="${gh.groupId}"
@@ -387,7 +406,7 @@ function displayEntries() {
     container.innerHTML = '<div class="entries-list">' + filtered.map(entry => {
         const icons = notesToIcons(entry.notes);
         const detailUrl = entry.groupKey && entry.date
-            ? `/entries/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/${encodeURIComponent(profileSlug)}/edit.html`
+            ? `/sessions/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/details.html`
             : '#';
         const hoursHtml = canEditHours
             ? `<input type="number" class="inline-hours" value="${entry.hours}" min="0" step="0.5"
@@ -465,6 +484,7 @@ async function loadProfile() {
             </div>
 
             ${buildDuplicatesCards(profile.duplicates)}
+            ${buildLinkedProfilesCard(profile.linkedProfiles)}
 
             <div class="section-card" id="groupsCard" style="display:none;">
                 <div class="section-header">

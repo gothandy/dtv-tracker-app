@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - DTV Tracker</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body { background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+
+        .login-header {
+            background: var(--dark); color: white;
+            padding: 1.25rem 1.5rem;
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .login-header img { height: 36px; }
+        .login-header h1 { font-size: 1.25rem; margin: 0; }
+
+        .login-container {
+            max-width: 480px; margin: 3rem auto; padding: 0 1.25rem; width: 100%;
+        }
+
+        .login-heading {
+            text-align: center; margin-bottom: 1.75rem;
+        }
+        .login-heading h2 { font-size: 1.4rem; color: var(--dark); margin: 0 0 0.4rem; }
+        .login-heading p { color: var(--text-light); font-size: 0.95rem; margin: 0; }
+
+        .login-option {
+            background: var(--surface); border-radius: 12px;
+            padding: 1.5rem; box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .login-option h3 { font-size: 1.05rem; color: var(--dark); margin: 0 0 0.5rem; }
+        .login-option p { color: var(--text-light); font-size: 0.875rem; margin: 0 0 1rem; line-height: 1.4; }
+
+        .btn-signin {
+            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+            width: 100%; padding: 0.8rem 1rem;
+            border: 1.5px solid var(--border-mid); border-radius: var(--radius);
+            font-size: 0.95rem; font-weight: 600; color: var(--dark);
+            cursor: pointer; text-decoration: none; min-height: 44px;
+            transition: box-shadow 0.15s, border-color 0.15s;
+            background: white; box-sizing: border-box;
+        }
+        .btn-signin:hover { box-shadow: var(--shadow); border-color: var(--border-strong, #aaa); }
+        .btn-signin svg { flex-shrink: 0; }
+
+        .reason-message {
+            background: #fff8e1; border: 2px solid #f59e0b; border-radius: 8px;
+            padding: 1rem 1.1rem 1rem 3rem; margin-bottom: 1rem;
+            color: #78350f; font-size: 0.9rem; font-weight: 500; line-height: 1.5;
+            position: relative;
+        }
+        .reason-message::before {
+            content: "⚠";
+            position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-header">
+        <img src="/img/logo.png" alt="DTV">
+        <h1>DTV Tracker</h1>
+    </div>
+
+    <div class="login-container">
+
+        <div class="login-heading">
+            <h2>Sign in</h2>
+            <p>Choose the option that applies to you.</p>
+        </div>
+
+        <div id="reasonMessage" class="reason-message" style="display:none"></div>
+
+        <!-- Personal account options (Google + Facebook) -->
+        <div class="login-option" id="personalCard">
+            <h3>Sign in with your Personal Account</h3>
+            <p>View your volunteer profile, register for sessions, and upload session photos.</p>
+            <a id="googleBtn" href="/auth/google/login" class="btn-signin">
+                <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </a>
+            <a id="facebookBtn" href="/auth/facebook/login" class="btn-signin" style="margin-top:0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.265h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" fill="#1877F2"/>
+                </svg>
+                Continue with Facebook
+            </a>
+        </div>
+
+        <!-- Microsoft option -->
+        <div class="login-option">
+            <h3>Sign in with your DTV Teams Account</h3>
+            <p>For dig leads, coordinators and admins — use your <strong>@dtv.org.uk</strong> Microsoft account.</p>
+            <a id="staffBtn" href="/auth/login" class="btn-signin">
+                <svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                    <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                    <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                    <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                </svg>
+                Continue with Microsoft
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        const reasons = {
+            'not-approved':  (email) => `Your account${email ? ` (${email})` : ''} isn\'t linked to a volunteer profile. Please contact your coordinator to get set up.`,
+            'not-found':     (email) => `Your account${email ? ` (${email})` : ''} isn\'t linked to a volunteer profile. Please contact your coordinator to get set up.`,
+            'invalid-state': () => 'Something went wrong with the sign-in process. Please try again.',
+            'no-email':      () => 'Your Facebook account doesn\'t have an email address we can use. Please try signing in with Google instead.',
+        };
+
+        function init() {
+            const params = new URLSearchParams(window.location.search);
+            const reason = params.get('reason');
+            const returnTo = params.get('returnTo');
+
+            if (reason && reasons[reason]) {
+                const email = params.get('email');
+                const el = document.getElementById('reasonMessage');
+                el.textContent = reasons[reason](email);
+                el.style.display = 'block';
+            }
+
+            if (returnTo && returnTo.startsWith('/')) {
+                document.getElementById('googleBtn').href = `/auth/google/login?returnTo=${encodeURIComponent(returnTo)}`;
+                document.getElementById('facebookBtn').href = `/auth/facebook/login?returnTo=${encodeURIComponent(returnTo)}`;
+                document.getElementById('staffBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+            }
+        }
+
+        fetch('/auth/providers')
+            .then(r => r.json())
+            .then(p => {
+                if (!p.google)   document.getElementById('googleBtn').style.display = 'none';
+                if (!p.facebook) document.getElementById('facebookBtn').style.display = 'none';
+                if (!p.google && !p.facebook) document.getElementById('personalCard').style.display = 'none';
+            });
+
+        init();
+    </script>
+</body>
+</html>

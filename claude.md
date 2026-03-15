@@ -26,7 +26,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
-- Role-based authorization: Admin, Check In, Read Only, and Public ([middleware/require-admin.ts](middleware/require-admin.ts))
+- Role-based authorization: Admin, Check In, Read Only, Self-Service, and Public ([middleware/require-admin.ts](middleware/require-admin.ts))
 - Server-side caching with 5-minute TTL; all writes call `clearCache()` for immediate consistency
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
@@ -40,9 +40,11 @@ Feature-complete volunteer tracking application with:
 - Session detail with entries, check-in, set hours, move group, session taxonomy tags, session photo gallery, edit/delete ([public/session-detail.html](public/session-detail.html))
 - Volunteers listing with FY filter, sort, group filter, search, advanced filters (type/hours/records), checkbox selection, bulk records, CSV download ([public/volunteers.html](public/volunteers.html))
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
-- Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete ([public/entry-detail.html](public/entry-detail.html))
+- Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Shared utilities: header, footer, breadcrumbs, date formatting ([public/js/common.js](public/js/common.js))
+- Unified sign-in page: Google (volunteer) and Microsoft (staff) options with role descriptions ([public/login.html](public/login.html))
+- Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
+- Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
 - Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
 - Session taxonomy tag UI: term tree picker, tag pills; supports `onConfirm` callback for bulk tagging from sessions listing ([public/js/session-tags.js](public/js/session-tags.js))
@@ -190,11 +192,11 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Entries default Checked to false
 
 ### Permissions / Authorization
-- Four access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Public** (unauthenticated — limited non-privacy view)
-- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field; everyone else logged in is Read Only; unauthenticated visitors are Public
+- Five access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Self-Service** (volunteer Google login — own profile + session sign-up + photo upload), **Public** (unauthenticated — limited non-privacy view)
+- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by Profile `Email` field (Google login); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
 - Role computed at login, stored in session; Public has no session role (`body[data-role]` not set)
 - Backend: `requireAdmin` middleware in [middleware/require-admin.ts](middleware/require-admin.ts) enforces per-endpoint
-- Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.auth-only` (any logged-in user), `.unauth-only` (Public only)
+- Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.auth-only` (any logged-in user), `.unauth-only` (Public only), `.selfservice-only` (Self-Service only)
 - Full reference: [docs/permissions.md](docs/permissions.md)
 
 ### Error Handling
@@ -235,7 +237,8 @@ dtv-tracker-app/
 │   ├── sharepoint.ts              # Profile, Entry, Regular types + utilities
 │   └── express-session.d.ts       # Session type augmentation for auth
 ├── services/
-│   ├── auth-config.ts             # MSAL client configuration
+│   ├── auth-config.ts             # MSAL client configuration (Microsoft OAuth)
+│   ├── google-auth.ts             # Google OAuth helper (DIY, native fetch — no extra packages)
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── eventbrite-sync.ts         # Shared attendee sync logic and consent question mapping
@@ -261,7 +264,6 @@ dtv-tracker-app/
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
 │   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
-│   ├── upload.ts                  # Public volunteer upload endpoints (validate code, upload files — no auth)
 │   ├── backup.ts                  # Backup endpoint: exports all 6 lists as JSON to SharePoint Shared Documents
 │   └── auth.ts                    # Authentication routes (login, callback, logout)
 ├── middleware/
@@ -277,7 +279,8 @@ dtv-tracker-app/
 │   ├── profile-detail.html        # Profile detail with FY stats, inline hours, group filter
 │   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
 │   ├── add-entry.html             # Add entry (register volunteer to session)
-│   ├── upload.html                # Public volunteer photo upload page (no auth required)
+│   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
+│   ├── login.html       # Unified sign-in page: volunteer (Google) and staff (Microsoft) options with descriptions
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
@@ -342,9 +345,10 @@ dtv-tracker-app/
 - [x] Azure App Service deployment
 - [x] Comprehensive manual test script ([docs/test-script.md](docs/test-script.md))
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
-- [x] Volunteer media upload via short code (check-in+ clicks Upload on entry detail; navigates directly to `/upload/{CODE}`; volunteer uploads without an account); accepts photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV); max 10 files, 10 MB each
-- [x] Upload codes persisted in Entries list `Code` field — survive server restarts, reusable for the same entry; public expiry is session date + 7 days; authenticated users bypass expiry
-- [x] Upload completion screen: shows file count, review notice; authenticated users see "View session gallery" link
+- [x] Volunteer media upload via authenticated entry ID (check-in+ clicks Upload on entry detail; navigates to `/upload.html?entryId=:id`; self-service volunteers can also upload from their profile or session page); accepts photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV); max 10 files, 10 MB each
+- [x] Upload completion screen: shows file count, review notice; link to session gallery
+- [x] Self-service volunteer login via Google OAuth — `Profile.Email` field controls access (set by admin/check-in); volunteers can view their profile, register for future sessions, and upload photos to their own entries
+- [x] Volunteer sign-up for sessions (self-service role): own profile only, future sessions only, duplicate prevention
 - [x] Session media storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure); capture date extracted from EXIF (images) or MP4/MOV container metadata (videos)
 - [x] Session gallery with lightbox viewer on session detail page; videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect); public users restricted to `IsPublic` items
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
@@ -379,7 +383,8 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - Standard SharePoint metadata fields (ID, Created, Modified, Author, Editor) are auto-managed
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
-- Upload codes are persisted in the `Code` field on the Entries list — they survive server restarts and are reused for the same entry. Public/volunteer access: valid while the session date is within the last 7 days. Authenticated users (admin/check-in) bypass this check and can upload to any session.
+- The `Code` field on the Entries list is no longer used for uploads (the code-based upload system was replaced by authenticated entry-ID-based upload). The field is left in SharePoint but no longer read or written.
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars are required for Google OAuth (self-service volunteer login). Create a Web Application OAuth 2.0 client in Google Cloud Console and register `/auth/google/callback` as an authorized redirect URI for both localhost and production domains.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".

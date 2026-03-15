@@ -660,7 +660,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       groupHours,
       entries: entryResponses,
       records: records.length > 0 ? records : undefined,
-      duplicates: duplicates.length > 0 ? duplicates : undefined
+      duplicates: duplicates.length > 0 ? duplicates : undefined,
+      linkedProfiles: profile.email
+        ? (rawProfiles as any[])
+            .filter((p: any) => p.ID !== spProfile.ID && p.Email?.toLowerCase() === profile.email!.toLowerCase())
+            .map((p: any) => ({ id: p.ID, slug: profileSlug(p.Title, p.ID), name: p.Title || '' }))
+        : undefined
     };
 
     res.json({ success: true, data } as ApiResponse<ProfileDetailResponse>);

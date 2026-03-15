@@ -104,6 +104,7 @@ export interface ProfileDetailResponse {
   entries: ProfileEntryResponse[];
   records?: ConsentRecordResponse[];
   duplicates?: ProfileDuplicateResponse[];
+  linkedProfiles?: Array<{ id: number; slug: string; name: string }>;
 }
 
 export interface ProfileDuplicateResponse {
@@ -134,6 +135,7 @@ export interface GroupDetailResponse {
 
 export interface EntryResponse {
   id: number;
+  profileId?: number;
   volunteerName?: string;
   volunteerSlug?: string;
   isGroup: boolean;
@@ -225,17 +227,12 @@ export interface TagHoursItem {
 
 export type TagHoursResponse = TagHoursItem[];
 
-export interface UploadCodeResponse {
-  code: string;  // e.g. "MXKP"
-  url: string;   // full upload URL e.g. "https://tracker.dtv.org.uk/upload/MXKP"
-}
-
-export interface UploadContextResponse {
+export interface EntryUploadContextResponse {
+  entryId: number;
+  sessionId: number;
   sessionName: string;
   date: string;        // YYYY-MM-DD
   groupKey: string;
   groupName: string;
   profileName: string;
-  sessionId: number;
-  isAuthenticated: boolean;
 }

@@ -29,10 +29,24 @@ import {
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
 
-import type { EntryDetailResponse, RecentSignupResponse, UploadCodeResponse } from '../types/api-responses';
+import multer from 'multer';
+import { sharePointClient } from '../services/sharepoint-client';
+import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
+
+import type { EntryDetailResponse, RecentSignupResponse, EntryUploadContextResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 10 }
+});
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif',
+  'video/mp4', 'video/quicktime', 'video/x-m4v'
+]);
 
 function appendNewTag(notes: string | undefined): string {
   const base = notes || '';
@@ -129,6 +143,16 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
       return;
     }
 
+    // Self-service users may only view their own entry (supports multiple linked profiles)
+    if (req.session.user?.role === 'selfservice') {
+      const entryProfileId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
+      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (entryProfileId === undefined || !ownIds.includes(entryProfileId)) {
+        res.status(403).json({ success: false, error: 'Not your entry' });
+        return;
+      }
+    }
+
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const volunteerId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
     const profile = volunteerId !== undefined ? profiles.find(p => p.ID === volunteerId) : undefined;
@@ -183,6 +207,107 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
       error: 'Failed to fetch entry detail',
       message: error.message
     });
+  }
+});
+
+// GET /entries/:id — entry detail by SharePoint ID (preferred; avoids slug collisions)
+router.get('/entries/:id', async (req: Request, res: Response) => {
+  try {
+    const entryId = parseInt(String(req.params.id), 10);
+    if (isNaN(entryId)) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+
+    const [rawGroups, rawSessions, rawEntries, rawProfiles] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const spEntry = entries.find(e => e.ID === entryId);
+    if (!spEntry) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+
+    // Self-service users may only view their own entry
+    if (req.session.user?.role === 'selfservice') {
+      const entryProfileId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
+      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (entryProfileId === undefined || !ownIds.includes(entryProfileId)) {
+        res.status(403).json({ success: false, error: 'Not your entry' });
+        return;
+      }
+    }
+
+    const sessionId = safeParseLookupId(spEntry[SESSION_LOOKUP]);
+    const spSession = sessionId !== undefined
+      ? (validateArray(rawSessions, validateSession, 'Session')).find(s => s.ID === sessionId)
+      : undefined;
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const groupId = safeParseLookupId((spSession as any)[GROUP_LOOKUP]);
+    const spGroup = (rawGroups as any[]).find((g: any) => g.ID === groupId);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const volunteerId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
+    const profile = volunteerId !== undefined ? profiles.find(p => p.ID === volunteerId) : undefined;
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+    const fy = calculateCurrentFY();
+    const lastFYStart = fy.startYear - 1;
+    let calcThisFY = 0;
+    let calcLastFY = 0;
+    const volunteerEntries = volunteerId !== undefined
+      ? entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId)
+      : [];
+    volunteerEntries.forEach(e => {
+      const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+      if (sid === undefined) return;
+      const sess = sessionMap.get(sid);
+      if (!sess) return;
+      const h = parseHours(e.Hours);
+      const sessionFY = calculateFinancialYear(new Date(sess.Date));
+      if (sessionFY === fy.startYear) calcThisFY += h;
+      else if (sessionFY === lastFYStart) calcLastFY += h;
+    });
+
+    const group = convertGroup(spGroup);
+
+    const data: EntryDetailResponse = {
+      id: spEntry.ID,
+      volunteerName: spEntry[PROFILE_DISPLAY],
+      volunteerSlug: volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]),
+      volunteerEmail: profile?.Email,
+      isGroup: profile?.IsGroup || false,
+      hoursLastFY: Math.round(calcLastFY * 10) / 10,
+      hoursThisFY: Math.round(calcThisFY * 10) / 10,
+      volunteerEntryCount: volunteerEntries.length,
+      count: spEntry.Count || 1,
+      hours: parseHours(spEntry.Hours),
+      checkedIn: spEntry.Checked || false,
+      notes: spEntry.Notes,
+      date: spSession.Date,
+      groupKey: group.lookupKeyName,
+      groupName: group.displayName,
+      sessionDisplayName: spSession.Name || spSession.Title
+    };
+
+    res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);
+  } catch (error: any) {
+    console.error('Error fetching entry detail by ID:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch entry detail', message: error.message });
   }
 });
 
@@ -245,6 +370,22 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // Self-service users may only delete their own entry (supports multiple linked profiles)
+    if (req.session.user?.role === 'selfservice') {
+      const rawEntries = await entriesRepository.getAll();
+      const entry = (rawEntries as any[]).find(e => e.ID === entryId);
+      if (!entry) {
+        res.status(404).json({ success: false, error: 'Entry not found' });
+        return;
+      }
+      const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
+      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (profileId === undefined || !ownIds.includes(profileId)) {
+        res.status(403).json({ success: false, error: 'Not your entry' });
+        return;
+      }
+    }
+
     await entriesRepository.delete(entryId);
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
@@ -291,6 +432,27 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
     if (!profile) {
       res.status(404).json({ success: false, error: 'Volunteer not found' });
       return;
+    }
+
+    if (req.session.user?.role === 'selfservice') {
+      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (!ownIds.length || !ownIds.includes(volunteerId)) {
+        res.status(403).json({ success: false, error: 'You can only register yourself' });
+        return;
+      }
+      if (new Date(spSession.Date) < new Date()) {
+        res.status(400).json({ success: false, error: 'Session has already passed' });
+        return;
+      }
+      const rawEntriesCheck = await entriesRepository.getAll();
+      const alreadyRegistered = (rawEntriesCheck as any[]).some(e =>
+        safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID &&
+        safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId
+      );
+      if (alreadyRegistered) {
+        res.status(409).json({ success: false, error: 'Already registered for this session' });
+        return;
+      }
     }
 
     const fields: Record<string, any> = {
@@ -454,7 +616,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
   }
 });
 
-router.post('/entries/:id/upload-code', async (req: Request, res: Response) => {
+router.get('/entries/:id/upload-context', async (req: Request, res: Response) => {
   try {
     const entryId = parseInt(String(req.params.id), 10);
     if (isNaN(entryId) || entryId <= 0) {
@@ -462,32 +624,148 @@ router.post('/entries/:id/upload-code', async (req: Request, res: Response) => {
       return;
     }
 
-    const rawEntries = await entriesRepository.getAll();
+    const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
+      entriesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const entry = entries.find(e => e.ID === entryId);
-    if (!entry) {
+    const rawEntry = entries.find(e => e.ID === entryId);
+    if (!rawEntry) {
       res.status(404).json({ success: false, error: 'Entry not found' });
       return;
     }
 
-    // Reuse the existing code if one was already assigned
-    const existingCode = entry.Code as string | undefined;
-    if (existingCode) {
-      const url = `${req.protocol}://${req.get('host')}/upload/${existingCode}`;
-      res.json({ success: true, data: { code: existingCode, url } } as ApiResponse<UploadCodeResponse>);
+    // Ownership check for self-service users (supports multiple linked profiles)
+    if (req.session.user?.role === 'selfservice') {
+      const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (profileId === undefined || !ownIds.includes(profileId)) {
+        res.status(403).json({ success: false, error: 'Not your entry' });
+        return;
+      }
+    }
+
+    const sessionId = safeParseLookupId(rawEntry[SESSION_LOOKUP]);
+    const spSession = sessionId !== undefined
+      ? (rawSessions as any[]).find((s: any) => s.ID === sessionId)
+      : undefined;
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
       return;
     }
 
-    // Generate a new 4-letter code and persist it to SharePoint
-    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const code = Array.from({ length: 4 }, () => CHARS[Math.floor(Math.random() * 26)]).join('');
-    await entriesRepository.updateCode(entryId, code);
+    const groupId = safeParseLookupId(spSession[GROUP_LOOKUP]);
+    const spGroup = groupId !== undefined
+      ? (rawGroups as any[]).find((g: any) => g.ID === groupId)
+      : undefined;
+    const group = spGroup ? convertGroup(spGroup) : null;
 
-    const url = `${req.protocol}://${req.get('host')}/upload/${code}`;
-    res.json({ success: true, data: { code, url } } as ApiResponse<UploadCodeResponse>);
+    const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profile = profileId !== undefined ? profiles.find(p => p.ID === profileId) : undefined;
+
+    const data: EntryUploadContextResponse = {
+      entryId: rawEntry.ID,
+      sessionId: sessionId!,
+      sessionName: spSession.Name || spSession.Title || group?.displayName || '',
+      date: spSession.Date.substring(0, 10),
+      groupKey: group?.lookupKeyName || '',
+      groupName: group?.displayName || group?.lookupKeyName || '',
+      profileName: profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer'
+    };
+
+    res.json({ success: true, data } as ApiResponse<EntryUploadContextResponse>);
   } catch (error: any) {
-    console.error('Error generating upload code:', error);
-    res.status(500).json({ success: false, error: 'Failed to generate upload code', message: error.message });
+    console.error('Error fetching upload context:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch upload context', message: error.message });
+  }
+});
+
+router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Request, res: Response) => {
+  try {
+    const entryId = parseInt(String(req.params.id), 10);
+    if (isNaN(entryId) || entryId <= 0) {
+      res.status(400).json({ success: false, error: 'Invalid entry ID' });
+      return;
+    }
+
+    const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
+      entriesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const rawEntry = entries.find(e => e.ID === entryId);
+    if (!rawEntry) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+
+    // Ownership check for self-service users (supports multiple linked profiles)
+    if (req.session.user?.role === 'selfservice') {
+      const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (profileId === undefined || !ownIds.includes(profileId)) {
+        res.status(403).json({ success: false, error: 'Not your entry' });
+        return;
+      }
+    }
+
+    const sessionId = safeParseLookupId(rawEntry[SESSION_LOOKUP]);
+    const spSession = sessionId !== undefined
+      ? (rawSessions as any[]).find((s: any) => s.ID === sessionId)
+      : undefined;
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const groupId = safeParseLookupId(spSession[GROUP_LOOKUP]);
+    const spGroup = groupId !== undefined
+      ? (rawGroups as any[]).find((g: any) => g.ID === groupId)
+      : undefined;
+    const group = spGroup ? convertGroup(spGroup) : null;
+
+    const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profile = profileId !== undefined ? profiles.find(p => p.ID === profileId) : undefined;
+    const profileName = profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer';
+
+    const driveId = mediaDriveId();
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      res.status(400).json({ success: false, error: 'No files provided' });
+      return;
+    }
+
+    const groupKey = group?.lookupKeyName || '';
+    const date = spSession.Date.substring(0, 10);
+    const folderPath = `${groupKey}/${date}`;
+    let uploaded = 0;
+
+    for (const file of files) {
+      if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+        console.warn(`[Upload] Rejected ${file.originalname}: unsupported type ${file.mimetype}`);
+        continue;
+      }
+      const takenAt = exifDate(file.buffer) ?? new Date();
+      const filename = mediaFilename(file.originalname, profileName, takenAt);
+      const uploadedItem = await sharePointClient.uploadFile(driveId, `${folderPath}/${filename}`, file.buffer, file.mimetype);
+      await sharePointClient.updateMediaItemFields(driveId, uploadedItem.id, { IsPublic: false });
+      uploaded++;
+    }
+
+    if (uploaded > 0) sharePointClient.clearCache();
+
+    res.json({ success: true, data: { uploaded } });
+  } catch (error: any) {
+    console.error('Error uploading photos:', error);
+    res.status(500).json({ success: false, error: 'Upload failed', message: error.message });
   }
 });
 

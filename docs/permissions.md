@@ -2,13 +2,14 @@
 
 ## Roles
 
-There are four access levels, two of which require login:
+There are five access levels:
 
 | Role | Auth required | Description |
 |------|--------------|-------------|
-| **Admin** | Yes | Full access to all features |
-| **Check In** | Yes | Field-day operations: view all data, check in volunteers, set hours, add entries, edit sessions/profiles, manage regulars |
-| **Read Only** | Yes | View all volunteer data (profiles, entries, hours) — no editing |
+| **Admin** | Yes (Microsoft) | Full access to all features |
+| **Check In** | Yes (Microsoft) | Field-day operations: view all data, check in volunteers, set hours, add entries, edit sessions/profiles, manage regulars, upload photos |
+| **Read Only** | Yes (Microsoft) | View all volunteer data (profiles, entries, hours) — no editing |
+| **Self-Service** | Yes (Google) | Volunteer login: view own profile, register for sessions, upload own photos |
 | **Public** | No | Limited read-only access to non-privacy data only (sessions, groups, stats) |
 
 ## Configuration
@@ -21,7 +22,9 @@ ADMIN_USERS=first.last@dtv.org.uk,another.email@dtv.org.uk
 
 **Check In** users are determined by matching the login email against the `User` field on Profiles. If a profile's `User` value matches the authenticated user's email, they get Check In access.
 
-**Read Only** is the default for any other authenticated DTV user (logged in but not in `ADMIN_USERS` and no matched Profile).
+**Read Only** is the default for any other authenticated DTV user (logged in via Microsoft but not in `ADMIN_USERS` and no matched Profile).
+
+**Self-Service** users log in via Google OAuth. Access is granted if the Google account email matches the `Email` field on a volunteer Profile (case-insensitive). To grant access: set `Profile.Email` to the volunteer's Google email. To revoke: clear it. The `Email` field is editable only by Check In and Admin users.
 
 **Public** is any unauthenticated visitor — no login required, but volunteer names, profiles, entries, and parking info are hidden.
 
@@ -70,7 +73,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | POST | `/profiles/:slug/regulars` | Add regular |
 | DELETE | `/regulars/:id` | Remove regular |
 | POST | `/sessions/:group/:date/refresh` | Refresh session (regulars + Eventbrite) |
-| POST | `/entries/:id/upload-code` | Generate volunteer upload code |
+| POST | `/entries/:id/photos` | Upload photos to an entry (any entry for check-in; own entry only for self-service) |
 
 ### Admin Only
 
@@ -99,7 +102,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 ### Backend
 
-1. **Role assignment** (`routes/auth.ts`): At login, the user's email is checked against `ADMIN_USERS` (→ `admin`), then against Profile `User` fields (→ `checkin`), otherwise → `readonly`. Role is stored in `req.session.user.role`. Unauthenticated visitors have no role (Public).
+1. **Role assignment** (`routes/auth.ts`): At Microsoft login, the user's email is checked against `ADMIN_USERS` (→ `admin`), then against Profile `User` fields (→ `checkin`), otherwise → `readonly`. At Google login, the email is matched against Profile `Email` fields (→ `selfservice`); no match → redirect to login.html with `?reason=not-approved`. Role is stored in `req.session.user.role`. Unauthenticated visitors have no role (Public).
 
 2. **Enforcement** (`middleware/require-admin.ts`): A single middleware applied before all API routes in `routes/api.ts`. Read Only users are blocked from all non-GET requests. Check In users are allowed specific write endpoints via pattern matching. Everything else requires Admin.
 
@@ -107,18 +110,20 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 
 ### Frontend
 
-1. **`common.js`**: After fetching `/auth/me`, sets `document.body.dataset.role` to the user's role (`admin`, `checkin`, or `readonly`). For Public (unauthenticated), `data-role` is never set.
+1. **`common.js`**: After fetching `/auth/me`, sets `document.body.dataset.role` to the user's role (`admin`, `checkin`, `readonly`, or `selfservice`). Also stores `window.currentUser` and dispatches a `authReady` custom event for pages that need to react to auth state. For Public (unauthenticated), `data-role` is never set.
 
 2. **`styles.css`**: CSS rules handle visibility per role:
    - `body:not([data-role="admin"]) .admin-only { display: none !important; }` — hides admin elements for all non-admins (including Public)
    - `body:not([data-role="admin"]) .admin-clickable { pointer-events: none; }` — disables clicks (record pills)
    - `body:not([data-role]) .checkin-only { display: none !important; }` — hides check-in action buttons for Public
    - `body[data-role="readonly"] .checkin-only { display: none !important; }` — hides check-in action buttons for Read Only
+   - `body[data-role="selfservice"] .checkin-only { display: none !important; }` — hides check-in UI for self-service users
    - `body[data-role="readonly"] ...` — disables inline controls (checkboxes, inputs) with `pointer-events: none; opacity: 0.6`
    - `.auth-only { display: none !important; }` / `body[data-role] .auth-only { display: revert !important; }` — hides auth-gated content from Public
    - `body[data-role] .unauth-only { display: none !important; }` — shows Public-only content (e.g. Privacy Protection card) only to unauthenticated visitors
+   - `.selfservice-only { display: none !important; }` / `body[data-role="selfservice"] .selfservice-only { display: revert !important; }` — shows self-service-only UI
 
-3. **HTML**: Elements marked with `class="admin-only"` (admin tier), `class="checkin-only"` (check-in tier), `class="auth-only"` (any logged-in user), or `class="unauth-only"` (Public only).
+3. **HTML**: Elements marked with `class="admin-only"` (admin tier), `class="checkin-only"` (check-in tier), `class="auth-only"` (any logged-in user), `class="unauth-only"` (Public only), or `class="selfservice-only"` (self-service only).
 
 ### Public (No Authentication)
 
@@ -126,11 +131,18 @@ The following endpoints and pages require no authentication and are served befor
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/upload/:code` | Volunteer photo upload page — code must be in URL; shows error if missing or invalid |
-| POST | `/api/upload/validate` | Validate a 4-letter upload code |
-| POST | `/api/upload/files` | Upload photos using a valid code |
+| GET | `/upload.html` | Volunteer photo upload page — uses `?entryId=` query param; redirects to `/login.html` if not authenticated |
+| GET | `/login.html` | Volunteer login page (Google OAuth) |
 
-The upload code is validated server-side on every request. For public (unauthenticated) access, expiry is session date + 7 days; authenticated users bypass this check. Upload path is derived from SharePoint data, not user input.
+The upload page calls `GET /api/entries/:id/upload-context` (requires login → 401 redirects to login.html) and `POST /api/entries/:id/photos` (requires login + ownership for self-service users). Self-service users can only upload to their own entries; check-in and admin users can upload to any entry.
+
+### Self-Service API Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | All (except exports) | View all data |
+| POST | `/sessions/:group/:date/entries` | Register for a session (own profile only; future sessions only; no duplicates) |
+| POST | `/entries/:id/photos` | Upload photos to own entry |
 
 ### API Key Auth
 

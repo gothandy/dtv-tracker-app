@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs').promises;
 const apiRoutes = require('./dist/routes/api');
 const authRoutes = require('./dist/routes/auth');
-const uploadRoutes = require('./dist/routes/upload');
 const { requireAuth } = require('./dist/middleware/require-auth');
 const { groupsRepository } = require('./dist/services/repositories/groups-repository');
 const { sessionsRepository } = require('./dist/services/repositories/sessions-repository');
@@ -67,14 +66,13 @@ app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 app.use('/svg', express.static(path.join(__dirname, 'public', 'svg')));
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
-// Upload page — public, code validates itself (handles /upload and /upload/AGHR)
-app.get('/upload', (req, res) => {
+// Public pages — volunteer-facing, no login required (auth handled client-side via /auth/me)
+app.get('/upload.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'upload.html'));
 });
-app.get('/upload/:code', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
-app.use('/api', uploadRoutes);
 
 // Public pages — served before auth so unauthenticated visitors can browse
 app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -188,7 +186,10 @@ app.get('/sessions/:group/:date/add-entry.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'add-entry.html'));
 });
 
-// Serve entry edit page at /entries/:group/:date/:slug/edit.html
+// Serve entry edit page — ID-based URL (preferred) and legacy group/date/slug URL
+app.get('/entries/:id/edit.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));
+});
 app.get('/entries/:group/:date/:slug/edit.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));
 });

@@ -24,6 +24,10 @@
     <script>createHeader(undefined, true);</script>
 
     <div class="container">
+        <div id="staffAccessWarning" class="selfservice-only" style="display:none;margin-bottom:1rem;padding:0.875rem 1rem;background:var(--surface);border:1px solid var(--border-mid);border-radius:var(--radius);font-size:0.9rem;">
+            You're signed in with your personal account. You also have a <a href="/auth/login">coordinator account</a> with additional access.
+        </div>
+
         <div id="statsSection"></div>
         <div id="wordCloudSection"></div>
         <div id="sessionSection"></div>
@@ -50,6 +54,13 @@
         initStatsSection();
         initSessionSection();
         initSignupsSection();
+
+        // Show coordinator-access notice for selfservice users who also have a coordinator account
+        document.addEventListener('authReady', e => {
+            if (e.detail?.hasStaffAccess) {
+                document.getElementById('staffAccessWarning').style.display = 'block';
+            }
+        });
     </script>
 </body>
 </html>

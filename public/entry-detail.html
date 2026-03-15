@@ -86,11 +86,8 @@
     </div>
 
     <script>
-        // Extract from URL: /entries/:group/:date/:slug/edit.html
-        const pathParts = window.location.pathname.split('/');
-        const groupKey = pathParts[2];
-        const entryDate = pathParts[3];
-        const profileSlug = pathParts[4];
+        // Extract from URL: /entries/:id/edit.html
+        const urlEntryId = window.location.pathname.split('/')[2];
 
         let entryId = null;
         let currentEntry = null;
@@ -129,8 +126,10 @@
                 if (!res.ok) throw new Error('Delete failed');
                 if (currentEntry && currentEntry.volunteerEntryCount <= 1 && currentEntry.volunteerSlug) {
                     window.location.href = `/profiles/${encodeURIComponent(currentEntry.volunteerSlug)}/details.html`;
+                } else if (currentEntry) {
+                    window.location.href = `/sessions/${encodeURIComponent(currentEntry.groupKey)}/${currentEntry.date.substring(0, 10)}/details.html`;
                 } else {
-                    window.location.href = `/sessions/${encodeURIComponent(groupKey)}/${entryDate}/details.html`;
+                    window.location.href = '/sessions.html';
                 }
             } catch (error) {
                 console.error('Error deleting entry:', error);
@@ -141,7 +140,7 @@
         async function loadEntry() {
             const contentDiv = document.getElementById('content');
 
-            if (!groupKey || !entryDate || !profileSlug) {
+            if (!urlEntryId || !/^\d+$/.test(urlEntryId)) {
                 contentDiv.innerHTML = `
                     <div class="empty-state">
                         <p>No entry specified</p>
@@ -152,7 +151,7 @@
             }
 
             try {
-                const response = await apiFetch(`/api/entries/${encodeURIComponent(groupKey)}/${encodeURIComponent(entryDate)}/${encodeURIComponent(profileSlug)}`);
+                const response = await apiFetch(`/api/entries/${urlEntryId}`);
 
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}: ${response.statusText}`);
@@ -168,6 +167,18 @@
                 entryId = entry.id;
                 currentEntry = entry;
                 document.title = `${entry.volunteerName || 'Entry'} - DTV Tracker`;
+
+                // Update breadcrumb with real session name
+                const crumbsEl = document.querySelector('.nav-crumbs');
+                if (crumbsEl && entry.groupKey && entry.date) {
+                    const groupHref = `/groups/${encodeURIComponent(entry.groupKey)}/detail.html`;
+                    const sessionHref = `/sessions/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/details.html`;
+                    const sessionLabel = entry.sessionDisplayName || entry.groupName || 'Session';
+                    crumbsEl.innerHTML =
+                        `<a href="/">Home</a><span class="breadcrumb-sep">/</span>` +
+                        `<a href="${groupHref}">${escapeHtml(entry.groupName || entry.groupKey)}</a><span class="breadcrumb-sep">/</span>` +
+                        `<a href="${sessionHref}">${escapeHtml(sessionLabel)}</a>`;
+                }
 
                 const groupBadge = entry.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
                 const memberBadge = isMember(entry) ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
@@ -202,17 +213,25 @@
                             <div class="form-label">Email</div>
                             <div><a href="mailto:${encodeURIComponent(entry.volunteerEmail)}">${escapeHtml(entry.volunteerEmail)}</a></div>
                         </div>` : ''}
-                        <div class="form-field" id="field-checked">
+                        <div class="form-field checkin-only" id="field-checked">
                             <div class="form-label">Checked In</div>
                             <input type="checkbox" id="inputChecked" ${entry.checkedIn ? 'checked' : ''}>
+                        </div>
+                        <div class="form-field selfservice-only">
+                            <div class="form-label">Checked In</div>
+                            <div>${entry.checkedIn ? 'Yes' : 'No'}</div>
                         </div>
                         <div class="form-field checkin-only" id="field-count">
                             <div class="form-label">Count</div>
                             <input type="number" id="inputCount" min="0" step="1" value="${entry.count}">
                         </div>
-                        <div class="form-field" id="field-hours">
+                        <div class="form-field checkin-only" id="field-hours">
                             <div class="form-label">Hours</div>
                             <input type="number" id="inputHours" min="0" step="0.5" value="${entry.hours}">
+                        </div>
+                        <div class="form-field selfservice-only">
+                            <div class="form-label">Hours</div>
+                            <div>${entry.hours}</div>
                         </div>
                         <div class="form-field admin-only" id="field-notes">
                             <div class="form-label">Notes</div>
@@ -221,9 +240,17 @@
                                 <div class="tag-buttons" id="tagButtons"></div>
                             </div>
                         </div>
+                        ${entry.notes ? `
+                        <div class="form-field selfservice-only">
+                            <div class="form-label">Notes</div>
+                            <div>${escapeHtml(entry.notes)}</div>
+                        </div>` : ''}
                     </div>
 
                     <div class="delete-section admin-only">
+                        <button class="btn-delete" onclick="deleteEntry()">Delete Entry</button>
+                    </div>
+                    <div class="delete-section selfservice-only">
                         <button class="btn-delete" onclick="deleteEntry()">Delete Entry</button>
                     </div>
                 `;
@@ -263,16 +290,9 @@
             }
         }
 
-        async function openUploadPage() {
+        function openUploadPage() {
             if (!entryId) return;
-            try {
-                const res = await apiFetch(`/api/entries/${entryId}/upload-code`, { method: 'POST' });
-                const result = await res.json();
-                if (!res.ok || !result.success) throw new Error(result.error || 'Failed');
-                window.location.href = result.data.url;
-            } catch (error) {
-                alert('Failed to generate upload link: ' + error.message);
-            }
+            window.location.href = `/upload.html?entryId=${entryId}`;
         }
 
         loadEntry();

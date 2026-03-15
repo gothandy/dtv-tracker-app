@@ -3,21 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Media - DTV</title>
+    <title>Upload Photos - DTV Tracker</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/common.js"></script>
     <style>
-        body { background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
-
-        .upload-header {
-            background: var(--dark); color: white;
-            padding: 1.25rem 1.5rem;
-            display: flex; align-items: center; gap: 0.75rem;
-        }
-        .upload-header img { height: 36px; }
-        .upload-header h1 { font-size: 1.25rem; margin: 0; }
-
         .upload-container {
-            max-width: 520px; margin: 2rem auto; padding: 0 1.25rem; width: 100%;
+            max-width: 520px; margin: 0 auto; padding: 1.5rem;
         }
 
         .upload-card {
@@ -25,17 +16,9 @@
             padding: 2rem; box-shadow: var(--shadow);
         }
 
-        /* Context info (step 2) */
         .context-info { margin-bottom: 1.5rem; }
-        .context-info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
         .context-info .volunteer-name { font-size: 1.4rem; font-weight: 700; color: var(--dark); }
         .context-info .session-name { color: var(--text-light); margin-top: 0.25rem; }
-        .share-btn {
-            background: none; border: none; cursor: pointer; padding: 0.25rem;
-            color: var(--text-light); flex-shrink: 0;
-        }
-        .share-btn:hover { color: var(--green); }
-        .share-btn svg { width: 22px; height: 22px; display: block; }
 
         .file-zone {
             border: 2px dashed var(--border-mid); border-radius: 8px;
@@ -58,7 +41,6 @@
         .file-status.err { color: var(--error, #e74c3c); }
         .file-status.pending { color: var(--text-light); }
 
-        /* Step 3 — done */
         .done-message { text-align: center; padding: 1rem 0; }
         .done-message .done-count { font-size: 1.5rem; font-weight: 700; color: var(--green); margin-bottom: 0.5rem; }
         .done-message p { color: var(--text-light); }
@@ -78,43 +60,27 @@
         }
     </style>
 </head>
-<body>
-    <div class="upload-header">
-        <img src="/img/logo.png" alt="DTV">
-        <h1>DTV Media Upload</h1>
-    </div>
+<body class="detail-page">
+    <script>createHeader('Upload photos', true);</script>
 
     <div class="upload-container">
         <div class="upload-card">
 
-            <!-- Loading -->
-            <div id="step-loading" class="loading-text">Checking code&hellip;</div>
+            <div id="step-loading" class="loading-text">Loading&hellip;</div>
 
-            <!-- Error -->
             <div id="step-error" style="display:none">
                 <div class="error-message" id="errorMessage"></div>
             </div>
 
-            <!-- Step 2: Upload -->
             <div id="step-upload" style="display:none">
                 <div class="context-info">
-                    <div class="context-info-row">
-                        <div>
-                            <div class="volunteer-name" id="ctxName"></div>
-                            <div class="session-name" id="ctxSession"></div>
-                        </div>
-                        <button class="share-btn" onclick="shareLink()" title="Share this link">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                            </svg>
-                        </button>
-                    </div>
+                    <div class="volunteer-name" id="ctxName"></div>
+                    <div class="session-name" id="ctxSession"></div>
                 </div>
 
                 <div class="file-zone" id="fileZone" onclick="document.getElementById('fileInput').click()">
                     <div class="file-zone-label">Tap to choose photos or short videos</div>
-                    <div class="file-zone-hint">JPG, PNG, WebP, HEIC, MP4, MOV &middot; up to 10 files &middot; max 10 MB each</div>
+                    <div class="file-zone-hint">JPG, PNG, WebP, HEIC, MP4, MOV &middot; up to 10 files &middot; max 15 MB each</div>
                 </div>
                 <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.mp4,.mov,.m4v" multiple style="display:none">
 
@@ -125,12 +91,11 @@
                 </button>
             </div>
 
-            <!-- Step 3: Done -->
             <div id="step-done" style="display:none">
                 <div class="done-message">
                     <div class="done-count" id="doneCount"></div>
                     <p>Thanks for sharing your media! It'll be reviewed by a volunteer coordinator and may be used in our gallery.</p>
-                    <a id="sessionLink" href="#" style="display:none;margin-top:1rem;color:var(--green);font-weight:600;">View session gallery</a>
+                    <a id="sessionLink" href="#" style="display:none;margin-top:1rem;display:none;color:var(--green);font-weight:600;">View session gallery</a>
                 </div>
             </div>
 
@@ -138,9 +103,8 @@
     </div>
 
     <script>
-        let activeCode = null;
-        let activeSessionId = null;
-        let activeIsAuthenticated = false;
+        let activeEntryId = null;
+        let activeContext = null;
         let selectedFiles = [];
 
         function showError(message) {
@@ -150,33 +114,42 @@
         }
 
         async function init() {
-            const parts = window.location.pathname.split('/').filter(Boolean);
-            const code = parts.length >= 2 ? parts[1].toUpperCase() : '';
+            const params = new URLSearchParams(window.location.search);
+            const entryId = params.get('entryId');
 
-            if (!code || !/^[A-Z]{4}$/.test(code)) {
-                showError('No upload code found. Please use the link provided by your session admin.');
+            if (!entryId || isNaN(parseInt(entryId, 10))) {
+                showError('No upload link found. Please use the link from your session page.');
                 return;
             }
 
             try {
-                const res = await fetch('/api/upload/validate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
-                });
-                const data = await res.json();
+                const res = await fetch(`/api/entries/${entryId}/upload-context`);
 
-                if (!res.ok || !data.success) {
-                    const reason = data.reason;
-                    showError(reason === 'expired'
-                        ? 'This code has expired. Please ask for a new one.'
-                        : 'Code not found. Please check and try again.');
+                if (res.status === 401) {
+                    window.location.href = `/login.html?returnTo=${encodeURIComponent(window.location.href)}`;
+                    return;
+                }
+                if (res.status === 403) {
+                    showError('This upload link is not for your account. Please sign in with the correct account.');
+                    return;
+                }
+                if (res.status === 404) {
+                    showError('Upload link not found. Please check the link and try again.');
+                    return;
+                }
+                if (!res.ok) {
+                    showError('Could not load upload details. Please try again.');
                     return;
                 }
 
-                activeCode = code;
-                activeSessionId = data.data.sessionId;
-                activeIsAuthenticated = data.data.isAuthenticated;
+                const data = await res.json();
+                if (!data.success) {
+                    showError(data.error || 'Could not load upload details.');
+                    return;
+                }
+
+                activeEntryId = entryId;
+                activeContext = data.data;
                 showUploadStep(data.data);
             } catch {
                 showError('Could not connect. Please try again.');
@@ -186,8 +159,20 @@
         function showUploadStep(context) {
             document.getElementById('step-loading').style.display = 'none';
             document.getElementById('ctxName').textContent = context.profileName;
-            document.getElementById('ctxSession').textContent = context.sessionName;
+            document.getElementById('ctxSession').textContent =
+                (context.sessionName || context.groupName) + ' \u2014 ' + context.date;
             document.getElementById('step-upload').style.display = 'block';
+
+            // Update breadcrumb nav with the real session link
+            const crumbsEl = document.querySelector('.nav-crumbs');
+            if (crumbsEl && context.groupKey && context.date) {
+                const sessionHref = `/sessions/${encodeURIComponent(context.groupKey)}/${context.date}/details.html`;
+                const sessionLabel = context.sessionName || context.groupName || 'Session';
+                crumbsEl.innerHTML =
+                    `<a href="/">Home</a><span class="breadcrumb-sep">/</span>` +
+                    `<a href="/sessions.html">Sessions</a><span class="breadcrumb-sep">/</span>` +
+                    `<a href="${sessionHref}">${escapeHtml(sessionLabel)}</a>`;
+            }
 
             const fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', function() {
@@ -202,19 +187,6 @@
                 zone.classList.remove('dragover');
                 handleFiles(Array.from(e.dataTransfer.files));
             });
-        }
-
-        function shareLink() {
-            const url = window.location.href;
-            if (navigator.share) {
-                navigator.share({ title: 'DTV Media Upload', url });
-            } else {
-                navigator.clipboard.writeText(url).then(() => {
-                    const btn = document.querySelector('.share-btn');
-                    btn.title = 'Copied!';
-                    setTimeout(() => btn.title = 'Share this link', 2000);
-                });
-            }
         }
 
         function handleFiles(files) {
@@ -234,12 +206,11 @@
         }
 
         async function uploadFiles() {
-            if (selectedFiles.length === 0 || !activeCode) return;
+            if (selectedFiles.length === 0 || !activeEntryId) return;
             const btn = document.getElementById('uploadBtn');
             btn.disabled = true;
 
             let uploaded = 0;
-            let failed = 0;
 
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
@@ -249,10 +220,9 @@
 
                 try {
                     const fd = new FormData();
-                    fd.append('code', activeCode);
                     fd.append('photos', file);
 
-                    const res = await fetch('/api/upload/files', { method: 'POST', body: fd });
+                    const res = await fetch(`/api/entries/${activeEntryId}/photos`, { method: 'POST', body: fd });
                     const data = await res.json();
 
                     if (res.ok && data.success && data.data.uploaded > 0) {
@@ -265,7 +235,6 @@
                 } catch {
                     statusEl.textContent = '\u2717 Failed';
                     statusEl.className = 'file-status err';
-                    failed++;
                 }
             }
 
@@ -273,9 +242,9 @@
                 document.getElementById('step-upload').style.display = 'none';
                 document.getElementById('doneCount').textContent =
                     `${uploaded} file${uploaded !== 1 ? 's' : ''} uploaded`;
-                if (activeSessionId && activeIsAuthenticated) {
+                if (activeContext) {
                     const link = document.getElementById('sessionLink');
-                    link.href = `/session-detail.html?id=${activeSessionId}`;
+                    link.href = `/sessions/${activeContext.groupKey}/${activeContext.date}/details.html`;
                     link.style.display = 'inline-block';
                 }
                 document.getElementById('step-done').style.display = 'block';
