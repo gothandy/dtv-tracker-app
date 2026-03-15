@@ -517,6 +517,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     let newProfiles = 0;
     let updatedRecords = 0;
     let noPhotoTagged = 0;
+    let firstAiderTagged = 0;
 
     // Step 1: Add missing regulars
     const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
@@ -601,10 +602,33 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       }
     }
 
-    console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto`);
+    // Step 4: Tag #FirstAider on entries where volunteer has a valid First Aid Certificate
+    // (Type = "First Aid Certificate", Status = "Expires", expiry date is after the session date)
+    const sessionDate = new Date(spSession.Date);
+    const firstAiderIds = new Set<number>();
+    for (const r of rawRecords) {
+      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      if (pid !== undefined && r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date) {
+        if (new Date(r.Date) > sessionDate) firstAiderIds.add(pid);
+      }
+    }
+
+    for (const entry of sessionEntries) {
+      const vid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+      if (vid === undefined) continue;
+      if (!firstAiderIds.has(vid)) continue;
+      const notes = entry.Notes || '';
+      if (!/\#FirstAider\b/i.test(notes)) {
+        const updatedNotes = notes ? `${notes} #FirstAider` : '#FirstAider';
+        await entriesRepository.updateFields(entry.ID, { Notes: updatedNotes });
+        firstAiderTagged++;
+      }
+    }
+
+    console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider`);
     res.json({
       success: true,
-      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged }
+      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged }
     });
   } catch (error: any) {
     console.error('Error refreshing session:', error);
@@ -613,6 +637,41 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       error: 'Failed to refresh session',
       message: error.message
     });
+  }
+});
+
+router.delete('/sessions/:group/:date/unchecked-entries', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+
+    const [rawGroups, rawSessions, rawEntries] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll(),
+      entriesRepository.getAll()
+    ]);
+
+    const spGroup = findGroupByKey(rawGroups, groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const sessionEntries = rawEntries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+    const unchecked = sessionEntries.filter(e => !e.Checked);
+
+    await Promise.all(unchecked.map(e => entriesRepository.delete(e.ID)));
+
+    res.json({ success: true, data: { deleted: unchecked.length } });
+  } catch (error: any) {
+    console.error('Error deleting unchecked entries:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete entries', message: error.message });
   }
 });
 

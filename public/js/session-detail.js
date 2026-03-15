@@ -65,8 +65,7 @@ function updateUserActionButtons() {
     if (uploadBtn) {
         if (myEntries.length > 0) {
             uploadBtn.innerHTML = `<a href="/upload.html?entryId=${myEntries[0].id}" class="btn-action" title="Upload photos" style="text-decoration:none;">
-                <img src="/svg/uploadphoto.svg" style="width:1em;height:1em;filter:brightness(0) invert(1);vertical-align:middle;">
-                Upload
+                <img src="/svg/uploadphoto.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Upload photos">
             </a>`;
         } else {
             uploadBtn.innerHTML = '';
@@ -244,6 +243,32 @@ async function toggleCheckin(entryId, checkbox) {
         updateEntriesHeading();
     } catch {
         checkbox.checked = !checkbox.checked;
+    }
+}
+
+async function deleteUncheckedEntries() {
+    const unchecked = sessionEntries.filter(e => !e.checkedIn);
+    if (!unchecked.length) {
+        alert('No unchecked entries to remove.');
+        return;
+    }
+    const msg = `Remove ${unchecked.length} unchecked entr${unchecked.length === 1 ? 'y' : 'ies'}?\n\n` +
+        `This deletes the registrations of everyone who hasn't been checked in — useful at the end of a session to remove no-shows.\n\n` +
+        `Checked-in entries are not affected.`;
+    if (!confirm(msg)) return;
+
+    try {
+        const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/unchecked-entries`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Delete failed');
+        }
+        loadSessionDetail();
+    } catch (error) {
+        console.error('Error deleting unchecked entries:', error);
+        alert(error.message || 'Failed to remove unchecked entries.');
     }
 }
 
@@ -499,7 +524,8 @@ async function loadSessionDetail() {
                         <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
                             <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
                         </button>
-                        <button class="btn-action checkin-only" onclick="openHoursModal()">Set Hours</button>
+                        <button class="btn-action checkin-only btn-action-danger" onclick="deleteUncheckedEntries()" title="Remove no-shows (delete unchecked entries)"><img src="/svg/trash.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;"></button>
+                        <button class="btn-action checkin-only" onclick="openHoursModal()" title="Set default hours"><img src="/svg/clock.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Set Hours"></button>
                         <a class="btn-action checkin-only" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
                             <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
                         </a>
