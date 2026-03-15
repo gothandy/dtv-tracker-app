@@ -166,6 +166,10 @@ app.get('/media/:group/:date/cover.jpg', async (req, res) => {
     }
 });
 
+// Policy pages — public, required for Google OAuth consent screen
+app.get('/privacy.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/terms.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+
 // Everything below requires login
 app.use(requireAuth);
 

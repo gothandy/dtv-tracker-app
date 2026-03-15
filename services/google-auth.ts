@@ -13,6 +13,7 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USER_URL  = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
 export function getGoogleRedirectUri(req: { protocol: string; get(name: string): string | undefined }): string {
+  if (process.env.GOOGLE_REDIRECT_URI) return process.env.GOOGLE_REDIRECT_URI;
   return `${req.protocol}://${req.get('host')}/auth/google/callback`;
 }
 

@@ -168,7 +168,13 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
 function createFooter() {
     document.body.insertAdjacentHTML('beforeend', `
         <footer class="site-footer">
-            <p>Dean Trail Volunteers &copy; ${new Date().getFullYear()}</p>
+            <p>Dean Trail Volunteers &mdash; Registered Charity 1208988</p>
+            <p class="footer-links">
+                <a href="/privacy.html">Privacy Policy</a>
+                <span class="footer-sep">&middot;</span>
+                <a href="/terms.html">Terms of Use</a>
+            </p>
+            <p>&copy; ${new Date().getFullYear()} Dean Trail Volunteers</p>
         </footer>
     `);
 }
