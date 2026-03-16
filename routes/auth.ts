@@ -10,6 +10,17 @@ import { profileSlug } from '../services/data-layer';
 
 const router: Router = express.Router();
 
+// Server-side store for Facebook OAuth CSRF state. Using a Map rather than the session
+// because on Android the Facebook app intercepts the OAuth redirect and the callback
+// lands in Chrome with a different session cookie than the PWA WebView that started the flow.
+const pendingFacebookStates = new Map<string, { returnTo?: string; expiresAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of pendingFacebookStates) {
+    if (val.expiresAt < now) pendingFacebookStates.delete(key);
+  }
+}, 60_000);
+
 // GET /auth/login — redirect to Microsoft login
 router.get('/login', async (req: Request, res: Response) => {
   try {
@@ -185,11 +196,11 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // GET /auth/facebook/login — redirect to Facebook OAuth
 router.get('/facebook/login', (req: Request, res: Response) => {
   const returnTo = req.query.returnTo as string | undefined;
-  if (returnTo && returnTo.startsWith('/')) {
-    req.session.returnTo = returnTo;
-  }
   const state = randomBytes(16).toString('hex');
-  (req.session as any).oauthState = state;
+  pendingFacebookStates.set(state, {
+    returnTo: returnTo?.startsWith('/') ? returnTo : undefined,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  });
   const redirectUri = getFacebookRedirectUri(req);
   res.redirect(getFacebookAuthUrl(redirectUri, state));
 });
@@ -197,10 +208,12 @@ router.get('/facebook/login', (req: Request, res: Response) => {
 // GET /auth/facebook/callback — handle redirect from Facebook
 router.get('/facebook/callback', async (req: Request, res: Response) => {
   try {
-    // Verify CSRF state
-    const expectedState = (req.session as any).oauthState;
-    delete (req.session as any).oauthState;
-    if (!expectedState || req.query.state !== expectedState) {
+    // Verify CSRF state against server-side Map (not session) — the callback may arrive
+    // in a different browser context (e.g. Chrome) than the PWA WebView that initiated the flow.
+    const stateKey = req.query.state as string;
+    const pending = pendingFacebookStates.get(stateKey);
+    pendingFacebookStates.delete(stateKey);
+    if (!pending || pending.expiresAt < Date.now()) {
       res.redirect('/login.html?reason=invalid-state');
       return;
     }
@@ -233,9 +246,7 @@ router.get('/facebook/callback', async (req: Request, res: Response) => {
     }
 
     req.session.user = result.sessionUser;
-    const returnTo = req.session.returnTo || '/';
-    delete req.session.returnTo;
-    res.redirect(returnTo);
+    res.redirect(pending.returnTo || '/');
   } catch (error: any) {
     console.error('Error in Facebook auth callback:', error.message);
     res.redirect('/login.html?reason=not-approved');
