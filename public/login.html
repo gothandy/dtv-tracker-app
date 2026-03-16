@@ -5,16 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - DTV Tracker</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/common.js"></script>
     <style>
-        body { background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
-
-        .login-header {
-            background: var(--dark); color: white;
-            padding: 1.25rem 1.5rem;
-            display: flex; align-items: center; gap: 0.75rem;
-        }
-        .login-header img { height: 36px; }
-        .login-header h1 { font-size: 1.25rem; margin: 0; }
+        .login-btn { display: none !important; }
 
         .login-container {
             max-width: 480px; margin: 3rem auto; padding: 0 1.25rem; width: 100%;
@@ -61,10 +54,7 @@
     </style>
 </head>
 <body>
-    <div class="login-header">
-        <img src="/img/logo.png" alt="DTV">
-        <h1>DTV Tracker</h1>
-    </div>
+    <script>createHeader('Sign in', true);</script>
 
     <div class="login-container">
 
@@ -199,13 +189,6 @@
 
         init();
     </script>
-    <footer class="site-footer">
-        <p>Dean Trail Volunteers &mdash; Registered Charity 1208988</p>
-        <p class="footer-links">
-            <a href="/privacy.html">Privacy Policy</a>
-            <span class="footer-sep">&middot;</span>
-            <a href="/terms.html">Terms of Use</a>
-        </p>
-    </footer>
+    <script>createFooter();</script>
 </body>
 </html>
