@@ -449,6 +449,13 @@ async function loadProfile() {
         const response = await profileFetch;
 
         if (!response.ok) {
+            if (response.status === 403) {
+                const selfUrl = window.currentUser?.profileSlug
+                    ? `/profiles/${encodeURIComponent(window.currentUser.profileSlug)}/details.html`
+                    : '/index.html';
+                contentDiv.innerHTML = `<div class="empty-state"><p>You don't have permission to view this profile.</p><a href="${selfUrl}" class="btn-primary">Go back</a></div>`;
+                return;
+            }
             throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
 

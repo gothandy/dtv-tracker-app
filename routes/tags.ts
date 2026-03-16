@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+/// <reference path="../types/express-session.d.ts" />
 import { taxonomyClient } from '../services/taxonomy-client';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
@@ -29,6 +30,12 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
     const fyParam = req.query.fy as string | undefined;    // e.g. "FY2025"
     const groupParam = req.query.group as string | undefined;  // group key (lowercase)
     const profileParam = req.query.profile as string | undefined;  // profile slug
+
+    // Profile-scoped queries reveal individual volunteer activity — require authentication.
+    if (profileParam && !req.session.user) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
 
     const termSetId = process.env.TAXONOMY_TERM_SET_ID || null;
 

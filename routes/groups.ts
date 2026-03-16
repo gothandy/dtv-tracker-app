@@ -35,18 +35,45 @@ router.get('/groups', async (req: Request, res: Response) => {
     const groups = validateArray(rawGroups, validateGroup, 'Group');
     const regularsMap = groupRegularsByCrewId(rawRegulars);
 
-    const isAuthenticated = !!req.session.user;
+    const role = req.session.user?.role;
+    const isTrusted = !!req.session.user && role !== 'selfservice';
+    const selfServiceProfileIds = role === 'selfservice'
+      ? (req.session.user?.profileIds || [])
+      : [];
+
     const data: GroupResponse[] = groups.map(spGroup => {
       const group = convertGroup(spGroup);
       const regulars = regularsMap.get(group.sharePointId) || [];
+
+      if (isTrusted) {
+        return {
+          id: group.sharePointId,
+          key: (group.lookupKeyName || '').toLowerCase(),
+          displayName: group.displayName,
+          description: group.description,
+          eventbriteSeriesId: group.eventbriteSeriesId,
+          regularsCount: regulars.length,
+          regulars
+        };
+      }
+
+      // Self-service or public: hide regulars list, but tell self-service if they personally are one
+      const isCurrentUserRegular = selfServiceProfileIds.length > 0
+        ? rawRegulars.some(r =>
+            safeParseLookupId(r[GROUP_LOOKUP]) === group.sharePointId &&
+            selfServiceProfileIds.includes(safeParseLookupId(r[PROFILE_LOOKUP]) as number)
+          )
+        : undefined;
+
       return {
         id: group.sharePointId,
         key: (group.lookupKeyName || '').toLowerCase(),
         displayName: group.displayName,
         description: group.description,
         eventbriteSeriesId: group.eventbriteSeriesId,
-        regularsCount: isAuthenticated ? regulars.length : 0,
-        regulars: isAuthenticated ? regulars : []
+        regularsCount: 0,
+        regulars: [],
+        ...(isCurrentUserRegular !== undefined && { isCurrentUserRegular })
       };
     });
 
@@ -177,14 +204,27 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       } catch { /* media counts are optional */ }
     }
 
-    const isAuthenticated = !!req.session.user;
+    const role = req.session.user?.role;
+    const isTrusted = !!req.session.user && role !== 'selfservice';
+    const selfServiceProfileIds = role === 'selfservice'
+      ? (req.session.user?.profileIds || [])
+      : [];
+
+    const isCurrentUserRegular = selfServiceProfileIds.length > 0
+      ? rawRegulars.some(r =>
+          safeParseLookupId(r[GROUP_LOOKUP]) === groupId &&
+          selfServiceProfileIds.includes(safeParseLookupId(r[PROFILE_LOOKUP]) as number)
+        )
+      : undefined;
+
     const data: GroupDetailResponse = {
       id: group.sharePointId,
       key: (group.lookupKeyName || '').toLowerCase(),
       displayName: group.displayName,
       description: group.description,
       eventbriteSeriesId: group.eventbriteSeriesId,
-      regulars: isAuthenticated ? regulars : [],
+      regulars: isTrusted ? regulars : [],
+      ...(isCurrentUserRegular !== undefined && { isCurrentUserRegular }),
       financialYear: `${fy.startYear}-${fy.endYear}`,
       stats: {
         sessions: fySessionIds.size,

@@ -497,6 +497,15 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       return;
     }
 
+    // Self-service users may only view their own profile(s).
+    if (req.session.user?.role === 'selfservice') {
+      const allowedIds = req.session.user.profileIds || [];
+      if (!allowedIds.includes(spProfile.ID)) {
+        res.status(403).json({ success: false, error: 'Not permitted' });
+        return;
+      }
+    }
+
     const profile = convertProfile(spProfile);
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
@@ -646,6 +655,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       date: r.Date || ''
     }));
 
+    const isSelfService = req.session.user?.role === 'selfservice';
+
     const data: ProfileDetailResponse = {
       id: profile.id,
       slug: nameToSlug(profile.name),
@@ -660,12 +671,13 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       groupHours,
       entries: entryResponses,
       records: records.length > 0 ? records : undefined,
-      duplicates: duplicates.length > 0 ? duplicates : undefined,
-      linkedProfiles: profile.email
+      // duplicates and linkedProfiles expose other volunteers' names/emails — hidden from self-service
+      duplicates: isSelfService ? undefined : (duplicates.length > 0 ? duplicates : undefined),
+      linkedProfiles: isSelfService ? undefined : (profile.email
         ? (rawProfiles as any[])
             .filter((p: any) => p.ID !== spProfile.ID && p.Email?.toLowerCase() === profile.email!.toLowerCase())
             .map((p: any) => ({ id: p.ID, slug: profileSlug(p.Title, p.ID), name: p.Title || '' }))
-        : undefined
+        : undefined)
     };
 
     res.json({ success: true, data } as ApiResponse<ProfileDetailResponse>);

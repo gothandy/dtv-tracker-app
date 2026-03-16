@@ -212,7 +212,7 @@
                     <h3>${escapeHtml(group.displayName)}</h3>
                     ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
                     <div class="meta">
-                        <div class="meta-item"><strong>${group.regularsCount}</strong> regulars</div>
+                        ${group.regularsCount > 0 ? `<div class="meta-item"><strong>${group.regularsCount}</strong> regulars</div>` : ''}
                         <div class="meta-item"><strong>${sessionCount}</strong> sessions</div>
                         <div class="meta-item"><strong>${totalHours}</strong> hrs</div>
                     </div>

@@ -254,14 +254,17 @@ async function loadGroupDetail() {
             </button>`;
 
         const regulars = group.regulars || [];
-        const regularsSection = regulars.length > 0
-            ? `<div class="regulars-section">
+        let regularsSection = '';
+        if (regulars.length > 0) {
+            regularsSection = `<div class="regulars-section">
                     <h2>Regulars (${regulars.length})</h2>
                     <ul class="regulars-list">
                         ${regulars.map(r => `<li><a href="/profiles/${encodeURIComponent(r.slug)}/details.html">${escapeHtml(r.name)}</a></li>`).join('')}
                     </ul>
-               </div>`
-            : '';
+               </div>`;
+        } else if (group.isCurrentUserRegular === true) {
+            regularsSection = `<div class="regulars-section"><p>You are a regular volunteer for this group.</p></div>`;
+        }
 
         contentDiv.innerHTML = `
             <div class="group-detail">

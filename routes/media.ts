@@ -55,7 +55,11 @@ router.get('/media', async (req: Request, res: Response) => {
     const driveId = mediaDriveId();
     const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${date}`);
     const isAuthenticated = !!req.session?.user;
-    const data = isAuthenticated ? photos : photos.filter(p => p.isPublic !== false);
+    const data = isAuthenticated
+      ? photos
+      : photos
+          .filter(p => p.isPublic !== false)
+          .map(({ name, webUrl, ...rest }) => rest); // strip uploader-name-containing fields from public response
     res.json({ success: true, data });
   } catch (error: any) {
     console.error('Error listing photos:', error);

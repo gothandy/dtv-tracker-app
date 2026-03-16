@@ -71,9 +71,9 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
         next();
         return;
       }
-      // Own profiles — allow primary and any linked profiles (same email, multiple profiles)
-      // The route handler returns public-safe data; ownership of the email is enforced at login
-      if (/^\/profiles\/[^/]+$/.test(req.path)) {
+      // Own profile detail — profile slugs always end in a numeric ID (e.g. john-doe-123).
+      // Excludes word-only paths like /profiles/export. Ownership enforced in the route handler.
+      if (/^\/profiles\/[^/]+-\d+$/.test(req.path)) {
         next();
         return;
       }

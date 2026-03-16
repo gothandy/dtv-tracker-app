@@ -18,6 +18,7 @@ export interface GroupResponse {
   eventbriteSeriesId?: string;
   regularsCount: number;
   regulars: GroupRegularResponse[];
+  isCurrentUserRegular?: boolean;
 }
 
 export interface SessionResponse {
@@ -122,6 +123,7 @@ export interface GroupDetailResponse {
   description?: string;
   eventbriteSeriesId?: string;
   regulars: GroupRegularResponse[];
+  isCurrentUserRegular?: boolean;
   financialYear: string;
   stats: {
     sessions: number;
