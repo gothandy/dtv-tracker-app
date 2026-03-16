@@ -198,26 +198,42 @@
                 document.getElementById('trustedBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
 
-            // On Android, clicking the Facebook button often routes to the Facebook native app
-            // (or a background Chrome tab), so the OAuth result never returns to this page.
-            // Fix: open the OAuth in a new tab via window.open() so this page stays alive and
-            // can detect completion via BroadcastChannel or /auth/me polling.
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
             const facebookBtn = document.getElementById('facebookBtn');
             if (facebookBtn) {
-                facebookBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const newWin = window.open(facebookBtn.href);
-                    if (newWin) {
-                        startFacebookAuthPolling(returnTo || '/');
-                    } else {
-                        // Popup blocked — fall back to normal navigation with localStorage handoff.
+                if (isStandalone) {
+                    // PWA standalone: the entire site is in scope so normal navigation traps the
+                    // OAuth inside the PWA WebView. Force it into a Chrome Custom Tab by setting
+                    // target="_blank" — standalone PWAs have no tab concept so _blank always opens
+                    // externally. The CCT shares Chrome's cookie store with the PWA, so polling
+                    // detects the session. BroadcastChannel is a faster fallback if it crosses contexts.
+                    facebookBtn.target = '_blank';
+                    facebookBtn.rel = 'noopener';
+                    facebookBtn.addEventListener('click', () => {
                         localStorage.setItem('pendingFacebookAuth', JSON.stringify({
                             ts: Date.now(),
                             returnTo: returnTo || '/'
                         }));
-                        window.location.href = facebookBtn.href;
-                    }
-                });
+                        startFacebookAuthPolling(returnTo || '/');
+                    });
+                } else {
+                    // Chrome: open OAuth in a new tab so this page stays alive for
+                    // BroadcastChannel / polling to detect completion.
+                    facebookBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const newWin = window.open(facebookBtn.href);
+                        if (newWin) {
+                            startFacebookAuthPolling(returnTo || '/');
+                        } else {
+                            // Popup blocked — fall back to normal navigation.
+                            localStorage.setItem('pendingFacebookAuth', JSON.stringify({
+                                ts: Date.now(),
+                                returnTo: returnTo || '/'
+                            }));
+                            window.location.href = facebookBtn.href;
+                        }
+                    });
+                }
             }
         }
 
