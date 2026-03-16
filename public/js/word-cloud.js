@@ -35,7 +35,7 @@ function createWordCloud(container, options = {}) {
         card.innerHTML = `
             <div class="word-cloud-header">
                 <h2>${escapeHtml(title)}</h2>
-                <button class="word-cloud-csv-btn" title="Download CSV">Download CSV</button>
+                <button class="word-cloud-csv-btn trusted-only" title="Download CSV">Download CSV</button>
             </div>
             <div class="word-cloud-body"></div>`;
         card.querySelector('.word-cloud-csv-btn').addEventListener('click', () => downloadCsv(lastItems, title));
