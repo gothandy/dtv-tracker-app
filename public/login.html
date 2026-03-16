@@ -198,21 +198,26 @@
                 document.getElementById('trustedBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
 
-            // In PWA standalone mode on Android, tapping the Facebook link triggers Android's
-            // app intent system which routes facebook.com to the native Facebook app. The OAuth
-            // callback then lands in Chrome rather than the PWA. We save the returnTo in
-            // localStorage so polling/BroadcastChannel can complete the login when we return.
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-            if (isStandalone) {
-                const facebookBtn = document.getElementById('facebookBtn');
-                if (facebookBtn) {
-                    facebookBtn.addEventListener('click', () => {
+            // On Android, clicking the Facebook button often routes to the Facebook native app
+            // (or a background Chrome tab), so the OAuth result never returns to this page.
+            // Fix: open the OAuth in a new tab via window.open() so this page stays alive and
+            // can detect completion via BroadcastChannel or /auth/me polling.
+            const facebookBtn = document.getElementById('facebookBtn');
+            if (facebookBtn) {
+                facebookBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const newWin = window.open(facebookBtn.href);
+                    if (newWin) {
+                        startFacebookAuthPolling(returnTo || '/');
+                    } else {
+                        // Popup blocked — fall back to normal navigation with localStorage handoff.
                         localStorage.setItem('pendingFacebookAuth', JSON.stringify({
                             ts: Date.now(),
                             returnTo: returnTo || '/'
                         }));
-                    });
-                }
+                        window.location.href = facebookBtn.href;
+                    }
+                });
             }
         }
 
