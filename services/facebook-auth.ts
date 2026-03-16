@@ -10,7 +10,11 @@
  * Requires env vars: FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
  */
 
-const FACEBOOK_AUTH_URL  = 'https://www.facebook.com/v19.0/dialog/oauth';
+// Use m.facebook.com to prevent Android's intent system routing this to the Facebook
+// native app (which claims www.facebook.com but not m.facebook.com). Without this,
+// the OAuth callback lands in the Facebook app's own WebView — a different cookie context
+// from Chrome — so the session is never visible to the browser that started the flow.
+const FACEBOOK_AUTH_URL  = 'https://m.facebook.com/v19.0/dialog/oauth';
 const FACEBOOK_TOKEN_URL = 'https://graph.facebook.com/v19.0/oauth/access_token';
 const FACEBOOK_USER_URL  = 'https://graph.facebook.com/me';
 
