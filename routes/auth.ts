@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import axios from 'axios';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHmac } from 'crypto';
 /// <reference path="../types/express-session.d.ts" />
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../services/auth-config';
 import { getGoogleAuthUrl, getGoogleRedirectUri, exchangeGoogleCode } from '../services/google-auth';
@@ -10,16 +10,31 @@ import { profileSlug } from '../services/data-layer';
 
 const router: Router = express.Router();
 
-// Server-side store for Facebook OAuth CSRF state. Using a Map rather than the session
-// because on Android the Facebook app intercepts the OAuth redirect and the callback
-// lands in Chrome with a different session cookie than the PWA WebView that started the flow.
-const pendingFacebookStates = new Map<string, { returnTo?: string; expiresAt: number }>();
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of pendingFacebookStates) {
-    if (val.expiresAt < now) pendingFacebookStates.delete(key);
+// HMAC-signed state for Facebook OAuth CSRF — stateless, works across multiple server instances.
+// The state encodes {returnTo, ts, nonce} signed with SESSION_SECRET so it can't be forged.
+const FB_STATE_SECRET = process.env.SESSION_SECRET || 'dtv-fb-state-secret';
+
+function signFacebookState(returnTo: string | undefined): string {
+  const payload = Buffer.from(JSON.stringify({ r: returnTo || '/', ts: Date.now(), n: randomBytes(8).toString('hex') })).toString('base64url');
+  const sig = createHmac('sha256', FB_STATE_SECRET).update(payload).digest('hex').slice(0, 16);
+  return `${payload}.${sig}`;
+}
+
+function verifyFacebookState(state: string): { returnTo: string } | null {
+  const dot = state.lastIndexOf('.');
+  if (dot === -1) return null;
+  const payload = state.slice(0, dot);
+  const sig = state.slice(dot + 1);
+  const expected = createHmac('sha256', FB_STATE_SECRET).update(payload).digest('hex').slice(0, 16);
+  if (sig !== expected) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (Date.now() - data.ts > 10 * 60 * 1000) return null; // 10-minute expiry
+    return { returnTo: data.r || '/' };
+  } catch {
+    return null;
   }
-}, 60_000);
+}
 
 // GET /auth/login — redirect to Microsoft login
 router.get('/login', async (req: Request, res: Response) => {
@@ -196,11 +211,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // GET /auth/facebook/login — redirect to Facebook OAuth
 router.get('/facebook/login', (req: Request, res: Response) => {
   const returnTo = req.query.returnTo as string | undefined;
-  const state = randomBytes(16).toString('hex');
-  pendingFacebookStates.set(state, {
-    returnTo: returnTo?.startsWith('/') ? returnTo : undefined,
-    expiresAt: Date.now() + 10 * 60 * 1000,
-  });
+  const state = signFacebookState(returnTo?.startsWith('/') ? returnTo : undefined);
   const redirectUri = getFacebookRedirectUri(req);
   res.redirect(getFacebookAuthUrl(redirectUri, state));
 });
@@ -208,12 +219,9 @@ router.get('/facebook/login', (req: Request, res: Response) => {
 // GET /auth/facebook/callback — handle redirect from Facebook
 router.get('/facebook/callback', async (req: Request, res: Response) => {
   try {
-    // Verify CSRF state against server-side Map (not session) — the callback may arrive
-    // in a different browser context (e.g. Chrome) than the PWA WebView that initiated the flow.
-    const stateKey = req.query.state as string;
-    const pending = pendingFacebookStates.get(stateKey);
-    pendingFacebookStates.delete(stateKey);
-    if (!pending || pending.expiresAt < Date.now()) {
+    // Verify CSRF state — signed token, no server-side storage needed, works across instances.
+    const pending = verifyFacebookState(req.query.state as string || '');
+    if (!pending) {
       res.redirect('/login.html?reason=invalid-state');
       return;
     }
@@ -246,7 +254,10 @@ router.get('/facebook/callback', async (req: Request, res: Response) => {
     }
 
     req.session.user = result.sessionUser;
-    res.redirect(pending.returnTo || '/');
+    // Redirect via login.html so BroadcastChannel can notify the PWA (which may be waiting
+    // on a different browser context after Android routed the Facebook OAuth to the Facebook app).
+    const dest = pending.returnTo || '/';
+    res.redirect(`/login.html?fbcomplete=1&returnTo=${encodeURIComponent(dest)}`);
   } catch (error: any) {
     console.error('Error in Facebook auth callback:', error.message);
     res.redirect('/login.html?reason=not-approved');

@@ -115,33 +115,64 @@
             const statusEl = document.getElementById('reasonMessage');
             statusEl.textContent = 'Completing sign-in… please wait.';
             statusEl.style.display = 'block';
+
+            // Primary: listen for BroadcastChannel message from the OAuth completion page.
+            // This works when the callback lands in Chrome (different context from the PWA)
+            // because both share the same Chrome profile / agent cluster on Android.
+            let bc = null;
+            try {
+                bc = new BroadcastChannel('dtv-auth');
+                bc.onmessage = (e) => {
+                    if (e.data?.type === 'auth-complete') {
+                        bc.close();
+                        clearInterval(interval);
+                        window.location.href = e.data.returnTo || pendingReturnTo || '/';
+                    }
+                };
+            } catch {}
+
+            // Fallback: poll /auth/me in case BroadcastChannel isn't supported or misses.
             const interval = setInterval(async () => {
                 try {
                     const res = await fetch('/auth/me');
                     const data = await res.json();
                     if (data.authenticated) {
+                        if (bc) bc.close();
                         clearInterval(interval);
                         window.location.href = pendingReturnTo || '/';
                     }
-                } catch {} // ignore transient network errors while polling
+                } catch {}
             }, 1000);
-            setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+            setTimeout(() => { clearInterval(interval); if (bc) bc.close(); }, 5 * 60 * 1000);
         }
 
         function init() {
             const params = new URLSearchParams(window.location.search);
-            const reason = params.get('reason');
             const returnTo = params.get('returnTo');
 
-            // If a Facebook auth was started in standalone mode (see below), resume polling
-            // when login.html reloads after the OAuth navigation completes or returns.
+            // Facebook OAuth completion — the callback redirects here so BroadcastChannel
+            // can notify the waiting PWA, then we navigate to the destination.
+            if (params.get('fbcomplete') === '1') {
+                const dest = returnTo?.startsWith('/') ? returnTo : '/';
+                try {
+                    const bc = new BroadcastChannel('dtv-auth');
+                    bc.postMessage({ type: 'auth-complete', returnTo: dest });
+                    setTimeout(() => bc.close(), 2000);
+                } catch {}
+                window.location.replace(dest);
+                return;
+            }
+
+            // If a Facebook auth was started in standalone mode (see below), resume waiting
+            // when login.html reloads after the OAuth navigation returns.
             const pending = JSON.parse(localStorage.getItem('pendingFacebookAuth') || 'null');
             if (pending && Date.now() - pending.ts < 5 * 60 * 1000) {
                 localStorage.removeItem('pendingFacebookAuth');
                 startFacebookAuthPolling(pending.returnTo);
-                return; // don't process reason/returnTo params while polling
+                return;
             }
 
+            const reason = params.get('reason');
             if (reason && reasons[reason]) {
                 const email = params.get('email');
                 const el = document.getElementById('reasonMessage');
@@ -155,13 +186,10 @@
                 document.getElementById('trustedBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
 
-            // In PWA standalone mode on Android, tapping the Facebook link causes Android to
-            // route the navigation to the native Facebook app (if installed) via the app intent
-            // system. The OAuth callback then lands in system Chrome rather than back in the PWA.
-            // We let this happen naturally — Chrome and the PWA share the same cookie store, so
-            // the session created in Chrome is visible to the PWA. We persist the auth intent to
-            // localStorage so that when login.html reloads (after the navigation returns), polling
-            // starts automatically and detects the completed session.
+            // In PWA standalone mode on Android, tapping the Facebook link triggers Android's
+            // app intent system which routes facebook.com to the native Facebook app. The OAuth
+            // callback then lands in Chrome rather than the PWA. We save the returnTo in
+            // localStorage so polling/BroadcastChannel can complete the login when we return.
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
             if (isStandalone) {
                 const facebookBtn = document.getElementById('facebookBtn');
@@ -171,9 +199,6 @@
                             ts: Date.now(),
                             returnTo: returnTo || '/'
                         }));
-                        // Normal navigation proceeds — no window.open(), no preventDefault().
-                        // Android handles the facebook.com redirect via the app or a CCT.
-                        // Either way the session ends up in the shared Chrome cookie store.
                     });
                 }
             }
