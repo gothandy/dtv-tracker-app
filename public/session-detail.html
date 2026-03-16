@@ -27,7 +27,7 @@
         </div>
         <div class="info-card unauth-only" style="margin-top: 1rem;">
             <div class="info-card-title">Privacy Protection</div>
-            <div class="info-card-body">Users are required to <a id="loginLink" href="/auth/login">log in</a> to access volunteer registrations.</div>
+            <div class="info-card-body">Users are required to <a id="loginLink" href="/login.html">log in</a> to access volunteer registrations.</div>
         </div>
     </div>
 
@@ -79,7 +79,7 @@
     <script src="/js/session-detail.js"></script>
     <script>
         const loginLink = document.getElementById('loginLink');
-        if (loginLink) loginLink.href = '/auth/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search);
+        if (loginLink) loginLink.href = '/login.html?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search);
     </script>
 </body>
 </html>

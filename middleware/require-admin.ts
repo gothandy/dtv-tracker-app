@@ -26,7 +26,7 @@ const SELFSERVICE_ALLOWED_PATTERNS = [
 // blocked to protect other volunteers' personal data (GDPR).
 const SELFSERVICE_ALLOWED_GET_PATTERNS = [
   /^\/stats/,
-  /^\/sessions/,                       // session list + detail — handler filters entries to own-only
+  /^\/sessions(?!\/export)/,            // session list + detail — handler filters entries to own-only; excludes /sessions/export
   /^\/groups/,
   /^\/tags/,
   /^\/media/,

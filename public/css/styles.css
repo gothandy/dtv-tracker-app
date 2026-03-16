@@ -64,6 +64,11 @@ body[data-role="selfservice"] .auth-link { pointer-events: none; opacity: 0.5; c
 /* Self-service only: hidden by default, shown only for selfservice role */
 .selfservice-only { display: none !important; }
 body[data-role="selfservice"] .selfservice-only { display: revert !important; }
+/* Trusted only: visible for admin/checkin/readonly; hidden for public and self-service */
+.trusted-only { display: none !important; }
+body[data-role="admin"] .trusted-only,
+body[data-role="checkin"] .trusted-only,
+body[data-role="readonly"] .trusted-only { display: revert !important; }
 
 /* === Base === */
 * { margin: 0; padding: 0; box-sizing: border-box; }

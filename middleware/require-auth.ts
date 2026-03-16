@@ -30,5 +30,5 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   // Page requests get redirected to login
   req.session.returnTo = req.originalUrl;
-  res.redirect('/auth/login');
+  res.redirect('/login.html');
 }

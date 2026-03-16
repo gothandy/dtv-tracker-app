@@ -439,8 +439,10 @@ function displaySessions(sessions) {
     }
 
     countDiv.textContent = filtered.length;
+    const role = window.currentUser?.role;
+    const isTrusted = role === 'admin' || role === 'checkin' || role === 'readonly';
     renderSessionList(contentDiv, filtered, {
-        checkboxMode: advancedOpen,
+        checkboxMode: advancedOpen && isTrusted,
         checkedIds: selectedSessions,
         onCheckChange: (id, checked) => {
             if (checked) selectedSessions.add(id);
