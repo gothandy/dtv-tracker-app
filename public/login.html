@@ -121,10 +121,36 @@
             'no-email':      () => 'Your Facebook account doesn\'t have an email address we can use. Please try signing in with Google instead.',
         };
 
+        function startFacebookAuthPolling(pendingReturnTo) {
+            const statusEl = document.getElementById('reasonMessage');
+            statusEl.textContent = 'Completing sign-in… please wait.';
+            statusEl.style.display = 'block';
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch('/auth/me');
+                    const data = await res.json();
+                    if (data.authenticated) {
+                        clearInterval(interval);
+                        window.location.href = pendingReturnTo || '/';
+                    }
+                } catch {} // ignore transient network errors while polling
+            }, 1000);
+            setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+        }
+
         function init() {
             const params = new URLSearchParams(window.location.search);
             const reason = params.get('reason');
             const returnTo = params.get('returnTo');
+
+            // If a Facebook auth was started in standalone mode (see below), resume polling
+            // when login.html reloads after the OAuth navigation completes or returns.
+            const pending = JSON.parse(localStorage.getItem('pendingFacebookAuth') || 'null');
+            if (pending && Date.now() - pending.ts < 5 * 60 * 1000) {
+                localStorage.removeItem('pendingFacebookAuth');
+                startFacebookAuthPolling(pending.returnTo);
+                return; // don't process reason/returnTo params while polling
+            }
 
             if (reason && reasons[reason]) {
                 const email = params.get('email');
@@ -139,30 +165,25 @@
                 document.getElementById('trustedBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
 
-            // In PWA standalone mode, tapping the Facebook link causes Android to route the
-            // navigation to the native Facebook app (if installed) via the app intent system.
-            // The Facebook app handles OAuth but redirects the callback to system Chrome instead
-            // of back to the PWA, so the PWA appears to stall. Using window.open() forces a
-            // Custom Chrome Tab (CCT) which bypasses app intents and stays within Chrome.
+            // In PWA standalone mode on Android, tapping the Facebook link causes Android to
+            // route the navigation to the native Facebook app (if installed) via the app intent
+            // system. The OAuth callback then lands in system Chrome rather than back in the PWA.
+            // We let this happen naturally — Chrome and the PWA share the same cookie store, so
+            // the session created in Chrome is visible to the PWA. We persist the auth intent to
+            // localStorage so that when login.html reloads (after the navigation returns), polling
+            // starts automatically and detects the completed session.
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
             if (isStandalone) {
                 const facebookBtn = document.getElementById('facebookBtn');
                 if (facebookBtn) {
-                    facebookBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        window.open(facebookBtn.href);
-                        // Poll until the session becomes authenticated (OAuth completes in the CCT)
-                        const interval = setInterval(async () => {
-                            try {
-                                const res = await fetch('/auth/me');
-                                const data = await res.json();
-                                if (data.authenticated) {
-                                    clearInterval(interval);
-                                    window.location.href = returnTo || '/';
-                                }
-                            } catch {} // ignore transient network errors while polling
-                        }, 1000);
-                        setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+                    facebookBtn.addEventListener('click', () => {
+                        localStorage.setItem('pendingFacebookAuth', JSON.stringify({
+                            ts: Date.now(),
+                            returnTo: returnTo || '/'
+                        }));
+                        // Normal navigation proceeds — no window.open(), no preventDefault().
+                        // Android handles the facebook.com redirect via the app or a CCT.
+                        // Either way the session ends up in the shared Chrome cookie store.
                     });
                 }
             }

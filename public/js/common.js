@@ -2,6 +2,11 @@
  * Common UI components and utilities
  */
 
+// Strip legacy Facebook OAuth fragment (#_=_) from the URL
+if (window.location.hash === '#_=_') {
+    history.replaceState(null, '', window.location.href.replace('#_=_', ''));
+}
+
 // Inject favicon and manifest links into <head> (single source of truth)
 document.head.insertAdjacentHTML('beforeend',
     '<link rel="icon" type="image/png" href="/img/logo.png">' +

@@ -103,11 +103,13 @@ async function resolveVolunteerSession(email: string, displayName: string, oauth
 
   const primary = matchedProfiles[0];
 
-  // Detect if this email also has a trusted (Microsoft) account, and which role it would get
+  // Detect if this email also has a trusted (Microsoft) account, and which role it would get.
+  // Check the profile's linked User field (Microsoft username) as well as the Facebook email itself.
   let trustedRole: 'admin' | 'checkin' | undefined;
-  if (adminUsers.includes(email.toLowerCase())) {
+  const linkedMicrosoftEmail = primary.User?.toLowerCase();
+  if (adminUsers.includes(email.toLowerCase()) || (linkedMicrosoftEmail && adminUsers.includes(linkedMicrosoftEmail))) {
     trustedRole = 'admin';
-  } else if (profiles.some(p => p.User?.toLowerCase() === email.toLowerCase())) {
+  } else if (primary.User) {
     trustedRole = 'checkin';
   }
 
