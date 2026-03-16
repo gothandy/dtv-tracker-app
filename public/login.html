@@ -175,9 +175,21 @@
             const reason = params.get('reason');
             if (reason && reasons[reason]) {
                 const email = params.get('email');
-                const el = document.getElementById('reasonMessage');
-                el.textContent = reasons[reason](email);
-                el.style.display = 'block';
+                // If auth already completed in another context (e.g. Chrome after Android Facebook
+                // routing), redirect silently rather than showing a stale error message.
+                fetch('/auth/me').then(r => r.json()).then(data => {
+                    if (data.authenticated) {
+                        window.location.replace(returnTo && returnTo.startsWith('/') ? returnTo : '/');
+                        return;
+                    }
+                    const el = document.getElementById('reasonMessage');
+                    el.textContent = reasons[reason](email);
+                    el.style.display = 'block';
+                }).catch(() => {
+                    const el = document.getElementById('reasonMessage');
+                    el.textContent = reasons[reason](email);
+                    el.style.display = 'block';
+                });
             }
 
             if (returnTo && returnTo.startsWith('/')) {
@@ -203,6 +215,17 @@
                 }
             }
         }
+
+        // When the PWA returns from background without a page reload (e.g. after Android routes
+        // Facebook OAuth to Chrome), re-check localStorage for a pending auth so polling starts.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') return;
+            const pending = JSON.parse(localStorage.getItem('pendingFacebookAuth') || 'null');
+            if (pending && Date.now() - pending.ts < 5 * 60 * 1000) {
+                localStorage.removeItem('pendingFacebookAuth');
+                startFacebookAuthPolling(pending.returnTo);
+            }
+        });
 
         // Debug panel — activated by ?debug=1 in the URL
         if (new URLSearchParams(window.location.search).has('debug')) {
@@ -243,8 +266,10 @@
                 if (!p.google && !p.facebook) document.getElementById('personalCard').style.display = 'none';
             });
 
+
         init();
     </script>
+    <div style="text-align:center;padding:1rem;"><a href="?debug=1" style="font-size:0.75rem;color:var(--text-lighter)">debug</a></div>
     <script>createFooter();</script>
 </body>
 </html>
