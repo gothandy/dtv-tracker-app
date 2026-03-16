@@ -196,6 +196,17 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex: 1;
+    min-width: 0;
+}
+.nav-crumbs a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 1.5rem;
+}
+.nav-crumbs .breadcrumb-sep {
+    flex-shrink: 0;
 }
 .site-nav a {
     color: var(--green);
