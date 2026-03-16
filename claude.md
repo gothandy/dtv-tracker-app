@@ -42,7 +42,7 @@ Feature-complete volunteer tracking application with:
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: Google (volunteer) and Microsoft (staff) options with role descriptions ([public/login.html](public/login.html))
+- Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted staff) options with role descriptions; PWA standalone mode uses `window.open()` + `/auth/me` polling for Facebook login to work around Android app intent routing ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
@@ -192,11 +192,13 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Entries default Checked to false
 
 ### Permissions / Authorization
-- Five access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Self-Service** (volunteer Google login — own profile + session sign-up + photo upload), **Public** (unauthenticated — limited non-privacy view)
-- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by Profile `Email` field (Google login); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
+- Five access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Self-Service** (volunteer Google/Facebook login — own profile only + session sign-up + photo upload), **Public** (unauthenticated — limited non-privacy view)
+- **"Trusted"** = Admin + Check In + Read Only (all Microsoft-auth roles). Self-Service is explicitly **not** trusted — it has stricter restrictions than Read Only: cannot view other volunteers' profiles, entries, or the volunteers listing; owns its own data only.
+- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by Profile `Email` field (Google/Facebook login); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
 - Role computed at login, stored in session; Public has no session role (`body[data-role]` not set)
-- Backend: `requireAdmin` middleware in [middleware/require-admin.ts](middleware/require-admin.ts) enforces per-endpoint
-- Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.auth-only` (any logged-in user), `.unauth-only` (Public only), `.selfservice-only` (Self-Service only)
+- Backend: `requireAuth` middleware gates all API routes (whitelist of public paths); `requireAdmin` middleware enforces role-based rules; route handlers enforce ownership for self-service users (profile ID check on `GET /api/profiles/:slug` etc.)
+- Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only` (Admin + Check In + Read Only; hidden from Self-Service and Public), `.auth-only` (any logged-in user), `.unauth-only` (Public only), `.selfservice-only` (Self-Service only)
+- All login redirects (page redirects, 401 API responses) go to `/login.html` — never `/auth/login`
 - Full reference: [docs/permissions.md](docs/permissions.md)
 
 ### Error Handling
@@ -280,7 +282,7 @@ dtv-tracker-app/
 │   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
-│   ├── login.html       # Unified sign-in page: volunteer (Google) and staff (Microsoft) options with descriptions
+│   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted staff (Microsoft) options; PWA standalone Facebook fix
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
@@ -347,8 +349,10 @@ dtv-tracker-app/
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
 - [x] Volunteer media upload via authenticated entry ID (check-in+ clicks Upload on entry detail; navigates to `/upload.html?entryId=:id`; self-service volunteers can also upload from their profile or session page); accepts photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV); max 10 files, 10 MB each
 - [x] Upload completion screen: shows file count, review notice; link to session gallery
-- [x] Self-service volunteer login via Google OAuth — `Profile.Email` field controls access (set by admin/check-in); volunteers can view their profile, register for future sessions, and upload photos to their own entries
+- [x] Self-service volunteer login via Google and Facebook OAuth — `Profile.Email` field controls access (set by admin/check-in); volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level
 - [x] Volunteer sign-up for sessions (self-service role): own profile only, future sessions only, duplicate prevention
+- [x] Self-service privacy hardening: regulars list hidden on group pages (shows "You are a regular" message if applicable); profile slugs require numeric ID suffix to prevent path confusion; `GET /api/tags/hours-by-taxonomy?profile=` requires authentication; media `name`/`webUrl` (contain uploader PII) stripped from public API responses
+- [x] Facebook login in PWA standalone mode (Android): uses `window.open()` to force a Chrome Custom Tab instead of triggering Android's app intent system (which routes to native Facebook app and loses the session context); polls `/auth/me` every second to detect login completion
 - [x] Session media storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure); capture date extracted from EXIF (images) or MP4/MOV container metadata (videos)
 - [x] Session gallery with lightbox viewer on session detail page; videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect); public users restricted to `IsPublic` items
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)

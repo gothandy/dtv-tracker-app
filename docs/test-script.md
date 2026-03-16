@@ -18,11 +18,12 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/groups.html` loads without redirect; regulars count shows 0
 - [ ] Unauthenticated visit to `/groups/:key/detail.html` loads without redirect; regulars section hidden
 - [ ] Unauthenticated visit to `/sessions/:group/:date/details.html` loads; entries section and free parking card hidden
-- [ ] Unauthenticated visit to `/volunteers.html` redirects to `/auth/login`
-- [ ] Unauthenticated visit to `/profiles/:slug/details.html` redirects to `/auth/login`
+- [ ] Unauthenticated visit to `/volunteers.html` redirects to `/login.html`
+- [ ] Unauthenticated visit to `/profiles/:slug/details.html` redirects to `/login.html`
 - [ ] Unauthenticated `GET /api/entries/recent` returns 401
-- [ ] `/auth/login` redirects to Microsoft login page
-- [ ] Successful login redirects back to `/` (or originally requested page)
+- [ ] Unauthenticated API 401 response (from `apiFetch` in common.js) redirects to `/login.html?returnTo=...` not `/auth/login`
+- [ ] `/login.html` shows Google, Facebook, and Microsoft login options
+- [ ] Successful Microsoft login redirects back to `/` (or originally requested page via `returnTo`)
 - [ ] Click Logout — session cleared, redirected to Microsoft logout
 - [ ] API key auth: `POST /api/eventbrite/event-and-attendee-update` with valid `X-Api-Key` succeeds without session
 - [ ] Invalid/missing API key returns 401
@@ -49,10 +50,33 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Read Only: entry detail — checked in and hours controls visible but disabled
 - [ ] Read Only: profile detail — edit button hidden, regular checkboxes disabled
 - [ ] Read Only: any POST/PATCH/DELETE API call returns 403 "Read only access"
+- [ ] Read Only: `GET /api/sessions/export` returns 403 (GDPR — trusted only)
 - [ ] Check In Only: `DELETE /api/sessions/:group/:date` returns 403
 - [ ] Check In Only: `GET /api/sessions/export` returns 403 (GDPR)
 - [ ] Check In Only: admin page shows only Icon Legend section
 - [ ] `/auth/me` returns `role: "admin"` or `role: "checkin"` based on env var
+- [ ] **Self-Service user** (profile has matching `Email` field, Google/Facebook login): no admin/check-in/edit controls visible
+- [ ] Self-Service: sessions page loads; CSV download button and session checkboxes **not shown** (trusted-only)
+- [ ] Self-Service: Advanced section on sessions page still functional (tag filter, group filter work)
+- [ ] Self-Service: groups page shows zero regulars count; group detail page shows **no regulars list**
+- [ ] Self-Service: group detail shows "You are a regular volunteer for this group" message if applicable
+- [ ] Self-Service: visiting own profile detail page loads and shows own data
+- [ ] Self-Service: visiting another volunteer's profile — API returns 403; page shows "You don't have permission to view this profile" with back link (not a blank error)
+- [ ] Self-Service: volunteers listing page is blocked — API returns 403 (not 200 with empty list)
+- [ ] Self-Service: `GET /api/profiles` (volunteers list endpoint) returns 403
+- [ ] Self-Service: `GET /api/sessions/export` returns 403
+- [ ] Self-Service: `GET /api/records/export` returns 403
+- [ ] Self-Service: `GET /api/tags/hours-by-taxonomy?profile=some-name` returns 401 (auth required for profile param)
+- [ ] Self-Service: `GET /api/tags/hours-by-taxonomy` (no profile param) returns 200 — tag stats are public
+- [ ] Self-Service: own profile response does **not** include `duplicates` or `linkedProfiles` fields
+- [ ] Self-Service: can register for a future session (POST to `/api/sessions/:group/:date/entries` with own profileId)
+- [ ] Self-Service: registering for a session that already has their entry returns 409 (duplicate prevention)
+- [ ] Self-Service: cannot register another volunteer — `POST /api/sessions/.../entries` with a different profileId returns 403
+- [ ] Self-Service: can delete own entry; attempting to delete another volunteer's entry returns 403
+- [ ] Self-Service: Upload button visible on own entry detail; can upload photos
+- [ ] **Public API security — media PII**: `GET /api/media?sessionId=X` response does **not** contain `name` or `webUrl` fields (these embed uploader's name in the filename)
+- [ ] **Public API security — media PII**: authenticated `GET /api/media?sessionId=X` response **does** include `name` and `webUrl`
+- [ ] **PWA standalone Facebook login** (Android, installed PWA from home screen): tapping "Continue with Facebook" opens a Chrome Custom Tab (not the native Facebook app); after completing Facebook login the PWA navigates to the dashboard without stalling
 
 ### H2. Create group
 - [ ] Groups page → "+" button → modal with Key (required), Display Name, Description

@@ -1,5 +1,36 @@
 # Development Progress
 
+## Session: 2026-03-16 (Security audit — self-service privacy hardening, Facebook PWA login, login redirects)
+
+### Completed Tasks
+
+#### Self-service volunteer data privacy — backend hardening ✓
+- `GET /api/profiles/:slug` — added ownership check: self-service users get 403 if the profile ID is not in `req.session.user.profileIds`. Strips `duplicates` and `linkedProfiles` from response for self-service users.
+- `GET /api/groups`, `GET /api/groups/:key` — regulars list returned as empty array for self-service/public; `isCurrentUserRegular` flag added to response so the frontend can show "You are a regular" without exposing other volunteers' names.
+- `GET /api/tags/hours-by-taxonomy?profile=` — requires authentication; returns 401 without session (prevents enumerating individual volunteer activity via public endpoint).
+- `GET /api/media/*` — `name` and `webUrl` fields stripped from unauthenticated responses (these fields embed the uploader's name in the generated filename).
+- `middleware/require-admin.ts` — profile slug regex tightened from `/^\/profiles\/[^/]+$/` to `/^\/profiles\/[^/]+-\d+$/` (prevents `/profiles/export` from matching self-service GET allowlist); sessions pattern updated to `/^\/sessions(?!\/export)/` (blocks self-service access to sessions CSV export).
+
+#### Self-service volunteer data privacy — frontend hardening ✓
+- Sessions page: CSV download button and session checkboxes are now `.trusted-only` — hidden from Self-Service and Public. Advanced section (tag filter etc.) remains accessible.
+- Sessions page JS: checkbox rendering gated on `isTrusted` role check in `sessions.js`.
+- Group detail: regulars list hidden for non-trusted; shows "You are a regular volunteer for this group" if `group.isCurrentUserRegular === true`.
+- Groups listing: "0 regulars" suppressed (zero count hidden for non-trusted).
+- Profile detail: graceful 403 handling with "You don't have permission" message and back link (instead of empty/broken page).
+- Added `.trusted-only` CSS class to `styles.css`.
+
+#### Facebook login in PWA standalone mode (Android) ✓
+- `public/login.html` — detects `display-mode: standalone` and intercepts Facebook button click; uses `window.open()` (forces Chrome Custom Tab, bypasses Android app intent system) + polls `/auth/me` every 1s to detect session completion; navigates PWA to destination on success. Stops polling after 5 minutes. Regular browser flow unchanged.
+
+#### Login redirect standardisation ✓
+- All login redirects now go to `/login.html` (unified sign-in page):
+  - `middleware/require-auth.ts` — page redirect changed from `/auth/login` to `/login.html`
+  - `public/session-detail.html` — static `href` and dynamic JS href both updated
+  - `public/js/common.js` — `apiFetch` 401 redirect updated
+
+#### `types/api-responses.ts` ✓
+- Added `isCurrentUserRegular?: boolean` to `GroupResponse` and `GroupDetailResponse`.
+
 ## Session: 2026-03-10 (Sessions CSV download, Eventbrite session name fix)
 
 ### Completed Tasks
