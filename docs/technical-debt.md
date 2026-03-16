@@ -229,6 +229,19 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
+## Facebook OAuth — Android Intent Interception
+**Priority**: Low | **Effort**: None (current approach works)
+
+The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to the Facebook native app. This is a community-discovered workaround, not a documented Meta API guarantee. If Facebook changes its Android intent filter to claim `m.facebook.com`, the problem would recur.
+
+**Known risk**: Facebook occasionally updates its app intent filters. If users report Facebook login failing again on Android in the future, the first thing to check is whether the intent filter change has happened — test by noting whether the Facebook web dialog appears in Chrome or the native app opens.
+
+**Session_secret**: The HMAC-signed OAuth state uses `SESSION_SECRET` env var (falls back to a hardcoded string if not set). If `SESSION_SECRET` is not configured in Azure App Service, the fallback is consistent so login still works — but it is weaker. Worth ensuring `SESSION_SECRET` is set.
+
+**Layered fallbacks**: The Facebook login flow now has four overlapping completion mechanisms (BroadcastChannel, `/auth/me` polling, `pendingFacebookAuth` localStorage, `visibilitychange` listener). This complexity was earned through debugging, but means the flow is hard to reason about in isolation. If the OAuth approach is ever revisited, these layers should be pruned to only what's necessary.
+
+---
+
 ## Notes
 
 - Prioritise based on actual pain points, not theoretical concerns

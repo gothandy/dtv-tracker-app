@@ -42,7 +42,7 @@ Feature-complete volunteer tracking application with:
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted users) options with role descriptions; PWA standalone mode uses `window.open()` + `/auth/me` polling for Facebook login to work around Android app intent routing ([public/login.html](public/login.html))
+- Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted users) options with role descriptions; Facebook login uses `m.facebook.com` OAuth URL (bypasses Android intent routing to native app) + `target="_blank"` in PWA standalone (forces Chrome Custom Tab) + `window.open()` in Chrome (keeps login.html alive for BroadcastChannel/polling) ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
@@ -282,7 +282,7 @@ dtv-tracker-app/
 │   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
-│   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted users (Microsoft) options; PWA standalone Facebook fix
+│   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted users (Microsoft) options; Facebook uses m.facebook.com + target=_blank (PWA) / window.open (Chrome)
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
@@ -352,7 +352,7 @@ dtv-tracker-app/
 - [x] Self-service volunteer login via Google and Facebook OAuth — `Profile.Email` field controls access (set by admin/check-in); volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level
 - [x] Volunteer sign-up for sessions (self-service role): own profile only, future sessions only, duplicate prevention
 - [x] Self-service privacy hardening: regulars list hidden on group pages (shows "You are a regular" message if applicable); profile slugs require numeric ID suffix to prevent path confusion; `GET /api/tags/hours-by-taxonomy?profile=` requires authentication; media `name`/`webUrl` (contain uploader PII) stripped from public API responses
-- [x] Facebook login in PWA standalone mode (Android): uses `window.open()` to force a Chrome Custom Tab instead of triggering Android's app intent system (which routes to native Facebook app and loses the session context); polls `/auth/me` every second to detect login completion
+- [x] Facebook login on Android (Chrome + PWA standalone): `m.facebook.com` OAuth URL bypasses Android's intent filter for the native Facebook app; PWA uses `target="_blank"` to open a Chrome Custom Tab (CCT shares cookies with PWA); Chrome uses `window.open()` to keep login.html alive; BroadcastChannel + `/auth/me` polling detects session completion
 - [x] Session media storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure); capture date extracted from EXIF (images) or MP4/MOV container metadata (videos)
 - [x] Session gallery with lightbox viewer on session detail page; videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect); public users restricted to `IsPublic` items
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)

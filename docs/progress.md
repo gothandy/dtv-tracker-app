@@ -19,8 +19,18 @@
 - Profile detail: graceful 403 handling with "You don't have permission" message and back link (instead of empty/broken page).
 - Added `.trusted-only` CSS class to `styles.css`.
 
-#### Facebook login in PWA standalone mode (Android) ✓
-- `public/login.html` — detects `display-mode: standalone` and intercepts Facebook button click; uses `window.open()` (forces Chrome Custom Tab, bypasses Android app intent system) + polls `/auth/me` every 1s to detect session completion; navigates PWA to destination on success. Stops polling after 5 minutes. Regular browser flow unchanged.
+#### Facebook login on Android — full fix (Chrome + PWA standalone) ✓
+Root cause: Android's intent filter for the Facebook native app claims `www.facebook.com`, intercepting the OAuth navigation. The callback then lands in the Facebook app's own WebView (a different cookie context), so the session is never visible to Chrome or the PWA.
+
+**`services/facebook-auth.ts`** — changed OAuth base URL from `https://www.facebook.com/v19.0/dialog/oauth` to `https://m.facebook.com/v19.0/dialog/oauth`. The Facebook app's intent filter does not claim `m.facebook.com`, so the OAuth opens in Chrome instead.
+
+**`routes/auth.ts`** — replaced session-based CSRF state (broke on Azure multi-instance and across browser contexts) with HMAC-signed stateless tokens (`SESSION_SECRET` env var). Added `fbcomplete=1` redirect so the callback page can notify the waiting tab via BroadcastChannel before navigating to the destination.
+
+**`public/login.html`** — two-path Facebook click handler:
+- *Chrome (non-standalone)*: `window.open()` opens OAuth in a new tab; original login.html stays alive running BroadcastChannel listener + `/auth/me` polling.
+- *PWA standalone*: `target="_blank"` on the button forces it into a Chrome Custom Tab (standalone PWAs have no tab concept so `_blank` always opens externally). OAuth completes in Chrome CCT (which shares cookies with the PWA). BroadcastChannel + polling detects session.
+
+Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendingFacebookAuth` localStorage item provides a fallback if the page reloads mid-flow; `visibilitychange` listener restarts polling if the page resumes from background without a reload; `reason` param check calls `/auth/me` before showing an error (guards against stale error URLs).
 
 #### Login redirect standardisation ✓
 - All login redirects now go to `/login.html` (unified sign-in page):

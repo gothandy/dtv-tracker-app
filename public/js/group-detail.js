@@ -303,6 +303,12 @@ async function loadGroupDetail() {
         initEventbriteButtons(contentDiv);
         wordCloudController = null;
         currentFilter = getStoredFY();
+        // If the selected FY has no sessions in this group (e.g. early in a new FY),
+        // fall back to the most recent FY that does have data.
+        const fyKeysWithData = [...new Set(allSessions.map(s => s.financialYear).filter(k => k?.startsWith('FY')))].sort();
+        if (fyKeysWithData.length > 0 && !fyKeysWithData.includes(currentFilter)) {
+            currentFilter = fyKeysWithData[fyKeysWithData.length - 1];
+        }
         buildChart();
         displaySessions();
         refreshWordCloud();

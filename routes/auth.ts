@@ -216,45 +216,17 @@ router.get('/facebook/login', (req: Request, res: Response) => {
   res.redirect(getFacebookAuthUrl(redirectUri, state));
 });
 
-// Debug log ring buffer — records each Facebook callback attempt for diagnostics.
-interface FbDebugEntry {
-  ts: string;
-  step: string; // last step reached before redirect
-  stateOk: boolean;
-  email?: string;       // masked
-  profileFound?: boolean;
-  error?: string;
-}
-const fbDebugLog: FbDebugEntry[] = [];
-function addFbDebug(entry: FbDebugEntry) {
-  fbDebugLog.unshift(entry);
-  if (fbDebugLog.length > 20) fbDebugLog.pop();
-  console.log('[fb-debug]', JSON.stringify(entry));
-}
-function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  return `${local[0]}***@${domain}`;
-}
-
 // GET /auth/facebook/callback — handle redirect from Facebook
 router.get('/facebook/callback', async (req: Request, res: Response) => {
-  const debug: FbDebugEntry = { ts: new Date().toISOString(), step: 'start', stateOk: false };
   try {
     // Verify CSRF state — signed token, no server-side storage needed, works across instances.
     const pending = verifyFacebookState(req.query.state as string || '');
-    debug.stateOk = !!pending;
     if (!pending) {
-      debug.step = 'state-failed';
-      addFbDebug(debug);
       res.redirect('/login.html?reason=invalid-state');
       return;
     }
-    debug.step = 'state-ok';
 
     if (req.query.error) {
-      debug.step = 'facebook-error';
-      debug.error = String(req.query.error);
-      addFbDebug(debug);
       console.error('Facebook auth error:', req.query.error);
       res.redirect('/login.html?reason=not-approved');
       return;
@@ -262,66 +234,33 @@ router.get('/facebook/callback', async (req: Request, res: Response) => {
 
     const code = req.query.code as string;
     if (!code) {
-      debug.step = 'no-code';
-      addFbDebug(debug);
       res.redirect('/login.html?reason=not-approved');
       return;
     }
-    debug.step = 'code-ok';
 
     const redirectUri = getFacebookRedirectUri(req);
     const fbUser = await exchangeFacebookCode(code, redirectUri);
-    debug.step = 'exchange-ok';
 
     if (!fbUser.email) {
-      debug.step = 'no-email';
-      addFbDebug(debug);
       res.redirect('/login.html?reason=no-email');
       return;
     }
-    debug.email = maskEmail(fbUser.email);
-    debug.step = 'email-ok';
 
     const result = await resolveVolunteerSession(fbUser.email, fbUser.name, fbUser.id);
-    debug.profileFound = result.ok;
     if (!result.ok) {
-      debug.step = 'profile-not-found';
-      addFbDebug(debug);
       res.redirect(`/login.html?reason=not-approved&email=${encodeURIComponent(fbUser.email)}`);
       return;
     }
-    debug.step = 'profile-ok';
 
     req.session.user = result.sessionUser;
-    debug.step = 'complete';
-    addFbDebug(debug);
-    // Redirect via login.html so BroadcastChannel can notify the PWA (which may be waiting
-    // on a different browser context after Android routed the Facebook OAuth to the Facebook app).
+    // Redirect via login.html so BroadcastChannel can notify the waiting tab/PWA — the OAuth
+    // may have completed in a Chrome Custom Tab or separate browser context on Android.
     const dest = pending.returnTo || '/';
     res.redirect(`/login.html?fbcomplete=1&returnTo=${encodeURIComponent(dest)}`);
   } catch (error: any) {
-    debug.step = 'exception';
-    debug.error = error.message;
-    addFbDebug(debug);
     console.error('Error in Facebook auth callback:', error.message);
     res.redirect('/login.html?reason=not-approved');
   }
-});
-
-// GET /auth/facebook/debug — diagnostic log of recent callback attempts (API key protected)
-router.get('/facebook/debug', (req: Request, res: Response) => {
-  const apiKey = process.env.API_SYNC_KEY;
-  if (!apiKey || req.headers['x-api-key'] !== apiKey) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  res.json({
-    log: fbDebugLog,
-    server: {
-      secretSet: !!process.env.SESSION_SECRET,
-      uptimeSeconds: Math.floor(process.uptime()),
-    },
-  });
 });
 
 // ─── Shared ───────────────────────────────────────────────────────────────────

@@ -248,37 +248,6 @@
             }
         });
 
-        // Debug panel — activated by ?debug=1 in the URL
-        if (new URLSearchParams(window.location.search).has('debug')) {
-            const panel = document.createElement('div');
-            panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#111;color:#0f0;font:12px monospace;padding:0.5rem;max-height:40vh;overflow-y:auto;z-index:9999;';
-            document.body.appendChild(panel);
-            const log = (msg) => {
-                const line = document.createElement('div');
-                line.textContent = `${new Date().toISOString().slice(11,23)} ${msg}`;
-                panel.prepend(line);
-            };
-            const isStandaloneDebug = window.matchMedia('(display-mode: standalone)').matches;
-            log(`standalone: ${isStandaloneDebug}`);
-            log(`BroadcastChannel: ${'BroadcastChannel' in window}`);
-            const p = localStorage.getItem('pendingFacebookAuth');
-            log(`pendingFacebookAuth: ${p ? JSON.parse(p).ts : 'none'}`);
-            try {
-                const bc = new BroadcastChannel('dtv-auth');
-                bc.onmessage = (e) => log(`BC received: ${JSON.stringify(e.data)}`);
-                log('BC listening on dtv-auth');
-            } catch (e) { log(`BC error: ${e.message}`); }
-            const origFetch = window.fetch;
-            window.fetch = async (...args) => {
-                const res = await origFetch(...args);
-                if (String(args[0]).includes('/auth/me')) {
-                    const clone = res.clone();
-                    clone.json().then(d => log(`/auth/me: authenticated=${d.authenticated}`)).catch(() => {});
-                }
-                return res;
-            };
-        }
-
         fetch('/auth/providers')
             .then(r => r.json())
             .then(p => {
@@ -290,7 +259,6 @@
 
         init();
     </script>
-    <div style="text-align:center;padding:1rem;"><a href="?debug=1" style="font-size:0.75rem;color:var(--text-lighter)">debug</a></div>
     <script>createFooter();</script>
 </body>
 </html>
