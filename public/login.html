@@ -138,6 +138,34 @@
                 document.getElementById('facebookBtn').href = `/auth/facebook/login?returnTo=${encodeURIComponent(returnTo)}`;
                 document.getElementById('staffBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
+
+            // In PWA standalone mode, tapping the Facebook link causes Android to route the
+            // navigation to the native Facebook app (if installed) via the app intent system.
+            // The Facebook app handles OAuth but redirects the callback to system Chrome instead
+            // of back to the PWA, so the PWA appears to stall. Using window.open() forces a
+            // Custom Chrome Tab (CCT) which bypasses app intents and stays within Chrome.
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone) {
+                const facebookBtn = document.getElementById('facebookBtn');
+                if (facebookBtn) {
+                    facebookBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.open(facebookBtn.href);
+                        // Poll until the session becomes authenticated (OAuth completes in the CCT)
+                        const interval = setInterval(async () => {
+                            try {
+                                const res = await fetch('/auth/me');
+                                const data = await res.json();
+                                if (data.authenticated) {
+                                    clearInterval(interval);
+                                    window.location.href = returnTo || '/';
+                                }
+                            } catch {} // ignore transient network errors while polling
+                        }, 1000);
+                        setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+                    });
+                }
+            }
         }
 
         fetch('/auth/providers')
