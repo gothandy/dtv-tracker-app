@@ -57,7 +57,7 @@ body[data-role] .unauth-only { display: none !important; }
 /* Visible but non-clickable for unauthenticated visitors */
 .auth-link { pointer-events: none; opacity: 0.5; cursor: default; }
 body[data-role] .auth-link { pointer-events: auto; opacity: 1; cursor: pointer; }
-/* Self-service role: hide coordinator-only UI */
+/* Self-service role: hide trusted-only UI */
 body[data-role="selfservice"] .checkin-only { display: none !important; }
 body[data-role="selfservice"] .admin-only { display: none !important; }
 body[data-role="selfservice"] .auth-link { pointer-events: none; opacity: 0.5; cursor: default; }

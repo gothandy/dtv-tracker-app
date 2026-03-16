@@ -6,7 +6,7 @@ Design document for collecting and displaying photos taken at volunteer events.
 
 ## Overview
 
-Photos are taken at sessions by volunteers and staff on their phones. The feature needs to make uploading as frictionless as possible in a field setting, and store photos in a human-readable structure directly in SharePoint.
+Photos are taken at sessions by volunteers and trusted users on their phones. The feature needs to make uploading as frictionless as possible in a field setting, and store photos in a human-readable structure directly in SharePoint.
 
 ---
 
@@ -55,7 +55,7 @@ The primary upload path. A logged-in admin or check-in user opens an entry detai
 3. Browser navigates directly to `/upload/{CODE}` — no intermediate step
 4. Upload page validates the code, shows volunteer name and session
 5. For recent sessions (≤ 7 days old): a share icon lets the user share the URL via the native share sheet or copy to clipboard — so they can pass the link to the volunteer via WhatsApp/text
-6. Volunteer (or staff) selects photos and uploads — files land in `{groupKey}/{date}/`
+6. Volunteer (or trusted user) selects photos and uploads — files land in `{groupKey}/{date}/`
 
 **Code design:**
 - 4 random uppercase letters — 26⁴ = 456,976 combinations; negligible guessing risk with ≤20 active codes
@@ -141,7 +141,7 @@ MEDIA_LIBRARY_DRIVE_ID=   # Graph API Drive ID of the Media document library (no
 
 A **Photos** carousel below the session title shows thumbnails for any photos in the session's folder. Tap a thumbnail to open the lightbox viewer.
 
-The upload button has been moved to the **entry detail page** — staff navigate there for the specific volunteer and click Upload. This keeps session-detail lightweight and avoids a multi-step "generate → share → wait" flow. Photos taken by any volunteer or staff member for the same session all land in the same folder.
+The upload button has been moved to the **entry detail page** — trusted users navigate there for the specific volunteer and click Upload. This keeps session-detail lightweight and avoids a multi-step "generate → share → wait" flow. Photos taken by any volunteer or trusted user for the same session all land in the same folder.
 
 ### Upload Page (`/upload/:code`)
 

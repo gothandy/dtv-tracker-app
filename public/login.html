@@ -100,7 +100,7 @@
         <div class="login-option">
             <h3>Sign in with your DTV Teams Account</h3>
             <p>For dig leads, coordinators and admins — use your <strong>@dtv.org.uk</strong> Microsoft account.</p>
-            <a id="staffBtn" href="/auth/login" class="btn-signin">
+            <a id="trustedBtn" href="/auth/login" class="btn-signin">
                 <svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
                     <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
                     <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
@@ -136,7 +136,7 @@
             if (returnTo && returnTo.startsWith('/')) {
                 document.getElementById('googleBtn').href = `/auth/google/login?returnTo=${encodeURIComponent(returnTo)}`;
                 document.getElementById('facebookBtn').href = `/auth/facebook/login?returnTo=${encodeURIComponent(returnTo)}`;
-                document.getElementById('staffBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+                document.getElementById('trustedBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
 
             // In PWA standalone mode, tapping the Facebook link causes Android to route the

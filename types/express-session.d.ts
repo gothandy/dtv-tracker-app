@@ -10,7 +10,7 @@ declare module 'express-session' {
       profileSlug?: string;
       profileId?: number;       // set for checkin and selfservice; used for ownership enforcement
       profileIds?: number[];    // all profiles for this email (selfservice with multiple linked profiles)
-      hasStaffAccess?: boolean; // selfservice user whose email also matches a staff-level account
+      trustedRole?: 'admin' | 'checkin'; // selfservice user whose email also matches a trusted account; indicates which role
     } | undefined;
     returnTo: string | undefined;
   }

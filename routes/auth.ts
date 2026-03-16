@@ -103,10 +103,13 @@ async function resolveVolunteerSession(email: string, displayName: string, oauth
 
   const primary = matchedProfiles[0];
 
-  // Flag if this Google email also has a staff-level account (for the homepage warning)
-  const hasStaffAccess =
-    adminUsers.includes(email.toLowerCase()) ||
-    profiles.some(p => p.User?.toLowerCase() === email.toLowerCase());
+  // Detect if this email also has a trusted (Microsoft) account, and which role it would get
+  let trustedRole: 'admin' | 'checkin' | undefined;
+  if (adminUsers.includes(email.toLowerCase())) {
+    trustedRole = 'admin';
+  } else if (profiles.some(p => p.User?.toLowerCase() === email.toLowerCase())) {
+    trustedRole = 'checkin';
+  }
 
   return {
     ok: true,
@@ -118,7 +121,7 @@ async function resolveVolunteerSession(email: string, displayName: string, oauth
       profileSlug: profileSlug(primary.Title, primary.ID),
       profileId: primary.ID,
       profileIds: matchedProfiles.map(p => p.ID),
-      hasStaffAccess: hasStaffAccess || undefined,
+      trustedRole,
     },
   };
 }

@@ -42,7 +42,7 @@ Feature-complete volunteer tracking application with:
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted staff) options with role descriptions; PWA standalone mode uses `window.open()` + `/auth/me` polling for Facebook login to work around Android app intent routing ([public/login.html](public/login.html))
+- Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted users) options with role descriptions; PWA standalone mode uses `window.open()` + `/auth/me` polling for Facebook login to work around Android app intent routing ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
@@ -282,7 +282,7 @@ dtv-tracker-app/
 │   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
-│   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted staff (Microsoft) options; PWA standalone Facebook fix
+│   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted users (Microsoft) options; PWA standalone Facebook fix
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
