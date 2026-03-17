@@ -31,6 +31,7 @@ nul
 dist/
 build/
 *.tsbuildinfo
+public/build.json
 
 # Testing
 coverage/

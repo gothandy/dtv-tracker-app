@@ -140,6 +140,9 @@ A back button is probably the right approach — simpler, works well on mobile, 
 ## Homepage spinner
 While the cache is building a spinner would help usability.
 
+## Standardise Modal Close Button
+Add a consistent `[×]` close button to all modals (top-right corner). Currently modals use text buttons ("Cancel", "Close"). The About modal in `common.js` would be the first to adopt the pattern.
+
 ## Filters, Cards & Stats Consistency Review
 Review all list pages (groups, sessions, volunteers, group detail, profile detail) for consistency and usability:
 - Filter options and ordering (All / Last FY / This FY / Future where applicable)

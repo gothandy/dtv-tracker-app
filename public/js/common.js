@@ -174,9 +174,51 @@ function createFooter() {
     document.body.insertAdjacentHTML('beforeend', `
         <footer class="site-footer">
             <p>&copy; ${new Date().getFullYear()} <a href="https://www.deantrailvolunteers.org.uk" target="_blank" rel="noopener">Dean Trail Volunteers</a> &middot; Charity No. <a href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5243025" target="_blank" rel="noopener">1208988</a></p>
-            <p><a href="/privacy.html">Privacy Policy</a> &middot; <a href="/terms.html">Terms of Use</a></p>
+            <p><a href="/privacy.html">Privacy Policy</a> &middot; <a href="/terms.html">Terms of Use</a> &middot; <a href="#" id="about-link">About</a></p>
         </footer>
+        <div id="about-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+            <div style="background:var(--surface,#fff);border-radius:12px;padding:1.5rem;max-width:340px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+                <h3 style="margin:0 0 1rem;font-size:1.1rem;">DTV Tracker App</h3>
+                <p style="margin:0 0 0.5rem;font-size:0.9rem;">Build: <span id="about-build-link"></span></p>
+                <p style="margin:0 0 0.5rem;font-size:0.9rem;">GitHub: <a id="about-github-link" href="#" target="_blank" rel="noopener"></a></p>
+                <p style="margin:0 0 0.5rem;font-size:0.9rem;">Contact: <a href="mailto:admin@deantrailvolunteers.org.uk">admin@deantrailvolunteers.org.uk</a></p>
+                <p style="margin:0 0 1.25rem;font-size:0.9rem;">Licence: <a href="https://github.com/gothandy/dtv-tracker-app/blob/main/LICENSE" target="_blank" rel="noopener">MIT</a></p>
+                <button id="about-close" class="btn btn-secondary" style="width:100%;">Close</button>
+            </div>
+        </div>
     `);
+
+    document.getElementById('about-link').addEventListener('click', e => {
+        e.preventDefault();
+        fetch('/build.json')
+            .then(r => r.ok ? r.json() : null)
+            .then(info => {
+                const modal = document.getElementById('about-modal');
+                if (info) {
+                    const d = new Date(info.built);
+                    const date = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                    const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                    const buildLink = document.getElementById('about-build-link');
+                    buildLink.textContent = `${date} ${time}`;
+
+                    const githubLink = document.getElementById('about-github-link');
+                    githubLink.textContent = info.commit.slice(0, 7);
+                    githubLink.href = `https://github.com/gothandy/dtv-tracker-app/commit/${info.commit}`;
+                }
+                modal.style.display = 'flex';
+            })
+            .catch(() => {
+                document.getElementById('about-modal').style.display = 'flex';
+            });
+    });
+
+    document.getElementById('about-close').addEventListener('click', () => {
+        document.getElementById('about-modal').style.display = 'none';
+    });
+
+    document.getElementById('about-modal').addEventListener('click', e => {
+        if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+    });
 }
 
 /**

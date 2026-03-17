@@ -3,7 +3,8 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:docs.workato.com)",
-      "WebFetch(domain:groups.google.com)"
+      "WebFetch(domain:groups.google.com)",
+      "Bash(npm run:*)"
     ],
     "defaultMode": "plan"
   }
