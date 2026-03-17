@@ -1,5 +1,25 @@
 # Development Progress
 
+## Session: 2026-03-17 (Auth refactor — split routes/auth.ts into per-provider files)
+
+### Completed Tasks
+
+#### Auth route refactor ✓
+
+`routes/auth.ts` (270-line monolith) split into focused per-provider files:
+
+- **`routes/auth/dtv.ts`** — DTV Account (Entra ID / Microsoft) login and callback
+- **`routes/auth/google.ts`** — Google OAuth login and callback
+- **`routes/auth/facebook.ts`** — Facebook OAuth login and callback
+- **`routes/auth/index.ts`** — shared routes: `/logout`, `/providers`, `/me`; mounts the three provider sub-routers
+- **`services/personal-auth.ts`** — extracted shared personal account resolution logic (`resolvePersonalSession`): matches OAuth email against Profile.Email, computes `selfservice` role, detects linked DTV Account for `trustedRole`. Used by both Google and Facebook callbacks.
+
+No functional changes; all existing OAuth flows, session structure, and endpoint paths are identical.
+
+**Note — CSRF state regression**: The 2026-03-16 Facebook fix replaced session-based OAuth CSRF state with HMAC-signed stateless tokens (to fix Azure multi-instance failures). The refactor inadvertently reverted this: `routes/auth/facebook.ts` and `routes/auth/google.ts` both use session-based `req.session.oauthState` again. This is tracked in technical-debt.md.
+
+---
+
 ## Session: 2026-03-17 (Eventbrite date timezone bug, session date correction, sync concurrency lock)
 
 ### Completed Tasks

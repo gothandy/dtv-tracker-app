@@ -238,7 +238,7 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 **Known risk**: Facebook occasionally updates its app intent filters. If users report Facebook login failing again on Android in the future, the first thing to check is whether the intent filter change has happened — test by noting whether the Facebook web dialog appears in Chrome or the native app opens.
 
-**Session_secret**: The HMAC-signed OAuth state uses `SESSION_SECRET` env var (falls back to a hardcoded string if not set). If `SESSION_SECRET` is not configured in Azure App Service, the fallback is consistent so login still works — but it is weaker. Worth ensuring `SESSION_SECRET` is set.
+**CSRF state regression (2026-03-17 refactor)**: The 2026-03-16 Facebook fix replaced session-based CSRF state with HMAC-signed stateless tokens specifically because session-based state breaks on Azure multi-instance deployments. The 2026-03-17 auth refactor inadvertently reverted this: `routes/auth/facebook.ts` and `routes/auth/google.ts` now use `req.session.oauthState` again. On a single-instance deployment (current setup) this works fine. Only relevant if Azure is ever scaled to multiple instances.
 
 **Layered fallbacks**: The Facebook login flow now has four overlapping completion mechanisms (BroadcastChannel, `/auth/me` polling, `pendingFacebookAuth` localStorage, `visibilitychange` listener). This complexity was earned through debugging, but means the flow is hard to reason about in isolation. If the OAuth approach is ever revisited, these layers should be pruned to only what's necessary.
 
@@ -251,4 +251,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-17 (Eventbrite sync concurrency fix noted; date storage bug fixed)*
+*Last Updated: 2026-03-17 (Auth refactor: CSRF state regression noted; Eventbrite sync concurrency fix noted; date storage bug fixed)*

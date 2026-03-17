@@ -18,7 +18,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
-- Microsoft Entra ID authentication with session management ([routes/auth.ts](routes/auth.ts))
+- Microsoft Entra ID authentication with session management ([routes/auth/dtv.ts](routes/auth/dtv.ts))
 - TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 11 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
@@ -240,6 +240,7 @@ dtv-tracker-app/
 │   └── express-session.d.ts       # Session type augmentation for auth
 ├── services/
 │   ├── auth-config.ts             # MSAL client configuration (Microsoft OAuth)
+│   ├── personal-auth.ts           # Shared personal account (Google/Facebook) session resolution
 │   ├── google-auth.ts             # Google OAuth helper (DIY, native fetch — no extra packages)
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
@@ -267,7 +268,11 @@ dtv-tracker-app/
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
 │   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
 │   ├── backup.ts                  # Backup endpoint: exports all 6 lists as JSON to SharePoint Shared Documents
-│   └── auth.ts                    # Authentication routes (login, callback, logout)
+│   └── auth/
+│       ├── index.ts               # Auth router: logout, /providers, /me
+│       ├── dtv.ts                 # DTV Account (Entra ID / Microsoft) login + callback
+│       ├── google.ts              # Google OAuth login + callback
+│       └── facebook.ts            # Facebook OAuth login + callback
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware
 │   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only / Public)
