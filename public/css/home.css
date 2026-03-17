@@ -51,8 +51,13 @@
 
 .signups-card {
     background: var(--surface); border-radius: var(--radius);
-    box-shadow: var(--shadow); margin-bottom: 1.5rem; overflow: hidden;
+    box-shadow: var(--shadow); margin-bottom: 1.5rem;
 }
+.signups-card .title-row {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+.signups-card .title-row h2 { font-size: 1.1rem; }
 .signups-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 1rem 1.5rem 0.75rem; border-bottom: 1px solid var(--border);
@@ -66,7 +71,7 @@
 .signups-select:focus { outline: none; border-color: var(--green); }
 .signup-row {
     display: flex; align-items: center; gap: 0.75rem;
-    padding: 0.6rem 1.5rem; border-bottom: 1px solid var(--border);
+    padding: 0.35rem 1rem; border-bottom: 1px solid var(--border);
     text-decoration: none; color: inherit; min-height: 44px;
 }
 .signup-row:last-child { border-bottom: none; }
@@ -79,7 +84,7 @@
 .refresh-message { text-align: center; font-size: 0.9rem; color: var(--green); margin-bottom: 1.5rem; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinning svg { animation: spin 0.7s linear infinite; }
+.spinning svg, .spinning img { animation: spin 0.7s linear infinite; }
 
 @media (max-width: 600px) {
     .container { margin: 1.5rem auto; padding: 0 1rem; }

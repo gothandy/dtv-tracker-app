@@ -1,5 +1,36 @@
+let signupsSince = '24h';
+
+function setSignupsSince(value, label) {
+    signupsSince = value;
+    const el = document.getElementById('signupsFilterLabel');
+    if (el) el.textContent = label;
+    // Close the dropdown
+    const menu = document.getElementById('signupsFilterMenu');
+    if (menu) menu.classList.remove('open');
+    // Update active state
+    document.querySelectorAll('#signupsFilterMenu button').forEach(b => {
+        b.classList.toggle('active', b.dataset.value === value);
+    });
+    loadRecentSignups();
+}
+
+async function refreshSignups() {
+    const btn = document.getElementById('refreshSignupsBtn');
+    if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+    try {
+        const role = window.currentUser?.role;
+        if (role === 'admin' || role === 'checkin') {
+            await fetch(`/api/eventbrite/quick-sync?since=${encodeURIComponent(signupsSince)}`, { method: 'POST' })
+                .catch(err => console.error('[quick-sync]', err));
+        }
+    } finally {
+        await loadRecentSignups();
+        if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+    }
+}
+
 async function loadRecentSignups() {
-    const since = document.getElementById('signupsSince')?.value || '24h';
+    const since = signupsSince;
     const list = document.getElementById('recentSignupsList');
     try {
         const res = await fetch(`/api/entries/recent?since=${encodeURIComponent(since)}`);
@@ -32,13 +63,26 @@ async function loadRecentSignups() {
 function initSignupsSection() {
     document.getElementById('signupsSection').innerHTML = `
         <div class="signups-card" id="recentSignupsCard" style="display:none">
-            <div class="signups-header">
-                <h3>Recent Sign-ups</h3>
-                <select class="signups-select" id="signupsSince" onchange="loadRecentSignups()">
-                    <option value="24h">Last 24h</option>
-                    <option value="48h">Last 48h</option>
-                    <option value="7d">Last 7 days</option>
-                </select>
+            <div class="title-row">
+                <div class="title-left">
+                    <h2>Recent Sign-ups</h2>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                    <div class="dropdown">
+                        <button class="dropdown-btn" onclick="toggleDropdown('signupsFilterMenu')">
+                            <img src="/svg/filter.svg" width="16" height="16" alt="">
+                            <span id="signupsFilterLabel">Last 24h</span>
+                        </button>
+                        <div class="dropdown-menu" id="signupsFilterMenu">
+                            <button class="active" data-value="24h" onclick="setSignupsSince('24h', 'Last 24h')">Last 24h</button>
+                            <button data-value="48h" onclick="setSignupsSince('48h', 'Last 48h')">Last 48h</button>
+                            <button data-value="7d" onclick="setSignupsSince('7d', 'Last 7 days')">Last 7 days</button>
+                        </div>
+                    </div>
+                    <button id="refreshSignupsBtn" class="btn-action" title="Refresh" onclick="refreshSignups()">
+                        <img src="/svg/refresh.svg" alt="Refresh" width="16" height="16">
+                    </button>
+                </div>
             </div>
             <div id="recentSignupsList"></div>
         </div>

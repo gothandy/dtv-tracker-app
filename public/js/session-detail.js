@@ -497,10 +497,7 @@ async function loadSessionDetail() {
                         <div id="registerBtn"></div>
                         <div id="uploadPhotoBtn"></div>
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit session">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                                <path d="m15 5 4 4"/>
-                            </svg>
+                            <img src="/svg/edit.svg" width="18" height="18" alt="Edit">
                         </button>
                     </div>
                 </div>
@@ -522,12 +519,12 @@ async function loadSessionDetail() {
                     <h2 class="entries-heading">${isSelfService ? 'Your Entries' : `Entries (${entries.filter(e => e.checkedIn).length} from ${entries.length})`}</h2>
                     <div class="header-buttons">
                         <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
-                            <svg viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0 1 10.3-4.2L11 5h4V1l-1.7 1.7A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.3 4.2L5 11H1v4l1.7-1.7A8 8 0 0 0 16 8h-2z" fill="currentColor"/></svg>
+                            <img src="/svg/refresh.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Refresh">
                         </button>
                         <button class="btn-action checkin-only btn-action-danger" onclick="deleteUncheckedEntries()" title="Remove no-shows (delete unchecked entries)"><img src="/svg/trash.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;"></button>
                         <button class="btn-action checkin-only" onclick="openHoursModal()" title="Set default hours"><img src="/svg/clock.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Set Hours"></button>
                         <a class="btn-action checkin-only" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
-                            <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                            <img src="/svg/add.svg" width="16" height="16" alt="">
                         </a>
                     </div>
                 </div>

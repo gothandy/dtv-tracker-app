@@ -92,16 +92,20 @@ export async function getOrgEvents(): Promise<EventbriteEvent[]> {
   return all;
 }
 
-export async function getAttendees(eventId: string): Promise<EventbriteAttendee[]> {
+export async function getAttendees(eventId: string, changedSince?: Date): Promise<EventbriteAttendee[]> {
   const all: EventbriteAttendee[] = [];
   let page = 1;
   let hasMore = true;
+
+  const sinceParam = changedSince
+    ? `&changed_since=${encodeURIComponent(changedSince.toISOString().replace(/\.\d{3}Z$/, 'Z'))}`
+    : '';
 
   while (hasMore) {
     const data = await fetchEventbrite<{
       attendees: EventbriteAttendee[];
       pagination: { has_more_items: boolean; page_number: number };
-    }>(`/events/${eventId}/attendees/?status=attending&expand=answers&page=${page}`);
+    }>(`/events/${eventId}/attendees/?status=attending&expand=answers&page=${page}${sinceParam}`);
 
     all.push(...(data.attendees || []));
     hasMore = data.pagination?.has_more_items || false;

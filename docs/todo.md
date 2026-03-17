@@ -87,6 +87,9 @@ Export all six SharePoint lists to CSV nightly as a safety net against accidenta
 
 **Lists to cover**: Groups, Sessions, Entries, Profiles, Regulars, Records — all fetched directly via the Graph API list items endpoint, no existing export logic needed
 
+## Automatic Eventbrite Notification on Homepage
+When an admin/check-in user loads the homepage, silently check Eventbrite for new registrations and import them automatically — no button required. The Refresh button on "Recent Sign-ups" currently provides on-demand sync; a background version would fire `quick-sync` on `authReady` with a 5-minute cooldown so it doesn't trigger on every page load.
+
 ## Sync Logging
 The Eventbrite sync endpoints return structured results but there's no persistent log. Azure Logic App run history provides some visibility, but a SharePoint "Logs" list would allow viewing sync history from within the app.
 - SharePoint Logs list with fields: Title (timestamp), Summary (text), Source (Manual/Scheduled)

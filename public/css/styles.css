@@ -323,18 +323,18 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     margin-bottom: 1.5rem;
     box-shadow: var(--shadow);
 }
-.filter-bar .title-row {
+.title-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
 }
-.filter-bar .title-left {
+.title-left {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
 }
-.filter-bar h2 {
+.title-row h2 {
     font-size: 1.3rem;
     color: var(--dark);
 }
@@ -388,6 +388,10 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     width: 18px;
     height: 18px;
     fill: currentColor;
+    flex-shrink: 0;
+}
+.dropdown-btn img {
+    filter: brightness(0) invert(1);
     flex-shrink: 0;
 }
 .dropdown-menu {
@@ -465,6 +469,10 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     width: 18px;
     height: 18px;
     fill: currentColor;
+    flex-shrink: 0;
+}
+.btn-action img {
+    filter: brightness(0) invert(1);
     flex-shrink: 0;
 }
 .filter-buttons {
@@ -1269,7 +1277,8 @@ a.entry-card { flex: 1; min-width: 0; }
 .checkin-box--checked::after { opacity: 1; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinning svg { animation: spin 0.7s linear infinite; }
+.spinning svg,
+.spinning img { animation: spin 0.7s linear infinite; }
 
 .entry-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
 .entry-name { font-size: 1.05rem; color: var(--dark); }

@@ -8,6 +8,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular
   { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/entries$/ }, // add entry
   { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/refresh$/ }, // refresh session
+  { method: 'POST',  pattern: /^\/eventbrite\/quick-sync$/ },        // lightweight Eventbrite sync
   { method: 'DELETE', pattern: /^\/sessions\/[^/]+\/[^/]+\/unchecked-entries$/ }, // remove no-shows
   { method: 'POST',  pattern: /^\/profiles$/ },               // create profile
   { method: 'PATCH', pattern: /^\/profiles\/[^/]+$/ },        // edit profile

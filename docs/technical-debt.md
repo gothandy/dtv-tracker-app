@@ -187,6 +187,24 @@ Five green variants exist in `:root`:
 
 ---
 
+## CSS: Card Component Fragmentation
+**Priority**: Low | **Effort**: Medium
+
+Card-style UI blocks (a white surface with border-radius, shadow, and a padded header) are implemented independently across pages and sections rather than sharing a common base pattern. Each component rolls its own card class — `.signups-card`, `.filter-bar`, `.section-card`, `.fy-chart`, `.cal-card`, `.session-card`, `.info-box`, `.nav-card` — with subtly different padding, margin, and header structure.
+
+**The practical pain** — demonstrated by the signups section (March 2026): the header padding was wrong because `.signups-card` had no inner padding, and fixing the dropdown clipping required removing `overflow: hidden` from a one-off class rather than from a shared base. These bugs wouldn't exist if all cards shared a common shell.
+
+**What a shared card pattern would look like**:
+- A `.card` base class (surface, border-radius, shadow, margin-bottom)
+- A `.card-header` modifier (flex row, 1rem–1.5rem padding, border-bottom)
+- Page/section classes extend the base rather than reimplement it
+
+**When to address**: If a new card-style section is being built from scratch, use this opportunity to define the shared base. Retrofitting existing cards is low priority — they mostly work — but over time the inconsistencies compound (as `.signups-card` showed).
+
+**Affected files**: `public/css/styles.css`, `public/css/home.css`, and various JS files that inject card HTML.
+
+---
+
 ## CSS: Session Tags Naming Inconsistency
 **Priority**: Low | **Effort**: Low
 
@@ -251,4 +269,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-17 (Auth refactor: CSRF state regression noted; Eventbrite sync concurrency fix noted; date storage bug fixed)*
+*Last Updated: 2026-03-17 (Auth refactor: CSRF state regression noted; Eventbrite sync concurrency fix noted; date storage bug fixed; Card component fragmentation added)*
