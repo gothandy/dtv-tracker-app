@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import axios from 'axios';
-import { randomBytes, createHmac } from 'crypto';
+import { randomBytes } from 'crypto';
 /// <reference path="../types/express-session.d.ts" />
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../services/auth-config';
 import { getGoogleAuthUrl, getGoogleRedirectUri, exchangeGoogleCode } from '../services/google-auth';
@@ -9,32 +9,6 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 import { profileSlug } from '../services/data-layer';
 
 const router: Router = express.Router();
-
-// HMAC-signed state for Facebook OAuth CSRF — stateless, works across multiple server instances.
-// The state encodes {returnTo, ts, nonce} signed with SESSION_SECRET so it can't be forged.
-const FB_STATE_SECRET = process.env.SESSION_SECRET || 'dtv-fb-state-secret';
-
-function signFacebookState(returnTo: string | undefined): string {
-  const payload = Buffer.from(JSON.stringify({ r: returnTo || '/', ts: Date.now(), n: randomBytes(8).toString('hex') })).toString('base64url');
-  const sig = createHmac('sha256', FB_STATE_SECRET).update(payload).digest('hex').slice(0, 16);
-  return `${payload}.${sig}`;
-}
-
-function verifyFacebookState(state: string): { returnTo: string } | null {
-  const dot = state.lastIndexOf('.');
-  if (dot === -1) return null;
-  const payload = state.slice(0, dot);
-  const sig = state.slice(dot + 1);
-  const expected = createHmac('sha256', FB_STATE_SECRET).update(payload).digest('hex').slice(0, 16);
-  if (sig !== expected) return null;
-  try {
-    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    if (Date.now() - data.ts > 10 * 60 * 1000) return null; // 10-minute expiry
-    return { returnTo: data.r || '/' };
-  } catch {
-    return null;
-  }
-}
 
 // GET /auth/login — redirect to Microsoft login
 router.get('/login', async (req: Request, res: Response) => {
@@ -211,7 +185,9 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // GET /auth/facebook/login — redirect to Facebook OAuth
 router.get('/facebook/login', (req: Request, res: Response) => {
   const returnTo = req.query.returnTo as string | undefined;
-  const state = signFacebookState(returnTo?.startsWith('/') ? returnTo : undefined);
+  if (returnTo && returnTo.startsWith('/')) req.session.returnTo = returnTo;
+  const state = randomBytes(16).toString('hex');
+  (req.session as any).oauthState = state;
   const redirectUri = getFacebookRedirectUri(req);
   res.redirect(getFacebookAuthUrl(redirectUri, state));
 });
@@ -219,9 +195,10 @@ router.get('/facebook/login', (req: Request, res: Response) => {
 // GET /auth/facebook/callback — handle redirect from Facebook
 router.get('/facebook/callback', async (req: Request, res: Response) => {
   try {
-    // Verify CSRF state — signed token, no server-side storage needed, works across instances.
-    const pending = verifyFacebookState(req.query.state as string || '');
-    if (!pending) {
+    // Verify CSRF state — same session-based approach as Google.
+    const expectedState = (req.session as any).oauthState;
+    delete (req.session as any).oauthState;
+    if (!expectedState || req.query.state !== expectedState) {
       res.redirect('/login.html?reason=invalid-state');
       return;
     }
@@ -255,7 +232,8 @@ router.get('/facebook/callback', async (req: Request, res: Response) => {
     req.session.user = result.sessionUser;
     // Redirect via login.html so BroadcastChannel can notify the waiting tab/PWA — the OAuth
     // may have completed in a Chrome Custom Tab or separate browser context on Android.
-    const dest = pending.returnTo || '/';
+    const dest = req.session.returnTo || '/';
+    delete req.session.returnTo;
     res.redirect(`/login.html?fbcomplete=1&returnTo=${encodeURIComponent(dest)}`);
   } catch (error: any) {
     console.error('Error in Facebook auth callback:', error.message);

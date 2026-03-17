@@ -173,7 +173,7 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
 function createFooter() {
     document.body.insertAdjacentHTML('beforeend', `
         <footer class="site-footer">
-            <p>&copy; ${new Date().getFullYear()} <a href="https://www.deantrailvolunteers.org.uk" target="_blank" rel="noopener">Dean Trail Volunteers</a> &middot; <a href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5243025" target="_blank" rel="noopener">Charity No. 1208988</a></p>
+            <p>&copy; ${new Date().getFullYear()} <a href="https://www.deantrailvolunteers.org.uk" target="_blank" rel="noopener">Dean Trail Volunteers</a> &middot; Charity No. <a href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5243025" target="_blank" rel="noopener">1208988</a></p>
             <p><a href="/privacy.html">Privacy Policy</a> &middot; <a href="/terms.html">Terms of Use</a></p>
         </footer>
     `);
