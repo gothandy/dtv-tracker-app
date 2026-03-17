@@ -104,6 +104,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Group dropdown pre-selects current group
 - [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, groupId? }`
 - [ ] Changing date redirects to new URL
+- [ ] Changing date on a session whose Title matches the auto-generated format (`YYYY-MM-DD GroupKey`) — Title is automatically updated to the new date; verify in SharePoint
 - [ ] Changing group shows confirmation: "Move this session to [group]? All existing entries will remain attached."
 - [ ] Changing group redirects to new group/date URL
 - [ ] Changing both group and date redirects correctly
@@ -222,6 +223,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `POST /api/eventbrite/sync-sessions`
 - [ ] Shows "X events, Y matched, Z new sessions"
 - [ ] Newly created sessions matched to a group have a blank Name (display title falls back to group name + date; no Eventbrite event title imported)
+- [ ] Newly created session: Date field in SharePoint shows the correct calendar date (not one day early) — verifies noon UTC storage fix
 
 ### H25. Eventbrite sync — attendees
 - [ ] Admin → "Fetch New Attendees"
@@ -232,11 +234,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Attendee name matches existing profile with no stored email → email is backfilled on the existing profile, no duplicate created
 - [ ] Attendee email matches an existing profile's email but name differs (e.g. child registered under parent email with different name) → name match used, not email; behaves by name logic
 - [ ] If any duplicates flagged, sync summary includes "X duplicate warning(s) — check session entries"
+- [ ] Triggering sync while one is already running returns 409 "Sync already in progress" (second request rejected immediately)
 
 ### H26. Eventbrite combined sync (scheduled)
 - [ ] `POST /api/eventbrite/event-and-attendee-update` with `X-Api-Key` header
 - [ ] Returns `{ summary: "..." }` suitable for email notification
 - [ ] Azure Logic App calls this daily
+- [ ] Concurrent call (second request while first still running) returns 409 — prevents duplicate entries from Logic App retries
 
 ### H27. Clear cache
 - [ ] Dashboard → Refresh button

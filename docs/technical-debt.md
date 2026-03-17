@@ -140,6 +140,8 @@ The Eventbrite sync logic is duplicated and fragile:
 
 **Recommended approach**: Extract a shared `syncAttendeeForSession()` function used by both the scheduled sync and the refresh endpoint, so consent mapping and entry creation logic live in one place.
 
+**Fixed (2026-03-17)**: Concurrent sync runs now blocked by `syncInProgress` flag — returns 409 if a sync is already running. Prevents duplicate entries from Logic App retries overlapping with an in-flight request.
+
 ---
 
 ## `profiles.ts` Route — Too Many Responsibilities
@@ -249,4 +251,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-02 (taxonomy env var simplified; remaining silent failure instances catalogued)*
+*Last Updated: 2026-03-17 (Eventbrite sync concurrency fix noted; date storage bug fixed)*

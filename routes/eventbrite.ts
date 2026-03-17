@@ -11,6 +11,9 @@ import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../se
 
 const router: Router = express.Router();
 
+// Prevent concurrent sync runs (e.g. Logic App retry arriving while first run still in progress)
+let syncInProgress = false;
+
 interface SyncSessionsResult {
   totalEvents: number;
   matchedEvents: number;
@@ -63,7 +66,7 @@ async function runSyncSessions(): Promise<SyncSessionsResult> {
     const title = `${dateStr} ${group.Title || ''}`.trim();
     await sessionsRepository.create({
       Title: title,
-      Date: dateStr,
+      Date: `${dateStr}T12:00:00Z`,
       [GROUP_LOOKUP]: String(group.ID),
       EventbriteEventID: event.id
     });
@@ -155,6 +158,12 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
 }
 
 router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: Response) => {
+  if (syncInProgress) {
+    console.warn('[Eventbrite Sync] Rejected concurrent request — sync already in progress');
+    res.status(409).json({ success: false, error: 'Sync already in progress' });
+    return;
+  }
+  syncInProgress = true;
   try {
     const sessionResult = await runSyncSessions();
     const attendeeResult = await runSyncAttendees();
@@ -173,10 +182,18 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
       success: false,
       error: error.message || 'Failed to run event and attendee update'
     });
+  } finally {
+    syncInProgress = false;
   }
 });
 
 router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) => {
+  if (syncInProgress) {
+    console.warn('[Eventbrite Sync] Rejected concurrent request — sync already in progress');
+    res.status(409).json({ success: false, error: 'Sync already in progress' });
+    return;
+  }
+  syncInProgress = true;
   try {
     const data = await runSyncAttendees();
     res.json({ success: true, data });
@@ -186,10 +203,18 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
       success: false,
       error: error.message || 'Failed to sync attendees'
     });
+  } finally {
+    syncInProgress = false;
   }
 });
 
 router.post('/eventbrite/sync-sessions', async (req: Request, res: Response) => {
+  if (syncInProgress) {
+    console.warn('[Eventbrite Sync] Rejected concurrent request — sync already in progress');
+    res.status(409).json({ success: false, error: 'Sync already in progress' });
+    return;
+  }
+  syncInProgress = true;
   try {
     const data = await runSyncSessions();
     res.json({ success: true, data });
@@ -199,6 +224,8 @@ router.post('/eventbrite/sync-sessions', async (req: Request, res: Response) => 
       success: false,
       error: error.message || 'Failed to sync sessions'
     });
+  } finally {
+    syncInProgress = false;
   }
 });
 

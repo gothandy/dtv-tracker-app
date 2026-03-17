@@ -91,7 +91,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           id: e.ID,
           volunteerName: name,
           volunteerSlug: vid !== undefined ? profileSlug(name, vid) : nameToSlug(name),
-          date: session.Date.substring(0, 10),
+          date: session.Date,
           groupKey: group.Title,
           groupName: group.Name || group.Title,
           notes: e.Notes,

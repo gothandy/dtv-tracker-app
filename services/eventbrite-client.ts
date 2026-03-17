@@ -69,7 +69,7 @@ export async function getOrgEvents(): Promise<EventbriteEvent[]> {
         id: string;
         series_id?: string;
         name?: { text?: string };
-        start?: { utc?: string };
+        start?: { utc?: string; local?: string };
         description?: { text?: string };
       }>;
       pagination: { has_more_items: boolean };
@@ -80,7 +80,7 @@ export async function getOrgEvents(): Promise<EventbriteEvent[]> {
         id: e.id,
         seriesId: e.series_id || undefined,
         name: e.name?.text || '',
-        startDate: e.start?.utc || '',
+        startDate: e.start?.local || e.start?.utc || '',
         description: e.description?.text || undefined
       });
     }

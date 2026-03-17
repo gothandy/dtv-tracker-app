@@ -486,7 +486,9 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof displayName === 'string') fields.Name = displayName;
     if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) fields.Date = date;
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      fields.Date = `${date}T12:00:00Z`;
+    }
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
     if (typeof coverMediaId === 'number') fields[SESSION_COVER_MEDIA] = String(coverMediaId);
     if (coverMediaId === null) fields[SESSION_COVER_MEDIA] = null;
@@ -519,6 +521,14 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (!spSession) {
       res.status(404).json({ success: false, error: 'Session not found' });
       return;
+    }
+
+    // Auto-update Title when date changes, if Title was auto-generated (starts with old date)
+    if (fields.Date && typeof date === 'string') {
+      const currentTitle = spSession.Title || '';
+      if (currentTitle.startsWith(dateParam)) {
+        fields.Title = `${date}${currentTitle.substring(dateParam.length)}`;
+      }
     }
 
     let newGroupKey = groupKey;

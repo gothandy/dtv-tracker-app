@@ -1,5 +1,35 @@
 # Development Progress
 
+## Session: 2026-03-17 (Eventbrite date timezone bug, session date correction, sync concurrency lock)
+
+### Completed Tasks
+
+#### Eventbrite session date timezone bug — investigated and fixed ✓
+
+Root cause: when the Eventbrite sync created sessions, it posted plain date strings (e.g. `"2026-04-22"`) to SharePoint's Date field. SharePoint interpreted these as midnight in the site's London timezone (BST = UTC+1), converting them to UTC the previous day (e.g. `"2026-04-21T23:00:00Z"`). The Title field (plain text) was unaffected and always stored the correct date.
+
+This affected all sessions created on **2026-02-15** (the initial data migration) when the SharePoint timezone was configured as UTC+1. Sessions created later in GMT (Feb 22, Feb 24, Mar 1) were correct because London timezone = UTC in winter. Sessions created during BST going forward would also be affected without the code fix.
+
+**`services/eventbrite-client.ts`** — changed Eventbrite event date source from `e.start?.utc` to `e.start?.local || e.start?.utc`. Uses the event's local calendar date rather than UTC, so events near midnight don't shift.
+
+**`routes/eventbrite.ts`** — `runSyncSessions()`: Date field now stored as `"${dateStr}T12:00:00Z"` (noon UTC) instead of a plain date string. Noon UTC cannot be shifted across a date boundary by any timezone offset, making storage robust regardless of SharePoint's timezone setting.
+
+**`routes/sessions.ts`** — PATCH endpoint: same noon UTC format applied when date is changed via session edit. Also auto-updates the Title field when date changes if the current Title starts with the old date string (e.g. `"2026-04-22 Wed"` → `"2026-04-23 Wed"`).
+
+**`routes/entries.ts`** — Recent Sign-ups (`GET /api/entries/recent`): changed `date: session.Date.substring(0, 10)` to `date: session.Date`. Passing the full ISO datetime string to the browser lets `toLocaleDateString('en-GB')` handle BST conversion correctly, so shifted legacy dates (stored as `"2026-04-21T23:00:00Z"`) display as April 22 in a UK browser.
+
+#### Diagnostic and correction scripts ✓
+
+**`scripts/check-session-dates.js`** — read-only diagnostic: reports sessions where the Title date doesn't match the Date field (in Europe/London timezone), and verifies Wed/Sat/etc sessions fall on the correct day of the week. Confirmed all 56 mismatches were from the 2026-02-15 migration.
+
+**`scripts/fix-session-dates.js`** — one-off correction: updates Date fields to `"${titleDate}T12:00:00Z"` for all sessions where Title date doesn't match stored date. Dry-run by default (`--apply` to commit). Applied to 53 sessions (3 timesheet outliers with deliberately end-of-month dates had already been corrected manually).
+
+#### Eventbrite sync concurrency lock ✓
+
+Added `syncInProgress` boolean flag in `routes/eventbrite.ts`. All three sync endpoints (`event-and-attendee-update`, `sync-sessions`, `sync-attendees`) check the flag on entry and return 409 if a sync is already running. Flag is cleared in `finally` block. Prevents duplicate entries caused by the Azure Logic App retrying a timed-out HTTP request while the first run was still processing.
+
+---
+
 ## Session: 2026-03-16 (Security audit — self-service privacy hardening, Facebook PWA login, login redirects)
 
 ### Completed Tasks
