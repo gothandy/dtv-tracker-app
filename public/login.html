@@ -212,22 +212,8 @@
                         startFacebookAuthPolling(returnTo || '/');
                     });
                 } else {
-                    // Chrome: open OAuth in a new tab so this page stays alive for
-                    // BroadcastChannel / polling to detect completion.
-                    facebookBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const newWin = window.open(facebookBtn.href);
-                        if (newWin) {
-                            startFacebookAuthPolling(returnTo || '/');
-                        } else {
-                            // Popup blocked — fall back to normal navigation.
-                            localStorage.setItem('pendingFacebookAuth', JSON.stringify({
-                                ts: Date.now(),
-                                returnTo: returnTo || '/'
-                            }));
-                            window.location.href = facebookBtn.href;
-                        }
-                    });
+                    // Desktop/browser: normal navigation — the fbcomplete=1 redirect handles
+                    // completion without needing this tab to stay alive.
                 }
             }
         }
