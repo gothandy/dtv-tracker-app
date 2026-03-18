@@ -7,10 +7,14 @@ if (window.location.hash === '#_=_') {
     history.replaceState(null, '', window.location.href.replace('#_=_', ''));
 }
 
-// Inject favicon and manifest links into <head> (single source of truth)
+// Inject favicon, manifest, and iOS PWA meta tags into <head> (single source of truth)
 document.head.insertAdjacentHTML('beforeend',
     '<link rel="icon" type="image/png" href="/img/logo.png">' +
-    '<link rel="manifest" href="/site.webmanifest">'
+    '<link rel="manifest" href="/site.webmanifest">' +
+    '<link rel="apple-touch-icon" href="/img/icon-192.png">' +
+    '<meta name="apple-mobile-web-app-capable" content="yes">' +
+    '<meta name="apple-mobile-web-app-status-bar-style" content="default">' +
+    '<meta name="apple-mobile-web-app-title" content="DTV Tracker">'
 );
 
 // Update or create meta tags by name/property (used by detail pages after data loads)
