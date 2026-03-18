@@ -3,7 +3,7 @@ let selectedFY = null;
 let wordCloudController = null;
 let fullCloudItems = [];   // Full tag-hours data from last fetch
 
-const CLOUD_DEFAULT_LIMIT = 5;  // Items shown when history is collapsed
+const CLOUD_DEFAULT_LIMIT = 7;  // Items shown when history is collapsed
 
 function isHistoryExpanded() {
     const chart = document.querySelector('.fy-chart');
@@ -57,10 +57,10 @@ function toggleHistory() {
 
 function updateWordCloudDisplay() {
     if (!wordCloudController || !fullCloudItems.length) return;
-    const items = isHistoryExpanded()
-        ? fullCloudItems
-        : fullCloudItems.slice(0, CLOUD_DEFAULT_LIMIT);
+    const expanded = isHistoryExpanded();
+    const items = expanded ? fullCloudItems : fullCloudItems.slice(0, CLOUD_DEFAULT_LIMIT);
     wordCloudController.update(items);
+    wordCloudController.setCsvVisible(expanded);
 }
 
 function fyToCookieKey(fy) { return 'FY' + fy.split('-')[0]; }
@@ -90,6 +90,7 @@ async function refreshWordCloud() {
         if (!wordCloudController) {
             wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), {
                 title: 'Hours by Area',
+                embedded: true,
                 getLinkUrl(item) {
                     if (!item.termGuid) return null;
                     const p = new URLSearchParams({ tag: item.termGuid });
@@ -192,6 +193,7 @@ function initStatsSection() {
                 </div>
             </div>
             <div id="fyAllRows"></div>
+            <div id="wordCloudSection"></div>
         </div>
 
         <div class="nav-grid">

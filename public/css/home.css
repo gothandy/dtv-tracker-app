@@ -81,6 +81,10 @@
 .signup-meta { font-size: 0.8rem; color: var(--text-faint); white-space: nowrap; text-align: right; flex-shrink: 0; }
 .signups-empty { padding: 1rem 1.5rem; color: var(--text-faint); font-size: 0.9rem; }
 
+.word-cloud-embedded { border-top: 1px solid var(--border); margin-top: 0.75rem; padding-top: 0.75rem; }
+.word-cloud-embedded .word-cloud-body { justify-content: center; }
+.word-cloud-embedded .word-cloud-csv-btn { display: block; margin: 0.75rem auto 0; }
+
 .refresh-message { text-align: center; font-size: 0.9rem; color: var(--green); margin-bottom: 1.5rem; }
 
 @keyframes spin { to { transform: rotate(360deg); } }

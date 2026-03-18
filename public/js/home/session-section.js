@@ -184,7 +184,7 @@ function initSessionSection() {
         <div class="session-section">
             <div class="cal-card">
                 <div class="cal-toolbar" id="calToolbar">
-                    <button class="cal-tb-btn" id="btnShowCal" onclick="toggleCalendar()">Show Calendar</button>
+                    <button class="btn-action" id="btnShowCal" onclick="toggleCalendar()">Show Calendar</button>
                     <div class="cal-tb-right">
                         <button class="cal-tb-btn" id="btnNext" onclick="jumpToNext()">Next</button>
                         <button class="cal-tb-btn" id="btnLast" onclick="jumpToLast()">Last</button>

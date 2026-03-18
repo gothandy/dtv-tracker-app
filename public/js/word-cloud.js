@@ -17,11 +17,13 @@ function createWordCloud(container, options = {}) {
     const title = options.title || 'Hours by Area';
     const minItems = options.minItems ?? 2;
     const getLinkUrl = options.getLinkUrl || null;
+    const embedded = options.embedded || false;
     const BASE_SIZE = 0.85;   // rem
     const MAX_SIZE  = 2.4;    // rem
 
     let card = null;
     let bodyEl = null;
+    let csvBtn = null;
     let lastItems = [];
 
     function shortLabel(label) {
@@ -31,15 +33,31 @@ function createWordCloud(container, options = {}) {
 
     function buildCard() {
         card = document.createElement('div');
-        card.className = 'word-cloud-card';
-        card.innerHTML = `
-            <div class="word-cloud-header">
-                <h2>${escapeHtml(title)}</h2>
-                <button class="word-cloud-csv-btn trusted-only" title="Download CSV">Download CSV</button>
-            </div>
-            <div class="word-cloud-body"></div>`;
-        card.querySelector('.word-cloud-csv-btn').addEventListener('click', () => downloadCsv(lastItems, title));
-        bodyEl = card.querySelector('.word-cloud-body');
+
+        if (embedded) {
+            card.className = 'word-cloud-embedded';
+            bodyEl = document.createElement('div');
+            bodyEl.className = 'word-cloud-body';
+            csvBtn = document.createElement('button');
+            csvBtn.className = 'word-cloud-csv-btn admin-only';
+            csvBtn.textContent = 'Download CSV';
+            csvBtn.style.display = 'none';
+            csvBtn.addEventListener('click', () => downloadCsv(lastItems, title));
+            card.appendChild(bodyEl);
+            card.appendChild(csvBtn);
+        } else {
+            card.className = 'word-cloud-card';
+            card.innerHTML = `
+                <div class="word-cloud-header">
+                    <h2>${escapeHtml(title)}</h2>
+                    <button class="word-cloud-csv-btn trusted-only" title="Download CSV">Download CSV</button>
+                </div>
+                <div class="word-cloud-body"></div>`;
+            csvBtn = card.querySelector('.word-cloud-csv-btn');
+            csvBtn.addEventListener('click', () => downloadCsv(lastItems, title));
+            bodyEl = card.querySelector('.word-cloud-body');
+        }
+
         container.appendChild(card);
     }
 
@@ -100,6 +118,9 @@ function createWordCloud(container, options = {}) {
         },
         show() {
             if (card && lastItems.length >= minItems) card.style.display = '';
+        },
+        setCsvVisible(visible) {
+            if (csvBtn && embedded) csvBtn.style.display = visible ? '' : 'none';
         }
     };
 }
