@@ -1,6 +1,14 @@
 let historyData = [];
 let selectedFY = null;
 let wordCloudController = null;
+let fullCloudItems = [];   // Full tag-hours data from last fetch
+
+const CLOUD_DEFAULT_LIMIT = 5;  // Items shown when history is collapsed
+
+function isHistoryExpanded() {
+    const chart = document.querySelector('.fy-chart');
+    return chart && !chart.classList.contains('history-collapsed');
+}
 
 function renderChart() {
     const container = document.getElementById('fyAllRows');
@@ -44,6 +52,15 @@ function toggleHistory() {
     const isCollapsed = chart.classList.toggle('history-collapsed');
     btn.textContent = isCollapsed ? 'Show History' : 'Hide History';
     btn.classList.toggle('active', !isCollapsed);
+    updateWordCloudDisplay();
+}
+
+function updateWordCloudDisplay() {
+    if (!wordCloudController || !fullCloudItems.length) return;
+    const items = isHistoryExpanded()
+        ? fullCloudItems
+        : fullCloudItems.slice(0, CLOUD_DEFAULT_LIMIT);
+    wordCloudController.update(items);
 }
 
 function fyToCookieKey(fy) { return 'FY' + fy.split('-')[0]; }
@@ -81,7 +98,9 @@ async function refreshWordCloud() {
                 }
             });
         }
-        wordCloudController.update(result.data);
+        // Store sorted by hours desc so slice(0, N) always gives the top N
+        fullCloudItems = [...result.data].sort((a, b) => b.hours - a.hours);
+        updateWordCloudDisplay();
     } catch (err) {
         console.error('[WordCloud] error', err);
     }

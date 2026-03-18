@@ -32,7 +32,7 @@ Feature-complete volunteer tracking application with:
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
 
 ### Pages
-- Dashboard with FY stats, progress bar, next session card ([public/index.html](public/index.html))
+- Dashboard with FY stats, next session card, personalised calendar ([public/index.html](public/index.html)); for self-service/check-in/admin-with-profile: calendar dots distinguish own sessions (filled) and regular-group sessions (outline); Next/Last jump to own sessions with global fallback; Registered/Attended pills on session cards; word cloud shows top 5 by default and expands to full on Show History
 - Admin page with Eventbrite sync buttons, exports, backup export, site link, icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
@@ -48,7 +48,7 @@ Feature-complete volunteer tracking application with:
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
 - Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
 - Session taxonomy tag UI: term tree picker, tag pills; supports `onConfirm` callback for bulk tagging from sessions listing ([public/js/session-tags.js](public/js/session-tags.js))
-- Calendar widget for sessions listing ([public/js/calendar.js](public/js/calendar.js))
+- Calendar widget for homepage ([public/js/calendar.js](public/js/calendar.js)); accepts optional `personalData` (`myDates`, `regularDates` sets) to render personal dot markers on cells
 - Lightbox photo viewer for session galleries ([public/js/lightbox.js](public/js/lightbox.js))
 - SVG icons for badges and tags ([public/svg/](public/svg/))
 
@@ -364,7 +364,8 @@ dtv-tracker-app/
 - [x] Calendar view on sessions listing page (month navigation, clickable session dates)
 - [x] FY bar charts on group detail and profile detail pages
 - [x] Manual backup export: admin button calls `POST /api/backup/export-all`, writes all 6 lists as JSON to `Tracker Archive/` folder in SharePoint Shared Documents (requires `BACKUP_DRIVE_ID` env var)
-- [x] Taxonomy tag word cloud on homepage, group detail, and profile detail — `GET /api/tags/hours-by-taxonomy` aggregates hours by tag with ancestor rollup; reusable `word-cloud.js` component; respects all FY/group/profile filters; CSV download
+- [x] Taxonomy tag word cloud on homepage, group detail, and profile detail — `GET /api/tags/hours-by-taxonomy` aggregates hours by tag with ancestor rollup; reusable `word-cloud.js` component; respects all FY/group/profile filters; CSV download; homepage shows top 5 by default, full cloud on Show History
+- [x] Personalised homepage calendar — self-service, check-in, and admin (with profile) users see calendar dots on their own sessions (filled) and regular-group sessions not yet joined (outline); Next/Last buttons target own sessions with global fallback; session cards show Registered/Attended pills; public and read-only users see standard global view
 
 ## Planned Features
 

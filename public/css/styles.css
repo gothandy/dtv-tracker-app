@@ -1014,11 +1014,17 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     line-height: 1.5;
     white-space: nowrap;
     margin-bottom: 0.35rem;
+    margin-right: 0.3rem;
 }
 .session-personal-pill.attended {
     background: var(--green);
     color: white;
     border-color: var(--green);
+}
+.session-personal-pill.regular {
+    background: transparent;
+    color: var(--text-mid);
+    border-color: var(--border-mid);
 }
 
 @media (max-width: 600px) {

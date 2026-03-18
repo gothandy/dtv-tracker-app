@@ -81,7 +81,11 @@ function toggleCalendar() {
 
 function onCalendarDaySelect(sessions) {
     const card = document.getElementById('nextDigCard');
-    renderSessionList(card, sessions, { allSessions, myEntryMap: personalised ? myEntryMap : null });
+    renderSessionList(card, sessions, {
+        allSessions,
+        myEntryMap: personalised ? myEntryMap : null,
+        regularGroupIds: personalised ? regularGroupIds : null,
+    });
     card.style.display = 'block';
     currentSelectedKey = sessions && sessions[0] ? sessions[0].date.substring(0, 10) : null;
     updateCalToolbar(currentSelectedKey);

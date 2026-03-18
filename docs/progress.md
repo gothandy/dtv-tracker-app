@@ -1,5 +1,26 @@
 # Development Progress
 
+## Session: 2026-03-18 (Homepage personalisation — steps 1 & 2)
+
+### Completed Tasks
+
+#### Personalised homepage calendar ✓
+
+- **`public/js/home/session-section.js`** — after `authReady`, fetches the user's profile (self-service, check-in, admin-with-profile only); builds `myEntryMap` (keyed `date|groupKey`) and `regularGroupIds`; Next/Last buttons prefer the user's own sessions with global fallback; passes personalData to calendar and myEntryMap to session cards. Backup `authReady` listener handles the rare case where auth resolves after sessions load.
+- **`public/js/calendar.js`** — accepts optional `personalData` 4th argument (`myDates`, `regularDates` Sets); auto-selects user's next session on init; adds `cal-my-session` (filled dot) and `cal-regular-session` (outline dot) CSS classes to cells.
+- **`public/js/session-cards.js`** — accepts `myEntryMap` option; renders "Attended · Nh" (filled pill) or "Registered" (outline pill) below the session title when matched.
+- **`public/css/styles.css`** — dot and pill styles; dots switch to white on the selected (green) cell.
+
+Public and read-only users see no change — personalisation is additive and role-gated.
+
+#### Word cloud Show History integration ✓
+
+- **`public/js/home/stats-section.js`** — `fullCloudItems` stores the full sorted set after each fetch; `updateWordCloudDisplay()` slices to top 5 when history is collapsed, passes all items when expanded; `toggleHistory()` calls `updateWordCloudDisplay()` in sync.
+
+Remaining homepage personalisation steps (3–5) added to `docs/todo.md`.
+
+---
+
 ## Session: 2026-03-17 (Auth refactor — split routes/auth.ts into per-provider files)
 
 ### Completed Tasks

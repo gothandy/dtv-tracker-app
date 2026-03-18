@@ -1,5 +1,20 @@
 # Todo
 
+## Homepage Personalisation — Remaining Steps
+
+Steps 1 and 2 are done (calendar personalisation + word cloud Show History integration). Remaining:
+
+**Step 3 — Personal word cloud**
+For self-service and check-in users (and admin with a profile), fetch the word cloud with `?profile=:id` so it reflects the user's own hours by area. Hooks into the profile data already loaded in step 1. Change: `stats-section.js` only.
+
+**Step 4 — CTA for next unregistered session**
+For personalised users, show a lightweight "Also coming up" prompt/card for the next upcoming session they haven't registered for. No extra fetch needed — data is already loaded. Change: `session-section.js` + `styles.css`.
+
+**Step 5 — Personal stats block below calendar**
+Add a new `personal-section.js` module rendered below the session calendar (above Recent Sign-ups). Shows the user's own FY hours bar chart (derived from profile entries, same visual style as org chart) and personal word cloud (moved here from step 3). Top stats section remains org-wide and unchanged. Changes: `personal-section.js` (new), `index.html`, `styles.css`.
+
+---
+
 ## Email Handling & GDPR — Requirements Gaps
 
 The current model (one email per profile, email used as matching key for Eventbrite

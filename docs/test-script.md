@@ -335,7 +335,25 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ## LOW PRIORITY — UI-Only
 
-### L1. FY filtering (client-side)
+### L1. Homepage personalisation
+
+**As a self-service or check-in user with sessions:**
+- [ ] Calendar shows a filled dot on dates where you have an entry (registered or attended)
+- [ ] Calendar shows an outline dot on dates where your regular group has a session but you haven't joined
+- [ ] Next button jumps to your next upcoming session; Last button jumps to your most recent session
+- [ ] If you have no upcoming sessions, Next/Last fall back to global next/last
+- [ ] Selected session card shows "Registered" pill for future sessions you're signed up to
+- [ ] Selected session card shows "Attended · Nh" pill for past sessions you attended (checked in, with hours if set), or "Registered" if not checked in
+
+**As a public or read-only user:**
+- [ ] Calendar, Next/Last, and session cards behave exactly as before — no personalisation applied
+
+**Word cloud:**
+- [ ] Homepage loads with top 5 tags visible by default (cloud still shows, just limited)
+- [ ] Clicking Show History expands the full word cloud alongside the FY bar chart
+- [ ] Clicking Hide History collapses back to top 5
+
+### L2. FY filtering (client-side)
 - [ ] Dashboard: This FY / Last FY toggle
 - [ ] Groups: All / Last FY / This FY
 - [ ] Sessions: Past / Last FY / This FY / Future

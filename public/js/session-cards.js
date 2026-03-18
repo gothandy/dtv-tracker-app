@@ -108,17 +108,24 @@ function buildSessionMetaHTML(session, isPast) {
  * entry: { checked, hours } or null/undefined
  * isPast: whether the session date is in the past
  */
-function buildPersonalPillHTML(entry, isPast) {
-    if (!entry) return '';
-    if (isPast && entry.checked) {
-        const hoursText = entry.hours > 0 ? ` &middot; ${entry.hours}h` : '';
-        return `<span class="session-personal-pill attended">Attended${hoursText}</span>`;
+function buildPersonalPillHTML(entry, isPast, isRegularGroup) {
+    const pills = [];
+    if (entry) {
+        if (isPast && entry.checked) {
+            const hoursText = entry.hours > 0 ? ` &middot; ${entry.hours}h` : '';
+            pills.push(`<span class="session-personal-pill attended">Attended${hoursText}</span>`);
+        } else {
+            pills.push(`<span class="session-personal-pill">Registered</span>`);
+        }
     }
-    return `<span class="session-personal-pill">Registered</span>`;
+    if (isRegularGroup) {
+        pills.push(`<span class="session-personal-pill regular">Regular</span>`);
+    }
+    return pills.join('');
 }
 
 function renderSessionList(container, sessions, options = {}) {
-    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange, myEntryMap } = options;
+    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange, myEntryMap, regularGroupIds } = options;
 
     if (sessions.length === 0) {
         container.innerHTML = '<p class="no-sessions">No sessions</p>';
@@ -152,7 +159,8 @@ function renderSessionList(container, sessions, options = {}) {
         const url = buildSessionDetailUrl(session);
         const entryKey = `${(session.date || '').substring(0, 10)}|${session.groupKey || ''}`;
         const personalEntry = myEntryMap ? myEntryMap.get(entryKey) : null;
-        const personalPillHTML = buildPersonalPillHTML(personalEntry, isPast);
+        const isRegularGroup = regularGroupIds ? regularGroupIds.has(session.groupId) : false;
+        const personalPillHTML = buildPersonalPillHTML(personalEntry, isPast, isRegularGroup);
 
         let card;
         if (isPast) {
