@@ -59,7 +59,7 @@ function updateWordCloudDisplay() {
     if (!wordCloudController || !fullCloudItems.length) return;
     const expanded = isHistoryExpanded();
     const items = expanded ? fullCloudItems : fullCloudItems.slice(0, CLOUD_DEFAULT_LIMIT);
-    wordCloudController.update(items);
+    wordCloudController.update(items, { maxSize: expanded ? 2.4 : 1.4 });
     wordCloudController.setCsvVisible(expanded);
 }
 

@@ -59,8 +59,9 @@ function updateCalToolbar(selectedKey) {
     const calVisible = document.getElementById('sessionCalendar').style.display !== 'none';
     document.getElementById('btnNext').classList.toggle('active', selectedKey === getMyNextKey());
     document.getElementById('btnLast').classList.toggle('active', selectedKey === getMyLastKey());
-    document.getElementById('btnShowCal').classList.toggle('active', calVisible);
-    document.getElementById('btnShowCal').textContent = calVisible ? 'Hide Calendar' : 'Show Calendar';
+    const btnCal = document.getElementById('btnShowCal');
+    btnCal.className = calVisible ? 'cal-tb-btn' : 'cal-tb-btn active';
+    btnCal.textContent = calVisible ? 'Hide Calendar' : 'Show Calendar';
 }
 
 function jumpToNext() {
@@ -184,7 +185,7 @@ function initSessionSection() {
         <div class="session-section">
             <div class="cal-card">
                 <div class="cal-toolbar" id="calToolbar">
-                    <button class="btn-action" id="btnShowCal" onclick="toggleCalendar()">Show Calendar</button>
+                    <button class="cal-tb-btn active" id="btnShowCal" onclick="toggleCalendar()">Show Calendar</button>
                     <div class="cal-tb-right">
                         <button class="cal-tb-btn" id="btnNext" onclick="jumpToNext()">Next</button>
                         <button class="cal-tb-btn" id="btnLast" onclick="jumpToLast()">Last</button>

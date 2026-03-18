@@ -25,6 +25,7 @@ function createWordCloud(container, options = {}) {
     let bodyEl = null;
     let csvBtn = null;
     let lastItems = [];
+    let currentMaxSize = MAX_SIZE;
 
     function shortLabel(label) {
         const parts = label.split(':');
@@ -76,7 +77,7 @@ function createWordCloud(container, options = {}) {
         bodyEl.innerHTML = '';
         const shuffled = [...visibleItems].sort(() => Math.random() - 0.5);
         for (const item of shuffled) {
-            const size = BASE_SIZE + (MAX_SIZE - BASE_SIZE) * (item.hours / maxHours);
+            const size = BASE_SIZE + (currentMaxSize - BASE_SIZE) * (item.hours / maxHours);
             const short = shortLabel(item.label);
             const url = getLinkUrl ? getLinkUrl(item) : null;
             const el = document.createElement(url ? 'a' : 'span');
@@ -109,8 +110,9 @@ function createWordCloud(container, options = {}) {
     }
 
     return {
-        update(items) {
+        update(items, { maxSize } = {}) {
             lastItems = items || [];
+            currentMaxSize = maxSize ?? MAX_SIZE;
             render(lastItems);
         },
         hide() {

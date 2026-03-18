@@ -453,7 +453,7 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     white-space: nowrap;
     text-decoration: none;
 }
-.btn-action:hover, .btn-action.active {
+.btn-action:hover {
     background: var(--green-dark);
 }
 .btn-action-danger {
