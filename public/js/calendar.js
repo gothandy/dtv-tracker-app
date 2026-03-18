@@ -8,6 +8,8 @@ let _month = 0;  // 0-indexed
 let _selectedKey = null;
 let _container = null;
 let _onDaySelect = null;
+let _myDates = null;        // Set<dateKey> — dates where the user has an entry
+let _regularDates = null;   // Set<dateKey> — regular-group sessions the user hasn't joined
 
 const MONTH_NAMES = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
@@ -33,6 +35,21 @@ function findDefaultKey() {
     const todayKey = toDateKey(new Date().toISOString());
     let nextKey = null;
     let lastKey = null;
+
+    // Prefer the user's own next session if personalised
+    if (_myDates && _myDates.size > 0) {
+        for (const key of _myDates) {
+            if (!_sessionIndex.has(key)) continue;
+            if (key >= todayKey) {
+                if (!nextKey || key < nextKey) nextKey = key;
+            } else {
+                if (!lastKey || key > lastKey) lastKey = key;
+            }
+        }
+        if (nextKey) return nextKey;
+    }
+
+    // Fall back to global next/last
     for (const key of _sessionIndex.keys()) {
         if (key >= todayKey) {
             if (!nextKey || key < nextKey) nextKey = key;
@@ -71,6 +88,8 @@ function renderCalendar() {
         let classes = 'cal-cell';
         if (dateKey === todayKey) classes += ' cal-today';
         if (_sessionIndex.has(dateKey)) classes += ' cal-has-session';
+        if (_myDates && _myDates.has(dateKey)) classes += ' cal-my-session';
+        else if (_regularDates && _regularDates.has(dateKey)) classes += ' cal-regular-session';
         if (dateKey === _selectedKey) classes += ' cal-selected';
         html += `<div class="${classes}" data-date="${dateKey}">${d}</div>`;
     }
@@ -115,16 +134,19 @@ function calendarSelectDate(dateKey) {
     selectDate(dateKey);
 }
 
-function initCalendar(container, sessions, onDaySelect) {
+// personalData: optional { myDates: Set<dateKey>, regularDates: Set<dateKey> }
+function initCalendar(container, sessions, onDaySelect, personalData) {
     _container = container;
     _onDaySelect = onDaySelect;
     _sessionIndex = buildSessionIndex(sessions);
+    _myDates = personalData ? personalData.myDates : null;
+    _regularDates = personalData ? personalData.regularDates : null;
 
     const today = new Date();
     _year = today.getFullYear();
     _month = today.getMonth();
 
-    // Auto-select the next upcoming session
+    // Auto-select the next upcoming session (personal if available, else global)
     _selectedKey = findDefaultKey();
 
     renderCalendar();

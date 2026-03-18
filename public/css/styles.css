@@ -969,6 +969,58 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     background: var(--green-dark) !important;
 }
 
+/* Personal session dots — small indicator below the date number */
+.cal-my-session,
+.cal-regular-session {
+    position: relative;
+    padding-bottom: 6px;
+}
+.cal-my-session::after,
+.cal-regular-session::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+.cal-my-session::after {
+    background: var(--green);
+}
+.cal-regular-session::after {
+    background: transparent;
+    border: 1px solid var(--green);
+    box-sizing: border-box;
+}
+/* Keep dots visible on the selected (green) cell */
+.cal-selected.cal-my-session::after {
+    background: white;
+}
+.cal-selected.cal-regular-session::after {
+    border-color: white;
+}
+
+/* Session card personal status pills */
+.session-personal-pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    color: var(--green-dark);
+    border: 1px solid var(--green);
+    background: var(--green-light);
+    line-height: 1.5;
+    white-space: nowrap;
+    margin-bottom: 0.35rem;
+}
+.session-personal-pill.attended {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+}
+
 @media (max-width: 600px) {
     .cal-widget { padding: 1rem; }
 }

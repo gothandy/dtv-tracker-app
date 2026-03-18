@@ -103,8 +103,22 @@ function buildSessionMetaHTML(session, isPast) {
     return items ? `<div class="meta">${items}</div>` : '';
 }
 
+/**
+ * Build a personal status pill for a session card.
+ * entry: { checked, hours } or null/undefined
+ * isPast: whether the session date is in the past
+ */
+function buildPersonalPillHTML(entry, isPast) {
+    if (!entry) return '';
+    if (isPast && entry.checked) {
+        const hoursText = entry.hours > 0 ? ` &middot; ${entry.hours}h` : '';
+        return `<span class="session-personal-pill attended">Attended${hoursText}</span>`;
+    }
+    return `<span class="session-personal-pill">Registered</span>`;
+}
+
 function renderSessionList(container, sessions, options = {}) {
-    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange } = options;
+    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange, myEntryMap } = options;
 
     if (sessions.length === 0) {
         container.innerHTML = '<p class="no-sessions">No sessions</p>';
@@ -136,6 +150,9 @@ function renderSessionList(container, sessions, options = {}) {
         }
         const countdown = isNext ? getCountdown(session.date) : null;
         const url = buildSessionDetailUrl(session);
+        const entryKey = `${(session.date || '').substring(0, 10)}|${session.groupKey || ''}`;
+        const personalEntry = myEntryMap ? myEntryMap.get(entryKey) : null;
+        const personalPillHTML = buildPersonalPillHTML(personalEntry, isPast);
 
         let card;
         if (isPast) {
@@ -150,6 +167,7 @@ function renderSessionList(container, sessions, options = {}) {
                 ${isLast && !isNext ? '<div class="last-session-label">Last session</div>' : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
+                ${personalPillHTML}
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 <div class="photo-carousel-slot"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
@@ -164,6 +182,7 @@ function renderSessionList(container, sessions, options = {}) {
                 ${countdown ? `<div class="countdown">${countdown === 'Today' ? "Today's Session" : `Next session &middot; ${countdown}`}</div>` : ''}
                 <div class="date">${formatDate(session.date)}</div>
                 <div class="title">${escapeHtml(session.displayName)}</div>
+                ${personalPillHTML}
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${buildSessionMetaHTML(session, false)}
