@@ -198,7 +198,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Profile detail → edit record modal → Delete button → confirmation
 - [ ] `DELETE /api/records/:id`
 
-### H22b. Collect consent (Check In / Admin)
+### H22b. Collect consent (Check In / Admin / Self-Service)
 - [ ] Profile detail → Records → "Collect Consent" button visible (Check In or Admin)
 - [ ] "Collect Consent" button **hidden** for Read Only users
 - [ ] Click → `/profiles/:slug/consent.html` — shows volunteer name; Submit disabled
@@ -208,6 +208,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: true, photoConsent: false }` → 200
 - [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: false }` → 400 (privacy required)
 - [ ] Read Only: `POST /api/profiles/:id/consent` → 403
+- [ ] **Entry detail consent button** (Check In / Admin): visible when volunteer has no Privacy Consent record; hidden once they have an Accepted record
+- [ ] Entry detail consent button: hidden for Read Only users
+- [ ] Entry detail consent button: clicking navigates to `/profiles/:slug/consent.html`
+- [ ] **Self-Service**: consent button visible on own entry detail when no privacy consent signed
+- [ ] Self-Service: clicking navigates to `/profiles/:slug/consent.html`; can submit successfully
+- [ ] Self-Service: `POST /api/profiles/:id/consent` for own profile → 200
+- [ ] Self-Service: `POST /api/profiles/:id/consent` for a different profile ID → 403
 
 ### H23. Bulk add records
 - [ ] Volunteers page → Advanced → no checkboxes ticked → "Add Records" → modal shows count of filtered individuals (groups excluded)
@@ -479,7 +486,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Header shows logged-in user name and Logout link
 - [ ] `/auth/me` returns user details (no session check)
 
-### L18. Upload button (entry detail)
-- [ ] Button positioned top-right of entry header card alongside h1
+### L18. Upload and consent buttons (entry detail)
+- [ ] Upload button positioned top-right of entry header card alongside h1
 - [ ] Displays cloud-upload SVG icon + "Upload" label
-- [ ] Visible for Admin and Check In; hidden for Read Only (checkin-only CSS class)
+- [ ] Upload button visible for Admin and Check In; hidden for Read Only and Self-Service (checkin-only CSS class)
+- [ ] Consent button (checkboxes icon + "Consent" label) shown next to Upload when volunteer has no Accepted Privacy Consent
+- [ ] Consent button hidden when volunteer already has Accepted Privacy Consent
+- [ ] Consent button visible for Admin, Check In, and Self-Service; hidden for Read Only (checkin-or-selfservice CSS class)

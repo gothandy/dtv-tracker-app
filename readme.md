@@ -211,6 +211,7 @@ Response includes a human-readable `summary` field, e.g.:
 | `/api/profiles/:slug/regulars` | POST | Add as regular to group |
 | `/api/profiles/:slug/transfer` | POST | Transfer entries between profiles |
 | `/api/profiles/:id/records` | POST | Create consent/governance record |
+| `/api/profiles/:id/consent` | POST | Upsert privacy and photo consent records (check-in+, or self-service for own profile) |
 
 ### Records
 
@@ -249,7 +250,7 @@ Response includes a human-readable `summary` field, e.g.:
 | Session Detail | `/sessions/:group/:date/details.html` | Entries, check-in, set hours, edit/delete |
 | Volunteers | `/volunteers.html` | Profiles with FY filter, sort, group filter, search |
 | Profile Detail | `/profiles/:slug/details.html` | FY stats, group hours, entries, records |
-| Entry Edit | `/entries/:group/:date/:slug/edit.html` | Tag buttons, hours, notes, delete; admin upload link generator |
+| Entry Detail | `/entries/:id/edit.html` | Tag buttons, hours, notes, delete; consent button (if no privacy consent); upload button (check-in+) |
 | Add Entry | `/sessions/:group/:date/add-entry.html` | Volunteer search and create |
 | Upload | `/upload` | Public volunteer photo upload (code entry) — no auth required |
 | Upload | `/upload/:code` | Same page — pre-fills and auto-submits the code from the URL |

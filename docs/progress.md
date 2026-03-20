@@ -1,5 +1,25 @@
 # Development Progress
 
+## Session: 2026-03-20 (Consent button on entry detail + self-service consent access)
+
+### Completed Tasks
+
+#### Consent button on entry detail ✓
+
+- **`routes/entries.ts`** — `GET /entries/:id` now fetches the volunteer's records and sets `hasPrivacyConsent: true` if there is an Accepted Privacy Consent record. Uses the already-imported `recordsRepository`.
+- **`types/api-responses.ts`** — Added `hasPrivacyConsent?: boolean` to `EntryDetailResponse`.
+- **`public/entry-detail.html`** — Renders a "Consent" button (checkboxes SVG icon) next to the Upload button in the entry header when `hasPrivacyConsent` is false. Clicking navigates to `/profiles/:slug/consent.html`. Button hidden once consent is signed.
+- **`public/css/styles.css`** — Added `.checkin-or-selfservice` CSS class: shown for admin, check-in, and self-service; hidden for read-only and public. Used by the consent button.
+
+#### Self-service consent submission ✓
+
+- **`middleware/require-admin.ts`** — Added `POST /api/profiles/:id/consent` to `SELFSERVICE_ALLOWED_PATTERNS`.
+- **`routes/profiles.ts`** — Added ownership check to `POST /profiles/:id/consent`: self-service users can only submit consent for their own profile; returns 403 otherwise.
+
+This enables self-service volunteers to sign their own consent form directly from their entry detail page, paving the way for email-based consent collection.
+
+---
+
 ## Session: 2026-03-18 (Homepage personalisation — steps 1 & 2)
 
 ### Completed Tasks

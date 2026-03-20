@@ -170,3 +170,43 @@ Review all list pages (groups, sessions, volunteers, group detail, profile detai
 - Card layouts — consistent use of meta items, green numbers, descriptions
 - Empty states when a filter returns no results
 - Default filter selection across pages
+
+## Homepage Refresh Button — Public Appearance
+The refresh icon at the top of the homepage is intentionally visible to public users (the loading spinner is useful), but it currently looks like a fully active button. For public users it should appear visually inactive — muted colour, no hover effect, `cursor: default` — so it doesn't imply interactivity. The spinner behaviour on click should remain.
+
+## Multiple Emails UI
+The `Profile.Email` field supports comma-separated addresses but there's no dedicated UI for managing them — currently edited as a raw string in the profile edit modal. Needs a proper multi-value input: add/remove individual addresses, clear labelling of which is primary (first in the list), and validation per address.
+
+## Dig Lead and First Aider Session Roles
+
+Two named roles per session: the designated Dig Lead and First Aider on the day.
+
+**Session fields** (new SharePoint lookup fields on Sessions list, pointing to Profiles):
+- `DigLead` — the lead dig leader for the session
+- `FirstAider` — the designated first aider
+
+Shown on session detail page (check-in+); editable via the session edit modal.
+
+**Dig Lead training record** (Records list):
+- New Type choice: `Dig Lead Training` — records who has completed dig lead training (Status: Accepted/Invited/etc., Date: training date)
+- Displayed on profile detail Records section like other record types
+
+**`#DigLead` entry tag** — marks sub dig leaders attending on the day (anyone with dig lead training who isn't the named session Dig Lead). Currently exists as a hashtag in entry Notes. Eventbrite sync should auto-tag `#DigLead` on entries where the volunteer has a `Dig Lead Training` record, similar to how `#NoPhoto` is tagged from Photo Consent. The named session Dig Lead may or may not also get this tag — TBD.
+
+**Schema changes**: two new lookup fields on Sessions list; one new Type choice on Records list.
+
+## #NoConsent Tag — Privacy Consent Warning
+Similar to `#NoPhoto`, automatically tag entries `#NoConsent` when the volunteer has no Accepted Privacy Consent record. Prompts check-in users to collect consent on the day.
+- Add `#NoConsent` to the tag icon config in `public/js/tag-icons.js` (red warning style, matching `#NoPhoto`)
+- Add SVG icon for the badge
+- Session refresh (`POST /api/sessions/:group/:date/refresh`) should tag `#NoConsent` on entries where the volunteer lacks consent, alongside the existing `#NoPhoto` logic
+- Entry detail and session detail should render the badge; check-in users can clear it once consent is collected (or it auto-clears on next refresh)
+
+## Records — Notes Field
+Add a free-text `Notes` field to the Records list for recording supplementary information against a record, e.g. which email address was used to collect consent, first aid certificate type/expiry, DofE award level. Schema change (new single-line text field on the Records SharePoint list) plus UI changes on the record add/edit modal and record pill display.
+
+## Human-Readable Entry URLs
+Replace numeric entry URLs (`/entries/123/edit.html`) with consistent slug-based URLs: `/sessions/:groupKey/:date/:volunteerSlug/entry.html` (e.g. `/sessions/Sat/2026-03-21/andrew-davies-1/entry.html`).
+- Express route serves `entry-detail.html` for the 5-segment pattern
+- New API endpoint `GET /api/sessions/:groupKey/:date/entries/:volunteerSlug` resolves the entry (group+date → session; slug suffix → profile ID; profile+session → entry)
+- `entry-detail.html` JS detects the new URL pattern and calls the new endpoint instead of `/api/entries/:id`
