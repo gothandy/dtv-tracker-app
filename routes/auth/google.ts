@@ -76,7 +76,8 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     res.redirect(returnTo);
   } catch (error: any) {
     console.error('Error in Google auth callback:', error.message);
-    res.redirect('/login.html?reason=not-approved');
+    // TEMP DEBUG — remove before go-live
+    res.json({ debugError: error.message, stack: error.stack });
   }
 });
 
