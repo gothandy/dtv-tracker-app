@@ -7,20 +7,11 @@ export async function resolvePersonalSession(email: string, displayName: string,
   ok: true;
   sessionUser: NonNullable<import('express-session').SessionData['user']>;
 } | { ok: false }> {
-  const adminUsers = (process.env.ADMIN_USERS || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+  const adminUsers = parseEmails(process.env.ADMIN_USERS);
   const profiles = await profilesRepository.getAll();
   const target = email.toLowerCase();
   const matchedProfiles = profiles.filter(p => parseEmails(p.Email).includes(target));
-  console.log(`[Auth] ${email}`);
-  if (matchedProfiles.length === 0) {
-    const candidates = profiles.filter(p => p.Email && p.Email.toLowerCase().includes(target.split('@')[0]));
-    for (const c of candidates) {
-      const raw = c.Email!;
-      console.error(`[Auth] NO MATCH. target="${target}" raw="${raw}" charCodes=[${[...raw].map(ch => ch.charCodeAt(0)).join(',')}] parsed=${JSON.stringify(parseEmails(raw))}`);
-    }
-    if (!candidates.length) console.error(`[Auth] NO MATCH and no candidate profiles found for ${target}`);
-    return { ok: false };
-  }
+  if (matchedProfiles.length === 0) return { ok: false };
 
   const primary = matchedProfiles[0];
 

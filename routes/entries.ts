@@ -180,13 +180,14 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     });
 
     const group = convertGroup(spGroup);
+    const emails = parseEmails(profile?.Email);
 
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
       volunteerSlug: volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]),
-      volunteerEmail: profile?.Email ? parseEmails(profile.Email)[0] : undefined,
-      volunteerEmails: profile?.Email ? parseEmails(profile.Email) : undefined,
+      volunteerEmail: emails[0],
+      volunteerEmails: emails.length > 0 ? emails : undefined,
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,
@@ -286,13 +287,14 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
     });
 
     const group = convertGroup(spGroup);
+    const emails = parseEmails(profile?.Email);
 
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
       volunteerSlug: volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]),
-      volunteerEmail: profile?.Email ? parseEmails(profile.Email)[0] : undefined,
-      volunteerEmails: profile?.Email ? parseEmails(profile.Email) : undefined,
+      volunteerEmail: emails[0],
+      volunteerEmails: emails.length > 0 ? emails : undefined,
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,

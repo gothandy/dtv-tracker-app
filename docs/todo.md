@@ -26,8 +26,9 @@ Would improve performance as the volunteer list grows.
 
 ## Email Handling & GDPR — Requirements Gaps
 
-The current model (one email per profile, email used as matching key for Eventbrite
-sync) works for the common case but has unmet requirements:
+The `Profile.Email` field supports a comma-separated list of addresses — all are used
+for OAuth login matching and Eventbrite sync, with the first as primary. This handles
+the common case of multi-account volunteers, but some gaps remain:
 
 - **Email changes**: a volunteer can update their email in Tracker, but this silently
   breaks future Eventbrite matching — the new email won't match their existing
@@ -38,17 +39,9 @@ sync) works for the common case but has unmet requirements:
 - **Children registered by parents**: children don't have their own email address.
   They're booked on Eventbrite by a parent, so their profile picks up whichever
   parent's email was used that day. A different parent books the same child next time
-  → different email → false name clash → duplicate profile. The current model treats
-  email as identity, which breaks for dependent registrants.
+  → different email → false name clash → duplicate profile.
 
-- **Multi-account volunteers**: some people have registered on Eventbrite with
-  different email addresses (personal vs. work, old vs. new). Each different email
-  currently risks creating a duplicate profile.
-
-These are requirements gaps in the matching model, not bugs. A future solution will
-need to decide whether email is identity (current) or contact detail (separating
-matching from communication), and how consents and email updates interact with GDPR
-obligations.
+These are requirements gaps in the matching model, not bugs.
 
 ---
 

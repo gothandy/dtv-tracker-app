@@ -98,7 +98,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 |------------|---------------|------|----------|---------|-------------|
 | **ID** | ID | Counter | Auto | - | Unique identifier (Primary Key) |
 | **Title** | Title | Single line of text | No | - | Volunteer name |
-| **Email** | Email | Single line of text | No | - | Volunteer email address |
+| **Email** | Email | Single line of text | No | - | Comma-separated email addresses; first is primary. All used for OAuth login matching and Eventbrite sync |
 | **MatchName** | MatchName | Single line of text | No | - | Lowercase name for Eventbrite matching |
 | **User** | User | Single line of text | No | - | DTV Entra ID username (e.g. andrew.davies@dtv.org.uk) |
 | **IsGroup** | IsGroup | Yes/No | No | No | Flag indicating if this is a group profile |
