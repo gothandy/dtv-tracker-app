@@ -78,7 +78,8 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | **Add entry** | Redirected (auth required) | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
 | **Entry detail** | Redirected (auth required) | View only (controls disabled) | Checked In toggle, Hours field, Count, Upload button | Notes, tag buttons, Delete Entry |
 | **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | — | Bulk Records |
-| **Profile detail** | Redirected (auth required) | View stats/entries/groups, duplicates/linked profiles | Edit profile (name/email/match name), Regulars checkboxes, Inline hours editing (own profile only) | Username field in edit modal, Add Record, record pill editing, Inline hours editing (all profiles), Transfer, Delete Profile |
+| **Profile detail** | Redirected (auth required) | View stats/entries/groups, duplicates/linked profiles | Edit profile (name/email/match name), Regulars checkboxes, Inline hours editing (own profile only), Collect Consent button | Username field in edit modal, Add Record, record pill editing, Inline hours editing (all profiles), Transfer, Delete Profile |
+| **Consent page** | Redirected (auth required) | **Blocked** — page loads but API returns 403 | Full access — collect privacy and photo consent | Full access |
 | **Admin** | Redirected (auth required) | Icon Legend only | — | Eventbrite sync, Exports, Site link |
 
 ---
@@ -135,6 +136,7 @@ Self-service users **cannot** access:
 | POST | `/sessions/:group/:date/refresh` | Refresh session (regulars + Eventbrite) |
 | POST | `/entries/:id/photos` | Upload photos to an entry |
 | PATCH | `/media/:itemId` | Update media item metadata (title, isPublic) |
+| POST | `/profiles/:id/consent` | Collect privacy and photo consent (upserts both records) |
 
 ### Admin Only
 

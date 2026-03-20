@@ -204,6 +204,11 @@ app.get('/profiles/:slug/details.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'profile-detail.html'));
 });
 
+// Serve consent collection page at /profiles/:slug/consent.html
+app.get('/profiles/:slug/consent.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'consent.html'));
+});
+
 // Mount API routes
 app.use('/api', apiRoutes);
 

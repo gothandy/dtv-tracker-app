@@ -7,12 +7,14 @@ let currentFilter = 'all';
 let currentGroup = '';
 let currentProfile = null;
 let canEditHours = false;
+let canCollectConsent = false;
 let wordCloudController = null;
 
 const authReady = apiFetch('/auth/me').then(r => r.json()).then(data => {
     if (data.authenticated) {
         canEditHours = data.user.role === 'admin' ||
             (data.user.role === 'checkin' && data.user.profileSlug === profileSlug);
+        canCollectConsent = data.user.role === 'admin' || data.user.role === 'checkin';
     }
 }).catch(() => {});
 
@@ -480,7 +482,7 @@ async function loadProfile() {
                     <h1>${escapeHtml(profile.name || 'Unknown')}${groupBadge}${memberBadge}</h1>
                     <div class="profile-actions">
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit profile">
-                            <img src="/svg/edit.svg" width="18" height="18" alt="Edit">
+                            <img src="/svg/edit.svg" width="18" height="18" alt="Edit"><span class="btn-label">Edit</span>
                         </button>
                     </div>
                 </div>
@@ -504,7 +506,10 @@ async function loadProfile() {
             <div class="section-card">
                 <div class="consent-header">
                     <h2>Records</h2>
-                    <button class="btn-add-record admin-only" onclick="openAddRecord()">+ Add</button>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        ${canCollectConsent ? `<a class="btn-action" href="/profiles/${encodeURIComponent(profileSlug)}/consent.html"><img src="/svg/checkboxes.svg" width="18" height="18" alt="" style="filter:brightness(0) invert(1);"><span class="btn-label">Consent</span></a>` : ''}
+                        <button class="btn-action admin-only" onclick="openAddRecord()"><img src="/svg/add.svg" width="18" height="18" alt="" style="filter:brightness(0) invert(1);"><span class="btn-label">Add</span></button>
+                    </div>
                 </div>
                 <div class="consent-pills">
                     ${(profile.records || []).map(r => `<span class="consent-pill admin-clickable status-${(r.status || '').toLowerCase()}" onclick="openEditRecord(${r.id}, '${escapeHtml(r.type).replace(/'/g, "\\'")}', '${escapeHtml(r.status || '').replace(/'/g, "\\'")}', '${r.date || ''}')">${escapeHtml(r.type)} <span class="consent-date">${escapeHtml(r.status || '')}${r.date ? ' · ' + formatDate(r.date) : ''}</span></span>`).join('')}

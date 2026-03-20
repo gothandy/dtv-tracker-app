@@ -446,6 +446,51 @@ router.post('/records/bulk', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
+  try {
+    const profileId = parseInt(String(req.params.id), 10);
+    if (isNaN(profileId)) {
+      res.status(400).json({ success: false, error: 'Invalid profile ID' });
+      return;
+    }
+    if (!recordsRepository.available) {
+      res.status(400).json({ success: false, error: 'Records list not configured' });
+      return;
+    }
+
+    const { privacyConsent, photoConsent } = req.body;
+    if (privacyConsent !== true) {
+      res.status(400).json({ success: false, error: 'Privacy consent is required' });
+      return;
+    }
+
+    const today = new Date().toISOString();
+    const existing = await recordsRepository.getByProfile(profileId);
+
+    // Upsert Privacy Consent (always Accepted — backend enforces this)
+    const privacyRecord = existing.find(r => r.Type === 'Privacy Consent');
+    if (privacyRecord) {
+      await recordsRepository.update(privacyRecord.ID, { Status: 'Accepted', Date: today });
+    } else {
+      await recordsRepository.create({ ProfileLookupId: profileId, Type: 'Privacy Consent', Status: 'Accepted', Date: today });
+    }
+
+    // Upsert Photo Consent (Accepted or Declined based on volunteer's choice)
+    const photoStatus = photoConsent === true ? 'Accepted' : 'Declined';
+    const photoRecord = existing.find(r => r.Type === 'Photo Consent');
+    if (photoRecord) {
+      await recordsRepository.update(photoRecord.ID, { Status: photoStatus, Date: today });
+    } else {
+      await recordsRepository.create({ ProfileLookupId: profileId, Type: 'Photo Consent', Status: photoStatus, Date: today });
+    }
+
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error saving consent:', error);
+    res.status(500).json({ success: false, error: 'Failed to save consent', message: error.message });
+  }
+});
+
 router.post('/profiles', async (req: Request, res: Response) => {
   try {
     const { name, email } = req.body;

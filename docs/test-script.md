@@ -198,6 +198,17 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Profile detail → edit record modal → Delete button → confirmation
 - [ ] `DELETE /api/records/:id`
 
+### H22b. Collect consent (Check In / Admin)
+- [ ] Profile detail → Records → "Collect Consent" button visible (Check In or Admin)
+- [ ] "Collect Consent" button **hidden** for Read Only users
+- [ ] Click → `/profiles/:slug/consent.html` — shows volunteer name; Submit disabled
+- [ ] Tick Privacy only → Submit enabled; submit → Privacy Consent: Accepted, Photo Consent: Declined
+- [ ] Tick both → submit → both Accepted
+- [ ] Return to profile → record pills show updated status and today's date
+- [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: true, photoConsent: false }` → 200
+- [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: false }` → 400 (privacy required)
+- [ ] Read Only: `POST /api/profiles/:id/consent` → 403
+
 ### H23. Bulk add records
 - [ ] Volunteers page → Advanced → no checkboxes ticked → "Add Records" → modal shows count of filtered individuals (groups excluded)
 - [ ] With checkboxes ticked → "Add Records (N)" → modal shows count of selected individuals only

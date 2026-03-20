@@ -1193,6 +1193,8 @@ label.group-hours-item { cursor: pointer; }
     .entry-info { gap: 0.5rem; }
     .entry-group { flex-basis: 100%; }
     .entry-meta { width: auto; }
+    .btn-action .btn-label { display: none; }
+    .btn-action { padding: 0.6rem 0.7rem; }
 }
 
 /* === Card selection mode (sessions + volunteers) ============================ */

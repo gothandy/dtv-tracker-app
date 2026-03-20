@@ -44,6 +44,7 @@ Feature-complete volunteer tracking application with:
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
 - Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted users) options with role descriptions; Facebook login uses `m.facebook.com` OAuth URL (bypasses Android intent routing to native app) + `target="_blank"` in PWA standalone (forces Chrome Custom Tab) + `window.open()` in Chrome (keeps login.html alive for BroadcastChannel/polling) ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
+- Consent collection page (check-in and admin only): served at `/profiles/:slug/consent.html`; fetches profile by slug, shows privacy (required) and photo (optional) consent checkboxes plus privacy policy link; submits to `POST /api/profiles/:id/consent` which upserts both records dated today ([public/consent.html](public/consent.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
 - Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
@@ -287,6 +288,7 @@ dtv-tracker-app/
 │   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
+│   ├── consent.html               # Consent collection page — served at /profiles/:slug/consent.html; check-in and admin only
 │   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted users (Microsoft) options; Facebook uses m.facebook.com + target=_blank (PWA) / window.open (Chrome)
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
@@ -366,6 +368,7 @@ dtv-tracker-app/
 - [x] Manual backup export: admin button calls `POST /api/backup/export-all`, writes all 6 lists as JSON to `Tracker Archive/` folder in SharePoint Shared Documents (requires `BACKUP_DRIVE_ID` env var)
 - [x] Taxonomy tag word cloud on homepage, group detail, and profile detail — `GET /api/tags/hours-by-taxonomy` aggregates hours by tag with ancestor rollup; reusable `word-cloud.js` component; respects all FY/group/profile filters; CSV download; homepage shows top 5 by default, full cloud on Show History
 - [x] Personalised homepage calendar — self-service, check-in, and admin (with profile) users see calendar dots on their own sessions (filled) and regular-group sessions not yet joined (outline); Next/Last buttons target own sessions with global fallback; session cards show Registered/Attended pills; public and read-only users see standard global view
+- [x] Consent collection page at `/profiles/:slug/consent.html` — check-in and admin users see "Collect Consent" button on profile Records section; page presents privacy (required) and photo (optional) checkboxes with privacy policy link; on submit upserts both records with today's date via `POST /api/profiles/:id/consent`
 
 ## Planned Features
 
