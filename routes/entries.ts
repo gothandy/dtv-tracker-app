@@ -289,6 +289,11 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
     const group = convertGroup(spGroup);
     const emails = parseEmails(profile?.Email);
 
+    const profileRecords = (volunteerId !== undefined && recordsRepository.available)
+      ? await recordsRepository.getByProfile(volunteerId)
+      : [];
+    const hasPrivacyConsent = profileRecords.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
+
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
@@ -306,7 +311,8 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       date: spSession.Date,
       groupKey: group.lookupKeyName,
       groupName: group.displayName,
-      sessionDisplayName: spSession.Name || spSession.Title
+      sessionDisplayName: spSession.Name || spSession.Title,
+      hasPrivacyConsent
     };
 
     res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);

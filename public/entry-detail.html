@@ -197,6 +197,11 @@
                                     <img src="/svg/upload.svg" width="20" height="20" alt="">
                                     Upload
                                 </button>
+                                ${!entry.hasPrivacyConsent && entry.volunteerSlug ? `
+                                <button class="btn-action checkin-or-selfservice" onclick="window.location.href='/profiles/${encodeURIComponent(entry.volunteerSlug)}/consent.html'" title="Collect consent">
+                                    <img src="/svg/checkboxes.svg" width="20" height="20" alt="">
+                                    Consent
+                                </button>` : ''}
                             </div>
                         </div>
 

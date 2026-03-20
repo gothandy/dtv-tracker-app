@@ -69,6 +69,11 @@ body[data-role="selfservice"] .selfservice-only { display: revert !important; }
 body[data-role="admin"] .trusted-only,
 body[data-role="checkin"] .trusted-only,
 body[data-role="readonly"] .trusted-only { display: revert !important; }
+/* Checkin or self-service: visible for admin/checkin/selfservice; hidden for readonly and public */
+.checkin-or-selfservice { display: none !important; }
+body[data-role="admin"] .checkin-or-selfservice,
+body[data-role="checkin"] .checkin-or-selfservice,
+body[data-role="selfservice"] .checkin-or-selfservice { display: inline-flex !important; }
 
 /* === Base === */
 * { margin: 0; padding: 0; box-sizing: border-box; }

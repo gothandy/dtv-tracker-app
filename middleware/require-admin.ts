@@ -21,6 +21,7 @@ const SELFSERVICE_ALLOWED_PATTERNS = [
   { method: 'POST',   pattern: /^\/sessions\/[^/]+\/[^/]+\/entries$/ }, // self-register for a session
   { method: 'POST',   pattern: /^\/entries\/\d+\/photos$/ },            // upload photos to own entry
   { method: 'DELETE', pattern: /^\/entries\/\d+$/ },                    // delete own entry; handler enforces ownership
+  { method: 'POST',   pattern: /^\/profiles\/\d+\/consent$/ },          // submit own consent; handler enforces ownership
 ];
 
 // GET paths self-service users can access — mirrors the public (unauthenticated) allowlist in

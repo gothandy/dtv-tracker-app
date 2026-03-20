@@ -191,6 +191,7 @@ export interface EntryDetailResponse {
   groupKey?: string;
   groupName?: string;
   sessionDisplayName?: string;
+  hasPrivacyConsent?: boolean;
 }
 
 export interface FYStatsResponse {

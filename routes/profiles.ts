@@ -458,6 +458,17 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
       return;
     }
 
+    // Self-service users may only submit consent for their own profile
+    if (req.session.user?.role === 'selfservice') {
+      const ownIds = req.session.user.profileIds?.length
+        ? req.session.user.profileIds
+        : (req.session.user.profileId ? [req.session.user.profileId] : []);
+      if (!ownIds.includes(profileId)) {
+        res.status(403).json({ success: false, error: 'Not permitted' });
+        return;
+      }
+    }
+
     const { privacyConsent, photoConsent } = req.body;
     if (privacyConsent !== true) {
       res.status(400).json({ success: false, error: 'Privacy consent is required' });
