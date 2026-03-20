@@ -94,7 +94,10 @@ export interface ProfileDetailResponse {
   id: number;
   slug: string;
   name?: string;
+  /** First email — primary for display */
   email?: string;
+  /** All emails on the profile */
+  emails?: string[];
   matchName?: string;
   user?: string;
   isGroup: boolean;
@@ -175,6 +178,7 @@ export interface EntryDetailResponse {
   volunteerName?: string;
   volunteerSlug?: string;
   volunteerEmail?: string;
+  volunteerEmails?: string[];
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;

@@ -78,13 +78,25 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
 }
 
 /**
+ * Parses a comma-separated email string into a trimmed, lowercased array.
+ * First entry is the primary email (used for display and future automated sends).
+ * All entries are used for OAuth login matching and Eventbrite sync.
+ */
+export function parseEmails(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+}
+
+/**
  * Converts SharePoint Profile to clean domain type
  */
 export function convertProfile(spProfile: SharePointProfile): Profile {
+  const emails = parseEmails(spProfile.Email);
   return {
     id: spProfile.ID,
     name: spProfile.Title,
-    email: spProfile.Email,
+    email: emails[0],
+    emails,
     matchName: spProfile.MatchName,
     user: spProfile.User,
     isGroup: spProfile.IsGroup || false,

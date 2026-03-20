@@ -19,6 +19,7 @@ router.get('/logout', (req: Request, res: Response) => {
 
 // GET /auth/providers — return which personal account OAuth providers are configured
 router.get('/providers', (_req: Request, res: Response) => {
+  console.log(`[Auth] Providers`);
   res.json({
     google:   !!process.env.GOOGLE_CLIENT_ID,
     facebook: !!process.env.FACEBOOK_APP_ID,

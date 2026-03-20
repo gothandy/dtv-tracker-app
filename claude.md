@@ -77,7 +77,7 @@ The application uses 6 SharePoint lists on the Tracker site (`/sites/tracker`):
 ### 4. Profiles List
 **GUID**: `84649143-9e10-42eb-b6ee-2e1f57033073`
 - Stores volunteer profile information
-- Key fields: Title (name), Email, MatchName (for Eventbrite matching), User (DTV Entra ID username), IsGroup
+- Key fields: Title (name), Email (comma-separated list — first is primary; all are used for OAuth matching and Eventbrite sync), MatchName (for Eventbrite matching), User (DTV Entra ID username), IsGroup
 - Hours are calculated from Entries, not stored
 
 ### 5. Regulars List
@@ -194,7 +194,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 ### Permissions / Authorization
 - Five access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Self-Service** (volunteer Google/Facebook login — own profile only + session sign-up + photo upload), **Public** (unauthenticated — limited non-privacy view)
 - **"Trusted"** = Admin + Check In + Read Only (all Microsoft-auth roles). Self-Service is explicitly **not** trusted — it has stricter restrictions than Read Only: cannot view other volunteers' profiles, entries, or the volunteers listing; owns its own data only.
-- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by Profile `Email` field (Google/Facebook login); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
+- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by any email in the Profile `Email` field (Google/Facebook login — comma-separated list supported); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
 - Role computed at login, stored in session; Public has no session role (`body[data-role]` not set)
 - Backend: `requireAuth` middleware gates all API routes (whitelist of public paths); `requireAdmin` middleware enforces role-based rules; route handlers enforce ownership for self-service users (profile ID check on `GET /api/profiles/:slug` etc.)
 - Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only` (Admin + Check In + Read Only; hidden from Self-Service and Public), `.auth-only` (any logged-in user), `.unauth-only` (Public only), `.selfservice-only` (Self-Service only)

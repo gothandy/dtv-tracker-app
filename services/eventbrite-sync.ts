@@ -5,7 +5,7 @@
 
 import { profilesRepository } from './repositories/profiles-repository';
 import { recordsRepository } from './repositories/records-repository';
-import { toMatchName, safeParseLookupId } from './data-layer';
+import { toMatchName, safeParseLookupId, parseEmails } from './data-layer';
 import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../types/sharepoint';
 import { SESSION_LOOKUP, PROFILE_LOOKUP } from './field-names';
@@ -50,7 +50,7 @@ export async function findOrCreateProfile(
     const byNameAndEmail = profiles.find(p => {
       const nameMatches = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
                           (p.Title && toMatchName(p.Title) === nameKey);
-      return nameMatches && p.Email?.toLowerCase() === normalizedEmail;
+      return nameMatches && parseEmails(p.Email).includes(normalizedEmail);
     });
     if (byNameAndEmail) return { profile: byNameAndEmail, isNew: false };
   }

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prebuild": "node -e \"const {execSync}=require('child_process'),fs=require('fs');try{const c=execSync('git rev-parse HEAD').toString().trim();fs.writeFileSync('public/build.json',JSON.stringify({built:new Date().toISOString(),commit:c}))}catch(e){}\"",
+    "prebuild": "node -e \"const {execSync}=require('child_process'),fs=require('fs');fs.rmSync('dist',{recursive:true,force:true});try{const c=execSync('git rev-parse HEAD').toString().trim();fs.writeFileSync('public/build.json',JSON.stringify({built:new Date().toISOString(),commit:c}))}catch(e){}\"",
     "build": "tsc",
     "start": "node app.js",
     "dev": "nodemon app.js",

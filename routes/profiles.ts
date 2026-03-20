@@ -21,7 +21,8 @@ import {
   nameToSlug,
   profileSlug,
   profileIdFromSlug,
-  toMatchName
+  toMatchName,
+  parseEmails
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP,
@@ -627,14 +628,15 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     // Find other profiles sharing the same match name (potential duplicates)
     const currentMatchKey = toMatchName(spProfile.MatchName || spProfile.Title);
     const currentTitleKey = toMatchName(spProfile.Title);
-    const currentEmail = spProfile.Email?.toLowerCase();
+    const currentEmails = parseEmails(spProfile.Email);
     const duplicates = currentMatchKey
       ? profiles
           .filter(p => p.ID !== spProfile.ID && toMatchName(p.MatchName || p.Title) === currentMatchKey)
           .map(p => {
-            const pEmail = p.Email?.toLowerCase();
+            const pEmails = parseEmails(p.Email);
+            const emailOverlap = pEmails.some(e => currentEmails.includes(e));
             const severity =
-              pEmail && currentEmail && pEmail === currentEmail ? 'red' :
+              emailOverlap && pEmails.length > 0 && currentEmails.length > 0 ? 'red' :
               toMatchName(p.Title) === currentTitleKey ? 'orange' : 'green';
             return {
               id: p.ID,
@@ -662,6 +664,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       slug: nameToSlug(profile.name),
       name: profile.name,
       email: profile.email,
+      emails: profile.emails.length > 0 ? profile.emails : undefined,
       matchName: spProfile.MatchName,
       user: spProfile.User,
       isGroup: profile.isGroup,
@@ -673,9 +676,9 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       records: records.length > 0 ? records : undefined,
       // duplicates and linkedProfiles expose other volunteers' names/emails — hidden from self-service
       duplicates: isSelfService ? undefined : (duplicates.length > 0 ? duplicates : undefined),
-      linkedProfiles: isSelfService ? undefined : (profile.email
+      linkedProfiles: isSelfService ? undefined : (currentEmails.length > 0
         ? (rawProfiles as any[])
-            .filter((p: any) => p.ID !== spProfile.ID && p.Email?.toLowerCase() === profile.email!.toLowerCase())
+            .filter((p: any) => p.ID !== spProfile.ID && parseEmails(p.Email).some((e: string) => currentEmails.includes(e)))
             .map((p: any) => ({ id: p.ID, slug: profileSlug(p.Title, p.ID), name: p.Title || '' }))
         : undefined)
     };

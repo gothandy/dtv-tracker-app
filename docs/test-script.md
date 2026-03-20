@@ -231,8 +231,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Shows "X sessions, Y new profiles, Z new entries, W consent records"
 - [ ] Creates profiles, entries, upserts consent records
 - [ ] Two attendees with same name but different emails → two separate profiles created; entry for the new profile has `#Duplicate` (red warning badge) on session detail
+- [ ] Attendee name AND email both match an existing profile → same profile reused (email checked against all profile emails, not just the first)
+- [ ] Attendee name matches existing profile, email is one of the profile's secondary emails → profile reused, no duplicate
 - [ ] Attendee name matches existing profile with no stored email → email is backfilled on the existing profile, no duplicate created
-- [ ] Attendee email matches an existing profile's email but name differs (e.g. child registered under parent email with different name) → name match used, not email; behaves by name logic
+- [ ] Attendee email matches an existing profile's email but name differs → name match used, not email; behaves by name logic
 - [ ] If any duplicates flagged, sync summary includes "X duplicate warning(s) — check session entries"
 - [ ] Triggering sync while one is already running returns 409 "Sync already in progress" (second request rejected immediately)
 
@@ -303,7 +305,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M7. Entry detail
 - [ ] `GET /api/entries/:group/:date/:slug` — entry with volunteer info, hours, notes
-- [ ] Email shown as `mailto:` link for authenticated users; hidden from public
+- [ ] All emails shown as individual `mailto:` links for authenticated users; hidden from public
+- [ ] Profile with comma-separated emails in SharePoint → multiple mailto links shown
 
 ### M8. Volunteers listing
 - [ ] `GET /api/profiles` — all volunteers with hours, records, membership status
@@ -315,7 +318,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `GET /api/profiles/:slug` — slug format is `name-id` (e.g. `gary-downs-42`); resolves correctly even when two profiles share a name
 - [ ] `GET /api/records/options` — populate record dropdowns
 - [ ] `GET /auth/me` — determines inline hours editing permissions
-- [ ] Email shown as mailto link
+- [ ] All emails shown as individual mailto links (one per line)
+- [ ] Profile with comma-separated emails in SharePoint → multiple mailto links shown
 
 ### M10. Unmatched Eventbrite events
 - [ ] `GET /api/eventbrite/unmatched-events` — events with no matching group

@@ -130,7 +130,7 @@ async function refreshWordCloud() {
 function openEditModal() {
     if (!currentProfile) return;
     document.getElementById('editName').value = currentProfile.name || '';
-    document.getElementById('editEmail').value = currentProfile.email || '';
+    document.getElementById('editEmail').value = (currentProfile.emails || []).join(',') || currentProfile.email || '';
     document.getElementById('editMatchName').value = currentProfile.matchName || '';
     document.getElementById('editUser').value = currentProfile.user || '';
     document.getElementById('editIsGroup').checked = !!currentProfile.isGroup;
@@ -484,7 +484,8 @@ async function loadProfile() {
                         </button>
                     </div>
                 </div>
-                ${profile.email ? `<div class="subtitle"><a href="mailto:${encodeURIComponent(profile.email)}">${escapeHtml(profile.email)}</a></div>` : ''}
+                ${(profile.emails && profile.emails.length > 0 ? profile.emails : (profile.email ? [profile.email] : []))
+                    .map(e => `<div class="subtitle"><a href="mailto:${encodeURIComponent(e)}">${escapeHtml(e)}</a></div>`).join('')}
             </div>
 
             ${buildDuplicatesCards(profile.duplicates)}

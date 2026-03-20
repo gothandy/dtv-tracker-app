@@ -15,6 +15,15 @@ Add a new `personal-section.js` module rendered below the session calendar (abov
 
 ---
 
+## SharePoint Index Review
+Investigate adding indexes to fields used for frequent lookups beyond the already-indexed `Session` field in Entries. Candidates:
+- `Email` in Profiles — queried on every personal OAuth login (`personal-auth.ts` scans all profiles)
+- `MatchName` in Profiles — scanned on every Eventbrite sync run
+
+Would improve performance as the volunteer list grows.
+
+---
+
 ## Email Handling & GDPR — Requirements Gaps
 
 The current model (one email per profile, email used as matching key for Eventbrite

@@ -43,7 +43,10 @@ export interface SharePointProfile extends SharePointBaseItem {
 export interface Profile {
   id: number;
   name?: string;
+  /** First email in the list — primary for display and future automated sends */
   email?: string;
+  /** All emails, parsed from the comma-separated Email field */
+  emails: string[];
   matchName?: string;
   user?: string;
   isGroup: boolean;

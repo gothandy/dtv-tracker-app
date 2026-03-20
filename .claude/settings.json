@@ -6,6 +6,9 @@
       "WebFetch(domain:groups.google.com)",
       "Bash(npm run:*)"
     ],
-    "defaultMode": "plan"
+    "defaultMode": "plan",
+    "additionalDirectories": [
+      "c:\\Users\\gotha\\dtv-tracker-app\\dist\\routes"
+    ]
   }
 }

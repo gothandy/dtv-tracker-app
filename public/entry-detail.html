@@ -208,10 +208,10 @@
                     </div>
 
                     <div class="edit-form">
-                        ${entry.volunteerEmail ? `
+                        ${(entry.volunteerEmails && entry.volunteerEmails.length > 0) ? `
                         <div class="form-field auth-only">
                             <div class="form-label">Email</div>
-                            <div><a href="mailto:${encodeURIComponent(entry.volunteerEmail)}">${escapeHtml(entry.volunteerEmail)}</a></div>
+                            ${entry.volunteerEmails.map(e => `<div><a href="mailto:${encodeURIComponent(e)}">${escapeHtml(e)}</a></div>`).join('')}
                         </div>` : ''}
                         <div class="form-field checkin-only" id="field-checked">
                             <div class="form-label">Checked In</div>
