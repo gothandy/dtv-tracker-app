@@ -19,6 +19,7 @@ npm start               # Start without auto-reload
 # Visit http://localhost:3000
 ```
 
+
 ## Prerequisites
 
 - **Node.js** 18+ (with npm)
