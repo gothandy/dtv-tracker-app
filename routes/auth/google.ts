@@ -3,8 +3,6 @@ import { randomBytes } from 'crypto';
 /// <reference path="../../types/express-session.d.ts" />
 import { getGoogleAuthUrl, getGoogleRedirectUri, exchangeGoogleCode } from '../../services/google-auth';
 import { resolvePersonalSession } from '../../services/personal-auth';
-import { profilesRepository } from '../../services/repositories/profiles-repository';
-import { parseEmails } from '../../services/data-layer';
 
 const router: Router = express.Router();
 
@@ -45,26 +43,6 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     const redirectUri = getGoogleRedirectUri(req);
     const googleUser = await exchangeGoogleCode(code, redirectUri);
-    const profiles = await profilesRepository.getAll();
-    const target = googleUser.email.toLowerCase();
-    const matchedProfiles = profiles.filter(p => parseEmails(p.Email).includes(target));
-    // TEMP DEBUG — remove before go-live
-    if (target === 'gothandy@gmail.com') {
-      res.json({
-        target,
-        redirectUri,
-        protocol: req.protocol,
-        host: req.get('host'),
-        totalProfiles: profiles.length,
-        matched: matchedProfiles.length,
-        candidates: profiles
-          .filter(p => p.Email)
-          .map(p => ({ id: p.ID, title: p.Title, rawEmail: p.Email, parsed: parseEmails(p.Email) }))
-          .filter(p => p.rawEmail!.toLowerCase().includes(target.split('@')[0]))
-      });
-      return;
-    }
-
     const result = await resolvePersonalSession(googleUser.email, googleUser.name, googleUser.id);
     if (!result.ok) {
       res.redirect(`/login.html?reason=not-approved&email=${encodeURIComponent(googleUser.email)}`);
@@ -76,8 +54,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     res.redirect(returnTo);
   } catch (error: any) {
     console.error('Error in Google auth callback:', error.message);
-    // TEMP DEBUG — remove before go-live
-    res.json({ debugError: error.message, stack: error.stack });
+    res.redirect('/login.html?reason=not-approved');
   }
 });
 
