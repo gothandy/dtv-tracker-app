@@ -36,6 +36,7 @@ function getGlobalLastKey() {
 }
 
 function getMyNextKey() {
+    if (window.currentUser?.role === 'admin') return getGlobalNextKey();
     if (!personalised || myDates.size === 0) return getGlobalNextKey();
     const todayKey = new Date().toISOString().substring(0, 10);
     let best = null;
@@ -46,6 +47,7 @@ function getMyNextKey() {
 }
 
 function getMyLastKey() {
+    if (window.currentUser?.role === 'admin') return getGlobalLastKey();
     if (!personalised || myDates.size === 0) return getGlobalLastKey();
     const todayKey = new Date().toISOString().substring(0, 10);
     let best = null;
