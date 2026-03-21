@@ -40,61 +40,45 @@ const router: Router = express.Router();
 
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
-    const [sessionsRaw, entriesRaw, groupsRaw] = await Promise.all([
+    const [sessionsRaw, groupsRaw] = await Promise.all([
       sessionsRepository.getAll(),
-      entriesRepository.getAll(),
       groupsRepository.getAll()
     ]);
 
-    const sessions = validateArray(sessionsRaw, validateSession, 'Session');
-    const entries = validateArray(entriesRaw, validateEntry, 'Entry');
-    const groups = validateArray(groupsRaw, validateGroup, 'Group');
+    const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+    const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
 
-    const enrichedSessions = enrichSessions(sessions, entries, groups);
-    const sortedSessions = sortSessionsByDate(enrichedSessions);
+    const data: SessionResponse[] = sessionsRaw
+      .filter(s => s.Date)
+      .map(s => {
+        const groupId = safeParseLookupId(s[GROUP_LOOKUP]);
+        const date = s.Date!.substring(0, 10);
+        const tags = extractMetadataTags(s[SESSION_METADATA]);
 
-    const groupKeyMap = new Map(groups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
-    const metadataMap = new Map(sessions.map(s => [s.ID, extractMetadataTags(s[SESSION_METADATA])]));
+        let stats: Record<string, any> = {};
+        try { stats = JSON.parse(s[SESSION_STATS] || '{}'); } catch {}
 
-    const data: SessionResponse[] = sortedSessions.map(s => {
-      const tags = metadataMap.get(s.sharePointId);
-      return {
-        id: s.sharePointId,
-        displayName: s.displayName,
-        description: s.description,
-        date: s.sessionDate.toISOString().substring(0, 10),
-        groupId: s.groupId,
-        groupKey: s.groupId ? groupKeyMap.get(s.groupId) : undefined,
-        groupName: s.groupName,
-        registrations: s.registrations,
-        hours: s.hours,
-        newCount: s.newCount || undefined,
-        childCount: s.childCount || undefined,
-        regularCount: s.regularCount || undefined,
-        eventbriteCount: s.eventbriteCount || undefined,
-        financialYear: `FY${s.financialYear}`,
-        eventbriteEventId: s.eventbriteEventId,
-        metadata: tags && tags.length ? tags : undefined
-      };
-    });
-
-    const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
-    if (mediaDriveId) {
-      try {
-        const groupKeys = [...new Set(data.filter(s => s.groupKey).map(s => s.groupKey!))];
-        const countsByGroup = new Map(
-          await Promise.all(groupKeys.map(gk =>
-            sharePointClient.listGroupDateCounts(mediaDriveId, gk).then(m => [gk, m] as const)
-          ))
-        );
-        for (const s of data) {
-          if (s.groupKey && s.date) {
-            const count = countsByGroup.get(s.groupKey)?.get(s.date.substring(0, 10)) ?? 0;
-            if (count > 0) s.mediaCount = count;
-          }
-        }
-      } catch { /* media counts are optional */ }
-    }
+        return {
+          id: s.ID,
+          displayName: s.Name || undefined,
+          description: s[SESSION_NOTES],
+          date,
+          groupId,
+          groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
+          groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
+          registrations: stats.count || 0,
+          hours: stats.hours || 0,
+          newCount: stats.new || undefined,
+          childCount: stats.child || undefined,
+          regularCount: stats.regular || undefined,
+          eventbriteCount: stats.eventbrite || undefined,
+          mediaCount: stats.media || undefined,
+          financialYear: `FY${calculateFinancialYear(new Date(s.Date!))}`,
+          eventbriteEventId: s.EventbriteEventID,
+          metadata: tags.length ? tags : undefined
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     res.json({ success: true, count: data.length, data } as ApiResponse<SessionResponse[]>);
   } catch (error: any) {

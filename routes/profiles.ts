@@ -535,9 +535,9 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
 
-    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRegulars, rawRecords] = await Promise.all([
+    // Phase 1: resolve profile + cached lookups
+    const [rawProfiles, rawSessions, rawGroups, rawRegulars, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
-      entriesRepository.getAll(),
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
       regularsRepository.getAll(),
@@ -565,8 +565,9 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
     const profile = convertProfile(spProfile);
 
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === spProfile.ID);
+    // Phase 2: fetch only this profile's entries (live, targeted Graph query)
+    const rawEntries = await entriesRepository.getByProfileId(spProfile.ID);
+    const profileEntries = validateArray(rawEntries, validateEntry, 'Entry');
 
     const sessions = validateArray(rawSessions, validateSession, 'Session');
     const sessionMap = new Map(sessions.map(s => [s.ID, s]));

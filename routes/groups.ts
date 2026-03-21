@@ -19,7 +19,7 @@ import {
   safeParseLookupId,
   parseHours
 } from '../services/data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
+import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NOTES } from '../services/field-names';
 import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
@@ -125,11 +125,10 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     const key = String(req.params.key).toLowerCase();
     const fy = calculateCurrentFY();
 
-    const [rawGroups, rawRegulars, rawSessions, rawEntries] = await Promise.all([
+    const [rawGroups, rawRegulars, rawSessions] = await Promise.all([
       groupsRepository.getAll(),
       regularsRepository.getAll(),
-      sessionsRepository.getAll(),
-      entriesRepository.getAll()
+      sessionsRepository.getAll()
     ]);
 
     const spGroup = findGroupByKey(rawGroups, key);
@@ -144,65 +143,49 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     const regulars = regularsMap.get(group.sharePointId) || [];
 
     // Filter sessions for this group
-    const groupSessions = validateArray(rawSessions, validateSession, 'Session')
-      .filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === groupId);
+    const groupSessions = rawSessions.filter(s => s.Date && safeParseLookupId(s[GROUP_LOOKUP]) === groupId);
 
     // FY sessions for stats
     const fyStart = new Date(Date.UTC(fy.startYear, 3, 1));
     const fyEnd = new Date(Date.UTC(fy.endYear, 2, 31, 23, 59, 59));
-    const fySessionIds = new Set(
-      groupSessions
-        .filter(s => {
-          const d = new Date(s.Date);
-          return d >= fyStart && d <= fyEnd;
-        })
-        .map(s => s.ID)
-    );
-
-    // Get entries for this group's FY sessions
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const fyEntries = entries.filter(e => {
-      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
-      return sessionId !== undefined && fySessionIds.has(sessionId);
+    const fySessions = groupSessions.filter(s => {
+      const d = new Date(s.Date!);
+      return d >= fyStart && d <= fyEnd;
     });
 
-    const totalHours = fyEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
-    const newVolunteers = fyEntries.filter(e => e.Notes && /\#new\b/i.test(e.Notes)).length;
-    const children = fyEntries.filter(e => e.Notes && /\#child\b/i.test(e.Notes)).length;
-    const uniqueVolunteers = new Set(
-      fyEntries
-        .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
-        .filter((id): id is number => id !== undefined)
-    ).size;
-
-    // Enrich sessions for display
-    const enriched = enrichSessions(groupSessions, rawEntries, rawGroups);
-    const sorted = sortSessionsByDate(enriched);
-
-    const allSessionResponses: SessionResponse[] = sorted.map(s => ({
-      id: s.sharePointId,
-      displayName: s.displayName,
-      description: s.description,
-      date: s.sessionDate.toISOString(),
-      groupId: s.groupId,
-      groupKey: key,
-      groupName: s.groupName,
-      registrations: s.registrations,
-      hours: s.hours,
-      financialYear: `FY${s.financialYear}`,
-      eventbriteEventId: s.eventbriteEventId
-    }));
-
-    const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
-    if (mediaDriveId) {
-      try {
-        const dateCounts = await sharePointClient.listGroupDateCounts(mediaDriveId, key);
-        for (const s of allSessionResponses) {
-          const count = dateCounts.get(s.date.substring(0, 10)) ?? 0;
-          if (count > 0) s.mediaCount = count;
-        }
-      } catch { /* media counts are optional */ }
+    // Aggregate FY stats from pre-computed Stats field on each session
+    let totalHours = 0, newVolunteers = 0, children = 0, totalRegistrations = 0;
+    for (const s of fySessions) {
+      let stats: Record<string, any> = {};
+      try { stats = JSON.parse(s[SESSION_STATS] || '{}'); } catch {}
+      totalHours      += stats.hours || 0;
+      newVolunteers   += stats.new   || 0;
+      children        += stats.child || 0;
+      totalRegistrations += stats.count || 0;
     }
+
+    // Build session responses from Stats field — no entries or media calls needed
+    const allSessionResponses: SessionResponse[] = groupSessions
+      .map(s => {
+        let stats: Record<string, any> = {};
+        try { stats = JSON.parse(s[SESSION_STATS] || '{}'); } catch {}
+        const date = s.Date!;
+        return {
+          id: s.ID,
+          displayName: s.Name || undefined,
+          description: s[SESSION_NOTES],
+          date,
+          groupId,
+          groupKey: key,
+          groupName: group.displayName,
+          registrations: stats.count || 0,
+          hours: stats.hours || 0,
+          mediaCount: stats.media || undefined,
+          financialYear: `FY${calculateFinancialYear(new Date(date))}`,
+          eventbriteEventId: s.EventbriteEventID
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     const role = req.session.user?.role;
     const isTrusted = !!req.session.user && role !== 'selfservice';
@@ -227,11 +210,11 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       ...(isCurrentUserRegular !== undefined && { isCurrentUserRegular }),
       financialYear: `${fy.startYear}-${fy.endYear}`,
       stats: {
-        sessions: fySessionIds.size,
+        sessions: fySessions.length,
         hours: Math.round(totalHours * 10) / 10,
         newVolunteers,
         children,
-        totalVolunteers: uniqueVolunteers
+        totalVolunteers: totalRegistrations  // total registrations — unique volunteer count deferred to Phase 2
       },
       sessions: allSessionResponses
     };

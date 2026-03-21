@@ -36,6 +36,15 @@ class EntriesRepository {
     return data as SharePointEntry[];
   }
 
+  async getByProfileId(profileId: number): Promise<SharePointEntry[]> {
+    const filter = `fields/${PROFILE_LOOKUP} eq ${profileId}`;
+    return await sharePointClient.getListItems(
+      this.listGuid,
+      this.selectFields,
+      filter
+    ) as SharePointEntry[];
+  }
+
   async getBySessionIds(sessionIds: number[]): Promise<SharePointEntry[]> {
     if (!sessionIds || sessionIds.length === 0) {
       return [];

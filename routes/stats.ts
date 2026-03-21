@@ -2,9 +2,33 @@ import express, { Request, Response, Router } from 'express';
 import { sharePointClient } from '../services/sharepoint-client';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
-import { calculateCurrentFY, calculateFYStats, calculateFinancialYear, getHoursByCalendarMonth } from '../services/data-layer';
+import { calculateCurrentFY, calculateFYStats, calculateFinancialYear } from '../services/data-layer';
+import { SESSION_STATS } from '../services/field-names';
 import type { StatsResponse, FYStatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
+
+// Reads pre-computed Stats JSON from session items — falls back to 0 on missing/malformed data
+function parseStatsHours(statsRaw: string | undefined | null): number {
+  if (!statsRaw) return 0;
+  try { return JSON.parse(statsRaw).hours || 0; } catch { return 0; }
+}
+
+function hoursFromStats(sessions: any[]): number {
+  return Math.round(sessions.reduce((sum, s) => sum + parseStatsHours(s[SESSION_STATS]), 0) * 10) / 10;
+}
+
+// Groups Stats.hours by calendar month — equivalent to getHoursByCalendarMonth but reads from Stats field
+function hoursByMonthFromStats(sessions: any[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const s of sessions) {
+    const h = parseStatsHours(s[SESSION_STATS]);
+    if (!h || !s.Date) continue;
+    const d = new Date(s.Date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    map.set(key, (map.get(key) || 0) + h);
+  }
+  return map;
+}
 
 const router: Router = express.Router();
 
@@ -27,16 +51,16 @@ router.get('/stats', async (req: Request, res: Response) => {
       thisFY: {
         activeGroups: statsThis.activeGroups,
         sessions: statsThis.sessions,
-        hours: statsThis.hours,
-        volunteers: statsThis.volunteers,
+        hours: hoursFromStats(sessionsThisFY),  // from pre-computed Stats field
+        volunteers: statsThis.volunteers,         // still from live entries
         financialYear: `${fy.startYear}-${fy.endYear}`,
         label: 'This FY'
       },
       lastFY: {
         activeGroups: statsLast.activeGroups,
         sessions: statsLast.sessions,
-        hours: statsLast.hours,
-        volunteers: statsLast.volunteers,
+        hours: hoursFromStats(sessionsLastFY),  // from pre-computed Stats field
+        volunteers: statsLast.volunteers,         // still from live entries
         financialYear: `${lastFYStartYear}-${fy.startYear}`,
         label: 'Last FY'
       }
@@ -81,9 +105,9 @@ router.get('/stats/history', async (req: Request, res: Response) => {
     const remainingFYMonths = FY_MONTHS.slice(currentMonthIdx);
 
     const prevFYSessions = sessionsByFY.get(currentFY.startYear - 1) || [];
-    const prevFYMonthly = getHoursByCalendarMonth(prevFYSessions, entries);
+    const prevFYMonthly = hoursByMonthFromStats(prevFYSessions);
     const currentFYSessions = sessionsByFY.get(currentFY.startYear) || [];
-    const currentFYMonthly = getHoursByCalendarMonth(currentFYSessions, entries);
+    const currentFYMonthly = hoursByMonthFromStats(currentFYSessions);
 
     const history: FYStatsResponse[] = Array.from(sessionsByFY.entries())
       .filter(([startYear]) => startYear <= currentFY.startYear)
@@ -114,8 +138,8 @@ router.get('/stats/history', async (req: Request, res: Response) => {
         return {
           activeGroups: stats.activeGroups,
           sessions: stats.sessions,
-          hours: stats.hours,
-          volunteers: stats.volunteers,
+          hours: hoursFromStats(sessions),  // from pre-computed Stats field
+          volunteers: stats.volunteers,      // still from live entries
           financialYear: `${startYear}-${endYear}`,
           label: isCurrentFY ? 'This FY' : `FY ${String(startYear).slice(2)}/${String(endYear).slice(2)}`,
           completedHours,
