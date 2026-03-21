@@ -32,6 +32,7 @@ import {
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
 
+import { computeAndSaveProfileStats } from '../services/profile-stats';
 import multer from 'multer';
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
@@ -394,11 +395,19 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
     }
 
+    const profileId = spEntry ? safeParseLookupId(spEntry[PROFILE_LOOKUP]) : undefined;
+
     await entriesRepository.updateFields(entryId, fields);
 
     if (sessionId !== undefined) {
       computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
         console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
+      );
+    }
+    // Only hours changes affect profile stats (isMember/cardStatus are unaffected by entry updates)
+    if (profileId !== undefined && fields.Hours !== undefined) {
+      computeAndSaveProfileStats(profileId).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
       );
     }
 
@@ -448,11 +457,18 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
     }
 
+    const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
+
     await entriesRepository.delete(entryId);
 
     if (sessionId !== undefined) {
       computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
         console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
+      );
+    }
+    if (profileId !== undefined) {
+      computeAndSaveProfileStats(profileId).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
       );
     }
 
@@ -543,6 +559,9 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
 
     computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
       console.error(`[Stats] Failed targeted update for session ${spSession.ID}:`, err)
+    );
+    computeAndSaveProfileStats(volunteerId).catch(err =>
+      console.error(`[Stats] Failed targeted profile update for profile ${volunteerId}:`, err)
     );
 
     res.json({ success: true, data: { id } });
@@ -709,6 +728,13 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       console.error(`[Stats] Failed stats update after session refresh:`, err)
     );
 
+    // Fire profile stats update for all affected volunteers (fire-and-forget)
+    for (const vid of existingVolunteerIds) {
+      computeAndSaveProfileStats(vid).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${vid}:`, err)
+      );
+    }
+
     console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider`);
     res.json({
       success: true,
@@ -788,12 +814,21 @@ router.delete('/sessions/:group/:date/unchecked-entries', async (req: Request, r
     let existingMedia = 0;
     try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
 
+    const uncheckedProfileIds = unchecked
+      .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
+      .filter((id): id is number => id !== undefined);
+
     await Promise.all(unchecked.map(e => entriesRepository.delete(e.ID)));
 
     if (unchecked.length > 0) {
       computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
         console.error(`[Stats] Failed targeted update after removing no-shows for session ${spSession.ID}:`, err)
       );
+      for (const vid of uncheckedProfileIds) {
+        computeAndSaveProfileStats(vid).catch(err =>
+          console.error(`[Stats] Failed targeted profile update for profile ${vid}:`, err)
+        );
+      }
     }
 
     res.json({ success: true, data: { deleted: unchecked.length } });

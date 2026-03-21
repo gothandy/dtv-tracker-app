@@ -35,6 +35,8 @@ export interface SharePointProfile extends SharePointBaseItem {
   User?: string;
   /** Flag indicating if this is a group profile */
   IsGroup?: boolean;
+  /** Allow bracket access for dynamic field names (Stats, etc.) */
+  [key: string]: any;
 }
 
 /**

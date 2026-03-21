@@ -64,8 +64,10 @@
             <h2>Stats Cache</h2>
             <div class="admin-actions">
                 <button class="admin-btn" id="refreshSessionStatsBtn" onclick="refreshSessionStats()">Refresh Session Stats</button>
+                <button class="admin-btn" id="refreshProfileStatsBtn" onclick="refreshProfileStats()">Refresh Profile Stats</button>
             </div>
             <div class="sync-result" id="refreshSessionStatsResult"></div>
+            <div class="sync-result" id="refreshProfileStatsResult"></div>
         </div>
 
         <div class="admin-section admin-only" id="siteSection" style="display:none;">
@@ -288,6 +290,32 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Refresh Session Stats';
+            }
+        }
+
+        async function refreshProfileStats() {
+            const btn = document.getElementById('refreshProfileStatsBtn');
+            const result = document.getElementById('refreshProfileStatsResult');
+            btn.disabled = true;
+            btn.textContent = 'Refreshing...';
+            result.textContent = '';
+            result.className = 'sync-result';
+
+            try {
+                const res = await apiFetch('/api/profiles/refresh-stats', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Refresh failed');
+
+                const d = data.data;
+                let msg = `${d.updated} of ${d.total} profiles updated`;
+                if (d.errors && d.errors.length) msg += ` (${d.errors.length} errors)`;
+                result.textContent = msg;
+            } catch (error) {
+                result.textContent = error.message || 'Refresh failed';
+                result.className = 'sync-result error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Refresh Profile Stats';
             }
         }
 

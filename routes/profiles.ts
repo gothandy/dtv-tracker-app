@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { sharePointClient } from '../services/sharepoint-client';
+import { runProfileStatsRefresh, computeAndSaveProfileStats } from '../services/profile-stats';
 import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
@@ -27,7 +28,7 @@ import {
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
-  PROFILE_LOOKUP, PROFILE_DISPLAY
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS
 } from '../services/field-names';
 import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
@@ -37,66 +38,21 @@ const router: Router = express.Router();
 router.get('/profiles', async (req: Request, res: Response) => {
   try {
     const groupFilter = req.query.group ? String(req.query.group).toLowerCase() : undefined;
-
-    const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRecords] = await Promise.all([
-      profilesRepository.getAll(),
-      entriesRepository.getAll(),
-      sessionsRepository.getAll(),
-      groupFilter ? groupsRepository.getAll() : Promise.resolve([]),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
-    ]);
-
-    const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const sessions = validateArray(rawSessions, validateSession, 'Session');
-    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
-
-    // When filtering by group, build a set of session IDs belonging to that group
-    let groupSessionIds: Set<number> | undefined;
-    if (groupFilter) {
-      const groups = validateArray(rawGroups, validateGroup, 'Group');
-      const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupFilter);
-      if (spGroup) {
-        groupSessionIds = new Set(
-          sessions.filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === spGroup.ID).map(s => s.ID)
-        );
-      }
-    }
+    // Group filter requires entries + sessions to know which profiles attended that group's sessions.
+    // All other filters (hours, records type/status) are applied client-side on the returned data.
+    const isAdvancedSearch = !!groupFilter;
 
     const fy = calculateCurrentFY();
     const fyParam = req.query.fy ? String(req.query.fy) : null;
     const thisFYStart = (fyParam && fyParam.startsWith('FY')) ? parseInt(fyParam.replace('FY', '')) : fy.startYear;
     const lastFYStart = thisFYStart - 1;
 
-    // Calculate hours and session counts per profile from entries
-    const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; hoursAll: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number>; sessionsAll: Set<number> }>();
-    entries.forEach(e => {
-      const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
-      if (volunteerId === undefined) return;
-      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
-      if (sessionId === undefined) return;
-      if (groupSessionIds && !groupSessionIds.has(sessionId)) return;
-      const session = sessionMap.get(sessionId);
-      if (!session) return;
-      const hours = parseHours(e.Hours);
-      const sessionFY = calculateFinancialYear(new Date(session.Date));
+    const [rawProfiles, rawRecords] = await Promise.all([
+      profilesRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+    ]);
 
-      if (!profileStats.has(volunteerId)) {
-        profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, hoursAll: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set(), sessionsAll: new Set() });
-      }
-      const ps = profileStats.get(volunteerId)!;
-      ps.hoursAll += hours;
-      ps.sessionsAll.add(sessionId);
-      if (sessionFY === thisFYStart) {
-        ps.hoursThisFY += hours;
-        ps.sessionsThisFY.add(sessionId);
-      } else if (sessionFY === lastFYStart) {
-        ps.hoursLastFY += hours;
-        ps.sessionsLastFY.add(sessionId);
-      }
-    });
-
-    const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
+    const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
 
     const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
     for (const r of rawRecords) {
@@ -106,27 +62,113 @@ router.get('/profiles', async (req: Request, res: Response) => {
       profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: r.Status || '' });
     }
 
-    const data: ProfileResponse[] = validProfiles.map(spProfile => {
-      const profile = convertProfile(spProfile);
-      const ps = profileStats.get(spProfile.ID);
-      return {
-        id: profile.id,
-        slug: profileSlug(profile.name, profile.id),
-        name: profile.name,
-        email: profile.email,
-        user: profile.user,
-        isGroup: profile.isGroup,
-        isMember: memberIds.has(spProfile.ID),
-        cardStatus: cardStatusMap.get(spProfile.ID),
-        hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
-        hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
-        hoursAll: ps ? Math.round(ps.hoursAll * 10) / 10 : 0,
-        sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
-        sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
-        sessionsAll: ps ? ps.sessionsAll.size : 0,
-        records: profileRecordsMap.get(spProfile.ID) || []
-      };
-    });
+    let data: ProfileResponse[];
+
+    if (isAdvancedSearch) {
+      // Group filter: need entries + sessions to find which profiles attended that group
+      const [rawEntries, rawSessions, rawGroups] = await Promise.all([
+        entriesRepository.getAll(),
+        sessionsRepository.getAll(),
+        groupsRepository.getAll()
+      ]);
+
+      const entries = validateArray(rawEntries, validateEntry, 'Entry');
+      const sessions = validateArray(rawSessions, validateSession, 'Session');
+      const sessionMap = new Map(sessions.map(s => [s.ID, s]));
+
+      let groupSessionIds: Set<number> | undefined;
+      const groups = validateArray(rawGroups, validateGroup, 'Group');
+      const spGroup = groups.find(g => (g.Title || '').toLowerCase() === groupFilter);
+      if (spGroup) {
+        groupSessionIds = new Set(
+          sessions.filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === spGroup.ID).map(s => s.ID)
+        );
+      }
+
+      const profileStats = new Map<number, { hoursThisFY: number; hoursLastFY: number; hoursAll: number; sessionsThisFY: Set<number>; sessionsLastFY: Set<number>; sessionsAll: Set<number> }>();
+      entries.forEach(e => {
+        const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
+        if (volunteerId === undefined) return;
+        const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
+        if (sessionId === undefined) return;
+        if (groupSessionIds && !groupSessionIds.has(sessionId)) return;
+        const session = sessionMap.get(sessionId);
+        if (!session) return;
+        const hours = parseHours(e.Hours);
+        const sessionFY = calculateFinancialYear(new Date(session.Date));
+
+        if (!profileStats.has(volunteerId)) {
+          profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, hoursAll: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set(), sessionsAll: new Set() });
+        }
+        const ps = profileStats.get(volunteerId)!;
+        ps.hoursAll += hours;
+        ps.sessionsAll.add(sessionId);
+        if (sessionFY === thisFYStart) {
+          ps.hoursThisFY += hours;
+          ps.sessionsThisFY.add(sessionId);
+        } else if (sessionFY === lastFYStart) {
+          ps.hoursLastFY += hours;
+          ps.sessionsLastFY.add(sessionId);
+        }
+      });
+
+      const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
+
+      data = validProfiles.map(spProfile => {
+        const profile = convertProfile(spProfile);
+        const ps = profileStats.get(spProfile.ID);
+        return {
+          id: profile.id,
+          slug: profileSlug(profile.name, profile.id),
+          name: profile.name,
+          email: profile.email,
+          user: profile.user,
+          isGroup: profile.isGroup,
+          isMember: memberIds.has(spProfile.ID),
+          cardStatus: cardStatusMap.get(spProfile.ID),
+          hoursLastFY: ps ? Math.round(ps.hoursLastFY * 10) / 10 : 0,
+          hoursThisFY: ps ? Math.round(ps.hoursThisFY * 10) / 10 : 0,
+          hoursAll: ps ? Math.round(ps.hoursAll * 10) / 10 : 0,
+          sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
+          sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
+          sessionsAll: ps ? ps.sessionsAll.size : 0,
+          records: profileRecordsMap.get(spProfile.ID) || []
+        };
+      });
+    } else {
+      // Basic listing: read hours/sessions/member status from pre-computed Stats field
+      const thisFYKey = `FY${thisFYStart}`;
+      const lastFYKey = `FY${lastFYStart}`;
+
+      data = validProfiles.map(spProfile => {
+        const profile = convertProfile(spProfile);
+        let stats: Record<string, any> = {};
+        try { stats = JSON.parse(spProfile[PROFILE_STATS] || '{}'); } catch {}
+
+        const hoursByFY: Record<string, number> = stats.hoursByFY || {};
+        const sessionsByFY: Record<string, number> = stats.sessionsByFY || {};
+        const hoursAll = Math.round(Object.values(hoursByFY).reduce((sum: number, h) => sum + (h as number), 0) * 10) / 10;
+        const sessionsAll = Object.values(sessionsByFY).reduce((sum: number, c) => sum + (c as number), 0);
+
+        return {
+          id: profile.id,
+          slug: profileSlug(profile.name, profile.id),
+          name: profile.name,
+          email: profile.email,
+          user: profile.user,
+          isGroup: profile.isGroup,
+          isMember: stats.isMember || false,
+          cardStatus: stats.cardStatus || undefined,
+          hoursLastFY: Math.round((hoursByFY[lastFYKey] || 0) * 10) / 10,
+          hoursThisFY: Math.round((hoursByFY[thisFYKey] || 0) * 10) / 10,
+          hoursAll,
+          sessionsLastFY: sessionsByFY[lastFYKey] || 0,
+          sessionsThisFY: sessionsByFY[thisFYKey] || 0,
+          sessionsAll,
+          records: profileRecordsMap.get(spProfile.ID) || []
+        };
+      });
+    }
 
     res.json({ success: true, count: data.length, data } as ApiResponse<ProfileResponse[]>);
   } catch (error: any) {
@@ -343,6 +385,9 @@ router.post('/profiles/:id/records', async (req: Request, res: Response) => {
       Status: status,
       Date: date || new Date().toISOString()
     });
+    computeAndSaveProfileStats(profileId).catch(err =>
+      console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
+    );
     res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
   } catch (error: any) {
     console.error('Error creating record:', error);
@@ -372,7 +417,17 @@ router.patch('/records/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // Look up profile ID from cache before the write clears it
+    const allRecordsForPatch = await recordsRepository.getAll();
+    const recordForPatch = allRecordsForPatch.find(r => r.ID === recordId);
+    const patchProfileId = recordForPatch ? safeParseLookupId(recordForPatch.ProfileLookupId as unknown as string) : undefined;
+
     await recordsRepository.update(recordId, fields);
+    if (patchProfileId !== undefined) {
+      computeAndSaveProfileStats(patchProfileId).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${patchProfileId}:`, err)
+      );
+    }
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error updating record:', error);
@@ -392,7 +447,17 @@ router.delete('/records/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // Look up profile ID from cache before the write clears it
+    const allRecordsForDelete = await recordsRepository.getAll();
+    const recordForDelete = allRecordsForDelete.find(r => r.ID === recordId);
+    const deleteProfileId = recordForDelete ? safeParseLookupId(recordForDelete.ProfileLookupId as unknown as string) : undefined;
+
     await recordsRepository.delete(recordId);
+    if (deleteProfileId !== undefined) {
+      computeAndSaveProfileStats(deleteProfileId).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${deleteProfileId}:`, err)
+      );
+    }
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error deleting record:', error);
@@ -436,6 +501,16 @@ router.post('/records/bulk', async (req: Request, res: Response) => {
       } else {
         await recordsRepository.create({ ProfileLookupId: id, Type: type, Status: status, Date: recordDate });
         created++;
+      }
+    }
+
+    // Fire profile stats update for all affected profiles
+    for (const profileId of profileIds) {
+      const id = parseInt(String(profileId), 10);
+      if (!isNaN(id)) {
+        computeAndSaveProfileStats(id).catch(err =>
+          console.error(`[Stats] Failed targeted profile update for profile ${id}:`, err)
+        );
       }
     }
 
@@ -495,6 +570,9 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
       await recordsRepository.create({ ProfileLookupId: profileId, Type: 'Photo Consent', Status: photoStatus, Date: today });
     }
 
+    computeAndSaveProfileStats(profileId).catch(err =>
+      console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
+    );
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error saving consent:', error);
@@ -902,6 +980,16 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       await profilesRepository.delete(sourceProfile.ID);
     }
 
+    // Update stats for target (all entries now belong to it); also source if kept
+    computeAndSaveProfileStats(targetProfile.ID).catch(err =>
+      console.error(`[Stats] Failed targeted profile update for target profile ${targetProfile.ID}:`, err)
+    );
+    if (!deleted) {
+      computeAndSaveProfileStats(sourceProfile.ID).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for source profile ${sourceProfile.ID}:`, err)
+      );
+    }
+
     const targetSlug = profileSlug(targetProfile.Title, targetProfile.ID);
     console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${deleted ? ', deleted source' : ''}`);
 
@@ -954,6 +1042,16 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
       error: 'Failed to delete profile',
       message: error.message
     });
+  }
+});
+
+router.post('/profiles/refresh-stats', async (req: Request, res: Response) => {
+  try {
+    const result = await runProfileStatsRefresh();
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('[Stats] Profile refresh failed:', error);
+    res.status(500).json({ success: false, error: 'Stats refresh failed', message: error.message });
   }
 });
 

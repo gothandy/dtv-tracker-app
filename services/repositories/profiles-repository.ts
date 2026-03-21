@@ -6,6 +6,7 @@
 
 import { SharePointProfile } from '../../types/sharepoint';
 import { sharePointClient } from '../sharepoint-client';
+import { PROFILE_STATS } from '../field-names';
 
 class ProfilesRepository {
   private listGuid: string;
@@ -22,7 +23,7 @@ class ProfilesRepository {
       return cached as SharePointProfile[];
     }
 
-    const selectFields = 'ID,Title,Email,MatchName,User,IsGroup,Created,Modified';
+    const selectFields = `ID,Title,Email,MatchName,User,IsGroup,${PROFILE_STATS},Created,Modified`;
 
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
@@ -31,6 +32,12 @@ class ProfilesRepository {
     );
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointProfile[];
+  }
+
+  // Updates only the Stats field — does NOT flush the full cache.
+  // Bulk callers should call sharePointClient.clearCacheKey('profiles') once when done.
+  async updateStats(profileId: number, stats: Record<string, any>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, profileId, { [PROFILE_STATS]: JSON.stringify(stats) });
   }
 
   async create(fields: { Title: string; Email?: string; MatchName?: string }): Promise<number> {

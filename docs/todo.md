@@ -71,6 +71,18 @@ These are requirements gaps in the matching model, not bugs.
 
 ---
 
+## Group Detail — Regulars Section Position
+Move the Regulars list below the word cloud (currently appears above it). Word cloud is more useful at a glance; regulars are a management detail.
+
+---
+
+## Sessions Advanced Filter — Minor UX Issues
+- Count total doesn't refresh when the advanced group/tag filters are applied — still shows the unfiltered total until a manual re-trigger
+- Advanced filter buttons (Apply/Clear) are in an odd position relative to the dropdowns
+Low priority, just polish.
+
+---
+
 ## Microsoft Planner Integration — Flag Issues from Sessions
 Allow check-in users to create a task in Microsoft Planner directly from the session detail page. Useful for flagging issues noticed during a dig (equipment running low, machinery broken, etc.) so they reach the wider team.
 
