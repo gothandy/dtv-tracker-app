@@ -15,6 +15,25 @@ Add a new `personal-section.js` module rendered below the session calendar (abov
 
 ---
 
+## Tag Word Cloud — Profile Scope: Targeted vs Cached Entries
+
+`GET /api/tags/hours-by-taxonomy?profile=` currently fetches all entries (~5,000) to find
+the one volunteer's entries. Two alternatives to investigate:
+
+1. **Targeted query** — filter entries at the SharePoint API level by `ProfileLookupId eq :id`
+   (if the `Profile` field is indexed — check `services/repositories/entries-repository.ts`).
+   Fetches only that volunteer's entries: fast cold path, no cache needed.
+
+2. **Shared cache** — keep `entriesRepository.getAll()` but rely on the 5-minute cache being
+   warm from other requests (profile detail page, stats refresh, etc.). Zero extra fetches if
+   the cache is hot; full 5,000-entry fetch on cold start.
+
+The right answer depends on whether the Profile field is indexed in SharePoint and how often
+the cache is warm when a profile word cloud is requested. Targeted query is probably faster
+on cold starts; shared cache is free if the data is already loaded.
+
+---
+
 ## Performance Optimisation (Remaining)
 
 Phase 1 (session Stats field pre-computation), Phase 2 (profile Stats field + targeted profile queries), and Phase C (recent signups filtered query) are all done. Remaining:

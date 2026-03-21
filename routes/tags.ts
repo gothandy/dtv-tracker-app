@@ -11,14 +11,13 @@ import {
   validateEntry,
   validateGroup,
   validateProfile,
-  enrichSessions,
   calculateFinancialYear,
   extractMetadataTags,
   safeParseLookupId,
   parseHours,
   nameToSlug
 } from '../services/data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_METADATA } from '../services/field-names';
+import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_METADATA, SESSION_STATS } from '../services/field-names';
 import type { TagHoursResponse } from '../types/api-responses';
 
 const router: Router = express.Router();
@@ -39,26 +38,30 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
 
     const termSetId = process.env.TAXONOMY_TERM_SET_ID || null;
 
+    // Profile-scoped queries need entries + profiles to resolve the volunteer's hours per session.
+    // All other queries (homepage, group detail) can read hours directly from session.Stats.
+    const needsEntries = !!profileParam;
+
     const [sessionsRaw, entriesRaw, groupsRaw, profilesRaw, taxonomyTree] = await Promise.all([
       sessionsRepository.getAll(),
-      entriesRepository.getAll(),
+      needsEntries ? entriesRepository.getAll() : Promise.resolve([]),
       groupsRepository.getAll(),
-      profilesRepository.getAll(),
+      needsEntries ? profilesRepository.getAll() : Promise.resolve([]),
       termSetId ? taxonomyClient.getTermSetTree(termSetId).catch(() => null) : Promise.resolve(null),
     ]);
 
     const sessions = validateArray(sessionsRaw, validateSession, 'Session');
-    const entries = validateArray(entriesRaw, validateEntry, 'Entry');
     const groups = validateArray(groupsRaw, validateGroup, 'Group');
-    const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
 
     // Filter entries to profile scope (if requested), then derive session ID set
     let profileSessionIds: Set<number> | null = null;
     const profileSessionHours = new Map<number, number>(); // sessionId → hours for this profile
 
     if (profileParam) {
+      const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
       const profile = profiles.find(p => nameToSlug(p.Title) === profileParam);
       if (profile) {
+        const entries = validateArray(entriesRaw, validateEntry, 'Entry');
         const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === profile.ID);
         profileSessionIds = new Set<number>();
         for (const e of profileEntries) {
@@ -99,17 +102,22 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
       filteredSessions = filteredSessions.filter(s => profileSessionIds!.has(s.ID));
     }
 
-    // Build sessionHoursMap: how many hours to attribute to each session
-    const enriched = enrichSessions(filteredSessions, entries, groups);
+    // Build sessionHoursMap: hours to attribute to each session.
+    // Profile scope: use the volunteer's own entry hours.
+    // All other scopes: read from pre-computed session Stats field (avoids fetching all entries).
     const sessionHoursMap = new Map<number, number>();
     if (profileSessionIds !== null) {
-      // Profile scope: use that volunteer's hours per session (not all-entry total)
       for (const [sid, hrs] of profileSessionHours) {
         sessionHoursMap.set(sid, hrs);
       }
     } else {
-      for (const s of enriched) {
-        sessionHoursMap.set(s.sharePointId, s.hours);
+      for (const s of filteredSessions) {
+        try {
+          const stats = s[SESSION_STATS] ? JSON.parse(s[SESSION_STATS]) : null;
+          sessionHoursMap.set(s.ID, stats?.hours ?? 0);
+        } catch {
+          sessionHoursMap.set(s.ID, 0);
+        }
       }
     }
 
