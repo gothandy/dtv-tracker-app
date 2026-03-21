@@ -23,11 +23,12 @@ import {
   parseHours,
   nameToSlug,
   profileSlug,
-  extractMetadataTags
+  extractMetadataTags,
+  calculateSessionStats
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP,
-  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA,
+  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
@@ -373,12 +374,10 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
 
-    const [rawGroups, rawSessions, rawEntries, rawProfiles, rawRecords] = await Promise.all([
+    // Phase 1: resolve group + session (both cached — fast)
+    const [rawGroups, rawSessions] = await Promise.all([
       groupsRepository.getAll(),
-      sessionsRepository.getAll(),
-      entriesRepository.getAll(),
-      profilesRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      sessionsRepository.getAll()
     ]);
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
@@ -396,8 +395,15 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       return;
     }
 
+    // Phase 2: fetch only this session's entries (live, targeted Graph query) + cached lookups
+    const [rawEntries, rawProfiles, rawRecords] = await Promise.all([
+      entriesRepository.getBySessionIds([spSession.ID]),
+      profilesRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+    ]);
+
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+    const sessionEntries = entries;
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
@@ -462,6 +468,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupEventbriteSeriesId: spGroup.EventbriteSeriesID || undefined,
       metadata: metadata.length ? metadata : undefined,
       coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
+      statsRaw: spSession[SESSION_STATS] || null,
       entries: visibleEntries
     };
 
@@ -559,6 +566,120 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       error: 'Failed to update session',
       message: error.message
     });
+  }
+});
+
+// Full refresh of Stats field on all Sessions — admin or API key auth.
+// Fetches sessions + entries + groups in one pass, then media counts per group,
+// then patches Stats JSON to each session item in batches of 10.
+// Returns { total, updated, errors } for display in the admin UI.
+router.post('/sessions/refresh-stats', async (req: Request, res: Response) => {
+  const start = Date.now();
+  console.log('[Stats] Starting session stats refresh');
+
+  try {
+    const [sessionsRaw, entriesRaw, groupsRaw] = await Promise.all([
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      groupsRepository.getAll()
+    ]);
+
+    console.log(`[Stats] Fetched ${sessionsRaw.length} sessions, ${entriesRaw.length} entries in ${Date.now() - start}ms`);
+
+    // groupId → groupKey (Title, lowercase) used for media folder paths
+    const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+
+    // Per-session entry stats from a single pass over all entries
+    const statsMap = calculateSessionStats(entriesRaw);
+
+    // One Graph call per group fetches all date subfolder counts in that group
+    const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
+    const mediaCountsByGroup = new Map<string, Map<string, number>>();
+    if (mediaDriveId) {
+      const uniqueGroupKeys = [...new Set(
+        sessionsRaw
+          .map(s => {
+            const gid = safeParseLookupId(s[GROUP_LOOKUP]);
+            return gid !== undefined ? groupKeyMap.get(gid) : undefined;
+          })
+          .filter((k): k is string => !!k)
+      )];
+      const mediaStart = Date.now();
+      await Promise.all(uniqueGroupKeys.map(async (groupKey) => {
+        const counts = await sharePointClient.listGroupDateCounts(mediaDriveId, groupKey);
+        mediaCountsByGroup.set(groupKey, counts);
+      }));
+      console.log(`[Stats] Media counts fetched for ${uniqueGroupKeys.length} groups in ${Date.now() - mediaStart}ms`);
+    }
+
+    // Only patch sessions where stats have changed — avoids unnecessary Graph writes
+    const total = sessionsRaw.length;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < sessionsRaw.length; i += 10) {
+      const batch = sessionsRaw.slice(i, i + 10);
+      await Promise.all(batch.map(async (spSession) => {
+        try {
+          const entryStats = statsMap.get(String(spSession.ID));
+          const gid = safeParseLookupId(spSession[GROUP_LOOKUP]);
+          const groupKey = gid !== undefined ? groupKeyMap.get(gid) : undefined;
+          const date = spSession.Date?.substring(0, 10);
+
+          let mediaCount = 0;
+          if (groupKey && date && mediaCountsByGroup.has(groupKey)) {
+            mediaCount = mediaCountsByGroup.get(groupKey)!.get(date) || 0;
+          }
+
+          const newStats = {
+            count: entryStats?.registrations || 0,
+            hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
+            media: mediaCount,
+            new: entryStats?.newCount || 0,
+            child: entryStats?.childCount || 0,
+            regular: entryStats?.regularCount || 0,
+            eventbrite: entryStats?.eventbriteCount || 0
+          };
+
+          // Skip if stored stats already match — avoids a Graph PATCH on every nightly run
+          const stored = spSession['Stats'];
+          if (stored) {
+            try {
+              const existing = JSON.parse(stored);
+              if (
+                existing.count     === newStats.count &&
+                existing.hours     === newStats.hours &&
+                existing.media     === newStats.media &&
+                existing.new       === newStats.new &&
+                existing.child     === newStats.child &&
+                existing.regular   === newStats.regular &&
+                existing.eventbrite === newStats.eventbrite
+              ) {
+                return; // unchanged — skip write
+              }
+            } catch { /* malformed JSON — fall through to write */ }
+          }
+
+          await sessionsRepository.updateStats(spSession.ID, newStats);
+          updated++;
+        } catch (err: any) {
+          const msg = `Session ${spSession.ID}: ${err.message}`;
+          console.error(`[Stats] Error: ${msg}`);
+          errors.push(msg);
+        }
+      }));
+    }
+
+    // Clear sessions cache so next read picks up the updated Stats field
+    sharePointClient.clearCacheKey('sessions');
+
+    const elapsed = Date.now() - start;
+    console.log(`[Stats] Session refresh complete: ${updated}/${total} updated, ${errors.length} errors, ${elapsed}ms`);
+
+    res.json({ success: true, data: { total, updated, errors } });
+  } catch (error: any) {
+    console.error('[Stats] Session refresh failed:', error);
+    res.status(500).json({ success: false, error: 'Stats refresh failed', message: error.message });
   }
 });
 

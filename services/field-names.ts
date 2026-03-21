@@ -18,3 +18,5 @@ export const PROFILE_DISPLAY  = 'Profile';
 export const SESSION_NOTES       = 'Notes';
 export const SESSION_METADATA    = 'Metadata';
 export const SESSION_COVER_MEDIA = 'CoverMediaLookupId'; // Lookup to Media library (ID field, consistent with GROUP_LOOKUP pattern)
+export const SESSION_STATS       = 'Stats'; // Pre-computed JSON stats stored on Session items (avoid full entries scan on listing views)
+export const PROFILE_STATS       = 'Stats'; // Same field name on Profiles list

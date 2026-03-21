@@ -542,6 +542,28 @@ export class SharePointClient {
   }
 
   /**
+   * Get the child file count for a single session media folder.
+   * One lightweight Graph call — used for targeted stats updates on a single session.
+   * Returns 0 if the folder doesn't exist yet.
+   */
+  async getSessionMediaCount(driveId: string, groupKey: string, date: string): Promise<number> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = `${encodeURIComponent(groupKey)}/${encodeURIComponent(date)}`;
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}?$select=folder`;
+
+      const response = await axios.get(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return (response.data.folder?.childCount as number) || 0;
+    } catch (error: any) {
+      if (error.response?.status === 404) return 0;
+      console.error(`Error getting media count for ${groupKey}/${date}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Clear all cached data
    */
   clearCache(): void {

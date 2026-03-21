@@ -170,6 +170,7 @@ export interface SessionDetailResponse {
   groupEventbriteSeriesId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
   coverMediaId: number | null;
+  statsRaw: string | null;
   entries: EntryResponse[];
 }
 

@@ -210,6 +210,8 @@ async function applyDefaultHours() {
                 body: JSON.stringify({ hours })
             })
         ));
+        // Single stats recompute after all writes complete — avoids N racing fire-and-forgets
+        await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}/stats`, { method: 'POST' });
         closeHoursModal();
         loadSessionDetail();
     } catch (error) {
@@ -506,6 +508,7 @@ async function loadSessionDetail() {
                 <div id="photoCarousel"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${statsSection}
+                ${window.location.hostname === 'localhost' && session.statsRaw ? `<div style="font-size:0.75rem;color:#888;font-family:monospace;margin-top:0.5rem;word-break:break-all;">Stats: ${escapeHtml(session.statsRaw)}</div>` : ''}
             </div>
             ${renderTagsSection(session)}
             ${session.groupEventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(session.groupName || 'Dean Trail Volunteers')}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}

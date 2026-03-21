@@ -20,12 +20,14 @@ import {
   nameToSlug,
   profileSlug,
   profileIdFromSlug,
-  parseEmails
+  parseEmails,
+  calculateSessionStats
 } from '../services/data-layer';
 import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
+  SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
@@ -38,6 +40,26 @@ import type { EntryDetailResponse, RecentSignupResponse, EntryUploadContextRespo
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
+
+// Recomputes and saves the Stats field for a single session after an entry change.
+// Called as fire-and-forget after entry writes so the response isn't delayed.
+// existingMedia is extracted from the cached session Stats before the write clears the cache.
+async function computeAndSaveSessionStats(sessionId: number, existingMedia: number = 0): Promise<void> {
+  const start = Date.now();
+  const sessionEntries = await entriesRepository.getBySessionIds([sessionId]);
+  const statsMap = calculateSessionStats(sessionEntries);
+  const entryStats = statsMap.get(String(sessionId));
+  await sessionsRepository.updateStats(sessionId, {
+    count: entryStats?.registrations || 0,
+    hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
+    media: existingMedia,
+    new: entryStats?.newCount || 0,
+    child: entryStats?.childCount || 0,
+    regular: entryStats?.regularCount || 0,
+    eventbrite: entryStats?.eventbriteCount || 0
+  });
+  console.log(`[Stats] Session ${sessionId} targeted stats update in ${Date.now() - start}ms`);
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -361,7 +383,25 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // Read session ID + existing media count from cache before the write clears it
+    const rawEntries = await entriesRepository.getAll();
+    const spEntry = (rawEntries as any[]).find(e => e.ID === entryId);
+    const sessionId = spEntry ? safeParseLookupId(spEntry[SESSION_LOOKUP]) : undefined;
+    let existingMedia = 0;
+    if (sessionId !== undefined) {
+      const rawSessions = await sessionsRepository.getAll();
+      const spSession = rawSessions.find(s => s.ID === sessionId);
+      try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    }
+
     await entriesRepository.updateFields(entryId, fields);
+
+    if (sessionId !== undefined) {
+      computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
+        console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
+      );
+    }
+
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error updating entry:', error);
@@ -381,14 +421,16 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    // Look up entry (cache hit) to get session ID and check ownership
+    const rawEntries = await entriesRepository.getAll();
+    const entry = (rawEntries as any[]).find(e => e.ID === entryId);
+    if (!entry) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+
     // Self-service users may only delete their own entry (supports multiple linked profiles)
     if (req.session.user?.role === 'selfservice') {
-      const rawEntries = await entriesRepository.getAll();
-      const entry = (rawEntries as any[]).find(e => e.ID === entryId);
-      if (!entry) {
-        res.status(404).json({ success: false, error: 'Entry not found' });
-        return;
-      }
       const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
       const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
       if (profileId === undefined || !ownIds.includes(profileId)) {
@@ -397,7 +439,23 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       }
     }
 
+    // Read existing media count from cache before delete clears it
+    const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
+    let existingMedia = 0;
+    if (sessionId !== undefined) {
+      const rawSessions = await sessionsRepository.getAll();
+      const spSession = rawSessions.find(s => s.ID === sessionId);
+      try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    }
+
     await entriesRepository.delete(entryId);
+
+    if (sessionId !== undefined) {
+      computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
+        console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
+      );
+    }
+
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error deleting entry:', error);
@@ -478,7 +536,15 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
     }
     if (entryNotes) fields.Notes = entryNotes;
 
+    let existingMedia = 0;
+    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+
     const id = await entriesRepository.create(fields);
+
+    computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+      console.error(`[Stats] Failed targeted update for session ${spSession.ID}:`, err)
+    );
+
     res.json({ success: true, data: { id } });
   } catch (error: any) {
     console.error('Error creating entry:', error);
@@ -636,6 +702,13 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       }
     }
 
+    // Update session Stats now that entries have been added/tagged
+    let existingMedia = 0;
+    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    await computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+      console.error(`[Stats] Failed stats update after session refresh:`, err)
+    );
+
     console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider`);
     res.json({
       success: true,
@@ -648,6 +721,41 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       error: 'Failed to refresh session',
       message: error.message
     });
+  }
+});
+
+// Recomputes and saves Stats for a single session — used after bulk operations
+// (e.g. set default hours) where multiple entry writes race against each other.
+router.post('/sessions/:group/:date/stats', async (req: Request, res: Response) => {
+  try {
+    const groupKey = String(req.params.group).toLowerCase();
+    const dateParam = String(req.params.date);
+
+    const [rawGroups, rawSessions] = await Promise.all([
+      groupsRepository.getAll(),
+      sessionsRepository.getAll()
+    ]);
+
+    const spGroup = findGroupByKey(rawGroups, groupKey);
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found' });
+      return;
+    }
+
+    const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    let existingMedia = 0;
+    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+
+    await computeAndSaveSessionStats(spSession.ID, existingMedia);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error updating session stats:', error);
+    res.status(500).json({ success: false, error: 'Failed to update session stats', message: error.message });
   }
 });
 
@@ -677,7 +785,16 @@ router.delete('/sessions/:group/:date/unchecked-entries', async (req: Request, r
     const sessionEntries = rawEntries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
     const unchecked = sessionEntries.filter(e => !e.Checked);
 
+    let existingMedia = 0;
+    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+
     await Promise.all(unchecked.map(e => entriesRepository.delete(e.ID)));
+
+    if (unchecked.length > 0) {
+      computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+        console.error(`[Stats] Failed targeted update after removing no-shows for session ${spSession.ID}:`, err)
+      );
+    }
 
     res.json({ success: true, data: { deleted: unchecked.length } });
   } catch (error: any) {

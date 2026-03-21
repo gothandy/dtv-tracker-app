@@ -6,7 +6,7 @@
 
 import { SharePointSession } from '../../types/session';
 import { sharePointClient } from '../sharepoint-client';
-import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA } from '../field-names';
+import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS } from '../field-names';
 
 class SessionsRepository {
   private listGuid: string;
@@ -16,7 +16,7 @@ class SessionsRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${SESSION_COVER_MEDIA},Created,Modified`;
+    return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${SESSION_COVER_MEDIA},${SESSION_STATS},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointSession[]> {
@@ -76,6 +76,12 @@ class SessionsRepository {
   async updateFields(sessionId: number, fields: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
     sharePointClient.clearCache();
+  }
+
+  // Updates only the Stats field — does NOT flush the full cache.
+  // Callers doing bulk updates should call sharePointClient.clearCacheKey('sessions') once when done.
+  async updateStats(sessionId: number, stats: Record<string, any>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, sessionId, { [SESSION_STATS]: JSON.stringify(stats) });
   }
 
   async delete(sessionId: number): Promise<void> {

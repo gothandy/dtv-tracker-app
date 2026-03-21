@@ -21,7 +21,7 @@
         }
         .admin-btn:hover { background: var(--green); color: white; }
         .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .sync-result { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-mid); min-height: 1.2rem; }
+        .sync-result { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-mid); }
         .sync-result.error { color: var(--error); }
         .legend-list { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
         .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-mid); }
@@ -58,6 +58,14 @@
                 <a class="admin-btn" href="/api/sessions/export">FE Hours Download</a>
                 <a class="admin-btn" href="/api/records/export">Records Download</a>
             </div>
+        </div>
+
+        <div class="admin-section admin-only">
+            <h2>Stats Cache</h2>
+            <div class="admin-actions">
+                <button class="admin-btn" id="refreshSessionStatsBtn" onclick="refreshSessionStats()">Refresh Session Stats</button>
+            </div>
+            <div class="sync-result" id="refreshSessionStatsResult"></div>
         </div>
 
         <div class="admin-section admin-only" id="siteSection" style="display:none;">
@@ -254,6 +262,32 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Export Backup';
+            }
+        }
+
+        async function refreshSessionStats() {
+            const btn = document.getElementById('refreshSessionStatsBtn');
+            const result = document.getElementById('refreshSessionStatsResult');
+            btn.disabled = true;
+            btn.textContent = 'Refreshing...';
+            result.textContent = '';
+            result.className = 'sync-result';
+
+            try {
+                const res = await apiFetch('/api/sessions/refresh-stats', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Refresh failed');
+
+                const d = data.data;
+                let msg = `${d.updated} of ${d.total} sessions updated`;
+                if (d.errors && d.errors.length) msg += ` (${d.errors.length} errors)`;
+                result.textContent = msg;
+            } catch (error) {
+                result.textContent = error.message || 'Refresh failed';
+                result.className = 'sync-result error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Refresh Session Stats';
             }
         }
 
