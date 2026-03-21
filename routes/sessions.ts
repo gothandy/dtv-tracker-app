@@ -61,7 +61,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
         id: s.sharePointId,
         displayName: s.displayName,
         description: s.description,
-        date: s.sessionDate.toISOString(),
+        date: s.sessionDate.toISOString().substring(0, 10),
         groupId: s.groupId,
         groupKey: s.groupId ? groupKeyMap.get(s.groupId) : undefined,
         groupName: s.groupName,
@@ -448,7 +448,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       id: spSession.ID,
       displayName: spSession.Name || spSession.Title,
       description: spSession[SESSION_NOTES],
-      date: spSession.Date,
+      date: spSession.Date?.substring(0, 10),
       groupId: groupId,
       groupName: group.displayName,
       registrations: sessionEntries.length,
@@ -550,7 +550,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
         process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
       );
     }
-    const newDate = fields.Date || dateParam;
+    const newDate = (fields.Date || dateParam).substring(0, 10);
     res.json({ success: true, data: { date: newDate, groupKey: newGroupKey } } as ApiResponse<{ date: string; groupKey: string }>);
   } catch (error: any) {
     console.error('Error updating session:', error);

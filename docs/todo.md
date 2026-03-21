@@ -183,6 +183,24 @@ Current breadcrumb is static (path-based) and doesn't reflect where the user nav
 
 A back button is probably the right approach — simpler, works well on mobile, and avoids the complexity of reconstructing navigation history from the URL alone.
 
+## Investigate Random Sign-Outs
+
+Reports of users being signed out every 5–10 minutes. Root cause not yet confirmed — gather more data before implementing fixes.
+
+**Likely causes (check in order):**
+1. **"Always On" disabled** in Azure App Service (Configuration → General settings) — app goes idle between requests and restarts, wiping in-memory sessions. Free fix if this is the cause.
+2. **App crashing** — App Insights Failures blade will show unhandled exceptions and process restarts. Check after next reported sign-out.
+3. **MemoryStore** — `express-session` defaults to in-memory session storage; all sessions lost on any process restart/redeploy. Long-term fix regardless of root cause: provision Azure Cache for Redis and add `connect-redis`.
+
+**Quick wins to apply once root cause confirmed:**
+- Add `rolling: true` to session config so the 8-hour window resets on activity rather than expiring from login time
+- Throw on startup if `SESSION_SECRET` env var is missing (currently falls back to a hardcoded string — a deploy without it invalidates all session cookies)
+- Revert OAuth CSRF state to stateless HMAC tokens in `google.ts`/`facebook.ts` (regression from 2026-03-17 refactor, noted in technical-debt.md)
+
+Key files: [app.js](app.js) (session config ~lines 38–48), [routes/auth/google.ts](routes/auth/google.ts), [routes/auth/facebook.ts](routes/auth/facebook.ts)
+
+---
+
 ## Homepage spinner
 While the cache is building a spinner would help usability.
 
