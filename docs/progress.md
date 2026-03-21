@@ -19,7 +19,7 @@ Added `Stats` multi-line text field to Sessions SharePoint list. Pre-computes `{
 Added `Stats` multi-line text field to Profiles SharePoint list. Pre-computes `{ hoursByFY, sessionsByFY, isMember, cardStatus }` JSON per profile.
 
 - **`services/profile-stats.ts`** — `computeAndSaveProfileStats(profileId)`: fetches entries by profile (indexed Graph call) + records from cache; writes Stats JSON. `runProfileStatsRefresh()`: bulk nightly refresh.
-- **`routes/profiles.ts`** — `POST /api/profiles/refresh-stats`: bulk nightly refresh, API key auth. Volunteers listing (`GET /api/profiles`) reads from Stats field for basic listing; group-filtered path still fetches entries (group filter requires knowing which profiles attended which group's sessions). Fire-and-forget `computeAndSaveProfileStats()` after every entry write, record write (consent, membership, card), and profile transfer.
+- **`routes/profiles.ts`** — `POST /api/profiles/refresh-stats`: bulk nightly refresh, API key auth. Fire-and-forget `computeAndSaveProfileStats()` after every entry write, record write (consent, membership, card), and profile transfer. Note: volunteers listing (`GET /api/profiles`) was later reverted to always compute live from entries (see 2026-03-21 fix below).
 - **`public/admin.html`** — "Refresh Profile Stats" button.
 - **`routes/stats.ts`** — `GET /api/stats` and `GET /api/stats/history` now read hours/sessions/activeGroups from session Stats field; volunteer counts from profile Stats field. No entries fetch needed.
 - **`routes/eventbrite.ts`** — nightly sync chain extended: Eventbrite sessions → attendees → session stats refresh → profile stats refresh.
@@ -44,6 +44,17 @@ All critical filtered-query indexes added via List Settings → Indexed Columns:
 - **Filter Logic Duplication** (2026-03-01) — `volunteers.js` filter pipeline extracted into `applyCommonFilters()` and `applyVolunteerFilters()` helpers. Sessions page inline JS (~485 lines) extracted to `public/js/sessions.js`.
 - **Silent Failure — `getColumnChoices`** (2026-03-01) — try/catch removed in `services/sharepoint-client.ts`; errors now propagate to route handler. `loadRecordOptions` in `volunteers.js` now logs on `!res.ok`.
 - **Silent Failure — `getTermSetIdForColumn`** (2026-03-02) — removed; tag route now reads term set ID directly from `TAXONOMY_TERM_SET_ID` env var.
+
+---
+
+## Session: 2026-03-21 (Volunteers listing group filter fix)
+
+### Completed Tasks
+
+#### Volunteers listing — reverted to live entry computation ✓
+
+- **`routes/profiles.ts`** — `GET /api/profiles` now always fetches entries, sessions, and groups to compute hours. The Stats-based fast path was removed because group + FY filter combinations were inconsistent (particularly FY=all + group returned wrong results). Accuracy over performance for this endpoint.
+- **`public/js/volunteers.js`** — Fixed pre-existing bug: when FY filter is "All" and a group is selected, profiles with no participation in that group were not being filtered out. Added `else if (currentGroup)` branch to filter by `hoursAll > 0 || sessionsAll > 0`.
 
 ---
 

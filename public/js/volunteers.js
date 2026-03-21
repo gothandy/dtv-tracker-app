@@ -82,6 +82,7 @@ function applyVolunteerFilters(volunteers) {
     else if (currentTypeFilter === 'groups')  filtered = filtered.filter(v => v.isGroup);
     else if (currentTypeFilter === 'users')   filtered = filtered.filter(v => !v.isGroup && v.user);
     if (currentFilter !== 'all') filtered = filtered.filter(v => v.hoursThisFY > 0 || v.sessionsThisFY > 0);
+    else if (currentGroup) filtered = filtered.filter(v => v.hoursAll > 0 || v.sessionsAll > 0);
     return applyCommonFilters(filtered);
 }
 
