@@ -86,7 +86,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
     const [rawEntries, rawSessions, rawGroups] = await Promise.all([
-      entriesRepository.getAll(),
+      entriesRepository.getRecent(cutoff),
       sessionsRepository.getAll(),
       groupsRepository.getAll()
     ]);
@@ -97,7 +97,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
 
     const recent: RecentSignupResponse[] = entries
-      .filter(e => !/#Regular\b/i.test(e.Notes || '') && new Date(e.Created) >= cutoff)
+      .filter(e => !/#Regular\b/i.test(e.Notes || ''))
       .sort((a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime())
       .slice(0, 50)
       .flatMap(e => {
@@ -982,7 +982,20 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       uploaded++;
     }
 
-    if (uploaded > 0) sharePointClient.clearCache();
+    if (uploaded > 0) {
+      sharePointClient.clearCache();
+      // Update session Stats with fresh media count (fire-and-forget)
+      if (sessionId !== undefined) {
+        (async () => {
+          try {
+            const mediaCount = await sharePointClient.getSessionMediaCount(driveId, groupKey, date);
+            await computeAndSaveSessionStats(sessionId, mediaCount);
+          } catch (err) {
+            console.error(`[Stats] Failed targeted update after upload for session ${sessionId}:`, err);
+          }
+        })();
+      }
+    }
 
     res.json({ success: true, data: { uploaded } });
   } catch (error: any) {

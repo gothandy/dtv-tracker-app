@@ -20,11 +20,12 @@ async function refreshSignups() {
     try {
         const role = window.currentUser?.role;
         if (role === 'admin' || role === 'checkin') {
-            await fetch(`/api/eventbrite/quick-sync?since=${encodeURIComponent(signupsSince)}`, { method: 'POST' })
+            // Fire-and-forget — don't block the UI on the Eventbrite API call
+            fetch(`/api/eventbrite/quick-sync?since=${encodeURIComponent(signupsSince)}`, { method: 'POST' })
                 .catch(err => console.error('[quick-sync]', err));
         }
-    } finally {
         await loadRecentSignups();
+    } finally {
         if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
     }
 }

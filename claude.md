@@ -181,6 +181,12 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - The app is the source of truth for all derived data. No Power Automate flows update fields.
 - Cached data (5-minute TTL) keeps this performant despite recalculating on each request.
 
+**Exception — Pre-computed Stats fields**: The Sessions and Profiles SharePoint lists each have a `Stats` multi-line text field that stores pre-computed aggregate JSON. This is a deliberate performance optimisation, not a deviation from the principle — it avoids fetching ~5,000 entries on every sessions listing or volunteers listing page load. Stats are kept fresh by:
+- A targeted `computeAndSaveSessionStats()` / `computeAndSaveProfileStats()` call after every entry write, record write, or media upload
+- A nightly bulk refresh (`POST /api/sessions/refresh-stats`, `POST /api/profiles/refresh-stats`) chained after the Eventbrite sync, also manually triggerable from the admin page
+
+Detail pages (session detail, profile detail) always fetch live entry data — Stats are only used by listing and aggregate views. See [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the JSON schema of each Stats field.
+
 ### SharePoint Integration
 - Use the documented GUIDs and internal field names from [docs/sharepoint-schema.md](docs/sharepoint-schema.md)
 - Field name constants live in `services/field-names.ts` — use these instead of hardcoded strings
@@ -413,4 +419,4 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 
 ---
 
-*Last Updated: 2026-03-20*
+*Last Updated: 2026-03-21*

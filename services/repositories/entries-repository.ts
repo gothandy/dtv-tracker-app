@@ -45,6 +45,16 @@ class EntriesRepository {
     ) as SharePointEntry[];
   }
 
+  async getRecent(cutoff: Date): Promise<SharePointEntry[]> {
+    // Requires a Created index on the Entries list (List Settings → Indexed Columns)
+    const filter = `fields/Created ge '${cutoff.toISOString()}'`;
+    return await sharePointClient.getListItems(
+      this.listGuid,
+      this.selectFields,
+      filter
+    ) as SharePointEntry[];
+  }
+
   async getBySessionIds(sessionIds: number[]): Promise<SharePointEntry[]> {
     if (!sessionIds || sessionIds.length === 0) {
       return [];

@@ -40,10 +40,6 @@ Errors are routinely swallowed at multiple layers, making bugs invisible to both
 | `public/js/profile-detail.js` | ~119 | `catch (e) { /* ignore */ }` | Transfer profile search fails silently |
 | `public/js/session-detail.js` | ~167 | `catch { checkbox.checked = !... }` | Check-in failure has no logging (data loss risk) |
 
-**Fixed** (2026-03-02): `services/taxonomy-client.ts` → removed `getTermSetIdForColumn` (column discovery via `$expand=termColumn` is not supported by Graph API; tag route now uses `TAXONOMY_TERM_SET_ID` env var directly)
-
-**Fixed** (2026-03-01): `services/sharepoint-client.ts` → `getColumnChoices` (try/catch removed; errors now propagate to route handler); `public/js/volunteers.js` → `loadRecordOptions` (added `console.error` on `!res.ok`)
-
 ---
 
 ## Modal HTML Duplication
@@ -92,26 +88,16 @@ The `test/` directory contains verification scripts that hit the live SharePoint
 ---
 
 ## Cache Invalidation Is Global
-**Priority**: Medium | **Effort**: Medium
+**Priority**: Low | **Effort**: Medium
 
 Every write — including check-in — calls `clearCache()` → `flushAll()`, evicting all cache keys simultaneously. During a busy field day, staff check in volunteers one after another; each write evicts groups, profiles, sessions, regulars, and records even though none of those changed. The next request hits a cold cache for everything, not just entries.
 
-**Fix**: Replace `clearCache()` with targeted key deletion per repository. Add `clearCacheByPrefix(prefix)` to `sharepoint-client.ts` and map each repository's write methods to only the keys they actually affect (e.g. entry writes clear `entries`, `entries-profile-{id}`, `sessions_FY*`; not groups/profiles/regulars/records). Full mapping in `docs/todo.md` Performance Optimisation section.
+**Partial fix (2026-03-21)**: Stats refresh helpers use `clearCacheKey('profiles')` / `clearCacheKey('sessions')` (targeted single-key eviction) rather than `clearCache()`. All other writes still call `clearCache()`.
 
-**Prerequisite for**: Filtered repository queries (Phase 2 in todo.md) introduce per-profile cache keys (`entries-profile-{id}`, `records-profile-{id}`) that also need selective invalidation.
-
----
-
-## Profile Detail Fetches All Lists
-**Priority**: Medium | **Effort**: Low-Medium
-
-`GET /api/profiles/:slug` fetches all 6 SharePoint lists in parallel — including ~5,000 entries and ~1,500 records — to serve one volunteer's ~30 entries and ~10 records. This is the primary source of cold-cache slowness on profile and entry detail pages.
-
-**Fix**: Add `getByProfileId(profileId)` to `entries-repository.ts` and `records-repository.ts` using Graph OData `$filter=fields/ProfileLookupId eq {id}`. Requires `ProfileLookupId` to be indexed on both lists first (see SharePoint Index Review in todo.md). Pattern already exists: `getBySessionIds()` in entries repository.
-
-**Expected impact**: Profile detail cold-cache response drops from ~1,500ms to ~600ms; Graph API dependency calls drop from 6 parallel fetches to 4.
+**Remaining fix**: Replace `clearCache()` with targeted key deletion per repository. Add `clearCacheByPrefix(prefix)` to `sharepoint-client.ts` and map each repository's write methods to only the keys they actually affect (e.g. entry writes clear `entries`, `entries-profile-{id}`, `sessions_FY*`; not groups/profiles/regulars/records).
 
 ---
+
 
 ## Graph API Retry Logic
 **Priority**: Low | **Effort**: Medium
@@ -161,8 +147,6 @@ The Eventbrite sync logic is duplicated and fragile:
 4. **No error recovery**: If an attendee sync fails partway through (e.g. SharePoint rate limit), there's no retry or partial-success handling. The whole sync attempt fails silently from the caller's perspective.
 
 **Recommended approach**: Extract a shared `syncAttendeeForSession()` function used by both the scheduled sync and the refresh endpoint, so consent mapping and entry creation logic live in one place.
-
-**Fixed (2026-03-17)**: Concurrent sync runs now blocked by `syncInProgress` flag — returns 409 if a sync is already running. Prevents duplicate entries from Logic App retries overlapping with an in-flight request.
 
 ---
 
@@ -266,10 +250,6 @@ The immediate inconsistency is `session.metadata` in `SessionDetailResponse` —
 
 ---
 
-## Filter Logic Duplication
-**Fixed** (2026-03-01): `volunteers.js` filter pipeline extracted into `applyCommonFilters()` (search, hours, records) and `applyVolunteerFilters()` (type, FY) helpers. All three callers (`getVisibleVolunteerIds`, `displayVolunteers`, `getFilteredIndividuals`) now delegate to these. Sessions.html inline JS (~485 lines) extracted to `public/js/sessions.js`; page-specific CSS moved to `styles.css` under `/* === Sessions Listing === */`.
-
----
 
 ## Facebook OAuth — Android Intent Interception
 **Priority**: Low | **Effort**: None (current approach works)
@@ -291,4 +271,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-21 (Performance: cache invalidation and profile detail fetch patterns documented; SharePoint index recommendations in todo.md)*
+*Last Updated: 2026-03-21*

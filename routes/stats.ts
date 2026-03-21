@@ -1,9 +1,9 @@
 import express, { Request, Response, Router } from 'express';
 import { sharePointClient } from '../services/sharepoint-client';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
-import { entriesRepository } from '../services/repositories/entries-repository';
-import { calculateCurrentFY, calculateFYStats, calculateFinancialYear } from '../services/data-layer';
-import { SESSION_STATS } from '../services/field-names';
+import { profilesRepository } from '../services/repositories/profiles-repository';
+import { calculateCurrentFY, calculateFinancialYear, safeParseLookupId } from '../services/data-layer';
+import { SESSION_STATS, PROFILE_STATS, GROUP_LOOKUP } from '../services/field-names';
 import type { StatsResponse, FYStatsResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -30,6 +30,27 @@ function hoursByMonthFromStats(sessions: any[]): Map<string, number> {
   return map;
 }
 
+// Counts profiles that have at least one session in the given FY, from pre-computed Stats field
+function volunteersFromStats(profiles: any[], fyKey: string): number {
+  let count = 0;
+  for (const p of profiles) {
+    try {
+      const stats = JSON.parse(p[PROFILE_STATS] || '{}');
+      if ((stats.sessionsByFY?.[fyKey] || 0) > 0) count++;
+    } catch { /* malformed Stats — skip */ }
+  }
+  return count;
+}
+
+// Counts distinct groups that ran sessions in a given set
+function activeGroupsFromSessions(sessions: any[]): number {
+  return new Set(
+    sessions
+      .map(s => safeParseLookupId(s[GROUP_LOOKUP]))
+      .filter((id): id is number => id !== undefined)
+  ).size;
+}
+
 const router: Router = express.Router();
 
 router.get('/stats', async (req: Request, res: Response) => {
@@ -38,29 +59,26 @@ router.get('/stats', async (req: Request, res: Response) => {
     const lastFYStartYear = fy.startYear - 1;
     const lastFYKey = `FY${lastFYStartYear}`;
 
-    const [sessionsThisFY, sessionsLastFY, entries] = await Promise.all([
+    const [sessionsThisFY, sessionsLastFY, rawProfiles] = await Promise.all([
       sessionsRepository.getByFinancialYear(fy.key),
       sessionsRepository.getByFinancialYear(lastFYKey),
-      entriesRepository.getAll()
+      profilesRepository.getAll()
     ]);
-
-    const statsThis = calculateFYStats(sessionsThisFY, entries);
-    const statsLast = calculateFYStats(sessionsLastFY, entries);
 
     const data: StatsResponse = {
       thisFY: {
-        activeGroups: statsThis.activeGroups,
-        sessions: statsThis.sessions,
-        hours: hoursFromStats(sessionsThisFY),  // from pre-computed Stats field
-        volunteers: statsThis.volunteers,         // still from live entries
+        activeGroups: activeGroupsFromSessions(sessionsThisFY),
+        sessions: sessionsThisFY.length,
+        hours: hoursFromStats(sessionsThisFY),
+        volunteers: volunteersFromStats(rawProfiles, fy.key),
         financialYear: `${fy.startYear}-${fy.endYear}`,
         label: 'This FY'
       },
       lastFY: {
-        activeGroups: statsLast.activeGroups,
-        sessions: statsLast.sessions,
-        hours: hoursFromStats(sessionsLastFY),  // from pre-computed Stats field
-        volunteers: statsLast.volunteers,         // still from live entries
+        activeGroups: activeGroupsFromSessions(sessionsLastFY),
+        sessions: sessionsLastFY.length,
+        hours: hoursFromStats(sessionsLastFY),
+        volunteers: volunteersFromStats(rawProfiles, lastFYKey),
         financialYear: `${lastFYStartYear}-${fy.startYear}`,
         label: 'Last FY'
       }
@@ -79,9 +97,9 @@ router.get('/stats', async (req: Request, res: Response) => {
 
 router.get('/stats/history', async (req: Request, res: Response) => {
   try {
-    const [allSessions, entries] = await Promise.all([
+    const [allSessions, rawProfiles] = await Promise.all([
       sessionsRepository.getAll(),
-      entriesRepository.getAll()
+      profilesRepository.getAll()
     ]);
 
     // Group sessions by FY start year, skipping the historical-totals placeholder
@@ -113,7 +131,6 @@ router.get('/stats/history', async (req: Request, res: Response) => {
       .filter(([startYear]) => startYear <= currentFY.startYear)
       .sort(([a], [b]) => a - b)
       .map(([startYear, sessions]) => {
-        const stats = calculateFYStats(sessions, entries);
         const endYear = startYear + 1;
         const isCurrentFY = startYear === currentFY.startYear;
 
@@ -136,10 +153,10 @@ router.get('/stats/history', async (req: Request, res: Response) => {
         }
 
         return {
-          activeGroups: stats.activeGroups,
-          sessions: stats.sessions,
-          hours: hoursFromStats(sessions),  // from pre-computed Stats field
-          volunteers: stats.volunteers,      // still from live entries
+          activeGroups: activeGroupsFromSessions(sessions),
+          sessions: sessions.length,
+          hours: hoursFromStats(sessions),
+          volunteers: volunteersFromStats(rawProfiles, `FY${startYear}`),
           financialYear: `${startYear}-${endYear}`,
           label: isCurrentFY ? 'This FY' : `FY ${String(startYear).slice(2)}/${String(endYear).slice(2)}`,
           completedHours,

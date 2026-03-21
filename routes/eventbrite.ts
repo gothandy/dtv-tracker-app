@@ -7,7 +7,7 @@ import { recordsRepository } from '../services/repositories/records-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
-import { getAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
+import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
 import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
@@ -359,22 +359,46 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
       return d >= today;
     });
 
+    // Single org-wide call — skips all per-session Eventbrite calls
+    const recentAttendees = await getOrgAttendees(changedSince);
+    if (!recentAttendees.length) {
+      console.log(`[QuickSync] No changed attendees in window — skipping`);
+      res.json({ success: true, data: { added: 0, sessionsChecked: 0 } });
+      return;
+    }
+
+    // Group by Eventbrite event ID so we can look up per session below
+    const attendeesByEventId = new Map<string, typeof recentAttendees>();
+    for (const a of recentAttendees) {
+      if (!a.event_id) continue;
+      if (!attendeesByEventId.has(a.event_id)) attendeesByEventId.set(a.event_id, []);
+      attendeesByEventId.get(a.event_id)!.push(a);
+    }
+
     const allRecords = recordsRepository.available ? await recordsRepository.getAll() : [];
+
+    // Fetch entries once; build per-session profile sets for duplicate checking
+    const allEntriesRaw = await entriesRepository.getAll();
+    const allEntries = validateArray(allEntriesRaw, validateEntry, 'Entry');
+    const sessionProfileIds = new Map<number, Set<number>>();
+    for (const e of allEntries) {
+      const sId = safeParseLookupId(e[SESSION_LOOKUP]);
+      const pId = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (sId === undefined || pId === undefined) continue;
+      if (!sessionProfileIds.has(sId)) sessionProfileIds.set(sId, new Set());
+      sessionProfileIds.get(sId)!.add(pId);
+    }
+
     let added = 0;
 
     for (const session of liveSessions) {
-      const attendees = await getAttendees(session.EventbriteEventID!, changedSince);
+      const attendees = attendeesByEventId.get(session.EventbriteEventID!) ?? [];
       if (!attendees.length) continue;
 
       console.log(`[QuickSync] Session ${session.ID} (${session.EventbriteEventID}): ${attendees.length} new/changed attendees`);
 
-      // Load cached entries and filter to this session only
-      const allEntriesRaw = await entriesRepository.getAll();
-      const sessionEntries = validateArray(allEntriesRaw, validateEntry, 'Entry')
-        .filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === session.ID);
-      const existingProfileIds = new Set(
-        sessionEntries.map(e => safeParseLookupId(e[PROFILE_LOOKUP])).filter((id): id is number => id !== undefined)
-      );
+      const existingProfileIds = sessionProfileIds.get(session.ID) ?? new Set<number>();
+      if (!sessionProfileIds.has(session.ID)) sessionProfileIds.set(session.ID, existingProfileIds);
 
       const sessionGroupId = safeParseLookupId(session[GROUP_LOOKUP]);
 

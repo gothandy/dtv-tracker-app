@@ -41,6 +41,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Notes** | Notes | Multiple lines of text | No | Planning notes, work done, and actions |
 | **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
 | **EventbriteEventID** | EventbriteEventID | Single line of text | No | Eventbrite Event identifier |
+| **Stats** | Stats | Multiple lines of text | No | Pre-computed JSON: `{ "count": N, "hours": N, "media": N, "new": N, "child": N, "regular": N, "eventbrite": N }` |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
@@ -48,9 +49,23 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 - **Group** / **GroupLookupId**: Lookup to Groups list — associates the session with a volunteer group
 
 ### Calculated Fields (not stored)
-- **Registrations**: Calculated from Entries list (count of entries for this session)
-- **Hours**: Calculated from Entries list (sum of entry hours)
 - **Financial Year**: Calculated from Date field (April–March rule)
+
+### Pre-computed Stats (stored in Stats field)
+The `Stats` JSON field caches values derived from the Entries list and SharePoint Media Library so that listing and aggregate views don't need to fetch all entries on every request:
+- **count**: number of entries (registrations) for this session
+- **hours**: sum of entry hours for this session
+- **media**: count of uploaded photos/videos in the SharePoint Media Library folder for this session
+- **new**: count of entries tagged `#New`
+- **child**: count of entries tagged `#Child`
+- **regular**: count of entries tagged `#Regular`
+- **eventbrite**: count of entries created via Eventbrite sync
+
+Stats are written by:
+- `POST /api/sessions/refresh-stats` (bulk nightly refresh, also manually triggered from admin page)
+- `computeAndSaveSessionStats()` helper (targeted update after each entry write/delete or media upload)
+
+Fall back to zeros if the field is empty (e.g. before first refresh run).
 
 ---
 
@@ -77,7 +92,13 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 ### Lookup Fields
 - **Session** / **SessionLookupId**: Lookup to Sessions list (indexed for performance)
-- **Profile** / **ProfileLookupId**: Lookup to Profiles list
+- **Profile** / **ProfileLookupId**: Lookup to Profiles list (indexed for performance)
+
+### Indexes
+- **SessionLookupId** — enables `getBySessionIds()` targeted query (session detail page)
+- **ProfileLookupId** — enables `getByProfileId()` targeted query (profile detail, targeted stats updates)
+- **Created** — enables `getRecent()` targeted query (recent signups homepage widget)
+- **Modified** — added alongside Created (auto-added by SharePoint)
 
 ### Data Model Notes
 This is a **many-to-many junction table** that creates the relationship between:
@@ -102,12 +123,24 @@ This is a **many-to-many junction table** that creates the relationship between:
 | **MatchName** | MatchName | Single line of text | No | - | Lowercase name for Eventbrite matching |
 | **User** | User | Single line of text | No | - | DTV Entra ID username (e.g. andrew.davies@dtv.org.uk) |
 | **IsGroup** | IsGroup | Yes/No | No | No | Flag indicating if this is a group profile |
+| **Stats** | Stats | Multiple lines of text | No | - | Pre-computed JSON: `{ "hoursByFY": { "FY2025": N }, "sessionsByFY": { "FY2025": N }, "isMember": bool, "cardStatus": "Accepted"\|"Invited"\|null }` |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
 
-### Calculated Fields (not stored)
-- **Hours**: Calculated from Entries list per financial year
-- **Membership**: Determined from Records list (Charity Membership record with Status "Accepted")
+### Pre-computed Stats (stored in Stats field)
+The `Stats` JSON field caches values derived from the Entries and Records lists so that listing and aggregate views don't need to fetch all entries on every request:
+- **hoursByFY**: dictionary of hours per financial year (e.g. `{ "FY2025": 120.0, "FY2026": 45.5 }`)
+- **sessionsByFY**: dictionary of session count per financial year
+- **isMember**: true if the profile has a Charity Membership record with Status "Accepted"
+- **cardStatus**: discount card status — "Accepted", "Invited", or null
+
+`thisFY` and `lastFY` totals are derived at request time from the dictionaries using `calculateCurrentFY()`. This avoids stale data at financial year boundaries.
+
+Stats are written by:
+- `POST /api/profiles/refresh-stats` (bulk nightly refresh, also manually triggered from admin page)
+- `computeAndSaveProfileStats()` helper (targeted update after each entry write/delete or record write)
+
+Fall back to zeros/false if the field is empty (e.g. before first refresh run).
 
 ### Integration Points
 - **Eventbrite**: Uses MatchName field (lowercase name) to sync with external Eventbrite registrations
@@ -241,4 +274,4 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 ---
 
-*Last Updated: 2026-02-16*
+*Last Updated: 2026-03-21*

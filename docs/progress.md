@@ -1,5 +1,52 @@
 # Development Progress
 
+## Session: 2026-03-21 (Performance — Stats cache full implementation)
+
+### Completed Tasks
+
+#### Session Stats field — Phase A ✓
+
+Added `Stats` multi-line text field to Sessions SharePoint list. Pre-computes `{ count, hours, media, new, child, regular, eventbrite }` JSON per session.
+
+- **`services/session-stats.ts`** — `computeAndSaveSessionStats()` helper: fetches entries for the session + media count via `getSessionMediaCount()`, computes and writes Stats JSON to SharePoint.
+- **`services/sharepoint-client.ts`** — `getSessionMediaCount()`: single lightweight Graph call to get `folder.childCount` for a session's media folder.
+- **`routes/sessions.ts`** — `POST /api/sessions/refresh-stats`: bulk nightly refresh, batched in groups of 10, API key auth, returns `{ updated: N, errors: [] }`. Sessions listing (`GET /api/sessions`) reads from Stats field — no `entriesRepository.getAll()` or media count calls.
+- **`public/admin.html`** — "Refresh Session Stats" button.
+- **`routes/entries.ts`** — targeted `computeAndSaveSessionStats()` call after every entry write/delete, media upload, session refresh, and remove no-shows.
+
+#### Profile Stats field — Phase B ✓
+
+Added `Stats` multi-line text field to Profiles SharePoint list. Pre-computes `{ hoursByFY, sessionsByFY, isMember, cardStatus }` JSON per profile.
+
+- **`services/profile-stats.ts`** — `computeAndSaveProfileStats(profileId)`: fetches entries by profile (indexed Graph call) + records from cache; writes Stats JSON. `runProfileStatsRefresh()`: bulk nightly refresh.
+- **`routes/profiles.ts`** — `POST /api/profiles/refresh-stats`: bulk nightly refresh, API key auth. Volunteers listing (`GET /api/profiles`) reads from Stats field for basic listing; group-filtered path still fetches entries (group filter requires knowing which profiles attended which group's sessions). Fire-and-forget `computeAndSaveProfileStats()` after every entry write, record write (consent, membership, card), and profile transfer.
+- **`public/admin.html`** — "Refresh Profile Stats" button.
+- **`routes/stats.ts`** — `GET /api/stats` and `GET /api/stats/history` now read hours/sessions/activeGroups from session Stats field; volunteer counts from profile Stats field. No entries fetch needed.
+- **`routes/eventbrite.ts`** — nightly sync chain extended: Eventbrite sessions → attendees → session stats refresh → profile stats refresh.
+
+#### Recent signups filtered query — Phase C ✓
+
+`GET /api/entries/recent` replaced the full ~5,000-entry scan with a Graph OData filtered query using the `Created` index. Returns only entries created in the last 7 days.
+
+- **`services/repositories/entries-repository.ts`** — `getRecent(cutoff)`: `$filter=fields/Created ge '...'` (requires `Created` index on the Entries list).
+
+#### SharePoint indexes ✓
+
+All critical filtered-query indexes added via List Settings → Indexed Columns:
+- Entries `ProfileLookupId` — for `getByProfileId()` (profile detail, targeted stats updates)
+- Entries `Created` — for `getRecent()` (recent signups)
+- Records `ProfileLookupId` — for `getByProfile()` (consent, targeted stats updates)
+- Entries `SessionLookupId` and Entries `Modified` were already in place.
+
+#### Tech-debt resolved ✓
+
+- **Profile Detail Fetches All Lists** — `GET /api/profiles/:slug` now uses `getByProfileId()` (indexed) and `recordsRepository.getByProfile()` instead of `getAll()` on both lists.
+- **Filter Logic Duplication** (2026-03-01) — `volunteers.js` filter pipeline extracted into `applyCommonFilters()` and `applyVolunteerFilters()` helpers. Sessions page inline JS (~485 lines) extracted to `public/js/sessions.js`.
+- **Silent Failure — `getColumnChoices`** (2026-03-01) — try/catch removed in `services/sharepoint-client.ts`; errors now propagate to route handler. `loadRecordOptions` in `volunteers.js` now logs on `!res.ok`.
+- **Silent Failure — `getTermSetIdForColumn`** (2026-03-02) — removed; tag route now reads term set ID directly from `TAXONOMY_TERM_SET_ID` env var.
+
+---
+
 ## Session: 2026-03-20 (Consent button on entry detail + self-service consent access)
 
 ### Completed Tasks

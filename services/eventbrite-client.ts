@@ -16,6 +16,7 @@ export interface EventbriteAnswer {
 export interface EventbriteAttendee {
   id: string;
   created: string;
+  event_id?: string;
   profile: {
     name: string;
     email: string;
@@ -85,6 +86,30 @@ export async function getOrgEvents(): Promise<EventbriteEvent[]> {
       });
     }
 
+    hasMore = data.pagination?.has_more_items || false;
+    page++;
+  }
+
+  return all;
+}
+
+export async function getOrgAttendees(changedSince: Date): Promise<EventbriteAttendee[]> {
+  const orgId = process.env.EVENTBRITE_ORGANIZATION_ID;
+  if (!orgId) throw new Error('EVENTBRITE_ORGANIZATION_ID not configured');
+
+  const all: EventbriteAttendee[] = [];
+  let page = 1;
+  let hasMore = true;
+
+  const sinceParam = `&changed_since=${encodeURIComponent(changedSince.toISOString().replace(/\.\d{3}Z$/, 'Z'))}`;
+
+  while (hasMore) {
+    const data = await fetchEventbrite<{
+      attendees: EventbriteAttendee[];
+      pagination: { has_more_items: boolean };
+    }>(`/organizations/${orgId}/attendees/?status=attending&expand=answers&page=${page}${sinceParam}`);
+
+    all.push(...(data.attendees || []));
     hasMore = data.pagination?.has_more_items || false;
     page++;
   }

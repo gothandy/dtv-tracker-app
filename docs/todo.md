@@ -15,38 +15,17 @@ Add a new `personal-section.js` module rendered below the session calendar (abov
 
 ---
 
-## Performance Optimisation (Phase 2+)
+## Performance Optimisation (Remaining)
 
-App Insights is enabled (codeless, Azure App Service portal). Once real traffic data is available, implement in order:
-
-**Phase 2 — Filtered repository queries for profile detail** (requires Phase 1 indexes first)
-- Add `getByProfileId(profileId)` to `records-repository.ts` — Graph OData `$filter=fields/ProfileLookupId eq {id}`, cache key `records-profile-{id}`
-- Add `getByProfileId(profileId)` to `entries-repository.ts` — same pattern; `getBySessionIds()` is the existing model
-- Update `GET /api/profiles/:slug` in `routes/profiles.ts` to use both filtered methods instead of `getAll()` — reduces entry fetch from ~5,000 to ~30 and records from ~1,500 to ~10
+Phase 1 (session Stats field pre-computation), Phase 2 (profile Stats field + targeted profile queries), and Phase C (recent signups filtered query) are all done. Remaining:
 
 **Phase 3 — Selective cache invalidation**
 - Add `clearCacheByPrefix(prefix)` helper to `sharepoint-client.ts`
 - Replace `clearCache()` (flushAll) in each repository write method with targeted key deletion; entry writes should only evict `entries`/`entries-profile-*`/`sessions_FY*`, not groups/profiles/sessions/records — critical for check-in day performance
+- Stats refresh helpers already use `clearCacheKey()` (single-key eviction) as a stepping stone
 
 **Phase 4 — Per-key TTL tuning**
 - groups: 30 min, profiles/sessions/records: 10 min, regulars: 15 min, entries: 5 min (keep short — changes on every check-in)
-
----
-
-## SharePoint Index Review
-Add via: List Settings → Indexed Columns → Create a new index. Do before Phase 2 above — filtered Graph API queries require the index to exist or the filter is rejected.
-
-Priority indexes:
-- **Entries `ProfileLookupId`** — enables filtered query fetching one volunteer's entries (~30) instead of all ~5,000. High priority.
-- **Records `ProfileLookupId`** — same for records (~10 vs ~1,500). High priority.
-
-Lower priority (future use only):
-- Sessions `GroupLookupId` — would enable group-filtered session queries; only useful if the data access pattern changes
-- Regulars `ProfileLookupId` — small list, low urgency
-
-Previously noted candidates:
-- `Email` in Profiles — queried on every personal OAuth login (`personal-auth.ts` scans all profiles)
-- `MatchName` in Profiles — scanned on every Eventbrite sync run
 
 ---
 
@@ -71,8 +50,18 @@ These are requirements gaps in the matching model, not bugs.
 
 ---
 
+## Session Stats — Media Count: Total vs Public Only
+The `media` count in session Stats (and shown on session cards) uses `folder.childCount` from the SharePoint Drive folder — this counts all uploaded items regardless of `IsPublic`. Consider whether the count should reflect only public items (i.e. those visible to public/self-service users). Counting all items is simpler and gives admins a true picture of uploads; counting only public items matches what an anonymous visitor would see in the gallery. Currently counts all.
+
+---
+
 ## Group Detail — Regulars Section Position
 Move the Regulars list below the word cloud (currently appears above it). Word cloud is more useful at a glance; regulars are a management detail.
+
+---
+
+## Volunteer Count — Group Profile Exclusion
+Homepage and history stats count volunteers as any profile with `sessionsByFY > 0`, including group profiles (IsGroup = true). A group attending a session counts as 1 volunteer, which is defensible but slightly inflates the "people" count. Consider filtering to `IsGroup = false` in `volunteersFromStats()` in `routes/stats.ts`. Leave as-is for now — behaviour matches the previous entries-based count.
 
 ---
 
@@ -135,10 +124,9 @@ Track which user made each change, for accountability and audit purposes. Three 
 Export all six SharePoint lists to CSV nightly as a safety net against accidental bulk deletion or data corruption.
 
 **Implementation approach** (mirrors Eventbrite sync pattern):
-1. Add a `POST /api/backup/export-all` endpoint that fetches all items from each list and writes the raw JSON response to the `Backups` folder in the Shared Documents library on the Tracker site (`/sites/Tracker/Shared Documents/Backups/`). No transformation needed — just `JSON.stringify` the raw SharePoint response. Will need the Drive ID for the Shared Documents library (separate from `MEDIA_LIBRARY_DRIVE_ID` which is the Media library used for photos).
-2. ~~Add a manual "Export Backup" button to the admin page~~ ✓ Done — `POST /api/backup/export-all` endpoint and admin button implemented
-3. Once validated, schedule via Azure Logic App (same as Eventbrite sync) for nightly automated runs; use API key auth
-4. Overwrite the same fixed filenames each run (e.g. `groups.json`, `entries.json`) and rely on SharePoint document library version history for older snapshots; configure version retention limit in library settings
+The `POST /api/backup/export-all` endpoint and admin "Export Backup" button are already implemented. Remaining:
+1. Schedule via Azure Logic App (same as Eventbrite sync) for nightly automated runs; use API key auth
+2. Overwrite the same fixed filenames each run (e.g. `groups.json`, `entries.json`) and rely on SharePoint document library version history for older snapshots; configure version retention limit in library settings
 
 **Lists to cover**: Groups, Sessions, Entries, Profiles, Regulars, Records — all fetched directly via the Graph API list items endpoint, no existing export logic needed
 

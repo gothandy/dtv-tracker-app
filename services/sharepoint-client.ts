@@ -159,7 +159,8 @@ export class SharePointClient {
       return response.data;
     } catch (error: any) {
       const status = error.response?.status;
-      console.error(`Microsoft Graph API Error: ${error.message} (Status: ${status || 'unknown'})`);
+      const graphMessage = error.response?.data?.error?.message || error.response?.data?.error?.code || '';
+      console.error(`Microsoft Graph API Error: ${error.message} (Status: ${status || 'unknown'})${graphMessage ? ` — ${graphMessage}` : ''}`);
 
       // Map common Graph API error codes to meaningful messages
       if (status === 404) {
