@@ -91,6 +91,28 @@ The `test/` directory contains verification scripts that hit the live SharePoint
 
 ---
 
+## Cache Invalidation Is Global
+**Priority**: Medium | **Effort**: Medium
+
+Every write — including check-in — calls `clearCache()` → `flushAll()`, evicting all cache keys simultaneously. During a busy field day, staff check in volunteers one after another; each write evicts groups, profiles, sessions, regulars, and records even though none of those changed. The next request hits a cold cache for everything, not just entries.
+
+**Fix**: Replace `clearCache()` with targeted key deletion per repository. Add `clearCacheByPrefix(prefix)` to `sharepoint-client.ts` and map each repository's write methods to only the keys they actually affect (e.g. entry writes clear `entries`, `entries-profile-{id}`, `sessions_FY*`; not groups/profiles/regulars/records). Full mapping in `docs/todo.md` Performance Optimisation section.
+
+**Prerequisite for**: Filtered repository queries (Phase 2 in todo.md) introduce per-profile cache keys (`entries-profile-{id}`, `records-profile-{id}`) that also need selective invalidation.
+
+---
+
+## Profile Detail Fetches All Lists
+**Priority**: Medium | **Effort**: Low-Medium
+
+`GET /api/profiles/:slug` fetches all 6 SharePoint lists in parallel — including ~5,000 entries and ~1,500 records — to serve one volunteer's ~30 entries and ~10 records. This is the primary source of cold-cache slowness on profile and entry detail pages.
+
+**Fix**: Add `getByProfileId(profileId)` to `entries-repository.ts` and `records-repository.ts` using Graph OData `$filter=fields/ProfileLookupId eq {id}`. Requires `ProfileLookupId` to be indexed on both lists first (see SharePoint Index Review in todo.md). Pattern already exists: `getBySessionIds()` in entries repository.
+
+**Expected impact**: Profile detail cold-cache response drops from ~1,500ms to ~600ms; Graph API dependency calls drop from 6 parallel fetches to 4.
+
+---
+
 ## Graph API Retry Logic
 **Priority**: Low | **Effort**: Medium
 
@@ -269,4 +291,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-17 (Auth refactor: CSRF state regression noted; Eventbrite sync concurrency fix noted; date storage bug fixed; Card component fragmentation added)*
+*Last Updated: 2026-03-21 (Performance: cache invalidation and profile detail fetch patterns documented; SharePoint index recommendations in todo.md)*

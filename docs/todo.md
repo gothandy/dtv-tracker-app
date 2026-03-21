@@ -15,12 +15,38 @@ Add a new `personal-section.js` module rendered below the session calendar (abov
 
 ---
 
+## Performance Optimisation (Phase 2+)
+
+App Insights is enabled (codeless, Azure App Service portal). Once real traffic data is available, implement in order:
+
+**Phase 2 — Filtered repository queries for profile detail** (requires Phase 1 indexes first)
+- Add `getByProfileId(profileId)` to `records-repository.ts` — Graph OData `$filter=fields/ProfileLookupId eq {id}`, cache key `records-profile-{id}`
+- Add `getByProfileId(profileId)` to `entries-repository.ts` — same pattern; `getBySessionIds()` is the existing model
+- Update `GET /api/profiles/:slug` in `routes/profiles.ts` to use both filtered methods instead of `getAll()` — reduces entry fetch from ~5,000 to ~30 and records from ~1,500 to ~10
+
+**Phase 3 — Selective cache invalidation**
+- Add `clearCacheByPrefix(prefix)` helper to `sharepoint-client.ts`
+- Replace `clearCache()` (flushAll) in each repository write method with targeted key deletion; entry writes should only evict `entries`/`entries-profile-*`/`sessions_FY*`, not groups/profiles/sessions/records — critical for check-in day performance
+
+**Phase 4 — Per-key TTL tuning**
+- groups: 30 min, profiles/sessions/records: 10 min, regulars: 15 min, entries: 5 min (keep short — changes on every check-in)
+
+---
+
 ## SharePoint Index Review
-Investigate adding indexes to fields used for frequent lookups beyond the already-indexed `Session` field in Entries. Candidates:
+Add via: List Settings → Indexed Columns → Create a new index. Do before Phase 2 above — filtered Graph API queries require the index to exist or the filter is rejected.
+
+Priority indexes:
+- **Entries `ProfileLookupId`** — enables filtered query fetching one volunteer's entries (~30) instead of all ~5,000. High priority.
+- **Records `ProfileLookupId`** — same for records (~10 vs ~1,500). High priority.
+
+Lower priority (future use only):
+- Sessions `GroupLookupId` — would enable group-filtered session queries; only useful if the data access pattern changes
+- Regulars `ProfileLookupId` — small list, low urgency
+
+Previously noted candidates:
 - `Email` in Profiles — queried on every personal OAuth login (`personal-auth.ts` scans all profiles)
 - `MatchName` in Profiles — scanned on every Eventbrite sync run
-
-Would improve performance as the volunteer list grows.
 
 ---
 
