@@ -9,6 +9,7 @@ import { validateArray, validateSession, validateEntry, validateProfile, validat
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
 import { getAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
 import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
+import { runSessionStatsRefresh } from '../services/session-stats';
 
 const router: Router = express.Router();
 
@@ -179,15 +180,17 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
   try {
     const sessionResult = await runSyncSessions();
     const attendeeResult = await runSyncAttendees();
+    const statsResult = await runSessionStatsRefresh();
 
     const parts = [
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions`,
-      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`
+      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
+      `Stats: ${statsResult.updated}/${statsResult.total} sessions updated${statsResult.errors.length ? `, ${statsResult.errors.length} error(s)` : ''}`
     ];
     const summary = parts.join(' / ');
 
     console.log(`[Eventbrite Sync] ${summary}`);
-    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult } });
+    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, stats: statsResult } });
   } catch (error: any) {
     console.error('Error running event and attendee update:', error);
     res.status(500).json({
