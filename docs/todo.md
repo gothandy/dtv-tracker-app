@@ -29,6 +29,15 @@ Phase 1 (session Stats field pre-computation), Phase 2 (profile Stats field + ta
 
 ---
 
+## MatchName Field — Is It Redundant?
+
+`MatchName` was added to support Eventbrite name matching (lowercased/normalised form of Title). Now that duplicate detection also normalises `Title` via `toMatchName()` at query time, and Eventbrite sync could do the same, the field may be unnecessary. Investigate:
+- Does Eventbrite sync need a stored normalised name, or can it normalise on the fly?
+- Are there profiles where `MatchName` differs meaningfully from `toMatchName(Title)`? (i.e. has it ever been manually overridden for a reason?)
+- If redundant: remove the field from SharePoint, the repositories, and all sync/matching code.
+
+---
+
 ## Email Handling & GDPR — Requirements Gaps
 
 The `Profile.Email` field supports a comma-separated list of addresses — all are used

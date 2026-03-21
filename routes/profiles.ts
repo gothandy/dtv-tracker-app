@@ -718,12 +718,17 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       .sort((a, b) => b.date.localeCompare(a.date));
 
     // Find other profiles sharing the same match name (potential duplicates)
-    const currentMatchKey = toMatchName(spProfile.MatchName || spProfile.Title);
+    const currentMatchName = toMatchName(spProfile.MatchName);
     const currentTitleKey = toMatchName(spProfile.Title);
     const currentEmails = parseEmails(spProfile.Email);
-    const duplicates = currentMatchKey
+    const duplicates = currentTitleKey
       ? profiles
-          .filter(p => p.ID !== spProfile.ID && toMatchName(p.MatchName || p.Title) === currentMatchKey)
+          .filter(p => {
+            if (p.ID === spProfile.ID) return false;
+            const pMatchKey = toMatchName(p.MatchName);
+            const pTitleKey = toMatchName(p.Title);
+            return (currentMatchName && pMatchKey === currentMatchName) || pTitleKey === currentTitleKey;
+          })
           .map(p => {
             const pEmails = parseEmails(p.Email);
             const emailOverlap = pEmails.some(e => currentEmails.includes(e));
