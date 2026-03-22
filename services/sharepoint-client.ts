@@ -7,6 +7,39 @@
 
 import axios from 'axios';
 import NodeCache from 'node-cache';
+import { DateTime } from 'luxon';
+
+// ---------------------------------------------------------------------------
+// Regional date helpers
+// SharePoint Date-Only fields are stored and returned by Graph API as UTC ISO
+// datetime strings (e.g. "2026-04-03T23:00:00Z"). These helpers convert
+// symmetrically between that format and plain YYYY-MM-DD date strings using
+// the site's configured timezone.
+// ---------------------------------------------------------------------------
+
+const SHAREPOINT_TIMEZONE = process.env.SHAREPOINT_TIMEZONE || 'Europe/London';
+
+/** UTC ISO datetime → YYYY-MM-DD in the site timezone (READ path) */
+function utcToLocalDate(utcIso: string): string {
+  return DateTime.fromISO(utcIso, { zone: 'UTC' }).setZone(SHAREPOINT_TIMEZONE).toISODate()!;
+}
+
+/** YYYY-MM-DD → midnight site-timezone UTC ISO for Graph API writes (WRITE path) */
+function localDateToUtcIso(dateStr: string): string {
+  return DateTime.fromISO(dateStr, { zone: SHAREPOINT_TIMEZONE }).toUTC().toISO()!;
+}
+
+/** Apply date-only field conversions to a fields object before writing */
+function applyDateFields(fields: Record<string, any>, dateOnlyFields: string[]): Record<string, any> {
+  if (dateOnlyFields.length === 0) return fields;
+  const result = { ...fields };
+  for (const field of dateOnlyFields) {
+    if (typeof result[field] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(result[field])) {
+      result[field] = localDateToUtcIso(result[field]);
+    }
+  }
+  return result;
+}
 
 interface GraphListItem {
   id: string;
@@ -181,7 +214,7 @@ export class SharePointClient {
    * Graph format: { value: [ { id: "1", fields: { Title: "...", Email: "..." } } ] }
    * REST format: [ { ID: 1, Title: "...", Email: "..." } ]
    */
-  transformGraphResponse(graphData: GraphResponse): any[] {
+  transformGraphResponse(graphData: GraphResponse, dateOnlyFields: string[] = []): any[] {
     if (!graphData || !graphData.value) {
       return [];
     }
@@ -207,6 +240,13 @@ export class SharePointClient {
         transformedItem.Modified = item.lastModifiedDateTime;
       }
 
+      // Convert Date-Only fields from UTC ISO to local YYYY-MM-DD
+      for (const field of dateOnlyFields) {
+        if (typeof transformedItem[field] === 'string' && transformedItem[field]) {
+          transformedItem[field] = utcToLocalDate(transformedItem[field]);
+        }
+      }
+
       return transformedItem;
     });
   }
@@ -219,7 +259,8 @@ export class SharePointClient {
     listGuid: string,
     selectFields: string | null = null,
     filter: string | null = null,
-    orderBy: string | null = null
+    orderBy: string | null = null,
+    dateOnlyFields: string[] = []
   ): Promise<any[]> {
     try {
       const siteId = await this.getSiteId();
@@ -262,7 +303,7 @@ export class SharePointClient {
         pageCount++;
 
         // Transform and accumulate items
-        const items = this.transformGraphResponse(data);
+        const items = this.transformGraphResponse(data, dateOnlyFields);
         allItems = allItems.concat(items);
 
         // Check for next page
@@ -287,13 +328,13 @@ export class SharePointClient {
   /**
    * Update fields on a single SharePoint list item via Microsoft Graph PATCH
    */
-  async updateListItem(listGuid: string, itemId: number, fields: Record<string, any>): Promise<void> {
+  async updateListItem(listGuid: string, itemId: number, fields: Record<string, any>, dateOnlyFields: string[] = []): Promise<void> {
     try {
       const token = await this.getAccessToken();
       const siteId = await this.getSiteId();
       const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items/${itemId}/fields`;
 
-      await axios.patch(url, fields, {
+      await axios.patch(url, applyDateFields(fields, dateOnlyFields), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -315,13 +356,13 @@ export class SharePointClient {
     }
   }
 
-  async createListItem(listGuid: string, fields: Record<string, any>): Promise<number> {
+  async createListItem(listGuid: string, fields: Record<string, any>, dateOnlyFields: string[] = []): Promise<number> {
     try {
       const token = await this.getAccessToken();
       const siteId = await this.getSiteId();
       const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items`;
 
-      const response = await axios.post(url, { fields }, {
+      const response = await axios.post(url, { fields: applyDateFields(fields, dateOnlyFields) }, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

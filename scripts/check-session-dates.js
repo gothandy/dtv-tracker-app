@@ -1,143 +1,141 @@
 /**
- * Diagnostic script: Check for sessions where the Title date doesn't match
- * the Date field value. Read-only — no writes.
+ * Diagnostic script: check whether each session's stored Date UTC value matches
+ * what the SharePoint UI would store — i.e. midnight in the site timezone → UTC.
  *
- * Run: node scripts/check-session-dates.js
- * (requires npm run build first)
+ * Uses luxon to convert Title date (YYYY-MM-DD) → midnight site time → UTC.
+ * Fetches raw UTC strings from SharePoint (no date conversion) and compares.
+ *
+ * Run: npm run build && node scripts/check-session-dates.js
  */
 
 require('dotenv').config();
-const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { DateTime } = require('luxon');
+const { sharePointClient } = require('../dist/services/sharepoint-client');
 
-const londonFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/London',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit'
-});
+const SHAREPOINT_TIMEZONE = process.env.SHAREPOINT_TIMEZONE || 'Europe/London';
+const LIST_GUID = process.env.SESSIONS_LIST_GUID;
 
-function londonDate(isoString) {
-  if (!isoString) return null;
-  return londonFormatter.format(new Date(isoString)); // returns "YYYY-MM-DD"
+const CHECKPOINTS = [484, 470]; // known manually-entered sessions (winter, summer)
+
+/** Convert YYYY-MM-DD at midnight in the site timezone to UTC ISO string */
+function midnightSiteTimeAsUTC(dateStr) {
+  return DateTime.fromISO(dateStr, { zone: SHAREPOINT_TIMEZONE }).toUTC().toISO();
 }
 
-function createdDate(isoString) {
-  if (!isoString) return null;
-  return new Date(isoString).toISOString().substring(0, 10);
-}
-
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-// Groups whose title suffix indicates an expected day of week
-const DAY_KEYWORDS = {
-  'Wed': 3,  // Wednesday
-  'Sat': 6,  // Saturday
-  'Sun': 0,  // Sunday
-  'Mon': 1,
-  'Fri': 5,
-};
-
-function getDayOfWeekFromDate(isoDate) {
-  // Parse YYYY-MM-DD as local noon UTC to avoid timezone shifts
-  const d = new Date(`${isoDate}T12:00:00Z`);
-  return d.getUTCDay(); // 0=Sun, 1=Mon, ... 6=Sat
+/** Strip milliseconds for comparison: "2026-08-14T23:00:00.000Z" → "2026-08-14T23:00:00Z" */
+function normalizeUtc(isoStr) {
+  return isoStr ? isoStr.replace('.000Z', 'Z') : null;
 }
 
 async function check() {
-  console.log('Fetching all sessions from SharePoint...\n');
-  const sessions = await sessionsRepository.getAll();
-  console.log(`Total sessions: ${sessions.length}\n`);
+  console.log(`Site timezone: ${SHAREPOINT_TIMEZONE}\n`);
 
-  const mismatches = [];
+  // Fetch raw sessions — empty dateOnlyFields so Date comes back as the raw UTC ISO string
+  const sessions = await sharePointClient.getListItems(LIST_GUID, 'ID,Title,Date', null, null, []);
+  console.log(`Total sessions fetched: ${sessions.length}\n`);
+
+  // --- Checkpoints ---
+  console.log('--- Checkpoints ---\n');
+  for (const id of CHECKPOINTS) {
+    const s = sessions.find(s => s.ID === id);
+    if (!s) { console.log(`ID ${id}: not found\n`); continue; }
+    const titleDate = (s.Title || '').substring(0, 10);
+    const expectedUtc = normalizeUtc(midnightSiteTimeAsUTC(titleDate));
+    const storedUtc   = normalizeUtc(s.Date);
+    const ok = expectedUtc === storedUtc;
+    console.log(`ID ${id}: "${s.Title}"`);
+    console.log(`  Expected UTC : ${expectedUtc}`);
+    console.log(`  Stored UTC   : ${storedUtc}`);
+    console.log(`  ${ok ? '✓ CORRECT' : '✗ INCORRECT'}\n`);
+  }
+
+  // --- Full check ---
+  let checked = 0, correct = 0, incorrect = 0;
+  const incorrectList = [];
 
   for (const s of sessions) {
     const titleDate = s.Title ? s.Title.substring(0, 10) : null;
-    const storedDate = londonDate(s.Date);
-
-    // Only flag sessions where the Title starts with a date-like string
     if (!titleDate || !/^\d{4}-\d{2}-\d{2}$/.test(titleDate)) continue;
-    if (!storedDate) continue;
+    if (!s.Date) continue;
+    checked++;
 
-    if (titleDate !== storedDate) {
-      mismatches.push({
-        id: s.ID,
-        title: s.Title,
-        titleDate,
-        storedDate,
-        rawDate: s.Date,
-        created: createdDate(s.Created),
-        hasEventbriteId: !!s.EventbriteEventID
-      });
+    const expectedUtc = normalizeUtc(midnightSiteTimeAsUTC(titleDate));
+    const storedUtc   = normalizeUtc(s.Date);
+
+    if (expectedUtc === storedUtc) {
+      correct++;
+    } else {
+      incorrect++;
+      incorrectList.push({ id: s.ID, title: s.Title, expectedUtc, storedUtc });
     }
   }
 
-  if (mismatches.length === 0) {
-    console.log('✓ No mismatches found — all Title dates match Date field values.');
-    return;
-  }
+  console.log('--- Results ---\n');
+  console.log(`Sessions with a Title date : ${checked}`);
+  console.log(`Correct                    : ${correct}`);
+  console.log(`Incorrect                  : ${incorrect}`);
 
-  console.log(`Found ${mismatches.length} mismatch(es):\n`);
-  console.log('ID'.padEnd(6), 'Title'.padEnd(30), 'Title date'.padEnd(12), 'Stored date'.padEnd(12), 'Created'.padEnd(12), 'Eventbrite');
-  console.log('-'.repeat(90));
-
-  const createdDates = new Set();
-  for (const m of mismatches) {
-    createdDates.add(m.created);
-    console.log(
-      String(m.id).padEnd(6),
-      (m.title || '').substring(0, 29).padEnd(30),
-      m.titleDate.padEnd(12),
-      m.storedDate.padEnd(12),
-      (m.created || '?').padEnd(12),
-      m.hasEventbriteId ? 'yes' : 'no'
-    );
-  }
-
-  console.log('\nUnique created dates among mismatches:', [...createdDates].sort().join(', '));
-
-  const allFeb15 = [...createdDates].every(d => d === '2026-02-15');
-  if (allFeb15) {
-    console.log('✓ All mismatches were created on 2026-02-15 — confirms the Feb 15 migration issue.');
-  } else {
-    console.log('⚠ Not all mismatches are from 2026-02-15 — review before running the fix script.');
-  }
-
-  // Day-of-week check: verify Wed/Sat/etc sessions fall on the right day (using Title date)
-  console.log('\n--- Day-of-week check (using Title date) ---\n');
-  const dowProblems = [];
-  for (const s of sessions) {
-    const titleDate = s.Title ? s.Title.substring(0, 10) : null;
-    if (!titleDate || !/^\d{4}-\d{2}-\d{2}$/.test(titleDate)) continue;
-
-    const titleSuffix = s.Title.substring(11).trim(); // e.g. "Wed", "Sat Dig"
-    const matchedKeyword = Object.keys(DAY_KEYWORDS).find(k => titleSuffix.startsWith(k));
-    if (!matchedKeyword) continue;
-
-    const expectedDay = DAY_KEYWORDS[matchedKeyword];
-    const actualDay = getDayOfWeekFromDate(titleDate);
-    if (actualDay !== expectedDay) {
-      dowProblems.push({
-        id: s.ID,
-        title: s.Title,
-        titleDate,
-        actualDay: DAY_NAMES[actualDay],
-        expectedDay: DAY_NAMES[expectedDay],
-        created: createdDate(s.Created)
-      });
-    }
-  }
-
-  if (dowProblems.length === 0) {
-    console.log('✓ All Wed/Sat/etc sessions fall on the correct day of the week.');
-  } else {
-    console.log(`Found ${dowProblems.length} day-of-week mismatch(es):\n`);
-    for (const p of dowProblems) {
-      console.log(`  ID ${p.id}: "${p.title}" — Title date ${p.titleDate} is a ${p.actualDay}, expected ${p.expectedDay} (created ${p.created})`);
+  if (incorrectList.length > 0) {
+    console.log('\nIncorrect sessions:');
+    console.log('ID'.padEnd(6), 'Title'.padEnd(35), 'Expected UTC'.padEnd(25), 'Stored UTC');
+    console.log('-'.repeat(95));
+    for (const s of incorrectList) {
+      console.log(
+        String(s.id).padEnd(6),
+        (s.title || '').substring(0, 34).padEnd(35),
+        (s.expectedUtc || '?').padEnd(25),
+        s.storedUtc || '?'
+      );
     }
   }
 }
 
-check().catch(err => {
-  console.error('Error:', err.message);
-  process.exit(1);
-});
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_KEYWORDS = { 'Sun': 0, 'Mon': 1, 'Wed': 3, 'Fri': 5, 'Sat': 6 };
+
+async function checkDayOfWeek() {
+  const sessions = await sharePointClient.getListItems(LIST_GUID, 'ID,Title', null, null, []);
+
+  console.log('\n--- Day-of-week check ---\n');
+  const problems = [];
+
+  for (const s of sessions) {
+    const titleDate = s.Title ? s.Title.substring(0, 10) : null;
+    if (!titleDate || !/^\d{4}-\d{2}-\d{2}$/.test(titleDate)) continue;
+
+    const suffix = s.Title.substring(11).trim();
+    const keyword = Object.keys(DAY_KEYWORDS).find(k => suffix.startsWith(k));
+    if (!keyword) continue;
+
+    // Parse title date at noon UTC to avoid any timezone shift on the day boundary
+    const actualDay = new Date(`${titleDate}T12:00:00Z`).getUTCDay();
+    const expectedDay = DAY_KEYWORDS[keyword];
+
+    if (actualDay !== expectedDay) {
+      problems.push({
+        id: s.ID,
+        title: s.Title,
+        titleDate,
+        actual: DAY_NAMES[actualDay],
+        expected: DAY_NAMES[expectedDay]
+      });
+    }
+  }
+
+  if (problems.length === 0) {
+    console.log('✓ All titled sessions fall on the expected day of the week.');
+    return;
+  }
+
+  console.log(`${problems.length} mismatch(es):\n`);
+  for (const p of problems) {
+    console.log(`  ID ${p.id}: "${p.title}" — ${p.titleDate} is a ${p.actual}, title says ${p.expected}`);
+  }
+}
+
+check()
+  .then(() => checkDayOfWeek())
+  .catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });

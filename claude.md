@@ -251,7 +251,7 @@ dtv-tracker-app/
 │   ├── auth-config.ts             # MSAL client configuration (Microsoft OAuth)
 │   ├── personal-auth.ts           # Shared personal account (Google/Facebook) session resolution
 │   ├── google-auth.ts             # Google OAuth helper (DIY, native fetch — no extra packages)
-│   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination)
+│   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination); luxon-based date helpers convert between raw UTC ISO (SharePoint) and YYYY-MM-DD (app) using SHAREPOINT_TIMEZONE
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── eventbrite-sync.ts         # Shared attendee sync logic and consent question mapping
 │   ├── taxonomy-client.ts         # SharePoint Term Store client for session tagging (Graph beta)
@@ -410,6 +410,7 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".
+- `SHAREPOINT_TIMEZONE` env var: IANA timezone identifier for the SharePoint site's configured timezone (default `Europe/London`). Must match the timezone set in SharePoint site settings. Used by `sharepoint-client.ts` for all Date-Only field conversions (read and write). Run `node scripts/check-session-dates.js` to verify stored UTC values are consistent.
 - Term Store access requires `TermStore.ReadWrite.All` application permission on the Azure app registration (admin consent required). Uses the Graph API **beta** endpoint — see [docs/tagging.md](docs/tagging.md) for full implementation notes.
 
 ## Known Constraints
@@ -421,4 +422,4 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 
 ---
 
-*Last Updated: 2026-03-21*
+*Last Updated: 2026-03-22*

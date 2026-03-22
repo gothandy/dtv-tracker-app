@@ -38,12 +38,14 @@
     "exifreader": "^4.36.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "luxon": "^3.7.2",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.18.2",
+    "@types/luxon": "^3.7.1",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.2.2",
     "dotenv-cli": "^11.0.0",

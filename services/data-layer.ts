@@ -557,7 +557,7 @@ export function findSessionByGroupAndDate(
   const validated = validateArray(sessions, validateSession, 'Session');
   return validated.find(s => {
     if (safeParseLookupId(s[GROUP_LOOKUP]) !== groupId) return false;
-    return s.Date.substring(0, 10) === date;
+    return s.Date === date;
   });
 }
 

@@ -1,5 +1,25 @@
 # Development Progress
 
+## Session: 2026-03-22 (Session date UTC normalization)
+
+### Completed Tasks
+
+#### Date storage investigation and normalization ✓
+
+The SharePoint Tracker site was historically configured on Pacific time (UTC-7/UTC-8), now corrected to (UTC) Dublin, Edinburgh, Lisbon, London. Session `Date` fields were stored with inconsistent UTC time components (`T12:00:00Z`, `T08:00:00Z`, `T07:00:00Z`) rather than the correct London-midnight UTC (`T00:00:00Z` for GMT months, `T23:00:00Z` for BST months).
+
+- **`scripts/check-session-dates.js`** — rewrote to use luxon and raw UTC fetching (no `dateOnlyFields` conversion). Computes expected UTC from Title date (midnight Europe/London → UTC) and compares to raw stored value. Reports correct/incorrect counts and shows two known-good checkpoint sessions (IDs 484 and 470). Includes day-of-week check for Wed/Sat/etc titled sessions.
+- **`scripts/normalize-session-dates.js`** — new one-off fix script. Dry-run by default; `--apply` writes corrected UTC values to SharePoint. Fixed 89 sessions, 0 failures.
+- **`services/sharepoint-client.ts`** — replaced Intl-based date helpers with `luxon`:
+  - Read path (`utcToLocalDate`): `DateTime.fromISO(utcIso, { zone: 'UTC' }).setZone(SHAREPOINT_TIMEZONE).toISODate()`
+  - Write path (`localDateToUtcIso`): `DateTime.fromISO(dateStr, { zone: SHAREPOINT_TIMEZONE }).toUTC().toISO()`
+  - Both paths use `SHAREPOINT_TIMEZONE` env var (default `Europe/London`). Removed `_localDateFormatter` Intl object.
+- **`package.json`** — added `luxon` (production) and `@types/luxon` (dev).
+
+Result: 533/533 sessions correct. Day-of-week check shows one known Sunday session (ID 386, Saturday crew) as the only mismatch.
+
+---
+
 ## Session: 2026-03-21 (Performance — Stats cache full implementation)
 
 ### Completed Tasks

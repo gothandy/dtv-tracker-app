@@ -893,7 +893,7 @@ router.get('/entries/:id/upload-context', async (req: Request, res: Response) =>
       entryId: rawEntry.ID,
       sessionId: sessionId!,
       sessionName: spSession.Name || spSession.Title || group?.displayName || '',
-      date: spSession.Date.substring(0, 10),
+      date: spSession.Date,
       groupKey: group?.lookupKeyName || '',
       groupName: group?.displayName || group?.lookupKeyName || '',
       profileName: profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer'
@@ -966,7 +966,7 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
     }
 
     const groupKey = group?.lookupKeyName || '';
-    const date = spSession.Date.substring(0, 10);
+    const date = spSession.Date;
     const folderPath = `${groupKey}/${date}`;
     let uploaded = 0;
 

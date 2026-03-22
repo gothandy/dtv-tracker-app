@@ -19,6 +19,8 @@ class SessionsRepository {
     return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${SESSION_COVER_MEDIA},${SESSION_STATS},Created,Modified`;
   }
 
+  private readonly dateOnlyFields = ['Date'];
+
   async getAll(): Promise<SharePointSession[]> {
     const cacheKey = 'sessions';
     const cached = sharePointClient.cache.get(cacheKey);
@@ -32,7 +34,8 @@ class SessionsRepository {
       this.listGuid,
       this.selectFields,
       null,
-      null  // TODO: Graph API orderby on this list returns 400 - sorting done in data layer instead
+      null,  // TODO: Graph API orderby on this list returns 400 - sorting done in data layer instead
+      this.dateOnlyFields
     );
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointSession[];
@@ -68,13 +71,13 @@ class SessionsRepository {
   }
 
   async create(fields: { Title: string; Date: string; [key: string]: any }): Promise<number> {
-    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    const id = await sharePointClient.createListItem(this.listGuid, fields, this.dateOnlyFields);
     sharePointClient.clearCache();
     return id;
   }
 
   async updateFields(sessionId: number, fields: Record<string, any>): Promise<void> {
-    await sharePointClient.updateListItem(this.listGuid, sessionId, fields);
+    await sharePointClient.updateListItem(this.listGuid, sessionId, fields, this.dateOnlyFields);
     sharePointClient.clearCache();
   }
 
@@ -82,6 +85,7 @@ class SessionsRepository {
   // Callers doing bulk updates should call sharePointClient.clearCacheKey('sessions') once when done.
   async updateStats(sessionId: number, stats: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, { [SESSION_STATS]: JSON.stringify(stats) });
+    sharePointClient.clearCache();
   }
 
   async delete(sessionId: number): Promise<void> {

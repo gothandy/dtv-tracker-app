@@ -22,6 +22,8 @@ class RecordsRepository {
     return 'ID,Title,Profile,ProfileLookupId,Type,Status,Date,Created,Modified';
   }
 
+  private readonly dateOnlyFields = ['Date'];
+
   async getAll(): Promise<SharePointRecord[]> {
     if (!this.available) return [];
 
@@ -35,7 +37,10 @@ class RecordsRepository {
     console.log(`[Cache] Miss: ${cacheKey} - fetching from SharePoint`);
     const data = await sharePointClient.getListItems(
       this.listGuid,
-      this.selectFields
+      this.selectFields,
+      null,
+      null,
+      this.dateOnlyFields
     );
     sharePointClient.cache.set(cacheKey, data);
     return data as SharePointRecord[];
@@ -48,14 +53,14 @@ class RecordsRepository {
 
   async create(fields: { ProfileLookupId: number; Type: string; Status: string; Date: string }): Promise<number> {
     if (!this.available) throw new Error('Records list not configured');
-    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    const id = await sharePointClient.createListItem(this.listGuid, fields, this.dateOnlyFields);
     sharePointClient.clearCache();
     return id;
   }
 
   async update(itemId: number, fields: { Status?: string; Date?: string }): Promise<void> {
     if (!this.available) throw new Error('Records list not configured');
-    await sharePointClient.updateListItem(this.listGuid, itemId, fields);
+    await sharePointClient.updateListItem(this.listGuid, itemId, fields, this.dateOnlyFields);
     sharePointClient.clearCache();
   }
 

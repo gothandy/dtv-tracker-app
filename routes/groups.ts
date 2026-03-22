@@ -267,7 +267,7 @@ router.patch('/groups/:key', async (req: Request, res: Response) => {
         .filter(s => safeParseLookupId(s[GROUP_LOOKUP]) === spGroup.ID);
       await Promise.all(
         groupSessions.map(s =>
-          sessionsRepository.updateFields(s.ID, { Title: `${s.Date.substring(0, 10)} ${fields.Title}` })
+          sessionsRepository.updateFields(s.ID, { Title: `${s.Date} ${fields.Title}` })
         )
       );
     }

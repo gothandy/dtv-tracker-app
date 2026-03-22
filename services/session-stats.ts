@@ -60,7 +60,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
         const entryStats = statsMap.get(String(spSession.ID));
         const gid = safeParseLookupId(spSession[GROUP_LOOKUP]);
         const groupKey = gid !== undefined ? groupKeyMap.get(gid) : undefined;
-        const date = spSession.Date?.substring(0, 10);
+        const date = spSession.Date;
 
         let mediaCount = 0;
         if (groupKey && date && mediaCountsByGroup.has(groupKey)) {

@@ -271,4 +271,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-21*
+*Last Updated: 2026-03-22*

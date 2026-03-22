@@ -53,7 +53,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
       .filter(s => s.Date)
       .map(s => {
         const groupId = safeParseLookupId(s[GROUP_LOOKUP]);
-        const date = s.Date!.substring(0, 10);
+        const date = s.Date!;
         const tags = extractMetadataTags(s[SESSION_METADATA]);
 
         let stats: Record<string, any> = {};
@@ -439,7 +439,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       id: spSession.ID,
       displayName: spSession.Name || spSession.Title,
       description: spSession[SESSION_NOTES],
-      date: spSession.Date?.substring(0, 10),
+      date: spSession.Date,
       groupId: groupId,
       groupName: group.displayName,
       registrations: sessionEntries.length,
@@ -479,7 +479,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof description === 'string') fields[SESSION_NOTES] = description;
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      fields.Date = `${date}T12:00:00Z`;
+      fields.Date = date;
     }
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
     if (typeof coverMediaId === 'number') fields[SESSION_COVER_MEDIA] = String(coverMediaId);
@@ -542,7 +542,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
         process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
       );
     }
-    const newDate = (fields.Date || dateParam).substring(0, 10);
+    const newDate = fields.Date || dateParam;
     res.json({ success: true, data: { date: newDate, groupKey: newGroupKey } } as ApiResponse<{ date: string; groupKey: string }>);
   } catch (error: any) {
     console.error('Error updating session:', error);
