@@ -55,6 +55,14 @@ const router: Router = express.Router();
 
 router.get('/stats', async (req: Request, res: Response) => {
   try {
+    const cacheKey = 'stats_summary';
+    const cached = sharePointClient.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      res.json({ success: true, data: cached });
+      return;
+    }
+
     const fy = calculateCurrentFY();
     const lastFYStartYear = fy.startYear - 1;
     const lastFYKey = `FY${lastFYStartYear}`;
@@ -84,6 +92,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       }
     };
 
+    sharePointClient.cache.set(cacheKey, data);
     res.json({ success: true, data } as ApiResponse<StatsResponse>);
   } catch (error: any) {
     console.error('Error fetching stats:', error);
@@ -97,6 +106,14 @@ router.get('/stats', async (req: Request, res: Response) => {
 
 router.get('/stats/history', async (req: Request, res: Response) => {
   try {
+    const cacheKey = 'stats_history';
+    const cached = sharePointClient.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      res.json({ success: true, data: cached });
+      return;
+    }
+
     const [allSessions, rawProfiles] = await Promise.all([
       sessionsRepository.getAll(),
       profilesRepository.getAll()
@@ -164,6 +181,7 @@ router.get('/stats/history', async (req: Request, res: Response) => {
         };
       });
 
+    sharePointClient.cache.set(cacheKey, history);
     res.json({ success: true, data: history } as ApiResponse<FYStatsResponse[]>);
   } catch (error: any) {
     console.error('Error fetching stats history:', error);
