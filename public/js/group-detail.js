@@ -63,7 +63,7 @@ async function refreshWordCloud() {
         if (!result.success) { console.error('[WordCloud] API error', result.error); return; }
         if (!wordCloudController) {
             wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), {
-                title: 'Hours by Area',
+                embedded: true,
                 getLinkUrl(item) {
                     if (!item.termGuid) return null;
                     const p = new URLSearchParams({ tag: item.termGuid });
@@ -74,6 +74,7 @@ async function refreshWordCloud() {
             });
         }
         wordCloudController.update(result.data);
+        wordCloudController.setCsvVisible(true);
     } catch (err) {
         console.error('[WordCloud] error', err);
     }
@@ -274,13 +275,12 @@ async function loadGroupDetail() {
                 </div>
                 ${group.description ? `<div class="description" style="margin-bottom:1.25rem;">${escapeHtml(group.description)}</div>` : ''}
                 <div id="fyChart"></div>
+                <div id="wordCloudSection"></div>
             </div>
 
             ${group.eventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(group.displayName)}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(group.eventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}
 
             ${regularsSection}
-
-            <div id="wordCloudSection"></div>
 
             <div class="filter-bar">
                 <div class="title-row">

@@ -121,9 +121,10 @@ async function refreshWordCloud() {
         const result = await res.json();
         if (!result.success) { console.error('[WordCloud] API error', result.error); return; }
         if (!wordCloudController) {
-            wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), { title: 'Hours by Area' });
+            wordCloudController = createWordCloud(document.getElementById('wordCloudSection'), { embedded: true });
         }
         wordCloudController.update(result.data);
+        wordCloudController.setCsvVisible(true);
     } catch (err) {
         console.error('[WordCloud] error', err);
     }
@@ -501,7 +502,7 @@ async function loadProfile() {
                 <div class="group-hours-list" id="groupsContainer"></div>
             </div>
 
-            <div id="wordCloudSection"></div>
+            <div class="word-cloud-card"><div id="wordCloudSection"></div></div>
 
             <div class="section-card">
                 <div class="consent-header">
