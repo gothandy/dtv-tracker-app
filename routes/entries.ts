@@ -384,14 +384,12 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Read session ID + existing media count from cache before the write clears it
-    const rawEntries = await entriesRepository.getAll();
-    const spEntry = (rawEntries as any[]).find(e => e.ID === entryId);
+    // Read session ID + existing media count — direct Graph calls, bypass cache entirely
+    const spEntry = await entriesRepository.getById(entryId);
     const sessionId = spEntry ? safeParseLookupId(spEntry[SESSION_LOOKUP]) : undefined;
     let existingMedia = 0;
     if (sessionId !== undefined) {
-      const rawSessions = await sessionsRepository.getAll();
-      const spSession = rawSessions.find(s => s.ID === sessionId);
+      const spSession = await sessionsRepository.getById(sessionId);
       try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
     }
 
@@ -430,9 +428,8 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Look up entry (cache hit) to get session ID and check ownership
-    const rawEntries = await entriesRepository.getAll();
-    const entry = (rawEntries as any[]).find(e => e.ID === entryId);
+    // Direct Graph call to get the entry — no cache scan
+    const entry = await entriesRepository.getById(entryId);
     if (!entry) {
       res.status(404).json({ success: false, error: 'Entry not found' });
       return;
@@ -448,12 +445,11 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       }
     }
 
-    // Read existing media count from cache before delete clears it
+    // Read existing media count before delete clears the cache
     const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
     let existingMedia = 0;
     if (sessionId !== undefined) {
-      const rawSessions = await sessionsRepository.getAll();
-      const spSession = rawSessions.find(s => s.ID === sessionId);
+      const spSession = await sessionsRepository.getById(sessionId);
       try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
     }
 
@@ -529,9 +525,8 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
         res.status(400).json({ success: false, error: 'Session has already passed' });
         return;
       }
-      const rawEntriesCheck = await entriesRepository.getAll();
-      const alreadyRegistered = (rawEntriesCheck as any[]).some(e =>
-        safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID &&
+      const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
+      const alreadyRegistered = (sessionEntries as any[]).some(e =>
         safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId
       );
       if (alreadyRegistered) {

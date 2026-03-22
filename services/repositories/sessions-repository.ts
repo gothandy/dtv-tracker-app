@@ -41,6 +41,10 @@ class SessionsRepository {
     return data as SharePointSession[];
   }
 
+  async getById(id: number): Promise<SharePointSession | null> {
+    return await sharePointClient.getListItem(this.listGuid, id, this.selectFields, this.dateOnlyFields) as SharePointSession | null;
+  }
+
   async getByFinancialYear(fy: string): Promise<SharePointSession[]> {
     const cacheKey = `sessions_${fy}`;
     const cached = sharePointClient.cache.get(cacheKey);
@@ -81,11 +85,11 @@ class SessionsRepository {
     sharePointClient.clearCache();
   }
 
-  // Updates only the Stats field — does NOT flush the full cache.
-  // Callers doing bulk updates should call sharePointClient.clearCacheKey('sessions') once when done.
+  // Updates only the Stats field — clears sessions cache only (not full flush).
+  // Bulk refresh callers (session-stats.ts) call clearCacheKey('sessions') once after the loop instead.
   async updateStats(sessionId: number, stats: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, { [SESSION_STATS]: JSON.stringify(stats) });
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('sessions');
   }
 
   async delete(sessionId: number): Promise<void> {

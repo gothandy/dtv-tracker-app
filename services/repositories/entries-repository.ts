@@ -36,6 +36,10 @@ class EntriesRepository {
     return data as SharePointEntry[];
   }
 
+  async getById(id: number): Promise<SharePointEntry | null> {
+    return await sharePointClient.getListItem(this.listGuid, id, this.selectFields) as SharePointEntry | null;
+  }
+
   async getByProfileId(profileId: number): Promise<SharePointEntry[]> {
     const filter = `fields/${PROFILE_LOOKUP} eq ${profileId}`;
     return await sharePointClient.getListItems(
@@ -112,23 +116,23 @@ class EntriesRepository {
 
   async updateCode(entryId: number, code: string): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, { Code: code });
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('entries');
   }
 
   async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('entries');
   }
 
   async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('entries');
     return id;
   }
 
   async delete(entryId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, entryId);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('entries');
   }
 }
 

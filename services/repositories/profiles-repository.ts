@@ -34,6 +34,11 @@ class ProfilesRepository {
     return data as SharePointProfile[];
   }
 
+  async getById(id: number): Promise<SharePointProfile | null> {
+    const selectFields = `ID,Title,Email,MatchName,User,IsGroup,${PROFILE_STATS},Created,Modified`;
+    return await sharePointClient.getListItem(this.listGuid, id, selectFields) as SharePointProfile | null;
+  }
+
   // Updates only the Stats field — does NOT flush the full cache.
   // Bulk callers should call sharePointClient.clearCacheKey('profiles') once when done.
   async updateStats(profileId: number, stats: Record<string, any>): Promise<void> {

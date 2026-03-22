@@ -252,6 +252,29 @@ export class SharePointClient {
   }
 
   /**
+   * Get a single SharePoint list item by ID via Microsoft Graph API (no cache)
+   */
+  async getListItem(listGuid: string, itemId: number, selectFields: string | null = null, dateOnlyFields: string[] = []): Promise<any | null> {
+    try {
+      const siteId = await this.getSiteId();
+      let endpoint = `sites/${siteId}/lists/${listGuid}/items/${itemId}`;
+      if (selectFields) {
+        endpoint += `?expand=fields(select=${selectFields})`;
+      } else {
+        endpoint += '?expand=fields';
+      }
+      const data = await this.get(endpoint);
+      // Wrap in array shape so transformGraphResponse can handle it
+      const transformed = this.transformGraphResponse({ value: [data] }, dateOnlyFields);
+      return transformed[0] ?? null;
+    } catch (error: any) {
+      if (error.response?.status === 404) return null;
+      console.error(`Error fetching list item ${itemId} from ${listGuid}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Get all items from a SharePoint list by GUID using Microsoft Graph API
    * Handles pagination automatically to retrieve all items
    */
