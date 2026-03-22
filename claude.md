@@ -160,6 +160,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
   - [docs/permissions.md](docs/permissions.md) — if roles or endpoint access change
   - [docs/technical-debt.md](docs/technical-debt.md) — code/architecture issues only (not functionality)
   - [docs/todo.md](docs/todo.md) — planned functionality and feature ideas
+  - [docs/bugs.md](docs/bugs.md) — known bugs to fix
   - [docs/progress.md](docs/progress.md) — development session notes (resolved items tracked here)
   - [docs/sharepoint-schema.md](docs/sharepoint-schema.md) — if SharePoint fields change
   - [readme.md](readme.md) — if dependencies or configuration change
