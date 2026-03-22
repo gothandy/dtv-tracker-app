@@ -273,9 +273,7 @@ async function loadGroupDetail() {
                         ${editBtn}
                     </div>
                 </div>
-                ${group.description ? `<div class="description" style="margin-bottom:1.25rem;">${escapeHtml(group.description)}</div>` : ''}
-                <div id="fyChart"></div>
-                <div id="wordCloudSection"></div>
+                ${group.description ? `<div class="description">${escapeHtml(group.description)}</div>` : ''}
             </div>
 
             ${group.eventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(group.displayName)}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(group.eventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}
@@ -292,6 +290,8 @@ async function loadGroupDetail() {
                         <img src="/svg/add.svg" width="16" height="16" alt="">
                     </button>
                 </div>
+                <div id="fyChart"></div>
+                <div id="wordCloudSection"></div>
             </div>
             <div id="sessionsContainer"></div>
         `;

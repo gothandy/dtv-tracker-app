@@ -1,36 +1,11 @@
 # Todo
 
-## Homepage Personalisation — Remaining Steps
+## Homepage Personalisation — Step 4 (Remaining)
 
-Steps 1 and 2 are done (calendar personalisation + word cloud Show History integration). Remaining:
-
-**Step 3 — Personal word cloud**
-For self-service and check-in users (and admin with a profile), fetch the word cloud with `?profile=:id` so it reflects the user's own hours by area. Hooks into the profile data already loaded in step 1. Change: `stats-section.js` only.
+Steps 1–3 are done (calendar personalisation, word cloud Show History integration, personal word cloud on homepage). Remaining:
 
 **Step 4 — CTA for next unregistered session**
 For personalised users, show a lightweight "Also coming up" prompt/card for the next upcoming session they haven't registered for. No extra fetch needed — data is already loaded. Change: `session-section.js` + `styles.css`.
-
-**Step 5 — Personal stats block below calendar**
-Add a new `personal-section.js` module rendered below the session calendar (above Recent Sign-ups). Shows the user's own FY hours bar chart (derived from profile entries, same visual style as org chart) and personal word cloud (moved here from step 3). Top stats section remains org-wide and unchanged. Changes: `personal-section.js` (new), `index.html`, `styles.css`.
-
----
-
-## Tag Word Cloud — Profile Scope: Targeted vs Cached Entries
-
-`GET /api/tags/hours-by-taxonomy?profile=` currently fetches all entries (~5,000) to find
-the one volunteer's entries. Two alternatives to investigate:
-
-1. **Targeted query** — filter entries at the SharePoint API level by `ProfileLookupId eq :id`
-   (if the `Profile` field is indexed — check `services/repositories/entries-repository.ts`).
-   Fetches only that volunteer's entries: fast cold path, no cache needed.
-
-2. **Shared cache** — keep `entriesRepository.getAll()` but rely on the 5-minute cache being
-   warm from other requests (profile detail page, stats refresh, etc.). Zero extra fetches if
-   the cache is hot; full 5,000-entry fetch on cold start.
-
-The right answer depends on whether the Profile field is indexed in SharePoint and how often
-the cache is warm when a profile word cloud is requested. Targeted query is probably faster
-on cold starts; shared cache is free if the data is already loaded.
 
 ---
 
@@ -80,6 +55,26 @@ These are requirements gaps in the matching model, not bugs.
 
 ## Session Stats — Media Count: Total vs Public Only
 The `media` count in session Stats (and shown on session cards) uses `folder.childCount` from the SharePoint Drive folder — this counts all uploaded items regardless of `IsPublic`. Consider whether the count should reflect only public items (i.e. those visible to public/self-service users). Counting all items is simpler and gives admins a true picture of uploads; counting only public items matches what an anonymous visitor would see in the gallery. Currently counts all.
+
+---
+
+## FY Bar Chart + Word Cloud — Consolidation
+
+The bar chart and word cloud are currently implemented independently across three pages with inconsistent behaviour. Consolidate into a single shared module and ensure consistent UX everywhere.
+
+**Current state (problems):**
+- Profile detail is missing the FY bar chart entirely (group detail has it, profile doesn't)
+- Bar chart + word cloud CSS is split across `home.css` and `styles.css`
+- Homepage bar chart has a collapse/expand toggle; detail pages do not — no principled reason for the difference
+- Word cloud CSV visibility varies page-to-page
+- `GET /api/tags/hours-by-taxonomy?profile=` fetches all ~5,000 entries to find one volunteer's data — consider a targeted SharePoint query filtered by `ProfileLookupId eq :id` to avoid the full fetch on cold cache
+
+**Goal:**
+- Single `fy-stats-panel.js` module (`createFYStatsPanel(container, options)`) covering both bar chart and word cloud
+- Decide and document the consistent behaviour: collapse toggle (homepage only?), word cloud limit, CSV visibility, FY click-to-filter vs always-selected
+- All bar chart + word cloud CSS consolidated into one place
+- Homepage, group detail, and profile detail all use the same module with different options
+- Profile detail gains the missing FY bar chart (from `Profile.Stats.hoursByFY`), wired to the existing FY filter
 
 ---
 

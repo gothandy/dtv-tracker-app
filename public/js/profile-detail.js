@@ -402,7 +402,7 @@ function displayEntries() {
     countEl.textContent = filtered.length;
 
     if (filtered.length === 0) {
-        container.innerHTML = '<p class="no-sessions">No entries</p>';
+        container.innerHTML = '<p class="no-sessions">No sessions</p>';
         return;
     }
 
@@ -502,8 +502,6 @@ async function loadProfile() {
                 <div class="group-hours-list" id="groupsContainer"></div>
             </div>
 
-            <div class="word-cloud-card"><div id="wordCloudSection"></div></div>
-
             <div class="section-card">
                 <div class="consent-header">
                     <h2>Records</h2>
@@ -521,7 +519,7 @@ async function loadProfile() {
             <div class="filter-bar">
                 <div class="title-row">
                     <div class="title-left">
-                        <h2>Entries</h2>
+                        <h2>Sessions</h2>
                         <div class="count" id="entriesCount"></div>
                     </div>
                     <select id="groupSelect" onchange="setGroup(this.value)">
@@ -529,6 +527,7 @@ async function loadProfile() {
                     </select>
                 </div>
                 <div id="fyChart"></div>
+                <div id="wordCloudSection"></div>
             </div>
             <div id="entriesContainer"></div>
             <div class="delete-section admin-only">

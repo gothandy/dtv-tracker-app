@@ -15,7 +15,8 @@ import {
   extractMetadataTags,
   safeParseLookupId,
   parseHours,
-  nameToSlug
+  nameToSlug,
+  profileSlug
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_METADATA, SESSION_STATS } from '../services/field-names';
 import type { TagHoursResponse } from '../types/api-responses';
@@ -59,7 +60,7 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
 
     if (profileParam) {
       const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
-      const profile = profiles.find(p => nameToSlug(p.Title) === profileParam);
+      const profile = profiles.find(p => profileSlug(p.Title, p.ID) === profileParam);
       if (profile) {
         const entries = validateArray(entriesRaw, validateEntry, 'Entry');
         const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === profile.ID);
