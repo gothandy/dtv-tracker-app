@@ -36,8 +36,8 @@ function findDefaultKey() {
     let nextKey = null;
     let lastKey = null;
 
-    // Prefer the user's own next session if personalised
-    if (_myDates && _myDates.size > 0) {
+    // Prefer the user's own next session if personalised (admin always sees global next)
+    if (_myDates && _myDates.size > 0 && window.currentUser?.role !== 'admin') {
         for (const key of _myDates) {
             if (!_sessionIndex.has(key)) continue;
             if (key >= todayKey) {
