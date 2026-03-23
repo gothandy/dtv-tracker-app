@@ -12,6 +12,7 @@ const { findGroupByKey, findSessionByGroupAndDate, convertGroup } = require('./d
 const { SESSION_NOTES, SESSION_COVER_MEDIA } = require('./dist/services/field-names');
 const { mediaDriveId } = require('./dist/services/media-upload');
 const { sharePointClient } = require('./dist/services/sharepoint-client');
+const { getCoverCache, setCoverCache } = require('./dist/services/cover-cache');
 const axios = require('axios');
 
 // Cache the session-detail HTML template in memory (read once, reuse across requests)
@@ -60,10 +61,11 @@ app.get('/site.webmanifest', (req, res) => {
     res.setHeader('Content-Type', 'application/manifest+json');
     res.sendFile(path.join(__dirname, 'public', 'site.webmanifest'));
 });
-app.use('/img', express.static(path.join(__dirname, 'public', 'img')));
-app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
-app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
-app.use('/svg', express.static(path.join(__dirname, 'public', 'svg')));
+const staticOptions = { maxAge: '1h' };
+app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOptions));
+app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
+app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
+app.use('/svg', express.static(path.join(__dirname, 'public', 'svg'), staticOptions));
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Public pages — volunteer-facing, no login required (auth handled client-side via /auth/me)
@@ -131,11 +133,20 @@ app.get('/sessions/:group/:date/details.html', async (req, res) => {
 });
 
 // Public cover image proxy — stable URL for og:image in social share previews
-// Serves the CoverMedia item (or first public item, or first item) for the session
+// Serves the CoverMedia item (or first public item, or first item) for the session.
+// Image bytes are cached server-side (1h TTL) to avoid repeated SharePoint round-trips.
 app.get('/media/:group/:date/cover.jpg', async (req, res) => {
     const groupKey = req.params.group.toLowerCase();
     const dateParam = req.params.date;
+    const cacheKey = `${groupKey}/${dateParam}`;
     try {
+        const cached = getCoverCache(cacheKey);
+        if (cached) {
+            res.set('Content-Type', cached.contentType);
+            res.set('Cache-Control', 'public, max-age=3600');
+            return res.send(cached.data);
+        }
+
         const driveId = mediaDriveId();
         const [photos, rawGroups, rawSessions] = await Promise.all([
             sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`),
@@ -156,10 +167,14 @@ app.get('/media/:group/:date/cover.jpg', async (req, res) => {
         const imageUrl = photo.largeUrl || photo.thumbnailUrl;
         if (!imageUrl) return res.redirect('/img/logo-930.jpg');
 
-        const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
-        res.set('Content-Type', 'image/jpeg');
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
+        const imageData = Buffer.from(imageResponse.data);
+        setCoverCache(cacheKey, imageData, contentType);
+
+        res.set('Content-Type', contentType);
         res.set('Cache-Control', 'public, max-age=3600');
-        imageResponse.data.pipe(res);
+        res.send(imageData);
     } catch (err) {
         console.error(`Error serving cover image for ${groupKey}/${dateParam}:`, err);
         res.redirect('/img/logo-930.jpg');

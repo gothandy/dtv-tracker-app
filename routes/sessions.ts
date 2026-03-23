@@ -36,6 +36,7 @@ import type { ApiResponse } from '../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh } from '../services/session-stats';
+import { clearCoverCacheKey } from '../services/cover-cache';
 
 const router: Router = express.Router();
 
@@ -542,6 +543,11 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
         process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
       );
     }
+    // Cover image changed — bust the server-side cover cache for this session
+    if (SESSION_COVER_MEDIA in fields) {
+      clearCoverCacheKey(`${groupKey}/${dateParam}`);
+    }
+
     const newDate = fields.Date || dateParam;
     res.json({ success: true, data: { date: newDate, groupKey: newGroupKey } } as ApiResponse<{ date: string; groupKey: string }>);
   } catch (error: any) {

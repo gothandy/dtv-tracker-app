@@ -186,6 +186,7 @@ Three independent caches with different TTLs suited to how often each type of da
 | **NodeCache** (`sharePointClient.cache`) | `sharepoint-client.ts` | SharePoint list data: sessions, entries, profiles, groups, records, regulars, media counts | 5 min | Yes — all repository writes call `sharePointClient.clearCache()` |
 | **Column schema cache** (`sharePointClient.columnCache`) | `sharepoint-client.ts` | SharePoint column definitions (choice field values for Type/Status etc.) | 1 hour | No |
 | **Taxonomy tree cache** (`treeCache`) | `taxonomy-client.ts` | Term Store hierarchy (tag labels, IDs, parent/child structure) | 1 hour | No |
+| **Cover image cache** (`coverCache`) | `services/cover-cache.ts` | Resolved session cover image bytes (JPEG) — avoids repeated Graph API round-trips per session | 1 hour | No — busted explicitly when `coverMediaId` changes on a session (`PATCH /api/sessions/:group/:date`) |
 
 The column and taxonomy caches are separated from NodeCache because data writes (`clearCache()`) would otherwise constantly invalidate them — previously causing repeated Graph API round-trips to re-fetch structural metadata that never changes during normal operation.
 
@@ -273,6 +274,7 @@ dtv-tracker-app/
 │   ├── field-names.ts             # SharePoint field name constants
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   ├── media-upload.ts            # Shared media helpers: EXIF date extraction, filename generation
+│   ├── cover-cache.ts             # Server-side cover image byte cache (1h TTL, write-safe)
 │   └── repositories/
 │       ├── groups-repository.ts
 │       ├── sessions-repository.ts

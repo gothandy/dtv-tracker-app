@@ -166,9 +166,11 @@ Key files: [app.js](../app.js) (session config ~lines 38–48), [routes/auth/goo
 ## Performance: Cache Optimisation
 *Touches: `services/sharepoint-client.ts`, all repositories*
 
-Steps are sequential — Phase 3 is a prerequisite for Phase 4.
+**Completed (2026-03-23)**: Taxonomy tree, column schema, and cover image caches extracted to separate Maps outside NodeCache with 1-hour TTLs — these were the main victims of the global flush. See Caching Architecture in CLAUDE.md.
 
-**Phase 3 — Selective cache invalidation**
+Remaining steps are sequential — Phase 3 is a prerequisite for Phase 4.
+
+**Phase 3 — Selective cache invalidation (NodeCache)**
 - Add `clearCacheByPrefix(prefix)` helper to `sharepoint-client.ts`
 - Replace `clearCache()` (flushAll) in each repository write method with targeted key deletion; entry writes should only evict `entries`/`entries-profile-*`/`sessions_FY*`, not groups/profiles/sessions/records — critical for check-in day performance
 - Stats refresh helpers already use `clearCacheKey()` (single-key eviction) as a stepping stone
@@ -317,3 +319,6 @@ Track which user made each change, for accountability and audit purposes. Three 
 2. **Custom audit log list** *(medium)* — Keep app-level SharePoint access but write to a SharePoint Logs list on every mutation, storing: user (from session), action, entity ID, and timestamp. Queryable history without touching the auth model. Doesn't appear in SharePoint's native audit trail but gives full control over the schema.
 
 3. **Delegated permissions / On-Behalf-Of flow** *(hardest, most "correct")*  — Use each user's own Entra ID access token for Graph API calls instead of the app's service account. Changes appear in SharePoint's native audit logs under the user's name. Requires: storing/refreshing per-user tokens in sessions, granting each user SharePoint site permissions, and significant rework of the auth and Graph client layers. Worth it for compliance requirements; otherwise Option 2 gives most of the benefit at a fraction of the cost.
+
+## Media Gallery 
+1. **Delete** Currently no way of deleting images.

@@ -1,5 +1,43 @@
 # Development Progress
 
+## Session: 2026-03-23 (Performance — caching and asset delivery)
+
+### Completed Tasks
+
+#### Nightly sync email formatting ✓
+
+Reformatted the `summary` field returned by `POST /api/eventbrite/event-and-attendee-update` (used by Azure Logic App email notifications):
+- Summary now uses `\n` line breaks (one item per line) instead of ` / ` separators
+- Sessions-processed count moved onto line 1 alongside the event totals (`X new sessions / Y sessions`)
+- Stats lines now include the IDs of updated items in parentheses when any were updated — e.g. `Session stats: 1/533 updated (567)` — to help diagnose unexpected stat changes
+- `SessionStatsRefreshResult` and `ProfileStatsRefreshResult` interfaces extended with `updatedIds: number[]`; both `runSessionStatsRefresh()` and `runProfileStatsRefresh()` now collect and return the updated IDs
+
+#### Eventbrite sync — missing stats updates after entry creation ✓
+
+Two sync endpoints were creating entries without triggering a stats refresh:
+- **`POST /api/eventbrite/quick-sync`**: now runs `runSessionStatsRefresh()` and `runProfileStatsRefresh()` in parallel at the end of the sync loop, but only when `added > 0` (no-op syncs stay fast)
+- **`POST /api/eventbrite/sync-attendees`** (standalone): now runs both stats refreshes after `runSyncAttendees()` and includes the results in the response, matching the behaviour of the combined `event-and-attendee-update` endpoint
+
+#### Caching architecture — structural caches separated from NodeCache ✓
+
+Root cause of `GET /api/tags/hours-by-taxonomy` consistently performing poorly: the taxonomy term tree was stored in NodeCache, which is flushed on every data write via `clearCache()`. During active use (check-ins, nightly sync with dozens of writes), the tree was effectively never warm — each cold request triggered multiple sequential Graph API beta calls to rebuild it.
+
+Three structural/schema caches now live in separate in-process Maps outside NodeCache and are not invalidated by data writes:
+
+- **Taxonomy tree** (`treeCache` in `services/taxonomy-client.ts`): module-level Map, 1-hour TTL. Stores the SharePoint Term Store hierarchy (labels, IDs, parent/child structure). `TaxonomyClient.clearTreeCache()` exposed for explicit bust.
+- **Column schema** (`columnCache` in `SharePointClient`): Map on the client instance, 1-hour TTL. Stores SharePoint column definitions (choice field values for Type/Status etc. on the Records list). `SharePointClient.clearColumnCache()` exposed for explicit bust.
+- **Cover image bytes** (`coverCache` in `services/cover-cache.ts`): module-level Map, 1-hour TTL. Stores resolved JPEG bytes for session cover images, avoiding repeated Graph API round-trips per session. `clearCoverCacheKey(key)` is called when `coverMediaId` changes on a session; `clearCoverCache()` for full bust.
+
+`POST /api/cache/clear` (admin homepage refresh button) now flushes all four caches: NodeCache, column schema, taxonomy tree, and cover images.
+
+The `cover.jpg` proxy route also changed from `responseType: 'stream'` to `responseType: 'arraybuffer'` so the bytes can be buffered, cached, and sent without an intermediate pipe.
+
+#### Static asset browser caching ✓
+
+Added `maxAge: '1h'` to all four `express.static` middleware calls in `app.js` (`/img`, `/css`, `/js`, `/svg`). Previously no `Cache-Control: max-age` was set so browsers revalidated static assets (logo, SVG icons, stylesheets, scripts) on every navigation.
+
+---
+
 ## Session: 2026-03-22 (Session date UTC normalization)
 
 ### Completed Tasks
