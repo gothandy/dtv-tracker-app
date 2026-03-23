@@ -88,5 +88,8 @@ function initSignupsSection() {
             <div id="recentSignupsList"></div>
         </div>
     `;
-    loadRecentSignups();
+    // Only load for authenticated users — endpoint returns PII and requires auth
+    document.addEventListener('authReady', () => {
+        if (window.currentUser) loadRecentSignups();
+    });
 }

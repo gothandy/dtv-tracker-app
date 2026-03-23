@@ -1,5 +1,15 @@
 # Development Progress
 
+## Session: 2026-03-23 (cont.)
+
+### Completed Tasks
+
+#### Homepage recent sign-ups — spurious 401s for unauthenticated visitors ✓
+
+`initSignupsSection()` was calling `loadRecentSignups()` unconditionally on page load, firing `GET /api/entries/recent` for every visitor including unauthenticated ones (generating 401s visible in App Insights). The card was correctly hidden but the fetch still ran. Fixed by deferring the load until after the `authReady` event and only calling it when `window.currentUser` is set.
+
+---
+
 ## Session: 2026-03-23 (Performance — caching, targeted invalidation, asset delivery)
 
 ### Completed Tasks

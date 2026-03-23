@@ -21,6 +21,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/volunteers.html` redirects to `/login.html`
 - [ ] Unauthenticated visit to `/profiles/:slug/details.html` redirects to `/login.html`
 - [ ] Unauthenticated `GET /api/entries/recent` returns 401
+- [ ] Unauthenticated visit to `/` does not trigger a `GET /api/entries/recent` request (check Network tab — recent sign-ups section should not be fetched)
 - [ ] Unauthenticated API 401 response (from `apiFetch` in common.js) redirects to `/login.html?returnTo=...` not `/auth/login`
 - [ ] `/login.html` shows Google, Facebook, and Microsoft login options
 - [ ] Successful Microsoft login redirects back to `/` (or originally requested page via `returnTo`)
