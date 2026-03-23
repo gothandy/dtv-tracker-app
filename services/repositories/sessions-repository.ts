@@ -8,6 +8,8 @@ import { SharePointSession } from '../../types/session';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS } from '../field-names';
 
+const SLUG_CACHE_TTL = 3600; // 1 hour — group+date→ID mappings are stable
+
 class SessionsRepository {
   private listGuid: string;
 
@@ -38,7 +40,39 @@ class SessionsRepository {
       this.dateOnlyFields
     );
     sharePointClient.cache.set(cacheKey, data, CACHE_TTL.sessions);
+    this.populateSlugCache(data as SharePointSession[]);
     return data as SharePointSession[];
+  }
+
+  /** Populate slug lookup entries from a set of sessions. Called after every getAll(). */
+  private populateSlugCache(sessions: SharePointSession[]): void {
+    for (const s of sessions) {
+      const groupTitle = (s[GROUP_DISPLAY] || '').toLowerCase();
+      if (groupTitle && s.Date && s.ID) {
+        sharePointClient.cache.set(`session_slug_${groupTitle}_${s.Date}`, s.ID, SLUG_CACHE_TTL);
+      }
+    }
+  }
+
+  /**
+   * Resolve a session by group key + date using a long-TTL slug lookup cache.
+   * On cache hit: one targeted getById() Graph call (avoids loading the full sessions list).
+   * On cache miss: falls back to getAll() which repopulates all slug entries as a side-effect.
+   */
+  async getBySlug(groupKey: string, date: string): Promise<SharePointSession | null> {
+    const slugKey = `session_slug_${groupKey.toLowerCase()}_${date}`;
+    const cachedId = sharePointClient.cache.get<number>(slugKey);
+    if (cachedId !== undefined) {
+      console.log(`[Cache] Hit: ${slugKey}`);
+      return await this.getById(cachedId);
+    }
+
+    // Miss — load full list (which also repopulates all slug entries)
+    const all = await this.getAll();
+    return all.find(s => {
+      const gt = (s[GROUP_DISPLAY] || '').toLowerCase();
+      return gt === groupKey.toLowerCase() && s.Date === date;
+    }) ?? null;
   }
 
   async getById(id: number): Promise<SharePointSession | null> {
@@ -78,6 +112,7 @@ class SessionsRepository {
     const id = await sharePointClient.createListItem(this.listGuid, fields, this.dateOnlyFields);
     sharePointClient.clearCacheKey('sessions');
     sharePointClient.clearCacheByPrefix('sessions_FY');
+    sharePointClient.clearCacheByPrefix('session_slug_');
     return id;
   }
 
@@ -85,6 +120,7 @@ class SessionsRepository {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields, this.dateOnlyFields);
     sharePointClient.clearCacheKey('sessions');
     sharePointClient.clearCacheByPrefix('sessions_FY');
+    sharePointClient.clearCacheByPrefix('session_slug_');
   }
 
   // Updates only the Stats field — clears sessions cache only (not full flush).
@@ -93,12 +129,14 @@ class SessionsRepository {
     await sharePointClient.updateListItem(this.listGuid, sessionId, { [SESSION_STATS]: JSON.stringify(stats) });
     sharePointClient.clearCacheKey('sessions');
     sharePointClient.clearCacheByPrefix('sessions_FY');
+    // Slug entries are not affected by stats-only updates — no slug clear needed here
   }
 
   async delete(sessionId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, sessionId);
     sharePointClient.clearCacheKey('sessions');
     sharePointClient.clearCacheByPrefix('sessions_FY');
+    sharePointClient.clearCacheByPrefix('session_slug_');
   }
 }
 

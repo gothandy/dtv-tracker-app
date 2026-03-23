@@ -17,8 +17,6 @@ import {
   calculateCurrentFY,
   calculateFinancialYear,
   findGroupByKey,
-  findSessionByGroupAndDate,
-  buildBadgeLookups,
   safeParseLookupId,
   parseHours,
   nameToSlug,
@@ -27,9 +25,9 @@ import {
   calculateSessionStats
 } from '../services/data-layer';
 import {
-  GROUP_LOOKUP,
+  GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
@@ -360,11 +358,18 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
 
-    // Phase 1: resolve group + session (both cached — fast)
-    const [rawGroups, rawSessions] = await Promise.all([
+    // Phase 1: resolve group + session
+    // getBySlug uses a 1h slug lookup cache (group+date→ID) so avoids loading the full sessions list
+    // on cache hits; falls back to getAll() on first access or after a session edit.
+    const [rawGroups, spSession] = await Promise.all([
       groupsRepository.getAll(),
-      sessionsRepository.getAll()
+      sessionsRepository.getBySlug(groupKey, dateParam)
     ]);
+
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
     if (!spGroup) {
@@ -375,17 +380,10 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupId = spGroup.ID;
     const group = convertGroup(spGroup);
 
-    const spSession = findSessionByGroupAndDate(rawSessions, groupId, dateParam);
-    if (!spSession) {
-      res.status(404).json({ success: false, error: 'Session not found' });
-      return;
-    }
-
     // Phase 2: fetch only this session's entries (live, targeted Graph query) + cached lookups
-    const [rawEntries, rawProfiles, rawRecords] = await Promise.all([
+    const [rawEntries, rawProfiles] = await Promise.all([
       entriesRepository.getBySessionIds([spSession.ID]),
-      profilesRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      profilesRepository.getAll()
     ]);
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
@@ -394,19 +392,19 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
-    const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
-
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
+      // isMember and cardStatus come from the pre-computed Profile.Stats field — no records fetch needed
+      const stats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
       return {
         id: e.ID,
         profileId: volunteerId,
         volunteerName: e[PROFILE_DISPLAY],
         volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
         isGroup: profile?.IsGroup || false,
-        isMember: volunteerId !== undefined ? memberIds.has(volunteerId) : false,
-        cardStatus: volunteerId !== undefined ? cardStatusMap.get(volunteerId) : undefined,
+        isMember: stats.isMember === true,
+        cardStatus: stats.cardStatus ?? undefined,
         count: e.Count || 1,
         hours: parseHours(e.Hours),
         checkedIn: e.Checked || false,
@@ -499,9 +497,9 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       return;
     }
 
-    const [rawGroups, rawSessions] = await Promise.all([
+    const [rawGroups, spSession] = await Promise.all([
       groupsRepository.getAll(),
-      sessionsRepository.getAll()
+      sessionsRepository.getBySlug(groupKey, dateParam)
     ]);
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
@@ -510,7 +508,6 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       return;
     }
 
-    const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
     if (!spSession) {
       res.status(404).json({ success: false, error: 'Session not found' });
       return;
@@ -579,9 +576,9 @@ router.delete('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
 
-    const [rawGroups, rawSessions] = await Promise.all([
+    const [rawGroups, spSession] = await Promise.all([
       groupsRepository.getAll(),
-      sessionsRepository.getAll()
+      sessionsRepository.getBySlug(groupKey, dateParam)
     ]);
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
@@ -590,7 +587,6 @@ router.delete('/sessions/:group/:date', async (req: Request, res: Response) => {
       return;
     }
 
-    const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
     if (!spSession) {
       res.status(404).json({ success: false, error: 'Session not found' });
       return;

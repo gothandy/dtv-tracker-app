@@ -40,8 +40,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In: edit profile button visible, can update name/email
-- [ ] Check In: Upload button on entry detail visible and functional (navigates to `/upload/CODE`)
-- [ ] Check In: `POST /api/entries/:id/upload-code` succeeds (not blocked by 403)
+- [ ] Check In: Upload button on entry detail visible and functional (navigates to `/upload.html?entryId=:id`)
 - [ ] Check In: Add Record, Transfer, Delete still hidden on profile page
 - [ ] Check In: `POST /api/profiles/:slug/records` returns 403
 - [ ] Check In: `POST /api/groups` returns 403
@@ -268,28 +267,48 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `POST /api/cache/clear`
 - [ ] Forces fresh data on next request
 
-### H28. Generate volunteer upload link (check-in+)
-- [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Read Only
-- [ ] Click button → `POST /api/entries/:id/upload-code` → browser navigates directly to `/upload/{CODE}`
-- [ ] No intermediate code panel shown — navigation is immediate
-- [ ] Read Only user: button not visible; `POST /api/entries/:id/upload-code` returns 403
+### H28. Upload button (entry detail — check-in/admin)
+- [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Read Only and Self-Service (`checkin-only` class)
+- [ ] Click button → browser navigates directly to `/upload.html?entryId=:id` (no API call, no intermediate step)
+- [ ] Self-service user on **session detail** page: "Upload" link rendered next to their own entry (if they have one); navigates to `/upload.html?entryId=:id`
+- [ ] Self-service user on **entry detail**: Upload button not visible
 
-### H29. Volunteer photo upload (public page)
-- [ ] Visit `/upload` in incognito (no session) — page loads without redirect to login
-- [ ] `/upload` with no code → error message shown ("No upload code found. Please use the link provided by your session admin.")
-- [ ] `/upload/INVALIDCODE` (invalid format) → same error
-- [ ] Visit `/upload/AGHR` with valid code → validates immediately, shows volunteer name and session name (no code entry step)
-- [ ] Visit `/upload/AGHR` with expired code (session date > 7 days ago, public access) → "This code has expired. Please ask for a new one."
-- [ ] Share icon visible for sessions ≤ 7 days old; hidden for sessions > 7 days old
-- [ ] Share icon → native share sheet (mobile) or copies URL to clipboard (desktop)
-- [ ] Authenticated user navigating to old session upload page (> 7 days) → validates OK, share icon hidden, upload works
-- [ ] Select 2–3 photos → Upload button shows correct count
-- [ ] Upload → each file shows "✓ Uploaded" status
+### H29. Volunteer photo upload page (`/upload.html`)
+- [ ] Visit `/upload.html?entryId=:id` in incognito (no session) → redirected to `/login.html?returnTo=/upload.html?entryId=:id`
+- [ ] Visit with no `entryId` param or non-numeric ID → error: "No upload link found. Please use the link from your session page."
+- [ ] Visit with valid `entryId` for a different volunteer (self-service wrong account) → error: "This upload link is not for your account."
+- [ ] Visit with non-existent `entryId` → error: "Upload link not found. Please check the link and try again."
+- [ ] Valid `entryId` → `GET /api/entries/:id/upload-context` → shows volunteer name and session name; no code entry step
+- [ ] Self-service: `GET /api/entries/:id/upload-context` for another volunteer's entry → 403
+- [ ] Select 2–3 photos → Upload button label updates to "Upload N files"; button enabled
+- [ ] Upload → each file shows "✓ Uploaded" status; non-supported file (e.g. PDF) shows "✗ Failed"
 - [ ] Files appear in SharePoint Media Library at `{groupKey}/{date}/`
-- [ ] Session `mediaCount` increments on next page load (cache cleared after upload)
-- [ ] Step 3 "X photos uploaded" confirmation shown after upload
-- [ ] Non-image file (e.g. PDF) → rejected server-side, shows "✗ Failed"
-- [ ] WhatsApp: paste `/upload/AGHR` URL → tap link on mobile → upload page opens and validates immediately
+- [ ] Completion step shows file count ("N files uploaded") and "View session gallery" link
+- [ ] "View session gallery" link navigates to the correct session detail page
+- [ ] `POST /api/entries/:id/photos` — self-service for another volunteer's entry returns 403
+
+### H30b. Session gallery (session detail)
+- [ ] Session detail with uploaded photos: cover image appears above the carousel; thumbnail strip below
+- [ ] Clicking a thumbnail opens the lightbox
+- [ ] Lightbox: left/right navigation works; close button (or Esc) dismisses
+- [ ] Video items in the gallery have a play-button overlay on the thumbnail; clicking opens lightbox and video plays inline
+- [ ] `GET /api/media/:itemId/stream` redirects to download URL for authenticated users
+- [ ] Public (unauthenticated) users: gallery only shows items where `IsPublic = true`; private items not visible
+- [ ] Public: `GET /api/media/:itemId/stream` for a non-public item → 403
+- [ ] Admin/Check In: lightbox shows "Public gallery" checkbox and title/alt-text input per item
+- [ ] Toggling "Public gallery" checkbox calls `PATCH /api/media/:itemId` — `{ isPublic: true/false }`; change persists on reload
+- [ ] Admin/Check In: can set cover image via lightbox "Set as cover" control; cover updates above carousel
+- [ ] `PATCH /api/media/:itemId` for Read Only or Self-Service → 403
+- [ ] **Media cache**: loading session detail twice → second load shows `[Cache] Hit: media_folder_*` in server logs (no repeat Graph call)
+- [ ] **Media cache bust**: upload a photo to a session → immediately reload the session gallery → new photo appears (cache was busted by upload)
+
+### H31. Backup export
+- [ ] Admin page → "Export Backup" button → `POST /api/backup/export-all`
+- [ ] Returns summary with file counts and timestamp; displayed in admin page
+- [ ] Files written to `Backups/` folder in Shared Documents on the Tracker site
+- [ ] Unchanged files are skipped (SHA-256 diff check) — re-running immediately results in 0 updated files
+- [ ] API key auth: `POST /api/backup/export-all` with valid `X-Api-Key` succeeds without session
+- [ ] Backup runs automatically as last step of nightly `POST /api/eventbrite/event-and-attendee-update` sync; result included in summary email
 
 ---
 

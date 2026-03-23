@@ -191,13 +191,17 @@ Four independent caches with different TTLs and invalidation strategies:
 
 | Entity | TTL | Rationale |
 |---|---|---|
-| `groups` | 30 min | Config-like — admin-only changes |
+| `groups` | 3 hr | Config-like — admin-only changes; very stable |
 | `sessions`, `profiles`, `regulars` | 5 min | Planning tier — Eventbrite sync, session edits |
 | `entries`, `records` | 1 min | Check-in tier — live writes on the day |
 | `stats_summary`, `stats_history` | 30 min | Summaries tier — trend/reporting data |
 | `media-counts-{groupKey}` | 15 min | Tidy-up tier — post-event uploads |
+| `session_slug_{group}_{date}` | 1 hr | Lookup tier — group+date→ID translation; stable after creation |
+| `media_folder_{groupKey}/{date}` | 15 min | Detail tier — session gallery listing; busted after upload |
 
 **Targeted invalidation**: each repository write only evicts its own key(s). Entry writes (check-in, hours) also clear `sessions_FY*` keys (FY aggregates are computed from entries). Groups, profiles, sessions, records, and regulars are never evicted by entry writes — critical for check-in day performance with multiple concurrent users.
+
+**Session detail performance**: `GET /api/sessions/:group/:date` uses `sessionsRepository.getBySlug()` which hits the slug lookup cache (1hr TTL) to resolve session ID without loading the full sessions list. Badge data (`isMember`, `cardStatus`) is read from `profile.Stats` — the records list is not fetched for this endpoint. Gallery requests hit `media_folder_*` cache after first load. `computeAndSaveSessionStats()` after entry writes clears `session_slug_*` and `sessions_FY*` but not the profiles or groups caches.
 
 **Admin cache clear** (`POST /api/cache/clear`, homepage refresh button) calls `sharePointClient.clearCache()` (flushAll on NodeCache), `sharePointClient.clearColumnCache()`, `taxonomyClient.clearTreeCache()`, and `clearCoverCache()` — a full flush of all four caches for pre-reporting or data-cleaning runs.
 

@@ -4,6 +4,19 @@ Items are grouped by the code they touch, so related work can be tackled togethe
 
 ---
 
+## Caching: Detail-tier Per-Session Caches
+*Touches: `services/repositories/entries-repository.ts`, `services/repositories/profiles-repository.ts`, `routes/sessions.ts`, `routes/entries.ts`*
+
+Deferred from session detail performance work (2026-03-23). Fixes 1–3, 6–7 already shipped. Measure average session detail load time before implementing these.
+
+**Fix 4 — Per-session entries cache**
+Cache `entries_session_{sessionId}` (1min TTL) inside `getBySessionIds()` for the single-ID path. Add optional `sessionId?: number` to `updateFields`, `create`, `delete` so route handlers can bust the specific key. Callers that already hold the session context (check-in, hours update, create entry) pass it; generic callers don't.
+
+**Fix 5 — Per-session profiles cache**
+After entries are loaded, collect the session's profile IDs and build `profiles_session_{sessionId}` (5min TTL) by filtering the profiles list cache. On cold list cache, falls back to `profilesRepository.getAll()`. Invalidate from `profilesRepository` write methods (`clearCacheByPrefix('profiles_session_')`) and from entry write handlers (`clearCacheKey('profiles_session_{sessionId}')`).
+
+---
+
 ## Homepage & Dashboard Polish
 *Touches: `index.html`, `session-cards.js`, `styles.css`, `eventbrite.ts`*
 

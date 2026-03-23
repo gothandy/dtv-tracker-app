@@ -56,7 +56,7 @@ interface GraphResponse {
 // Tier-informed per-entity TTLs (seconds).
 // Groups/config-like data stays hot a long time; entries expire fast for check-in accuracy.
 export const CACHE_TTL = {
-  groups:   1800,  // 30 min  — config tier: admin-only changes
+  groups:  10800,  //  3 hr   — config tier: admin-only changes
   sessions:  300,  //  5 min  — planning tier: session edits, Eventbrite sync
   profiles:  300,  //  5 min  — planning tier
   regulars:  300,  //  5 min  — planning tier
@@ -589,6 +589,13 @@ export class SharePointClient {
     driveId: string,
     folderPath: string
   ): Promise<{ id: string; listItemId: number; name: string; webUrl: string; thumbnailUrl: string; largeUrl: string; mimeType: string; isPublic: boolean; title: string | null }[]> {
+    const cacheKey = `media_folder_${folderPath}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached as { id: string; listItemId: number; name: string; webUrl: string; thumbnailUrl: string; largeUrl: string; mimeType: string; isPublic: boolean; title: string | null }[];
+    }
+
     try {
       const token = await this.getAccessToken();
       const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
@@ -599,7 +606,7 @@ export class SharePointClient {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      return (response.data.value as any[])
+      const result = (response.data.value as any[])
         .filter(item => item.file?.mimeType?.startsWith('image/') || item.file?.mimeType?.startsWith('video/'))
         .map(item => ({
           id: item.id as string,
@@ -612,11 +619,18 @@ export class SharePointClient {
           isPublic: item.listItem?.fields?.IsPublic !== false,  // default true if absent/null
           title: (item.listItem?.fields?.Title as string | undefined) || null,
         }));
+
+      this.cache.set(cacheKey, result, CACHE_TTL.media);
+      return result;
     } catch (error: any) {
       if (error.response?.status === 404) return [];
       console.error(`Error listing folder photos at ${folderPath}:`, error.response?.data || error.message);
       throw error;
     }
+  }
+
+  clearMediaFolderCache(folderPath: string): void {
+    this.cache.del(`media_folder_${folderPath}`);
   }
 
   /**

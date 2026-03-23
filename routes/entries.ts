@@ -978,7 +978,8 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
     }
 
     if (uploaded > 0) {
-      sharePointClient.clearCache();
+      sharePointClient.clearMediaFolderCache(folderPath);
+      sharePointClient.clearCacheByPrefix(`media-counts-${groupKey}`);
       // Update session Stats with fresh media count (fire-and-forget)
       if (sessionId !== undefined) {
         (async () => {
