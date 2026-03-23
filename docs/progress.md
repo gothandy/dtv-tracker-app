@@ -1,5 +1,30 @@
 # Development Progress
 
+## Session: 2026-03-23 (Backup export improvements)
+
+### Completed Tasks
+
+#### Backup — diff check, metadata, nightly integration ✓
+
+- Extracted backup logic to `services/backup-export.ts` (`runBackupExport()`) matching the `session-stats.ts` pattern
+- Added SHA-256 diff check: downloads existing file, compares hash, skips upload if unchanged (sorts list items by ID first for stable ordering)
+- Added `Backups/taxonomy.json` (term set tree) and `Backups/schema.json` (all site lists with columns via single `GET /sites/{siteId}/lists?$expand=columns` call) — both with diff checking; volatile Graph API fields (`lastModifiedDateTime`, `eTag` etc.) stripped from schema JSON before hashing to avoid false positives
+- `routes/backup.ts` now a thin wrapper; `routes/eventbrite.ts` calls `runBackupExport()` as last nightly step and appends backup line to email summary
+- Added `/api/backup/` to `API_KEY_PATHS` in `require-auth.ts`
+- Admin button result updated to show updated/skipped breakdown
+- Added `downloadFile()` and `getAllListsWithColumns()` to `sharepoint-client.ts`
+
+#### Admin page site shortcuts ✓
+
+- Replaced 6 individual SharePoint list links with a single "Site Contents" button (`/sites/Tracker/_layouts/15/viewlsts.aspx?view=14`)
+- Removed Media shortcut; section now has 3 buttons: Site Contents, Term Store, Backup
+
+#### Bug consolidation ✓
+
+- Merged `docs/bugs.md` into `docs/todo.md` with `**[BUG]**` tags in relevant sections; `bugs.md` archived to `docs/legacy/`
+
+---
+
 ## Session: 2026-03-23 (cont.)
 
 ### Completed Tasks

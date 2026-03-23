@@ -187,19 +187,10 @@
                     document.getElementById('siteLink').textContent = isTracker ? 'Tracker Site' : 'Members Site';
                     document.getElementById('siteSection').style.display = '';
 
-                    const lists = [
-                        { name: 'Groups', path: '/Lists/Groups/AllItems.aspx' },
-                        { name: 'Sessions', path: '/Lists/Sessions/AllItems.aspx' },
-                        { name: 'Entries', path: '/Lists/Entries/AllItems.aspx' },
-                        { name: 'Profiles', path: '/Lists/Profiles/AllItems.aspx' },
-                        { name: 'Regulars', path: '/Lists/Regulars/AllItems.aspx' },
-                        { name: 'Records', path: '/Lists/Records/AllItems.aspx' },
-                    ];
                     const termStoreUrl = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/SiteAdmin.aspx#/termStoreAdminCenter';
                     document.getElementById('siteShortcuts').innerHTML =
-                        lists.map(l => `<a class="admin-btn" href="${url}${l.path}" target="_blank">${escapeHtml(l.name)}</a>`).join('') +
+                        `<a class="admin-btn" href="https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/viewlsts.aspx?view=14" target="_blank">Site Contents</a>` +
                         `<a class="admin-btn" href="${termStoreUrl}" target="_blank">Term Store</a>` +
-                        `<a class="admin-btn" href="https://dtvolunteers.sharepoint.com/sites/Tracker/Media/Forms/AllItems.aspx" target="_blank">Media</a>` +
                         `<button class="admin-btn" id="exportBackupBtn" onclick="exportBackup()">Backup</button>`;
                 }
             } catch (e) { /* ignore */ }
@@ -256,8 +247,14 @@
                 const res = await apiFetch('/api/backup/export-all', { method: 'POST' });
                 const data = await res.json();
                 if (!res.ok || !data.success) throw new Error(data.error || 'Export failed');
-                const summary = data.data.exported.map(e => `${e.list}: ${e.count}`).join(', ');
-                result.textContent = `Exported at ${new Date(data.data.timestamp).toLocaleTimeString()} — ${summary}`;
+                const { updated, skipped, timestamp } = data.data;
+                const time = new Date(timestamp).toLocaleTimeString();
+                if (updated.length) {
+                    result.textContent = `Exported at ${time} — ${updated.join(', ')} updated` +
+                        (skipped.length ? ` (${skipped.join(', ')} unchanged)` : '');
+                } else {
+                    result.textContent = `Exported at ${time} — no changes`;
+                }
             } catch (error) {
                 result.textContent = error.message || 'Export failed';
                 result.className = 'sync-result error';

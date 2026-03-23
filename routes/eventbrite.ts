@@ -11,6 +11,7 @@ import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, Event
 import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
+import { runBackupExport } from '../services/backup-export';
 
 const router: Router = express.Router();
 
@@ -183,6 +184,7 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
     const attendeeResult = await runSyncAttendees();
     const sessionStatsResult = await runSessionStatsRefresh();
     const profileStatsResult = await runProfileStatsRefresh();
+    const backupResult = await runBackupExport();
 
     const sessionIdsStr = sessionStatsResult.updatedIds.length ? ` (${sessionStatsResult.updatedIds.join(', ')})` : '';
     const profileIdsStr = profileStatsResult.updatedIds.length ? ` (${profileStatsResult.updatedIds.join(', ')})` : '';
@@ -190,12 +192,13 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions / ${attendeeResult.sessionsProcessed} sessions`,
       `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
-      `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`
+      `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
+      backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes'
     ];
     const summary = parts.join('\n');
 
     console.log(`[Eventbrite Sync] ${summary}`);
-    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult } });
+    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult, backup: backupResult } });
   } catch (error: any) {
     console.error('Error running event and attendee update:', error);
     res.status(500).json({

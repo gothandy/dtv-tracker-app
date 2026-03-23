@@ -33,7 +33,7 @@ Feature-complete volunteer tracking application with:
 
 ### Pages
 - Dashboard with FY stats, next session card, personalised calendar ([public/index.html](public/index.html)); for self-service/check-in/admin-with-profile: calendar dots distinguish own sessions (filled) and regular-group sessions (outline); Next/Last jump to own sessions with global fallback; Registered/Attended pills on session cards; word cloud shows top 5 by default and expands to full on Show History
-- Admin page with Eventbrite sync buttons, exports, backup export, site link, icon legend ([public/admin.html](public/admin.html))
+- Admin page with Eventbrite sync buttons, exports, backup export, site shortcuts (Site Contents, Term Store, Backup), icon legend ([public/admin.html](public/admin.html))
 - Groups listing with FY filter ([public/groups.html](public/groups.html))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
 - Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection, bulk tagging, and CSV download of selected sessions ([public/sessions.html](public/sessions.html))
@@ -159,8 +159,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
   - [docs/test-script.md](docs/test-script.md) — manual test script (add/update test cases)
   - [docs/permissions.md](docs/permissions.md) — if roles or endpoint access change
   - [docs/technical-debt.md](docs/technical-debt.md) — code/architecture issues only (not functionality)
-  - [docs/todo.md](docs/todo.md) — planned functionality and feature ideas
-  - [docs/bugs.md](docs/bugs.md) — known bugs to fix
+  - [docs/todo.md](docs/todo.md) — planned functionality, feature ideas, and bugs (tagged `**[BUG]**`)
   - [docs/progress.md](docs/progress.md) — development session notes (resolved items tracked here)
   - [docs/sharepoint-schema.md](docs/sharepoint-schema.md) — if SharePoint fields change
   - [readme.md](readme.md) — if dependencies or configuration change
@@ -285,6 +284,7 @@ dtv-tracker-app/
 │   ├── data-layer.ts              # Data conversion, enrichment, validation
 │   ├── media-upload.ts            # Shared media helpers: EXIF date extraction, filename generation
 │   ├── cover-cache.ts             # Server-side cover image byte cache (1h TTL, write-safe)
+│   ├── backup-export.ts           # runBackupExport(): diff-checked JSON export of all 6 lists + taxonomy + schema
 │   └── repositories/
 │       ├── groups-repository.ts
 │       ├── sessions-repository.ts
@@ -303,7 +303,7 @@ dtv-tracker-app/
 │   ├── eventbrite.ts              # Eventbrite sync endpoints
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
 │   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
-│   ├── backup.ts                  # Backup endpoint: exports all 6 lists as JSON to SharePoint Shared Documents
+│   ├── backup.ts                  # Backup endpoint: thin wrapper calling runBackupExport()
 │   └── auth/
 │       ├── index.ts               # Auth router: logout, /providers, /me
 │       ├── dtv.ts                 # DTV Account (Entra ID / Microsoft) login + callback
@@ -375,7 +375,7 @@ dtv-tracker-app/
 - [x] Mobile-first responsive design (44px touch targets)
 - [x] Eventbrite session sync (org events → sessions via SeriesID matching)
 - [x] Eventbrite attendee sync (attendees → profiles/entries/consent records); name-clash detection flags `#Duplicate` entries when same name + different email; backfills email on existing profiles without one
-- [x] Admin page with manual sync buttons, unmatched events, icon legend
+- [x] Admin page with manual sync buttons, unmatched events, icon legend, site shortcuts (Site Contents, Term Store, Backup)
 - [x] SVG icons for badges (member, card, group) and entry tags
 - [x] Bulk add/update records from volunteers page (with optional checkbox selection of specific volunteers)
 - [x] CSV export filtered to selected volunteers (`?profileIds=` param on `/api/profiles/export`)
@@ -400,7 +400,7 @@ dtv-tracker-app/
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
 - [x] Calendar view on sessions listing page (month navigation, clickable session dates)
 - [x] FY bar charts on group detail and profile detail pages
-- [x] Manual backup export: admin button calls `POST /api/backup/export-all`, writes all 6 lists as JSON to `Tracker Archive/` folder in SharePoint Shared Documents (requires `BACKUP_DRIVE_ID` env var)
+- [x] Nightly backup export: `POST /api/backup/export-all` (admin button) and last step of nightly sync; exports all 6 lists + `taxonomy.json` + `schema.json` to `Backups/` in Shared Documents; SHA-256 diff check skips unchanged files; result included in nightly email summary; API key auth supported
 - [x] Taxonomy tag word cloud on homepage, group detail, and profile detail — `GET /api/tags/hours-by-taxonomy` aggregates hours by tag with ancestor rollup; reusable `word-cloud.js` component; respects all FY/group/profile filters; CSV download; homepage shows top 5 by default, full cloud on Show History
 - [x] Personalised homepage calendar — self-service, check-in, and admin (with profile) users see calendar dots on their own sessions (filled) and regular-group sessions not yet joined (outline); Next/Last buttons target own sessions with global fallback; session cards show Registered/Attended pills; public and read-only users see standard global view
 - [x] Consent collection page at `/profiles/:slug/consent.html` — check-in and admin users see "Collect Consent" button on profile Records section; page presents privacy (required) and photo (optional) checkboxes with privacy policy link; on submit upserts both records with today's date via `POST /api/profiles/:id/consent`; self-service users can also access for their own profile (e.g. via entry detail consent button)

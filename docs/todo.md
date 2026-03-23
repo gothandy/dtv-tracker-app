@@ -10,9 +10,6 @@ Items are grouped by the code they touch, so related work can be tackled togethe
 **Step 4 — CTA for next unregistered session**
 For personalised users, show a lightweight "Also coming up" prompt/card for the next upcoming session they haven't registered for. No extra fetch needed — data is already loaded. Change: `session-cards.js` + `styles.css`.
 
-**Homepage spinner**
-While the cache is building a spinner would help usability.
-
 **Homepage Refresh Button — Public Appearance**
 The refresh icon at the top of the homepage is intentionally visible to public users (the loading spinner is useful), but it currently looks like a fully active button. For public users it should appear visually inactive — muted colour, no hover effect, `cursor: default` — so it doesn't imply interactivity. The spinner behaviour on click should remain.
 
@@ -25,8 +22,11 @@ When an admin/check-in user loads the homepage, silently check Eventbrite for ne
 *Touches: `sessions.html`, `sessions.js`, `session-cards.js`, `tags.ts`*
 
 **Sessions Advanced Filter — Minor UX Issues**
-- Count total doesn't refresh when the advanced group/tag filters are applied — still shows the unfiltered total until a manual re-trigger
+- **[BUG]** Count total doesn't refresh when the advanced group/tag filters are applied — still shows the unfiltered total until a manual re-trigger
+- **[BUG]** Select/deselect in advanced mode doesn't update the results count
 - Advanced filter buttons (Apply/Clear) are in an odd position relative to the dropdowns
+- Total shown on the selection button may not be needed — consider removing for simplicity
+- We should show totals for all users including public.
 
 Low priority, just polish.
 
@@ -47,7 +47,6 @@ The tag filter dropdown should show ALL ancestor nodes as separate options, not 
 The bar chart and word cloud are currently implemented independently across three pages with inconsistent behaviour. Consolidate into a single shared module and ensure consistent UX everywhere.
 
 **Current state (problems):**
-- Profile detail is missing the FY bar chart entirely (group detail has it, profile doesn't)
 - Bar chart + word cloud CSS is split across `home.css` and `styles.css`
 - Homepage bar chart has a collapse/expand toggle; detail pages do not — no principled reason for the difference
 - Word cloud CSV visibility varies page-to-page
@@ -60,8 +59,8 @@ The bar chart and word cloud are currently implemented independently across thre
 - Homepage, group detail, and profile detail all use the same module with different options
 - Profile detail gains the missing FY bar chart (from `Profile.Stats.hoursByFY`), wired to the existing FY filter
 
-**Group Detail — Regulars Section Position**
-Move the Regulars list below the word cloud (currently appears above it). Word cloud is more useful at a glance; regulars are a management detail. Do this as part of the stats panel consolidation pass on `group-detail.html`.
+**[BUG] Profile Detail — Groups Filter Bar Chart**
+The groups filter on the profile detail page doesn't update the FY bar chart.
 
 ---
 
@@ -119,6 +118,19 @@ Automatically link through to the volunteers page with advanced filters set from
 **Bulk Email to Volunteers**
 Both from filtered volunteers page, groups (regulars) and session page? Or provide emails to cut and paste into email client.
 
+**Volunteer Calls to Action**
+Shift the whole App away from being a backend management tool, to something that is highly compelling to the "self-service" audiance. This would include thing like.
+- No future registrations - Target a group they've been on before.
+- Only go on one groups digs - Target other groups.
+- Highlight benefits and push on homepage with (only 2 more digs and you get X)
+- Make sign up easier than Eventbrite with self-service sign in. Maybe with registrations from all session cards.
+- You've just earned discounts.
+- AGM x- days away for members.
+- Membership application form for anyone with the hours.
+Then some updates with the website.
+- Links from the website (your account style).
+- Replace eventbrite sign up with feed
+
 ---
 
 ## Entry URLs & Session Actions
@@ -150,7 +162,7 @@ Allow check-in users to create a task in Microsoft Planner directly from the ses
 Reports of users being signed out every 5–10 minutes. Root cause not yet confirmed — gather more data before implementing fixes.
 
 **Likely causes (check in order):**
-1. **"Always On" disabled** in Azure App Service (Configuration → General settings) — app goes idle between requests and restarts, wiping in-memory sessions. Free fix if this is the cause.
+1. **"Always On" disabled** in Azure App Service (Configuration → General settings) — app goes idle between requests and restarts, wiping in-memory sessions. Free fix if this is the cause. [I think this has been fixed now. Waiting on more feedback before closing issue]
 2. **App crashing** — App Insights Failures blade will show unhandled exceptions and process restarts. Check after next reported sign-out.
 3. **MemoryStore** — `express-session` defaults to in-memory session storage; all sessions lost on any process restart/redeploy. Long-term fix regardless of root cause: provision Azure Cache for Redis and add `connect-redis`.
 
@@ -163,18 +175,6 @@ Key files: [app.js](../app.js) (session config ~lines 38–48), [routes/auth/goo
 
 ---
 
-## Performance: Cache Optimisation
-*Touches: `services/sharepoint-client.ts`, all repositories*
-
-**Completed (2026-03-23)**: Taxonomy tree, column schema, and cover image caches extracted to separate Maps outside NodeCache with 1-hour TTLs — these were the main victims of the global flush. See Caching Architecture in CLAUDE.md.
-
-**Completed (2026-03-23)**: Selective invalidation and per-entity TTLs implemented. NodeCache now uses tier-informed TTLs (`CACHE_TTL` constants in `sharepoint-client.ts`): groups 30 min, sessions/profiles/regulars 5 min, entries/records 1 min, stats 30 min, media 15 min. Each repository write only evicts its own key(s); entry writes also clear `sessions_FY*` (FY aggregates depend on entries). `clearCache()` (flushAll) is kept for the admin cache-clear endpoint.
-
-**Possible future optimisation — Phase 5**
-Scope the entries/planning cache to upcoming sessions only. Currently all ~5,000 entries are fetched and cached as one blob. A targeted query for sessions in the next 30 days (and their entries) would make check-in cold-cache refreshes far faster.
-
----
-
 ## Sync, Logging & Backup
 *Touches: `eventbrite.ts`, `eventbrite-sync.ts`, `admin.html`, `backup.ts`; Azure Logic App config*
 
@@ -184,13 +184,14 @@ The Eventbrite sync endpoints return structured results but there's no persisten
 - Write to Logs list at the end of `event-and-attendee-update` endpoint
 - Display on admin page with last sync timestamp
 
-**Nightly CSV Backup**
-Export all six SharePoint lists to CSV nightly as a safety net against accidental bulk deletion or data corruption.
+**Nightly Backup — Azure Logic App scheduling**
+Backup now runs as the last step of the nightly Eventbrite sync and is included in the email summary. Remaining: schedule the existing Logic App to also trigger `POST /api/backup/export-all` directly (or rely on it running via the sync chain). Configure SharePoint document library version retention limit in library settings.
 
-**Implementation approach** (mirrors Eventbrite sync pattern):
-The `POST /api/backup/export-all` endpoint and admin "Export Backup" button are already implemented. Remaining:
-1. Schedule via Azure Logic App (same as Eventbrite sync) for nightly automated runs; use API key auth
-2. Overwrite the same fixed filenames each run (e.g. `groups.json`, `entries.json`) and rely on SharePoint document library version history for older snapshots; configure version retention limit in library settings
+**Nightly task endpoint naming**
+`POST /api/eventbrite/event-and-attendee-update` now does: session sync, attendee sync, session stats refresh, profile stats refresh, and backup export — the name no longer reflects its scope. Consider renaming to `POST /api/nightly/run` with a redirect or alias so the existing Azure Logic App URL keeps working.
+
+**Media Metadata Backup**
+Add `Backups/media.json` to the nightly backup — file name, folder path (`groupKey/date`), `mimeType`, `isPublic`, and `title` (caption) per item. The photos themselves don't need backing up; these custom column values are what could be lost if the SharePoint list behind the drive was corrupted. Use the Graph Drive delta endpoint (`GET /drives/{driveId}/root/delta?$expand=listItem(...)`) to fetch all items in one paginated traversal — needs a new paginated method on `sharepoint-client.ts`. Include same diff check as other backup files.
 
 **MatchName Field — Is It Redundant?**
 `MatchName` was added to support Eventbrite name matching (lowercased/normalised form of Title). Now that duplicate detection also normalises `Title` via `toMatchName()` at query time, and Eventbrite sync could do the same, the field may be unnecessary. Investigate:
@@ -212,6 +213,9 @@ Current breadcrumb is static (path-based) and doesn't reflect where the user nav
 - **Context-sensitive breadcrumb**: Detect referrer to build the correct trail (e.g. entry page reached from session vs profile shows different parent). Started on profile detail page but incomplete.
 
 A back button is probably the right approach — simpler, works well on mobile, and avoids the complexity of reconstructing navigation history from the URL alone.
+
+**[BUG] Self-Service Breadcrumb — Volunteers Link**
+The breadcrumb on profile detail in self-service mode includes a Volunteers link that returns an error (self-service users can't access the volunteers listing). Remove the Volunteers breadcrumb step for self-service users — from their perspective, profile sits directly under the homepage.
 
 **Filters, Cards & Stats Consistency Review**
 Review all list pages (groups, sessions, volunteers, group detail, profile detail) for consistency and usability:
@@ -321,3 +325,5 @@ Track which user made each change, for accountability and audit purposes. Three 
 ## Recording No Shows
 Currently we delete no shows. Suggest we start recording these against volunteers so we know who's likely to be a repeat offender.
 
+## Taxonomy Stats
+Divide the hours by the number of tags and allocate that way.

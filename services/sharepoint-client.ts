@@ -515,6 +515,36 @@ export class SharePointClient {
   }
 
   /**
+   * Download a file from a SharePoint document library.
+   * Returns null if the file doesn't exist (404), throws on other errors.
+   */
+  async downloadFile(driveId: string, filePath: string): Promise<Buffer | null> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/content`;
+      const response = await axios.get(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        responseType: 'arraybuffer'
+      });
+      return Buffer.from(response.data);
+    } catch (error: any) {
+      if (error.response?.status === 404) return null;
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch all lists on the SharePoint site with their column definitions expanded.
+   * Single Graph call — used for schema backup.
+   */
+  async getAllListsWithColumns(): Promise<any[]> {
+    const siteId = await this.getSiteId();
+    const data = await this.get(`sites/${siteId}/lists?$expand=columns`);
+    return data.value || [];
+  }
+
+  /**
    * List all date subfolders under a group folder and return their child file counts.
    * One Graph API call per group key — used for batch photo counts on session cards.
    * Returns an empty Map if the group folder doesn't exist yet.
