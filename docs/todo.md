@@ -168,15 +168,10 @@ Key files: [app.js](../app.js) (session config ~lines 38–48), [routes/auth/goo
 
 **Completed (2026-03-23)**: Taxonomy tree, column schema, and cover image caches extracted to separate Maps outside NodeCache with 1-hour TTLs — these were the main victims of the global flush. See Caching Architecture in CLAUDE.md.
 
-Remaining steps are sequential — Phase 3 is a prerequisite for Phase 4.
+**Completed (2026-03-23)**: Selective invalidation and per-entity TTLs implemented. NodeCache now uses tier-informed TTLs (`CACHE_TTL` constants in `sharepoint-client.ts`): groups 30 min, sessions/profiles/regulars 5 min, entries/records 1 min, stats 30 min, media 15 min. Each repository write only evicts its own key(s); entry writes also clear `sessions_FY*` (FY aggregates depend on entries). `clearCache()` (flushAll) is kept for the admin cache-clear endpoint.
 
-**Phase 3 — Selective cache invalidation (NodeCache)**
-- Add `clearCacheByPrefix(prefix)` helper to `sharepoint-client.ts`
-- Replace `clearCache()` (flushAll) in each repository write method with targeted key deletion; entry writes should only evict `entries`/`entries-profile-*`/`sessions_FY*`, not groups/profiles/sessions/records — critical for check-in day performance
-- Stats refresh helpers already use `clearCacheKey()` (single-key eviction) as a stepping stone
-
-**Phase 4 — Per-key TTL tuning**
-- groups: 30 min, profiles/sessions/records: 10 min, regulars: 15 min, entries: 5 min (keep short — changes on every check-in)
+**Possible future optimisation — Phase 5**
+Scope the entries/planning cache to upcoming sessions only. Currently all ~5,000 entries are fetched and cached as one blob. A targeted query for sessions in the next 30 days (and their entries) would make check-in cold-cache refreshes far faster.
 
 ---
 
@@ -322,3 +317,7 @@ Track which user made each change, for accountability and audit purposes. Three 
 
 ## Media Gallery 
 1. **Delete** Currently no way of deleting images.
+
+## Recording No Shows
+Currently we delete no shows. Suggest we start recording these against volunteers so we know who's likely to be a repeat offender.
+

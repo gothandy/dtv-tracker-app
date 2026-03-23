@@ -5,7 +5,7 @@
  */
 
 import { SharePointEntry } from '../../types/sharepoint';
-import { sharePointClient } from '../sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY } from '../field-names';
 
 class EntriesRepository {
@@ -32,7 +32,7 @@ class EntriesRepository {
       this.listGuid,
       this.selectFields
     );
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.entries);
     return data as SharePointEntry[];
   }
 
@@ -117,22 +117,26 @@ class EntriesRepository {
   async updateCode(entryId: number, code: string): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, { Code: code });
     sharePointClient.clearCacheKey('entries');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 
   async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
     sharePointClient.clearCacheKey('entries');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 
   async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.clearCacheKey('entries');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
     return id;
   }
 
   async delete(entryId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, entryId);
     sharePointClient.clearCacheKey('entries');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 }
 

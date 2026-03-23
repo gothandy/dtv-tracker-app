@@ -1,5 +1,5 @@
 import express, { Request, Response, Router } from 'express';
-import { sharePointClient } from '../services/sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../services/sharepoint-client';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { clearCoverCache } from '../services/cover-cache';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
@@ -94,7 +94,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       }
     };
 
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.stats);
     res.json({ success: true, data } as ApiResponse<StatsResponse>);
   } catch (error: any) {
     console.error('Error fetching stats:', error);
@@ -183,7 +183,7 @@ router.get('/stats/history', async (req: Request, res: Response) => {
         };
       });
 
-    sharePointClient.cache.set(cacheKey, history);
+    sharePointClient.cache.set(cacheKey, history, CACHE_TTL.stats);
     res.json({ success: true, data: history } as ApiResponse<FYStatsResponse[]>);
   } catch (error: any) {
     console.error('Error fetching stats history:', error);

@@ -88,15 +88,14 @@ The `test/` directory contains verification scripts that hit the live SharePoint
 ---
 
 ## Cache Invalidation Is Global (NodeCache)
-**Priority**: Low | **Effort**: Medium
+**Resolved (2026-03-23)**
 
-Every write — including check-in — calls `clearCache()` → `flushAll()`, evicting all NodeCache keys simultaneously. During a busy field day, staff check in volunteers one after another; each write evicts groups, profiles, sessions, regulars, and records even though none of those changed. The next request hits a cold cache for everything, not just entries.
+Every write — including check-in — previously called `clearCache()` → `flushAll()`, evicting all NodeCache keys simultaneously. Now resolved:
 
-**Partial fix (2026-03-21)**: Stats refresh helpers use `clearCacheKey('profiles')` / `clearCacheKey('sessions')` (targeted single-key eviction) rather than `clearCache()`. All other writes still call `clearCache()`.
-
-**Structural caches resolved (2026-03-23)**: Taxonomy tree, column schema, and cover image bytes now live in separate in-process Maps outside NodeCache. These were the highest-impact victims of `clearCache()` — the taxonomy tree was being re-fetched from Graph API on almost every request. See Caching Architecture in CLAUDE.md.
-
-**Remaining fix**: Replace `clearCache()` with targeted key deletion per repository in NodeCache. Add `clearCacheByPrefix(prefix)` to `sharepoint-client.ts` and map each repository's write methods to only the keys they actually affect (e.g. entry writes clear `entries`, `entries-profile-{id}`, `sessions_FY*`; not groups/profiles/regulars/records).
+- **Structural caches** (taxonomy tree, column schema, cover image bytes) moved to separate in-process Maps outside NodeCache with 1-hour TTLs.
+- **Selective invalidation**: each repository write now only evicts its own key(s). Entry writes (check-in, hours) clear `entries` + `sessions_FY*` only — groups, profiles, sessions, records, and regulars are untouched.
+- **Per-entity TTLs** (`CACHE_TTL` constants in `sharepoint-client.ts`): groups 30 min, sessions/profiles/regulars 5 min, entries/records 1 min, stats 30 min, media 15 min.
+- `clearCache()` (flushAll) is kept and used only by the admin "Clear cache" endpoint (`POST /api/cache/clear`).
 
 ---
 

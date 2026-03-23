@@ -5,7 +5,7 @@
  */
 
 import { SharePointRegular } from '../../types/sharepoint';
-import { sharePointClient } from '../sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROFILE_LOOKUP, PROFILE_DISPLAY, GROUP_LOOKUP, GROUP_DISPLAY } from '../field-names';
 
 class RegularsRepository {
@@ -21,13 +21,13 @@ class RegularsRepository {
 
   async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('regulars');
     return id;
   }
 
   async delete(regularId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, regularId);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('regulars');
   }
 
   async getAll(): Promise<SharePointRegular[]> {
@@ -43,7 +43,7 @@ class RegularsRepository {
       this.listGuid,
       this.selectFields
     );
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.regulars);
     return data as SharePointRegular[];
   }
 }

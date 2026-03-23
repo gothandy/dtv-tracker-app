@@ -7,7 +7,7 @@
 
 import { SharePointRecord } from '../../types/sharepoint';
 import { safeParseLookupId } from '../data-layer';
-import { sharePointClient } from '../sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 
 class RecordsRepository {
   private get listGuid(): string {
@@ -42,7 +42,7 @@ class RecordsRepository {
       null,
       this.dateOnlyFields
     );
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.records);
     return data as SharePointRecord[];
   }
 
@@ -54,20 +54,20 @@ class RecordsRepository {
   async create(fields: { ProfileLookupId: number; Type: string; Status: string; Date: string }): Promise<number> {
     if (!this.available) throw new Error('Records list not configured');
     const id = await sharePointClient.createListItem(this.listGuid, fields, this.dateOnlyFields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('records');
     return id;
   }
 
   async update(itemId: number, fields: { Status?: string; Date?: string }): Promise<void> {
     if (!this.available) throw new Error('Records list not configured');
     await sharePointClient.updateListItem(this.listGuid, itemId, fields, this.dateOnlyFields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('records');
   }
 
   async delete(itemId: number): Promise<void> {
     if (!this.available) throw new Error('Records list not configured');
     await sharePointClient.deleteListItem(this.listGuid, itemId);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('records');
   }
 }
 

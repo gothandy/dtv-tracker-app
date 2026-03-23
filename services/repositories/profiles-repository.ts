@@ -5,7 +5,7 @@
  */
 
 import { SharePointProfile } from '../../types/sharepoint';
-import { sharePointClient } from '../sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROFILE_STATS } from '../field-names';
 
 class ProfilesRepository {
@@ -30,7 +30,7 @@ class ProfilesRepository {
       this.listGuid,
       selectFields
     );
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.profiles);
     return data as SharePointProfile[];
   }
 
@@ -47,18 +47,18 @@ class ProfilesRepository {
 
   async create(fields: { Title: string; Email?: string; MatchName?: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('profiles');
     return id;
   }
 
   async delete(profileId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, profileId);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('profiles');
   }
 
   async updateFields(profileId: number, fields: Partial<Pick<SharePointProfile, 'Title' | 'Email' | 'MatchName' | 'User' | 'IsGroup'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, profileId, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('profiles');
   }
 }
 

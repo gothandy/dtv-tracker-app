@@ -5,7 +5,7 @@
  */
 
 import { SharePointSession } from '../../types/session';
-import { sharePointClient } from '../sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS } from '../field-names';
 
 class SessionsRepository {
@@ -37,7 +37,7 @@ class SessionsRepository {
       null,  // TODO: Graph API orderby on this list returns 400 - sorting done in data layer instead
       this.dateOnlyFields
     );
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.sessions);
     return data as SharePointSession[];
   }
 
@@ -70,19 +70,21 @@ class SessionsRepository {
     });
 
     console.log(`[SessionsByFY] Filtered ${filteredData.length} sessions for ${fy} from ${allSessions.length} total`);
-    sharePointClient.cache.set(cacheKey, filteredData);
+    sharePointClient.cache.set(cacheKey, filteredData, CACHE_TTL.sessions);
     return filteredData;
   }
 
   async create(fields: { Title: string; Date: string; [key: string]: any }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields, this.dateOnlyFields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
     return id;
   }
 
   async updateFields(sessionId: number, fields: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields, this.dateOnlyFields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 
   // Updates only the Stats field — clears sessions cache only (not full flush).
@@ -90,11 +92,13 @@ class SessionsRepository {
   async updateStats(sessionId: number, stats: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, { [SESSION_STATS]: JSON.stringify(stats) });
     sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 
   async delete(sessionId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, sessionId);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 }
 

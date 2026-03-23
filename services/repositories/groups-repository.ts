@@ -5,7 +5,7 @@
  */
 
 import { SharePointGroup } from '../../types/group';
-import { sharePointClient } from '../sharepoint-client';
+import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 
 class GroupsRepository {
   private listGuid: string;
@@ -16,18 +16,18 @@ class GroupsRepository {
 
   async create(fields: { Title: string; Name?: string; Description?: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('groups');
     return id;
   }
 
   async updateFields(groupId: number, fields: Partial<Pick<SharePointGroup, 'Title' | 'Name' | 'Description' | 'EventbriteSeriesID'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, groupId, fields);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('groups');
   }
 
   async delete(groupId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, groupId);
-    sharePointClient.clearCache();
+    sharePointClient.clearCacheKey('groups');
   }
 
   async getAll(): Promise<SharePointGroup[]> {
@@ -43,7 +43,7 @@ class GroupsRepository {
       this.listGuid,
       'ID,Title,Name,Description,EventbriteSeriesID,Created,Modified'
     );
-    sharePointClient.cache.set(cacheKey, data);
+    sharePointClient.cache.set(cacheKey, data, CACHE_TTL.groups);
     return data as SharePointGroup[];
   }
 }

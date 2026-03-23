@@ -53,6 +53,19 @@ interface GraphResponse {
   '@odata.nextLink'?: string;
 }
 
+// Tier-informed per-entity TTLs (seconds).
+// Groups/config-like data stays hot a long time; entries expire fast for check-in accuracy.
+export const CACHE_TTL = {
+  groups:   1800,  // 30 min  — config tier: admin-only changes
+  sessions:  300,  //  5 min  — planning tier: session edits, Eventbrite sync
+  profiles:  300,  //  5 min  — planning tier
+  regulars:  300,  //  5 min  — planning tier
+  entries:    60,  //  1 min  — check-in tier: live updates on the day
+  records:    60,  //  1 min  — check-in tier: consent/badge data
+  stats:    1800,  // 30 min  — summaries tier: trend/reporting data
+  media:     900,  // 15 min  — tidy-up tier: post-event uploads
+} as const;
+
 export class SharePointClient {
   private siteUrl: string;
   private clientId: string;
@@ -73,9 +86,9 @@ export class SharePointClient {
     this.clientSecret = process.env.SHAREPOINT_CLIENT_SECRET!;
     this.tenantId = process.env.SHAREPOINT_TENANT_ID!;
 
-    // Data cache with 5 minute TTL (300 seconds)
+    // Data cache — stdTTL is the fallback; most keys set their own TTL via CACHE_TTL constants.
     this.cache = new NodeCache({
-      stdTTL: 300,           // Default TTL: 5 minutes
+      stdTTL: 300,           // Default fallback: 5 minutes
       checkperiod: 60,       // Check for expired keys every 60 seconds
       useClones: false       // Return references for better performance
     });
@@ -529,7 +542,7 @@ export class SharePointClient {
           counts.set(item.name as string, item.folder.childCount as number);
         }
       }
-      this.cache.set(cacheKey, counts);
+      this.cache.set(cacheKey, counts, CACHE_TTL.media);
       return counts;
     } catch (error: any) {
       if (error.response?.status === 404) return new Map();
@@ -657,6 +670,18 @@ export class SharePointClient {
       this.cache.del(key);
       console.log(`[Cache] Cleared: ${key}`);
     });
+  }
+
+  /**
+   * Clear all cached keys that start with the given prefix.
+   * Used for key families like 'sessions_FY*' where multiple FY-specific keys may exist.
+   */
+  clearCacheByPrefix(prefix: string): void {
+    const keys = this.cache.keys().filter(k => k.startsWith(prefix));
+    if (keys.length) {
+      this.cache.del(keys);
+      console.log(`[Cache] Cleared ${keys.length} key(s) with prefix: ${prefix}`);
+    }
   }
 
   /**

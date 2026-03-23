@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-03-02
+**Last Updated**: 2026-03-23
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
@@ -27,7 +27,7 @@ Feature-complete volunteer tracking application with:
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
 - Role-based authorization: Admin, Check In, Read Only, Self-Service, and Public ([middleware/require-admin.ts](middleware/require-admin.ts))
-- Server-side caching with 5-minute TTL across three independent caches (see Caching Architecture below)
+- Server-side caching with tier-informed per-entity TTLs and targeted per-repository invalidation (see Caching Architecture below)
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
 
@@ -179,23 +179,33 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 
 ### Caching Architecture
 
-Three independent caches with different TTLs suited to how often each type of data changes:
+Four independent caches with different TTLs and invalidation strategies:
 
-| Cache | Where | What | TTL | Busted by writes? |
+| Cache | Where | What | TTL | Invalidation |
 |---|---|---|---|---|
-| **NodeCache** (`sharePointClient.cache`) | `sharepoint-client.ts` | SharePoint list data: sessions, entries, profiles, groups, records, regulars, media counts | 5 min | Yes — all repository writes call `sharePointClient.clearCache()` |
-| **Column schema cache** (`sharePointClient.columnCache`) | `sharepoint-client.ts` | SharePoint column definitions (choice field values for Type/Status etc.) | 1 hour | No |
-| **Taxonomy tree cache** (`treeCache`) | `taxonomy-client.ts` | Term Store hierarchy (tag labels, IDs, parent/child structure) | 1 hour | No |
-| **Cover image cache** (`coverCache`) | `services/cover-cache.ts` | Resolved session cover image bytes (JPEG) — avoids repeated Graph API round-trips per session | 1 hour | No — busted explicitly when `coverMediaId` changes on a session (`PATCH /api/sessions/:group/:date`) |
+| **NodeCache** (`sharePointClient.cache`) | `sharepoint-client.ts` | SharePoint list data — see per-entity TTLs below | varies | Targeted per-repository write (not full flush) |
+| **Column schema cache** (`sharePointClient.columnCache`) | `sharepoint-client.ts` | SharePoint column definitions (choice field values for Type/Status etc.) | 1 hour | Manual admin clear only |
+| **Taxonomy tree cache** (`treeCache`) | `taxonomy-client.ts` | Term Store hierarchy (tag labels, IDs, parent/child structure) | 1 hour | Manual admin clear only |
+| **Cover image cache** (`coverCache`) | `services/cover-cache.ts` | Resolved session cover image bytes (JPEG) — avoids repeated Graph API round-trips per session | 1 hour | Explicit bust when `coverMediaId` changes on a session (`PATCH /api/sessions/:group/:date`) |
 
-The column and taxonomy caches are separated from NodeCache because data writes (`clearCache()`) would otherwise constantly invalidate them — previously causing repeated Graph API round-trips to re-fetch structural metadata that never changes during normal operation.
+**NodeCache per-entity TTLs** (defined as `CACHE_TTL` constants in `sharepoint-client.ts`, organised around operational use):
 
-**Admin cache clear** (`POST /api/cache/clear`, homepage refresh button) flushes all three caches explicitly via `sharePointClient.clearCache()`, `sharePointClient.clearColumnCache()`, and `taxonomyClient.clearTreeCache()`.
+| Entity | TTL | Rationale |
+|---|---|---|
+| `groups` | 30 min | Config-like — admin-only changes |
+| `sessions`, `profiles`, `regulars` | 5 min | Planning tier — Eventbrite sync, session edits |
+| `entries`, `records` | 1 min | Check-in tier — live writes on the day |
+| `stats_summary`, `stats_history` | 30 min | Summaries tier — trend/reporting data |
+| `media-counts-{groupKey}` | 15 min | Tidy-up tier — post-event uploads |
+
+**Targeted invalidation**: each repository write only evicts its own key(s). Entry writes (check-in, hours) also clear `sessions_FY*` keys (FY aggregates are computed from entries). Groups, profiles, sessions, records, and regulars are never evicted by entry writes — critical for check-in day performance with multiple concurrent users.
+
+**Admin cache clear** (`POST /api/cache/clear`, homepage refresh button) calls `sharePointClient.clearCache()` (flushAll on NodeCache), `sharePointClient.clearColumnCache()`, `taxonomyClient.clearTreeCache()`, and `clearCoverCache()` — a full flush of all four caches for pre-reporting or data-cleaning runs.
 
 ### Calculated Fields Over Stored Fields
 - **Always calculate derived values** (hours totals, counts) from source entries at query time rather than storing them.
 - The app is the source of truth for all derived data. No Power Automate flows update fields.
-- NodeCache (5-minute TTL) keeps this performant despite recalculating on each request.
+- NodeCache keeps this performant despite recalculating on each request.
 
 **Exception — Pre-computed Stats fields**: The Sessions SharePoint list has a `Stats` multi-line text field that stores pre-computed aggregate JSON. This is a deliberate performance optimisation, not a deviation from the principle — it avoids fetching ~5,000 entries on every sessions listing page load. Stats are kept fresh by:
 - A targeted `computeAndSaveSessionStats()` call after every entry write, record write, or media upload

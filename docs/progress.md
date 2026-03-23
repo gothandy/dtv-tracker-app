@@ -1,6 +1,6 @@
 # Development Progress
 
-## Session: 2026-03-23 (Performance — caching and asset delivery)
+## Session: 2026-03-23 (Performance — caching, targeted invalidation, asset delivery)
 
 ### Completed Tasks
 
@@ -31,6 +31,43 @@ Three structural/schema caches now live in separate in-process Maps outside Node
 `POST /api/cache/clear` (admin homepage refresh button) now flushes all four caches: NodeCache, column schema, taxonomy tree, and cover images.
 
 The `cover.jpg` proxy route also changed from `responseType: 'stream'` to `responseType: 'arraybuffer'` so the bytes can be buffered, cached, and sent without an intermediate pipe.
+
+#### NodeCache — targeted invalidation and per-entity TTLs ✓
+
+Replaced the global `clearCache()` (flushAll) pattern in all six repositories with targeted per-key eviction, and introduced tier-informed TTLs on every `cache.set()` call.
+
+**What changed:**
+
+- **`CACHE_TTL` constants** exported from `services/sharepoint-client.ts` — a single source of truth for all NodeCache TTLs, named by entity:
+
+  | Entity | TTL | Rationale |
+  |---|---|---|
+  | `groups` | 30 min | Admin-only changes — no reason to expire frequently |
+  | `sessions`, `profiles`, `regulars` | 5 min | Planning tier — Eventbrite sync and session edits happen in this window |
+  | `entries`, `records` | 1 min | Check-in tier — live updates during events; freshness matters |
+  | `stats_summary`, `stats_history` | 30 min | Summaries/reporting — trend data, stale for short periods is fine |
+  | `media-counts-{groupKey}` | 15 min | Tidy-up tier — photo uploads are post-event, not real-time |
+
+- **`clearCacheByPrefix(prefix)`** added to `SharePointClient` — deletes all NodeCache keys starting with the given prefix. Used to clear the `sessions_FY*` family (e.g. `sessions_FY2025`, `sessions_FY2026`) when entries or sessions change, since FY-filtered session results include aggregated entry data.
+
+- **Per-repository targeted invalidation:**
+
+  | Repository | Write methods | Keys cleared |
+  |---|---|---|
+  | `groups-repository.ts` | create, update, delete | `groups` |
+  | `sessions-repository.ts` | create, update, delete, updateStats | `sessions` + `sessions_FY*` |
+  | `profiles-repository.ts` | create, update, delete | `profiles` |
+  | `entries-repository.ts` | create, update, delete | `entries` + `sessions_FY*` |
+  | `records-repository.ts` | create, update, delete | `records` |
+  | `regulars-repository.ts` | create, delete | `regulars` |
+
+  Previously every write in all six repos called `clearCache()` → `flushAll()`. A check-in write now evicts only `entries` + `sessions_FY*` — groups, sessions, profiles, records, and regulars stay warm.
+
+- **`routes/stats.ts`** — stats cache set calls now pass `CACHE_TTL.stats` (30 min) instead of relying on the NodeCache `stdTTL` default.
+
+**Why entries clear `sessions_FY*`:** The `sessions_FY{year}` cache keys hold sessions filtered and annotated with FY-aggregated data derived from entries (hours, headcount). After a check-in or hours update these are stale. The base `sessions` key (the raw session list from SharePoint) is independent of entries and is not cleared by entry writes.
+
+**`clearCache()` (flushAll) is kept** — used only by the admin "Clear cache" endpoint (`POST /api/cache/clear`) which flushes all four caches. This remains the recommended action before reporting runs or after data-cleaning.
 
 #### Static asset browser caching ✓
 
