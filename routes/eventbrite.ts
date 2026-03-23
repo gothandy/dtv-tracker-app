@@ -215,8 +215,10 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
   }
   syncInProgress = true;
   try {
-    const data = await runSyncAttendees();
-    res.json({ success: true, data });
+    const attendees = await runSyncAttendees();
+    const sessionStatsResult = await runSessionStatsRefresh();
+    const profileStatsResult = await runProfileStatsRefresh();
+    res.json({ success: true, data: { attendees, sessionStats: sessionStatsResult, profileStats: profileStatsResult } });
   } catch (error: any) {
     console.error('Error syncing Eventbrite attendees:', error);
     res.status(500).json({
@@ -431,6 +433,11 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
     }
 
     console.log(`[QuickSync] ${liveSessions.length} sessions checked, ${added} entries added`);
+
+    if (added > 0) {
+      await Promise.all([runSessionStatsRefresh(), runProfileStatsRefresh()]);
+    }
+
     res.json({ success: true, data: { added, sessionsChecked: liveSessions.length } });
   } catch (error: any) {
     console.error('Error in quick sync:', error);

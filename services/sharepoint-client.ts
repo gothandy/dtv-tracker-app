@@ -62,6 +62,10 @@ export class SharePointClient {
   private tokenExpiry: number | undefined;
   private siteId: string | undefined;
   public cache: NodeCache;
+  // Column schema (choices) is structural metadata that must not be flushed by data writes.
+  // Keyed by listGuid; 1-hour TTL — column definitions never change during normal app operation.
+  private columnCache = new Map<string, { columns: any[]; fetchedAt: number }>();
+  private readonly COLUMN_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
   constructor() {
     this.siteUrl = process.env.SHAREPOINT_SITE_URL!;
@@ -434,20 +438,28 @@ export class SharePointClient {
   /**
    * Get choice values for a column in a SharePoint list.
    * Fetches all columns for the list (cached), then finds the named column.
+   * Uses a separate cache that is not flushed by data writes — column schema never
+   * changes during normal operation. Call clearColumnCache() for an explicit bust.
    */
   async getColumnChoices(listGuid: string, columnName: string): Promise<string[]> {
-    const cacheKey = `columns-${listGuid}`;
-    let columns = this.cache.get(cacheKey) as any[] | undefined;
+    const entry = this.columnCache.get(listGuid);
+    let columns: any[];
 
-    if (!columns) {
+    if (entry && Date.now() - entry.fetchedAt < this.COLUMN_CACHE_TTL_MS) {
+      columns = entry.columns;
+    } else {
       const siteId = await this.getSiteId();
       const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
       columns = data.value || [];
-      this.cache.set(cacheKey, columns);
+      this.columnCache.set(listGuid, { columns, fetchedAt: Date.now() });
     }
 
-    const column = (columns as any[]).find((c: any) => c.name === columnName || c.displayName === columnName);
+    const column = columns.find((c: any) => c.name === columnName || c.displayName === columnName);
     return column?.choice?.choices || [];
+  }
+
+  clearColumnCache(): void {
+    this.columnCache.clear();
   }
 
   /**

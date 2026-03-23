@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { sharePointClient } from '../services/sharepoint-client';
+import { taxonomyClient } from '../services/taxonomy-client';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { calculateCurrentFY, calculateFinancialYear, safeParseLookupId } from '../services/data-layer';
@@ -204,6 +205,8 @@ router.get('/health', (req: Request, res: Response) => {
 router.post('/cache/clear', (req: Request, res: Response) => {
   try {
     sharePointClient.clearCache();
+    sharePointClient.clearColumnCache();
+    taxonomyClient.clearTreeCache();
     res.json({ success: true, message: 'Cache cleared successfully' });
   } catch (error: any) {
     console.error('Error clearing cache:', error);

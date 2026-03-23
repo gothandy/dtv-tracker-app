@@ -27,7 +27,7 @@ Feature-complete volunteer tracking application with:
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
 - Role-based authorization: Admin, Check In, Read Only, Self-Service, and Public ([middleware/require-admin.ts](middleware/require-admin.ts))
-- Server-side caching with 5-minute TTL; all writes call `clearCache()` for immediate consistency
+- Server-side caching with 5-minute TTL across three independent caches (see Caching Architecture below)
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
 
@@ -177,10 +177,24 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Keep code simple and maintainable
 - Follow existing patterns in the codebase
 
+### Caching Architecture
+
+Three independent caches with different TTLs suited to how often each type of data changes:
+
+| Cache | Where | What | TTL | Busted by writes? |
+|---|---|---|---|---|
+| **NodeCache** (`sharePointClient.cache`) | `sharepoint-client.ts` | SharePoint list data: sessions, entries, profiles, groups, records, regulars, media counts | 5 min | Yes — all repository writes call `sharePointClient.clearCache()` |
+| **Column schema cache** (`sharePointClient.columnCache`) | `sharepoint-client.ts` | SharePoint column definitions (choice field values for Type/Status etc.) | 1 hour | No |
+| **Taxonomy tree cache** (`treeCache`) | `taxonomy-client.ts` | Term Store hierarchy (tag labels, IDs, parent/child structure) | 1 hour | No |
+
+The column and taxonomy caches are separated from NodeCache because data writes (`clearCache()`) would otherwise constantly invalidate them — previously causing repeated Graph API round-trips to re-fetch structural metadata that never changes during normal operation.
+
+**Admin cache clear** (`POST /api/cache/clear`, homepage refresh button) flushes all three caches explicitly via `sharePointClient.clearCache()`, `sharePointClient.clearColumnCache()`, and `taxonomyClient.clearTreeCache()`.
+
 ### Calculated Fields Over Stored Fields
 - **Always calculate derived values** (hours totals, counts) from source entries at query time rather than storing them.
 - The app is the source of truth for all derived data. No Power Automate flows update fields.
-- Cached data (5-minute TTL) keeps this performant despite recalculating on each request.
+- NodeCache (5-minute TTL) keeps this performant despite recalculating on each request.
 
 **Exception — Pre-computed Stats fields**: The Sessions SharePoint list has a `Stats` multi-line text field that stores pre-computed aggregate JSON. This is a deliberate performance optimisation, not a deviation from the principle — it avoids fetching ~5,000 entries on every sessions listing page load. Stats are kept fresh by:
 - A targeted `computeAndSaveSessionStats()` call after every entry write, record write, or media upload

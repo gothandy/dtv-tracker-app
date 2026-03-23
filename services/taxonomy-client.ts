@@ -8,6 +8,13 @@
 import axios from 'axios';
 import { SharePointClient, sharePointClient } from './sharepoint-client';
 
+// Term set trees must not be flushed by data writes (which call clearCache()).
+// This cache lives outside NodeCache entirely. 1-hour TTL is appropriate — term store
+// structure is schema, not data; it never changes during normal app operation.
+// Explicit cache clears (admin refresh) should call taxonomyClient.clearTreeCache().
+const TREE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const treeCache = new Map<string, { tree: any[]; fetchedAt: number }>();
+
 export class TaxonomyClient {
   private sp: SharePointClient;
   // Caches the hidden companion field name for each taxonomy column (never changes after creation)
@@ -15,6 +22,10 @@ export class TaxonomyClient {
 
   constructor(sp: SharePointClient) {
     this.sp = sp;
+  }
+
+  clearTreeCache(): void {
+    treeCache.clear();
   }
 
   /**
@@ -25,14 +36,14 @@ export class TaxonomyClient {
    * - Children must be fetched individually via /sets/{setId}/terms/{termId}/children
    *
    * We fetch root terms, then recursively fetch children for each term in parallel.
-   * The full tree is cached (5-min TTL) so the burst of API calls only happens once.
+   * The tree is cached for 1 hour in a module-level cache that is not flushed by data
+   * writes — term store structure never changes during normal app operation.
    */
   async getTermSetTree(termSetId: string): Promise<{ label: string; id: string; children?: any[] }[]> {
-    const cacheKey = `termset-${termSetId}`;
-    const cached = this.sp.cache.get(cacheKey);
-    if (cached) {
-      console.log(`[Cache] Hit: ${cacheKey}`);
-      return cached as any[];
+    const entry = treeCache.get(termSetId);
+    if (entry && Date.now() - entry.fetchedAt < TREE_CACHE_TTL_MS) {
+      console.log(`[Cache] Hit: termset-${termSetId}`);
+      return entry.tree;
     }
 
     const token = await this.sp.getAccessToken();
@@ -42,7 +53,7 @@ export class TaxonomyClient {
     console.log(`[TermSet] ${rootTerms.length} root terms, fetching full tree...`);
 
     const tree = await this.fetchTermChildren(termSetId, rootTerms, token);
-    this.sp.cache.set(cacheKey, tree);
+    treeCache.set(termSetId, { tree, fetchedAt: Date.now() });
     return tree;
   }
 
