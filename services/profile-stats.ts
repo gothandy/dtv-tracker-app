@@ -21,6 +21,7 @@ import { PROFILE_LOOKUP, SESSION_LOOKUP, PROFILE_STATS } from './field-names';
 export interface ProfileStatsRefreshResult {
   total: number;
   updated: number;
+  updatedIds: number[];
   errors: string[];
 }
 
@@ -138,6 +139,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
   const total = profilesRaw.length;
   let updated = 0;
+  const updatedIds: number[] = [];
   const errors: string[] = [];
 
   for (let i = 0; i < profilesRaw.length; i += 10) {
@@ -162,6 +164,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
         await profilesRepository.updateStats(spProfile.ID, newStats);
         updated++;
+        updatedIds.push(spProfile.ID);
       } catch (err: any) {
         const msg = `Profile ${spProfile.ID}: ${err.message}`;
         console.error(`[Stats] Error: ${msg}`);
@@ -175,5 +178,5 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
   const elapsed = Date.now() - start;
   console.log(`[Stats] Profile refresh complete: ${updated}/${total} updated, ${errors.length} errors, ${elapsed}ms`);
 
-  return { total, updated, errors };
+  return { total, updated, updatedIds, errors };
 }

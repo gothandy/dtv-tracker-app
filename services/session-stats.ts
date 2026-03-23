@@ -12,6 +12,7 @@ import { GROUP_LOOKUP, SESSION_STATS } from './field-names';
 export interface SessionStatsRefreshResult {
   total: number;
   updated: number;
+  updatedIds: number[];
   errors: string[];
 }
 
@@ -51,6 +52,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
 
   const total = sessionsRaw.length;
   let updated = 0;
+  const updatedIds: number[] = [];
   const errors: string[] = [];
 
   for (let i = 0; i < sessionsRaw.length; i += 10) {
@@ -98,6 +100,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
 
         await sessionsRepository.updateStats(spSession.ID, newStats);
         updated++;
+        updatedIds.push(spSession.ID);
       } catch (err: any) {
         const msg = `Session ${spSession.ID}: ${err.message}`;
         console.error(`[Stats] Error: ${msg}`);
@@ -111,5 +114,5 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
   const elapsed = Date.now() - start;
   console.log(`[Stats] Session refresh complete: ${updated}/${total} updated, ${errors.length} errors, ${elapsed}ms`);
 
-  return { total, updated, errors };
+  return { total, updated, updatedIds, errors };
 }

@@ -184,13 +184,15 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
     const sessionStatsResult = await runSessionStatsRefresh();
     const profileStatsResult = await runProfileStatsRefresh();
 
+    const sessionIdsStr = sessionStatsResult.updatedIds.length ? ` (${sessionStatsResult.updatedIds.join(', ')})` : '';
+    const profileIdsStr = profileStatsResult.updatedIds.length ? ` (${profileStatsResult.updatedIds.join(', ')})` : '';
     const parts = [
-      `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions`,
-      `${attendeeResult.sessionsProcessed} sessions, ${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
-      `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}`,
-      `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}`
+      `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions / ${attendeeResult.sessionsProcessed} sessions`,
+      `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
+      `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
+      `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`
     ];
-    const summary = parts.join(' / ');
+    const summary = parts.join('\n');
 
     console.log(`[Eventbrite Sync] ${summary}`);
     res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult } });
