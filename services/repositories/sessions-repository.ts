@@ -56,8 +56,10 @@ class SessionsRepository {
 
   /**
    * Resolve a session by group key + date using a long-TTL slug lookup cache.
-   * On cache hit: one targeted getById() Graph call (avoids loading the full sessions list).
-   * On cache miss: falls back to getAll() which repopulates all slug entries as a side-effect.
+   * On cache hit: one targeted getById() Graph call.
+   * On cache miss: one targeted OData query by exact Title — Title is always "${date} ${groupTitle}"
+   * and OData eq on text is case-insensitive, so '2026-03-15 sat' matches "2026-03-15 Sat".
+   * Returns null (→ 404) if not found — no getAll() fallback.
    */
   async getBySlug(groupKey: string, date: string): Promise<SharePointSession | null> {
     const slugKey = `session_slug_${groupKey.toLowerCase()}_${date}`;
@@ -67,16 +69,33 @@ class SessionsRepository {
       return await this.getById(cachedId);
     }
 
-    // Miss — load full list (which also repopulates all slug entries)
-    const all = await this.getAll();
-    return all.find(s => {
-      const gt = (s[GROUP_DISPLAY] || '').toLowerCase();
-      return gt === groupKey.toLowerCase() && s.Date === date;
-    }) ?? null;
+    // Miss — exact title lookup: one Graph call, returns ≤1 session
+    const filter = `fields/Title eq '${date} ${groupKey}'`;
+    const results = await sharePointClient.getListItems(
+      this.listGuid, this.selectFields, filter, null, this.dateOnlyFields
+    ) as SharePointSession[];
+
+    const session = results[0] ?? null;
+    if (session) {
+      sharePointClient.cache.set(slugKey, session.ID, SLUG_CACHE_TTL);
+    }
+    return session;
   }
 
   async getById(id: number): Promise<SharePointSession | null> {
-    return await sharePointClient.getListItem(this.listGuid, id, this.selectFields, this.dateOnlyFields) as SharePointSession | null;
+    const cacheKey = `session_item_${id}`;
+    const cached = sharePointClient.cache.get<SharePointSession>(cacheKey);
+    if (cached !== undefined) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached;
+    }
+    const item = await sharePointClient.getListItem(
+      this.listGuid, id, this.selectFields, this.dateOnlyFields
+    ) as SharePointSession | null;
+    if (item !== null) {
+      sharePointClient.cache.set(cacheKey, item, CACHE_TTL.sessions);
+    }
+    return item;
   }
 
   async getByFinancialYear(fy: string): Promise<SharePointSession[]> {
@@ -119,6 +138,7 @@ class SessionsRepository {
   async updateFields(sessionId: number, fields: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, fields, this.dateOnlyFields);
     sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheKey(`session_item_${sessionId}`);
     sharePointClient.clearCacheByPrefix('sessions_FY');
     sharePointClient.clearCacheByPrefix('session_slug_');
   }
@@ -135,6 +155,7 @@ class SessionsRepository {
   async delete(sessionId: number): Promise<void> {
     await sharePointClient.deleteListItem(this.listGuid, sessionId);
     sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheKey(`session_item_${sessionId}`);
     sharePointClient.clearCacheByPrefix('sessions_FY');
     sharePointClient.clearCacheByPrefix('session_slug_');
   }

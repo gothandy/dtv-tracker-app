@@ -197,11 +197,12 @@ Four independent caches with different TTLs and invalidation strategies:
 | `stats_summary`, `stats_history` | 30 min | Summaries tier — trend/reporting data |
 | `media-counts-{groupKey}` | 15 min | Tidy-up tier — post-event uploads |
 | `session_slug_{group}_{date}` | 1 hr | Lookup tier — group+date→ID translation; stable after creation |
+| `session_item_{id}` | 5 min | Item tier — individual session record; cleared by updateFields/delete, not updateStats |
 | `media_folder_{groupKey}/{date}` | 15 min | Detail tier — session gallery listing; busted after upload |
 
 **Targeted invalidation**: each repository write only evicts its own key(s). Entry writes (check-in, hours) also clear `sessions_FY*` keys (FY aggregates are computed from entries). Groups, profiles, sessions, records, and regulars are never evicted by entry writes — critical for check-in day performance with multiple concurrent users.
 
-**Session detail performance**: `GET /api/sessions/:group/:date` uses `sessionsRepository.getBySlug()` which hits the slug lookup cache (1hr TTL) to resolve session ID without loading the full sessions list. Badge data (`isMember`, `cardStatus`) is read from `profile.Stats` — the records list is not fetched for this endpoint. Gallery requests hit `media_folder_*` cache after first load. `computeAndSaveSessionStats()` after entry writes clears `session_slug_*` and `sessions_FY*` but not the profiles or groups caches.
+**Session detail performance**: `GET /api/sessions/:group/:date` has two paths. Public (unauthenticated): served entirely from the session record and its pre-computed Stats field — no entries or profiles fetch. `getBySlug()` on slug miss does a single targeted OData query (`fields/Title eq '${date} ${groupKey}'`) rather than loading all sessions; result cached in `session_item_{id}` (5min). Authenticated: live entries via `getBySessionIds()` + `profilesRepository.getAll()` (5min cache); `session_item_{id}` still serves the session record from memory. Gallery requests hit `media_folder_*` cache after first load. `computeAndSaveSessionStats()` after entry writes clears `sessions_FY*` but not `session_item_*` (stats-only writes don't affect session detail rendering).
 
 **Admin cache clear** (`POST /api/cache/clear`, homepage refresh button) calls `sharePointClient.clearCache()` (flushAll on NodeCache), `sharePointClient.clearColumnCache()`, `taxonomyClient.clearTreeCache()`, and `clearCoverCache()` — a full flush of all four caches for pre-reporting or data-cleaning runs.
 

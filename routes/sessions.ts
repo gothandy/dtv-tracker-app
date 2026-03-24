@@ -359,8 +359,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const dateParam = String(req.params.date);
 
     // Phase 1: resolve group + session
-    // getBySlug uses a 1h slug lookup cache (group+date→ID) so avoids loading the full sessions list
-    // on cache hits; falls back to getAll() on first access or after a session edit.
+    // getBySlug uses a 1h slug lookup cache; on miss does a single targeted OData query by Title.
     const [rawGroups, spSession] = await Promise.all([
       groupsRepository.getAll(),
       sessionsRepository.getBySlug(groupKey, dateParam)
@@ -379,7 +378,38 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const groupId = spGroup.ID;
     const group = convertGroup(spGroup);
+    const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
 
+    // Public (unauthenticated) path: serve entirely from the session record and pre-computed Stats.
+    // No entries or profiles fetch — everything shown publicly is already on the session.
+    if (!req.session.user) {
+      const statsJson = JSON.parse(spSession[SESSION_STATS] || '{}');
+      const data: SessionDetailResponse = {
+        id: spSession.ID,
+        displayName: spSession.Name || spSession.Title,
+        description: spSession[SESSION_NOTES],
+        date: spSession.Date,
+        groupId: groupId,
+        groupName: group.displayName,
+        registrations: statsJson.count ?? 0,
+        hours: statsJson.hours ?? 0,
+        newCount: statsJson.new || undefined,
+        childCount: statsJson.child || undefined,
+        regularCount: statsJson.regular || undefined,
+        eventbriteCount: statsJson.eventbrite || undefined,
+        financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
+        eventbriteEventId: spSession.EventbriteEventID,
+        groupEventbriteSeriesId: spGroup.EventbriteSeriesID || undefined,
+        metadata: metadata.length ? metadata : undefined,
+        coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
+        statsRaw: spSession[SESSION_STATS] || null,
+        entries: []
+      };
+      res.json({ success: true, data } as ApiResponse<SessionDetailResponse>);
+      return;
+    }
+
+    // Authenticated path: live entries + profile lookups
     // Phase 2: fetch only this session's entries (live, targeted Graph query) + cached lookups
     const [rawEntries, rawProfiles] = await Promise.all([
       entriesRepository.getBySessionIds([spSession.ID]),
@@ -418,16 +448,11 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const regularCount = sessionEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
     const eventbriteCount = sessionEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
 
-    const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
-
-    // Self-service users see only their own entry (not the full list) to protect other
-    // volunteers' personal data. Public (unauthenticated) users see no entries at all.
+    // Self-service users see only their own entry (not the full list) to protect other volunteers' data.
     const role = req.session.user?.role;
     const selfProfileId = req.session.user?.profileId;
     let visibleEntries: EntryResponse[];
-    if (!req.session.user) {
-      visibleEntries = [];
-    } else if (role === 'selfservice') {
+    if (role === 'selfservice') {
       const ownIds = req.session.user?.profileIds?.length ? req.session.user.profileIds : (selfProfileId !== undefined ? [selfProfileId] : []);
       visibleEntries = ownIds.length ? entryResponses.filter(e => e.profileId !== undefined && ownIds.includes(e.profileId)) : [];
     } else {
