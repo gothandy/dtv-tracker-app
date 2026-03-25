@@ -26,7 +26,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `/login.html` shows Google, Facebook, and Microsoft login options
 - [ ] Successful Microsoft login redirects back to `/` (or originally requested page via `returnTo`)
 - [ ] Click Logout — session cleared, redirected to Microsoft logout
-- [ ] API key auth: `POST /api/eventbrite/event-and-attendee-update` with valid `X-Api-Key` succeeds without session
+- [ ] API key auth: `POST /api/eventbrite/nightly-update` with valid `X-Api-Key` succeeds without session
 - [ ] Invalid/missing API key returns 401
 - [ ] API key only works for `/api/eventbrite/` paths — rejected on other endpoints
 - [ ] **Admin user** (in `ADMIN_USERS` env var): all edit/create/delete buttons visible, all API calls succeed
@@ -256,10 +256,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] If any duplicates flagged, sync summary includes "X duplicate warning(s) — check session entries"
 - [ ] Triggering sync while one is already running returns 409 "Sync already in progress" (second request rejected immediately)
 
-### H26. Eventbrite combined sync (scheduled)
-- [ ] `POST /api/eventbrite/event-and-attendee-update` with `X-Api-Key` header
-- [ ] Returns `{ summary: "..." }` suitable for email notification
-- [ ] Azure Logic App calls this daily
+### H26. Nightly update (scheduled)
+- [ ] `POST /api/eventbrite/nightly-update` with `X-Api-Key` header
+- [ ] Returns `{ summary: "..." }` suitable for email notification; includes cache warmup line
+- [ ] Azure Logic App calls `/api/eventbrite/nightly-update` daily at 05:30 UTC
 - [ ] Concurrent call (second request while first still running) returns 409 — prevents duplicate entries from Logic App retries
 
 ### H27. Clear cache
@@ -308,7 +308,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Files written to `Backups/` folder in Shared Documents on the Tracker site
 - [ ] Unchanged files are skipped (SHA-256 diff check) — re-running immediately results in 0 updated files
 - [ ] API key auth: `POST /api/backup/export-all` with valid `X-Api-Key` succeeds without session
-- [ ] Backup runs automatically as last step of nightly `POST /api/eventbrite/event-and-attendee-update` sync; result included in summary email
+- [ ] Backup runs automatically as last step of nightly `POST /api/eventbrite/nightly-update`; result included in summary email
 
 ---
 

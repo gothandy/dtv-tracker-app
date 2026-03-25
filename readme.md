@@ -129,12 +129,12 @@ All environment variables from `.env` must be configured in Azure App Service > 
 
 An **Azure Logic App** (Consumption plan) runs a daily scheduled sync:
 
-1. **Trigger**: Recurrence — daily at a configured time (e.g. 03:00 UTC)
-2. **Action**: HTTP POST to `/api/eventbrite/event-and-attendee-update`
+1. **Trigger**: Recurrence — daily at 05:30 UTC
+2. **Action**: HTTP POST to `/api/eventbrite/nightly-update`
    - Header: `X-Api-Key: <API_SYNC_KEY value>`
 3. **Optional**: Send email action with the `summary` field from the response
 
-The API key bypasses the normal Entra ID session auth for `/api/eventbrite/` paths only (handled in `middleware/require-auth.ts`).
+The API key bypasses the normal Entra ID session auth for `/api/eventbrite/` paths (handled in `middleware/require-auth.ts`).
 
 The sync:
 - Fetches live events from Eventbrite, creates sessions for any new events matching a group's `EventbriteSeriesID`
@@ -232,7 +232,7 @@ Response includes a human-readable `summary` field, e.g.:
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/eventbrite/event-and-attendee-update` | POST | Run full sync (sessions + attendees), returns summary |
+| `/api/eventbrite/nightly-update` | POST | Run nightly update (Eventbrite sync, stats refresh, backup, cache warmup), returns summary |
 | `/api/eventbrite/sync-sessions` | POST | Sync Eventbrite events → sessions |
 | `/api/eventbrite/sync-attendees` | POST | Sync Eventbrite attendees → profiles/entries |
 | `/api/eventbrite/unmatched-events` | GET | List Eventbrite events with no matching group |

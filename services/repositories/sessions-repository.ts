@@ -8,7 +8,6 @@ import { SharePointSession } from '../../types/session';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS } from '../field-names';
 
-const SLUG_CACHE_TTL = 3600; // 1 hour — group+date→ID mappings are stable
 
 class SessionsRepository {
   private listGuid: string;
@@ -49,7 +48,7 @@ class SessionsRepository {
     for (const s of sessions) {
       const groupTitle = (s[GROUP_DISPLAY] || '').toLowerCase();
       if (groupTitle && s.Date && s.ID) {
-        sharePointClient.cache.set(`session_slug_${groupTitle}_${s.Date}`, s.ID, SLUG_CACHE_TTL);
+        sharePointClient.cache.set(`session_slug_${groupTitle}_${s.Date}`, s.ID, CACHE_TTL.slug);
       }
     }
   }
@@ -77,7 +76,7 @@ class SessionsRepository {
 
     const session = results[0] ?? null;
     if (session) {
-      sharePointClient.cache.set(slugKey, session.ID, SLUG_CACHE_TTL);
+      sharePointClient.cache.set(slugKey, session.ID, CACHE_TTL.slug);
     }
     return session;
   }
@@ -123,7 +122,7 @@ class SessionsRepository {
     });
 
     console.log(`[SessionsByFY] Filtered ${filteredData.length} sessions for ${fy} from ${allSessions.length} total`);
-    sharePointClient.cache.set(cacheKey, filteredData, CACHE_TTL.sessions);
+    sharePointClient.cache.set(cacheKey, filteredData, CACHE_TTL.slug);
     return filteredData;
   }
 

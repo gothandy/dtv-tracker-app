@@ -132,15 +132,15 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
   - `getOrgEvents()` — fetches all live events from the organisation, used to create new sessions
   - `getAttendees()` — fetches attendees for a specific event, used to create profiles and entries
 - Sync endpoints ([routes/eventbrite.ts](routes/eventbrite.ts)):
-  - `POST /api/eventbrite/event-and-attendee-update` — combined sync (sessions + attendees), returns summary string
+  - `POST /api/eventbrite/nightly-update` — full nightly run: session sync, attendee sync, session/profile stats refresh, backup export, cache warmup; returns summary string for email notification
   - `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups by SeriesID, creates missing sessions; group-matched sessions are created with a blank `Name` (display title falls back to group name + date)
   - `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records; detects name clashes (same name + different email = different person) and tags the new entry `#Duplicate` for admin review
   - `GET /api/eventbrite/unmatched-events` — lists events with no matching group (for admin UI)
 - Admin page ([public/admin.html](public/admin.html)) provides manual sync buttons
-- Scheduled daily sync via Azure Logic App calling `event-and-attendee-update` with API key auth
+- Scheduled daily sync via Azure Logic App calling `POST /api/eventbrite/nightly-update` with API key auth
 
 ### Scheduled Sync
-- **Azure Logic App** (Consumption plan) calls `POST /api/eventbrite/event-and-attendee-update` daily
+- **Azure Logic App** (Consumption plan) calls `POST /api/eventbrite/nightly-update` daily (05:30 UTC)
 - Auth: `X-Api-Key` header checked in `middleware/require-auth.ts` for `/api/eventbrite/` paths
 - Env vars: `API_SYNC_KEY` (shared secret), `EVENTBRITE_ORGANIZATION_ID`, `EVENTBRITE_API_KEY`
 - Response includes `summary` field for email notifications
@@ -191,14 +191,9 @@ Four independent caches with different TTLs and invalidation strategies:
 
 | Entity | TTL | Rationale |
 |---|---|---|
-| `groups` | 3 hr | Config-like — admin-only changes; very stable |
-| `sessions`, `profiles`, `regulars` | 5 min | Planning tier — Eventbrite sync, session edits |
-| `entries`, `records` | 1 min | Check-in tier — live writes on the day |
-| `stats_summary`, `stats_history` | 30 min | Summaries tier — trend/reporting data |
-| `media-counts-{groupKey}` | 15 min | Tidy-up tier — post-event uploads |
-| `session_slug_{group}_{date}` | 1 hr | Lookup tier — group+date→ID translation; stable after creation |
-| `session_item_{id}` | 5 min | Item tier — individual session record; cleared by updateFields/delete, not updateStats |
-| `media_folder_{groupKey}/{date}` | 15 min | Detail tier — session gallery listing; busted after upload |
+| `groups`, `sessions`, `profiles`, `regulars` | 6 hr | Warmed by nightly task at 05:30 UTC; covers morning + check-in window; targeted invalidation fires on every write |
+| `entries` | 5 min | Check-in tier — live writes on the day |
+| `records`, `stats_summary`, `stats_history`, `media-counts-{groupKey}`, `session_slug_{group}_{date}`, `session_item_{id}`, `media_folder_{groupKey}/{date}` | 24 hr | Targeted invalidation handles writes; TTL is safety net for direct SharePoint edits only |
 
 **Targeted invalidation**: each repository write only evicts its own key(s). Entry writes (check-in, hours) also clear `sessions_FY*` keys (FY aggregates are computed from entries). Groups, profiles, sessions, records, and regulars are never evicted by entry writes — critical for check-in day performance with multiple concurrent users.
 

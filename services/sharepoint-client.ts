@@ -54,16 +54,19 @@ interface GraphResponse {
 }
 
 // Tier-informed per-entity TTLs (seconds).
-// Groups/config-like data stays hot a long time; entries expire fast for check-in accuracy.
+// Warmed caches (groups/sessions/profiles/regulars) stay hot for 6hr — nightly task at 05:30 covers morning + check-in window.
+// Everything else is 24hr; targeted invalidation fires on every write so TTL is just a safety net for direct SharePoint edits.
+// Only entries stay short — live check-in accuracy requires it.
 export const CACHE_TTL = {
-  groups:  10800,  //  3 hr   — config tier: admin-only changes
-  sessions:  300,  //  5 min  — planning tier: session edits, Eventbrite sync
-  profiles:  300,  //  5 min  — planning tier
-  regulars:  300,  //  5 min  — planning tier
-  entries:    60,  //  1 min  — check-in tier: live updates on the day
-  records:    60,  //  1 min  — check-in tier: consent/badge data
-  stats:    1800,  // 30 min  — summaries tier: trend/reporting data
-  media:     900,  // 15 min  — tidy-up tier: post-event uploads
+  groups:   21600,  //  6 hr  — warmed nightly; invalidated on every write
+  sessions: 21600,  //  6 hr  — warmed nightly; invalidated on every write
+  profiles: 21600,  //  6 hr  — warmed nightly; invalidated on every write
+  regulars: 21600,  //  6 hr  — warmed nightly; invalidated on every write
+  entries:    300,  //  5 min — check-in tier: live updates on the day
+  records:  86400,  // 24 hr  — invalidated on write; rarely changes between sessions
+  stats:    86400,  // 24 hr  — recomputed after every entry/session write anyway
+  media:    86400,  // 24 hr  — gallery rarely changes mid-day
+  slug:     86400,  // 24 hr  — group+date→ID mappings; cleared on session create/update/delete
 } as const;
 
 export class SharePointClient {

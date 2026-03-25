@@ -172,7 +172,18 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, duplicateWarnings };
 }
 
-router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: Response) => {
+async function runCacheWarmup(): Promise<string[]> {
+  const warmed: string[] = [];
+  await Promise.all([
+    groupsRepository.getAll().then(() => warmed.push('groups')),
+    sessionsRepository.getAll().then(() => warmed.push('sessions')),
+    profilesRepository.getAll().then(() => warmed.push('profiles')),
+    regularsRepository.getAll().then(() => warmed.push('regulars')),
+  ]);
+  return warmed;
+}
+
+async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
   if (syncInProgress) {
     console.warn('[Eventbrite Sync] Rejected concurrent request — sync already in progress');
     res.status(409).json({ success: false, error: 'Sync already in progress' });
@@ -186,6 +197,14 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
     const profileStatsResult = await runProfileStatsRefresh();
     const backupResult = await runBackupExport();
 
+    let warmupKeys: string[] = [];
+    try {
+      warmupKeys = await runCacheWarmup();
+      console.log(`[Nightly Update] Cache warmed: ${warmupKeys.join(', ')}`);
+    } catch (warmupError: any) {
+      console.warn('[Nightly Update] Cache warmup failed (non-fatal):', warmupError.message);
+    }
+
     const sessionIdsStr = sessionStatsResult.updatedIds.length ? ` (${sessionStatsResult.updatedIds.join(', ')})` : '';
     const profileIdsStr = profileStatsResult.updatedIds.length ? ` (${profileStatsResult.updatedIds.join(', ')})` : '';
     const parts = [
@@ -193,22 +212,25 @@ router.post('/eventbrite/event-and-attendee-update', async (req: Request, res: R
       `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
       `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
-      backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes'
+      backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes',
+      warmupKeys.length ? `Cache warmed: ${warmupKeys.join(', ')}` : 'Cache warmup: skipped'
     ];
     const summary = parts.join('\n');
 
-    console.log(`[Eventbrite Sync] ${summary}`);
-    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult, backup: backupResult } });
+    console.log(`[Nightly Update] ${summary}`);
+    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult, backup: backupResult, warmup: { keys: warmupKeys } } });
   } catch (error: any) {
-    console.error('Error running event and attendee update:', error);
+    console.error('Error running nightly update:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to run event and attendee update'
+      error: error.message || 'Failed to run nightly update'
     });
   } finally {
     syncInProgress = false;
   }
-});
+}
+
+router.post('/eventbrite/nightly-update', handleNightlyUpdate);
 
 router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) => {
   if (syncInProgress) {

@@ -194,14 +194,11 @@ Key files: [app.js](../app.js) (session config ~lines 38–48), [routes/auth/goo
 **Sync Logging**
 The Eventbrite sync endpoints return structured results but there's no persistent log. Azure Logic App run history provides some visibility, but a SharePoint "Logs" list would allow viewing sync history from within the app.
 - SharePoint Logs list with fields: Title (timestamp), Summary (text), Source (Manual/Scheduled)
-- Write to Logs list at the end of `event-and-attendee-update` endpoint
+- Write to Logs list at the end of `nightly-update` endpoint
 - Display on admin page with last sync timestamp
 
 **Nightly Backup — Azure Logic App scheduling**
 Backup now runs as the last step of the nightly Eventbrite sync and is included in the email summary. Remaining: schedule the existing Logic App to also trigger `POST /api/backup/export-all` directly (or rely on it running via the sync chain). Configure SharePoint document library version retention limit in library settings.
-
-**Nightly task endpoint naming**
-`POST /api/eventbrite/event-and-attendee-update` now does: session sync, attendee sync, session stats refresh, profile stats refresh, and backup export — the name no longer reflects its scope. Consider renaming to `POST /api/nightly/run` with a redirect or alias so the existing Azure Logic App URL keeps working.
 
 **Media Metadata Backup**
 Add `Backups/media.json` to the nightly backup — file name, folder path (`groupKey/date`), `mimeType`, `isPublic`, and `title` (caption) per item. The photos themselves don't need backing up; these custom column values are what could be lost if the SharePoint list behind the drive was corrupted. Use the Graph Drive delta endpoint (`GET /drives/{driveId}/root/delta?$expand=listItem(...)`) to fetch all items in one paginated traversal — needs a new paginated method on `sharepoint-client.ts`. Include same diff check as other backup files.
@@ -237,6 +234,17 @@ Review all list pages (groups, sessions, volunteers, group detail, profile detai
 - Card layouts — consistent use of meta items, green numbers, descriptions
 - Empty states when a filter returns no results
 - Default filter selection across pages
+
+---
+
+## Groups Listing Performance
+*Touches: `groups.html`, `routes/groups.ts`, `services/repositories/groups-repository.ts`, `routes/sessions.ts`, SharePoint Groups list schema*
+
+**Investigate slow load on groups listing page**
+The groups page currently makes two parallel API calls on cold cache: `GET /api/groups` (groups + regulars) and `GET /api/sessions` (all sessions + groups). Sessions is likely the bottleneck — it returns all sessions across all groups so the client can compute per-group session counts and hours totals. Profile each call to confirm which is slow and why.
+
+**Potential fix — pre-computed Stats field on Groups list**
+Similar to the `Stats` field on Sessions, add a `Stats` JSON field to the Groups SharePoint list storing pre-computed aggregates (session count, total hours, last session date, etc.). This would let `GET /api/groups` return everything needed to render the groups listing without fetching sessions at all. Stats kept fresh by updating the group's Stats field after any session write that affects it (create, edit, delete, stats refresh). The FY filter would require either storing per-FY breakdowns in the Stats JSON (like Sessions does), or falling back to the current approach for non-default filters.
 
 ---
 
