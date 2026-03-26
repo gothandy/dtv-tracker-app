@@ -65,7 +65,7 @@ export const CACHE_TTL = {
   entries:    300,  //  5 min — check-in tier: live updates on the day
   records:  86400,  // 24 hr  — invalidated on write; rarely changes between sessions
   stats:    86400,  // 24 hr  — recomputed after every entry/session write anyway
-  media:    86400,  // 24 hr  — gallery rarely changes mid-day
+  media:     3600,  //  1 hr  — thumbnail URLs have ~24h token validity; shorter TTL recovers from missed invalidation
   slug:     86400,  // 24 hr  — group+date→ID mappings; cleared on session create/update/delete
 } as const;
 
@@ -372,30 +372,36 @@ export class SharePointClient {
    * Update fields on a single SharePoint list item via Microsoft Graph PATCH
    */
   async updateListItem(listGuid: string, itemId: number, fields: Record<string, any>, dateOnlyFields: string[] = []): Promise<void> {
-    try {
-      const token = await this.getAccessToken();
-      const siteId = await this.getSiteId();
-      const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items/${itemId}/fields`;
+    // Retry once on 429 (SharePoint throttling) after the Retry-After delay (default 30s)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const token = await this.getAccessToken();
+        const siteId = await this.getSiteId();
+        const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listGuid}/items/${itemId}/fields`;
 
-      await axios.patch(url, applyDateFields(fields, dateOnlyFields), {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        await axios.patch(url, applyDateFields(fields, dateOnlyFields), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return;
+      } catch (error: any) {
+        const status = error.response?.status;
+        const spError = error.response?.data?.error?.message;
+        console.error(`Error updating list item ${itemId} in ${listGuid} (attempt ${attempt}):`, error.response?.data || error.message);
+
+        if (status === 429 && attempt === 1) {
+          const retryAfter = parseInt(error.response?.headers?.['retry-after'] || '30', 10);
+          console.warn(`[SharePoint] Throttled — retrying after ${retryAfter}s`);
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+          continue;
         }
-      });
-    } catch (error: any) {
-      const status = error.response?.status;
-      const spError = error.response?.data?.error?.message;
-      console.error(`Error updating list item ${itemId} in ${listGuid}:`, error.response?.data || error.message);
-
-      if (status === 404) {
-        throw new Error('SharePoint list item not found');
-      } else if (status === 403) {
-        throw new Error('Access denied - check API permissions');
-      } else if (status === 401) {
-        throw new Error('Unauthorized - token may be invalid or expired');
+        if (status === 404) throw new Error('SharePoint list item not found');
+        if (status === 403) throw new Error('Access denied - check API permissions');
+        if (status === 401) throw new Error('Unauthorized - token may be invalid or expired');
+        throw new Error(spError || error.message);
       }
-      throw new Error(spError || error.message);
     }
   }
 

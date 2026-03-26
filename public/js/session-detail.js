@@ -145,7 +145,7 @@ async function saveSessionEdit() {
         });
         if (!res.ok) {
             const data = await res.json();
-            throw new Error(data.error || 'Save failed');
+            throw new Error(data.message || data.error || 'Save failed');
         }
         const result = await res.json();
         closeEditModal();

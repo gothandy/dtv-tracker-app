@@ -960,7 +960,7 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       return;
     }
 
-    const groupKey = group?.lookupKeyName || '';
+    const groupKey = (group?.lookupKeyName || '').toLowerCase();
     const date = spSession.Date;
     const folderPath = `${groupKey}/${date}`;
     let uploaded = 0;

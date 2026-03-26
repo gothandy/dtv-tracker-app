@@ -340,8 +340,10 @@ Track which user made each change, for accountability and audit purposes. Three 
 
 3. **Delegated permissions / On-Behalf-Of flow** *(hardest, most "correct")*  — Use each user's own Entra ID access token for Graph API calls instead of the app's service account. Changes appear in SharePoint's native audit logs under the user's name. Requires: storing/refreshing per-user tokens in sessions, granting each user SharePoint site permissions, and significant rework of the auth and Graph client layers. Worth it for compliance requirements; otherwise Option 2 gives most of the benefit at a fraction of the cost.
 
-## Media Gallery 
-1. **Delete** Currently no way of deleting images.
+## Media Gallery
+1. **Delete** — No way to delete images. Delete button needed in the lightbox/gallery (admin/check-in only).
+2. **Edit in all locations** — Currently limited edit controls (title, IsPublic toggle) are only available in some views. Should be accessible wherever the gallery appears (session detail, profile detail, entry detail, homepage session cards).
+3. **Consistent gallery across locations** — Gallery UI (lightbox, photo strip, controls) should be consistent wherever photos appear. Currently the session detail gallery is more fully-featured than the homepage card strip.
 
 ## Recording No Shows
 Currently we delete no shows. Suggest we start recording these against volunteers so we know who's likely to be a repeat offender.
