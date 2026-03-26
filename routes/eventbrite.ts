@@ -12,6 +12,7 @@ import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../se
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runBackupExport } from '../services/backup-export';
+import { sharePointClient } from '../services/sharepoint-client';
 
 const router: Router = express.Router();
 
@@ -172,15 +173,19 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, duplicateWarnings };
 }
 
-async function runCacheWarmup(): Promise<string[]> {
-  const warmed: string[] = [];
+const WARMUP_KEYS = ['groups', 'sessions', 'profiles', 'regulars'] as const;
+
+function snapshotCacheState(): Record<string, boolean> {
+  return Object.fromEntries(WARMUP_KEYS.map(k => [k, sharePointClient.isCached(k)]));
+}
+
+async function runCacheWarmup(): Promise<void> {
   await Promise.all([
-    groupsRepository.getAll().then(() => warmed.push('groups')),
-    sessionsRepository.getAll().then(() => warmed.push('sessions')),
-    profilesRepository.getAll().then(() => warmed.push('profiles')),
-    regularsRepository.getAll().then(() => warmed.push('regulars')),
+    groupsRepository.getAll(),
+    sessionsRepository.getAll(),
+    profilesRepository.getAll(),
+    regularsRepository.getAll(),
   ]);
-  return warmed;
 }
 
 async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
@@ -190,6 +195,7 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     return;
   }
   syncInProgress = true;
+  const cacheBeforeSync = snapshotCacheState();
   try {
     const sessionResult = await runSyncSessions();
     const attendeeResult = await runSyncAttendees();
@@ -197,14 +203,17 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     const profileStatsResult = await runProfileStatsRefresh();
     const backupResult = await runBackupExport();
 
-    let warmupKeys: string[] = [];
+    const cacheBeforeWarmup = snapshotCacheState();
     try {
-      warmupKeys = await runCacheWarmup();
-      console.log(`[Nightly Update] Cache warmed: ${warmupKeys.join(', ')}`);
+      await runCacheWarmup();
     } catch (warmupError: any) {
       console.warn('[Nightly Update] Cache warmup failed (non-fatal):', warmupError.message);
     }
 
+    const cacheStateLine = [
+      `before sync: ${WARMUP_KEYS.map(k => `${k} ${cacheBeforeSync[k] ? 'warm' : 'cold'}`).join(', ')}`,
+      `before warmup: ${WARMUP_KEYS.map(k => `${k} ${cacheBeforeWarmup[k] ? 'warm' : 'cold'}`).join(', ')}`
+    ].join(' / ');
     const sessionIdsStr = sessionStatsResult.updatedIds.length ? ` (${sessionStatsResult.updatedIds.join(', ')})` : '';
     const profileIdsStr = profileStatsResult.updatedIds.length ? ` (${profileStatsResult.updatedIds.join(', ')})` : '';
     const parts = [
@@ -213,12 +222,12 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
       `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
       backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes',
-      warmupKeys.length ? `Cache warmed: ${warmupKeys.join(', ')}` : 'Cache warmup: skipped'
+      `Cache at start: ${cacheStateLine}`
     ];
-    const summary = parts.join('\n');
+    const summary = parts.join('<br>\n');
 
     console.log(`[Nightly Update] ${summary}`);
-    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult, backup: backupResult, warmup: { keys: warmupKeys } } });
+    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, sessionStats: sessionStatsResult, profileStats: profileStatsResult, backup: backupResult, cache: { beforeSync: cacheBeforeSync, beforeWarmup: cacheBeforeWarmup } } });
   } catch (error: any) {
     console.error('Error running nightly update:', error);
     res.status(500).json({

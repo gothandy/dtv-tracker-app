@@ -700,6 +700,10 @@ export class SharePointClient {
     }
   }
 
+  isCached(key: string): boolean {
+    return this.cache.has(key);
+  }
+
   /**
    * Clear all cached data
    */
