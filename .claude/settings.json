@@ -5,7 +5,9 @@
       "WebFetch(domain:docs.workato.com)",
       "WebFetch(domain:groups.google.com)",
       "Bash(npm run:*)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(mv public.html home-public.html)",
+      "Bash(mv home.html home-before-first.html)"
     ],
     "defaultMode": "plan",
     "additionalDirectories": [

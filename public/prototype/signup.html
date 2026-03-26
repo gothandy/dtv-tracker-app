@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DTV Tracker — Sign Up</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #fff; }
+  .dtv-header { background: #1a1a1a; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  .dtv-header-link { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .dtv-logo { width: 36px; height: 36px; border-radius: 50%; background: #4CAF50; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #1a1a1a; }
+  .dtv-header h1 { font-size: 16px; font-weight: 700; color: #fff; font-family: Georgia, serif; }
+  .dtv-header p { font-size: 10px; color: #888; }
+  .dtv-accent { height: 3px; background: #4CAF50; }
+  .dtv-footer { background: #1a1a1a; padding: 16px; text-align: center; }
+  .dtv-footer p { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .dtv-footer a { font-size: 11px; color: #4CAF50; text-decoration: none; margin: 0 8px; }
+  #root { max-width: 680px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="dtv-header">
+  <a href="index.html" class="dtv-header-link">
+    <div class="dtv-logo">DTV</div>
+    <div>
+      <h1>DTV Tracker</h1>
+      <p>tracker.dtv.org.uk</p>
+    </div>
+  </a>
+</div>
+<div class="dtv-accent"></div>
+
+<div id="root"></div>
+
+<div class="dtv-accent"></div>
+<div class="dtv-footer">
+  <p style="font-size: 13px; font-weight: 700; color: #fff; font-family: Georgia, serif;">Dean Trail Volunteers</p>
+  <p>Building Trails. Building Community.</p>
+  <div style="margin-top: 8px;">
+    <a href="https://deantrailvolunteers.org.uk">Website</a>
+    <a href="https://instagram.com/deantrailvolunteers">Instagram</a>
+    <a href="https://facebook.com/deantrailvolunteers">Facebook</a>
+  </div>
+  <p style="font-size: 10px; color: #444; margin-top: 8px;">tracker.dtv.org.uk</p>
+</div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+  const { useState, useMemo, useRef, useEffect, useCallback } = React;
+
+  // ── COMPONENT START ── signup.jsx ────────────────────────────────────────────
+
+  const SESSION = {
+  name: "DH trail rework",
+  group: "Wed crew",
+  dateLabel: "Wed 26 Mar",
+  time: "9:30am",
+  spots: 4,
+  groupColor: "#3B6D11",
+  groupBg: "#EAF3DE",
+  groupText: "#27500A",
+  };
+
+  const STEPS = ["Authorise", "Consent", "Confirmed"];
+
+  function StepIndicator({ current }) {
+  const idx = STEPS.indexOf(current);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "0 20px" }}>
+      {STEPS.map((s, i) => {
+        const isDone = i < idx;
+        const isActive = i === idx;
+        return (
+          <div key={s} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 60 }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 500,
+                background: isDone || isActive ? "#3B6D11" : "#e8e7e3",
+                color: isDone || isActive ? "#fff" : "#a0a09a",
+                transition: "all 0.2s",
+              }}>
+                {isDone ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : i + 1}
+              </div>
+              <div style={{
+                fontSize: 10, marginTop: 4,
+                color: isDone || isActive ? "#3B6D11" : "#a0a09a",
+                fontWeight: isActive ? 500 : 400,
+              }}>{s}</div>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div style={{
+                flex: 1, height: 1.5, borderRadius: 1,
+                background: isDone ? "#3B6D11" : "#e8e7e3",
+                margin: "0 4px", marginBottom: 18,
+                transition: "background 0.2s",
+              }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+  }
+
+  function SignUpFunnel() {
+  const [step, setStep] = useState("Authorise");
+  const [isReturning, setIsReturning] = useState(false);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [consentData, setConsentData] = useState(false);
+  const [consentPhotos, setConsentPhotos] = useState(null);
+  const [newsletter, setNewsletter] = useState(false);
+
+  const handleOAuth = (provider) => {
+    setEmail(provider === "google" ? "you@gmail.com" : "you@facebook.com");
+    const oauthName = provider === "google" ? "Jane Smith" : "Jane Smith";
+    if (oauthName) setName(oauthName);
+    setTimeout(() => {
+      setStep(isReturning ? "Confirmed" : "Consent");
+    }, 300);
+  };
+
+  const handleChangeAccount = () => {
+    setEmail("");
+    setName("");
+    setConsentData(false);
+    setConsentPhotos(null);
+    setStep("Authorise");
+  };
+
+  const canConfirm = name.trim().length > 1 && consentData && consentPhotos !== null;
+
+  return (
+    <div style={{
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      maxWidth: 480, margin: "0 auto", minHeight: "100vh",
+      display: "flex", flexDirection: "column",
+    }}>
+
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "14px 16px", borderBottom: "0.5px solid #e8e7e3",
+      }}>
+        <button
+          onClick={() => {
+            if (step === "Consent") handleChangeAccount();
+            else window.history?.back?.();
+          }}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 18, color: "#73726c", padding: "0 4px", fontFamily: "inherit",
+          }}
+        >&#8249;</button>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>Sign up</div>
+      </div>
+
+      <div style={{
+        padding: "14px 20px", borderBottom: "0.5px solid #e8e7e3",
+        display: "flex", alignItems: "center", gap: 12,
+      }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 10,
+          background: SESSION.groupBg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 500, color: SESSION.groupText,
+        }}>{SESSION.group.split(" ")[0]}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 500 }}>{SESSION.name}</div>
+          <div style={{ fontSize: 12, color: "#73726c" }}>
+            {SESSION.group} · {SESSION.dateLabel}, {SESSION.time}
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: "#9a7b1a", fontWeight: 500 }}>{SESSION.spots} spots</div>
+      </div>
+
+      {step !== "Confirmed" && (
+        <div style={{ padding: "16px 0 8px" }}>
+          <StepIndicator current={step} />
+        </div>
+      )}
+
+      <div style={{ flex: 1, padding: "20px" }}>
+
+        {step === "Authorise" && (
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 6 }}>Sign in to continue</div>
+            <div style={{ fontSize: 13, color: "#73726c", lineHeight: 1.5, marginBottom: 24 }}>
+              We'll use your email to send a confirmation and any session updates.
+            </div>
+
+            <button onClick={() => handleOAuth("google")} style={{
+              width: "100%", padding: "12px 16px", borderRadius: 10,
+              border: "0.5px solid #d5d4cf", background: "#fff",
+              cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              fontSize: 14, fontWeight: 500, color: "#333", marginBottom: 10,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+
+            <button onClick={() => handleOAuth("facebook")} style={{
+              width: "100%", padding: "12px 16px", borderRadius: 10,
+              border: "0.5px solid #d5d4cf", background: "#fff",
+              cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              fontSize: 14, fontWeight: 500, color: "#333",
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
+              </svg>
+              Continue with Facebook
+            </button>
+
+            <div style={{ marginTop: 24, padding: "12px", background: "#f5f4f0", borderRadius: 8, fontSize: 11, color: "#a0a09a" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={isReturning} onChange={e => setIsReturning(e.target.checked)} />
+                <span>Simulate returning user (skip to confirmed)</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {step === "Consent" && (
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 6 }}>Almost there</div>
+            <div style={{ fontSize: 13, color: "#73726c", lineHeight: 1.5, marginBottom: 20 }}>
+              Confirm your details and permissions to reserve your spot.
+            </div>
+
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "11px 14px", borderRadius: 10,
+              border: "0.5px solid #e8e7e3", background: "#f5f4f0",
+              marginBottom: 4,
+            }}>
+              <span style={{ fontSize: 13, color: "#73726c" }}>{email}</span>
+              <button
+                onClick={handleChangeAccount}
+                style={{
+                  fontSize: 11, color: "#185FA5", background: "none",
+                  border: "none", cursor: "pointer", fontFamily: "inherit",
+                }}
+              >Not you?</button>
+            </div>
+            <div style={{ fontSize: 11, color: "#a0a09a", marginBottom: 16 }}>
+              Your confirmation will be sent to this address.
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 500, color: "#73726c", display: "block", marginBottom: 6 }}>
+                Your name
+              </label>
+              <input
+                type="text" value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="First and last name"
+                autoFocus
+                style={{
+                  width: "100%", padding: "11px 14px", borderRadius: 10,
+                  border: "0.5px solid #d5d4cf", fontSize: 14,
+                  fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+              <label style={{
+                display: "flex", gap: 10, cursor: "pointer",
+                padding: "14px", borderRadius: 10,
+                border: consentData ? "1.5px solid #3B6D11" : "0.5px solid #d5d4cf",
+                background: consentData ? "#EAF3DE" : "transparent",
+                transition: "all 0.15s",
+              }}>
+                <input
+                  type="checkbox" checked={consentData}
+                  onChange={e => setConsentData(e.target.checked)}
+                  style={{ marginTop: 2, accentColor: "#3B6D11" }}
+                />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: consentData ? "#27500A" : "inherit" }}>
+                    I consent to my data being stored
+                  </div>
+                  <div style={{ fontSize: 11, color: consentData ? "#3B6D11" : "#a0a09a", marginTop: 3, lineHeight: 1.5 }}>
+                    We store your name and email to manage bookings and send session updates. <a href="#" style={{ color: "#185FA5" }}>Privacy policy</a>
+                  </div>
+                </div>
+              </label>
+
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>
+                  Can we include you in session photos?
+                </div>
+                <div style={{ fontSize: 11, color: "#a0a09a", lineHeight: 1.5, marginBottom: 10 }}>
+                  We take photos during sessions for social media and the website. You can change this anytime.
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <label
+                    onClick={() => setConsentPhotos(true)}
+                    style={{
+                      flex: 1, padding: "10px 14px", borderRadius: 10, cursor: "pointer",
+                      border: consentPhotos === true ? "1.5px solid #3B6D11" : "0.5px solid #d5d4cf",
+                      background: consentPhotos === true ? "#EAF3DE" : "transparent",
+                      display: "flex", alignItems: "center", gap: 8,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{
+                      width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                      border: consentPhotos === true ? "5px solid #3B6D11" : "1.5px solid #b0afa8",
+                      background: "#fff", boxSizing: "border-box",
+                      transition: "all 0.15s",
+                    }} />
+                    <span style={{ fontSize: 13, fontWeight: consentPhotos === true ? 500 : 400, color: consentPhotos === true ? "#27500A" : "inherit" }}>
+                      Yes please
+                    </span>
+                  </label>
+                  <label
+                    onClick={() => setConsentPhotos(false)}
+                    style={{
+                      flex: 1, padding: "10px 14px", borderRadius: 10, cursor: "pointer",
+                      border: consentPhotos === false ? "1.5px solid #5F5E5A" : "0.5px solid #d5d4cf",
+                      background: consentPhotos === false ? "#F1EFE8" : "transparent",
+                      display: "flex", alignItems: "center", gap: 8,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{
+                      width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                      border: consentPhotos === false ? "5px solid #5F5E5A" : "1.5px solid #b0afa8",
+                      background: "#fff", boxSizing: "border-box",
+                      transition: "all 0.15s",
+                    }} />
+                    <span style={{ fontSize: 13, fontWeight: consentPhotos === false ? 500 : 400, color: consentPhotos === false ? "#444441" : "inherit" }}>
+                      No thanks
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => canConfirm && setStep("Confirmed")}
+              disabled={!canConfirm}
+              style={{
+                width: "100%", padding: "13px", borderRadius: 10,
+                border: "none", fontSize: 15, fontWeight: 500,
+                fontFamily: "inherit",
+                cursor: canConfirm ? "pointer" : "default",
+                background: canConfirm ? "#3B6D11" : "#d5d4cf",
+                color: canConfirm ? "#fff" : "#a0a09a",
+                transition: "all 0.2s",
+              }}
+            >Confirm my spot</button>
+          </div>
+        )}
+
+        {step === "Confirmed" && (
+          <div>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: "#EAF3DE", margin: "0 auto 14px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="#3B6D11" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 500, marginBottom: 4 }}>You're in!</div>
+              <div style={{ fontSize: 13, color: "#73726c", lineHeight: 1.5 }}>
+                Your spot for <span style={{ fontWeight: 500 }}>{SESSION.name}</span> on {SESSION.dateLabel} at {SESSION.time} is confirmed.
+              </div>
+            </div>
+
+            <div style={{
+              padding: "14px 16px", borderRadius: 12,
+              border: `1.5px solid ${SESSION.groupColor}`, marginBottom: 20,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 500 }}>{SESSION.name}</div>
+                  <div style={{ fontSize: 12, color: "#73726c" }}>{SESSION.group} · {SESSION.dateLabel}, {SESSION.time}</div>
+                </div>
+                <span style={{
+                  fontSize: 10, padding: "3px 10px", borderRadius: 10, fontWeight: 500,
+                  color: SESSION.groupText, background: SESSION.groupBg,
+                }}>Booked</span>
+              </div>
+              <div style={{ fontSize: 12, color: "#73726c", lineHeight: 1.5 }}>
+                Confirmation email sent to <span style={{ fontWeight: 500 }}>{email || "your inbox"}</span>. Check spam if it doesn't arrive shortly.
+              </div>
+            </div>
+
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#a0a09a", marginBottom: 8 }}>While you're here</div>
+
+            <label style={{
+              display: "flex", gap: 10, cursor: "pointer",
+              padding: "12px 14px", borderRadius: 10,
+              border: newsletter ? "1.5px solid #185FA5" : "0.5px solid #d5d4cf",
+              background: newsletter ? "#E6F1FB" : "transparent",
+              transition: "all 0.15s", marginBottom: 10,
+            }}>
+              <input
+                type="checkbox" checked={newsletter}
+                onChange={e => setNewsletter(e.target.checked)}
+                style={{ marginTop: 2, accentColor: "#185FA5" }}
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: newsletter ? "#0C447C" : "inherit" }}>
+                  Sign me up to the newsletter
+                </div>
+                <div style={{ fontSize: 11, color: newsletter ? "#185FA5" : "#a0a09a", marginTop: 2 }}>
+                  Monthly updates, session highlights, trail news.
+                </div>
+              </div>
+            </label>
+
+            <div style={{
+              padding: "14px 16px", borderRadius: 10,
+              border: "0.5px solid #d5d4cf", marginBottom: 20,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>Follow us</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <a href="https://instagram.com/deantrailvolunteers" style={{
+                  flex: 1, padding: "8px", borderRadius: 8, border: "0.5px solid #d5d4cf",
+                  textAlign: "center", fontSize: 12, color: "#73726c", textDecoration: "none",
+                }}>Instagram</a>
+                <a href="https://facebook.com/deantrailvolunteers" style={{
+                  flex: 1, padding: "8px", borderRadius: 8, border: "0.5px solid #d5d4cf",
+                  textAlign: "center", fontSize: 12, color: "#73726c", textDecoration: "none",
+                }}>Facebook</a>
+              </div>
+            </div>
+
+            <button onClick={() => window.history?.back?.()} style={{
+              width: "100%", padding: "13px", borderRadius: 10,
+              border: "0.5px solid #d5d4cf", fontSize: 14, fontWeight: 500,
+              fontFamily: "inherit", cursor: "pointer",
+              background: "transparent", color: "#73726c",
+            }}>Browse more sessions</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+  }
+
+  // ── COMPONENT END ────────────────────────────────────────────────────────────
+
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    React.createElement(SignUpFunnel)
+  );
+</script>
+</body>
+</html>

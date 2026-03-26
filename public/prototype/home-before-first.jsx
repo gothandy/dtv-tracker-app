@@ -1,0 +1,313 @@
+import { useState, useMemo } from "react";
+
+const USER = {
+  name: "Jane",
+  hoursLogged: 9.5,
+  hoursTarget: 15,
+  newsletterSignedUp: false,
+  followsSocials: false,
+};
+
+const UPCOMING = {
+  name: "DH trail rework",
+  group: "Wed crew",
+  dateLabel: "Wed 26 Mar",
+  time: "9:30am",
+  lead: "Mike R.",
+  desc: "Reshaping the berm sequence on the DH trail. Winter rain washed out the second berm lip and the drainage channel is blocked with debris. We need to rebuild the lip, clear the drainage, and cut back overhanging branches on the top section.",
+  plan: "9:30 meet at top car park. Walk up together. Split into two teams — berm and drainage. Break at 11:30. Aim to finish by 1pm.",
+  groupColor: "#3B6D11",
+  groupBg: "#EAF3DE",
+  groupText: "#27500A",
+  prepLink: "#",
+};
+
+const ALT_SESSIONS = [
+  { id: 3, name: "Jump line build", dateLabel: "Wed 2 Apr", time: "9:30am", spots: 10 },
+  { id: 8, name: "Skills area signage", dateLabel: "Wed 9 Apr", time: "9:30am", spots: 6 },
+];
+
+const PHOTOS = [
+  { id: 1, bg: "linear-gradient(135deg, #C0DD97, #639922)", label: "Last week's berm", ratio: "4/3" },
+  { id: 2, bg: "linear-gradient(135deg, #9FE1CB, #1D9E75)", label: "Drainage done", ratio: "1/1" },
+  { id: 3, bg: "linear-gradient(135deg, #85B7EB, #378ADD)", label: "The crew, Feb", ratio: "4/3" },
+  { id: 4, bg: "linear-gradient(135deg, #97C459, #3B6D11)", label: "Before and after", ratio: "3/4" },
+  { id: 5, bg: "linear-gradient(135deg, #C0DD97, #97C459)", label: "Rock armour", ratio: "4/3" },
+];
+
+const GET_INVOLVED = [
+  { id: 1, title: "Invite a friend", desc: "Know someone who'd enjoy this? Share your session link.", color: "#185FA5", bg: "#E6F1FB", text: "#0C447C", action: "Share link" },
+  { id: 2, title: "Pedalabikeaway discount", desc: "As a volunteer, get 10% off bike hire and servicing.", color: "#3B6D11", bg: "#EAF3DE", text: "#27500A", action: "Find out more" },
+  { id: 3, title: "Summer BBQ", desc: "As a volunteer you're invited to the end of season BBQ. Bring the family.", color: "#854F0B", bg: "#FAEEDA", text: "#633806", action: "Save the date" },
+  { id: 4, title: "Forest Deli coffee", desc: "Free coffee on dig days. Show your volunteer badge at the counter.", color: "#0F6E56", bg: "#E1F5EE", text: "#085041", action: "Nice" },
+  { id: 5, title: "Social rides", desc: "Monthly group rides just for volunteers. All abilities welcome.", color: "#534AB7", bg: "#EEEDFE", text: "#3C3489", action: "See dates" },
+  { id: 6, title: "Follow us", desc: "See what the crews have been up to between sessions.", color: "#5F5E5A", bg: "#F1EFE8", text: "#444441", action: "Instagram" },
+];
+
+function pickCTA(user) {
+  if (!user.newsletterSignedUp) return { type: "newsletter" };
+  if (!user.followsSocials) return { type: "socials" };
+  return null;
+}
+
+export default function LoggedInHome() {
+  const [showRearrange, setShowRearrange] = useState(false);
+  const [textExpanded, setTextExpanded] = useState(false);
+  const [newsletter, setNewsletter] = useState(USER.newsletterSignedUp);
+
+  const cta = useMemo(() => pickCTA({ ...USER, newsletterSignedUp: newsletter }), [newsletter]);
+
+  return (
+    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 680, margin: "0 auto" }}>
+
+      {/* HEADER */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "12px 16px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8, background: "#3B6D11",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 14, fontWeight: 500, color: "#fff",
+          }}>DT</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>Hey {USER.name}</div>
+            <div style={{ fontSize: 11, color: "#a0a09a" }}>tracker.dtv.org.uk</div>
+          </div>
+        </div>
+        <button style={{
+          fontSize: 12, padding: "6px 14px", borderRadius: 8,
+          border: "0.5px solid #d5d4cf", background: "transparent",
+          color: "#73726c", cursor: "pointer", fontFamily: "inherit",
+        }}>Share</button>
+      </div>
+
+      {/* ─── PHOTO STRIP ─── */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{
+          display: "flex", gap: 3, overflowX: "auto", paddingBottom: 4,
+          scrollbarWidth: "none", WebkitOverflowScrolling: "touch",
+        }}>
+          {PHOTOS.map(photo => {
+            const height = 200;
+            const ratioMap = { "4/3": 4/3, "1/1": 1, "3/4": 3/4 };
+            const width = Math.round(height * (ratioMap[photo.ratio] || 1));
+            return (
+              <div key={photo.id} style={{
+                width, height, flexShrink: 0, background: photo.bg,
+                position: "relative", overflow: "hidden",
+              }}>
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+                  padding: "16px 8px 6px",
+                }}>
+                  <span style={{ fontSize: 10, color: "#fff" }}>{photo.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── SESSION CARD ─── */}
+      <div style={{ margin: "0 16px", padding: "16px", borderRadius: 12, border: `2px solid ${UPCOMING.groupColor}` }}>
+
+        {/* Top row: info left, leader photo right */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: UPCOMING.groupText, marginBottom: 3 }}>Your next session</div>
+            <div style={{ fontSize: 17, fontWeight: 500, marginBottom: 2 }}>{UPCOMING.name}</div>
+            <div style={{ fontSize: 13, color: "#73726c", marginBottom: 2 }}>{UPCOMING.dateLabel}, {UPCOMING.time}</div>
+            <span style={{
+              fontSize: 10, padding: "2px 8px", borderRadius: 8, fontWeight: 500,
+              color: UPCOMING.groupText, background: UPCOMING.groupBg,
+              display: "inline-block", marginTop: 4,
+            }}>{UPCOMING.group}</span>
+          </div>
+          {/* Leader passport photo */}
+          <div style={{ flexShrink: 0, textAlign: "center" }}>
+            <div style={{
+              width: 56, height: 64, borderRadius: 6, background: UPCOMING.groupBg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18, fontWeight: 500, color: UPCOMING.groupText,
+              overflow: "hidden",
+            }}>{UPCOMING.lead.split(" ").map(n => n[0]).join("")}</div>
+            <div style={{ fontSize: 10, color: "#a0a09a", marginTop: 3 }}>{UPCOMING.lead}</div>
+            <div style={{ fontSize: 9, color: "#c8c7c3" }}>Session lead</div>
+          </div>
+        </div>
+
+        {/* Text block — truncated */}
+        <div style={{ overflow: "hidden", position: "relative", maxHeight: textExpanded ? "none" : 65, marginBottom: 4 }}>
+          {UPCOMING.plan && (
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "#a0a09a", marginBottom: 2 }}>Plan for the day</div>
+              <div style={{ fontSize: 13, color: "#73726c", lineHeight: 1.5 }}>{UPCOMING.plan}</div>
+            </div>
+          )}
+          <div style={{ fontSize: 13, color: "#73726c", lineHeight: 1.5 }}>{UPCOMING.desc}</div>
+          {!textExpanded && (
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 24, background: "linear-gradient(transparent, white)", pointerEvents: "none" }} />
+          )}
+        </div>
+        {!textExpanded && (
+          <button onClick={() => setTextExpanded(true)} style={{
+            fontSize: 12, color: "#185FA5", background: "none", border: "none",
+            cursor: "pointer", fontFamily: "inherit", padding: "2px 0 0",
+          }}>more</button>
+        )}
+
+        {/* Action buttons row */}
+        <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+          <a href={UPCOMING.prepLink} style={{
+            flex: 1, padding: "9px 0", borderRadius: 8,
+            border: "0.5px solid #d5d4cf", textDecoration: "none",
+            fontSize: 12, color: "#185FA5", textAlign: "center",
+            fontFamily: "inherit",
+          }}>What to bring</a>
+          <button onClick={() => setShowRearrange(!showRearrange)} style={{
+            flex: 1, padding: "9px 0", borderRadius: 8,
+            border: "0.5px solid #d5d4cf", background: "transparent",
+            fontSize: 12, color: "#73726c", cursor: "pointer",
+            fontFamily: "inherit",
+          }}>{showRearrange ? "Keep this date" : "Rearrange"}</button>
+        </div>
+
+        {/* Rearrange options */}
+        {showRearrange && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: "#a0a09a", marginBottom: 6 }}>
+              Move to a different {UPCOMING.group} session:
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {ALT_SESSIONS.map(s => (
+                <button key={s.id} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "9px 12px", borderRadius: 8,
+                  border: "0.5px solid #d5d4cf", background: "transparent",
+                  cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500 }}>{s.name}</div>
+                    <div style={{ fontSize: 11, color: "#73726c" }}>{s.dateLabel}, {s.time}</div>
+                  </div>
+                  <span style={{ fontSize: 11, color: "#9a7b1a", fontWeight: 500 }}>{s.spots} spots</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ─── GET INVOLVED CTAs ─── */}
+      <div style={{ margin: "16px 0 0", paddingLeft: 16 }}>
+        <div
+          style={{
+            display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, paddingRight: 16,
+            scrollbarWidth: "none", WebkitOverflowScrolling: "touch",
+            scrollSnapType: "x mandatory",
+          }}
+        >
+          {GET_INVOLVED.map((item, i) => (
+            <div key={item.id} style={{
+              width: "calc(45% - 4px)", minWidth: "calc(45% - 4px)", flexShrink: 0,
+              padding: "14px 14px", borderRadius: 12,
+              border: "0.5px solid #d5d4cf", cursor: "pointer",
+              display: "flex", flexDirection: "column", justifyContent: "space-between",
+              scrollSnapAlign: "start",
+            }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>{item.title}</div>
+                <div style={{ fontSize: 11, color: "#73726c", lineHeight: 1.5, marginBottom: 10 }}>{item.desc}</div>
+              </div>
+              <div style={{
+                fontSize: 11, fontWeight: 500, color: item.text,
+                padding: "6px 10px", borderRadius: 8, background: item.bg,
+                textAlign: "center",
+              }}>{item.action}</div>
+            </div>
+          ))}
+        </div>
+        {/* Dots */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 5, marginTop: 8 }}>
+          {GET_INVOLVED.map((_, i) => (
+            <div key={i} style={{
+              width: 5, height: 5, borderRadius: "50%",
+              background: i === 0 ? "#73726c" : "#d5d4cf",
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* ─── SINGLE CTA SLOT ─── */}
+      {cta && (
+        <div style={{ margin: "16px 16px 0" }}>
+
+          {cta.type === "newsletter" && (
+            <label style={{
+              display: "flex", gap: 10, cursor: "pointer",
+              padding: "16px 18px", borderRadius: 12,
+              border: newsletter ? "1.5px solid #185FA5" : "0.5px solid #d5d4cf",
+              background: newsletter ? "#E6F1FB" : "transparent",
+              transition: "all 0.15s",
+            }}>
+              <input
+                type="checkbox" checked={newsletter}
+                onChange={e => setNewsletter(e.target.checked)}
+                style={{ marginTop: 2, accentColor: "#185FA5" }}
+              />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: newsletter ? "#0C447C" : "inherit" }}>Get the newsletter</div>
+                <div style={{ fontSize: 12, color: newsletter ? "#185FA5" : "#a0a09a", marginTop: 2, lineHeight: 1.5 }}>
+                  Monthly updates, session highlights, trail news. No spam.
+                </div>
+              </div>
+            </label>
+          )}
+
+          {cta.type === "socials" && (
+            <div style={{ padding: "16px 18px", borderRadius: 12, border: "0.5px solid #d5d4cf" }}>
+              <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Follow along</div>
+              <div style={{ fontSize: 12, color: "#73726c", marginBottom: 10 }}>See what the crews have been up to between sessions.</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <a href="#" style={{ flex: 1, padding: "8px", borderRadius: 8, border: "0.5px solid #d5d4cf", textAlign: "center", fontSize: 12, color: "#73726c", textDecoration: "none" }}>Instagram</a>
+                <a href="#" style={{ flex: 1, padding: "8px", borderRadius: 8, border: "0.5px solid #d5d4cf", textAlign: "center", fontSize: 12, color: "#73726c", textDecoration: "none" }}>Facebook</a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── CONTACT ─── */}
+      <div style={{
+        margin: "20px 16px 0", padding: "16px 20px", borderRadius: 12,
+        border: "0.5px solid #d5d4cf", textAlign: "center",
+      }}>
+        <div style={{ fontSize: 13, color: "#73726c", lineHeight: 1.5 }}>
+          Looking for something more flexible, adhoc with a bigger group or perhaps a bigger role?
+        </div>
+        <a href="mailto:admin@deantrailvolunteers.org" style={{
+          fontSize: 14, fontWeight: 500, color: "#185FA5",
+          marginTop: 6, display: "inline-block", textDecoration: "none",
+        }}>admin@deantrailvolunteers.org</a>
+      </div>
+
+      {/* FOOTER */}
+      <div style={{
+        marginTop: 20, padding: "16px", textAlign: "center",
+        borderTop: "0.5px solid #d5d4cf",
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Dean Trail Volunteers</div>
+        <div style={{ fontSize: 11, color: "#a0a09a", lineHeight: 1.6 }}>Forest of Dean, Gloucestershire</div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 10 }}>
+          <a href="https://instagram.com/deantrailvolunteers" style={{ fontSize: 11, color: "#73726c", textDecoration: "none" }}>Instagram</a>
+          <a href="https://facebook.com/deantrailvolunteers" style={{ fontSize: 11, color: "#73726c", textDecoration: "none" }}>Facebook</a>
+          <a href="mailto:admin@deantrailvolunteers.org" style={{ fontSize: 11, color: "#73726c", textDecoration: "none" }}>Email</a>
+        </div>
+        <div style={{ fontSize: 10, color: "#c8c7c3", marginTop: 10 }}>tracker.dtv.org.uk</div>
+      </div>
+    </div>
+  );
+}
