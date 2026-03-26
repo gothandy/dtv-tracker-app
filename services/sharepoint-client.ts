@@ -223,7 +223,7 @@ export class SharePointClient {
       } else if (status === 401) {
         throw new Error('Unauthorized - token may be invalid or expired');
       }
-      throw error;
+      throw new Error(graphMessage || error.message);
     }
   }
 
@@ -305,11 +305,12 @@ export class SharePointClient {
     orderBy: string | null = null,
     dateOnlyFields: string[] = []
   ): Promise<any[]> {
+    let endpoint = '';
     try {
       const siteId = await this.getSiteId();
 
       // Graph API endpoint: /sites/{site-id}/lists/{list-id}/items
-      let endpoint = `sites/${siteId}/lists/${listGuid}/items`;
+      endpoint = `sites/${siteId}/lists/${listGuid}/items`;
 
       // Build query parameters
       const params: string[] = [];
@@ -363,7 +364,7 @@ export class SharePointClient {
       console.log(`[Fetch Complete] Retrieved ${allItems.length} items across ${pageCount} page(s) for list ${listGuid}`);
       return allItems;
     } catch (error: any) {
-      console.error(`Error fetching list items (${listGuid}):`, error.message);
+      console.error(`Error fetching list items (${listGuid}) endpoint="${endpoint}":`, error.message);
       throw error;
     }
   }
