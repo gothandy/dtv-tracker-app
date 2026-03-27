@@ -31,6 +31,13 @@ When an admin/check-in user loads the homepage, silently check Eventbrite for ne
 
 ---
 
+## Auth: Google & Facebook Login
+*Touches: `routes/auth/index.ts`, `routes/auth/google.ts`, `routes/auth/facebook.ts`, `login.html`*
+
+Google and Facebook buttons are currently hidden on the login page pending further testing of magic link as the sole personal login method. Facebook has a confirmed OAuth issue on Android (redirect URI blocked); root cause not fully resolved. If magic link proves sufficient, remove both OAuth strategies, route files, and the `passport-facebook`/`passport-google-oauth20` packages.
+
+---
+
 ## Sessions Listing: Search & Filter Enhancements
 *Touches: `sessions.html`, `sessions.js`, `session-cards.js`, `tags.ts`*
 

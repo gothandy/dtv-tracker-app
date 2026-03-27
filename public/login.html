@@ -110,16 +110,16 @@
                        placeholder="your@email.com" autocomplete="email">
                 <button id="magicSendBtn" class="btn-magic-send" onclick="sendMagicLink()">Send login link</button>
                 <div id="magicStatus" class="magic-status"></div>
-                <div class="divider-or" id="magicDivider">or continue with</div>
+                <div class="divider-or" id="magicDivider" style="display:none">or continue with</div>
             </div>
 
-            <!-- Google + Facebook side by side -->
-            <div class="social-btns" id="socialBtns">
+            <!-- Google + Facebook side by side (hidden — kept for future testing) -->
+            <div class="social-btns" id="socialBtns" style="display:none">
                 <a id="googleBtn" href="/auth/google/login" class="btn-signin">
                     <img src="/svg/google.svg" width="18" height="18" alt="">
                     Google
                 </a>
-                <a id="facebookBtn" href="/auth/facebook/login" class="btn-signin" target="_blank" rel="noopener noreferrer">
+                <a id="facebookBtn" href="/auth/facebook/login" class="btn-signin">
                     <img src="/svg/facebook.svg" width="18" height="18" alt="">
                     Facebook
                 </a>
