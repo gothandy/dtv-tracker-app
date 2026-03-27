@@ -85,6 +85,21 @@ ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
 
 # Session secret (change in production)
 SESSION_SECRET=your_session_secret_here
+
+# Google OAuth (self-service volunteer login)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# Facebook OAuth (self-service volunteer login)
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+
+# Magic link email login (optional — shows email link option on login page when set)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your_smtp_username
+SMTP_PASS=your_smtp_password
+SMTP_FROM=DTV Tracker <noreply@dtv.org.uk>
 ```
 
 Never commit the `.env` file to version control (already in `.gitignore`). The list GUIDs are the same for everyone — they identify the SharePoint lists.

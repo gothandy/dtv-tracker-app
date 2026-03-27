@@ -1,5 +1,37 @@
 # Development Progress
 
+## Session: 2026-03-27 (Auth refactor — Passport.js + magic link + simplified Facebook flow)
+
+### Completed Tasks
+
+#### Passport.js — replace DIY Google/Facebook auth ✓
+
+Replaced the hand-rolled `services/facebook-auth.ts` and `services/google-auth.ts` with `passport`, `passport-facebook`, and `passport-google-oauth20`. Both deleted; `routes/auth/index.ts` now configures strategies and calls `passport.initialize()`. Route handlers in `facebook.ts` and `google.ts` are simpler — they delegate all token exchange and profile fetching to Passport.
+
+Facebook strategy uses `authorizationURL: 'https://m.facebook.com/v19.0/dialog/oauth'` to preserve the Android intent-filter workaround. Passport now handles CSRF state internally (resolves the long-standing CSRF regression from the 2026-03-17 refactor).
+
+#### Facebook login — simplified to direct navigation ✓
+
+Removed the CCT + BroadcastChannel + `/auth/me` polling + `pendingFacebookAuth` localStorage + `visibilitychange` listener complexity from `login.html`. The Facebook flow is now identical to Google: click button → navigate to OAuth → callback sets session → redirect to destination. No multi-context completion detection needed.
+
+The `fbcomplete=1` redirect was also removed from the Facebook callback — it now redirects directly to `dest`, same as Google.
+
+#### Magic link email login ✓
+
+New auth option below Google/Facebook on the login page. User enters their email → 15-minute signed link sent via SMTP → click → logged in. Email matched against `Profile.Email` via existing `resolvePersonalSession()`.
+
+New files:
+- `services/magic-auth.ts` — `MagicLoginStrategy` instance + nodemailer SMTP transport
+- `routes/auth/magic.ts` — `POST /auth/magic/send` + `GET /auth/magic/callback`
+
+Magic link button is hidden when `SMTP_HOST` is not configured (reported by `GET /auth/providers`). New env vars: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`.
+
+#### WordPress OAuth (todo.md) ✓
+
+Added item to `docs/todo.md` — future integration making the tracker the "My DTV" section of the DTV website, with WordPress credentials used for login via `passport-oauth2` + WP OAuth Server plugin.
+
+---
+
 ## Session: 2026-03-23 (Backup export improvements)
 
 ### Completed Tasks

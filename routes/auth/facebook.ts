@@ -1,68 +1,49 @@
-import express, { Request, Response, Router } from 'express';
-import { randomBytes } from 'crypto';
+import express, { Request, Response, Router, NextFunction } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
-import { getFacebookAuthUrl, getFacebookRedirectUri, exchangeFacebookCode } from '../../services/facebook-auth';
+import passport from 'passport';
 import { resolvePersonalSession } from '../../services/personal-auth';
 
 const router: Router = express.Router();
 
 // GET /auth/facebook/login — redirect to Facebook OAuth
-router.get('/facebook/login', (req: Request, res: Response) => {
-  const returnTo = req.query.returnTo as string | undefined;
-  if (returnTo && returnTo.startsWith('/')) req.session.returnTo = returnTo;
-  const state = randomBytes(16).toString('hex');
-  (req.session as any).oauthState = state;
-  const redirectUri = getFacebookRedirectUri(req);
-  res.redirect(getFacebookAuthUrl(redirectUri, state));
+router.get('/facebook/login', (req: Request, res: Response, next: NextFunction) => {
+  if (req.query.returnTo && String(req.query.returnTo).startsWith('/')) {
+    req.session.returnTo = req.query.returnTo as string;
+  }
+  passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
 });
 
 // GET /auth/facebook/callback — handle redirect from Facebook
-router.get('/facebook/callback', async (req: Request, res: Response) => {
-  try {
-    // Verify CSRF state — same session-based approach as Google.
-    const expectedState = (req.session as any).oauthState;
-    delete (req.session as any).oauthState;
-    if (!expectedState || req.query.state !== expectedState) {
-      res.redirect('/login.html?reason=invalid-state');
-      return;
-    }
+router.get('/facebook/callback', (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate('facebook', { session: false }, async (err: any, profile: any) => {
+    try {
+      if (err || !profile) {
+        console.error('Facebook auth error:', err?.message || 'no profile returned');
+        res.redirect('/login.html?reason=not-approved');
+        return;
+      }
 
-    if (req.query.error) {
-      console.error('Facebook auth error:', req.query.error);
+      const email = profile.emails?.[0]?.value as string | undefined;
+      if (!email) {
+        res.redirect('/login.html?reason=no-email');
+        return;
+      }
+
+      const result = await resolvePersonalSession(email, profile.displayName, profile.id);
+      if (!result.ok) {
+        res.redirect(`/login.html?reason=not-approved&email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      req.session.user = result.sessionUser;
+      const dest = req.session.returnTo || '/';
+      delete req.session.returnTo;
+      res.redirect(dest);
+    } catch (error: any) {
+      console.error('Error in Facebook auth callback:', error.message);
       res.redirect('/login.html?reason=not-approved');
-      return;
     }
-
-    const code = req.query.code as string;
-    if (!code) {
-      res.redirect('/login.html?reason=not-approved');
-      return;
-    }
-
-    const redirectUri = getFacebookRedirectUri(req);
-    const fbUser = await exchangeFacebookCode(code, redirectUri);
-
-    if (!fbUser.email) {
-      res.redirect('/login.html?reason=no-email');
-      return;
-    }
-
-    const result = await resolvePersonalSession(fbUser.email, fbUser.name, fbUser.id);
-    if (!result.ok) {
-      res.redirect(`/login.html?reason=not-approved&email=${encodeURIComponent(fbUser.email)}`);
-      return;
-    }
-
-    req.session.user = result.sessionUser;
-    // Redirect via login.html so BroadcastChannel can notify the waiting tab/PWA — the OAuth
-    // may have completed in a Chrome Custom Tab or separate browser context on Android.
-    const dest = req.session.returnTo || '/';
-    delete req.session.returnTo;
-    res.redirect(`/login.html?fbcomplete=1&returnTo=${encodeURIComponent(dest)}`);
-  } catch (error: any) {
-    console.error('Error in Facebook auth callback:', error.message);
-    res.redirect('/login.html?reason=not-approved');
-  }
+  })(req, res, next);
 });
 
 export = router;

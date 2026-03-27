@@ -40,6 +40,33 @@
         .btn-signin:hover { box-shadow: var(--shadow); border-color: var(--border-strong, #aaa); }
         .btn-signin svg { flex-shrink: 0; }
 
+        .magic-link-row {
+            display: flex; gap: 0.5rem; margin-top: 0.75rem;
+        }
+        .magic-link-row input[type="email"] {
+            flex: 1; padding: 0.75rem 0.875rem;
+            border: 1.5px solid var(--border-mid); border-radius: var(--radius);
+            font-size: 0.95rem; min-height: 44px; box-sizing: border-box;
+            color: var(--dark); background: white;
+        }
+        .magic-link-row input[type="email"]:focus {
+            outline: none; border-color: var(--green);
+        }
+        .magic-link-row button {
+            padding: 0.75rem 1rem; min-height: 44px;
+            background: var(--green); color: white;
+            border: none; border-radius: var(--radius);
+            font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .magic-link-row button:hover { background: var(--green-dark); }
+        .magic-link-row button:disabled { opacity: 0.6; cursor: default; }
+
+        .magic-status {
+            font-size: 0.875rem; margin-top: 0.5rem; color: var(--text-light); display: none;
+        }
+        .magic-status.success { color: #166534; }
+        .magic-status.error   { color: #991b1b; }
+
         .reason-message {
             background: #fff8e1; border: 2px solid #f59e0b; border-radius: 8px;
             padding: 1rem 1.1rem 1rem 3rem; margin-bottom: 1rem;
@@ -60,7 +87,7 @@
 
         <div id="reasonMessage" class="reason-message" style="display:none"></div>
 
-        <!-- Personal account options (Google + Facebook) -->
+        <!-- Personal account options (Google + Facebook + Magic Link) -->
         <div class="login-option" id="personalCard">
             <h3>Log in with your Personal Account</h3>
             <p>View your volunteer profile, register for sessions, and upload session photos.</p>
@@ -72,6 +99,13 @@
                 <img src="/svg/facebook.svg" width="18" height="18" alt="Facebook">
                 Continue with Facebook
             </a>
+            <div id="magicLinkSection" style="display:none">
+                <div class="magic-link-row">
+                    <input type="email" id="magicEmail" placeholder="your@email.com" autocomplete="email">
+                    <button id="magicSendBtn" onclick="sendMagicLink()">Send login link</button>
+                </div>
+                <div id="magicStatus" class="magic-status"></div>
+            </div>
         </div>
 
         <!-- Trusted Account (Microsoft dtv.org.uk) -->
@@ -94,72 +128,51 @@
             'no-email':      () => 'Your Facebook account doesn\'t have an email address we can use. Please try signing in with Google instead.',
         };
 
-        function startFacebookAuthPolling(pendingReturnTo) {
-            const statusEl = document.getElementById('reasonMessage');
-            statusEl.textContent = 'Completing sign-in… please wait.';
-            statusEl.style.display = 'block';
+        async function sendMagicLink() {
+            const email = document.getElementById('magicEmail').value.trim();
+            if (!email) return;
 
-            // Primary: listen for BroadcastChannel message from the OAuth completion page.
-            // This works when the callback lands in Chrome (different context from the PWA)
-            // because both share the same Chrome profile / agent cluster on Android.
-            let bc = null;
+            const btn = document.getElementById('magicSendBtn');
+            const status = document.getElementById('magicStatus');
+            btn.disabled = true;
+            status.className = 'magic-status';
+            status.textContent = 'Sending…';
+            status.style.display = 'block';
+
             try {
-                bc = new BroadcastChannel('dtv-auth');
-                bc.onmessage = (e) => {
-                    if (e.data?.type === 'auth-complete') {
-                        bc.close();
-                        clearInterval(interval);
-                        window.location.href = e.data.returnTo || pendingReturnTo || '/';
-                    }
-                };
-            } catch {}
-
-            // Fallback: poll /auth/me in case BroadcastChannel isn't supported or misses.
-            const interval = setInterval(async () => {
-                try {
-                    const res = await fetch('/auth/me');
-                    const data = await res.json();
-                    if (data.authenticated) {
-                        if (bc) bc.close();
-                        clearInterval(interval);
-                        window.location.href = pendingReturnTo || '/';
-                    }
-                } catch {}
-            }, 1000);
-            setTimeout(() => { clearInterval(interval); if (bc) bc.close(); }, 5 * 60 * 1000);
+                const res = await fetch('/auth/magic/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ destination: email }),
+                });
+                if (res.ok) {
+                    status.className = 'magic-status success';
+                    status.textContent = 'Check your email — a login link is on its way (expires in 15 minutes).';
+                } else {
+                    status.className = 'magic-status error';
+                    status.textContent = 'Something went wrong. Please try again.';
+                    btn.disabled = false;
+                }
+            } catch {
+                status.className = 'magic-status error';
+                status.textContent = 'Could not send email. Please check your connection and try again.';
+                btn.disabled = false;
+            }
         }
+
+        // Allow Enter key to submit magic link form
+        document.getElementById('magicEmail').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMagicLink();
+        });
 
         function init() {
             const params = new URLSearchParams(window.location.search);
             const returnTo = params.get('returnTo');
 
-            // Facebook OAuth completion — the callback redirects here so BroadcastChannel
-            // can notify the waiting PWA, then we navigate to the destination.
-            if (params.get('fbcomplete') === '1') {
-                const dest = returnTo?.startsWith('/') ? returnTo : '/';
-                try {
-                    const bc = new BroadcastChannel('dtv-auth');
-                    bc.postMessage({ type: 'auth-complete', returnTo: dest });
-                    setTimeout(() => bc.close(), 2000);
-                } catch {}
-                window.location.replace(dest);
-                return;
-            }
-
-            // If a Facebook auth was started in standalone mode (see below), resume waiting
-            // when login.html reloads after the OAuth navigation returns.
-            const pending = JSON.parse(localStorage.getItem('pendingFacebookAuth') || 'null');
-            if (pending && Date.now() - pending.ts < 5 * 60 * 1000) {
-                localStorage.removeItem('pendingFacebookAuth');
-                startFacebookAuthPolling(pending.returnTo);
-                return;
-            }
-
             const reason = params.get('reason');
             if (reason && reasons[reason]) {
                 const email = params.get('email');
-                // If auth already completed in another context (e.g. Chrome after Android Facebook
-                // routing), redirect silently rather than showing a stale error message.
+                // If auth somehow already completed, redirect rather than show stale error.
                 fetch('/auth/me').then(r => r.json()).then(data => {
                     if (data.authenticated) {
                         window.location.replace(returnTo && returnTo.startsWith('/') ? returnTo : '/');
@@ -180,51 +193,16 @@
                 document.getElementById('facebookBtn').href = `/auth/facebook/login?returnTo=${encodeURIComponent(returnTo)}`;
                 document.getElementById('trustedBtn').href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
             }
-
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-            const facebookBtn = document.getElementById('facebookBtn');
-            if (facebookBtn) {
-                if (isStandalone) {
-                    // PWA standalone: the entire site is in scope so normal navigation traps the
-                    // OAuth inside the PWA WebView. Force it into a Chrome Custom Tab by setting
-                    // target="_blank" — standalone PWAs have no tab concept so _blank always opens
-                    // externally. The CCT shares Chrome's cookie store with the PWA, so polling
-                    // detects the session. BroadcastChannel is a faster fallback if it crosses contexts.
-                    facebookBtn.target = '_blank';
-                    facebookBtn.rel = 'noopener';
-                    facebookBtn.addEventListener('click', () => {
-                        localStorage.setItem('pendingFacebookAuth', JSON.stringify({
-                            ts: Date.now(),
-                            returnTo: returnTo || '/'
-                        }));
-                        startFacebookAuthPolling(returnTo || '/');
-                    });
-                } else {
-                    // Desktop/browser: normal navigation — the fbcomplete=1 redirect handles
-                    // completion without needing this tab to stay alive.
-                }
-            }
         }
-
-        // When the PWA returns from background without a page reload (e.g. after Android routes
-        // Facebook OAuth to Chrome), re-check localStorage for a pending auth so polling starts.
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState !== 'visible') return;
-            const pending = JSON.parse(localStorage.getItem('pendingFacebookAuth') || 'null');
-            if (pending && Date.now() - pending.ts < 5 * 60 * 1000) {
-                localStorage.removeItem('pendingFacebookAuth');
-                startFacebookAuthPolling(pending.returnTo);
-            }
-        });
 
         fetch('/auth/providers')
             .then(r => r.json())
             .then(p => {
                 if (!p.google)   document.getElementById('googleBtn').style.display = 'none';
                 if (!p.facebook) document.getElementById('facebookBtn').style.display = 'none';
+                if (p.magic)     document.getElementById('magicLinkSection').style.display = 'block';
                 if (!p.google && !p.facebook) document.getElementById('personalCard').style.display = 'none';
             });
-
 
         init();
     </script>

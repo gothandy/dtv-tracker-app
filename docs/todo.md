@@ -170,6 +170,21 @@ Allow check-in users to create a task in Microsoft Planner directly from the ses
 ## Auth & Session Reliability
 *Touches: `app.js` (session config), `routes/auth/google.ts`, `routes/auth/facebook.ts`*
 
+**WordPress OAuth2 (Step 3 — "My DTV" integration)**
+
+Tracker app becomes the "My DTV" section of the DTV website. Volunteers log in with their WordPress account — one set of credentials for both the public website and the tracker.
+
+- Install **WP OAuth Server** plugin (free, WordPress.org) on the DTV WordPress site
+- Register the tracker app as an OAuth client; note client ID and secret
+- Add `passport-oauth2` strategy to `routes/auth/index.ts` pointing at the WordPress OAuth endpoints
+- Add "Log in with DTV Website" button to `public/login.html`
+- New env vars: `WP_CLIENT_ID`, `WP_CLIENT_SECRET`, `WP_BASE_URL` (WordPress site URL)
+- Phase out Facebook/Google once volunteers are migrated to WordPress accounts
+
+Key files: [routes/auth/index.ts](../routes/auth/index.ts), [public/login.html](../public/login.html)
+
+---
+
 **Investigate Random Sign-Outs**
 
 Reports of users being signed out every 5–10 minutes. Root cause not yet confirmed — gather more data before implementing fixes.
@@ -182,7 +197,7 @@ Reports of users being signed out every 5–10 minutes. Root cause not yet confi
 **Quick wins to apply once root cause confirmed:**
 - Add `rolling: true` to session config so the 8-hour window resets on activity rather than expiring from login time
 - Throw on startup if `SESSION_SECRET` env var is missing (currently falls back to a hardcoded string — a deploy without it invalidates all session cookies)
-- Revert OAuth CSRF state to stateless HMAC tokens in `google.ts`/`facebook.ts` (regression from 2026-03-17 refactor, noted in technical-debt.md)
+- ~~Revert OAuth CSRF state to stateless HMAC tokens~~ — resolved: Passport now handles CSRF state for Google and Facebook (2026-03-27)
 
 Key files: [app.js](../app.js) (session config ~lines 38–48), [routes/auth/google.ts](../routes/auth/google.ts), [routes/auth/facebook.ts](../routes/auth/facebook.ts)
 

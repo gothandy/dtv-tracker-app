@@ -42,7 +42,7 @@ Feature-complete volunteer tracking application with:
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: Google and Facebook (volunteer self-service) and Microsoft (trusted users) options with role descriptions; Facebook login uses `m.facebook.com` OAuth URL (bypasses Android intent routing to native app) + `target="_blank"` in PWA standalone (forces Chrome Custom Tab) + `window.open()` in Chrome (keeps login.html alive for BroadcastChannel/polling) ([public/login.html](public/login.html))
+- Unified sign-in page: Google, Facebook, magic link email (volunteer self-service) and Microsoft (trusted users) options with role descriptions; Facebook login uses `m.facebook.com` OAuth URL (bypasses Android intent routing to native app); all auth uses direct navigation (no popup/CCT/BroadcastChannel); magic link shown when `SMTP_HOST` is configured ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Consent collection page: served at `/profiles/:slug/consent.html`; accessible to check-in, admin, and self-service (own profile only); fetches profile by slug, shows privacy (required) and photo (optional) consent checkboxes plus privacy policy link; submits to `POST /api/profiles/:id/consent` which upserts both records dated today ([public/consent.html](public/consent.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
@@ -274,8 +274,8 @@ dtv-tracker-app/
 │   └── express-session.d.ts       # Session type augmentation for auth
 ├── services/
 │   ├── auth-config.ts             # MSAL client configuration (Microsoft OAuth)
-│   ├── personal-auth.ts           # Shared personal account (Google/Facebook) session resolution
-│   ├── google-auth.ts             # Google OAuth helper (DIY, native fetch — no extra packages)
+│   ├── personal-auth.ts           # Shared personal account session resolution (email → profile match)
+│   ├── magic-auth.ts              # passport-magic-login strategy + nodemailer SMTP transport
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination); luxon-based date helpers convert between raw UTC ISO (SharePoint) and YYYY-MM-DD (app) using SHAREPOINT_TIMEZONE
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── eventbrite-sync.ts         # Shared attendee sync logic and consent question mapping
@@ -305,10 +305,11 @@ dtv-tracker-app/
 │   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
 │   ├── backup.ts                  # Backup endpoint: thin wrapper calling runBackupExport()
 │   └── auth/
-│       ├── index.ts               # Auth router: logout, /providers, /me
+│       ├── index.ts               # Auth router: Passport strategy config, passport.initialize(), /providers, /me, /logout
 │       ├── dtv.ts                 # DTV Account (Entra ID / Microsoft) login + callback
-│       ├── google.ts              # Google OAuth login + callback
-│       └── facebook.ts            # Facebook OAuth login + callback
+│       ├── google.ts              # Google OAuth login + callback (passport-google-oauth20)
+│       ├── facebook.ts            # Facebook OAuth login + callback (passport-facebook, m.facebook.com)
+│       └── magic.ts               # Magic link email login: POST /send + GET /callback (passport-magic-login)
 ├── middleware/
 │   ├── require-auth.ts            # Auth guard middleware
 │   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only / Public)
@@ -394,7 +395,8 @@ dtv-tracker-app/
 - [x] Self-service volunteer login via Google and Facebook OAuth — `Profile.Email` field controls access (set by admin/check-in); supports comma-separated list so one profile can match multiple OAuth accounts (e.g. personal + old address); volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level
 - [x] Volunteer sign-up for sessions (self-service role): own profile only, future sessions only, duplicate prevention
 - [x] Self-service privacy hardening: regulars list hidden on group pages (shows "You are a regular" message if applicable); profile slugs require numeric ID suffix to prevent path confusion; `GET /api/tags/hours-by-taxonomy?profile=` requires authentication; media `name`/`webUrl` (contain uploader PII) stripped from public API responses
-- [x] Facebook login on Android (Chrome + PWA standalone): `m.facebook.com` OAuth URL bypasses Android's intent filter for the native Facebook app; PWA uses `target="_blank"` to open a Chrome Custom Tab (CCT shares cookies with PWA); Chrome uses `window.open()` to keep login.html alive; BroadcastChannel + `/auth/me` polling detects session completion
+- [x] Facebook login on Android: `m.facebook.com` OAuth URL bypasses Android's intent filter for the native Facebook app; direct-navigation flow (no popup/CCT/polling); all personal auth (Google, Facebook, magic link) handled via Passport.js
+- [x] Magic link email login: enter email → receive one-time link (15min expiry) → click → logged in; shown on login page when `SMTP_HOST` is configured; uses `passport-magic-login` + nodemailer
 - [x] Session media storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure); capture date extracted from EXIF (images) or MP4/MOV container metadata (videos)
 - [x] Session gallery with lightbox viewer on session detail page; videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect); public users restricted to `IsPublic` items
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
@@ -434,6 +436,8 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
 - The `Code` field on the Entries list is no longer used for uploads (the code-based upload system was replaced by authenticated entry-ID-based upload). The field is left in SharePoint but no longer read or written.
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars are required for Google OAuth (self-service volunteer login). Create a Web Application OAuth 2.0 client in Google Cloud Console and register `/auth/google/callback` as an authorized redirect URI for both localhost and production domains.
+- `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` env vars are required for Facebook OAuth. Register `/auth/facebook/callback` as a valid OAuth redirect URI in the Facebook Developer Console; the app must be in Live mode for non-developer users to log in.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` env vars enable magic link email login (optional — the button is hidden when `SMTP_HOST` is not set). Works with any SMTP provider (Azure Communication Services, SendGrid, etc.).
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".
