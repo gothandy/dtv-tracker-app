@@ -64,7 +64,7 @@ router.get('/providers', (_req: Request, res: Response) => {
   res.json({
     google:   !!process.env.GOOGLE_CLIENT_ID,
     facebook: !!process.env.FACEBOOK_APP_ID,
-    magic:    !!process.env.SMTP_HOST,
+    magic:    !!process.env.MAIL_SENDER,
   });
 });
 

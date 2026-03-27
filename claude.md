@@ -275,7 +275,8 @@ dtv-tracker-app/
 ├── services/
 │   ├── auth-config.ts             # MSAL client configuration (Microsoft OAuth)
 │   ├── personal-auth.ts           # Shared personal account session resolution (email → profile match)
-│   ├── magic-auth.ts              # passport-magic-login strategy + nodemailer SMTP transport
+│   ├── magic-auth.ts              # passport-magic-login strategy; sends via graph-mail.ts
+│   ├── graph-mail.ts              # sendEmail() via Microsoft Graph API (reuses app credentials)
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination); luxon-based date helpers convert between raw UTC ISO (SharePoint) and YYYY-MM-DD (app) using SHAREPOINT_TIMEZONE
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── eventbrite-sync.ts         # Shared attendee sync logic and consent question mapping
@@ -437,7 +438,7 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - The `Code` field on the Entries list is no longer used for uploads (the code-based upload system was replaced by authenticated entry-ID-based upload). The field is left in SharePoint but no longer read or written.
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars are required for Google OAuth (self-service volunteer login). Create a Web Application OAuth 2.0 client in Google Cloud Console and register `/auth/google/callback` as an authorized redirect URI for both localhost and production domains.
 - `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` env vars are required for Facebook OAuth. Register `/auth/facebook/callback` as a valid OAuth redirect URI in the Facebook Developer Console; the app must be in Live mode for non-developer users to log in.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` env vars enable magic link email login (optional — the button is hidden when `SMTP_HOST` is not set). Works with any SMTP provider (Azure Communication Services, SendGrid, etc.).
+- `MAIL_SENDER` env var enables magic link email login (optional — the button is hidden when not set). Must be the UPN/address of a mailbox the Azure app has `Mail.Send` permission for. Emails sent via Graph API (`POST /v1.0/users/{sender}/sendMail`); reuses existing app credentials. Add `Mail.Send` application permission in the Azure app registration and grant admin consent.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".

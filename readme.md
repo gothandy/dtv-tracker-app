@@ -94,12 +94,8 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 FACEBOOK_APP_ID=your_facebook_app_id
 FACEBOOK_APP_SECRET=your_facebook_app_secret
 
-# Magic link email login (optional — shows email link option on login page when set)
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your_smtp_username
-SMTP_PASS=your_smtp_password
-SMTP_FROM=DTV Tracker <noreply@dtv.org.uk>
+# Magic link email login — sent via Microsoft Graph API (Mail.Send permission required)
+MAIL_SENDER=noreply@dtv.org.uk   # UPN of the shared mailbox to send from
 ```
 
 Never commit the `.env` file to version control (already in `.gitignore`). The list GUIDs are the same for everyone — they identify the SharePoint lists.
