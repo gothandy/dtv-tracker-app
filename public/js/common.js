@@ -177,8 +177,8 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
 function createFooter() {
     document.body.insertAdjacentHTML('beforeend', `
         <footer class="site-footer">
-            <p>&copy; ${new Date().getFullYear()} <a href="https://www.deantrailvolunteers.org.uk" target="_blank" rel="noopener">Dean Trail Volunteers</a> &middot; Charity No. <a href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5243025" target="_blank" rel="noopener">1208988</a></p>
-            <p><a href="/privacy.html">Privacy Policy</a> &middot; <a href="/terms.html">Terms of Use</a> &middot; <a href="#" id="about-link">About</a></p>
+            <p><span class="footer-seg">&copy; ${new Date().getFullYear()} <a href="https://www.deantrailvolunteers.org.uk" target="_blank" rel="noopener">Dean Trail Volunteers</a></span> &middot; <span class="footer-seg">Charity No. <a href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5243025" target="_blank" rel="noopener">1208988</a></span></p>
+            <p><span class="footer-seg"><a href="/privacy.html">Privacy Policy</a></span> &middot; <span class="footer-seg"><a href="/terms.html">Terms of Use</a></span> &middot; <span class="footer-seg"><a href="#" id="about-link">About</a></span></p>
         </footer>
         <div id="about-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
             <div style="background:var(--surface,#fff);border-radius:12px;padding:1.5rem;max-width:340px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.18);">

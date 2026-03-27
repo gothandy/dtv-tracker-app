@@ -13,59 +13,71 @@
             max-width: 480px; margin: 3rem auto; padding: 0 1.25rem; width: 100%;
         }
 
-        .login-heading {
-            text-align: center; margin-bottom: 1.75rem;
-        }
-        .login-heading h2 { font-size: 1.4rem; color: var(--dark); margin: 0 0 0.4rem; }
-        .login-heading p { color: var(--text-light); font-size: 0.95rem; margin: 0; }
-
         .login-option {
             background: var(--surface); border-radius: 12px;
             padding: 1.5rem; box-shadow: var(--shadow);
             margin-bottom: 1rem;
         }
 
-        .login-option h3 { font-size: 1.05rem; color: var(--dark); margin: 0 0 0.5rem; }
-        .login-option p { color: var(--text-light); font-size: 0.875rem; margin: 0 0 1rem; line-height: 1.4; }
+        .login-option h3 { font-size: 1.2rem; color: var(--dark); margin: 0 0 0.3rem; }
+        .login-option p { color: var(--text-light); font-size: 0.875rem; margin: 0 0 1.25rem; line-height: 1.4; }
 
-        .btn-signin {
-            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-            width: 100%; padding: 0.8rem 1rem;
+        /* Magic link — full-width stacked layout */
+        .magic-email-input {
+            display: block; width: 100%; box-sizing: border-box;
+            padding: 0.75rem 0.875rem; margin-bottom: 0.625rem;
             border: 1.5px solid var(--border-mid); border-radius: var(--radius);
-            font-size: 0.95rem; font-weight: 600; color: var(--dark);
-            cursor: pointer; text-decoration: none; min-height: 44px;
-            transition: box-shadow 0.15s, border-color 0.15s;
-            background: white; box-sizing: border-box;
-        }
-        .btn-signin:hover { box-shadow: var(--shadow); border-color: var(--border-strong, #aaa); }
-        .btn-signin svg { flex-shrink: 0; }
-
-        .magic-link-row {
-            display: flex; gap: 0.5rem; margin-top: 0.75rem;
-        }
-        .magic-link-row input[type="email"] {
-            flex: 1; padding: 0.75rem 0.875rem;
-            border: 1.5px solid var(--border-mid); border-radius: var(--radius);
-            font-size: 0.95rem; min-height: 44px; box-sizing: border-box;
+            font-size: 0.95rem; min-height: 44px;
             color: var(--dark); background: white;
         }
-        .magic-link-row input[type="email"]:focus {
-            outline: none; border-color: var(--green);
-        }
-        .magic-link-row button {
-            padding: 0.75rem 1rem; min-height: 44px;
+        .magic-email-input:focus { outline: none; border-color: var(--green); }
+
+        .btn-magic-send {
+            display: block; width: 100%; box-sizing: border-box;
+            padding: 0.8rem 1rem; min-height: 44px;
             background: var(--green); color: white;
             border: none; border-radius: var(--radius);
-            font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+            font-size: 0.95rem; font-weight: 600; cursor: pointer;
         }
-        .magic-link-row button:hover { background: var(--green-dark); }
-        .magic-link-row button:disabled { opacity: 0.6; cursor: default; }
+        .btn-magic-send:hover { background: var(--green-dark); }
+        .btn-magic-send:disabled { opacity: 0.6; cursor: default; }
 
         .magic-status {
             font-size: 0.875rem; margin-top: 0.5rem; color: var(--text-light); display: none;
         }
         .magic-status.success { color: #166534; }
         .magic-status.error   { color: #991b1b; }
+
+        /* "Or continue with" divider */
+        .divider-or {
+            display: flex; align-items: center; gap: 0.75rem;
+            color: var(--text-light); font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 0.05em; margin: 1.25rem 0;
+        }
+        .divider-or::before, .divider-or::after {
+            content: ''; flex: 1; border-top: 1px solid var(--border);
+        }
+
+        /* Google + Facebook side by side */
+        .social-btns {
+            display: flex; gap: 0.75rem;
+        }
+        .btn-signin {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+            padding: 0.8rem 1rem;
+            border: 1.5px solid var(--border-mid); border-radius: var(--radius);
+            font-size: 0.9rem; font-weight: 600; color: var(--dark);
+            cursor: pointer; text-decoration: none; min-height: 44px;
+            transition: box-shadow 0.15s, border-color 0.15s;
+            background: white; box-sizing: border-box;
+        }
+        .btn-signin:hover { box-shadow: var(--shadow); border-color: var(--border-strong, #aaa); }
+        .btn-signin svg, .btn-signin img { flex-shrink: 0; }
+
+        /* Stack on very small screens */
+        @media (max-width: 360px) {
+            .social-btns { flex-direction: column; }
+        }
 
         .reason-message {
             background: #fff8e1; border: 2px solid #f59e0b; border-radius: 8px;
@@ -87,33 +99,39 @@
 
         <div id="reasonMessage" class="reason-message" style="display:none"></div>
 
-        <!-- Personal account options (Google + Facebook + Magic Link) -->
+        <!-- Personal account options -->
         <div class="login-option" id="personalCard">
-            <h3>Log in with your Personal Account</h3>
-            <p>View your volunteer profile, register for sessions, and upload session photos.</p>
-            <a id="googleBtn" href="/auth/google/login" class="btn-signin">
-                <img src="/svg/google.svg" width="18" height="18" alt="Google">
-                Continue with Google
-            </a>
-            <a id="facebookBtn" href="/auth/facebook/login" class="btn-signin" style="margin-top:0.5rem;">
-                <img src="/svg/facebook.svg" width="18" height="18" alt="Facebook">
-                Continue with Facebook
-            </a>
+            <h3>Personal Sign In</h3>
+            <p>View your volunteer profile, register for sessions, and upload photos.</p>
+
+            <!-- Magic link email (shown when MAIL_SENDER is configured) -->
             <div id="magicLinkSection" style="display:none">
-                <div class="magic-link-row">
-                    <input type="email" id="magicEmail" placeholder="your@email.com" autocomplete="email">
-                    <button id="magicSendBtn" onclick="sendMagicLink()">Send login link</button>
-                </div>
+                <input type="email" id="magicEmail" class="magic-email-input"
+                       placeholder="your@email.com" autocomplete="email">
+                <button id="magicSendBtn" class="btn-magic-send" onclick="sendMagicLink()">Send login link</button>
                 <div id="magicStatus" class="magic-status"></div>
+                <div class="divider-or" id="magicDivider">or continue with</div>
+            </div>
+
+            <!-- Google + Facebook side by side -->
+            <div class="social-btns" id="socialBtns">
+                <a id="googleBtn" href="/auth/google/login" class="btn-signin">
+                    <img src="/svg/google.svg" width="18" height="18" alt="">
+                    Google
+                </a>
+                <a id="facebookBtn" href="/auth/facebook/login" class="btn-signin">
+                    <img src="/svg/facebook.svg" width="18" height="18" alt="">
+                    Facebook
+                </a>
             </div>
         </div>
 
         <!-- Trusted Account (Microsoft dtv.org.uk) -->
         <div class="login-option">
-            <h3>Log in with your DTV Teams Account</h3>
+            <h3>DTV Teams Account</h3>
             <p>For dig leads, coordinators and admins — use your <strong>@dtv.org.uk</strong> Microsoft account.</p>
-            <a id="trustedBtn" href="/auth/login" class="btn-signin">
-                <img src="/svg/microsoft.svg" width="18" height="18" alt="Microsoft">
+            <a id="trustedBtn" href="/auth/login" class="btn-signin" style="width:100%; box-sizing:border-box;">
+                <img src="/svg/microsoft.svg" width="18" height="18" alt="">
                 Continue with Microsoft
             </a>
         </div>
@@ -135,6 +153,7 @@
             const btn = document.getElementById('magicSendBtn');
             const status = document.getElementById('magicStatus');
             btn.disabled = true;
+            document.getElementById('magicEmail').disabled = true;
             status.className = 'magic-status';
             status.textContent = 'Sending…';
             status.style.display = 'block';
@@ -152,15 +171,16 @@
                     status.className = 'magic-status error';
                     status.textContent = 'Something went wrong. Please try again.';
                     btn.disabled = false;
+                    document.getElementById('magicEmail').disabled = false;
                 }
             } catch {
                 status.className = 'magic-status error';
                 status.textContent = 'Could not send email. Please check your connection and try again.';
                 btn.disabled = false;
+                document.getElementById('magicEmail').disabled = false;
             }
         }
 
-        // Allow Enter key to submit magic link form
         document.getElementById('magicEmail').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendMagicLink();
         });
@@ -172,7 +192,6 @@
             const reason = params.get('reason');
             if (reason && reasons[reason]) {
                 const email = params.get('email');
-                // If auth somehow already completed, redirect rather than show stale error.
                 fetch('/auth/me').then(r => r.json()).then(data => {
                     if (data.authenticated) {
                         window.location.replace(returnTo && returnTo.startsWith('/') ? returnTo : '/');
@@ -201,7 +220,17 @@
                 if (!p.google)   document.getElementById('googleBtn').style.display = 'none';
                 if (!p.facebook) document.getElementById('facebookBtn').style.display = 'none';
                 if (p.magic)     document.getElementById('magicLinkSection').style.display = 'block';
-                if (!p.google && !p.facebook) document.getElementById('personalCard').style.display = 'none';
+
+                // Hide divider if no social buttons are shown
+                const hasSocial = p.google || p.facebook;
+                if (!hasSocial) {
+                    document.getElementById('socialBtns').style.display = 'none';
+                    document.getElementById('magicDivider').style.display = 'none';
+                }
+                // Hide personal card entirely if nothing is configured
+                if (!p.google && !p.facebook && !p.magic) {
+                    document.getElementById('personalCard').style.display = 'none';
+                }
             });
 
         init();
