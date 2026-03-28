@@ -225,13 +225,23 @@ class MediaGallery {
       this._btnNext.disabled = !this._embla.canScrollNext();
     };
 
-    this._embla.on('settle', updateSelection);
+    this._embla.on('select', updateSelection);
     this._embla.on('settle', updateNav);
 
-    // Click any slide to fire onAction
+    // Distinguish tap from drag: if scroll fired between pointerDown and click, it was a drag.
+    let dragHappened = false;
+    this._embla.on('pointerDown', () => { dragHappened = false; });
+    this._embla.on('scroll', () => { dragHappened = true; });
+
+    // Tap unselected slide → scroll to centre it. Tap already-selected slide → onAction.
     slides.forEach((slide, i) => {
       slide.addEventListener('click', () => {
-        if (this._opts.onAction) this._opts.onAction(this._items[i], i);
+        if (dragHappened) return;
+        if (this._embla.selectedScrollSnap() === i) {
+          if (this._opts.onAction) this._opts.onAction(this._items[i], i);
+        } else {
+          this._embla.scrollTo(i);
+        }
       });
     });
 
