@@ -45,6 +45,8 @@ Feature-complete volunteer tracking application with:
 - Unified sign-in page: Google, Facebook, magic link email (volunteer self-service) and Microsoft (trusted users) options with role descriptions; Facebook login uses `m.facebook.com` OAuth URL (bypasses Android intent routing to native app); all auth uses direct navigation (no popup/CCT/BroadcastChannel); magic link shown when `SMTP_HOST` is configured ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Consent collection page: served at `/profiles/:slug/consent.html`; accessible to check-in, admin, and self-service (own profile only); fetches profile by slug, shows privacy (required) and photo (optional) consent checkboxes plus privacy policy link; submits to `POST /api/profiles/:id/consent` which upserts both records dated today ([public/consent.html](public/consent.html))
+- Media library page (authenticated): lists all sessions with photos as an Embla horizontal carousel using session cover images; clicking a session navigates to its gallery ([public/media/index.html](public/media/index.html))
+- Session gallery page (authenticated): full-width Embla carousel for a single session's photos/videos (`?groupKey=&date=`); clicking any item opens the shared lightbox ([public/media/session.html](public/media/session.html))
 - Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
 - Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
 - Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
@@ -350,7 +352,13 @@ dtv-tracker-app/
 │   │   ├── volunteers.js          # Volunteers listing logic (filters, sort, checkbox selection, bulk records, CSV download)
 │   │   ├── session-detail.js      # Session detail logic (entries, check-in, hours, photos, edit/delete)
 │   │   └── group-detail.js        # Group detail logic (bar chart, sessions, edit/delete, new session)
-│   └── svg/                       # SVG icons for badges and tags
+│   ├── svg/                       # SVG icons for badges and tags
+│   └── media/                     # Standalone media gallery pages (authenticated)
+│       ├── index.html             # Media library — all sessions with photos, Embla carousel
+│       ├── session.html           # Session gallery — single session photos/videos, Embla + lightbox
+│       └── embla/
+│           ├── gallery.js         # MediaGallery class — Embla-powered horizontal carousel
+│           └── gallery.css        # Carousel styles (viewport, slides, nav buttons, captions)
 └── test/
     ├── test-auth.js               # Authentication verification
     └── test-*.js                  # Various data/integration tests
@@ -408,6 +416,7 @@ dtv-tracker-app/
 - [x] Personalised homepage calendar — self-service, check-in, and admin (with profile) users see calendar dots on their own sessions (filled) and regular-group sessions not yet joined (outline); Next/Last buttons target own sessions with global fallback; session cards show Registered/Attended pills; public and read-only users see standard global view
 - [x] Consent collection page at `/profiles/:slug/consent.html` — check-in and admin users see "Collect Consent" button on profile Records section; page presents privacy (required) and photo (optional) checkboxes with privacy policy link; on submit upserts both records with today's date via `POST /api/profiles/:id/consent`; self-service users can also access for their own profile (e.g. via entry detail consent button)
 - [x] Entry detail consent button — shown next to Upload when volunteer has no Accepted Privacy Consent; visible to check-in, admin, and self-service; hidden once consent is signed; uses `.checkin-or-selfservice` CSS class
+- [x] Standalone media gallery pages (`/media/`): authenticated library listing all sessions with photos (cover carousel) and per-session gallery (Embla + lightbox); breadcrumbs wired in `common.js`; Embla loaded from CDN; `MediaGallery` class in `public/media/embla/gallery.js`
 
 ## Planned Features
 

@@ -1,0 +1,163 @@
+/* === MediaGallery (Embla) component === */
+
+/* ── Wrap: holds viewport + absolutely-positioned nav buttons ── */
+.mg-wrap {
+  position: relative;
+}
+
+/* ── Embla root ── */
+.mg-viewport {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Embla container ── */
+.mg-track {
+  display: flex;
+}
+
+/* ── Slides ── */
+.mg-item {
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: opacity 0.3s;
+}
+
+.mg-item.mg-selected {
+  opacity: 1;
+}
+
+.mg-item-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #1a1a1a;
+  /* border-radius set inline by JS */
+}
+
+.mg-item-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.mg-item-inner.img-error img {
+  display: none;
+}
+
+/* ── Video overlay ── */
+.mg-video-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.mg-play-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  padding-left: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Nav buttons — float over left/right gallery edges ── */
+.mg-btn-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  color: #444;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.mg-nav-prev { left: 10px; }
+.mg-nav-next { right: 10px; }
+
+.mg-btn-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 1);
+}
+
+.mg-btn-nav:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+/* ── Caption overlay — shown on selected slide ── */
+.mg-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2.5rem 0.75rem 0.6rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.mg-item.mg-selected .mg-caption {
+  opacity: 1;
+}
+
+/* ── Edit button — bottom-right, on hover of selected slide ── */
+.mg-edit-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 5px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  border-radius: 100px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #111;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, background 0.15s;
+  white-space: nowrap;
+}
+
+.mg-edit-btn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.mg-item.mg-selected .mg-item-inner:hover .mg-edit-btn {
+  opacity: 1;
+  pointer-events: auto;
+}

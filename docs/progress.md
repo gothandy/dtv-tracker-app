@@ -1,5 +1,28 @@
 # Development Progress
 
+## Session: 2026-03-28 (Standalone media gallery pages)
+
+### Completed Tasks
+
+#### Standalone media gallery — Embla carousel ✓
+
+New authenticated section at `/media/` providing a dedicated gallery experience separate from the session detail page.
+
+**New files (`public/media/` — untracked, not in git history):**
+- `public/media/index.html` — media library: loads all sessions with `mediaCount > 0` from `GET /api/sessions`, renders them as an Embla horizontal carousel using `/media/{groupKey}/{date}/cover.jpg` proxy URLs; clicking a session navigates to `session.html?groupKey=&date=`
+- `public/media/session.html` — session gallery: loads session data + media items in parallel, renders in `MediaGallery`; clicking any item calls `openLightbox()` from the shared `lightbox.js`
+- `public/media/embla/gallery.js` — `MediaGallery` class: Embla-powered horizontal carousel with variable-width slides (aspect ratio computed from natural image dimensions), prev/next nav buttons, keyboard arrow support, `onAction(item, index)` callback, `mg-selected` CSS class for the centred slide
+- `public/media/embla/gallery.css` — carousel styles: opacity dim on non-selected slides, caption gradient overlay, edit button on hover of selected slide, nav button positioning
+
+**Modified:**
+- `public/js/common.js` — breadcrumbs for `/media/` (Media library, one level below Home) and `/media/session.html` (Home > Media)
+
+**Access:** Both pages served by post-auth `express.static('public')` — require login.
+
+**Embla options:** `{ loop: false, align: 'center' }` — free momentum scrolling, centred snap. `containScroll: 'keepSnaps'` was tried and removed (restricted momentum to one slide per gesture). Click handler fires `onAction` directly on any slide (without requiring the slide to be pre-selected — the two-tap pattern was also removed).
+
+---
+
 ## Session: 2026-03-27 (Auth refactor — Passport.js + magic link + simplified Facebook flow)
 
 ### Completed Tasks

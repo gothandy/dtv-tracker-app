@@ -47,6 +47,17 @@ function getBreadcrumbs() {
         return crumbs;
     }
 
+    // Media library index: one level below Home
+    if (path === '/media/' || path === '/media/index.html') {
+        return crumbs;
+    }
+
+    // Media session gallery: Home > Media
+    if (path === '/media/session.html') {
+        crumbs.push({ href: '/media/', label: 'Media' });
+        return crumbs;
+    }
+
     // Group detail: Home > Groups
     if (path.startsWith('/groups/') && path.endsWith('/detail.html')) {
         crumbs.push({ href: '/groups.html', label: 'Groups' });

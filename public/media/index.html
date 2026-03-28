@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media - DTV Tracker</title>
+    <meta name="description" content="Browse session photos and videos.">
+    <meta property="og:title" content="Media - DTV Tracker">
+    <meta property="og:description" content="Browse session photos and videos.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="embla/gallery.css">
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <script>createHeader('Session Media', true);</script>
+
+    <div class="container">
+        <p id="status" style="color:var(--text-faint);font-size:0.9rem;">Loading…</p>
+        <div id="galleryWrap"></div>
+    </div>
+
+    <script src="https://unpkg.com/embla-carousel/embla-carousel.umd.js"></script>
+    <script src="embla/gallery.js"></script>
+    <script>
+        const status = document.getElementById('status');
+        const wrap = document.getElementById('galleryWrap');
+
+        fetch('/api/sessions')
+            .then(r => {
+                if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+                return r.json();
+            })
+            .then(body => {
+                if (!body.success) throw new Error(body.error || 'API error');
+
+                const sessions = body.data.filter(s => s.mediaCount > 0);
+                if (!sessions.length) {
+                    status.textContent = 'No sessions with photos yet.';
+                    return;
+                }
+
+                // /media/:group/:date/cover.jpg already resolves the correct cover photo
+                // (CoverMediaLookupId → first public photo → first photo) with server-side caching.
+                const items = sessions.map(s => ({
+                    id: s.id,
+                    largeUrl: `/media/${encodeURIComponent(s.groupKey)}/${encodeURIComponent(s.date)}/cover.jpg`,
+                    mimeType: 'image/jpeg',
+                    title: `${s.displayName || s.groupName}  ·  ${formatDate(s.date)}`,
+                    _groupKey: s.groupKey,
+                    _date: s.date,
+                }));
+
+                status.remove();
+
+                const gallery = new MediaGallery(wrap, {
+                    height: Math.min(Math.round(window.innerHeight * 0.62), 520),
+                    gap: 8,
+                    radius: 6,
+                    onAction: (item) => {
+                        location.href = `session.html?groupKey=${encodeURIComponent(item._groupKey)}&date=${encodeURIComponent(item._date)}`;
+                    },
+                });
+                gallery.setItems(items);
+            })
+            .catch(err => {
+                status.textContent = `Could not load media: ${err.message}`;
+                console.error('Media library load failed:', err);
+            });
+    </script>
+</body>
+</html>

@@ -302,6 +302,25 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] **Media cache**: loading session detail twice → second load shows `[Cache] Hit: media_folder_*` in server logs (no repeat Graph call)
 - [ ] **Media cache bust**: upload a photo to a session → immediately reload the session gallery → new photo appears (cache was busted by upload)
 
+### H30c. Standalone media gallery (`/media/`)
+
+- [ ] Visit `/media/` without login → redirected to `/login.html`
+- [ ] Visit `/media/` logged in → page loads; sessions with photos appear as a horizontal carousel
+- [ ] Each carousel slide shows the session cover image, date, and group name as a caption
+- [ ] Clicking a session slide navigates to `/media/session.html?groupKey=…&date=…`
+- [ ] Sessions with no photos (`mediaCount === 0`) do not appear in the library
+
+**Session gallery (`/media/session.html?groupKey=…&date=…`):**
+- [ ] Visit without login → redirected to `/login.html`
+- [ ] Valid `groupKey` + `date` → session gallery loads; all photos/videos appear as carousel slides
+- [ ] Carousel scrolls freely with momentum (multiple slides per swipe); centred slide is full-brightness
+- [ ] Non-selected slides are dimmed; centred slide shows caption overlay (`N / total`)
+- [ ] Clicking any slide opens the lightbox at that item
+- [ ] Lightbox: left/right navigation, Esc to close, video plays inline
+- [ ] Prev/Next nav buttons: disabled at start/end of carousel; enabled when scrollable
+- [ ] Arrow-key navigation (left/right) scrolls the carousel
+- [ ] Breadcrumb: Home > Media (Home links to `/`, Media links to `/media/`)
+
 ### H31. Backup export
 - [ ] Admin page → "Export Backup" button → `POST /api/backup/export-all`
 - [ ] Returns summary with file counts and timestamp; displayed in admin page
