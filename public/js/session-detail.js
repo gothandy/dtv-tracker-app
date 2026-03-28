@@ -306,56 +306,120 @@ async function refreshSession() {
 }
 
 let photoData = [];
+let sessionGallery = null;
+let galleryResizeObserver = null;
+let photoEditIndex = null;
 
-async function loadPhotos() {
-    const carousel = document.getElementById('photoCarousel');
-    if (!carousel) return;
+async function loadPhotos(startIndex = 0) {
+    const wrap = document.getElementById('sessionGallery');
+    if (!wrap) return;
+
+    if (sessionGallery) { sessionGallery.destroy(); sessionGallery = null; }
+    if (galleryResizeObserver) { galleryResizeObserver.disconnect(); galleryResizeObserver = null; }
+
     try {
         const res = await apiFetch(`/api/media?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(sessionDate)}`);
         const data = await res.json();
-        if (!data.success || !data.data.length) { carousel.innerHTML = ''; photoData = []; return; }
-        photoData = data.data;
+        if (!data.success) { wrap.style.height = ''; wrap.innerHTML = ''; photoData = []; return; }
 
-        // Render cover media above the carousel
-        const coverEl = document.getElementById('sessionCover');
-        if (coverEl) {
-            const coverMediaId = currentSession && currentSession.coverMediaId;
-            const cover = (coverMediaId && photoData.find(p => p.listItemId === coverMediaId))
-                || photoData.find(p => p.isPublic !== false)
-                || photoData[0];
-            const coverIndex = photoData.indexOf(cover);
-            const isVideo = cover.mimeType && cover.mimeType.startsWith('video/');
-            coverEl.innerHTML = `<div class="session-cover"><a href="#" onclick="openLightbox(${coverIndex},photoData);return false;" ${isVideo ? 'class="session-cover-video"' : ''}>` +
-                `<img src="${escapeHtml(cover.largeUrl || cover.thumbnailUrl)}" alt="${escapeHtml(cover.title || cover.name)}">` +
-                (isVideo ? `<span class="play-icon">&#9654;</span>` : '') +
-                `</a></div>`;
-        }
+        const role = document.body.dataset.role;
+        const isAdmin = ['admin', 'checkin'].includes(role);
+        const isPublicView = !role;
 
-        // Register lightbox edit controls for admin/check-in users
-        const isAdmin = ['admin', 'checkin'].includes(document.body.dataset.role);
-        if (isAdmin) {
-            setLightboxMetaRenderer((p, i) => {
-                const isCover = currentSession && currentSession.coverMediaId === p.listItemId;
-                return `<div class="lightbox-edit">` +
-                    `<label><input type="checkbox" ${p.isPublic !== false ? 'checked' : ''} onchange="setMediaPublic(${i},this.checked)"> Public gallery</label>` +
-                    `<label><input type="checkbox" ${isCover ? 'checked' : ''} onchange="setMediaCover(${i},this.checked)"> Cover</label>` +
-                    `<input type="text" class="lightbox-title-input" value="${escapeHtml(p.title || '')}" placeholder="Alt text / title" onblur="setMediaTitle(${i},this.value)" maxlength="255">` +
-                    `</div>`;
-            });
-        } else {
-            setLightboxMetaRenderer(null);
-        }
+        let items = data.data;
+        if (isPublicView) items = items.filter(p => p.isPublic !== false);
+        if (!items.length) { wrap.style.height = ''; photoData = []; return; }
 
-        carousel.innerHTML = '<div class="photo-strip">' +
-            data.data.map((p, i) => {
-                const isVideo = p.mimeType && p.mimeType.startsWith('video/');
-                return `<a href="#" onclick="openLightbox(${i},photoData);return false;" ${isVideo ? 'class="video-thumb"' : ''}>` +
-                    `<img src="${escapeHtml(p.thumbnailUrl)}" alt="${escapeHtml(p.title || p.name)}" loading="lazy">` +
-                    (isVideo ? `<span class="play-icon">&#9654;</span>` : '') +
-                    `</a>`;
-            }).join('') + '</div>';
-    } catch { carousel.innerHTML = ''; photoData = []; }
+        photoData = items;
+
+        const galleryOpts = () => {
+            const maxWidth = Math.round(wrap.offsetWidth * 0.93);
+            return {
+                height: Math.round(maxWidth * 0.70),
+                maxWidth,
+                minWidth: Math.round(wrap.offsetWidth * 0.50),
+            };
+        };
+
+        const mainH = () => Math.round(Math.round(wrap.offsetWidth * 0.93) * 0.70);
+
+        wrap.style.height = mainH() + 'px';
+
+        sessionGallery = new MediaGallery(wrap, {
+            ...galleryOpts(), gap: 8, radius: 6, thumbs: false,
+            startIndex,
+            showEditBtn: isAdmin,
+            sessionTags: (currentSession && currentSession.tags) || [],
+            onAction: (item, i) => openLightbox(i, photoData),
+            onEdit: isAdmin ? (item, i) => openPhotoEditModal(i) : null,
+        });
+        sessionGallery.setItems(items);
+
+        let lastWidth = wrap.offsetWidth;
+        galleryResizeObserver = new ResizeObserver(() => {
+            if (wrap.offsetWidth === lastWidth) return;
+            lastWidth = wrap.offsetWidth;
+            wrap.style.height = mainH() + 'px';
+            sessionGallery.setOptions(galleryOpts());
+        });
+        galleryResizeObserver.observe(wrap);
+    } catch (e) {
+        console.error('Error loading photos:', e);
+        wrap.style.height = '';
+        photoData = [];
+    }
 }
+
+function openPhotoEditModal(index) {
+    photoEditIndex = index;
+    const p = photoData[index];
+    document.getElementById('photoPublic').checked = p.isPublic !== false;
+    document.getElementById('photoCover').checked = currentSession && currentSession.coverMediaId === p.listItemId;
+    document.getElementById('photoTitle').value = p.title || '';
+    _updatePhotoCoverDisabled();
+    document.getElementById('photoEditModal').classList.add('visible');
+}
+
+function _updatePhotoCoverDisabled() {
+    const pub = document.getElementById('photoPublic');
+    const cover = document.getElementById('photoCover');
+    cover.disabled = !pub.checked;
+    if (!pub.checked) cover.checked = false;
+}
+
+function closePhotoEditModal() {
+    document.getElementById('photoEditModal').classList.remove('visible');
+    photoEditIndex = null;
+}
+
+async function savePhotoEdit() {
+    const i = photoEditIndex;
+    const p = photoData[i];
+    const isPublic = document.getElementById('photoPublic').checked;
+    const isCover = document.getElementById('photoCover').checked;
+    const title = document.getElementById('photoTitle').value.trim();
+    const wasCover = currentSession && currentSession.coverMediaId === p.listItemId;
+    await setMediaPublic(i, isPublic);
+    await setMediaTitle(i, title);
+    if (isCover !== wasCover) await setMediaCover(i, isCover);
+    closePhotoEditModal();
+    await loadPhotos(i);
+}
+
+async function deletePhoto() {
+    const i = photoEditIndex;
+    const p = photoData[i];
+    if (!confirm('Delete this photo? This cannot be undone.')) return;
+    const res = await apiFetch(`/api/media/${p.id}?groupKey=${encodeURIComponent(groupKey)}&date=${encodeURIComponent(sessionDate)}`, { method: 'DELETE' });
+    if (!res.ok) { showError('Failed to delete photo'); return; }
+    closePhotoEditModal();
+    await loadPhotos();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const pubEl = document.getElementById('photoPublic');
+    if (pubEl) pubEl.addEventListener('change', _updatePhotoCoverDisabled);
+});
 
 async function setMediaCover(index, checked) {
     const photo = photoData[index];
@@ -504,12 +568,11 @@ async function loadSessionDetail() {
                     </div>
                 </div>
                 ${session.groupName ? `<div class="group-name">${escapeHtml(session.groupName)}</div>` : ''}
-                <div id="sessionCover"></div>
-                <div id="photoCarousel"></div>
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${statsSection}
             </div>
             ${renderTagsSection(session)}
+            <div id="sessionGallery" style="margin-bottom:1.5rem"></div>
             ${session.groupEventbriteSeriesId && isPublicView ? `<div class="session-eventbrite-cta"><p>Volunteer at the ${escapeHtml(session.groupName || 'Dean Trail Volunteers')}</p><a class="btn-eventbrite-cta" href="https://www.eventbrite.co.uk/e/${encodeURIComponent(session.groupEventbriteSeriesId)}" target="_blank" rel="noopener">Register on Eventbrite</a></div>` : ''}
             <div class="auth-only">
                 <div id="userActionButtons" style="margin-bottom:0.75rem;"></div>

@@ -33,6 +33,10 @@ class MediaGallery {
       thumbs: true,
       quality: 'large',
       onAction: null,
+      showEditBtn: false,
+      sessionTags: [],
+      onEdit: null,
+      startIndex: 0,
       ...options,
     };
 
@@ -201,12 +205,37 @@ class MediaGallery {
         inner.appendChild(caption);
       }
 
+      // Top-left info bar (private pill + session tags)
+      const infoBar = document.createElement('div');
+      infoBar.className = 'mg-info-bar';
+
       if (item.isPublic === false) {
-        const badge = document.createElement('div');
-        badge.className = 'mg-private-badge';
-        badge.title = 'Not in public gallery';
-        badge.innerHTML = '<img src="/svg/nophoto.svg" width="18" height="18" alt="Private">';
-        inner.appendChild(badge);
+        const priv = document.createElement('div');
+        priv.className = 'mg-tag-pill mg-tag-private';
+        priv.title = 'Not in public gallery';
+        priv.innerHTML = '<img src="/svg/nophoto.svg" width="22" height="22" alt="Private">';
+        infoBar.appendChild(priv);
+      }
+
+      for (const tag of this._opts.sessionTags) {
+        const pill = document.createElement('div');
+        pill.className = 'mg-tag-pill';
+        pill.textContent = tag.label;
+        infoBar.appendChild(pill);
+      }
+
+      if (infoBar.children.length) inner.appendChild(infoBar);
+
+      // Top-right edit badge (admin only)
+      if (this._opts.showEditBtn) {
+        const editBadge = document.createElement('button');
+        editBadge.className = 'mg-edit-badge';
+        editBadge.innerHTML = '<img src="/svg/edit.svg" width="16" height="16" alt="Edit">';
+        editBadge.addEventListener('click', e => {
+          e.stopPropagation();
+          if (this._opts.onEdit) this._opts.onEdit(this._items[i], i);
+        });
+        inner.appendChild(editBadge);
       }
 
       slide.appendChild(inner);
@@ -224,6 +253,7 @@ class MediaGallery {
       loop: false,
       align: 'center',
       dragFree: true,
+      startIndex: this._opts.startIndex || 0,
     });
 
     const slides = Array.from(this._track.children);
@@ -256,13 +286,6 @@ class MediaGallery {
           ov.className = 'mg-video-overlay';
           ov.innerHTML = '<div class="mg-play-icon mg-play-icon--sm">▶</div>';
           inner.appendChild(ov);
-        }
-
-        if (item.isPublic === false) {
-          const badge = document.createElement('div');
-          badge.className = 'mg-private-badge';
-          badge.innerHTML = '<img src="/svg/nophoto.svg" width="12" height="12" alt="Private">';
-          inner.appendChild(badge);
         }
 
         slide.appendChild(inner);

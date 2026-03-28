@@ -110,4 +110,20 @@ router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response)
   }
 });
 
+// Delete a media item. Admin/Check-in only. Pass groupKey+date query params to bust folder cache.
+router.delete('/media/:itemId', requireAdmin, async (req: Request, res: Response) => {
+  const groupKey = (req.query.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
+  const date = (req.query.date as string || '').replace(/[^0-9-]/g, '');
+  try {
+    const driveId = mediaDriveId();
+    await sharePointClient.deleteMediaItem(driveId, String(req.params.itemId));
+    clearCoverCache();
+    if (groupKey && date) sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting media item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export = router;

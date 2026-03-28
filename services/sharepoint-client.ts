@@ -685,6 +685,14 @@ export class SharePointClient {
     this.clearCache();
   }
 
+  async deleteMediaItem(driveId: string, itemId: string): Promise<void> {
+    const token = await this.getAccessToken();
+    await axios.delete(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+  }
+
   /**
    * Get the child file count for a single session media folder.
    * One lightweight Graph call — used for targeted stats updates on a single session.

@@ -12,11 +12,14 @@
     <meta property="og:image" content="">
     <meta property="og:site_name" content="DTV Tracker">
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/media/embla/gallery.css">
     <script src="/js/common.js"></script>
     <script src="/js/session-cards.js"></script>
     <script src="/js/lightbox.js"></script>
     <script src="/js/tag-icons.js"></script>
     <script src="/js/session-tags.js"></script>
+    <script src="https://unpkg.com/embla-carousel/embla-carousel.umd.js"></script>
+    <script src="/media/embla/gallery.js"></script>
 </head>
 <body class="detail-page">
     <script>createHeader('Session Details', true);</script>
@@ -72,6 +75,31 @@
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" onclick="closeHoursModal()">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmHoursBtn" onclick="applyDefaultHours()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="photoEditModal">
+        <div class="modal">
+            <h3>Edit Photo</h3>
+            <div class="modal-field">
+                <label><input type="checkbox" id="photoPublic"> Public gallery</label>
+            </div>
+            <div class="modal-field">
+                <label><input type="checkbox" id="photoCover"> Cover photo</label>
+            </div>
+            <div class="modal-field">
+                <label for="photoTitle">Description</label>
+                <textarea id="photoTitle" rows="3" maxlength="255" placeholder="Alt text / title"></textarea>
+            </div>
+            <div class="modal-buttons" style="justify-content:space-between;">
+                <button class="modal-btn modal-btn-delete" onclick="deletePhoto()" title="Delete photo">
+                    <img src="/svg/trash.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Delete">
+                </button>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="modal-btn modal-btn-cancel" onclick="closePhotoEditModal()">Cancel</button>
+                    <button class="modal-btn modal-btn-confirm" onclick="savePhotoEdit()">Save</button>
+                </div>
             </div>
         </div>
     </div>
