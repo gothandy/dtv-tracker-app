@@ -46,7 +46,7 @@
                     id: s.id,
                     largeUrl: `/media/${encodeURIComponent(s.groupKey)}/${encodeURIComponent(s.date)}/cover.jpg`,
                     mimeType: 'image/jpeg',
-                    title: `${s.displayName || s.groupName}  ·  ${formatDate(s.date)}`,
+                    title: [formatDate(s.date), s.groupName, s.displayName !== s.groupName ? s.displayName : ''].filter(Boolean).join('  ·  '),
                     _groupKey: s.groupKey,
                     _date: s.date,
                 }));
@@ -58,7 +58,7 @@
                     gap: 8,
                     radius: 6,
                     onAction: (item) => {
-                        location.href = `session.html?groupKey=${encodeURIComponent(item._groupKey)}&date=${encodeURIComponent(item._date)}`;
+                        location.href = `/sessions/${encodeURIComponent(item._groupKey)}/${encodeURIComponent(item._date)}/details.html`;
                     },
                 });
                 gallery.setItems(items);

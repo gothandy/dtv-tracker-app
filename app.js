@@ -66,6 +66,7 @@ app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOpti
 app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
 app.use('/svg', express.static(path.join(__dirname, 'public', 'svg'), staticOptions));
+app.use('/media/embla', express.static(path.join(__dirname, 'public', 'media', 'embla'), staticOptions));
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Public pages — volunteer-facing, no login required (auth handled client-side via /auth/me)
@@ -134,17 +135,22 @@ app.get('/sessions/:group/:date/details.html', async (req, res) => {
 
 // Public cover image proxy — stable URL for og:image in social share previews
 // Serves the CoverMedia item (or first public item, or first item) for the session.
-// Image bytes are cached server-side (1h TTL) to avoid repeated SharePoint round-trips.
+// Public cover image proxy — stable URL for og:image and public gallery slides.
+// Authenticated users (admin/check-in): cover photo served regardless of isPublic; not cached.
+// Unauthenticated users: cover photo only served if isPublic is true; response cached 1h.
 app.get('/media/:group/:date/cover.jpg', async (req, res) => {
     const groupKey = req.params.group.toLowerCase();
     const dateParam = req.params.date;
+    const isAuthenticated = !!req.session?.user;
     const cacheKey = `${groupKey}/${dateParam}`;
     try {
-        const cached = getCoverCache(cacheKey);
-        if (cached) {
-            res.set('Content-Type', cached.contentType);
-            res.set('Cache-Control', 'public, max-age=3600');
-            return res.send(cached.data);
+        if (!isAuthenticated) {
+            const cached = getCoverCache(cacheKey);
+            if (cached) {
+                res.set('Content-Type', cached.contentType);
+                res.set('Cache-Control', 'public, max-age=3600');
+                return res.send(cached.data);
+            }
         }
 
         const driveId = mediaDriveId();
@@ -157,23 +163,30 @@ app.get('/media/:group/:date/cover.jpg', async (req, res) => {
 
         const spGroup = findGroupByKey(rawGroups, groupKey);
         const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
-        // CoverMedia is a lookup field: { LookupId: integer, LookupValue: "filename" }
         const coverMediaId = spSession?.[SESSION_COVER_MEDIA] ? parseInt(String(spSession[SESSION_COVER_MEDIA]), 10) || null : null;
-        const photo = (coverMediaId && photos.find(p => p.listItemId === coverMediaId))
-            || photos.find(p => p.isPublic !== false)
-            || photos[0];
+        const coverPhoto = coverMediaId ? photos.find(p => p.listItemId === coverMediaId) : null;
 
-        // largeUrl is a pre-signed Graph API thumbnail URL (works for both images and videos)
+        // Authenticated: serve cover as-is; unauthenticated: only if isPublic
+        const photo = isAuthenticated
+            ? coverPhoto
+            : (coverPhoto?.isPublic !== false ? coverPhoto : null);
+        if (!photo) return res.redirect('/img/logo-930.jpg');
+
         const imageUrl = photo.largeUrl || photo.thumbnailUrl;
         if (!imageUrl) return res.redirect('/img/logo-930.jpg');
 
         const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
         const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
         const imageData = Buffer.from(imageResponse.data);
-        setCoverCache(cacheKey, imageData, contentType);
+
+        if (!isAuthenticated) {
+            setCoverCache(cacheKey, imageData, contentType);
+            res.set('Cache-Control', 'public, max-age=3600');
+        } else {
+            res.set('Cache-Control', 'private, no-store');
+        }
 
         res.set('Content-Type', contentType);
-        res.set('Cache-Control', 'public, max-age=3600');
         res.send(imageData);
     } catch (err) {
         console.error(`Error serving cover image for ${groupKey}/${dateParam}:`, err);

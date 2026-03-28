@@ -3,6 +3,7 @@ import express, { Request, Response, Router } from 'express';
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId } from '../services/media-upload';
 import { requireAdmin } from '../middleware/require-admin';
+import { clearCoverCache } from '../services/cover-cache';
 
 const router: Router = express.Router();
 
@@ -101,6 +102,7 @@ router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response)
   try {
     const driveId = mediaDriveId();
     await sharePointClient.updateMediaItemFields(driveId, String(req.params.itemId), fields);
+    if ('IsPublic' in fields) clearCoverCache();
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error updating media item:', error);

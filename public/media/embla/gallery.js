@@ -1,5 +1,5 @@
 /**
- * MediaGallery — Embla-powered horizontal photo/video strip.
+ * MediaGallery — Embla-powered horizontal photo/video strip with thumbnail nav.
  *
  * Requires EmblaCarousel to be loaded as a global before this script.
  * CDN: https://unpkg.com/embla-carousel/embla-carousel.umd.js
@@ -11,13 +11,14 @@
  * Item shape: { id, thumbnailUrl, largeUrl, mimeType, title }
  *
  * Options:
- *   height    {number}   280              Gallery height in px
- *   minWidth  {number}   120              Minimum slide width in px
- *   maxWidth  {number}   560              Maximum slide width in px
- *   gap       {number}   8                Gap between slides in px
- *   radius    {number}   6                Slide border-radius in px
- *   quality   {string}   'large'          'large' or 'thumbnail'
- *   onAction  {function} null             onAction(item, index) — tap selected item
+ *   height      {number}   280    Main strip height in px
+ *   minWidth    {number}   120    Minimum slide width in px
+ *   maxWidth    {number}   560    Maximum slide width in px
+ *   gap         {number}   8      Gap between slides in px
+ *   radius      {number}   6      Slide border-radius in px
+ *   thumbHeight {number}   64     Thumbnail strip height in px
+ *   quality     {string}   'large'
+ *   onAction    {function} null   onAction(item, index) — tap selected item
  */
 class MediaGallery {
   constructor(container, options = {}) {
@@ -28,6 +29,8 @@ class MediaGallery {
       maxWidth: 560,
       gap: 8,
       radius: 6,
+      thumbHeight: 64,
+      thumbs: true,
       quality: 'large',
       onAction: null,
       ...options,
@@ -35,9 +38,11 @@ class MediaGallery {
 
     this._items = [];
     this._embla = null;
+    this._emblaThumb = null;
     this._viewport = null;
     this._track = null;
-    this._info = null;
+    this._thumbViewport = null;
+    this._thumbTrack = null;
     this._btnPrev = null;
     this._btnNext = null;
 
@@ -52,15 +57,15 @@ class MediaGallery {
   }
 
   setOptions(partial) {
-    const rebuildKeys = ['height', 'minWidth', 'maxWidth', 'gap', 'radius', 'quality'];
+    const rebuildKeys = ['height', 'minWidth', 'maxWidth', 'gap', 'radius', 'thumbHeight', 'thumbs', 'quality'];
     const needsRebuild = rebuildKeys.some(k => k in partial && partial[k] !== this._opts[k]);
     Object.assign(this._opts, partial);
-    this._viewport.style.height = this._opts.height + 'px';
     if (needsRebuild && this._items.length) this._initEmbla();
   }
 
   destroy() {
     if (this._embla) { this._embla.destroy(); this._embla = null; }
+    if (this._emblaThumb) { this._emblaThumb.destroy(); this._emblaThumb = null; }
     window.removeEventListener('keydown', this._onKey);
     this._el.innerHTML = '';
   }
@@ -70,23 +75,19 @@ class MediaGallery {
   _build() {
     this._el.innerHTML = '';
 
-    // Wrap holds the viewport + absolutely-positioned nav buttons so they
-    // overlay the gallery edges without being clipped by overflow:hidden.
     const wrap = document.createElement('div');
     wrap.className = 'mg-wrap';
 
-    // Embla root — overflow:hidden
+    // Main strip — overflow:hidden viewport + absolutely-positioned nav buttons
     this._viewport = document.createElement('div');
     this._viewport.className = 'mg-viewport';
     this._viewport.style.height = this._opts.height + 'px';
 
-    // Embla container — display:flex
     this._track = document.createElement('div');
     this._track.className = 'mg-track';
     this._viewport.appendChild(this._track);
     wrap.appendChild(this._viewport);
 
-    // Nav buttons sit in the wrap (not inside viewport) so they aren't clipped
     this._btnPrev = this._navBtn('‹', 'Previous', 'mg-nav-prev');
     this._btnNext = this._navBtn('›', 'Next', 'mg-nav-next');
     this._btnPrev.addEventListener('click', () => this._embla && this._embla.scrollPrev());
@@ -94,9 +95,20 @@ class MediaGallery {
     wrap.appendChild(this._btnPrev);
     wrap.appendChild(this._btnNext);
 
+    // Thumbnail strip (optional)
+    if (this._opts.thumbs) {
+      this._thumbViewport = document.createElement('div');
+      this._thumbViewport.className = 'mg-thumb-viewport';
+      this._thumbViewport.style.height = this._opts.thumbHeight + 'px';
+
+      this._thumbTrack = document.createElement('div');
+      this._thumbTrack.className = 'mg-thumb-track';
+      this._thumbViewport.appendChild(this._thumbTrack);
+      wrap.appendChild(this._thumbViewport);
+    }
+
     this._el.appendChild(wrap);
 
-    // Arrow-key navigation
     this._onKey = e => {
       if (!this._embla) return;
       if (e.key === 'ArrowLeft') this._embla.scrollPrev();
@@ -148,11 +160,14 @@ class MediaGallery {
 
   _initEmbla() {
     if (this._embla) { this._embla.destroy(); this._embla = null; }
+    if (this._emblaThumb) { this._emblaThumb.destroy(); this._emblaThumb = null; }
 
-    const { height, gap, radius } = this._opts;
+    const { height, gap, radius, thumbHeight } = this._opts;
+    const thumbWidth = Math.round(thumbHeight * (4 / 3));
+
+    // Main slides
     this._track.innerHTML = '';
     this._track.style.gap = gap + 'px';
-
     for (let i = 0; i < this._items.length; i++) {
       const item = this._items[i];
       const w = this._itemWidth(item);
@@ -179,23 +194,20 @@ class MediaGallery {
         inner.appendChild(ov);
       }
 
-      // Edit button — overlay, visible on hover of selected slide
-      const editBtn = document.createElement('button');
-      editBtn.className = 'mg-edit-btn';
-      editBtn.textContent = 'Edit';
-      editBtn.addEventListener('click', e => {
-        e.stopPropagation(); // don't bubble to slide click handler
-        if (this._opts.onAction) this._opts.onAction(item, i);
-      });
-      inner.appendChild(editBtn);
+      if (item.title) {
+        const caption = document.createElement('div');
+        caption.className = 'mg-caption';
+        caption.textContent = item.title;
+        inner.appendChild(caption);
+      }
 
-      // Caption pre-rendered with fixed position — "3 / 48 · Title"
-      const total = this._items.length;
-      const caption = document.createElement('div');
-      caption.className = 'mg-caption';
-      const title = item.title || '';
-      caption.textContent = `${i + 1} / ${total}${title ? '  ·  ' + title : ''}`;
-      inner.appendChild(caption);
+      if (item.isPublic === false) {
+        const badge = document.createElement('div');
+        badge.className = 'mg-private-badge';
+        badge.title = 'Not in public gallery';
+        badge.innerHTML = '<img src="/svg/nophoto.svg" width="18" height="18" alt="Private">';
+        inner.appendChild(badge);
+      }
 
       slide.appendChild(inner);
       this._track.appendChild(slide);
@@ -207,6 +219,7 @@ class MediaGallery {
       return;
     }
 
+    // Main Embla — free physics, variable-width slides
     this._embla = EmblaCarousel(this._viewport, {
       loop: false,
       align: 'center',
@@ -215,9 +228,69 @@ class MediaGallery {
 
     const slides = Array.from(this._track.children);
 
+    // Thumb strip — only when thumbs:true
+    let thumbSlides = [];
+    if (this._opts.thumbs) {
+      this._thumbTrack.innerHTML = '';
+      this._thumbTrack.style.gap = gap + 'px';
+      for (let i = 0; i < this._items.length; i++) {
+        const item = this._items[i];
+        const isVideo = item.mimeType && item.mimeType.startsWith('video/');
+
+        const slide = document.createElement('div');
+        slide.className = 'mg-thumb-slide';
+        slide.style.cssText = `width:${thumbWidth}px;height:${thumbHeight}px;`;
+
+        const inner = document.createElement('div');
+        inner.className = 'mg-thumb-inner';
+        inner.style.borderRadius = Math.round(radius * 0.5) + 'px';
+
+        const img = document.createElement('img');
+        img.src = item.thumbnailUrl || item.largeUrl || '';
+        img.alt = item.title || '';
+        img.onerror = () => inner.classList.add('img-error');
+        inner.appendChild(img);
+
+        if (isVideo) {
+          const ov = document.createElement('div');
+          ov.className = 'mg-video-overlay';
+          ov.innerHTML = '<div class="mg-play-icon mg-play-icon--sm">▶</div>';
+          inner.appendChild(ov);
+        }
+
+        if (item.isPublic === false) {
+          const badge = document.createElement('div');
+          badge.className = 'mg-private-badge';
+          badge.innerHTML = '<img src="/svg/nophoto.svg" width="12" height="12" alt="Private">';
+          inner.appendChild(badge);
+        }
+
+        slide.appendChild(inner);
+        this._thumbTrack.appendChild(slide);
+      }
+
+      this._emblaThumb = EmblaCarousel(this._thumbViewport, {
+        loop: false,
+        align: 'center',
+        containScroll: 'keepSnaps',
+        dragFree: true,
+      });
+
+      thumbSlides = Array.from(this._thumbTrack.children);
+      thumbSlides.forEach((slide, i) => {
+        slide.addEventListener('click', () => {
+          if (this._embla) this._embla.scrollTo(i);
+        });
+      });
+    }
+
     const updateSelection = () => {
       const sel = this._embla.selectedScrollSnap();
       slides.forEach((s, i) => s.classList.toggle('mg-selected', i === sel));
+      if (this._emblaThumb) {
+        thumbSlides.forEach((s, i) => s.classList.toggle('mg-selected', i === sel));
+        this._emblaThumb.scrollTo(sel);
+      }
     };
 
     const updateNav = () => {
@@ -228,12 +301,11 @@ class MediaGallery {
     this._embla.on('select', updateSelection);
     this._embla.on('settle', updateNav);
 
-    // Distinguish tap from drag: if scroll fired between pointerDown and click, it was a drag.
+    // Tap main slide — unselected: centre it; selected: onAction
     let dragHappened = false;
     this._embla.on('pointerDown', () => { dragHappened = false; });
     this._embla.on('scroll', () => { dragHappened = true; });
 
-    // Tap unselected slide → scroll to centre it. Tap already-selected slide → onAction.
     slides.forEach((slide, i) => {
       slide.addEventListener('click', () => {
         if (dragHappened) return;
@@ -247,6 +319,5 @@ class MediaGallery {
 
     updateSelection();
     updateNav();
-
   }
 }

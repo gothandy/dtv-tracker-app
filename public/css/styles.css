@@ -121,6 +121,7 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     align-items: center;
     gap: 0.75rem;
     font-size: 0.9rem;
+    min-height: 1.8rem;
 }
 .header-btn {
     display: inline-flex;
@@ -136,6 +137,7 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     font-size: 0.8rem;
     font-family: inherit;
     cursor: pointer;
+    min-height: 1.8rem;
 }
 .header-btn:hover {
     opacity: 1;
@@ -147,6 +149,7 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
     border-color: white;
     opacity: 1;
     font-weight: 600;
+    min-height: 1.8rem;
 }
 .header-btn.login-btn:hover {
     background: var(--green-light);
@@ -814,7 +817,7 @@ body.detail-page .container { max-width: 900px; padding: 1.5rem; flex: 1; min-wi
     .site-header h1 { font-size: 2rem; }
     .header-logo { height: 36px; }
     .header-top { flex-direction: column-reverse; }
-    .user-info { align-self: flex-end; margin-bottom: 0.25rem; }
+    .user-info { align-self: flex-end; margin-bottom: 0.25rem; min-height: 2.1rem; }
     .btn-label { display: none; }
     .login-btn .btn-label { display: inline; }
     .site-nav { padding: 0.6rem 1.25rem; }

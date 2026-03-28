@@ -366,6 +366,8 @@ Track which user made each change, for accountability and audit purposes. Three 
 1. **Delete** — No way to delete images. Delete button needed in the lightbox/gallery (admin/check-in only).
 2. **Edit in all locations** — Currently limited edit controls (title, IsPublic toggle) are only available in some views. Should be accessible wherever the gallery appears (session detail, profile detail, entry detail, homepage session cards).
 3. **Consistent gallery across locations** — Gallery UI (lightbox, photo strip, controls) should be consistent wherever photos appear. Currently the session detail gallery is more fully-featured than the homepage card strip.
+4. **Private cover photo indicator** — The cover proxy serves the logo when a session's cover photo is not marked IsPublic (including if toggled off directly in SharePoint). Admins won't know why the slide is showing the logo. Add a visual warning in the session detail / lightbox UI when the designated cover photo exists but is not public — e.g. a warning badge or note in the edit panel. Note: this can also happen silently via direct SharePoint edits, so the check should always be live against the current IsPublic state.
+5. **Private image indicator** — Add a visible "private" overlay/badge on images in the admin/check-in gallery view when IsPublic is false, so it's immediately obvious which photos aren't in the public gallery.
 
 ## Recording No Shows
 Currently we delete no shows. Suggest we start recording these against volunteers so we know who's likely to be a repeat offender.
