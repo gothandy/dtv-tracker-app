@@ -7,10 +7,6 @@ import { createAuthToken } from '../../services/auth-store';
 
 const router: Router = express.Router();
 
-const CALLBACK_BASE = process.env.WEBSITE_HOSTNAME
-  ? `https://${process.env.WEBSITE_HOSTNAME}/auth/magic/callback`
-  : `http://localhost:${process.env.PORT || 3000}/auth/magic/callback`;
-
 const AUTH_TTL_MS = parseInt(process.env.AUTH_BASIC_TTL_HOURS || '72', 10) * 60 * 60 * 1000;
 
 function setAuthCookie(res: Response, rawToken: string): void {
@@ -43,9 +39,12 @@ router.post('/magic/send', async (req: Request, res: Response) => {
   const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/') && returnTo.length <= 200
     ? returnTo : null;
 
+  // Build callback URL from the incoming request so it matches whatever domain the user is on
+  // (custom domain, not the Azure default .azurewebsites.net hostname).
+  const callbackBase = `${req.protocol}://${req.get('host')}/auth/magic/callback`;
   const callbackUrl = safeReturnTo
-    ? `${CALLBACK_BASE}?token=${token}&returnTo=${encodeURIComponent(safeReturnTo)}`
-    : `${CALLBACK_BASE}?token=${token}`;
+    ? `${callbackBase}?token=${token}&returnTo=${encodeURIComponent(safeReturnTo)}`
+    : `${callbackBase}?token=${token}`;
 
   try {
     const html = `<p>Click the button below to sign in to DTV Tracker. This link expires in 15 minutes.</p>

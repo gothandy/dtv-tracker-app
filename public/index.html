@@ -26,6 +26,10 @@
     <script>createHeader(undefined, true);</script>
 
     <div class="container">
+        <div id="trustedAccessWarning" style="display:none;margin-bottom:1rem;padding:0.875rem 1rem;background:var(--surface);border:1px solid var(--border-mid);border-radius:var(--radius);font-size:0.9rem;">
+            You're signed in with your personal account. You also have a <a id="trustedAccessLink" href="/login.html">trusted account</a> with additional access.
+        </div>
+
         <div id="mediaGalleryWrap" style="margin-bottom:1.5rem"></div>
         <script>
             (function() {
@@ -34,10 +38,6 @@
                 wrap.style.height = Math.round(maxWidth * 0.70) + 'px';
             })();
         </script>
-
-        <div id="trustedAccessWarning" style="display:none;margin-bottom:1rem;padding:0.875rem 1rem;background:var(--surface);border:1px solid var(--border-mid);border-radius:var(--radius);font-size:0.9rem;">
-            You're signed in with your personal account. You also have a <a id="trustedAccessLink" href="/login.html">trusted account</a> with additional access.
-        </div>
 
         <div id="sessionSection"></div>
         <div class="session-eventbrite-cta unauth-only">
