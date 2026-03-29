@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-03-23
+**Last Updated**: 2026-03-29
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
@@ -42,7 +42,7 @@ Feature-complete volunteer tracking application with:
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: Google, Facebook, magic link email (volunteer self-service) and Microsoft (trusted users) options with role descriptions; Facebook login uses `m.facebook.com` OAuth URL (bypasses Android intent routing to native app); all auth uses direct navigation (no popup/CCT/BroadcastChannel); magic link shown when `SMTP_HOST` is configured ([public/login.html](public/login.html))
+- Unified sign-in page: magic link email (volunteer self-service, shown when `MAIL_SENDER` is configured) and Microsoft (trusted users) options; on successful magic link send, login cards are replaced by a sent-confirmation section with 15-minute countdown and "Back to Login" link; reason codes (`not-approved`, `not-found`, `invalid-state`) shown as warning banners ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Consent collection page: served at `/profiles/:slug/consent.html`; accessible to check-in, admin, and self-service (own profile only); fetches profile by slug, shows privacy (required) and photo (optional) consent checkboxes plus privacy policy link; submits to `POST /api/profiles/:id/consent` which upserts both records dated today ([public/consent.html](public/consent.html))
 - Media library page (authenticated): lists all sessions with photos as an Embla horizontal carousel using session cover images; clicking a session navigates to its gallery ([public/media/index.html](public/media/index.html))
@@ -57,7 +57,7 @@ Feature-complete volunteer tracking application with:
 
 ## Data Model
 
-The application uses 6 SharePoint lists on the Tracker site (`/sites/tracker`):
+The application uses 7 SharePoint lists on the Tracker site (`/sites/tracker`):
 
 ### 1. Groups List
 **GUID**: `6e86cef7-a855-41a4-93e8-6e01a80434a2`
@@ -228,9 +228,9 @@ Detail pages (session detail, profile detail) always fetch live entry data — S
 - Entries default Checked to false
 
 ### Permissions / Authorization
-- Five access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Self-Service** (volunteer Google/Facebook login — own profile only + session sign-up + photo upload), **Public** (unauthenticated — limited non-privacy view)
+- Five access levels: **Admin** (full access), **Check In** (field-day operations), **Read Only** (view all data, no edits), **Self-Service** (volunteer magic link login — own profile only + session sign-up + photo upload), **Public** (unauthenticated — limited non-privacy view)
 - **"Trusted"** = Admin + Check In + Read Only (all Microsoft-auth roles). Self-Service is explicitly **not** trusted — it has stricter restrictions than Read Only: cannot view other volunteers' profiles, entries, or the volunteers listing; owns its own data only.
-- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by any email in the Profile `Email` field (Google/Facebook login — comma-separated list supported); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
+- Admin users set via `ADMIN_USERS` env var; Check In users matched by Profile `User` field (Microsoft login); Self-Service users matched by any email in the Profile `Email` field (magic link — comma-separated list supported); everyone else logged in via Microsoft is Read Only; unauthenticated visitors are Public
 - Role computed at login, stored in session; Public has no session role (`body[data-role]` not set)
 - Backend: `requireAuth` middleware gates all API routes (whitelist of public paths); `requireAdmin` middleware enforces role-based rules; route handlers enforce ownership for self-service users (profile ID check on `GET /api/profiles/:slug` etc.)
 - Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only` (Admin + Check In + Read Only; hidden from Self-Service and Public), `.auth-only` (any logged-in user), `.unauth-only` (Public only), `.selfservice-only` (Self-Service only)
@@ -276,8 +276,8 @@ dtv-tracker-app/
 │   └── express-session.d.ts       # Session type augmentation for auth
 ├── services/
 │   ├── auth-config.ts             # MSAL client configuration (Microsoft OAuth)
+│   ├── auth-store.ts              # createAuthToken / validateAuthToken — 128-bit token, SHA-256 hash stored in Logins list
 │   ├── personal-auth.ts           # Shared personal account session resolution (email → profile match)
-│   ├── magic-auth.ts              # passport-magic-login strategy; sends via graph-mail.ts
 │   ├── graph-mail.ts              # sendEmail() via Microsoft Graph API (reuses app credentials)
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination); luxon-based date helpers convert between raw UTC ISO (SharePoint) and YYYY-MM-DD (app) using SHAREPOINT_TIMEZONE
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
@@ -308,12 +308,11 @@ dtv-tracker-app/
 │   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
 │   ├── backup.ts                  # Backup endpoint: thin wrapper calling runBackupExport()
 │   └── auth/
-│       ├── index.ts               # Auth router: Passport strategy config, passport.initialize(), /providers, /me, /logout
+│       ├── index.ts               # Auth router: mounts dtv + magic routers; /providers, /me, /logout (clears dtv-auth cookie)
 │       ├── dtv.ts                 # DTV Account (Entra ID / Microsoft) login + callback
-│       ├── google.ts              # Google OAuth login + callback (passport-google-oauth20)
-│       ├── facebook.ts            # Facebook OAuth login + callback (passport-facebook, m.facebook.com)
-│       └── magic.ts               # Magic link email login: POST /send + GET /callback (passport-magic-login)
+│       └── magic.ts               # Magic link email login: POST /send (15min JWT) + GET /callback (createAuthToken → dtv-auth cookie)
 ├── middleware/
+│   ├── auth.ts                    # Cookie auth middleware: reads dtv-auth cookie → validateAuthToken → req.session.user (selfservice)
 │   ├── require-auth.ts            # Auth guard middleware
 │   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only / Public)
 ├── public/
@@ -328,7 +327,7 @@ dtv-tracker-app/
 │   ├── add-entry.html             # Add entry (register volunteer to session)
 │   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
 │   ├── consent.html               # Consent collection page — served at /profiles/:slug/consent.html; check-in, admin, and self-service (own profile)
-│   ├── login.html       # Unified sign-in page: volunteer (Google/Facebook) and trusted users (Microsoft) options; Facebook uses m.facebook.com + target=_blank (PWA) / window.open (Chrome)
+│   ├── login.html                 # Unified sign-in page: magic link (volunteer self-service) and Microsoft (trusted users); sent-confirmation section with 15-min countdown replaces cards after send
 │   ├── admin.html                 # Admin page (Eventbrite sync, exports)
 │   ├── css/
 │   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
@@ -401,11 +400,10 @@ dtv-tracker-app/
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
 - [x] Volunteer media upload via authenticated entry ID (check-in+ clicks Upload on entry detail; navigates to `/upload.html?entryId=:id`; self-service volunteers can also upload from their profile or session page); accepts photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV); max 10 files, 10 MB each
 - [x] Upload completion screen: shows file count, review notice; link to session gallery
-- [x] Self-service volunteer login via Google and Facebook OAuth — `Profile.Email` field controls access (set by admin/check-in); supports comma-separated list so one profile can match multiple OAuth accounts (e.g. personal + old address); volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level
+- [x] Self-service volunteer login via magic link email — `Profile.Email` field controls access (set by admin/check-in); supports comma-separated list so one profile can match multiple email addresses (e.g. personal + old address); volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level
 - [x] Volunteer sign-up for sessions (self-service role): own profile only, future sessions only, duplicate prevention
 - [x] Self-service privacy hardening: regulars list hidden on group pages (shows "You are a regular" message if applicable); profile slugs require numeric ID suffix to prevent path confusion; `GET /api/tags/hours-by-taxonomy?profile=` requires authentication; media `name`/`webUrl` (contain uploader PII) stripped from public API responses
-- [x] Facebook login on Android: `m.facebook.com` OAuth URL bypasses Android's intent filter for the native Facebook app; direct-navigation flow (no popup/CCT/polling); all personal auth (Google, Facebook, magic link) handled via Passport.js
-- [x] Magic link email login: enter email → receive one-time link (15min expiry) → click → logged in; shown on login page when `SMTP_HOST` is configured; uses `passport-magic-login` + nodemailer
+- [x] Magic link auth: 128-bit random token, SHA-256 hash stored in SharePoint Logins list; 72h TTL; multi-device (each token valid independently); `dtv-auth` cookie read by `middleware/auth.ts` on every request; `passport`, Google OAuth, and Facebook OAuth fully removed
 - [x] Session media storage in SharePoint Media Library (`{groupKey}/{date}/` folder structure); capture date extracted from EXIF (images) or MP4/MOV container metadata (videos)
 - [x] Session gallery with lightbox viewer on session detail page; videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect); public users restricted to `IsPublic` items
 - [x] Session taxonomy tags via SharePoint Managed Metadata Term Store (hierarchical tag picker)
@@ -445,9 +443,8 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
 - The `Code` field on the Entries list is no longer used for uploads (the code-based upload system was replaced by authenticated entry-ID-based upload). The field is left in SharePoint but no longer read or written.
-- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars are required for Google OAuth (self-service volunteer login). Create a Web Application OAuth 2.0 client in Google Cloud Console and register `/auth/google/callback` as an authorized redirect URI for both localhost and production domains.
-- `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` env vars are required for Facebook OAuth. Register `/auth/facebook/callback` as a valid OAuth redirect URI in the Facebook Developer Console; the app must be in Live mode for non-developer users to log in.
-- `MAIL_SENDER` env var enables magic link email login (optional — the button is hidden when not set). Must be the UPN/address of a mailbox the Azure app has `Mail.Send` permission for. Emails sent via Graph API (`POST /v1.0/users/{sender}/sendMail`); reuses existing app credentials. Add `Mail.Send` application permission in the Azure app registration and grant admin consent.
+- `MAIL_SENDER` env var enables magic link email login (optional — the Volunteer Sign In card is hidden when not set). Must be the UPN/address of a mailbox the Azure app has `Mail.Send` permission for. Emails sent via Graph API (`POST /v1.0/users/{sender}/sendMail`); reuses existing app credentials. Add `Mail.Send` application permission in the Azure app registration and grant admin consent.
+- `AUTH_BASIC_TTL_HOURS` env var: lifetime of `dtv-auth` cookie tokens (default `72`). Tokens are stored as SHA-256 hashes in the SharePoint Logins list (GUID `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57`). Emergency revocation: clear all items from the Logins list.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".
@@ -463,4 +460,4 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 
 ---
 
-*Last Updated: 2026-03-22*
+*Last Updated: 2026-03-29*

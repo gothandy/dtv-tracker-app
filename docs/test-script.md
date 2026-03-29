@@ -23,7 +23,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated `GET /api/entries/recent` returns 401
 - [ ] Unauthenticated visit to `/` does not trigger a `GET /api/entries/recent` request (check Network tab — recent sign-ups section should not be fetched)
 - [ ] Unauthenticated API 401 response (from `apiFetch` in common.js) redirects to `/login.html?returnTo=...` not `/auth/login`
-- [ ] `/login.html` shows Google, Facebook, and Microsoft login options
+- [ ] `/login.html` shows Volunteer Sign In (magic link) and DTV Teams Account (Microsoft) cards; Volunteer card only shown when `MAIL_SENDER` is configured
+- [ ] Enter email, click "Send sign-in link" → both cards hide, sent-confirmation section appears with 15:00 countdown
+- [ ] Countdown ticks down to 00:00 then stops
+- [ ] Click "Didn't receive the link? Back to Login" → cards restored, countdown stopped, form re-enabled
+- [ ] Click magic link in email → signed in, redirected to destination (or `/` if no returnTo)
+- [ ] Click expired magic link (wait >15min) → redirected to `/login.html?reason=invalid-state`
+- [ ] Email not in Profiles → redirected to `/login.html?reason=not-approved` with warning banner
 - [ ] Successful Microsoft login redirects back to `/` (or originally requested page via `returnTo`)
 - [ ] Click Logout — session cleared, redirected to Microsoft logout
 - [ ] API key auth: `POST /api/eventbrite/nightly-update` with valid `X-Api-Key` succeeds without session

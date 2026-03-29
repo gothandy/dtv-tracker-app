@@ -1,11 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs').promises;
 const apiRoutes = require('./dist/routes/api');
 const authRoutes = require('./dist/routes/auth');
 const { requireAuth } = require('./dist/middleware/require-auth');
+const { authMiddleware } = require('./dist/middleware/auth');
 const { groupsRepository } = require('./dist/services/repositories/groups-repository');
 const { sessionsRepository } = require('./dist/services/repositories/sessions-repository');
 const { findGroupByKey, findSessionByGroupAndDate, convertGroup } = require('./dist/services/data-layer');
@@ -34,8 +36,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(express.json());
+app.use(cookieParser());
 
-// Session management
+// Session management (used for DTV account auth and returnTo during login flows)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
     resave: false,
@@ -43,10 +46,14 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000, // 8 hours
+        maxAge: 8 * 60 * 60 * 1000, // 8 hours — DTV account sessions only
         sameSite: 'lax',
     },
 }));
+
+// Auth middleware — populates req.session.user from dtv-auth cookie for self-service volunteers.
+// Must run after session() so DTV account sessions are already present.
+app.use(authMiddleware);
 
 // Health check (unprotected — Azure health probes)
 app.get('/api/health', (req, res) => {

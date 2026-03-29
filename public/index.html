@@ -58,7 +58,7 @@
             .then(r => r.ok ? r.json() : null)
             .then(body => {
                 const sessions = (body?.data || []).filter(s => s.mediaCount > 0);
-                if (!sessions.length) return;
+                if (!sessions.length) { wrap.style.display = 'none'; return; }
                 const items = sessions.map(s => ({
                     id: s.id,
                     largeUrl: `/media/${encodeURIComponent(s.groupKey)}/${encodeURIComponent(s.date)}/cover.jpg`,

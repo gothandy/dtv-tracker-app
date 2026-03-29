@@ -175,6 +175,28 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 ---
 
+## 7. Logins List
+
+**Purpose**: Persistent auth token store for magic link sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `AUTH_BASIC_TTL_HOURS` (default 72h). Emergency revocation: delete all items.
+
+**List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57`
+
+### Columns
+
+| Column Name | Internal Name | Type | Required | Description |
+|-------------|---------------|------|----------|-------------|
+| Title | Title | Single line of text | Yes | SHA-256 hex hash of the raw 128-bit token; built-in, indexed by default |
+| Profile | Profile | Lookup (→ Profiles) | Yes | Profile the token was issued for |
+| Created | Created | Date (auto) | — | Token issue date; used for 72h TTL query (`Created ge '<since>'`); auto-managed by SharePoint |
+
+### Notes
+- `Title` stores only the SHA-256 hash — the raw token is never persisted
+- Multiple rows per profile are normal (multiple devices / multiple logins)
+- `validateAuthToken` queries: `fields/Title eq '<hash>' and fields/Created ge '<now-minus-TTL>'`
+- Rows are not automatically pruned; clear the list for emergency revocation
+
+---
+
 ## 6. Records List
 
 **Purpose**: Tracks consents, benefits, and governance items per volunteer profile
@@ -274,4 +296,4 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 ---
 
-*Last Updated: 2026-03-21*
+*Last Updated: 2026-03-29*

@@ -73,6 +73,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       role,
       profileSlug: matchedProfile ? profileSlug(matchedProfile.Title, matchedProfile.ID) : undefined,
       profileId: matchedProfile?.ID,
+      freshAuthAt: new Date().toISOString(),
     };
 
     const returnTo = req.session.returnTo || '/';

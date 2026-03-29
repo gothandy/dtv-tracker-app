@@ -82,6 +82,19 @@
 .signups-empty { padding: 1rem 1.5rem; color: var(--text-faint); font-size: 0.9rem; }
 
 
+/* Gallery skeleton — visible while sessions fetch is in-flight */
+#mediaGalleryWrap {
+    border-radius: 6px;
+    overflow: hidden;
+    background: linear-gradient(90deg, #e2e2e2 25%, #ececec 50%, #e2e2e2 75%);
+    background-size: 400% 100%;
+    animation: gallery-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes gallery-shimmer {
+    0%   { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
 .refresh-message { text-align: center; font-size: 0.9rem; color: var(--green); margin-bottom: 1.5rem; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
