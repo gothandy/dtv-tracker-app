@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colours */
+  --color-dtv-dark: #0f0e17;
+  --color-dtv-green: #4FAF4A;
+  --color-dtv-light: #fffffe;
+
+  /* Fonts */
+  --font-display: 'Rubik Dirt', cursive;
+  --font-body: 'Momo Trust Display', cursive;
+
+  /* No border radius — square corners throughout */
+  --radius: 0;
+}
+
+@layer base {
+  @font-face {
+    font-family: 'Rubik Dirt';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('https://cdn.jsdelivr.net/fontsource/fonts/rubik-dirt@latest/latin-400-normal.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Momo Trust Display';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('https://cdn.jsdelivr.net/fontsource/fonts/momo-trust-display@latest/latin-400-normal.woff2') format('woff2');
+  }
+
+  html, body {
+    background-color: theme(--color-dtv-dark);
+    color: theme(--color-dtv-light);
+    font-family: theme(--font-body);
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-family: theme(--font-display);
+  }
+}

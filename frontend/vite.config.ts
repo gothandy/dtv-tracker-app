@@ -1,16 +1,24 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
+import { execSync } from 'child_process'
+
+function getCommit(): string {
+  try { return execSync('git rev-parse HEAD').toString().trim() } catch { return '' }
+}
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue({ template: { transformAssetUrls: false } }), tailwindcss()],
   base: process.env.VITE_BASE_PATH ?? '/',
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __GIT_COMMIT__: JSON.stringify(getCommit()),
+  },
   server: {
     port: 5173,
     proxy: {
       '/api':  'http://localhost:3000',
       '/auth': 'http://localhost:3000',
-      '/img':  'http://localhost:3000',
-      '/svg':  'http://localhost:3000',
     }
   }
 })

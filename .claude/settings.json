@@ -12,7 +12,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(npm uninstall:*)",
       "Bash(\"c:\\\\Users\\\\gotha\\\\dtv-tracker-app\\\\.env\")",
-      "Bash(npx vue-tsc:*)"
+      "Bash(npx vue-tsc:*)",
+      "Read(//c/Users/gotha/Downloads/**)"
     ],
     "defaultMode": "plan",
     "additionalDirectories": [

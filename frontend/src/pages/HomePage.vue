@@ -1,6 +1,10 @@
 <template>
-  <h1>My DTV Tracker</h1>
-  <h2>How we doing?</h2>
-  <h2>What's been happening?</h2>
-  <h2>Want to get involved?</h2>
+  <DefaultLayout>
+    <h1 class="text-dtv-green text-4xl uppercase mb-4">My DTV Tracker</h1>
+    <p class="text-black">How we doing?</p>
+  </DefaultLayout>
 </template>
+
+<script setup lang="ts">
+import DefaultLayout from '../layouts/DefaultLayout.vue'
+</script>
