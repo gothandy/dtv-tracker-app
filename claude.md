@@ -16,6 +16,8 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 **Last Updated**: 2026-03-29
 
+> **Frontend migration in progress**: A new Vue 3 + Vite frontend is being built in `frontend/`. During migration the old site continues to run from `public/` at `/`. The new frontend is accessible at `/v2/` on the live site (built with `VITE_BASE_PATH=/v2/`). At cut-over, `public/` will be deleted and Express will serve `frontend/dist/` at `/`.
+
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
 - Microsoft Entra ID authentication with session management ([routes/auth/dtv.ts](routes/auth/dtv.ts))
@@ -258,6 +260,18 @@ dtv-tracker-app/
 ├── package.json
 ├── tsconfig.json                   # TypeScript configuration
 ├── CLAUDE.md                       # This file - project context for Claude
+├── frontend/                       # Vue 3 + Vite frontend (new — in development)
+│   ├── index.html                  # Vite entry point
+│   ├── vite.config.ts              # Dev proxy (/api, /auth, /img, /svg → Express); VITE_BASE_PATH for staging
+│   ├── tsconfig.json               # Frontend TypeScript config
+│   ├── package.json                # Independent package (own node_modules)
+│   ├── dist/                       # Built output — served by Express at /v2/ during migration
+│   └── src/
+│       ├── main.ts                 # App bootstrap (Vue + Pinia + Router)
+│       ├── App.vue                 # Root component
+│       ├── router/index.ts         # Vue Router route definitions
+│       └── pages/
+│           └── HomePage.vue        # Hello World placeholder
 ├── docs/
 │   ├── permissions.md             # Role-based permissions reference
 │   ├── progress.md                # Development session notes
@@ -424,16 +438,26 @@ dtv-tracker-app/
 ## Running the Application
 
 ```bash
+# Terminal 1 — Express API server
 npm install       # Install dependencies
 npm run build     # Compile TypeScript
 npm run dev       # Start with auto-reload (development)
-# or
-npm start         # Start without auto-reload
 
-# Visit http://localhost:3000
+# Terminal 2 — Vue frontend dev server
+npm run frontend:dev   # Starts Vite at http://localhost:5173
+
+# Visit http://localhost:5173 — Vite proxies all /api and /auth calls to Express
 
 npm run test:live # Integration tests — require live SharePoint credentials, run locally only
 ```
+
+**Frontend build scripts (run from repo root):**
+```bash
+npm run frontend:build           # Production build (base = /)
+npm run frontend:build:staging   # Staging build served at /v2/ on live site (base = /v2/)
+```
+
+**Local auth:** Add `FRONTEND_URL=http://localhost:5173` to `.env` so post-login redirects (Microsoft OAuth and magic link) land on Vite instead of `localhost:3000`. Unset in production — no effect on live site.
 
 ## Important Notes
 
@@ -449,6 +473,7 @@ npm run test:live # Integration tests — require live SharePoint credentials, r
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".
 - `SHAREPOINT_TIMEZONE` env var: IANA timezone identifier for the SharePoint site's configured timezone (default `Europe/London`). Must match the timezone set in SharePoint site settings. Used by `sharepoint-client.ts` for all Date-Only field conversions (read and write). Run `node scripts/check-session-dates.js` to verify stored UTC values are consistent.
+- `FRONTEND_URL` env var: post-login redirect target for local frontend development (e.g. `http://localhost:5173`). When set, Microsoft OAuth and magic link callbacks redirect here instead of `/`. Leave unset in production.
 - Term Store access requires `TermStore.ReadWrite.All` application permission on the Azure app registration (admin consent required). Uses the Graph API **beta** endpoint — see [docs/tagging.md](docs/tagging.md) for full implementation notes.
 
 ## Known Constraints

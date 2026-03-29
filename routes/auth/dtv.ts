@@ -76,7 +76,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       freshAuthAt: new Date().toISOString(),
     };
 
-    const returnTo = req.session.returnTo || '/';
+    const returnTo = req.session.returnTo || process.env.FRONTEND_URL || '/';
     delete req.session.returnTo;
     res.redirect(returnTo);
   } catch (error: any) {

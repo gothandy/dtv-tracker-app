@@ -1,5 +1,39 @@
 # Development Progress
 
+## Session: 2026-03-29 (Vue 3 + Vite frontend scaffold)
+
+### Completed Tasks
+
+#### Frontend migration — scaffold ✓
+
+New `frontend/` directory with a clean Vue 3 + Vite project. The old `public/` site is untouched throughout; `frontend/` is built in parallel and served at `/v2/` during migration. Cut-over happens when the new frontend is feature-complete.
+
+**New files:**
+- `frontend/package.json` — independent package (`dtv-tracker-frontend`); own `node_modules`
+- `frontend/vite.config.ts` — dev proxy for `/api`, `/auth`, `/img`, `/svg` → Express port 3000; `base` driven by `VITE_BASE_PATH` env var (default `/`)
+- `frontend/tsconfig.json` — Vue + Vite TypeScript config with `vite/client` types
+- `frontend/index.html` — Vite entry point
+- `frontend/src/main.ts` — app bootstrap (Vue + Pinia + Router)
+- `frontend/src/App.vue` — root component
+- `frontend/src/router/index.ts` — Vue Router (single route: `/` → `HomePage`)
+- `frontend/src/pages/HomePage.vue` — Hello World placeholder
+
+**Modified:**
+- `routes/auth/dtv.ts` — post-login redirect uses `process.env.FRONTEND_URL` fallback; enables full end-to-end auth on Vite dev server
+- `routes/auth/magic.ts` — same `FRONTEND_URL` fallback on magic link callback
+- `app.js` — added two lines serving `frontend/dist/` at `/v2/` for live staging (Express 5 syntax: `/v2/*path`)
+- `.github/workflows/main_dtvtrackerapp.yml` — added frontend build step (`VITE_BASE_PATH=/v2/ npm run build`) and `frontend/dist/` included in deployment zip
+- `package.json` — added `frontend:dev`, `frontend:build`, `frontend:build:staging` convenience scripts; added `cross-env` dev dependency
+
+**Development workflow:**
+- Terminal 1: `npm run dev` (Express on port 3000)
+- Terminal 2: `npm run frontend:dev` (Vite on port 5173)
+- Add `FRONTEND_URL=http://localhost:5173` to `.env` for full auth flow via Vite
+
+**Staging:** Push to `main` → GitHub Actions builds `frontend/dist/` with `VITE_BASE_PATH=/v2/` → live at `yoursite.com/v2/`
+
+---
+
 ## Session: 2026-03-28 (Standalone media gallery pages)
 
 ### Completed Tasks

@@ -29,11 +29,17 @@ jobs:
           npm run build --if-present
           npm run test --if-present
 
+      - name: Build frontend (staging at /v2/)
+        run: |
+          cd frontend
+          npm install
+          VITE_BASE_PATH=/v2/ npm run build
+
       - name: Prune dev dependencies
         run: npm prune --production
 
       - name: Create deployment zip
-        run: zip -r release.zip app.js package.json dist/ node_modules/ public/
+        run: zip -r release.zip app.js package.json dist/ node_modules/ public/ frontend/dist/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

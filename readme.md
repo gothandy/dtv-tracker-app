@@ -12,11 +12,13 @@ npm install
 # Create .env file with your credentials (see Setup section)
 
 npm run build           # Compile TypeScript
-npm run dev:tracker     # Start with auto-reload (development)
-# or
-npm start               # Start without auto-reload
+npm run dev:tracker     # Start Express with auto-reload (development)
 
-# Visit http://localhost:3000
+# In a second terminal — Vue frontend dev server
+npm run frontend:dev    # Start Vite on http://localhost:5173
+
+# Visit http://localhost:5173 (frontend)
+# API available at http://localhost:3000
 ```
 
 
@@ -114,19 +116,61 @@ The tests hit live SharePoint — they verify auth, list access, field shapes, a
 ### 5. Build and Run
 
 ```bash
+# Terminal 1 — Express API server
 npm run build           # Compile TypeScript
 npm run dev:tracker     # Start with nodemon using .env.tracker
+
+# Terminal 2 — Vue frontend dev server
+npm run frontend:dev    # Starts Vite on http://localhost:5173
 ```
 
-The server runs at http://localhost:3000.
+**Express** runs at http://localhost:3000 (API only during frontend development).
+**Frontend** runs at http://localhost:5173 — Vite proxies all `/api` and `/auth` requests to Express automatically.
 
-**Restarting after a code change**: nodemon watches the `dist/` folder, so run `npm run build` in a second terminal and nodemon will restart automatically. If you need a full restart, stop nodemon (Ctrl+C), run `npm run build`, then `npm run dev:tracker` again.
+**Restarting after a backend code change**: nodemon watches the `dist/` folder, so run `npm run build` in a second terminal and nodemon will restart automatically.
+
+**Frontend convenience scripts** (run from repo root):
+```bash
+npm run frontend:dev             # Start Vite dev server
+npm run frontend:build           # Production build (base = /)
+npm run frontend:build:staging   # Staging build (base = /v2/)
+```
+
+### 6. Environment variables for local frontend development
+
+Add `FRONTEND_URL` to your `.env` so post-login auth redirects land on the Vite dev server:
+
+```bash
+FRONTEND_URL=http://localhost:5173
+```
+
+Without this, after a Microsoft or magic-link login Express redirects to `localhost:3000` instead of `localhost:5173`.
 
 ## Deployment
 
 The app is hosted on **Azure App Service** (Node.js, UK South region).
 
 All environment variables from `.env` must be configured in Azure App Service > Configuration > Application settings.
+
+### CI/CD — GitHub Actions
+
+Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on every push to `main`.
+
+**Build job:**
+1. Installs root dependencies (`npm install`)
+2. Compiles TypeScript (`npm run build`)
+3. Installs frontend dependencies and builds with `VITE_BASE_PATH=/v2/` — output to `frontend/dist/`
+4. Prunes dev dependencies
+5. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, `public/`, and `frontend/dist/` into `release.zip`
+
+**Deploy job:**
+1. Authenticates with Azure via OIDC (no stored secrets — uses federated identity)
+2. Disables Kudu build-on-deploy (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`)
+3. Deploys `release.zip` directly to Azure App Service
+
+**Frontend staging:** The built `frontend/dist/` is served by Express at `/v2/` — accessible at `yoursite.com/v2/` after every deploy. This is temporary during the frontend migration; the `/v2/` path will be removed at cut-over.
+
+**No manual deploy steps required** — push to `main` and the workflow handles everything.
 
 ### Scheduled Eventbrite Sync
 
@@ -277,9 +321,16 @@ dtv-tracker-app/
 │   ├── stats.ts        # Dashboard stats, cache, config
 │   ├── eventbrite.ts   # Eventbrite sync endpoints
 │   ├── upload.ts       # Public photo upload endpoints (validate + upload, no auth)
-│   └── auth.ts         # Authentication (login, callback, logout)
+│   └── auth/           # Authentication (Microsoft + magic link)
 ├── middleware/          # Auth guard middleware (session + API key)
-├── public/             # Frontend HTML/CSS/JS (10 pages, served statically)
+├── frontend/           # Vue 3 + Vite frontend (new — in development)
+│   ├── src/
+│   │   ├── pages/      # Page components (thin wrappers)
+│   │   ├── router/     # Vue Router
+│   │   └── main.ts     # App bootstrap
+│   ├── vite.config.ts  # Dev proxy config; VITE_BASE_PATH for staging builds
+│   └── dist/           # Built output (served by Express at /v2/ during migration)
+├── public/             # Legacy frontend HTML/CSS/JS (being replaced by frontend/)
 ├── docs/               # SharePoint schema, setup guides, progress notes
 └── test/               # Auth and data verification scripts
 ```

@@ -76,6 +76,10 @@ app.use('/svg', express.static(path.join(__dirname, 'public', 'svg'), staticOpti
 app.use('/media/embla', express.static(path.join(__dirname, 'public', 'media', 'embla'), staticOptions));
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
+// frontend staging at /v2/ — remove at cut-over
+app.use('/v2', express.static(path.join(__dirname, 'frontend', 'dist')));
+app.get('/v2/*path', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
+
 // Public pages — volunteer-facing, no login required (auth handled client-side via /auth/me)
 app.get('/upload.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'upload.html'));

@@ -10,7 +10,9 @@
       "Bash(mv home.html home-before-first.html)",
       "WebFetch(domain:www.embla-carousel.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(\"c:\\\\Users\\\\gotha\\\\dtv-tracker-app\\\\.env\")",
+      "Bash(npx vue-tsc:*)"
     ],
     "defaultMode": "plan",
     "additionalDirectories": [
