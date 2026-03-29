@@ -9,7 +9,8 @@
       "Bash(mv public.html home-public.html)",
       "Bash(mv home.html home-before-first.html)",
       "WebFetch(domain:www.embla-carousel.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm uninstall:*)"
     ],
     "defaultMode": "plan",
     "additionalDirectories": [

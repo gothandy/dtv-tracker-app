@@ -86,14 +86,6 @@ ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
 # Session secret (change in production)
 SESSION_SECRET=your_session_secret_here
 
-# Google OAuth (self-service volunteer login)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# Facebook OAuth (self-service volunteer login)
-FACEBOOK_APP_ID=your_facebook_app_id
-FACEBOOK_APP_SECRET=your_facebook_app_secret
-
 # Magic link email login — sent via Microsoft Graph API (Mail.Send permission required)
 MAIL_SENDER=noreply@dtv.org.uk   # UPN of the shared mailbox to send from
 ```

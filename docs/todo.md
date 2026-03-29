@@ -31,12 +31,6 @@ When an admin/check-in user loads the homepage, silently check Eventbrite for ne
 
 ---
 
-## Auth: Google & Facebook Login
-*Touches: `routes/auth/index.ts`, `routes/auth/google.ts`, `routes/auth/facebook.ts`, `login.html`*
-
-Google and Facebook buttons are currently hidden on the login page pending further testing of magic link as the sole personal login method. Facebook has a confirmed OAuth issue on Android (redirect URI blocked); root cause not fully resolved. If magic link proves sufficient, remove both OAuth strategies, route files, and the `passport-facebook`/`passport-google-oauth20` packages.
-
----
 
 ## Sessions Listing: Search & Filter Enhancements
 *Touches: `sessions.html`, `sessions.js`, `session-cards.js`, `tags.ts`*
@@ -174,8 +168,23 @@ Allow check-in users to create a task in Microsoft Planner directly from the ses
 
 ---
 
+## Auth: Magic Link Improvements (Deferred)
+*Touches: `middleware/require-fresh-auth.ts` (new), `public/login.html`, `routes/auth/magic.ts`, nightly sync*
+
+Deferred from 2026-03-29 auth rewrite. Foundation (SharePoint Logins list, 72h token, custom magic link) is in place.
+
+**Step-up auth** — `freshAuthAt` is already tracked on the session user (Auth list `Created`). Add `middleware/require-fresh-auth.ts`: if `freshAuthAt` is older than `AUTH_STEPUP_WINDOW_MINUTES` (default 30), auto-send a fresh magic link to the email on the account, return `401 { stepUp: true }`. Apply to selfservice users on profile edit, consent, media upload, entry delete. Frontend `apiFetch()` in `common.js` shows a dismissable overlay on `401 + stepUp: true` instead of redirecting to login.
+
+**BroadcastChannel login flow** — Callback serves inline HTML that broadcasts `{ type: 'auth-success', destination }` on `BroadcastChannel('dtv-auth')` and shows "✓ Signed in — you can close this tab"; 3s fallback redirect for cross-device. Login page listens on the channel and navigates on success; polls `/auth/me` every 3s as cross-device fallback.
+
+**Rate limiting on magic link sends** — In-memory `Map<string, number[]>` (lowercase email → Unix timestamps). On `POST /auth/magic/send`: if ≥ `AUTH_RATE_LIMIT_EMAILS_PER_HOUR` (default 5) emails sent in the last hour, return `429`. Resets on server restart — sufficient for throttling.
+
+**Nightly pruning of Auth list records** — Records older than 72h are unreachable but accumulate. Add a pruning step to the nightly sync (`POST /api/eventbrite/nightly-update`) that deletes Logins list items where `Created lt '<now minus 72h>'`.
+
+---
+
 ## Auth & Session Reliability
-*Touches: `app.js` (session config), `routes/auth/google.ts`, `routes/auth/facebook.ts`*
+*Touches: `app.js` (session config)*
 
 **WordPress OAuth2 (Step 3 — "My DTV" integration)**
 
@@ -192,21 +201,9 @@ Key files: [routes/auth/index.ts](../routes/auth/index.ts), [public/login.html](
 
 ---
 
-**Investigate Random Sign-Outs**
+**Random sign-outs** — resolved 2026-03-29 by replacing in-memory `express-session` auth with SharePoint Logins list backed by a persistent `dtv-auth` cookie. Auth now survives server restarts. `SESSION_SECRET` startup throw and `rolling: true` are still worth adding as hardening — throw on missing secret in `app.js`, add `rolling: true` to session config so the MSAL/returnTo session window resets on activity.
 
-Reports of users being signed out every 5–10 minutes. Root cause not yet confirmed — gather more data before implementing fixes.
-
-**Likely causes (check in order):**
-1. **"Always On" disabled** in Azure App Service (Configuration → General settings) — app goes idle between requests and restarts, wiping in-memory sessions. Free fix if this is the cause. [I think this has been fixed now. Waiting on more feedback before closing issue]
-2. **App crashing** — App Insights Failures blade will show unhandled exceptions and process restarts. Check after next reported sign-out.
-3. **MemoryStore** — `express-session` defaults to in-memory session storage; all sessions lost on any process restart/redeploy. Long-term fix regardless of root cause: provision Azure Cache for Redis and add `connect-redis`.
-
-**Quick wins to apply once root cause confirmed:**
-- Add `rolling: true` to session config so the 8-hour window resets on activity rather than expiring from login time
-- Throw on startup if `SESSION_SECRET` env var is missing (currently falls back to a hardcoded string — a deploy without it invalidates all session cookies)
-- ~~Revert OAuth CSRF state to stateless HMAC tokens~~ — resolved: Passport now handles CSRF state for Google and Facebook (2026-03-27)
-
-Key files: [app.js](../app.js) (session config ~lines 38–48), [routes/auth/google.ts](../routes/auth/google.ts), [routes/auth/facebook.ts](../routes/auth/facebook.ts)
+Key files: [app.js](../app.js) (session config)
 
 ---
 
