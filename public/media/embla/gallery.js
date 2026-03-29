@@ -20,6 +20,11 @@
  *   quality     {string}   'large'
  *   onAction    {function} null   onAction(item, index) — tap selected item
  */
+// Default gallery height: 62% of viewport height, capped at 400px for large screens.
+function defaultGalleryHeight() {
+  return Math.min(Math.round(window.innerHeight * 0.62), 400);
+}
+
 class MediaGallery {
   constructor(container, options = {}) {
     this._el = typeof container === 'string' ? document.querySelector(container) : container;
@@ -119,6 +124,7 @@ class MediaGallery {
       else if (e.key === 'ArrowRight') this._embla.scrollNext();
     };
     window.addEventListener('keydown', this._onKey);
+
   }
 
   _navBtn(label, ariaLabel, posClass) {
@@ -128,6 +134,15 @@ class MediaGallery {
     btn.textContent = label;
     btn.disabled = true;
     return btn;
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  _fadeIn(img) {
+    img.style.opacity = '0';
+    const show = () => { img.style.opacity = '1'; };
+    img.onload = show;
+    if (img.complete) show();
   }
 
   // ── Image dimensions ────────────────────────────────────────────────────────
@@ -189,6 +204,7 @@ class MediaGallery {
       img.src = this._imageUrl(item) || '';
       img.alt = item.title || '';
       img.onerror = () => inner.classList.add('img-error');
+      this._fadeIn(img);
       inner.appendChild(img);
 
       if (isVideo) {
@@ -279,6 +295,7 @@ class MediaGallery {
         img.src = item.thumbnailUrl || item.largeUrl || '';
         img.alt = item.title || '';
         img.onerror = () => inner.classList.add('img-error');
+        this._fadeIn(img);
         inner.appendChild(img);
 
         if (isVideo) {

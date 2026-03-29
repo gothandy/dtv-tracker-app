@@ -13,7 +13,7 @@
     <script src="/js/common.js"></script>
     <script src="/js/lightbox.js"></script>
 </head>
-<body class="detail-page">
+<body>
     <script>createHeader('Session Gallery', true);</script>
 
     <div class="container">
@@ -62,7 +62,7 @@
                 status.remove();
 
                 const gallery = new MediaGallery(wrap, {
-                    height: Math.min(Math.round(window.innerHeight * 0.62), 520),
+                    height: defaultGalleryHeight(),
                     gap: 8,
                     radius: 6,
                     onAction: (item, i) => {

@@ -88,6 +88,7 @@ function onCalendarDaySelect(sessions) {
         allSessions,
         myEntryMap: personalised ? myEntryMap : null,
         regularGroupIds: personalised ? regularGroupIds : null,
+        showPhotos: false,
     });
     card.style.display = 'block';
     currentSelectedKey = sessions && sessions[0] ? sessions[0].date.substring(0, 10) : null;

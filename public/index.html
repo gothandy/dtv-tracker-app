@@ -30,14 +30,9 @@
             You're signed in with your personal account. You also have a <a id="trustedAccessLink" href="/login.html">trusted account</a> with additional access.
         </div>
 
+        <div id="statsSection"></div>
+
         <div id="mediaGalleryWrap" style="margin-bottom:1.5rem"></div>
-        <script>
-            (function() {
-                const wrap = document.getElementById('mediaGalleryWrap');
-                const maxWidth = Math.round(wrap.offsetWidth * 0.93);
-                wrap.style.height = Math.round(maxWidth * 0.70) + 'px';
-            })();
-        </script>
 
         <div id="sessionSection"></div>
         <div class="session-eventbrite-cta unauth-only">
@@ -45,7 +40,6 @@
             <a class="btn-eventbrite-cta" href="https://dtv.eventbrite.co.uk" target="_blank" rel="noopener">Sign up on Eventbrite</a>
         </div>
         <div id="signupsSection"></div>
-        <div id="statsSection"></div>
 
     </div>
 
@@ -69,12 +63,8 @@
                     _date: s.date,
                 }));
                 const wrap = document.getElementById('mediaGalleryWrap');
-                const galleryOpts = () => {
-                    const maxWidth = Math.round(wrap.offsetWidth * 0.93);
-                    return { height: Math.round(maxWidth * 0.70), maxWidth, minWidth: Math.round(wrap.offsetWidth * 0.50) };
-                };
                 const gallery = new MediaGallery(wrap, {
-                    ...galleryOpts(),
+                    height: defaultGalleryHeight(),
                     gap: 8,
                     radius: 6,
                     thumbs: false,
@@ -83,13 +73,6 @@
                     },
                 });
                 gallery.setItems(items);
-                let lastWidth = wrap.offsetWidth;
-                new ResizeObserver(() => {
-                    if (wrap.offsetWidth !== lastWidth) {
-                        lastWidth = wrap.offsetWidth;
-                        gallery.setOptions(galleryOpts());
-                    }
-                }).observe(wrap);
             })
             .catch(() => {});
 

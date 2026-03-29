@@ -118,7 +118,7 @@ function getBreadcrumbs() {
 /**
  * Create and insert the site header
  */
-function createHeader(subtitle = 'Volunteer hours tracking and registration system', showBackLink = false) {
+function createHeader(subtitle = 'Stats, Sign-ups, Photos .', showBackLink = false) {
     const crumbs = showBackLink ? getBreadcrumbs() : null;
     const breadcrumbHtml = crumbs
         ? crumbs.map(c => `<a href="${c.href}">${c.label}</a>`).join('<span class="breadcrumb-sep">/</span>')
@@ -129,7 +129,7 @@ function createHeader(subtitle = 'Volunteer hours tracking and registration syst
             <div class="header-top">
                 <div class="header-brand">
                     <img src="/img/logo.png" alt="DTV" class="header-logo">
-                    <h1>DTV Tracker</h1>
+                    <h1>My DTV Tracker</h1>
                 </div>
                 <div class="user-info" id="userInfo"></div>
             </div>

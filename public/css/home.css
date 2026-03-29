@@ -1,6 +1,7 @@
 .container { max-width: 900px; margin: 3rem auto; padding: 0 2rem; }
 
 #nextDigCard, #lastDigCard { display: none; }
+#nextDigCard .photo-carousel-slot, #lastDigCard .photo-carousel-slot { display: none; }
 
 .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
 .nav-card {

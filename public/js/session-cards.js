@@ -125,7 +125,7 @@ function buildPersonalPillHTML(entry, isPast, isRegularGroup) {
 }
 
 function renderSessionList(container, sessions, options = {}) {
-    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange, myEntryMap, regularGroupIds } = options;
+    const { showGroup = true, allSessions, checkboxMode = false, checkedIds, onCheckChange, myEntryMap, regularGroupIds, showPhotos = true } = options;
 
     if (sessions.length === 0) {
         container.innerHTML = '<p class="no-sessions">No sessions</p>';
@@ -177,7 +177,7 @@ function renderSessionList(container, sessions, options = {}) {
                 <div class="title">${escapeHtml(session.displayName)}</div>
                 ${personalPillHTML}
                 ${showGroup && session.groupName ? `<div class="group"><a href="/groups/${encodeURIComponent(session.groupKey)}/detail.html" onclick="event.stopPropagation()">${escapeHtml(session.groupName)}</a></div>` : ''}
-                <div class="photo-carousel-slot"></div>
+                ${showPhotos ? '<div class="photo-carousel-slot"></div>' : ''}
                 ${session.description ? `<div class="description">${escapeHtml(session.description)}</div>` : ''}
                 ${buildSessionMetaHTML(session, true)}
                 ${buildCardTagsHTML(session.metadata)}
@@ -226,15 +226,17 @@ function renderSessionList(container, sessions, options = {}) {
     clampDescriptions(list);
 
     // Lazy-load photos for all past session cards that have media
-    list.querySelectorAll('.session-card[data-session-idx]').forEach(card => {
-        const idx = parseInt(card.dataset.sessionIdx, 10);
-        const session = sessions[idx];
-        if (!session || !session.mediaCount) return;
-        const parts = (card.dataset.sessionPath || '').split('/');
-        const gk = parts[0];
-        const date = parts[1];
-        if (gk && date) loadCardPhotos(card, gk, date, session);
-    });
+    if (showPhotos) {
+        list.querySelectorAll('.session-card[data-session-idx]').forEach(card => {
+            const idx = parseInt(card.dataset.sessionIdx, 10);
+            const session = sessions[idx];
+            if (!session || !session.mediaCount) return;
+            const parts = (card.dataset.sessionPath || '').split('/');
+            const gk = parts[0];
+            const date = parts[1];
+            if (gk && date) loadCardPhotos(card, gk, date, session);
+        });
+    }
 }
 
 /**

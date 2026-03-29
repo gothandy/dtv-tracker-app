@@ -54,9 +54,10 @@
                 status.remove();
 
                 const gallery = new MediaGallery(wrap, {
-                    height: Math.min(Math.round(window.innerHeight * 0.62), 520),
+                    height: defaultGalleryHeight(),
                     gap: 8,
                     radius: 6,
+                    thumbs: false,
                     onAction: (item) => {
                         location.href = `/sessions/${encodeURIComponent(item._groupKey)}/${encodeURIComponent(item._date)}/details.html`;
                     },
