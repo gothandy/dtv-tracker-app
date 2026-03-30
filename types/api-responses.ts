@@ -39,6 +39,10 @@ export interface SessionResponse {
   financialYear: string;
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
+  // Per-user status — only present when request is authenticated and user has a profile
+  isRegistered?: boolean;
+  isAttended?: boolean;
+  isRegular?: boolean;
 }
 
 export interface ProfileResponse {

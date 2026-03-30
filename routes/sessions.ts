@@ -4,6 +4,7 @@ import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
+import { regularsRepository } from '../services/repositories/regulars-repository';
 import { recordsRepository } from '../services/repositories/records-repository';
 import {
   enrichSessions,
@@ -40,13 +41,34 @@ const router: Router = express.Router();
 
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
-    const [sessionsRaw, groupsRaw] = await Promise.all([
+    const profileId = req.session.user?.profileId;
+
+    const [sessionsRaw, groupsRaw, entriesRaw, regularsRaw] = await Promise.all([
       sessionsRepository.getAll(),
-      groupsRepository.getAll()
+      groupsRepository.getAll(),
+      profileId !== undefined ? entriesRepository.getAll() : Promise.resolve([]),
+      profileId !== undefined ? regularsRepository.getAll() : Promise.resolve([]),
     ]);
 
     const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
     const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
+
+    // Build per-user lookup maps (empty when not authenticated with a profile)
+    const entryMap = new Map<number, { isAttended: boolean }>();
+    const regularGroupIds = new Set<number>();
+    if (profileId !== undefined) {
+      for (const e of entriesRaw) {
+        const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+        const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
+        if (sid !== undefined && pid === profileId)
+          entryMap.set(sid, { isAttended: !!e.Checked });
+      }
+      for (const r of regularsRaw) {
+        const pid = safeParseLookupId(r[PROFILE_LOOKUP]);
+        const gid = safeParseLookupId(r[GROUP_LOOKUP]);
+        if (pid === profileId && gid !== undefined) regularGroupIds.add(gid);
+      }
+    }
 
     const data: SessionResponse[] = sessionsRaw
       .filter(s => s.Date)
@@ -75,7 +97,12 @@ router.get('/sessions', async (req: Request, res: Response) => {
           mediaCount: stats.media || undefined,
           financialYear: `FY${calculateFinancialYear(new Date(s.Date!))}`,
           eventbriteEventId: s.EventbriteEventID,
-          metadata: tags.length ? tags : undefined
+          metadata: tags.length ? tags : undefined,
+          ...(profileId !== undefined && {
+            isRegistered: entryMap.has(s.ID),
+            isAttended: entryMap.get(s.ID)?.isAttended ?? false,
+            isRegular: groupId !== undefined && regularGroupIds.has(groupId),
+          }),
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
