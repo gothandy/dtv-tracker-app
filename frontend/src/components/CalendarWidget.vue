@@ -1,16 +1,18 @@
 <template>
-  <div class="w-fit pt-4">
+  <div class="w-full">
     <!-- Header -->
     <div class="flex items-center justify-between mb-2 gap-4">
       <button
-        class="w-9 h-9 flex items-center justify-center bg-transparent border-none text-gray-700 hover:bg-dtv-green/20 cursor-pointer text-lg"
+        class="w-9 h-9 flex items-center justify-center bg-transparent border-none text-dtv-green cursor-pointer text-lg hover:bg-dtv-green/20"
+
         @click="navigateMonth(-1)"
       >&#8592;</button>
-      <span class="font-display text-gray-800 text-base uppercase tracking-wide">
+      <span class="font-body text-dtv-green text-base uppercase tracking-wide">
         {{ formatMonthYear(currentYear, currentMonth) }}
       </span>
       <button
-        class="w-9 h-9 flex items-center justify-center bg-transparent border-none text-gray-700 hover:bg-dtv-green/20 cursor-pointer text-lg"
+        class="w-9 h-9 flex items-center justify-center bg-transparent border-none text-dtv-green cursor-pointer text-lg hover:bg-dtv-green/20"
+
         @click="navigateMonth(1)"
       >&#8594;</button>
     </div>
@@ -21,11 +23,11 @@
       <div
         v-for="name in DAY_NAMES"
         :key="name"
-        class="text-center text-xs text-gray-400 pb-1 w-9"
+        class="text-center text-xs text-dtv-green/60 pb-1 uppercase tracking-wide"
       >{{ name }}</div>
 
       <!-- Blank offset cells (start) -->
-      <div v-for="n in monthOffset" :key="`blank-${n}`" class="w-9 h-9" />
+      <div v-for="n in monthOffset" :key="`blank-${n}`" class="aspect-square" />
 
       <!-- Day cells -->
       <div
@@ -40,7 +42,7 @@
           v-if="hasPersonalSession(day)"
           :class="[
             'absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full',
-            selectedKey === dateKey(day) ? 'bg-white' : 'bg-dtv-green'
+            selectedKey === dateKey(day) ? 'bg-white' : dateKey(day) < todayKey ? 'bg-dtv-green' : 'bg-white'
           ]"
         />
         <!-- Regular-group dot (outline) — only when not already personally registered -->
@@ -48,13 +50,13 @@
           v-else-if="hasRegularSession(day)"
           :class="[
             'absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full border',
-            selectedKey === dateKey(day) ? 'border-white bg-transparent' : 'border-dtv-green bg-transparent'
+            selectedKey === dateKey(day) ? 'border-white bg-transparent' : dateKey(day) < todayKey ? 'border-dtv-green bg-transparent' : 'border-white bg-transparent'
           ]"
         />
       </div>
 
       <!-- Trailing blanks to always fill 6 rows -->
-      <div v-for="n in trailingBlanks" :key="`trail-${n}`" class="w-9 h-9" />
+      <div v-for="n in trailingBlanks" :key="`trail-${n}`" class="aspect-square" />
     </div>
   </div>
 </template>
@@ -133,17 +135,20 @@ function cellClasses(day: number): string[] {
   const hasSession = sessionIndex.value.has(key)
   const isSelected = key === selectedKey.value
   const isToday = key === todayKey
+  const isPast = key < todayKey
   const hasDot = hasPersonalSession(day) || hasRegularSession(day)
 
   return [
-    'relative w-9 h-9 flex flex-col items-center justify-center text-sm select-none',
-    isToday && !hasSession ? 'font-bold text-gray-700' : isToday ? 'font-bold' : '',
-    hasSession && !isSelected ? 'bg-dtv-green/20 text-dtv-green cursor-pointer hover:bg-dtv-green/30' : '',
-    isSelected ? '!bg-dtv-green !text-white cursor-pointer' : '',
-    !hasSession ? 'text-gray-300 cursor-default' : '',
+    'relative aspect-square w-full flex flex-col items-center justify-center text-sm select-none',
+    isToday ? 'font-bold' : '',
+    hasSession && !isSelected && isPast ? 'bg-white text-dtv-green cursor-pointer hover:bg-dtv-green/10' : '',
+    hasSession && !isSelected && !isPast ? 'bg-dtv-green text-white cursor-pointer hover:bg-dtv-green/80' : '',
+    isSelected ? '!bg-dtv-dark !text-white cursor-pointer' : '',
+    !hasSession ? 'text-dtv-green/40 cursor-default' : '',
     hasDot ? 'pb-2' : '',
   ].filter(Boolean)
 }
+
 
 function handleDayClick(day: number) {
   const key = dateKey(day)

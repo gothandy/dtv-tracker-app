@@ -178,6 +178,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
           groupId,
           groupKey: key,
           groupName: group.displayName,
+          spacesAvailable: 20,
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           mediaCount: stats.media || undefined,

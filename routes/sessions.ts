@@ -88,6 +88,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupId,
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
+          spacesAvailable: 20,
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           newCount: stats.new || undefined,

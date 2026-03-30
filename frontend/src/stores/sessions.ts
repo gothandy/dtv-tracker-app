@@ -10,6 +10,7 @@ interface SessionResponse {
   displayName?: string
   description?: string
   financialYear: string
+  spacesAvailable: number
   registrations: number
   hours: number
   mediaCount?: number
@@ -28,6 +29,7 @@ function mapSession(r: SessionResponse): Session {
     displayName: r.displayName,
     description: r.description,
     financialYear: r.financialYear,
+    spacesAvailable: r.spacesAvailable,
     registrations: r.registrations,
     hours: r.hours,
     mediaCount: r.mediaCount,

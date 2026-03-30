@@ -29,6 +29,7 @@ export interface SessionResponse {
   groupId?: number;
   groupKey?: string;
   groupName?: string;
+  spacesAvailable: number;
   registrations: number;
   hours: number;
   newCount?: number;

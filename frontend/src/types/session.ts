@@ -10,6 +10,7 @@ export interface Session {
   displayName?: string   // override title; falls back to groupName + date when absent
   description?: string
   financialYear: string
+  spacesAvailable: number
   registrations: number
   hours: number
   mediaCount?: number

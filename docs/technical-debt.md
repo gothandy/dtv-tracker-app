@@ -232,6 +232,21 @@ The session tags styles (added at the bottom of `styles.css`) use a different na
 
 ---
 
+## sessions.ts Route — Inline Mapping Duplication
+**Priority**: Low | **Effort**: Low
+
+Two items flagged during the v2 personal-flags enrichment (2026-03-30):
+
+1. **`enrichSessions` imported but unused** — `data-layer.ts` exports an `enrichSessions` function that is imported in `routes/sessions.ts` but the `GET /api/sessions` handler does its own inline mapping instead. Either the inline mapping should be replaced with `enrichSessions`, or the import should be removed.
+
+2. **`groupKeyMap` / `groupNameMap` pattern duplicated** — the same two-map pattern (group ID → key, group ID → name) is rebuilt inline in multiple route handlers. A small shared helper (e.g. `buildGroupMaps(groups)`) in `data-layer.ts` would remove the repetition and make it easier to add a third group field (e.g. display name) later.
+
+**When to address**: Next time `GET /api/sessions` or another route using these maps is touched for a substantive change.
+
+**Affected files**: `routes/sessions.ts`, `routes/groups.ts`, `services/data-layer.ts`
+
+---
+
 ## Tag/Metadata Naming Inconsistency
 **Priority**: Low | **Effort**: Low
 
@@ -270,4 +285,4 @@ The `m.facebook.com` subdomain trick prevents Android from routing the OAuth to 
 
 ---
 
-*Last Updated: 2026-03-23*
+*Last Updated: 2026-03-30*
