@@ -278,9 +278,30 @@ dtv-tracker-app/
 │   └── src/
 │       ├── main.ts                 # App bootstrap (Vue + Pinia + Router)
 │       ├── App.vue                 # Root component
-│       ├── router/index.ts         # Vue Router route definitions
+│       ├── router/index.ts         # Vue Router route definitions + path builder functions
+│       ├── composables/
+│       │   └── useAuth.ts          # Auth state composable — fetches /auth/me, exposes user + ready
+│       ├── stores/
+│       │   ├── sessions.ts         # Sessions listing store
+│       │   └── sessionDetail.ts    # Session detail store — normalises isRegistered/isAttended/isRegular
+│       ├── components/
+│       │   ├── LayoutColumns.vue   # Responsive 2-col / 3-col grid layout
+│       │   ├── SessionList.vue     # Session list with grouped dates and status tabs
+│       │   └── DebugData.vue       # Dev-only JSON data dump
+│       ├── layouts/
+│       │   └── DefaultLayout.vue   # Page shell with header/footer
 │       └── pages/
-│           └── HomePage.vue        # Hello World placeholder
+│           ├── HomePage.vue        # Calendar + session list
+│           ├── SessionDetailPage.vue  # Public-facing session detail (sign-up focused)
+│           └── sessions/           # Page-specific components for SessionDetailPage
+│               ├── SessionHeaderCard.vue   # Group name / date-time-location / description
+│               ├── CoverPhotoCard.vue      # Cover photo at 2:3 aspect ratio
+│               ├── BookCard.vue            # Booking CTA (days-to-go, button, spaces left)
+│               ├── LoginToBookCard.vue     # "Log in to book faster" prompt (logged-out only)
+│               ├── WhatToExpectCard.vue    # Static what-to-expect bullets (future sessions)
+│               ├── WriteUpCard.vue         # Session description write-up (past sessions)
+│               ├── SessionStatsCard.vue    # Attended/hours/counts table (past sessions)
+│               └── GroupTeaserCard.vue     # Next session teaser with link (past sessions)
 ├── docs/
 │   ├── permissions.md             # Role-based permissions reference
 │   ├── progress.md                # Development session notes
@@ -494,4 +515,4 @@ npm run frontend:build:staging   # Staging build served at /v2/ on live site (ba
 
 ---
 
-*Last Updated: 2026-03-29*
+*Last Updated: 2026-03-30*

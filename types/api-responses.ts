@@ -179,6 +179,11 @@ export interface SessionDetailResponse {
   coverMediaId: number | null;
   statsRaw: string | null;
   entries: EntryResponse[];
+  nextSession?: string;
+  // Per-user status — only present when request is authenticated and user has a profile
+  isRegistered?: boolean;
+  isAttended?: boolean;
+  isRegular?: boolean;
 }
 
 export interface EntryDetailResponse {

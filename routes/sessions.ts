@@ -381,6 +381,7 @@ router.post('/sessions/bulk-tag', async (req: Request, res: Response) => {
   }
 });
 
+
 router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
@@ -388,9 +389,10 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     // Phase 1: resolve group + session
     // getBySlug uses a 1h slug lookup cache; on miss does a single targeted OData query by Title.
-    const [rawGroups, spSession] = await Promise.all([
+    const [rawGroups, spSession, rawSessions] = await Promise.all([
       groupsRepository.getAll(),
-      sessionsRepository.getBySlug(groupKey, dateParam)
+      sessionsRepository.getBySlug(groupKey, dateParam),
+      sessionsRepository.getAll()
     ]);
 
     if (!spSession) {
@@ -407,6 +409,13 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupId = spGroup.ID;
     const group = convertGroup(spGroup);
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const isPast = spSession.Date < today;
+    const nextSpSession = isPast ? rawSessions
+      .filter(s => safeParseLookupId(s[GROUP_LOOKUP] as unknown as string) === groupId && s.Date >= today)
+      .sort((a, b) => a.Date.localeCompare(b.Date))[0] : undefined;
+    const nextSession = nextSpSession ? `/sessions/${groupKey}/${nextSpSession.Date}` : undefined;
 
     // Public (unauthenticated) path: serve entirely from the session record and pre-computed Stats.
     // No entries or profiles fetch — everything shown publicly is already on the session.
@@ -433,7 +442,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         metadata: metadata.length ? metadata : undefined,
         coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
         statsRaw: spSession[SESSION_STATS] || null,
-        entries: []
+        entries: [],
+        nextSession
       };
       res.json({ success: true, data } as ApiResponse<SessionDetailResponse>);
       return;
@@ -510,7 +520,13 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       metadata: metadata.length ? metadata : undefined,
       coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
       statsRaw: spSession[SESSION_STATS] || null,
-      entries: visibleEntries
+      entries: visibleEntries,
+      nextSession,
+      ...(selfProfileId !== undefined && {
+        isRegistered: entryResponses.some(e => e.profileId === selfProfileId),
+        isAttended: entryResponses.some(e => e.profileId === selfProfileId && e.checkedIn),
+        isRegular: false // TODO: wire up once regulars are fetched on this endpoint
+      })
     };
 
     res.json({ success: true, data } as ApiResponse<SessionDetailResponse>);

@@ -19,6 +19,7 @@ export default defineConfig({
     proxy: {
       '/api':  'http://localhost:3000',
       '/auth': 'http://localhost:3000',
+      '/media': 'http://localhost:3000',
     }
   }
 })

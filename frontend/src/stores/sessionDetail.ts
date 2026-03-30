@@ -15,7 +15,8 @@ export const useSessionDetailStore = defineStore('sessionDetail', () => {
       const res = await window.fetch(`/api/sessions/${groupKey}/${date}`)
       if (!res.ok) throw new Error(`Failed to load session (${res.status})`)
       const json = await res.json()
-      session.value = json.data
+      const d = json.data
+      session.value = { ...d, isRegistered: d.isRegistered ?? false, isAttended: d.isAttended ?? false, isRegular: d.isRegular ?? false }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
       console.error('[sessionDetail store]', error.value)

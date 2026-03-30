@@ -13,14 +13,12 @@
           <!-- Main row -->
           <RouterLink
             :to="sessionPath(session.groupKey!, session.date)"
-            class="bg-dtv-green px-4 py-3 flex items-center justify-between gap-2 hover:bg-dtv-green/80 transition-colors no-underline"
+            class="bg-dtv-green px-4 py-4 flex items-center justify-between gap-2 hover:bg-dtv-green/80 transition-colors no-underline"
           >
             <p class="font-body text-white text-sm uppercase leading-tight">
               {{ session.groupName }}
             </p>
-            <span class="bg-white p-2 flex-shrink-0">
-              <img src="/svg/next.svg" alt="" class="w-4 h-4" />
-            </span>
+            <img src="/svg/next.svg" alt="" class="w-4 h-4 flex-shrink-0 brightness-0 invert" />
           </RouterLink>
 
           <!-- Tags row — kissing below -->

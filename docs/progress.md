@@ -1,5 +1,41 @@
 # Development Progress
 
+## Session: 2026-03-30 (Vue session detail page — component architecture)
+
+### Completed Tasks
+
+#### SessionDetailPage — decomposed into page-specific components ✓
+
+The session detail page has been broken into focused, single-concern components under `frontend/src/pages/sessions/`. The page owns visibility logic (`v-if`) and passes data down as props; components own their own padding, styling, and internal layout.
+
+**Architecture decisions:**
+- Page-specific components live in `frontend/src/pages/sessions/` (sibling folder to `SessionDetailPage.vue`), not in `components/` — promoted to `components/` only if used by a second page
+- Components own their internal padding; pages own layout/gaps only
+- Shared visual patterns (card chrome etc.) go in CSS files in `frontend/src/styles/`, not duplicated as Tailwind utilities
+- `isBookable` computed on the page (`session.date >= today`; remains open on day-of, closes next day — time field TBD); passed implicitly via `v-if` to control which cards render
+
+**New components (`frontend/src/pages/sessions/`):**
+- `SessionHeaderCard.vue` — group name (green on black, `w-fit`), date/time/location table (black on white, full width), group description (white on dark, full width, `mt-auto` pushes to bottom of column); takes `session` prop
+- `CoverPhotoCard.vue` — renders `/media/:groupKey/:date/cover.jpg`; `aspect-[2/3]` enforces 2:3 ratio; shown only when `coverMediaId` is set; takes `groupKey`, `date`, `alt` props
+- `BookCard.vue` — booking CTA (days-to-go badge, Book button, spaces left chip, first-timer note); shown when `isBookable && !isRegistered`; `daysToGo` and `spacesLeft` computed internally; takes `session` prop
+- `LoginToBookCard.vue` — "Log in to book faster" prompt; hardcoded `/login` href; shown when `isBookable && !user`; dumb layout only
+- `WhatToExpectCard.vue` — static bullet list; shown when `isBookable`; no props
+- `WriteUpCard.vue` — session description with `white-space: pre-line` for SharePoint line breaks; shown when `!isBookable && session.description`; takes `description` prop
+- `SessionStatsCard.vue` — attended/hours/first-timers/children/regulars table (white on green); shown when `!isBookable`; takes `session` prop
+- `GroupTeaserCard.vue` — "Like the sound of this?" teaser with group description and link to next session; shown when `!isBookable && session.nextSession`; takes `groupName`, `groupDescription`, `nextSession` (URL string) props
+
+**Backend changes:**
+- `types/api-responses.ts` — added `nextSession?: string`, `isRegistered?`, `isAttended?`, `isRegular?` to `SessionDetailResponse`
+- `routes/sessions.ts` — `GET /api/sessions/:group/:date` now fetches `sessionsRepository.getAll()` in the Phase 1 parallel fetch; computes `nextSession` URL (`/sessions/:groupKey/:date`) for both public and authenticated response paths; `isRegistered`/`isAttended`/`isRegular` added to authenticated response
+- `stores/sessionDetail.ts` — normalises `isRegistered`/`isAttended`/`isRegular` from `undefined` to `false` on fetch so page logic can use simple `!isRegistered`
+
+**Other changes:**
+- `frontend/vite.config.ts` — added `/media` proxy to Express (required for cover image in dev)
+- `frontend/src/components/LayoutColumns.vue` — left column changed from `self-start` to `self-stretch` so header card fills full row height (enables `mt-auto` description push)
+- `frontend/src/components/SessionList.vue` — next arrow SVG: removed white background wrapper, uses `brightness-0 invert` to render white on green
+
+---
+
 ## Session: 2026-03-29 (Vue 3 + Vite frontend scaffold)
 
 ### Completed Tasks
