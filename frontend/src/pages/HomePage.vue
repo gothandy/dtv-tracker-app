@@ -10,7 +10,7 @@
           <div class="bg-dtv-dark px-8 py-5 relative z-10">
             <span class="font-body text-dtv-green text-xl uppercase leading-none tracking-wide">Choose a session</span>
           </div>
-          <div class="bg-dtv-dark px-8 py-5 relative z-10 mt-8 mr-16">
+          <div class="bg-dtv-dark px-8 py-5 relative z-10 my-8 mr-16">
             <span class="font-body text-dtv-green text-base uppercase leading-none tracking-wide">Book your spot</span>
           </div>
         </div>

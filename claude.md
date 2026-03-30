@@ -174,6 +174,15 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - **Comments explain why, not what**: Use comments for things developers need to know that aren't obvious from the code (SharePoint quirks, business rules, workarounds)
 - **Comments as a tech debt flag**: If you need a comment to explain what code does, consider whether the code itself could be clearer
 
+### Vue Frontend: URL / Path Conventions
+- **Path builders live in `frontend/src/router/index.ts`**, colocated with the route definitions they describe. This is the single source of truth for URL structure — independent of data concerns (stores) and design concerns (components).
+- Export a named function for each entity, e.g. `sessionPath(groupKey, date)`. Import these wherever a `RouterLink` or programmatic navigation needs a URL. Never construct entity URLs inline in components or stores.
+- If the API returns a `slug` field (as profiles do), that slug feeds the path builder — it does not replace it.
+
+### Vue Frontend: Component CSS
+- Scoped styles (`<style scoped>`) belong in the component that owns them. Promote to `frontend/src/styles/` only when a pattern is shared across two or more components.
+- `main.css` holds design tokens and global base styles only. Shared component patterns go in a separate file (e.g. `list.css`) imported from `main.css`.
+
 ### Code Style
 - TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
 - Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)

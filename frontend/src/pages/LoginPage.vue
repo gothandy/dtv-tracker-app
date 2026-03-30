@@ -40,7 +40,7 @@
           <div class="bg-gray-50 p-6 border border-gray-200 text-center">
             <h2 class="text-lg font-bold text-black mb-1">DTV Teams Account</h2>
             <p class="text-base text-gray-500 mb-4 leading-snug">For dig leads, coordinators and admins — use your <strong>@dtv.org.uk</strong> Microsoft account.</p>
-            <a :href="microsoftHref" class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 bg-white text-black font-bold text-base hover:border-gray-400 transition-colors no-underline">
+            <a :href="microsoftHref" class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 bg-white text-black text-base hover:border-gray-400 transition-colors no-underline">
               <img src="/svg/microsoft.svg" width="18" height="18" alt="" />
               Continue with Microsoft
             </a>

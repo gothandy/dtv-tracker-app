@@ -164,6 +164,8 @@ export interface SessionDetailResponse {
   date: string;
   groupId?: number;
   groupName?: string;
+  groupDescription?: string;
+  spacesAvailable: number; // TODO: replace hardcoded 20 with real capacity field when available
   registrations: number;
   hours: number;
   newCount?: number;

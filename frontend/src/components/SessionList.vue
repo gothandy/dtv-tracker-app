@@ -11,14 +11,17 @@
           class="mt-4 first:mt-0"
         >
           <!-- Main row -->
-          <div class="bg-dtv-green px-4 py-3 flex items-center justify-between gap-2 cursor-pointer hover:bg-dtv-green/80 transition-colors">
+          <RouterLink
+            :to="sessionPath(session.groupKey!, session.date)"
+            class="bg-dtv-green px-4 py-3 flex items-center justify-between gap-2 hover:bg-dtv-green/80 transition-colors no-underline"
+          >
             <p class="font-body text-white text-sm uppercase leading-tight">
               {{ session.groupName }}
             </p>
-            <button class="bg-white p-2 flex-shrink-0 cursor-pointer">
+            <span class="bg-white p-2 flex-shrink-0">
               <img src="/svg/next.svg" alt="" class="w-4 h-4" />
-            </button>
-          </div>
+            </span>
+          </RouterLink>
 
           <!-- Tags row — kissing below -->
           <div class="flex justify-end">
@@ -45,6 +48,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Session } from '../types/session'
+import { sessionPath } from '../router'
 
 const props = defineProps<{
   sessions: Session[]

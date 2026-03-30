@@ -419,6 +419,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         date: spSession.Date,
         groupId: groupId,
         groupName: group.displayName,
+        groupDescription: group.description,
+        spacesAvailable: 20, // TODO: replace with real capacity field when available
         registrations: statsJson.count ?? 0,
         hours: statsJson.hours ?? 0,
         newCount: statsJson.new || undefined,
@@ -494,6 +496,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       date: spSession.Date,
       groupId: groupId,
       groupName: group.displayName,
+      groupDescription: group.description,
+      spacesAvailable: 20, // TODO: replace with real capacity field when available
       registrations: sessionEntries.length,
       hours: Math.round(totalHours * 10) / 10,
       newCount: newCount || undefined,
