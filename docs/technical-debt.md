@@ -4,6 +4,13 @@ Code and architecture items only. Functionality lives in [todo.md](todo.md). Res
 
 ---
 
+## Vue Frontend: Tailwind Utility Duplication
+**Priority**: Medium | **Effort**: Low
+
+Tailwind utility strings are repeated verbatim across components (e.g. the same 6-class tab style copied onto every `<span>`). This makes visual tweaks require touching many lines and makes the classes hard to read. The fix is to extract repeated patterns into named CSS component classes (e.g. `.session-tab`) in `main.css` using `@layer components`, and reference those from templates. Started with `.session-tab` — other candidates include session card rows, title blocks, and nav elements.
+
+---
+
 ## Silent Failure Pattern
 **Priority**: High | **Effort**: Medium
 
