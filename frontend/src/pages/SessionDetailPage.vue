@@ -13,6 +13,7 @@
         <template #right>
           <CoverPhotoCard v-if="store.session.coverMediaId" :group-key="(route.params.groupKey as string)" :date="store.session.date" :alt="store.session.groupName" />
           <BookCard v-if="isBookable && !store.session.isRegistered" :session="store.session" />
+          <ForThisSessionCard v-if="isBookable && store.session.isRegistered" :session="store.session" />
         </template>
       </LayoutColumns>
 
@@ -65,6 +66,7 @@ import SessionHeaderCard from './sessions/SessionHeaderCard.vue'
 import SessionStatsCard from './sessions/SessionStatsCard.vue'
 import GroupTeaserCard from './sessions/GroupTeaserCard.vue'
 import PhotoGalleryCard from './sessions/PhotoGalleryCard.vue'
+import ForThisSessionCard from './sessions/ForThisSessionCard.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()

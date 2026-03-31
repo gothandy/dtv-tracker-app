@@ -43,30 +43,35 @@ router.get('/sessions', async (req: Request, res: Response) => {
   try {
     const profileId = req.session.user?.profileId;
 
+    const profileStats = req.session.user?.profileStats;
+    const hasProfileStats = profileId !== undefined && profileStats !== undefined;
+
     const [sessionsRaw, groupsRaw, entriesRaw, regularsRaw] = await Promise.all([
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
-      profileId !== undefined ? entriesRepository.getAll() : Promise.resolve([]),
-      profileId !== undefined ? regularsRepository.getAll() : Promise.resolve([]),
+      // Skip broad entries fetch when profile stats give us session IDs
+      profileId !== undefined && !hasProfileStats ? entriesRepository.getAll() : Promise.resolve([]),
+      // Skip regulars fetch when profile stats give us regular group IDs
+      profileId !== undefined && !hasProfileStats ? regularsRepository.getAll() : Promise.resolve([]),
     ]);
 
     const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
     const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
 
-    // Build per-user lookup maps (empty when not authenticated with a profile)
-    const entryMap = new Map<number, { isAttended: boolean }>();
-    const regularGroupIds = new Set<number>();
-    if (profileId !== undefined) {
+    // Build per-user lookup maps — from profile stats if available, otherwise from fetched entries/regulars
+    const registeredSessionIds = new Set<number>(profileStats?.sessionIds ?? []);
+    const regularGroupIdSet = new Set<number>(profileStats?.regularGroupIds ?? []);
+
+    if (profileId !== undefined && !hasProfileStats) {
       for (const e of entriesRaw) {
         const sid = safeParseLookupId(e[SESSION_LOOKUP]);
         const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-        if (sid !== undefined && pid === profileId)
-          entryMap.set(sid, { isAttended: !!e.Checked });
+        if (sid !== undefined && pid === profileId) registeredSessionIds.add(sid);
       }
       for (const r of regularsRaw) {
         const pid = safeParseLookupId(r[PROFILE_LOOKUP]);
         const gid = safeParseLookupId(r[GROUP_LOOKUP]);
-        if (pid === profileId && gid !== undefined) regularGroupIds.add(gid);
+        if (pid === profileId && gid !== undefined) regularGroupIdSet.add(gid);
       }
     }
 
@@ -100,9 +105,9 @@ router.get('/sessions', async (req: Request, res: Response) => {
           eventbriteEventId: s.EventbriteEventID,
           metadata: tags.length ? tags : undefined,
           ...(profileId !== undefined && {
-            isRegistered: entryMap.has(s.ID),
-            isAttended: entryMap.get(s.ID)?.isAttended ?? false,
-            isRegular: groupId !== undefined && regularGroupIds.has(groupId),
+            isRegistered: registeredSessionIds.has(s.ID),
+            isAttended: false, // attended status not available from profile stats; live on entry
+            isRegular: groupId !== undefined && regularGroupIdSet.has(groupId),
           }),
         };
       })
@@ -449,16 +454,20 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       return;
     }
 
-    // Authenticated path: live entries + profile lookups
-    // Phase 2: fetch only this session's entries (live, targeted Graph query) + cached lookups
+    // Authenticated path
+    // Self-service: all personal flags come from profile stats cached at login — no entry fetch needed.
+    // Admin/checkin: fetch all session entries + profiles to show the full volunteer list.
+    const role = req.session.user?.role;
+    const selfProfileId = req.session.user?.profileId;
+    const selfProfileStats = req.session.user?.profileStats;
+    const isSelfService = role === 'selfservice';
+
     const [rawEntries, rawProfiles] = await Promise.all([
-      entriesRepository.getBySessionIds([spSession.ID]),
-      profilesRepository.getAll()
+      isSelfService ? Promise.resolve([]) : entriesRepository.getBySessionIds([spSession.ID]),
+      isSelfService ? Promise.resolve([]) : profilesRepository.getAll(),
     ]);
 
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const sessionEntries = entries;
-
+    const sessionEntries = validateArray(rawEntries, validateEntry, 'Entry');
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
@@ -488,15 +497,25 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const regularCount = sessionEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
     const eventbriteCount = sessionEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
 
-    // Self-service users see only their own entry (not the full list) to protect other volunteers' data.
-    const role = req.session.user?.role;
-    const selfProfileId = req.session.user?.profileId;
-    let visibleEntries: EntryResponse[];
-    if (role === 'selfservice') {
-      const ownIds = req.session.user?.profileIds?.length ? req.session.user.profileIds : (selfProfileId !== undefined ? [selfProfileId] : []);
-      visibleEntries = ownIds.length ? entryResponses.filter(e => e.profileId !== undefined && ownIds.includes(e.profileId)) : [];
-    } else {
-      visibleEntries = entryResponses;
+    // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
+    let isRegistered: boolean | undefined;
+    let isAttended: boolean | undefined;
+    let isRegular: boolean | undefined;
+    let userEntryId: number | undefined;
+
+    if (selfProfileId !== undefined) {
+      if (selfProfileStats) {
+        isRegistered = selfProfileStats.sessionIds?.includes(spSession.ID) ?? false;
+        isRegular = selfProfileStats.regularGroupIds?.includes(groupId) ?? false;
+      }
+      if (!isSelfService) {
+        // Admin/checkin: derive live attended status from the fetched entries
+        const ownEntry = entryResponses.find(e => e.profileId === selfProfileId);
+        isRegistered = isRegistered ?? ownEntry !== undefined;
+        isAttended = ownEntry?.checkedIn ?? false;
+        userEntryId = ownEntry?.id;
+        isRegular = isRegular ?? false;
+      }
     }
 
     const data: SessionDetailResponse = {
@@ -508,7 +527,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupName: group.displayName,
       groupDescription: group.description,
       spacesAvailable: 20, // TODO: replace with real capacity field when available
-      registrations: sessionEntries.length,
+      registrations: isSelfService ? (JSON.parse(spSession[SESSION_STATS] || '{}').count ?? 0) : sessionEntries.length,
       hours: Math.round(totalHours * 10) / 10,
       newCount: newCount || undefined,
       childCount: childCount || undefined,
@@ -520,12 +539,13 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       metadata: metadata.length ? metadata : undefined,
       coverMediaId: safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null,
       statsRaw: spSession[SESSION_STATS] || null,
-      entries: visibleEntries,
+      entries: entryResponses,
       nextSession,
       ...(selfProfileId !== undefined && {
-        isRegistered: entryResponses.some(e => e.profileId === selfProfileId),
-        isAttended: entryResponses.some(e => e.profileId === selfProfileId && e.checkedIn),
-        isRegular: false // TODO: wire up once regulars are fetched on this endpoint
+        isRegistered,
+        isAttended,
+        isRegular,
+        userEntryId
       })
     };
 

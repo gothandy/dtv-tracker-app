@@ -4,6 +4,15 @@ export interface AuthUser {
   displayName: string
   role: 'admin' | 'checkin' | 'readonly' | 'selfservice'
   profileSlug?: string
+  profileStats?: {
+    sessionsByFY: Record<string, number>
+    hoursByFY: Record<string, number>
+    isMember: boolean
+    cardStatus?: string | null
+    regularGroupIds?: number[]
+    sessionIds?: number[]
+    linkedProfileIds?: number[]
+  }
 }
 
 const user = ref<AuthUser | null>(null)

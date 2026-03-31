@@ -184,6 +184,8 @@ export interface SessionDetailResponse {
   isRegistered?: boolean;
   isAttended?: boolean;
   isRegular?: boolean;
+  userIsNew?: boolean;        // #New tag present on the user's entry for this session
+  userEntryId?: number;       // entry ID for this user on this session (when isRegistered)
 }
 
 export interface EntryDetailResponse {

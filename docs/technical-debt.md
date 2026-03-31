@@ -239,6 +239,24 @@ The session tags styles (added at the bottom of `styles.css`) use a different na
 
 ---
 
+## Session Detail Endpoint — Broad Cache Queries on a High-Traffic Path
+**Resolved (2026-03-31)**
+
+Profile stats (`regularGroupIds`, `sessionIds`, `linkedProfileIds`) are now stored in the Profile Stats JSON field in SharePoint and parsed at login into `req.session.user.profileStats`. This eliminated all broad fetches for self-service users.
+
+**Before**: authenticated session detail made 4 SharePoint calls — `getBySessionIds`, `profilesRepository.getAll()`, `regularsRepository.getAll()`, `entriesRepository.getByProfileId`.
+
+**After**:
+- **Self-service**: 0 entry calls — `isRegistered`, `isRegular`, `userSessionCount`, `isNew` all derived from profile stats in the session. `entries: []` returned (they only need the personalised card).
+- **Admin/check-in**: 2 calls — `getBySessionIds` (full entry list for management UI) + `profilesRepository.getAll()` (resolve volunteer names/badges). `regularsRepository` and `getByProfileId` removed.
+- **Sessions listing** (`GET /api/sessions`): skips `entriesRepository.getAll()` + `regularsRepository.getAll()` when `profileStats` is present; falls back to the old path on first login before stats are populated.
+
+**Remaining**: Full entry list (names, check-in status) for admin/check-in is still a single broad `getBySessionIds` + profiles fetch — this is justified since admins need the full list. A future split into a separate lazy-loaded call would further optimise the initial page load for admin users.
+
+**Affected files**: `routes/sessions.ts`, `routes/auth/dtv.ts`, `services/personal-auth.ts`, `services/profile-stats.ts`, `types/express-session.d.ts`
+
+---
+
 ## sessions.ts Route — Inline Mapping Duplication
 **Priority**: Low | **Effort**: Low
 
@@ -251,6 +269,37 @@ Two items flagged during the v2 personal-flags enrichment (2026-03-30):
 **When to address**: Next time `GET /api/sessions` or another route using these maps is touched for a substantive change.
 
 **Affected files**: `routes/sessions.ts`, `routes/groups.ts`, `services/data-layer.ts`
+
+---
+
+## Entry Hashtags — Replace with Structured JSON Field
+**Priority**: Medium | **Effort**: Medium
+
+Entry flags are currently stored as free-text hashtags in the `Notes` field (`#New`, `#Child`, `#DofE`, `#DigLead`, `#FirstAider`, `#Regular`, `#Eventbrite`, `#Duplicate`). Every consumer parses them with regex at query time:
+
+```ts
+sessionEntries.filter(e => /#New\b/i.test(String(e.Notes || '')))
+```
+
+This pattern appears in `routes/sessions.ts`, `routes/entries.ts`, and `services/eventbrite-sync.ts`. It's fragile (typos pass silently), can't be filtered server-side via OData, and means the full Notes string must be fetched and scanned in Node.js for every aggregation.
+
+**The proposal**: replace hashtags with a structured `Flags` JSON field on the Entries list (similar to the `Stats` field on Sessions). Something like:
+
+```json
+{ "new": true, "child": true, "regular": false, "dofE": false, "digLead": false, "firstAider": false, "eventbrite": true, "duplicate": false }
+```
+
+**Benefits:**
+- Session stat aggregations (`newCount`, `childCount`, `regularCount`) become simple JSON parses rather than regex scans across all entries
+- `isRegular` / `isNew` for the personalised card are already resolved from profile stats — hashtag migration would only be needed for the admin-path aggregate counts
+- Graph API OData filtering becomes possible (e.g. filter entries where `Flags` contains `"new": true`) — avoids loading all entries for a session just to count flags
+- Eliminates the regex edge-case risk on free-text Notes
+
+**Migration path**: add the `Flags` field to SharePoint, write it on new entries, backfill from existing `Notes` hashtags via a one-off migration script, then remove the regex consumers once all entries have the field.
+
+**Current state**: entries already flow through most high-traffic paths (session detail, session stats refresh, Eventbrite sync). The hashtag parsing is the main bottleneck — the entries themselves are the right place to hold this data, just in a better format.
+
+**Affected files**: `routes/sessions.ts`, `routes/entries.ts`, `services/eventbrite-sync.ts`, `services/data-layer.ts`, `docs/sharepoint-schema.md`
 
 ---
 

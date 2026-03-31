@@ -110,7 +110,7 @@ Shown on session detail page (check-in+); editable via the session edit modal.
 Add a free-text `Notes` field to the Records list for recording supplementary information against a record, e.g. which email address was used to collect consent, first aid certificate type/expiry, DofE award level. Schema change (new single-line text field on the Records SharePoint list) plus UI changes on the record add/edit modal and record pill display.
 
 **Use of #Tags — Retire Redundant Tags**
-Many of the tags can be retired? Things like "#New" can be calculated, #Regulars comes from the lookup. Perhaps overtime gently retire each once possible, leaving those that are required like dig lead, etc. Do this after the new auto-tags above are settled, so it's clear what stays. All tags now use SVG icons configured in `public/js/tag-icons.js` — easy to add/remove/rename tags by editing this file.
+`#New` and `#Regular` are now redundant for the personalised session card — `sessionIds.length === 1` gives `isNew` and `regularGroupIds` gives `isRegular`, both from profile stats. They're still used for admin-path session aggregate counts (`newCount`, `regularCount`) — retire these only once the Entry Hashtags → structured Flags field migration (above) is done. Other tags (`#DigLead`, `#FirstAider`, `#DofE`, `#Child`, `#Duplicate`, `#NoPhoto`) remain meaningful and should be kept. Do this after the new auto-tags above are settled. All tags use SVG icons in `public/js/tag-icons.js`.
 
 ---
 

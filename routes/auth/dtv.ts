@@ -4,6 +4,7 @@ import axios from 'axios';
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-config';
 import { profilesRepository } from '../../services/repositories/profiles-repository';
 import { profileSlug } from '../../services/data-layer';
+import { PROFILE_STATS } from '../../services/field-names';
 
 const router: Router = express.Router();
 
@@ -66,6 +67,11 @@ router.get('/callback', async (req: Request, res: Response) => {
       role = 'checkin';
     }
 
+    let profileStats: NonNullable<typeof req.session.user>['profileStats'] | undefined;
+    if (matchedProfile?.[PROFILE_STATS]) {
+      try { profileStats = JSON.parse(matchedProfile[PROFILE_STATS]); } catch {}
+    }
+
     req.session.user = {
       id: profile.id,
       displayName: profile.displayName,
@@ -74,6 +80,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       profileSlug: matchedProfile ? profileSlug(matchedProfile.Title, matchedProfile.ID) : undefined,
       profileId: matchedProfile?.ID,
       freshAuthAt: new Date().toISOString(),
+      profileStats,
     };
 
     const returnTo = req.session.returnTo || process.env.FRONTEND_URL || '/';

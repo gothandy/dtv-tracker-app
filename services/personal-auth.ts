@@ -1,5 +1,6 @@
 import { profilesRepository } from './repositories/profiles-repository';
 import { profileSlug, parseEmails } from './data-layer';
+import { PROFILE_STATS } from './field-names';
 
 // Resolves a personal account (Google/Facebook) OAuth login by matching the
 // OAuth email against Profile.Email. Used by all personal account providers.
@@ -25,6 +26,11 @@ export async function resolvePersonalSession(email: string, displayName: string,
     trustedRole = 'checkin';
   }
 
+  let profileStats: NonNullable<import('express-session').SessionData['user']>['profileStats'];
+  if (primary[PROFILE_STATS]) {
+    try { profileStats = JSON.parse(primary[PROFILE_STATS]); } catch {}
+  }
+
   return {
     ok: true,
     sessionUser: {
@@ -36,6 +42,7 @@ export async function resolvePersonalSession(email: string, displayName: string,
       profileId: primary.ID,
       profileIds: matchedProfiles.map(p => p.ID),
       trustedRole,
+      profileStats,
     },
   };
 }

@@ -14,9 +14,10 @@ import { profilesRepository } from './repositories/profiles-repository';
 import { entriesRepository } from './repositories/entries-repository';
 import { sessionsRepository } from './repositories/sessions-repository';
 import { recordsRepository } from './repositories/records-repository';
+import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear } from './data-layer';
-import { PROFILE_LOOKUP, SESSION_LOOKUP, PROFILE_STATS } from './field-names';
+import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS } from './field-names';
 
 export interface ProfileStatsRefreshResult {
   total: number;
@@ -43,17 +44,20 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   }
 
   // Targeted fetches for this profile
-  const [profileEntries, profileRecordsRaw] = await Promise.all([
+  const [profileEntries, profileRecordsRaw, regularsRaw] = await Promise.all([
     entriesRepository.getByProfileId(profileId),
-    recordsRepository.available ? recordsRepository.getByProfile(profileId) : Promise.resolve([])
+    recordsRepository.available ? recordsRepository.getByProfile(profileId) : Promise.resolve([]),
+    regularsRepository.getAll()
   ]);
 
   const hoursByFY: Record<string, number> = {};
   const sessionsByFY: Record<string, number> = {};
+  const sessionIds: number[] = [];
 
   for (const e of profileEntries) {
     const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
     if (sessionId === undefined) continue;
+    sessionIds.push(sessionId);
     const fyKey = sessionFYMap.get(sessionId);
     if (!fyKey) continue;
     const hours = parseFloat(String(e.Hours)) || 0;
@@ -65,6 +69,19 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     hoursByFY[k] = Math.round(hoursByFY[k] * 10) / 10;
   }
 
+  const regularGroupIds = regularsRaw
+    .filter(r => safeParseLookupId(r[PROFILE_LOOKUP] as unknown as string) === profileId)
+    .map(r => safeParseLookupId(r[GROUP_LOOKUP] as unknown as string))
+    .filter((id): id is number => id !== undefined);
+
+  // Other profiles sharing any email with this one — available from cached profiles list
+  const profilesRaw = await profilesRepository.getAll();
+  const thisProfile = profilesRaw.find(p => p.ID === profileId);
+  const thisEmails = new Set((thisProfile?.Email || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean));
+  const linkedProfileIds = profilesRaw
+    .filter(p => p.ID !== profileId && (p.Email || '').split(',').some((e: string) => thisEmails.has(e.trim().toLowerCase())))
+    .map(p => p.ID);
+
   let isMember = false;
   let cardStatus: string | null = null;
   for (const r of profileRecordsRaw) {
@@ -72,7 +89,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
   }
 
-  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus });
+  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, sessionIds, linkedProfileIds });
   sharePointClient.clearCacheKey('profiles');
 
   console.log(`[Stats] Profile ${profileId} targeted stats update in ${Date.now() - start}ms`);
@@ -82,11 +99,12 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
   const start = Date.now();
   console.log('[Stats] Starting profile stats refresh');
 
-  const [profilesRaw, entriesRaw, sessionsRaw, recordsRaw] = await Promise.all([
+  const [profilesRaw, entriesRaw, sessionsRaw, recordsRaw, regularsRaw] = await Promise.all([
     profilesRepository.getAll(),
     entriesRepository.getAll(),
     sessionsRepository.getAll(),
-    recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+    recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([]),
+    regularsRepository.getAll()
   ]);
 
   console.log(`[Stats] Fetched ${profilesRaw.length} profiles, ${entriesRaw.length} entries, ${recordsRaw.length} records in ${Date.now() - start}ms`);
@@ -99,14 +117,18 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     sessionFYMap.set(s.ID, `FY${fy}`);
   }
 
-  // Aggregate hours and session counts per profile per FY
+  // Aggregate hours, session counts, and session ID lists per profile
   const profileHours = new Map<number, Record<string, number>>();   // profileId → { FY2025: 120.0 }
   const profileSessions = new Map<number, Record<string, number>>(); // profileId → { FY2025: 28 }
+  const profileSessionIds = new Map<number, number[]>();             // profileId → [sessionId, ...]
 
   for (const e of entriesRaw) {
     const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
     const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
     if (profileId === undefined || sessionId === undefined) continue;
+
+    if (!profileSessionIds.has(profileId)) profileSessionIds.set(profileId, []);
+    profileSessionIds.get(profileId)!.push(sessionId);
 
     const fyKey = sessionFYMap.get(sessionId);
     if (!fyKey) continue;
@@ -118,6 +140,26 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
     if (!profileSessions.has(profileId)) profileSessions.set(profileId, {});
     profileSessions.get(profileId)![fyKey] = (profileSessions.get(profileId)![fyKey] || 0) + 1;
+  }
+
+  // Regular group IDs per profile
+  const profileRegularGroupIds = new Map<number, number[]>();
+  for (const r of regularsRaw) {
+    const pid = safeParseLookupId(r[PROFILE_LOOKUP] as unknown as string);
+    const gid = safeParseLookupId(r[GROUP_LOOKUP] as unknown as string);
+    if (pid === undefined || gid === undefined) continue;
+    if (!profileRegularGroupIds.has(pid)) profileRegularGroupIds.set(pid, []);
+    profileRegularGroupIds.get(pid)!.push(gid);
+  }
+
+  // Linked profile IDs — other profiles sharing any email with this one
+  const profileLinkedIds = new Map<number, number[]>();
+  for (const p of profilesRaw) {
+    const emails = (p.Email || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+    const linked = profilesRaw
+      .filter(q => q.ID !== p.ID && (q.Email || '').split(',').some((e: string) => emails.includes(e.trim().toLowerCase())))
+      .map(q => q.ID);
+    if (linked.length) profileLinkedIds.set(p.ID, linked);
   }
 
   // membership and card status from records
@@ -150,7 +192,10 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
           hoursByFY: roundHours(profileHours.get(spProfile.ID) || {}),
           sessionsByFY: profileSessions.get(spProfile.ID) || {},
           isMember: memberIds.has(spProfile.ID),
-          cardStatus: cardStatusMap.get(spProfile.ID) || null
+          cardStatus: cardStatusMap.get(spProfile.ID) || null,
+          regularGroupIds: profileRegularGroupIds.get(spProfile.ID) || [],
+          sessionIds: profileSessionIds.get(spProfile.ID) || [],
+          linkedProfileIds: profileLinkedIds.get(spProfile.ID) || []
         };
 
         // Skip if stored stats already match

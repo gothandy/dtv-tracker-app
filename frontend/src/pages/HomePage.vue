@@ -38,25 +38,38 @@
         />
       </template>
     </LayoutColumns>
+    <DebugData v-if="user" :item="user" />
   </DefaultLayout>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
 import SessionList from '../components/SessionList.vue'
+import DebugData from '../components/DebugData.vue'
 import { useSessionsStore } from '../stores/sessions'
+import { useAuth } from '../composables/useAuth'
 import type { Session } from '../types/session'
 
+const route = useRoute()
+const router = useRouter()
 const store = useSessionsStore()
-const selectedDate = ref<string | undefined>(undefined)
+const { user } = useAuth()
+
+const initialDate = typeof route.query.date === 'string' ? route.query.date : undefined
+const selectedDate = ref<string | undefined>(initialDate)
 const selectedSessions = ref<Session[]>([])
 
 function onDateSelect(sessions: Session[]) {
   selectedSessions.value = sessions
 }
+
+watch(selectedDate, (date) => {
+  router.replace({ query: date ? { date } : {} })
+})
 
 store.fetch()
 </script>

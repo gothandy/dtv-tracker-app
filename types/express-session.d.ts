@@ -12,6 +12,15 @@ declare module 'express-session' {
       profileIds?: number[];    // all profiles for this email (selfservice with multiple linked profiles)
       trustedRole?: 'admin' | 'checkin'; // selfservice user whose email also matches a trusted account; indicates which role
       freshAuthAt?: string;             // ISO timestamp of last fresh authentication (Auth list Created date)
+      profileStats?: {
+        sessionsByFY: Record<string, number>;
+        hoursByFY: Record<string, number>;
+        isMember: boolean;
+        cardStatus?: string | null;
+        regularGroupIds?: number[];
+        sessionIds?: number[];
+        linkedProfileIds?: number[];
+      };
     } | undefined;
     returnTo: string | undefined;
   }
