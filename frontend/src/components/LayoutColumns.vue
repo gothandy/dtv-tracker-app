@@ -4,13 +4,13 @@
   <!-- ratio="2-1":   wide left, narrow right -->
   <!-- ratio="1-2":   narrow left, wide right -->
   <div :class="gridClass">
-    <div v-if="slots.left" class="overflow-visible self-stretch">
+    <div v-if="slots.left" class="min-w-0 self-stretch">
       <slot name="left" />
     </div>
-    <div v-if="slots.middle" class="self-stretch">
+    <div v-if="slots.middle" class="min-w-0 self-stretch">
       <slot name="middle" />
     </div>
-    <div v-if="slots.right" class="min-w-0">
+    <div v-if="slots.right" class="min-w-0 self-stretch">
       <slot name="right" />
     </div>
   </div>

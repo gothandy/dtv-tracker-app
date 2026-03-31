@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <div v-if="isLocalhost" class="p-4">
     <button @click="open = !open" class="text-xs text-gray-400 hover:text-gray-600 uppercase tracking-widest cursor-pointer">
       {{ open ? '▲ Debug' : '▼ Debug' }}
     </button>
     <dl v-if="open" class="mt-1 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-dtv-dark">
-      <template v-for="(value, key) in item" :key="key">
+      <template v-for="(value, key) in (item as Record<string, unknown>)" :key="key">
         <dt class="text-gray-400 self-start">{{ key }}</dt>
         <dd v-if="Array.isArray(value)">
           <span v-if="!value.length" class="text-gray-400">—</span>
@@ -34,7 +34,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-defineProps<{ item: Record<string, unknown> }>()
+defineProps<{ item: object }>()
+const isLocalhost = window.location.hostname === 'localhost'
 const open = ref(false)
 const openArrays = ref(new Set<string | number>())
 

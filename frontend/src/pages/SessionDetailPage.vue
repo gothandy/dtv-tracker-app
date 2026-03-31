@@ -38,7 +38,12 @@
         </template>
       </LayoutColumns>
 
-      <DebugData :item="store.session as unknown as Record<string, unknown>" class="p-6" />
+      <PhotoGalleryCard
+        :group-key="(route.params.groupKey as string)"
+        :date="store.session.date"
+      />
+
+      <DebugData :item="store.session!" />
     </template>
   </DefaultLayout>
 </template>
@@ -59,6 +64,7 @@ import WriteUpCard from './sessions/WriteUpCard.vue'
 import SessionHeaderCard from './sessions/SessionHeaderCard.vue'
 import SessionStatsCard from './sessions/SessionStatsCard.vue'
 import GroupTeaserCard from './sessions/GroupTeaserCard.vue'
+import PhotoGalleryCard from './sessions/PhotoGalleryCard.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()
