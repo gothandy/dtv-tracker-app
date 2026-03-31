@@ -2,7 +2,7 @@
   <div class="min-h-[340px]">
     <template v-if="groupedDates.length">
       <div v-for="group in groupedDates" :key="group.date">
-        <div class="text-xs uppercase tracking-widest text-gray-400 px-4 pt-6 pb-2">
+        <div class="text-xs uppercase tracking-widest text-gray-400 px-4 pt-12 pb-2">
           What's on {{ formatDate(group.date) }}
         </div>
         <div
@@ -16,9 +16,9 @@
             class="bg-dtv-green px-4 py-4 flex items-center justify-between gap-2 hover:bg-dtv-green/80 transition-colors no-underline"
           >
             <p class="font-body text-white text-sm uppercase leading-tight">
-              {{ session.groupName }}
+              {{ session.groupName }} 🞂
             </p>
-            <img src="/svg/next.svg" alt="" class="w-4 h-4 flex-shrink-0 brightness-0 invert" />
+            
           </RouterLink>
 
           <!-- Tags row — kissing below -->
@@ -29,7 +29,7 @@
             <span v-else-if="session.isRegular"    class="session-tab bg-dtv-dark opacity-70">Regular</span>
             <!-- Spaces left (future) or attended count (past) -->
             <span v-if="session.date >= todayKey"
-              :class="['session-tab', (session.spacesAvailable - session.registrations) <= 5 ? 'bg-dtv-red' : 'bg-dtv-dark', (session.isRegistered || session.isAttended) ? 'opacity-70' : '']">
+              :class="['session-tab bg-dtv-dark', (session.isRegistered || session.isAttended) ? 'opacity-70' : '']">
               {{ session.spacesAvailable - session.registrations }} spaces left
             </span>
             <span v-else class="session-tab bg-dtv-dark">{{ session.registrations }} attended</span>

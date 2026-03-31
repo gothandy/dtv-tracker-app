@@ -42,6 +42,7 @@
       <PhotoGalleryCard
         :group-key="(route.params.groupKey as string)"
         :date="store.session.date"
+        :max-height="400"
       />
 
       <DebugData :item="store.session!" />

@@ -1,0 +1,84 @@
+@layer components {
+
+  /* ── Wrapper ── */
+
+  .cta {
+    display: flex;
+    flex-direction: column;
+  }
+
+
+  /* ── Blocks ── */
+
+  .cta-title,
+  .cta-body,
+  .cta-button {
+    padding: 1.25rem 2rem;
+  }
+
+
+  /* ── Colours ── */
+
+  .cta-green { background-color: theme(--color-dtv-green); color: theme(--color-dtv-dark);  }
+  .cta-dark  { background-color: theme(--color-dtv-dark);  color: theme(--color-dtv-green); }
+  .cta-red   { background-color: theme(--color-dtv-red);   color: theme(--color-dtv-light); }
+  .cta-dirt  { background-color: theme(--color-dtv-dirt);  color: theme(--color-dtv-light); }
+  .cta-white {  color: theme(--color-dtv-dark);  }
+
+
+  /* ── Alignment — on the wrapper ── */
+
+  .cta.cta-left   { align-items: flex-start; }
+  .cta.cta-center { align-items: center; }
+  .cta.cta-right  { align-items: flex-end; }
+
+
+  /* ── Title ── */
+
+  .cta-title {
+    font-family: theme(--font-body);
+    font-size: 2.5rem;
+    line-height: 1.1;
+  }
+
+  .cta-title.cta-xl { font-size: 3.5rem; }
+
+  .cta-title.cta-sm { font-size: 1.5rem; }
+
+  /* Rubik Dirt display font variant */
+  .cta-title.cta-dirt { font-family: theme(--font-display); }
+
+
+  /* ── Body ── */
+
+  .cta-body {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+
+  /* ── Button ── */
+
+  .cta-button {
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .cta-button button,
+  .cta-button a {
+    font-family: theme(--font-body);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+  }
+
+  .cta-button:hover { opacity: 0.8; transition: opacity 0.15s ease; }
+
+}

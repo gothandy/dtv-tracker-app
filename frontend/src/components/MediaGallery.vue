@@ -1,6 +1,6 @@
 <template>
   <div class="mg-wrap">
-    <div ref="viewportEl" class="mg-viewport" :style="{ height: height + 'px' }">
+    <div ref="viewportEl" class="mg-viewport" :style="{ height: height + 'px' }" >
       <div class="mg-track">
         <div
           v-for="(item, i) in items"
@@ -14,8 +14,8 @@
       </div>
     </div>
 
-    <button class="mg-nav mg-nav-prev" aria-label="Previous" :disabled="!canScrollPrev" @click="embla?.scrollPrev()">‹</button>
-    <button class="mg-nav mg-nav-next" aria-label="Next"     :disabled="!canScrollNext" @click="embla?.scrollNext()">›</button>
+    <button class="mg-nav mg-nav-prev" aria-label="Previous" :disabled="!canScrollPrev" @click="scrollPrev">🞀</button>
+    <button class="mg-nav mg-nav-next" aria-label="Next"     :disabled="!canScrollNext" @click="scrollNext">🞂</button>
   </div>
 </template>
 
@@ -27,11 +27,11 @@ import type { MediaItem } from '../types/media'
 
 const props = withDefaults(defineProps<{
   items: MediaItem[]
-  height?: number     // strip height in px
+  maxHeight?: number  // cap in px — actual height = min(maxHeight, vw * 0.75)
   minRatio?: number   // min slide width÷height — 0.75 = portrait 3:4
   maxRatio?: number   // max slide width÷height — 1.33 = landscape 4:3
 }>(), {
-  height: 300,
+  maxHeight: 500,
   minRatio: 3 / 4,
   maxRatio: 4 / 3,
 })
@@ -39,16 +39,20 @@ const props = withDefaults(defineProps<{
 const viewportEl    = ref<HTMLElement | null>(null)
 const canScrollPrev = ref(false)
 const canScrollNext = ref(false)
+const height        = ref(300)
 let embla: EmblaCarouselType | null = null
 
 function slideWidth(item: MediaItem): number {
   const ar = (item._w && item._h) ? item._w / item._h : 1
-  return Math.round(props.height * Math.min(props.maxRatio, Math.max(props.minRatio, ar)))
+  return Math.round(height.value * Math.min(props.maxRatio, Math.max(props.minRatio, ar)))
 }
 
 function fadeIn(img: HTMLImageElement) {
   img.style.opacity = '1'
 }
+
+function scrollPrev() { embla?.scrollPrev() }
+function scrollNext() { embla?.scrollNext() }
 
 function initEmbla() {
   embla?.destroy(); embla = null
@@ -63,7 +67,10 @@ function updateNav() {
   canScrollNext.value = embla?.canScrollNext() ?? false
 }
 
-onMounted(() => { if (props.items.length) initEmbla() })
+onMounted(() => {
+  height.value = Math.min(props.maxHeight, window.innerWidth * 0.75)
+  if (props.items.length) initEmbla()
+})
 
 watch(() => props.items, (items) => { if (items.length) initEmbla() }, { flush: 'post' })
 
@@ -144,6 +151,7 @@ onUnmounted(() => embla?.destroy())
 
 .mg-nav-prev { left: 10px; }
 .mg-nav-next { right: 10px; }
+.mg-nav-icon { width: 16px; height: 16px; }
 
 .mg-nav:hover:not(:disabled) { opacity: 1; }
 .mg-nav:disabled { opacity: 0.08; cursor: default; }

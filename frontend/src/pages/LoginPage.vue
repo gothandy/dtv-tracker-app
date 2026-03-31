@@ -15,7 +15,7 @@
 
           <!-- Volunteer sign-in (magic link) -->
           <div v-if="magicEnabled" class="bg-gray-50 p-6 border border-gray-200 text-center">
-            <h2 class="text-lg font-bold text-black mb-1">Volunteer Sign In</h2>
+            <h2 class="text-2xl font-bold text-black mb-1">Volunteer Sign In</h2>
             <p class="text-base text-gray-500 mb-4 leading-snug">View your volunteer profile, register for sessions, and upload photos.</p>
             <input
               v-model="email"
@@ -38,7 +38,7 @@
 
           <!-- DTV Teams account (Microsoft) -->
           <div class="bg-gray-50 p-6 border border-gray-200 text-center">
-            <h2 class="text-lg font-bold text-black mb-1">DTV Teams Account</h2>
+            <h2 class="text-2xl font-bold text-black mb-1">DTV Teams Account</h2>
             <p class="text-base text-gray-500 mb-4 leading-snug">For dig leads, coordinators and admins — use your <strong>@dtv.org.uk</strong> Microsoft account.</p>
             <a :href="microsoftHref" class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 bg-white text-black text-base hover:border-gray-400 transition-colors no-underline">
               <img src="/svg/microsoft.svg" width="18" height="18" alt="" />
@@ -52,7 +52,7 @@
 
       <!-- Sent confirmation -->
       <div v-else class="bg-gray-50 p-6 border border-gray-200 text-center">
-        <h2 class="text-lg font-bold text-black mb-3">Check your email</h2>
+        <h2 class="text-xl font-bold text-black mb-3">Check your email</h2>
         <p class="text-base text-gray-500 mb-2 leading-relaxed">A sign-in link is on its way — click it to continue. The link expires in:</p>
         <div class="text-4xl font-bold text-dtv-green tracking-wider my-4">{{ countdown }}</div>
         <p class="text-base text-gray-500 mb-4 leading-relaxed">Already clicked the link? If you're signed in you can close this tab.</p>

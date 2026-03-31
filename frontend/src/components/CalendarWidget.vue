@@ -1,20 +1,16 @@
 <template>
-  <div class="w-full">
+  <div ref="el" class="w-full">
     <!-- Header -->
     <div class="flex items-center justify-between mb-2 gap-4">
-      <button
-        class="w-9 h-9 flex items-center justify-center bg-transparent border-none text-dtv-green cursor-pointer text-lg hover:bg-dtv-green/20"
-
-        @click="navigateMonth(-1)"
-      >&#8592;</button>
-      <span class="font-body text-dtv-green text-base uppercase tracking-wide">
+      <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(-1)">
+        🞀
+      </button>
+      <span class="font-body text-black text-base uppercase tracking-wide">
         {{ formatMonthYear(currentYear, currentMonth) }}
       </span>
-      <button
-        class="w-9 h-9 flex items-center justify-center bg-transparent border-none text-dtv-green cursor-pointer text-lg hover:bg-dtv-green/20"
-
-        @click="navigateMonth(1)"
-      >&#8594;</button>
+      <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(1)">
+        🞂
+      </button>
     </div>
 
     <!-- Grid -->
@@ -23,7 +19,7 @@
       <div
         v-for="name in DAY_NAMES"
         :key="name"
-        class="text-center text-xs text-dtv-green/60 pb-1 uppercase tracking-wide"
+        class="text-center text-xs text-black/60 pb-1 uppercase tracking-wide"
       >{{ name }}</div>
 
       <!-- Blank offset cells (start) -->
@@ -73,7 +69,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [dateKey: string]
   'select': [sessions: Session[]]
+  'confirm': [sessions: Session[]]
 }>()
+
+const el = ref<HTMLElement | null>(null)
 
 const DAY_NAMES = ['Mo','Tu','We','Th','Fr','Sa','Su']
 
@@ -143,7 +142,7 @@ function cellClasses(day: number): string[] {
     isToday ? 'font-bold' : '',
     hasSession && !isSelected && isPast ? 'bg-white text-dtv-green cursor-pointer hover:bg-dtv-green/10' : '',
     hasSession && !isSelected && !isPast ? 'bg-dtv-green text-white cursor-pointer hover:bg-dtv-green/80' : '',
-    isSelected ? '!bg-dtv-dark !text-white cursor-pointer' : '',
+    isSelected ? '!bg-dtv-dirt !text-white cursor-pointer' : '',
     !hasSession ? 'text-dtv-green/40 cursor-default' : '',
     hasDot ? 'pb-2' : '',
   ].filter(Boolean)
@@ -153,7 +152,12 @@ function cellClasses(day: number): string[] {
 function handleDayClick(day: number) {
   const key = dateKey(day)
   if (!sessionIndex.value.has(key)) return
+  if (key === selectedKey.value) {
+    emit('confirm', sessionIndex.value.get(key)!)
+    return
+  }
   selectDate(key)
+  el.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function selectDate(key: string) {
@@ -202,9 +206,12 @@ watch(() => props.modelValue, (val) => {
   if (val && val !== selectedKey.value) selectDate(val)
 })
 
-// Re-run default selection when sessions load (store fetch completes after mount)
+// Re-run selection when sessions load (store fetch completes after mount)
 watch(() => props.sessions, () => {
-  if (!selectedKey.value) {
+  if (selectedKey.value) {
+    // Sessions just arrived — re-emit for the already-selected key (e.g. from URL)
+    if (sessionIndex.value.has(selectedKey.value)) selectDate(selectedKey.value)
+  } else {
     const key = findDefaultKey()
     if (key) selectDate(key)
   }

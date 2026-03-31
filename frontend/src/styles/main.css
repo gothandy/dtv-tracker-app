@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./call-to-action.css";
 
 @theme {
   /* Colours */
@@ -6,7 +7,7 @@
   --color-dtv-green: #4FAF4A;
   --color-dtv-red: #d6472b;
   --color-dtv-light: #fffffe;
-
+  --color-dtv-dirt: #91241f;
   /* Fonts */
   --font-display: 'Rubik Dirt', cursive;
   --font-body: 'Momo Trust Display', cursive;
@@ -42,5 +43,9 @@
 
   h1 {
     font-family: theme(--font-display);
+  }
+
+  h2 {
+    font-family: theme(--font-body);
   }
 }

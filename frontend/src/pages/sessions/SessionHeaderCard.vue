@@ -2,8 +2,8 @@
   <div class="flex flex-col h-full">
 
     <!-- Title: green on black -->
-    <div class="bg-dtv-green px-6 py-4 w-fit">
-      <h1 class="font-display text-white text-4xl uppercase leading-none">
+    <div class="bg-white px-6 py-4 w-fit mt-4">
+      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">
         {{ session.groupName }}
       </h1>
     </div>
