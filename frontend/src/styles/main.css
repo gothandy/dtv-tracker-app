@@ -17,6 +17,10 @@
 }
 
 
+@utility svg-green {
+  filter: brightness(0) saturate(100%) invert(54%) sepia(40%) saturate(600%) hue-rotate(73deg) brightness(95%);
+}
+
 @layer base {
   @font-face {
     font-family: 'Rubik Dirt';
