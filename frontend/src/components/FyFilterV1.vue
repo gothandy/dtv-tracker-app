@@ -1,6 +1,6 @@
 <template>
-  <div class="fy-filter">
-    <button class="fy-btn" @click.stop="open = !open">
+  <div class="fy-filter" ref="el">
+    <button class="fy-btn" @click.stop="toggleOpen">
       <img src="/svg/filter.svg" width="16" height="16" alt="" style="filter: brightness(0) invert(1)" />
       <span>{{ selectedLabel }}</span>
     </button>
@@ -23,7 +23,15 @@ const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const sessionsStore = useSessionsStore()
+const el = ref<HTMLElement | null>(null)
 const open = ref(false)
+
+function toggleOpen() {
+  if (!open.value) {
+    el.value?.dispatchEvent(new CustomEvent('dropdown-opened', { bubbles: true }))
+  }
+  open.value = !open.value
+}
 
 function fyKeyToLabel(fyKey: string): string {
   const startYear = parseInt(fyKey.replace('FY', ''))
@@ -53,8 +61,18 @@ function onClickOutside(e: MouseEvent) {
   if (!(e.target as HTMLElement).closest('.fy-filter')) open.value = false
 }
 
-onMounted(() => document.addEventListener('click', onClickOutside))
-onUnmounted(() => document.removeEventListener('click', onClickOutside))
+function onDropdownOpened(e: Event) {
+  if (el.value && !el.value.contains(e.target as Node)) open.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+  document.addEventListener('dropdown-opened', onDropdownOpened)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+  document.removeEventListener('dropdown-opened', onDropdownOpened)
+})
 </script>
 
 <style scoped>

@@ -30,8 +30,10 @@ Migrate remaining pages to Vue 3 (`frontend/`). Commit and push after each unit.
 - [x] `MediaGallery` — all sessions with cover photos, newest first, click → session
 
 ## 6. Sessions listing
-- [ ] `stores/sessions.ts` — extend with FY/group/tag filter + search state
-- [ ] `SessionsPage.vue` + route `/sessions`
+- [x] `SessionsFilterV1.vue` — FY, search, group, tag (Advanced)
+- [x] `TagPickerV1.vue` — reusable tag tree picker (used by filter; will be reused for bulk tagging)
+- [x] `SessionResultsV1.vue` — results list
+- [x] `SessionsPage.vue` + route `/sessions`
 
 ## 7. Session detail — admin panel
 - [ ] `EntriesListV1.vue`

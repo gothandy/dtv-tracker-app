@@ -15,6 +15,10 @@ interface SessionResponse {
   registrations: number
   hours: number
   mediaCount?: number
+  newCount?: number
+  childCount?: number
+  regularCount?: number
+  eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
   isRegistered?: boolean
   isAttended?: boolean
@@ -35,6 +39,10 @@ function mapSession(r: SessionResponse): Session {
     registrations: r.registrations,
     hours: r.hours,
     mediaCount: r.mediaCount,
+    newCount: r.newCount,
+    childCount: r.childCount,
+    regularCount: r.regularCount,
+    eventbriteCount: r.eventbriteCount,
     metadata: r.metadata,
     isRegistered: r.isRegistered ?? false,
     isAttended: r.isAttended ?? false,

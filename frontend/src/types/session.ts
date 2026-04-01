@@ -15,6 +15,10 @@ export interface Session {
   registrations: number
   hours: number
   mediaCount?: number
+  newCount?: number
+  childCount?: number
+  regularCount?: number
+  eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
 
   // Current user's relationship to this session.

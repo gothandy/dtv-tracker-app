@@ -7,6 +7,8 @@ import AboutPage from '../pages/AboutPage.vue'
 import LoginPage from '../pages/LoginPage.vue'
 import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
+import SessionsPage from '../pages/SessionsPage.vue'
+import SessionsPage from '../pages/SessionsPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.
@@ -26,6 +28,7 @@ export const router = createRouter({
     { path: '/', component: HomePage },
     { path: '/groups', component: GroupsPage },
     { path: '/groups/:key', component: GroupDetailPage },
+    { path: '/sessions', component: SessionsPage },
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },
     { path: '/privacy', component: PrivacyPage },
     { path: '/terms', component: TermsPage },
