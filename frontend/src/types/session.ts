@@ -5,6 +5,7 @@
 export interface Session {
   id: number
   date: string           // YYYY-MM-DD
+  groupId?: number
   groupKey?: string
   groupName?: string
   displayName?: string   // override title; falls back to groupName + date when absent

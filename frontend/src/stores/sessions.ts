@@ -5,6 +5,7 @@ import type { Session } from '../types/session'
 interface SessionResponse {
   id: number
   date: string
+  groupId?: number
   groupKey?: string
   groupName?: string
   displayName?: string
@@ -24,6 +25,7 @@ function mapSession(r: SessionResponse): Session {
   return {
     id: r.id,
     date: r.date,
+    groupId: r.groupId,
     groupKey: r.groupKey,
     groupName: r.groupName,
     displayName: r.displayName,

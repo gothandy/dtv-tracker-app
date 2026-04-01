@@ -17,30 +17,28 @@
 
       <!-- Dropdown nav -->
       <div v-if="open" class="absolute top-full right-0 z-50 w-72 bg-black">
-      <nav class="flex flex-col px-4 py-4 gap-1">
-        <RouterLink v-for="link in links" :key="link.to" :to="link.to"
-          @click="open = false"
-          class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">
-          {{ link.label }}
-        </RouterLink>
+        <nav class="flex flex-col px-4 py-4 gap-1">
+          <RouterLink to="/" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Home</RouterLink>
+          <RouterLink to="/sessions" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sessions</RouterLink>
+          <RouterLink to="/groups" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Groups</RouterLink>
+          <RouterLink v-if="isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Volunteers</RouterLink>
+          <RouterLink v-if="isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
+          <RouterLink to="/about" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">About</RouterLink>
 
-        <template v-if="ready">
-          <RouterLink v-if="user?.profileSlug" :to="`/volunteers/${user.profileSlug}`"
-            @click="open = false"
-            class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
-            {{ user.displayName }}
-          </RouterLink>
-          <a v-if="user" href="/auth/logout"
-            class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
-            Logout
-          </a>
-          <RouterLink v-else to="/login"
-            @click="open = false"
-            class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
-            Login
-          </RouterLink>
-        </template>
-      </nav>
+          <template v-if="ready">
+            <RouterLink v-if="user?.profileSlug" :to="`/profiles/${user.profileSlug}`"
+              @click="open = false"
+              class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
+              {{ user.displayName }}
+            </RouterLink>
+            <a v-if="user" href="/auth/logout" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
+              Logout
+            </a>
+            <RouterLink v-else to="/login" @click="open = false" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
+              Login
+            </RouterLink>
+          </template>
+        </nav>
       </div>
     </div>
   </header>
@@ -48,10 +46,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useAuth } from '../composables/useAuth'
+import { useRole } from '../composables/useRole'
 
 const open = ref(false)
-const { user, ready } = useAuth()
+const { user, ready, isAdmin, isTrusted } = useRole()
 
 function toggleMenu() {
   open.value = !open.value
@@ -65,12 +63,5 @@ function onClickOutside(e: MouseEvent) {
 
 onMounted(() => document.addEventListener('click', onClickOutside))
 onUnmounted(() => document.removeEventListener('click', onClickOutside))
-
-const links = [
-  { to: '/', label: 'Home' },
-  { to: '/sessions', label: 'Sessions' },
-  { to: '/groups', label: 'Groups' },
-  { to: '/volunteers', label: 'Volunteers' },
-  { to: '/about', label: 'About' },
-]
 </script>
+

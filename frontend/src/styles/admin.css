@@ -1,0 +1,185 @@
+/* Shared V1 admin styles — tables, forms, modals, action bars */
+
+/* === Tables === */
+.dtv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.dtv-table th {
+  background-color: theme(--color-dtv-green);
+  color: theme(--color-dtv-dark);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+}
+
+.dtv-table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: middle;
+}
+
+.dtv-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dtv-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* === Forms === */
+.dtv-input,
+.dtv-select,
+.dtv-textarea {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: theme(--color-dtv-light);
+  padding: 0.5rem 0.75rem;
+  font-family: theme(--font-body);
+  font-size: 1rem;
+  width: 100%;
+}
+
+.dtv-input:focus,
+.dtv-select:focus,
+.dtv-textarea:focus {
+  outline: 2px solid theme(--color-dtv-green);
+  outline-offset: -1px;
+}
+
+.dtv-select option {
+  background-color: theme(--color-dtv-dark);
+}
+
+.dtv-label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.75;
+}
+
+.dtv-field {
+  margin-bottom: 1rem;
+}
+
+/* === Action bars === */
+.dtv-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 0;
+}
+
+/* === Buttons === */
+.dtv-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: theme(--color-dtv-light);
+  padding: 0.4rem 0.9rem;
+  font-family: theme(--font-body);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.dtv-btn:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.dtv-btn-primary {
+  background-color: theme(--color-dtv-green);
+  border-color: theme(--color-dtv-green);
+  color: theme(--color-dtv-dark);
+  font-weight: 600;
+}
+
+.dtv-btn-primary:hover {
+  opacity: 0.88;
+}
+
+.dtv-btn-danger {
+  background-color: theme(--color-dtv-red);
+  border-color: theme(--color-dtv-red);
+  color: theme(--color-dtv-light);
+}
+
+.dtv-btn-danger:hover {
+  opacity: 0.88;
+}
+
+/* === Modal === */
+.dtv-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.dtv-modal {
+  background-color: theme(--color-dtv-dark);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.dtv-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.dtv-modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.dtv-modal-close {
+  background: none;
+  border: none;
+  color: theme(--color-dtv-light);
+  font-size: 1.25rem;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.dtv-modal-close:hover {
+  opacity: 1;
+}
+
+.dtv-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+/* === Section headers === */
+.dtv-section {
+  margin-top: 2rem;
+}
+
+.dtv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.dtv-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  opacity: 0.75;
+  text-transform: lowercase;
+  letter-spacing: 0.03em;
+}
