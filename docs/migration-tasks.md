@@ -13,23 +13,25 @@ Migrate remaining pages to Vue 3 (`frontend/`). Commit and push after each unit.
 ## 3. Groups listing
 - [x] `stores/groups.ts`
 - [x] `FyFilterV1.vue`
-- [x] `GroupsPage.vue` + route `/groups`
+- [x] `GroupsListV1.vue` + route `/groups`
 
 ## 4. Group detail
 - [x] `stores/groupDetail.ts`
 - [x] `GroupHeaderV1.vue`
 - [x] `GroupRegularsV1.vue`
 - [x] `FyBarChartV1.vue`
+- [x] `WordCloudV1.vue`
 - [x] `SessionsListV1.vue`
 - [x] `GroupDetailV1.vue` (assembler)
 - [x] `GroupDetailPage.vue` + route `/groups/:key`
 
-## 5. Sessions listing
+## 5. Homepage additions
+- [x] `FyBarChartV1` + `WordCloudV1` — below calendar, using all sessions
+- [x] `MediaGallery` — all sessions with cover photos, newest first, click → session
+
+## 6. Sessions listing
 - [ ] `stores/sessions.ts` — extend with FY/group/tag filter + search state
 - [ ] `SessionsPage.vue` + route `/sessions`
-
-## 6. Homepage additions
-- [ ] `HomePage.vue` — add word cloud + FY bar chart (reuses V1 components)
 
 ## 7. Session detail — admin panel
 - [ ] `EntriesListV1.vue`
@@ -56,3 +58,4 @@ Migrate remaining pages to Vue 3 (`frontend/`). Commit and push after each unit.
 
 ## Tech debt
 - [x] `WordCloudV1.vue` — accepts `TagHoursItem[]`; callers fetch from `/api/tags/hours-by-taxonomy` and pass result in
+- [ ] V1 components to receive clean typed props rather than raw `SessionResponse[]` (post-migration incremental pass)

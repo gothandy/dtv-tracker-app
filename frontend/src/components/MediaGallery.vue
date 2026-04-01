@@ -6,7 +6,9 @@
           v-for="(item, i) in items"
           :key="item.id"
           class="mg-slide"
+          :class="{ 'mg-slide--clickable': props.clickable }"
           :style="{ width: slideWidth(item) + 'px' }"
+          @click="emit('select', i)"
         >
           <img :src="item.largeUrl || item.thumbnailUrl" :alt="item.title ?? ''" @load="e => fadeIn(e.target as HTMLImageElement)" style="opacity:0" />
           <div v-if="item.title" class="mg-caption">{{ item.title }}</div>
@@ -30,11 +32,15 @@ const props = withDefaults(defineProps<{
   maxHeight?: number  // cap in px — actual height = min(maxHeight, vw * 0.75)
   minRatio?: number   // min slide width÷height — 0.75 = portrait 3:4
   maxRatio?: number   // max slide width÷height — 1.33 = landscape 4:3
+  clickable?: boolean
 }>(), {
   maxHeight: 500,
   minRatio: 3 / 4,
   maxRatio: 4 / 3,
+  clickable: false,
 })
+
+const emit = defineEmits<{ select: [index: number] }>()
 
 const viewportEl    = ref<HTMLElement | null>(null)
 const canScrollPrev = ref(false)
@@ -155,4 +161,7 @@ onUnmounted(() => embla?.destroy())
 
 .mg-nav:hover:not(:disabled) { opacity: 1; }
 .mg-nav:disabled { opacity: 0.08; cursor: default; }
+
+.mg-slide--clickable { cursor: pointer; }
+.mg-slide--clickable:hover img { opacity: 0.88 !important; }
 </style>
