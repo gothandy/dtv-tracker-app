@@ -64,6 +64,7 @@ import type { Session } from '../types/session'
 const props = defineProps<{
   sessions: Session[]
   modelValue?: string
+  immediateConfirm?: boolean  // emit 'confirm' on first click rather than requiring a second click
 }>()
 
 const emit = defineEmits<{
@@ -152,7 +153,7 @@ function cellClasses(day: number): string[] {
 function handleDayClick(day: number) {
   const key = dateKey(day)
   if (!sessionIndex.value.has(key)) return
-  if (key === selectedKey.value) {
+  if (key === selectedKey.value || props.immediateConfirm) {
     emit('confirm', sessionIndex.value.get(key)!)
     return
   }
@@ -204,14 +205,17 @@ function findDefaultKey(): string | null {
 
 watch(() => props.modelValue, (val) => {
   if (val && val !== selectedKey.value) selectDate(val)
+  else if (!val) selectedKey.value = null
 })
 
 // Re-run selection when sessions load (store fetch completes after mount)
 watch(() => props.sessions, () => {
-  if (selectedKey.value) {
+  if (selectedKey.value && sessionIndex.value.has(selectedKey.value)) {
     // Sessions just arrived — re-emit for the already-selected key (e.g. from URL)
-    if (sessionIndex.value.has(selectedKey.value)) selectDate(selectedKey.value)
+    selectDate(selectedKey.value)
   } else {
+    // No valid selection — pick the best default for these sessions
+    selectedKey.value = null
     const key = findDefaultKey()
     if (key) selectDate(key)
   }

@@ -1,6 +1,6 @@
 <template>
-  <!-- Trusted: full regulars list -->
-  <div v-if="isTrusted && group.regulars.length > 0" class="gr-section">
+  <!-- Admin / check-in: full regulars list -->
+  <div v-if="(isAdmin || isCheckIn) && group.regulars.length > 0" class="gr-section">
     <div class="gr-title-row">
       <h3>Regulars</h3>
       <span class="gr-count">{{ group.regulars.length }}</span>
@@ -28,7 +28,7 @@ import type { GroupDetailResponse } from '../../../types/api-responses'
 
 defineProps<{ group: GroupDetailResponse }>()
 
-const { isTrusted, isSelfService } = useRole()
+const { isAdmin, isCheckIn, isSelfService } = useRole()
 </script>
 
 <style scoped>

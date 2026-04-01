@@ -3,44 +3,44 @@
     <div v-if="store.loading" class="gd-loading">Loading…</div>
     <div v-else-if="store.error" class="gd-error">{{ store.error }}</div>
     <template v-else-if="store.group">
-      <!-- V1 cards with padding -->
-      <div class="gd-padded">
-        <GroupHeaderV1 :group="store.group" @updated="reload" />
-        <GroupRegularsV1 :group="store.group" />
-      </div>
 
-      <!-- Cover photo gallery — full width, latest first, only sessions with media -->
-      <MediaGallery v-if="coverItems.length" :items="coverItems" :max-height="280" />
-
-      <!-- Bar chart + word cloud -->
-      <div class="gd-padded">
-        <div class="gd-charts">
-          <FyBarChartV1 :sessions="store.group.sessions" v-model="selectedFy" />
-          <WordCloudV1 :tags="tagHours" />
-        </div>
-      </div>
-
-      <!-- Calendar + session list (v2, same as homepage) -->
-      <LayoutColumns ratio="1-2">
+      <!-- Header (2) + Regulars (1, admin/check-in only) -->
+      <LayoutColumns ratio="2-1">
         <template #left>
+          <GroupHeaderV1 :group="store.group" @updated="reload" />
+        </template>
+        <template v-if="isAdmin || isCheckIn" #right>
+          <GroupRegularsV1 :group="store.group" />
+        </template>
+      </LayoutColumns>
+
+      <!-- Bar chart (2) + Word cloud (1) -->
+      <LayoutColumns ratio="2-1">
+        <template #left>
+          <FyBarChartV1 :sessions="store.group.sessions" v-model="selectedFy" />
+        </template>
+        <template #right>
+          <WordCloudV1 :tags="tagHours" />
+        </template>
+      </LayoutColumns>
+
+      <!-- Gallery (2) + Calendar (1, one-click navigate) -->
+      <LayoutColumns ratio="2-1">
+        <template #left>
+          <MediaGallery v-if="coverItems.length" :items="coverItems" :max-height="280" />
+        </template>
+        <template #right>
           <div class="bg-dtv-green/25 min-h-[340px] h-full flex items-start justify-center p-2">
             <CalendarWidget
               v-model="selectedDate"
               :sessions="groupSessions"
-              @select="onDateSelect"
-              @confirm="onDateConfirm"
+              :immediate-confirm="true"
+              @confirm="onDateSelect"
             />
           </div>
         </template>
-        <template #right>
-          <SessionList
-            ref="sessionListEl"
-            :sessions="selectedSessions"
-            :selected-date="selectedDate"
-            :loading="false"
-          />
-        </template>
       </LayoutColumns>
+
     </template>
   </DefaultLayout>
 </template>
@@ -49,15 +49,15 @@
 import { ref, computed, onMounted, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGroupDetailStore } from '../stores/groupDetail'
+import { useRole } from '../composables/useRole'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from './LayoutColumns.vue'
 import CalendarWidget from './CalendarWidget.vue'
-import SessionList from './SessionList.vue'
+import MediaGallery from './MediaGallery.vue'
 import GroupHeaderV1 from './GroupHeaderV1.vue'
 import GroupRegularsV1 from './GroupRegularsV1.vue'
 import FyBarChartV1 from './FyBarChartV1.vue'
 import WordCloudV1 from './WordCloudV1.vue'
-import MediaGallery from './MediaGallery.vue'
 import { sessionPath } from '../router/index'
 import type { Session } from '../types/session'
 import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
@@ -66,14 +66,12 @@ import type { MediaItem } from '../types/media'
 const route = useRoute()
 const router = useRouter()
 const store = useGroupDetailStore()
+const { isAdmin, isCheckIn } = useRole()
 
 const selectedFy = ref('')
-const tagHours = ref<TagHoursItem[]>([])
 const selectedDate = ref<string | undefined>(undefined)
-const selectedSessions = ref<Session[]>([])
-const sessionListEl = ref<{ $el: HTMLElement } | null>(null)
+const tagHours = ref<TagHoursItem[]>([])
 
-// Map API SessionResponse → frontend Session type
 function mapSession(r: SessionResponse): Session {
   return {
     id: r.id,
@@ -99,7 +97,6 @@ const groupSessions = computed<Session[]>(() =>
   store.group ? store.group.sessions.map(mapSession) : []
 )
 
-// Cover photo MediaItems — newest first, only sessions with media
 const coverItems = computed<MediaItem[]>(() => {
   if (!store.group) return []
   return [...store.group.sessions]
@@ -110,24 +107,15 @@ const coverItems = computed<MediaItem[]>(() => {
       thumbnailUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
       largeUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
       mimeType: 'image/jpeg',
-      title: formatDate(s.date),
+      title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       isPublic: true,
     }))
 })
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
+// One-click navigate — on a group page there's at most one session per date
 function onDateSelect(sessions: Session[]) {
-  selectedSessions.value = sessions
-}
-
-function onDateConfirm(sessions: Session[]) {
   if (sessions.length === 1) {
     router.push(sessionPath(sessions[0].groupKey!, sessions[0].date))
-  } else {
-    sessionListEl.value?.$el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
@@ -154,25 +142,14 @@ function reload() {
 onMounted(reload)
 
 watch(() => route.params.key, key => {
-  if (key) store.fetch(key as string)
+  if (key) {
+    selectedDate.value = undefined
+    store.fetch(key as string)
+  }
 })
 </script>
 
 <style scoped>
 .gd-loading { padding: 2rem; color: #777; }
 .gd-error { padding: 2rem; color: #d6472b; }
-
-.gd-padded { padding: 1.5rem 1.5rem 0; }
-
-
-.gd-charts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 1.5rem;
-  margin-bottom: 0;
-}
-
-@media (max-width: 600px) {
-  .gd-charts { grid-template-columns: 1fr; }
-}
 </style>
