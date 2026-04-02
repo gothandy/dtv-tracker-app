@@ -33,9 +33,9 @@ const { isAdmin, isCheckIn, isSelfService } = useRole()
 
 <style scoped>
 .gr-section {
-  background: white;
+  background: var(--color-white);
   padding: 1rem 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 
@@ -46,10 +46,10 @@ const { isAdmin, isCheckIn, isSelfService } = useRole()
   margin-bottom: 0.75rem;
 }
 
-.gr-title-row h3 { font-size: 1rem; font-weight: 700; color: #333; margin: 0; }
+.gr-title-row h3 { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0; }
 
 .gr-count {
-  background: #eee; color: #666;
+  background: var(--color-surface-subtle); color: var(--color-text-label);
   font-size: 0.8rem; font-weight: 600;
   padding: 0.15rem 0.5rem;
 }
@@ -57,18 +57,18 @@ const { isAdmin, isCheckIn, isSelfService } = useRole()
 .gr-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 .gr-item {
-  background: #f5f5f5;
-  color: #3d9a3d;
+  background: var(--color-surface-hover);
+  color: var(--color-green-hover);
   text-decoration: none;
   padding: 0.25rem 0.6rem;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
-.gr-item:hover { background: #eef8ee; }
+.gr-item:hover { background: var(--color-green-tint); }
 
 .gr-self {
-  color: #3d9a3d;
+  color: var(--color-green-hover);
   font-weight: 600;
   font-size: 0.9rem;
 }

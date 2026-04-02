@@ -1,7 +1,7 @@
 <template>
   <div class="fy-filter" ref="el">
     <button class="fy-btn" @click.stop="toggleOpen">
-      <img src="/svg/filter.svg" width="16" height="16" alt="" style="filter: brightness(0) invert(1)" />
+      <img src="/svg/filter.svg" width="16" height="16" alt="" class="svg-white" />
       <span>{{ selectedLabel }}</span>
     </button>
     <div v-if="open" class="fy-menu">
@@ -83,8 +83,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.75rem;
-  background: #4FAF4A;
-  color: white;
+  background: var(--color-dtv-green);
+  color: var(--color-white);
   border: none;
   font-size: 0.85rem;
   font-weight: 600;
@@ -92,17 +92,17 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.fy-btn:hover { background: #3d9a3d; }
+.fy-btn:hover { background: var(--color-green-hover); }
 
 .fy-menu {
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
   min-width: 120px;
   z-index: 50;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .fy-option {
@@ -114,9 +114,9 @@ onUnmounted(() => {
   border: none;
   font-size: 0.85rem;
   cursor: pointer;
-  color: #333;
+  color: var(--color-text);
 }
 
-.fy-option:hover { background: #f5f5f5; }
-.fy-option.active { color: #4FAF4A; font-weight: 600; }
+.fy-option:hover { background: var(--color-surface-hover); }
+.fy-option.active { color: var(--color-dtv-green); font-weight: 600; }
 </style>

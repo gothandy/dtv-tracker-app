@@ -21,14 +21,17 @@ import { computed, useSlots } from 'vue'
 
 const props = withDefaults(defineProps<{
   ratio?: '1-1-1' | '2-1' | '1-2'
+  align?: 'stretch' | 'start'
 }>(), {
   ratio: '1-1-1',
+  align: 'stretch',
 })
 
 const slots = useSlots()
 
 const gridClass = computed(() => {
-  const base = 'grid grid-cols-1 items-stretch'
+  const alignClass = props.align === 'start' ? 'items-start' : 'items-stretch'
+  const base = `grid grid-cols-1 ${alignClass}`
   if (props.ratio === '2-1') return `${base} md:grid-cols-[2fr_1fr]`
   if (props.ratio === '1-2') return `${base} md:grid-cols-[1fr_2fr]`
   return `${base} md:grid-cols-3` // 1-1-1

@@ -48,23 +48,24 @@ const fyData = computed(() => {
   })
 })
 
-// Auto-select most recent FY on load
+// Auto-select last FY (second most recent) on load, falling back to most recent
 watch(fyData, data => {
   if (data.length > 0 && !props.modelValue) {
-    emit('update:modelValue', data[data.length - 1].key)
+    const defaultFy = data.length >= 2 ? data[data.length - 2] : data[data.length - 1]
+    emit('update:modelValue', defaultFy.key)
   }
 }, { immediate: true })
 </script>
 
 <style scoped>
 .fbc-section {
-  background: white;
+  background: var(--color-white);
   padding: 1rem 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 
-.fbc-section h3 { font-size: 1rem; font-weight: 700; color: #333; margin: 0 0 0.75rem; }
+.fbc-section h3 { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0 0 0.75rem; }
 
 .fbc-chart { display: flex; flex-direction: column; gap: 0.25rem; }
 
@@ -81,24 +82,24 @@ watch(fyData, data => {
   text-align: left;
 }
 
-.fbc-row:hover { background: #f5f5f5; }
+.fbc-row:hover { background: var(--color-surface-hover); }
 
 .fbc-row.selected {
-  background: #eef8ee;
+  background: var(--color-green-tint);
 }
 
 .fbc-row.selected .fbc-label,
-.fbc-row.selected .fbc-hours { color: #333; font-weight: 700; }
+.fbc-row.selected .fbc-hours { color: var(--color-text); font-weight: 700; }
 
-.fbc-label { width: 3rem; font-size: 0.85rem; color: #666; flex-shrink: 0; }
+.fbc-label { width: 3rem; font-size: 0.85rem; color: var(--color-text-label); flex-shrink: 0; }
 
 .fbc-track {
   flex: 1;
   height: 12px;
-  background: #e0e0e0;
+  background: var(--color-surface-subtle);
 }
 
-.fbc-actual { height: 100%; background: #4FAF4A; }
+.fbc-actual { height: 100%; background: var(--color-dtv-green); }
 
-.fbc-hours { width: 3.5rem; font-size: 0.85rem; color: #666; text-align: right; flex-shrink: 0; }
+.fbc-hours { width: 3.5rem; font-size: 0.85rem; color: var(--color-text-label); text-align: right; flex-shrink: 0; }
 </style>

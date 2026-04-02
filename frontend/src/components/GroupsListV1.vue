@@ -10,7 +10,9 @@
           </div>
           <div style="display:flex; gap:0.5rem; align-items:center">
             <FyFilterV1 v-model="selectedFy" />
-            <button v-if="isAdmin" class="v1-btn-action" @click="showNewGroup = true" title="New group">+</button>
+            <button v-if="isAdmin" class="icon-btn" @click="showNewGroup = true" title="New group">
+              <img src="/svg/add.svg" alt="New group" />
+            </button>
           </div>
         </div>
       </div>
@@ -159,16 +161,16 @@ async function createGroup() {
 
 <style scoped>
 .v1-page {
-  background: #f5f5f5;
+  background: var(--color-surface-hover);
   min-height: 100%;
   padding: 1.5rem;
 }
 
 .v1-filter-bar {
-  background: white;
+  background: var(--color-white);
 
   padding: 1rem 1.25rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 
@@ -188,34 +190,19 @@ async function createGroup() {
 .v1-title-left h2 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #333;
+  color: var(--color-text);
   margin: 0;
 }
 
 .v1-count {
-  background: #eee;
-  color: #666;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-label);
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
 
 }
 
-.v1-btn-action {
-  background: #4FAF4A;
-  color: white;
-  border: none;
-
-  width: 36px;
-  height: 36px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.v1-btn-action:hover { background: #3d9a3d; }
 
 .v1-groups-grid {
   display: grid;
@@ -232,10 +219,10 @@ async function createGroup() {
 }
 
 .v1-group-card {
-  background: white;
+  background: var(--color-white);
 
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
   text-decoration: none;
@@ -245,11 +232,11 @@ async function createGroup() {
 
 .v1-group-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .v1-group-card h3 {
-  color: #333;
+  color: var(--color-text);
   margin-bottom: 0.5rem;
   font-size: 1.3rem;
   display: flex;
@@ -264,7 +251,7 @@ async function createGroup() {
 }
 
 .v1-description {
-  color: #555;
+  color: var(--color-text-secondary);
   margin-bottom: 1rem;
   line-height: 1.5;
   font-size: 0.95rem;
@@ -275,8 +262,8 @@ async function createGroup() {
   gap: 1rem;
   flex-wrap: wrap;
   font-size: 0.85rem;
-  color: #777;
-  border-top: 1px solid #eee;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-surface-subtle);
   padding-top: 1rem;
 }
 
@@ -286,19 +273,19 @@ async function createGroup() {
   gap: 0.3rem;
 }
 
-.v1-meta-item strong { color: #4FAF4A; }
+.v1-meta-item strong { color: var(--color-dtv-green); }
 
 .v1-loading, .v1-error, .v1-empty {
   text-align: center;
   padding: 3rem;
-  color: #777;
+  color: var(--color-text-muted);
 }
 
 /* Modal */
 .v1-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: var(--color-overlay);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -306,16 +293,16 @@ async function createGroup() {
 }
 
 .v1-modal {
-  background: white;
+  background: var(--color-white);
 
   padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-lg);
   width: 90%;
   max-width: 400px;
 }
 
 .v1-modal h3 {
-  color: #333;
+  color: var(--color-text);
   margin-bottom: 1rem;
   font-size: 1.1rem;
 }
@@ -327,7 +314,7 @@ async function createGroup() {
 .v1-modal-field label {
   display: block;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--color-text-label);
   margin-bottom: 0.3rem;
 }
 
@@ -336,7 +323,7 @@ async function createGroup() {
   width: 100%;
   font-size: 1rem;
   padding: 0.6rem 0.75rem;
-  border: 2px solid #ddd;
+  border: 2px solid var(--color-border);
 
   font-family: inherit;
 }
@@ -346,7 +333,7 @@ async function createGroup() {
 .v1-modal-field input:focus,
 .v1-modal-field textarea:focus {
   outline: none;
-  border-color: #4FAF4A;
+  border-color: var(--color-dtv-green);
 }
 
 .v1-modal-buttons {
@@ -366,7 +353,7 @@ async function createGroup() {
 }
 
 .v1-modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.v1-modal-btn-cancel { background: #f5f5f5; color: #666; }
-.v1-modal-btn-confirm { background: #4FAF4A; color: white; }
-.v1-modal-btn-confirm:hover:not(:disabled) { background: #3d9a3d; }
+.v1-modal-btn-cancel { background: var(--color-surface-hover); color: var(--color-text-label); }
+.v1-modal-btn-confirm { background: var(--color-dtv-green); color: var(--color-white); }
+.v1-modal-btn-confirm:hover:not(:disabled) { background: var(--color-green-hover); }
 </style>

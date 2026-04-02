@@ -1,6 +1,6 @@
 <template>
-  <div v-if="loading" class="py-6 text-center text-sm" style="color: rgba(255,255,255,0.4)">Loading photos…</div>
-  <div v-else-if="error" class="py-4 px-6 text-sm" style="color: #d6472b">{{ error }}</div>
+  <div v-if="loading" class="py-6 text-center text-sm" style="color: var(--color-dtv-light); opacity: 0.4">Loading photos…</div>
+  <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
   <MediaGallery v-else-if="items.length" :items="items" />
 </template>
 

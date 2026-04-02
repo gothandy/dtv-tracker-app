@@ -47,17 +47,17 @@ function shortLabel(label: string): string {
 
 <style scoped>
 .wc-section {
-  background: white;
+  background: var(--color-white);
   padding: 1rem 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
   height: 100%;
   box-sizing: border-box;
 }
 
-.wc-section h3 { font-size: 1rem; font-weight: 700; color: #333; margin: 0 0 0.75rem; }
+.wc-section h3 { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0 0 0.75rem; }
 
-.wc-empty { color: #777; font-size: 0.9rem; }
+.wc-empty { color: var(--color-text-muted); font-size: 0.9rem; }
 
 .wc-cloud {
   display: flex;
@@ -67,7 +67,7 @@ function shortLabel(label: string): string {
 }
 
 .wc-tag {
-  color: #4FAF4A;
+  color: var(--color-dtv-green);
   font-weight: 600;
   line-height: 1.3;
   cursor: default;

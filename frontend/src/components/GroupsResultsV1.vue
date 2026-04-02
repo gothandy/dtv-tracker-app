@@ -35,8 +35,8 @@ defineProps<{
 </script>
 
 <style scoped>
-.gr-state { text-align: center; padding: 3rem; color: #777; }
-.gr-state--error { color: #d6472b; }
+.gr-state { text-align: center; padding: 3rem; color: var(--color-text-muted); }
+.gr-state--error { color: var(--color-dtv-red); }
 
 .gr-grid {
   display: grid;
@@ -47,30 +47,30 @@ defineProps<{
 @media (max-width: 600px) { .gr-grid { grid-template-columns: 1fr; } }
 
 .gr-card {
-  background: white;
+  background: var(--color-white);
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   text-decoration: none;
   color: inherit;
   display: block;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.gr-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+.gr-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 .gr-card h3 {
-  color: #333; margin: 0 0 0.5rem;
+  color: var(--color-text); margin: 0 0 0.5rem;
   font-size: 1.3rem;
   display: flex; align-items: center; gap: 0.4rem;
 }
 .gr-eb { width: 16px; height: 16px; }
 
-.gr-description { color: #555; margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.5; }
+.gr-description { color: var(--color-text-secondary); margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.5; }
 
 .gr-meta {
   display: flex; gap: 1rem; flex-wrap: wrap;
-  font-size: 0.85rem; color: #777;
-  border-top: 1px solid #eee; padding-top: 1rem;
+  font-size: 0.85rem; color: var(--color-text-muted);
+  border-top: 1px solid var(--color-surface-subtle); padding-top: 1rem;
 }
 .gr-meta-item { display: flex; align-items: center; gap: 0.3rem; }
-.gr-meta-item strong { color: #4FAF4A; }
+.gr-meta-item strong { color: var(--color-dtv-green); }
 </style>

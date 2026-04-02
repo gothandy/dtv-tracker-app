@@ -90,6 +90,6 @@ function formatDate(dateStr: string): string {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: white;
+  color: var(--color-white);
 }
 </style>

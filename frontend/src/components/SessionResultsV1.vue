@@ -95,20 +95,20 @@ function shortLabel(label: string): string {
 
 <style scoped>
 .sr-section {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
 }
 
-.sr-empty { padding: 1.5rem; color: #777; font-size: 0.9rem; }
+.sr-empty { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.9rem; }
 
 .sr-select-row {
   padding: 0.5rem 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-surface-hover);
 }
 
 .sr-select-all {
   background: none; border: none; cursor: pointer;
-  font-size: 0.85rem; font-weight: 600; color: #4FAF4A; padding: 0;
+  font-size: 0.85rem; font-weight: 600; color: var(--color-dtv-green); padding: 0;
 }
 .sr-select-all:hover { text-decoration: underline; }
 
@@ -117,7 +117,7 @@ function shortLabel(label: string): string {
 .sr-row {
   display: flex;
   align-items: flex-start;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-surface-hover);
 }
 .sr-row:last-child { border-bottom: none; }
 
@@ -126,7 +126,7 @@ function shortLabel(label: string): string {
   width: 16px; height: 16px;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: #4FAF4A;
+  accent-color: var(--color-dtv-green);
 }
 
 .sr-card {
@@ -136,22 +136,22 @@ function shortLabel(label: string): string {
   text-decoration: none;
   color: inherit;
 }
-.sr-card:hover { background: #f9f9f9; }
+.sr-card:hover { background: var(--color-surface-hover); }
 
-.sr-date { font-size: 0.85rem; color: #4FAF4A; margin-bottom: 0.2rem; }
-.sr-name { font-size: 1rem; font-weight: 700; color: #222; margin-bottom: 0.15rem; }
-.sr-group { font-size: 0.8rem; color: #999; margin-bottom: 0.35rem; }
+.sr-date { font-size: 0.85rem; color: var(--color-dtv-green); margin-bottom: 0.2rem; }
+.sr-name { font-size: 1rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.15rem; }
+.sr-group { font-size: 0.8rem; color: var(--color-text-faint); margin-bottom: 0.35rem; }
 
 .sr-description {
-  font-size: 0.875rem; color: #777; font-style: italic; margin-bottom: 0.6rem;
+  font-size: 0.875rem; color: var(--color-text-muted); font-style: italic; margin-bottom: 0.6rem;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
 .sr-meta {
   display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem;
-  font-size: 0.85rem; color: #444; margin-bottom: 0.5rem;
+  font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;
 }
 
 .sr-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.sr-tag { border: 1px solid #ccc; font-size: 0.78rem; padding: 0.15rem 0.6rem; color: #555; }
+.sr-tag { border: 1px solid var(--color-border); font-size: 0.78rem; padding: 0.15rem 0.6rem; color: var(--color-text-secondary); }
 </style>

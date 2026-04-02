@@ -36,28 +36,26 @@ Migrate remaining pages to Vue 3 (`frontend/`). Commit and push after each unit.
 - [x] `SessionsPage.vue` + route `/sessions`
 
 ## 7. Session detail — admin panel
-- [ ] `EntriesListV1.vue`
-- [ ] `ConfirmModalV1.vue`
-- [ ] `SessionDetailPage.vue` — add admin panel
+- [x] `SessionTagsV1.vue` — tag pills (all); add/remove (checkin/admin)
+- [x] `SessionActionButtonsV1.vue` — own component (not in header); Upload Photos + Edit Session
+- [x] `SessionEditModalV1.vue` — edit modal; admin: date/group/eventbriteId/delete
+- [x] `AddEntryModalV1.vue` — volunteer search → POST entry (modal, no separate page)
+- [x] `SetHoursModalV1.vue` — bulk hours for checked-in/0h entries
+- [x] `EntriesListV1.vue` — self-contained; check-in/hours/tags; Add/Set Hours/Refresh
+- [x] `SessionDetailPage.vue` — wired in all new components
 
-## 8. Add entry
-- [ ] `AddEntryPage.vue` + route `/sessions/:groupKey/:date/add-entry`
-
-## 9. Entry detail
-- [ ] `stores/entryDetail.ts`
-- [ ] `EntryDetailPage.vue` + route `/entries/:id`
-
-## 10. Volunteers
+## 8. Profiles listing
 - [ ] `stores/profiles.ts`
-- [ ] `VolunteersPage.vue` + route `/profiles`
+- [ ] `ProfilesPage.vue` + route `/profiles`
 
-## 11. Profile detail
+## 9. Profile detail
 - [ ] `stores/profileDetail.ts`
 - [ ] `ProfileDetailPage.vue` + route `/profiles/:slug`
 
-## 12. Admin page
+## 10. Admin page
 - [ ] `AdminPage.vue` + route `/admin`
 
 ## Tech debt
 - [x] `WordCloudV1.vue` — accepts `TagHoursItem[]`; callers fetch from `/api/tags/hours-by-taxonomy` and pass result in
 - [ ] V1 components to receive clean typed props rather than raw `SessionResponse[]` (post-migration incremental pass)
+- [x] `main.css` colour palette tidy — consolidate `--color-dtv-*` brand colours and `--color-*` neutral/state tokens into a single well-organised block with section comments; remove any unused vars

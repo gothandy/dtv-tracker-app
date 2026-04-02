@@ -4,33 +4,17 @@
     <div v-else-if="store.error" class="gd-error">{{ store.error }}</div>
     <template v-else-if="store.group">
 
-      <!-- Header (2) + Regulars (1, admin/check-in only) -->
-      <LayoutColumns ratio="2-1">
+      <!-- Left: header / bar chart / tag cloud  |  Right: actions / regulars / calendar -->
+      <LayoutColumns ratio="2-1" align="start">
         <template #left>
-          <GroupHeaderV1 :group="store.group" @updated="reload" />
-        </template>
-        <template v-if="isAdmin || isCheckIn" #right>
-          <GroupRegularsV1 :group="store.group" />
-        </template>
-      </LayoutColumns>
-
-      <!-- Bar chart (2) + Word cloud (1) -->
-      <LayoutColumns ratio="2-1">
-        <template #left>
+          <GroupHeaderV1 :group="store.group" :show-eb-link="isAdmin" />
           <FyBarChartV1 :sessions="store.group.sessions" v-model="selectedFy" />
-        </template>
-        <template #right>
           <WordCloudV1 :tags="tagHours" />
         </template>
-      </LayoutColumns>
-
-      <!-- Gallery (2) + Calendar (1, one-click navigate) -->
-      <LayoutColumns ratio="2-1">
-        <template #left>
-          <MediaGallery v-if="coverItems.length" :items="coverItems" :max-height="280" />
-        </template>
         <template #right>
-          <div class="bg-dtv-green/25 min-h-[340px] h-full flex items-start justify-center p-2">
+          <GroupActionButtonsV1 v-if="isAdmin" :group="store.group" @updated="reload" />
+          <GroupRegularsV1 v-if="isAdmin || isCheckIn" :group="store.group" />
+          <div class="bg-dtv-green/25 flex items-start justify-center p-2">
             <CalendarWidget
               v-model="selectedDate"
               :sessions="groupSessions"
@@ -40,6 +24,9 @@
           </div>
         </template>
       </LayoutColumns>
+
+      <!-- Gallery: full width -->
+      <MediaGallery v-if="coverItems.length" :items="coverItems" :max-height="280" />
 
     </template>
   </DefaultLayout>
@@ -55,6 +42,7 @@ import LayoutColumns from './LayoutColumns.vue'
 import CalendarWidget from './CalendarWidget.vue'
 import MediaGallery from './MediaGallery.vue'
 import GroupHeaderV1 from './GroupHeaderV1.vue'
+import GroupActionButtonsV1 from './GroupActionButtonsV1.vue'
 import GroupRegularsV1 from './GroupRegularsV1.vue'
 import FyBarChartV1 from './FyBarChartV1.vue'
 import WordCloudV1 from './WordCloudV1.vue'
@@ -154,6 +142,6 @@ watch(() => route.params.key, key => {
 </script>
 
 <style scoped>
-.gd-loading { padding: 2rem; color: #777; }
-.gd-error { padding: 2rem; color: #d6472b; }
+.gd-loading { padding: 2rem; color: var(--color-text-muted); }
+.gd-error { padding: 2rem; color: var(--color-dtv-red); }
 </style>

@@ -39,6 +39,30 @@
         </template>
       </LayoutColumns>
 
+      <!-- Tags — visible to all -->
+      <SessionTagsV1
+        :session="store.session"
+        :group-key="(route.params.groupKey as string)"
+        :date="store.session.date"
+        @updated="store.fetch(route.params.groupKey as string, store.session!.date)"
+      />
+
+      <!-- Action buttons — upload/edit for checkin/admin/self-service -->
+      <SessionActionButtonsV1
+        v-if="isCheckIn || isAdmin || isSelfService"
+        :session="store.session"
+        :group-key="(route.params.groupKey as string)"
+        :date="store.session.date"
+        @saved="(gk, d) => store.fetch(gk, d)"
+      />
+
+      <!-- Entries — checkin/admin only -->
+      <EntriesListV1
+        v-if="isCheckIn || isAdmin"
+        :group-key="(route.params.groupKey as string)"
+        :date="store.session.date"
+      />
+
       <PhotoGalleryCard
         :group-key="(route.params.groupKey as string)"
         :date="store.session.date"
@@ -58,6 +82,7 @@ import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
 import { useAuth } from '../composables/useAuth'
+import { useRole } from '../composables/useRole'
 import LoginToBookCard from './sessions/LoginToBookCard.vue'
 import BookCard from './sessions/BookCard.vue'
 import WhatToExpectCard from './sessions/WhatToExpectCard.vue'
@@ -68,10 +93,14 @@ import SessionStatsCard from './sessions/SessionStatsCard.vue'
 import GroupTeaserCard from './sessions/GroupTeaserCard.vue'
 import PhotoGalleryCard from './sessions/PhotoGalleryCard.vue'
 import ForThisSessionCard from './sessions/ForThisSessionCard.vue'
+import SessionTagsV1 from '../components/SessionTagsV1.vue'
+import SessionActionButtonsV1 from '../components/SessionActionButtonsV1.vue'
+import EntriesListV1 from '../components/EntriesListV1.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()
 const { user } = useAuth()
+const { isAdmin, isCheckIn, isSelfService } = useRole()
 
 // Open on day of session, closed from next day onwards (time field TBD)
 const isBookable = computed(() => {

@@ -91,9 +91,9 @@ watch(filtered, list => emit('filtered', list), { immediate: true })
 
 <style scoped>
 .sf-wrap {
-  background: white;
+  background: var(--color-white);
   padding: 1rem 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 
@@ -104,10 +104,10 @@ watch(filtered, list => emit('filtered', list), { immediate: true })
   margin-bottom: 0.75rem;
 }
 
-.sf-heading { font-size: 1.1rem; font-weight: 700; color: #333; margin: 0; }
+.sf-heading { font-size: 1.1rem; font-weight: 700; color: var(--color-text); margin: 0; }
 
 .sf-count {
-  background: #eee; color: #666;
+  background: var(--color-surface-subtle); color: var(--color-text-label);
   font-size: 0.8rem; font-weight: 600;
   padding: 0.15rem 0.5rem;
   margin-right: auto;
@@ -123,23 +123,23 @@ watch(filtered, list => emit('filtered', list), { immediate: true })
 .sf-search {
   flex: 2 1 180px;
   padding: 0.5rem 0.75rem;
-  border: 2px solid #ddd;
+  border: 2px solid var(--color-border);
   font-size: 0.95rem;
   font-family: inherit;
-  color: #333;
-  background: white;
+  color: var(--color-text);
+  background: var(--color-white);
   box-sizing: border-box;
 }
-.sf-search:focus { outline: none; border-color: #4FAF4A; }
+.sf-search:focus { outline: none; border-color: var(--color-dtv-green); }
 
 .sf-select {
   flex: 1 1 140px;
   padding: 0.45rem 0.6rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   font-size: 0.85rem;
   font-family: inherit;
-  color: #333;
-  background: white;
+  color: var(--color-text);
+  background: var(--color-white);
   cursor: pointer;
 }
 

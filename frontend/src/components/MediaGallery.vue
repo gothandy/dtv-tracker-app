@@ -1,5 +1,6 @@
 <template>
   <div class="mg-wrap">
+    <div class="mg-title">{{ title }}</div>
     <div ref="viewportEl" class="mg-viewport" :style="{ height: height + 'px' }" >
       <div class="mg-track">
         <div
@@ -18,6 +19,7 @@
 
     <button class="mg-nav mg-nav-prev" aria-label="Previous" :disabled="!canScrollPrev" @click="scrollPrev">🞀</button>
     <button class="mg-nav mg-nav-next" aria-label="Next"     :disabled="!canScrollNext" @click="scrollNext">🞂</button>
+    <div class="mg-footer"></div>
   </div>
 </template>
 
@@ -29,11 +31,13 @@ import type { MediaItem } from '../types/media'
 
 const props = withDefaults(defineProps<{
   items: MediaItem[]
+  title?: string
   maxHeight?: number  // cap in px — actual height = min(maxHeight, vw * 0.75)
   minRatio?: number   // min slide width÷height — 0.75 = portrait 3:4
   maxRatio?: number   // max slide width÷height — 1.33 = landscape 4:3
   clickable?: boolean
 }>(), {
+  title: 'Photos',
   maxHeight: 500,
   minRatio: 3 / 4,
   maxRatio: 4 / 3,
@@ -86,7 +90,22 @@ onUnmounted(() => embla?.destroy())
 <style scoped>
 .mg-wrap {
   position: relative;
-  background: #0f0e17;
+  background: var(--color-dtv-dark);
+}
+
+.mg-title {
+  background: black;
+  color: var(--color-white);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  text-transform: lowercase;
+  letter-spacing: 0.03em;
+}
+
+.mg-footer {
+  background: black;
+  height: 8px;
 }
 
 .mg-viewport {
@@ -105,7 +124,7 @@ onUnmounted(() => embla?.destroy())
   height: 100%;
   position: relative;
   overflow: hidden;
-  background: #0f0e17;
+  background: var(--color-dtv-dark);
 }
 
 .mg-slide img {
@@ -124,8 +143,8 @@ onUnmounted(() => embla?.destroy())
   left: 0;
   display: inline-block;
   max-width: 100%;
-  background: rgba(0, 0, 0, 0.82);
-  color: #fff;
+  background: var(--color-caption-bg);
+  color: var(--color-white);
   font-size: 0.75rem;
   padding: 3px 8px;
   white-space: nowrap;
@@ -136,21 +155,21 @@ onUnmounted(() => embla?.destroy())
 
 .mg-nav {
   position: absolute;
-  top: 50%;
+  top: calc(50% + 16px);  /* offset for title bar (~32px / 2) */
   transform: translateY(-50%);
   z-index: 10;
   width: 36px;
   height: 36px;
   padding: 0;
   border: none;
-  background: rgba(255, 255, 255, 0.88);
-  color: #444;
+  background: var(--color-nav-bg);
+  color: var(--color-text-secondary);
   font-size: 1.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
   opacity: 0.75;
   transition: opacity 0.15s;
 }

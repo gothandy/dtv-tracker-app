@@ -17,7 +17,7 @@
 
 .dtv-table td {
   padding: 0.4rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
@@ -26,38 +26,35 @@
 }
 
 .dtv-table tr:hover td {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--color-surface-hover);
 }
 
 /* === Forms === */
 .dtv-input,
 .dtv-select,
 .dtv-textarea {
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: theme(--color-dtv-light);
+  background-color: var(--color-white);
+  border: 2px solid var(--color-border);
+  color: var(--color-text);
   padding: 0.5rem 0.75rem;
   font-family: theme(--font-body);
   font-size: 1rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .dtv-input:focus,
 .dtv-select:focus,
 .dtv-textarea:focus {
-  outline: 2px solid theme(--color-dtv-green);
-  outline-offset: -1px;
-}
-
-.dtv-select option {
-  background-color: theme(--color-dtv-dark);
+  outline: none;
+  border-color: theme(--color-dtv-green);
 }
 
 .dtv-label {
   display: block;
   font-size: 0.85rem;
+  color: var(--color-text-label);
   margin-bottom: 0.25rem;
-  opacity: 0.75;
 }
 
 .dtv-field {
@@ -75,9 +72,9 @@
 
 /* === Buttons === */
 .dtv-btn {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: theme(--color-dtv-light);
+  background-color: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   padding: 0.4rem 0.9rem;
   font-family: theme(--font-body);
   font-size: 0.9rem;
@@ -85,7 +82,7 @@
 }
 
 .dtv-btn:hover {
-  background-color: rgba(255, 255, 255, 0.18);
+  background-color: var(--color-surface-subtle);
 }
 
 .dtv-btn-primary {
@@ -113,7 +110,7 @@
 .dtv-modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,13 +118,14 @@
 }
 
 .dtv-modal {
-  background-color: theme(--color-dtv-dark);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
   padding: 1.5rem;
   width: 90%;
   max-width: 480px;
   max-height: 85vh;
   overflow-y: auto;
+  box-shadow: var(--shadow-lg);
 }
 
 .dtv-modal-header {
@@ -140,20 +138,20 @@
 .dtv-modal-title {
   font-size: 1.1rem;
   font-weight: 600;
+  color: var(--color-text);
 }
 
 .dtv-modal-close {
   background: none;
   border: none;
-  color: theme(--color-dtv-light);
+  color: var(--color-text-muted);
   font-size: 1.25rem;
   cursor: pointer;
-  opacity: 0.6;
   line-height: 1;
 }
 
 .dtv-modal-close:hover {
-  opacity: 1;
+  color: var(--color-text);
 }
 
 .dtv-modal-footer {
@@ -162,6 +160,9 @@
   gap: 0.5rem;
   margin-top: 1.25rem;
 }
+
+/* Delete always bottom-left */
+.dtv-modal-footer .dtv-btn-danger { margin-right: auto; }
 
 /* === Section headers === */
 .dtv-section {

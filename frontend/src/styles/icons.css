@@ -1,0 +1,36 @@
+/* Shared icon styles — icon buttons and tag colour modifiers */
+
+/* Green icon button — white SVG on green square */
+.icon-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--color-dtv-green);
+  color: var(--color-white);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.icon-btn:hover { filter: brightness(0.9); }
+.icon-btn:disabled { opacity: 0.5; cursor: default; }
+.icon-btn img {
+  width: 1.1rem;
+  height: 1.1rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+/* Make any SVG white — use on dark/coloured backgrounds */
+.svg-white { filter: brightness(0) invert(1); }
+
+/* Make any SVG DTV green */
+.svg-green {
+  filter: brightness(0) saturate(100%) invert(54%) sepia(40%) saturate(600%) hue-rotate(73deg) brightness(95%);
+}
+
+/* Tag icon colour modifiers — matches TAG_ICONS config color field */
+.icon-orange img     { filter: sepia(1) saturate(4) hue-rotate(0deg); }
+.icon-red img        { filter: sepia(1) saturate(6) hue-rotate(310deg); }
+.icon-dark-green img { filter: sepia(1) saturate(3) hue-rotate(80deg) brightness(0.7); }

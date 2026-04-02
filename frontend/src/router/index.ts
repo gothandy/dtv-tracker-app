@@ -8,7 +8,6 @@ import LoginPage from '../pages/LoginPage.vue'
 import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
 import SessionsPage from '../pages/SessionsPage.vue'
-import SessionsPage from '../pages/SessionsPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.

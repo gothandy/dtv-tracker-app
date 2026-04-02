@@ -33,7 +33,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 interface TaxNode { label: string; id: string; children?: TaxNode[] }
-interface TagOption { label: string; displayLabel: string; depth: number }
+interface TagOption { label: string; displayLabel: string; depth: number; termGuid: string }
 
 const props = defineProps<{
   modelValue: string        // '' = all tags, '__none__' = untagged, or colon-path label
@@ -42,7 +42,10 @@ const props = defineProps<{
   availableLabels?: Set<string> // if set, only show tags present in this set (or with descendants in it)
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [v: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [v: string]
+  'select': [label: string, termGuid: string]
+}>()
 
 const panelOpen = ref(false)
 const loading = ref(false)
@@ -60,7 +63,7 @@ function flatten(nodes: TaxNode[], displayPrefix = '', depth = 0): TagOption[] {
     const label = displayPrefix ? `${displayPrefix}:${node.label}` : node.label
     const displayLabel = displayPrefix ? `${displayPrefix} > ${node.label}` : node.label
     return [
-      { label, displayLabel, depth },
+      { label, displayLabel, depth, termGuid: node.id },
       ...flatten(node.children ?? [], label, depth + 1)
     ]
   })
@@ -106,7 +109,9 @@ function onDropdownOpened(e: Event) {
 watch(panelOpen, open => { if (open) loadTree() })
 
 function select(label: string, _display: string) {
+  const termGuid = flatOptions.value.find(o => o.label === label)?.termGuid ?? ''
   emit('update:modelValue', label)
+  emit('select', label, termGuid)
   panelOpen.value = false
 }
 
@@ -133,16 +138,16 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.45rem 0.6rem;
-  border: 1px solid #ddd;
-  background: white;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
   font-size: 0.85rem;
   font-family: inherit;
-  color: #333;
+  color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
 }
-.tp-btn:hover { background: #f5f5f5; }
-.tp-btn.active { border-color: #4FAF4A; color: #3d9a3d; font-weight: 600; }
+.tp-btn:hover { background: var(--color-surface-hover); }
+.tp-btn.active { border-color: var(--color-dtv-green); color: var(--color-green-hover); font-weight: 600; }
 
 .tp-panel {
   position: absolute;
@@ -151,22 +156,22 @@ onUnmounted(() => {
   min-width: 220px;
   max-height: 280px;
   overflow-y: auto;
-  background: white;
-  border: 1px solid #ddd;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
   z-index: 50;
 }
 
-.tp-loading { padding: 0.75rem; font-size: 0.85rem; color: #777; }
+.tp-loading { padding: 0.75rem; font-size: 0.85rem; color: var(--color-text-muted); }
 
 .tp-tree { list-style: none; margin: 0; padding: 0; }
 
 .tp-row {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
-  color: #333;
+  color: var(--color-text);
   cursor: pointer;
 }
-.tp-row:hover { background: #f5f5f5; }
-.tp-row.selected { color: #3d9a3d; font-weight: 600; background: #eef8ee; }
+.tp-row:hover { background: var(--color-surface-hover); }
+.tp-row.selected { color: var(--color-green-hover); font-weight: 600; background: var(--color-green-tint); }
 </style>

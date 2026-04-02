@@ -1,13 +1,46 @@
 @import "tailwindcss";
 @import "./call-to-action.css";
+@import "./icons.css";
+@import "./admin.css";
 
 @theme {
-  /* Colours */
+  /* DTV brand colours */
   --color-dtv-dark: #0f0e17;
   --color-dtv-green: #4FAF4A;
   --color-dtv-red: #d6472b;
   --color-dtv-light: #fffffe;
   --color-dtv-dirt: #91241f;
+
+  /* Neutrals — light surfaces (V1 components) */
+  --color-white: #ffffff;
+  --color-surface-hover: #f5f5f5;   /* hover state on light surfaces */
+  --color-surface-subtle: #eeeeee;  /* badges, tags, muted areas */
+  --color-border: #dddddd;
+
+  /* Text on light backgrounds */
+  --color-text: #333333;
+  --color-text-secondary: #555555;
+  --color-text-label: #666666;
+  --color-text-muted: #777777;
+  --color-text-faint: #999999;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.2);
+
+  /* Overlays / gallery */
+  --color-overlay: rgba(0,0,0,0.5);
+  --color-caption-bg: rgba(0,0,0,0.82);
+  --color-nav-bg: rgba(255,255,255,0.88);
+
+  /* State / accent */
+  --color-green-hover: #3d9a3d;
+  --color-green-tint: #eef8ee;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #856404;
+  --color-error: #ee5555;
+
   /* Fonts */
   --font-display: 'Rubik Dirt', cursive;
   --font-body: 'Momo Trust Display', cursive;
@@ -17,9 +50,7 @@
 }
 
 
-@utility svg-green {
-  filter: brightness(0) saturate(100%) invert(54%) sepia(40%) saturate(600%) hue-rotate(73deg) brightness(95%);
-}
+
 
 @layer base {
   @font-face {

@@ -5,7 +5,9 @@
       <span class="gf-count">{{ filtered.length }}</span>
       <div class="gf-actions">
         <FyFilterV1 v-model="fy" />
-        <button v-if="isAdmin" class="gf-add-btn" @click="showNew = true" title="New group">+</button>
+        <button v-if="isAdmin" class="icon-btn" @click="showNew = true" title="New group">
+          <img src="/svg/add.svg" alt="New group" />
+        </button>
       </div>
     </div>
 
@@ -113,9 +115,9 @@ async function createGroup() {
 
 <style scoped>
 .gf-wrap {
-  background: white;
+  background: var(--color-white);
   padding: 1rem 1.25rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 
@@ -125,10 +127,10 @@ async function createGroup() {
   gap: 0.75rem;
 }
 
-.gf-heading { font-size: 1.1rem; font-weight: 700; color: #333; margin: 0; }
+.gf-heading { font-size: 1.1rem; font-weight: 700; color: var(--color-text); margin: 0; }
 
 .gf-count {
-  background: #eee; color: #666;
+  background: var(--color-surface-subtle); color: var(--color-text-label);
   font-size: 0.8rem; font-weight: 600;
   padding: 0.15rem 0.5rem;
   margin-right: auto;
@@ -136,37 +138,31 @@ async function createGroup() {
 
 .gf-actions { display: flex; gap: 0.5rem; align-items: center; }
 
-.gf-add-btn {
-  background: #4FAF4A; color: white; border: none;
-  width: 36px; height: 36px; font-size: 1.2rem;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-.gf-add-btn:hover { background: #3d9a3d; }
 
 .gf-modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  position: fixed; inset: 0; background: var(--color-overlay);
   z-index: 100; display: flex; align-items: center; justify-content: center;
 }
 .gf-modal {
-  background: white; padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 90%; max-width: 400px;
+  background: var(--color-white); padding: 1.5rem;
+  box-shadow: var(--shadow-lg); width: 90%; max-width: 400px;
 }
-.gf-modal h3 { color: #333; margin: 0 0 1rem; font-size: 1.1rem; }
+.gf-modal h3 { color: var(--color-text); margin: 0 0 1rem; font-size: 1.1rem; }
 .gf-modal-field { margin-bottom: 1rem; }
-.gf-modal-field label { display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; }
+.gf-modal-field label { display: block; font-size: 0.85rem; color: var(--color-text-label); margin-bottom: 0.3rem; }
 .gf-modal-field input,
 .gf-modal-field textarea {
   width: 100%; font-size: 1rem; padding: 0.6rem 0.75rem;
-  border: 2px solid #ddd; font-family: inherit; box-sizing: border-box;
-  color: #333; background: white;
+  border: 2px solid var(--color-border); font-family: inherit; box-sizing: border-box;
+  color: var(--color-text); background: var(--color-white);
 }
 .gf-modal-field textarea { min-height: 60px; resize: vertical; }
 .gf-modal-field input:focus,
-.gf-modal-field textarea:focus { outline: none; border-color: #4FAF4A; }
+.gf-modal-field textarea:focus { outline: none; border-color: var(--color-dtv-green); }
 .gf-modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
 .gf-btn { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; }
-.gf-btn { background: #f5f5f5; color: #666; }
-.gf-btn--primary { background: #4FAF4A; color: white; }
-.gf-btn--primary:hover:not(:disabled) { background: #3d9a3d; }
+.gf-btn { background: var(--color-surface-hover); color: var(--color-text-label); }
+.gf-btn--primary { background: var(--color-dtv-green); color: var(--color-white); }
+.gf-btn--primary:hover:not(:disabled) { background: var(--color-green-hover); }
 .gf-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>
