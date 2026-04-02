@@ -99,7 +99,6 @@ onUnmounted(() => embla?.destroy())
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0.5rem 0.75rem;
-  text-transform: lowercase;
   letter-spacing: 0.03em;
 }
 

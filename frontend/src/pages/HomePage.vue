@@ -1,10 +1,15 @@
 <template>
   <DefaultLayout>
-    <LayoutColumns class="pt-8">
+    <div class="bg-white px-6 py-4 w-fit mt-4">
+      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">What's going on?</h1>
+    </div>
+    <LayoutColumns class="pt-2">
       <!-- CTA card: adapts to user's session history -->
       <template #left>
         <NextActionCard :sessions="store.sessions" @select="onCtaSelect" />
       </template>
+
+      
 
       <!-- Calendar -->
       <template #middle>
@@ -20,6 +25,8 @@
         </div>
       </template>
 
+
+
       <!-- Session picker -->
       <template #right>
         <SessionList
@@ -31,6 +38,24 @@
       </template>
     </LayoutColumns>
 
+    <div class="bg-white px-6 py-4 w-fit mt-4">
+      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">What's been happening?</h1>
+    </div>
+
+    <!-- Cover photo gallery — all sessions with photos, newest first -->
+    <MediaGallery
+      v-if="coverItems.length"
+      :items="coverItems"
+      :max-height="280"
+      :clickable="true"
+      title="Photos from recent events"
+      @select="onGallerySelect"
+    />
+
+    <div class="bg-white px-6 py-4 w-fit mt-4">
+      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">What it makes possible?</h1>
+    </div>
+
     <!-- Bar chart + Word cloud -->
     <LayoutColumns ratio="2-1">
       <template #left>
@@ -41,14 +66,7 @@
       </template>
     </LayoutColumns>
 
-    <!-- Cover photo gallery — all sessions with photos, newest first -->
-    <MediaGallery
-      v-if="coverItems.length"
-      :items="coverItems"
-      :max-height="280"
-      :clickable="true"
-      @select="onGallerySelect"
-    />
+
   </DefaultLayout>
 </template>
 
