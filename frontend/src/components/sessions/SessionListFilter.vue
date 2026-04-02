@@ -3,7 +3,7 @@
     <div class="sf-title-row">
       <h2 class="sf-heading">Sessions</h2>
       <span class="sf-count">{{ filtered.length }}</span>
-      <FyFilterV1 v-model="fy" />
+      <FyFilter v-model="fy" />
     </div>
     <div class="sf-filters">
       <input
@@ -17,7 +17,7 @@
         <option value="">All groups</option>
         <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
       </select>
-      <TagPickerV1
+      <TagPicker
         v-model="tagLabel"
         :show-no-tags="true"
         :available-labels="availableTagLabels"
@@ -28,9 +28,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import FyFilterV1 from './FyFilterV1.vue'
-import TagPickerV1 from './TagPickerV1.vue'
-import type { Session } from '../types/session'
+import FyFilter from '../FyFilter.vue'
+import TagPicker from '../TagPicker.vue'
+import type { Session } from '../../types/session'
 
 const props = defineProps<{ sessions: Session[] }>()
 const emit = defineEmits<{ filtered: [sessions: Session[]] }>()

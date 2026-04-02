@@ -59,10 +59,10 @@
     <!-- Bar chart + Word cloud -->
     <LayoutColumns ratio="2-1">
       <template #left>
-        <FyBarChartV1 :sessions="(store.sessions as any)" v-model="selectedFy" />
+        <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" />
       </template>
       <template #right>
-        <WordCloudV1 :tags="tagHours" />
+        <WordCloud :tags="tagHours" />
       </template>
     </LayoutColumns>
 
@@ -76,11 +76,11 @@ import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
-import SessionList from '../components/SessionList.vue'
+import SessionList from '../components/sessions/SessionList.vue'
 import MediaGallery from '../components/MediaGallery.vue'
-import FyBarChartV1 from '../components/FyBarChartV1.vue'
-import WordCloudV1 from '../components/WordCloudV1.vue'
-import NextActionCard from './homepage/NextActionCard.vue'
+import FyBarChart from '../components/FyBarChart.vue'
+import WordCloud from '../components/WordCloud.vue'
+import NextActionCard from '../components/homepage/NextActionCard.vue'
 import { useSessionsStore } from '../stores/sessions'
 import { useAuth } from '../composables/useAuth'
 import { sessionPath } from '../router'

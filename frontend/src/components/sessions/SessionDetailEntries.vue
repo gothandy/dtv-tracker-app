@@ -82,7 +82,7 @@
       </div>
     </div>
 
-    <EntryEditModalV1
+    <EditEntryModal
       v-if="editingEntryId"
       :entry-id="editingEntryId"
       @close="editingEntryId = null"
@@ -90,7 +90,7 @@
       @deleted="load"
     />
 
-    <AddEntryModalV1
+    <AddEntryModal
       v-if="showAdd"
       :group-key="groupKey"
       :date="date"
@@ -98,7 +98,7 @@
       @added="load"
     />
 
-    <SetHoursModalV1
+    <SetHoursModal
       v-if="showSetHours"
       :entries="entries"
       @close="showSetHours = false"
@@ -110,12 +110,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { entryPath } from '../router/index'
-import type { EntryResponse } from '../../../types/api-responses'
-import { iconsFromNotes } from '../utils/tagIcons'
-import EntryEditModalV1 from './EntryEditModalV1.vue'
-import AddEntryModalV1 from './AddEntryModalV1.vue'
-import SetHoursModalV1 from './SetHoursModalV1.vue'
+import { entryPath } from '../../router/index'
+import type { EntryResponse } from '../../../../types/api-responses'
+import { iconsFromNotes } from '../../utils/tagIcons'
+import EditEntryModal from '../../pages/modals/EditEntryModal.vue'
+import AddEntryModal from '../../pages/modals/AddEntryModal.vue'
+import SetHoursModal from '../../pages/modals/SetHoursModal.vue'
 
 const props = defineProps<{ groupKey: string; date: string }>()
 

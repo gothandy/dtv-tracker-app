@@ -73,8 +73,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { groupsPath, sessionPath } from '../router/index'
-import type { GroupDetailResponse } from '../../../types/api-responses'
+import { groupsPath, sessionPath } from '../../router/index'
+import type { GroupDetailResponse } from '../../../../types/api-responses'
 
 const props = defineProps<{ group: GroupDetailResponse }>()
 const emit = defineEmits<{ updated: [] }>()

@@ -6,14 +6,14 @@
       <LayoutColumns ratio="2-1">
         <!-- Left: session info -->
         <template #left>
-          <SessionHeaderCard :session="store.session" />
+          <SessionDetailHeader :session="store.session" />
         </template>
 
         <!-- Right: booking panel -->
         <template #right>
-          <CoverPhotoCard v-if="store.session.coverMediaId" :group-key="(route.params.groupKey as string)" :date="store.session.date" :alt="store.session.groupName" />
-          <BookCard v-if="isBookable && !store.session.isRegistered" :session="store.session" />
-          <ForThisSessionCard v-if="isBookable && store.session.isRegistered" :session="store.session" />
+          <SessionDetailCover v-if="store.session.coverMediaId" :group-key="(route.params.groupKey as string)" :date="store.session.date" :alt="store.session.groupName" />
+          <SessionDetailBook v-if="isBookable && !store.session.isRegistered" :session="store.session" />
+          <SessionDetailForThis v-if="isBookable && store.session.isRegistered" :session="store.session" />
         </template>
       </LayoutColumns>
 
@@ -22,15 +22,15 @@
 
         <!-- What to Expect / Write Up -->
         <template #left>
-          <WhatToExpectCard v-if="isBookable" />
-          <WriteUpCard v-if="!isBookable && store.session.description" :description="store.session.description!" />
+          <SessionDetailExpect v-if="isBookable" />
+          <SessionDetailWriteUp v-if="!isBookable && store.session.description" :description="store.session.description!" />
         </template>
 
         <!-- Returning Volunteer / Stats -->
         <template #right>
-          <LoginToBookCard v-if="isBookable && !user" />
-          <SessionStatsCard v-if="!isBookable" :session="store.session" />
-          <GroupTeaserCard
+          <SessionDetailLogin v-if="isBookable && !user" />
+          <SessionDetailStats v-if="!isBookable" :session="store.session" />
+          <SessionDetailGroupTeaser
             v-if="!isBookable && store.session.nextSession"
             :group-name="store.session.groupName!"
             :group-description="store.session.groupDescription"
@@ -40,7 +40,7 @@
       </LayoutColumns>
 
       <!-- Tags — visible to all -->
-      <SessionTagsV1
+      <SessionDetailTags
         :session="store.session"
         :group-key="(route.params.groupKey as string)"
         :date="store.session.date"
@@ -48,7 +48,7 @@
       />
 
       <!-- Action buttons — upload/edit for checkin/admin/self-service -->
-      <SessionActionButtonsV1
+      <SessionDetailActions
         v-if="isCheckIn || isAdmin || isSelfService"
         :session="store.session"
         :group-key="(route.params.groupKey as string)"
@@ -57,13 +57,13 @@
       />
 
       <!-- Entries — checkin/admin only -->
-      <EntriesListV1
+      <SessionDetailEntries
         v-if="isCheckIn || isAdmin"
         :group-key="(route.params.groupKey as string)"
         :date="store.session.date"
       />
 
-      <PhotoGalleryCard
+      <SessionDetailGallery
         :group-key="(route.params.groupKey as string)"
         :date="store.session.date"
         :max-height="400"
@@ -83,19 +83,19 @@ import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
 import { useAuth } from '../composables/useAuth'
 import { useRole } from '../composables/useRole'
-import LoginToBookCard from './sessions/LoginToBookCard.vue'
-import BookCard from './sessions/BookCard.vue'
-import WhatToExpectCard from './sessions/WhatToExpectCard.vue'
-import CoverPhotoCard from './sessions/CoverPhotoCard.vue'
-import WriteUpCard from './sessions/WriteUpCard.vue'
-import SessionHeaderCard from './sessions/SessionHeaderCard.vue'
-import SessionStatsCard from './sessions/SessionStatsCard.vue'
-import GroupTeaserCard from './sessions/GroupTeaserCard.vue'
-import PhotoGalleryCard from './sessions/PhotoGalleryCard.vue'
-import ForThisSessionCard from './sessions/ForThisSessionCard.vue'
-import SessionTagsV1 from '../components/SessionTagsV1.vue'
-import SessionActionButtonsV1 from '../components/SessionActionButtonsV1.vue'
-import EntriesListV1 from '../components/EntriesListV1.vue'
+import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
+import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
+import SessionDetailExpect from '../components/sessions/SessionDetailExpect.vue'
+import SessionDetailCover from '../components/sessions/SessionDetailCover.vue'
+import SessionDetailWriteUp from '../components/sessions/SessionDetailWriteUp.vue'
+import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
+import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
+import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
+import SessionDetailGallery from '../components/sessions/SessionDetailGallery.vue'
+import SessionDetailForThis from '../components/sessions/SessionDetailForThis.vue'
+import SessionDetailTags from '../components/sessions/SessionDetailTags.vue'
+import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
+import SessionDetailEntries from '../components/sessions/SessionDetailEntries.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()

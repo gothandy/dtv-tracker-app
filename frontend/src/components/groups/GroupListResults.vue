@@ -24,8 +24,8 @@
 </template>
 
 <script setup lang="ts">
-import { groupPath } from '../router/index'
-import type { GroupWithStats } from './GroupsFilterV1.vue'
+import { groupPath } from '../../router/index'
+import type { GroupWithStats } from './GroupListFilter.vue'
 
 defineProps<{
   groups: GroupWithStats[]

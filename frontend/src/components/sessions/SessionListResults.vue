@@ -44,9 +44,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { sessionPath } from '../router/index'
-import { useRole } from '../composables/useRole'
-import type { Session } from '../types/session'
+import { sessionPath } from '../../router/index'
+import { useRole } from '../../composables/useRole'
+import type { Session } from '../../types/session'
 
 const props = defineProps<{
   sessions: Session[]

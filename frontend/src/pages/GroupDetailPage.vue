@@ -1,7 +1,7 @@
 <template>
-  <GroupDetailV1 />
+  <GroupDetail />
 </template>
 
 <script setup lang="ts">
-import GroupDetailV1 from '../components/GroupDetailV1.vue'
+import GroupDetail from '../components/groups/GroupDetail.vue'
 </script>

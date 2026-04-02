@@ -4,7 +4,7 @@
       <h2 class="gf-heading">Groups</h2>
       <span class="gf-count">{{ filtered.length }}</span>
       <div class="gf-actions">
-        <FyFilterV1 v-model="fy" />
+        <FyFilter v-model="fy" />
         <button v-if="isAdmin" class="icon-btn" @click="showNew = true" title="New group">
           <img src="/svg/add.svg" alt="New group" />
         </button>
@@ -41,12 +41,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import FyFilterV1 from './FyFilterV1.vue'
-import { useRole } from '../composables/useRole'
-import { useGroupsStore } from '../stores/groups'
-import { groupPath } from '../router/index'
-import type { GroupResponse } from '../../../types/api-responses'
-import type { Session } from '../types/session'
+import FyFilter from '../FyFilter.vue'
+import { useRole } from '../../composables/useRole'
+import { useGroupsStore } from '../../stores/groups'
+import { groupPath } from '../../router/index'
+import type { GroupResponse } from '../../../../types/api-responses'
+import type { Session } from '../../types/session'
 
 export interface GroupWithStats extends GroupResponse {
   sessionCount: number

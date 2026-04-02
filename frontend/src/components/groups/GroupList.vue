@@ -9,7 +9,7 @@
             <div class="v1-count">{{ filteredGroups.length }}</div>
           </div>
           <div style="display:flex; gap:0.5rem; align-items:center">
-            <FyFilterV1 v-model="selectedFy" />
+            <FyFilter v-model="selectedFy" />
             <button v-if="isAdmin" class="icon-btn" @click="showNewGroup = true" title="New group">
               <img src="/svg/add.svg" alt="New group" />
             </button>
@@ -79,12 +79,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import DefaultLayout from '../layouts/DefaultLayout.vue'
-import FyFilterV1 from './FyFilterV1.vue'
-import { useGroupsStore } from '../stores/groups'
-import { useSessionsStore } from '../stores/sessions'
-import { useRole } from '../composables/useRole'
-import { groupPath } from '../router/index'
+import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import FyFilter from '../FyFilter.vue'
+import { useGroupsStore } from '../../stores/groups'
+import { useSessionsStore } from '../../stores/sessions'
+import { useRole } from '../../composables/useRole'
+import { groupPath } from '../../router/index'
 
 const store = useGroupsStore()
 const sessionsStore = useSessionsStore()

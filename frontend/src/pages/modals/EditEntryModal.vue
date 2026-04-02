@@ -88,9 +88,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { useRole } from '../composables/useRole'
-import { profilePath } from '../router/index'
-import { TAG_ICONS } from '../utils/tagIcons'
+import { useRole } from '../../composables/useRole'
+import { profilePath } from '../../router/index'
+import { TAG_ICONS } from '../../utils/tagIcons'
 
 const props = defineProps<{ entryId: number }>()
 const emit = defineEmits<{ close: []; saved: []; deleted: [] }>()

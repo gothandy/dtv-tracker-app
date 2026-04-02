@@ -9,7 +9,7 @@
       <div class="dtv-field">
         <label class="dtv-label">Search volunteer</label>
         <div v-if="loadingProfiles" class="aem-status">Loading…</div>
-        <ProfilePickerV1
+        <ProfilePicker
           v-else
           ref="picker"
           :profiles="profiles"
@@ -29,13 +29,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import ProfilePickerV1, { type PickerProfile } from './ProfilePickerV1.vue'
-import type { EntryResponse } from '../../../types/api-responses'
+import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
+import type { EntryResponse } from '../../../../types/api-responses'
 
 const props = defineProps<{ groupKey: string; date: string }>()
 const emit = defineEmits<{ close: []; added: [entry: EntryResponse] }>()
 
-const picker = ref<InstanceType<typeof ProfilePickerV1> | null>(null)
+const picker = ref<InstanceType<typeof ProfilePicker> | null>(null)
 const profiles = ref<PickerProfile[]>([])
 const loadingProfiles = ref(false)
 const adding = ref(false)

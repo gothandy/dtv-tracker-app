@@ -9,7 +9,7 @@
       <button v-if="canEdit" class="stags-remove" @click="removeTag(tag.termGuid)">×</button>
     </span>
     <div v-if="canEdit" class="stags-add-wrap">
-      <TagPickerV1
+      <TagPicker
         v-model="pickedLabel"
         placeholder="+ Add tag"
         @select="onPick"
@@ -20,9 +20,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRole } from '../composables/useRole'
-import TagPickerV1 from './TagPickerV1.vue'
-import type { SessionDetailResponse } from '../../../types/api-responses'
+import { useRole } from '../../composables/useRole'
+import TagPicker from '../TagPicker.vue'
+import type { SessionDetailResponse } from '../../../../types/api-responses'
 
 const props = defineProps<{
   session: SessionDetailResponse

@@ -7,13 +7,13 @@
       <!-- Left: header / bar chart / tag cloud  |  Right: actions / regulars / calendar -->
       <LayoutColumns ratio="2-1" align="start">
         <template #left>
-          <GroupHeaderV1 :group="store.group" :show-eb-link="isAdmin" />
-          <FyBarChartV1 :sessions="store.group.sessions" v-model="selectedFy" />
-          <WordCloudV1 :tags="tagHours" />
+          <GroupDetailHeader :group="store.group" :show-eb-link="isAdmin" />
+          <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" />
+          <WordCloud :tags="tagHours" />
         </template>
         <template #right>
-          <GroupActionButtonsV1 v-if="isAdmin" :group="store.group" @updated="reload" />
-          <GroupRegularsV1 v-if="isAdmin || isCheckIn" :group="store.group" />
+          <GroupDetailActions v-if="isAdmin" :group="store.group" @updated="reload" />
+          <GroupDetailRegulars v-if="isAdmin || isCheckIn" :group="store.group" />
           <div class="bg-dtv-green/25 flex items-start justify-center p-2">
             <CalendarWidget
               v-model="selectedDate"
@@ -35,21 +35,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useGroupDetailStore } from '../stores/groupDetail'
-import { useRole } from '../composables/useRole'
-import DefaultLayout from '../layouts/DefaultLayout.vue'
-import LayoutColumns from './LayoutColumns.vue'
-import CalendarWidget from './CalendarWidget.vue'
-import MediaGallery from './MediaGallery.vue'
-import GroupHeaderV1 from './GroupHeaderV1.vue'
-import GroupActionButtonsV1 from './GroupActionButtonsV1.vue'
-import GroupRegularsV1 from './GroupRegularsV1.vue'
-import FyBarChartV1 from './FyBarChartV1.vue'
-import WordCloudV1 from './WordCloudV1.vue'
-import { sessionPath } from '../router/index'
-import type { Session } from '../types/session'
-import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
-import type { MediaItem } from '../types/media'
+import { useGroupDetailStore } from '../../stores/groupDetail'
+import { useRole } from '../../composables/useRole'
+import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import LayoutColumns from '../LayoutColumns.vue'
+import CalendarWidget from '../CalendarWidget.vue'
+import MediaGallery from '../MediaGallery.vue'
+import GroupDetailHeader from './GroupDetailHeader.vue'
+import GroupDetailActions from './GroupDetailActions.vue'
+import GroupDetailRegulars from './GroupDetailRegulars.vue'
+import FyBarChart from '../FyBarChart.vue'
+import WordCloud from '../WordCloud.vue'
+import { sessionPath } from '../../router/index'
+import type { Session } from '../../types/session'
+import type { SessionResponse, TagHoursItem } from '../../../../types/api-responses'
+import type { MediaItem } from '../../types/media'
 
 const route = useRoute()
 const router = useRouter()

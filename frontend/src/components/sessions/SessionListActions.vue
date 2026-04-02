@@ -18,7 +18,7 @@
     <div v-if="showTagPicker" class="sa-modal-overlay" @click.self="showTagPicker = false">
       <div class="sa-modal">
         <h3>Add tag to {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }}</h3>
-        <TagPickerV1 v-model="pickedTag" placeholder="Choose a tag…" />
+        <TagPicker v-model="pickedTag" placeholder="Choose a tag…" />
         <div class="sa-modal-buttons">
           <button class="sa-btn" @click="showTagPicker = false">Cancel</button>
           <button class="sa-btn sa-btn--primary" :disabled="!pickedTag || saving" @click="applyTag">
@@ -32,9 +32,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import TagPickerV1 from './TagPickerV1.vue'
-import { useRole } from '../composables/useRole'
-import type { Session } from '../types/session'
+import TagPicker from '../TagPicker.vue'
+import { useRole } from '../../composables/useRole'
+import type { Session } from '../../types/session'
 
 const props = defineProps<{
   sessions: Session[]   // full filtered list (for CSV + hours summary)

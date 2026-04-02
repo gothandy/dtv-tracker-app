@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import type { GroupDetailResponse } from '../../../types/api-responses'
+import type { GroupDetailResponse } from '../../../../types/api-responses'
 
 defineProps<{ group: GroupDetailResponse, showEbLink?: boolean }>()
 </script>

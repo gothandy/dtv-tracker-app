@@ -31,7 +31,7 @@
       </div>
     </div>
 
-    <SessionEditModalV1
+    <EditSessionModal
       v-if="showEdit"
       :session="session"
       :group-key="groupKey"
@@ -46,10 +46,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRole } from '../composables/useRole'
-import { sessionPath } from '../router/index'
-import type { SessionDetailResponse } from '../../../types/api-responses'
-import SessionEditModalV1 from './SessionEditModalV1.vue'
+import { useRole } from '../../composables/useRole'
+import { sessionPath } from '../../router/index'
+import type { SessionDetailResponse } from '../../../../types/api-responses'
+import EditSessionModal from '../../pages/modals/EditSessionModal.vue'
 
 const props = defineProps<{
   session: SessionDetailResponse

@@ -1,12 +1,12 @@
 <template>
   <DefaultLayout>
     <div class="pt-8 px-6">
-      <GroupsFilterV1
+      <GroupListFilter
         :groups="groupsStore.groups"
         :sessions="sessionsStore.sessions"
         @filtered="filtered = $event"
       />
-      <GroupsResultsV1
+      <GroupListResults
         :groups="filtered"
         :loading="groupsStore.loading"
         :error="groupsStore.error"
@@ -18,11 +18,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
-import GroupsFilterV1 from '../components/GroupsFilterV1.vue'
-import GroupsResultsV1 from '../components/GroupsResultsV1.vue'
+import GroupListFilter from '../components/groups/GroupListFilter.vue'
+import GroupListResults from '../components/groups/GroupListResults.vue'
 import { useGroupsStore } from '../stores/groups'
 import { useSessionsStore } from '../stores/sessions'
-import type { GroupWithStats } from '../components/GroupsFilterV1.vue'
+import type { GroupWithStats } from '../components/groups/GroupListFilter.vue'
 
 const groupsStore = useGroupsStore()
 const sessionsStore = useSessionsStore()

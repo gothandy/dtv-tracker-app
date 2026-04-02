@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { EntryResponse } from '../../../types/api-responses'
+import type { EntryResponse } from '../../../../types/api-responses'
 
 const props = defineProps<{ entries: EntryResponse[] }>()
 const emit = defineEmits<{ close: []; done: [] }>()

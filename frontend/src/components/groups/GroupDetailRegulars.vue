@@ -22,9 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRole } from '../composables/useRole'
-import { profilePath } from '../router/index'
-import type { GroupDetailResponse } from '../../../types/api-responses'
+import { useRole } from '../../composables/useRole'
+import { profilePath } from '../../router/index'
+import type { GroupDetailResponse } from '../../../../types/api-responses'
 
 defineProps<{ group: GroupDetailResponse }>()
 

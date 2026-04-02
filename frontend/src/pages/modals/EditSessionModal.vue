@@ -66,9 +66,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRole } from '../composables/useRole'
-import { groupPath } from '../router/index'
-import type { SessionDetailResponse } from '../../../types/api-responses'
+import { useRole } from '../../composables/useRole'
+import { groupPath } from '../../router/index'
+import type { SessionDetailResponse } from '../../../../types/api-responses'
 
 interface GroupItem { id: number; name: string; key: string }
 
