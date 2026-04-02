@@ -1,6 +1,8 @@
 <template>
   <DefaultLayout>
-    <h1 class="text-dtv-green text-3xl uppercase mb-2">Terms of Use</h1>
+    <h1 class="sr-only">Terms of Use</h1>
+    <PageTitle>Terms of Use</PageTitle>
+    <div class="px-6 pt-4 pb-8">
     <p class="text-sm text-gray-500 mb-8">Dean Trail Volunteers &mdash; Registered Charity 1208988<br>Last updated: March 2026</p>
 
     <div class="prose max-w-none text-black space-y-6">
@@ -62,9 +64,14 @@
         <p>For questions about these terms, contact Dean Trail Volunteers via the details in our <a href="https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">Privacy Notice (PDF)</a>.</p>
       </section>
     </div>
+    </div>
   </DefaultLayout>
 </template>
 
 <script setup lang="ts">
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import { usePageTitle } from '../composables/usePageTitle'
+import PageTitle from '../components/PageTitle.vue'
+
+usePageTitle('Terms of Use')
 </script>

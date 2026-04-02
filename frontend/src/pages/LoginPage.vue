@@ -1,6 +1,7 @@
 <template>
   <DefaultLayout>
-    <div class="flex flex-col items-center">
+    <h1 class="sr-only">Login</h1>
+    <div class="prose flex flex-col items-center">
 
       <!-- Reason banner -->
       <div v-if="reasonMessage" class="w-full max-w-sm mb-4 p-4 pl-10 border-2 border-amber-400 bg-amber-50 text-amber-900 text-base font-medium leading-relaxed relative">
@@ -68,6 +69,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { usePageTitle } from '../composables/usePageTitle'
+
+usePageTitle('Login')
 import { useRoute } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="prose p-6">
     <!-- TODO display a different list depending on the session category (dig, fund raising, behind the scenes etc.) -->
     <h2 class="font-display text-dtv-dark text-xl uppercase leading-none mb-4">What to Expect</h2>
     <ul class="text-sm text-dtv-dark space-y-2 list-disc list-inside">

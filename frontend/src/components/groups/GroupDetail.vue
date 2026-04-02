@@ -1,13 +1,15 @@
 <template>
   <DefaultLayout>
+    <h1 v-if="store.group" class="sr-only">{{ store.group.displayName || store.group.key }}</h1>
     <div v-if="store.loading" class="gd-loading">Loading…</div>
     <div v-else-if="store.error" class="gd-error">{{ store.error }}</div>
     <template v-else-if="store.group">
+      <PageTitle>{{ store.group.displayName || store.group.key }}</PageTitle>
 
       <!-- Left: header / bar chart / tag cloud  |  Right: actions / regulars / calendar -->
       <LayoutColumns ratio="2-1" align="start">
         <template #left>
-          <GroupDetailHeader :group="store.group" :show-eb-link="isAdmin" />
+          <GroupDetailHeader :group="store.group" />
           <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" />
           <WordCloud :tags="tagHours" />
         </template>
@@ -36,6 +38,8 @@
 import { ref, computed, onMounted, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGroupDetailStore } from '../../stores/groupDetail'
+import { usePageTitle } from '../../composables/usePageTitle'
+import PageTitle from '../PageTitle.vue'
 import { useRole } from '../../composables/useRole'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../LayoutColumns.vue'
@@ -55,6 +59,9 @@ const route = useRoute()
 const router = useRouter()
 const store = useGroupDetailStore()
 const { isAdmin, isCheckIn } = useRole()
+
+const titleText = computed(() => store.group?.displayName || store.group?.key || '')
+usePageTitle(titleText)
 
 const selectedFy = ref('')
 const selectedDate = ref<string | undefined>(undefined)

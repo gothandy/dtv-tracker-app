@@ -8,6 +8,7 @@ import LoginPage from '../pages/LoginPage.vue'
 import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
 import SessionsPage from '../pages/SessionsPage.vue'
+import AdminPage from '../pages/AdminPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.
@@ -23,6 +24,7 @@ export const adminPath = () => '/admin'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: () => ({ top: 0 }),
   routes: [
     { path: '/', component: HomePage },
     { path: '/groups', component: GroupsPage },
@@ -33,5 +35,6 @@ export const router = createRouter({
     { path: '/terms', component: TermsPage },
     { path: '/about', component: AboutPage },
     { path: '/login', component: LoginPage },
+    { path: '/admin', component: AdminPage },
   ]
 })

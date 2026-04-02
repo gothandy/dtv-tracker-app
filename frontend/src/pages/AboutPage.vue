@@ -1,7 +1,8 @@
 <template>
   <DefaultLayout>
-    <div class="m-4">
-      <h1 class="text-dtv-green text-3xl uppercase mb-8">About</h1>
+    <h1 class="sr-only">About</h1>
+    <PageTitle>About</PageTitle>
+    <div class="px-6 pt-4 pb-8">
 
       <div class="space-y-3 text-black">
         <div class="flex gap-3">
@@ -36,6 +37,10 @@
 
 <script setup lang="ts">
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import { usePageTitle } from '../composables/usePageTitle'
+import PageTitle from '../components/PageTitle.vue'
+
+usePageTitle('About')
 
 declare const __BUILD_TIME__: string
 declare const __GIT_COMMIT__: string

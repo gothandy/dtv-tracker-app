@@ -1,8 +1,7 @@
 <template>
   <DefaultLayout>
-    <div class="bg-white px-6 py-4 w-fit mt-4">
-      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">What's going on?</h1>
-    </div>
+    <h1 class="sr-only">Home</h1>
+    <PageTitle>What's going on?</PageTitle>
     <LayoutColumns class="pt-2">
       <!-- CTA card: adapts to user's session history -->
       <template #left>
@@ -38,9 +37,7 @@
       </template>
     </LayoutColumns>
 
-    <div class="bg-white px-6 py-4 w-fit mt-4">
-      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">What's been happening?</h1>
-    </div>
+    <PageTitle>What's been happening?</PageTitle>
 
     <!-- Cover photo gallery — all sessions with photos, newest first -->
     <MediaGallery
@@ -52,9 +49,7 @@
       @select="onGallerySelect"
     />
 
-    <div class="bg-white px-6 py-4 w-fit mt-4">
-      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">What it makes possible?</h1>
-    </div>
+    <PageTitle>What it makes possible?</PageTitle>
 
     <!-- Bar chart + Word cloud -->
     <LayoutColumns ratio="2-1">
@@ -72,6 +67,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, watchEffect } from 'vue'
+import { usePageTitle } from '../composables/usePageTitle'
+import PageTitle from '../components/PageTitle.vue'
+
+usePageTitle('Home')
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'

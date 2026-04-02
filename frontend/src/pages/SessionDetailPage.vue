@@ -1,8 +1,10 @@
 <template>
   <DefaultLayout :padded="false">
+    <h1 v-if="store.session" class="sr-only">{{ store.session.groupName }}, {{ formatDate(store.session.date) }}</h1>
     <div v-if="store.loading" class="text-gray-400 p-6">Loading…</div>
     <div v-else-if="store.error" class="text-red-500 p-6">{{ store.error }}</div>
     <template v-else-if="store.session">
+      <PageTitle>{{ store.session.groupName }}</PageTitle>
       <LayoutColumns ratio="2-1">
         <!-- Left: session info -->
         <template #left>
@@ -83,6 +85,8 @@ import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
 import { useAuth } from '../composables/useAuth'
 import { useRole } from '../composables/useRole'
+import { usePageTitle } from '../composables/usePageTitle'
+import PageTitle from '../components/PageTitle.vue'
 import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
 import SessionDetailExpect from '../components/sessions/SessionDetailExpect.vue'
@@ -102,13 +106,22 @@ const store = useSessionDetailStore()
 const { user } = useAuth()
 const { isAdmin, isCheckIn, isSelfService } = useRole()
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const titleText = computed(() => {
+  if (!store.session) return ''
+  return `${formatDate(store.session.date)} | ${store.session.groupName}`
+})
+usePageTitle(titleText)
+
 // Open on day of session, closed from next day onwards (time field TBD)
 const isBookable = computed(() => {
   if (!store.session) return false
   const today = new Date().toISOString().slice(0, 10)
   return store.session.date >= today
 })
-
 
 function load() {
   store.fetch(route.params.groupKey as string, route.params.date as string)

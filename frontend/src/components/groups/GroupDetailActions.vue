@@ -2,6 +2,9 @@
   <div class="gab-wrap">
     <button class="v1-btn v1-btn-primary" @click="showAdd = true">+ Add session</button>
     <button class="v1-btn" @click="openEdit">Edit</button>
+    <a v-if="group.eventbriteSeriesId" :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`" target="_blank" rel="noopener" class="v1-btn" title="View on Eventbrite">
+      <img src="/svg/eventbrite.svg" alt="Eventbrite" class="gab-eb-icon" />
+    </a>
 
     <!-- Edit modal -->
     <div v-if="showEdit" class="v1-modal-overlay" @click.self="showEdit = false">
@@ -193,6 +196,8 @@ async function confirmDelete() {
 .v1-btn-danger { background: var(--color-dtv-red); color: var(--color-white); border-color: var(--color-dtv-red); }
 .v1-btn-danger:hover:not(:disabled) { opacity: 0.88; }
 .v1-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.gab-eb-icon { width: 18px; height: 18px; opacity: 0.7; display: block; }
 
 .v1-modal-overlay {
   position: fixed; inset: 0; background: var(--color-overlay);

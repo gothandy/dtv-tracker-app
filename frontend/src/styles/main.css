@@ -83,4 +83,8 @@
   h2 {
     font-family: theme(--font-body);
   }
+
+  .prose {
+    font-family: system-ui, sans-serif;
+  }
 }

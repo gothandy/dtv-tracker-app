@@ -1,6 +1,8 @@
 <template>
   <DefaultLayout>
-    <div class="pt-8 px-6">
+    <h1 class="sr-only">Groups</h1>
+    <PageTitle>Groups</PageTitle>
+    <div class="px-6">
       <GroupListFilter
         :groups="groupsStore.groups"
         :sessions="sessionsStore.sessions"
@@ -18,6 +20,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import { usePageTitle } from '../composables/usePageTitle'
+import PageTitle from '../components/PageTitle.vue'
+
+usePageTitle('Groups')
 import GroupListFilter from '../components/groups/GroupListFilter.vue'
 import GroupListResults from '../components/groups/GroupListResults.vue'
 import { useGroupsStore } from '../stores/groups'

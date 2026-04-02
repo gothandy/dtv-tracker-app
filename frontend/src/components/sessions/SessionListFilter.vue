@@ -1,7 +1,6 @@
 <template>
   <div class="sf-wrap">
     <div class="sf-title-row">
-      <h2 class="sf-heading">Sessions</h2>
       <span class="sf-count">{{ filtered.length }}</span>
       <FyFilter v-model="fy" />
     </div>

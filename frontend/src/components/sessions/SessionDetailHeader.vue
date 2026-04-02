@@ -1,13 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
 
-    <!-- Title: green on black -->
-    <div class="bg-white px-6 py-4 w-fit mt-4">
-      <h1 class="font-display text-dtv-green text-4xl uppercase leading-none">
-        {{ session.groupName }}
-      </h1>
-    </div>
-
     <!-- Table: black on white -->
     <div class="bg-white px-6 pt-8 pb-12">
       <dl class="text-sm text-dtv-dark space-y-1">

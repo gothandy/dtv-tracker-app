@@ -1,7 +1,6 @@
 <template>
   <div class="gf-wrap">
     <div class="gf-title-row">
-      <h2 class="gf-heading">Groups</h2>
       <span class="gf-count">{{ filtered.length }}</span>
       <div class="gf-actions">
         <FyFilter v-model="fy" />

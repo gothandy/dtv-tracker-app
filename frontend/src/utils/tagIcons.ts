@@ -20,7 +20,7 @@ export const TAG_ICONS: TagIcon[] = [
   { icon: 'regular.svg',    alt: 'Regular',          tag: '#Regular',    type: 'tag' },
   { icon: 'new.svg',        alt: 'New',              tag: '#New',        type: 'tag' },
   { icon: 'diglead.svg',    alt: 'Dig Lead',         tag: '#DigLead',    type: 'tag' },
-  { icon: 'firstaider.svg', alt: 'First Aider',      tag: '#FirstAider', type: 'tag', color: 'dark-green' },
+  { icon: 'firstaider.svg', alt: 'First Aider',      tag: '#FirstAider', type: 'tag', color: 'green' },
   { icon: 'csr.svg',        alt: 'CSR',              tag: '#CSR',        type: 'tag' },
   { icon: 'late.svg',       alt: 'Late',             tag: '#Late',       type: 'tag' },
   { icon: 'nophoto.svg',    alt: 'No Photo',         tag: '#NoPhoto',    type: 'tag', color: 'red' },
