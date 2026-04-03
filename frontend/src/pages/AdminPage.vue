@@ -1,6 +1,6 @@
 <template>
   <DefaultLayout>
-    <PageTitle>Admin</PageTitle>
+    <PageHeader>Admin</PageHeader>
     <div class="pt-3 pb-8">
 
       <div v-if="!ready" class="ap-status">Loading…</div>
@@ -120,7 +120,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
-import PageTitle from '../components/PageTitle.vue'
+import PageHeader from '../components/PageHeader.vue'
 import { useRole } from '../composables/useRole'
 import { usePageTitle } from '../composables/usePageTitle'
 import { TAG_ICONS } from '../utils/tagIcons'

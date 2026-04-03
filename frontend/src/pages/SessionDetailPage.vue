@@ -1,37 +1,55 @@
 <template>
   <DefaultLayout :padded="false">
     <h1 v-if="store.session" class="sr-only">{{ store.session.groupName }}, {{ formatDate(store.session.date) }}</h1>
-    <div v-if="store.loading" class="text-gray-400 p-6">Loading…</div>
+    <div v-if="store.loading && !store.session" class="text-gray-400 p-6">Loading…</div>
     <div v-else-if="store.error" class="text-red-500 p-6">{{ store.error }}</div>
     <template v-else-if="store.session">
-      <PageTitle>{{ store.session.groupName }}</PageTitle>
+      <PageHeader>{{ store.session.groupName }}</PageHeader>
+
+      <!-- TOP ROW -->
       <LayoutColumns ratio="2-1">
+
+        <template #header>
+          <SectionHeader :hidden="true">Session Details</SectionHeader>
+        </template>
+
         <!-- Left: session info -->
         <template #left>
           <SessionDetailHeader :session="store.session" />
+          
         </template>
 
         <!-- Right: booking panel -->
         <template #right>
-          <SessionDetailCover v-if="store.session.coverMediaId" :group-key="(route.params.groupKey as string)" :date="store.session.date" :alt="store.session.groupName" />
+
+
           <SessionDetailBook v-if="isBookable && !store.session.isRegistered" :session="store.session" />
           <SessionDetailForThis v-if="isBookable && store.session.isRegistered" :session="store.session" />
+          <SessionDetailLogin v-if="isBookable && !user" />
+
+          <!-- Action buttons — upload/edit for checkin/admin/self-service -->
+          <SessionDetailActions
+            v-if="isCheckIn || isAdmin || isSelfService"
+            :session="store.session"
+            :group-key="(route.params.groupKey as string)"
+            :date="store.session.date"
+            @saved="(gk, d) => store.fetch(gk, d)"
+          />
+          
         </template>
       </LayoutColumns>
 
-      <!-- Second row: about / description / returning volunteer -->
-      <LayoutColumns ratio="2-1">
+      
 
-        <!-- What to Expect / Write Up -->
-        <template #left>
-          <SessionDetailExpect v-if="isBookable" />
-          <SessionDetailWriteUp v-if="!isBookable && store.session.description" :description="store.session.description!" />
+      <!-- SECOND ROW -->
+      <LayoutColumns ratio="1-2">
+        <template #header>
+          <SectionHeader v-if="isBookable">What to Expect</SectionHeader>
         </template>
 
-        <!-- Returning Volunteer / Stats -->
-        <template #right>
-          <SessionDetailLogin v-if="isBookable && !user" />
-          <SessionDetailStats v-if="!isBookable" :session="store.session" />
+        <template #left>
+          <SessionDetailCover v-if="store.session.coverMediaId" :group-key="(route.params.groupKey as string)" :date="store.session.date" :alt="store.session.groupName" />
+          <SessionDetailStats :session="store.session" />
           <SessionDetailGroupTeaser
             v-if="!isBookable && store.session.nextSession"
             :group-name="store.session.groupName!"
@@ -39,37 +57,54 @@
             :next-session="store.session.nextSession"
           />
         </template>
+
+        <template #right>
+          <SessionDetailExpect v-if="isBookable" />
+          <SessionDetailWriteUp v-if="!isBookable && store.session.description" :description="store.session.description!" />
+          
+          <!-- Tags — visible to all -->
+          <SessionDetailTags
+            :session="store.session"
+            :group-key="(route.params.groupKey as string)"
+            :date="store.session.date"
+            @updated="store.fetch(route.params.groupKey as string, store.session!.date)"
+          />
+
+          <SessionDetailGallery
+            :group-key="(route.params.groupKey as string)"
+            :date="store.session.date"
+            :max-height="400"
+            title="Your photos from the day"
+          />
+        </template>
+
       </LayoutColumns>
 
-      <!-- Tags — visible to all -->
-      <SessionDetailTags
-        :session="store.session"
-        :group-key="(route.params.groupKey as string)"
-        :date="store.session.date"
-        @updated="store.fetch(route.params.groupKey as string, store.session!.date)"
-      />
 
-      <!-- Action buttons — upload/edit for checkin/admin/self-service -->
-      <SessionDetailActions
-        v-if="isCheckIn || isAdmin || isSelfService"
-        :session="store.session"
-        :group-key="(route.params.groupKey as string)"
-        :date="store.session.date"
-        @saved="(gk, d) => store.fetch(gk, d)"
-      />
 
-      <!-- Entries — checkin/admin only -->
-      <SessionDetailEntries
-        v-if="isCheckIn || isAdmin"
-        :group-key="(route.params.groupKey as string)"
-        :date="store.session.date"
-      />
+      <!-- BOTTOM ROW -->
+      <LayoutColumns ratio="2-1" :reverse="true">
+        <template #left>
+          <!-- Entries — checkin/admin only -->
+          <SessionDetailEntries
+            v-if="isCheckIn || isAdmin"
+            :group-key="(route.params.groupKey as string)"
+            :date="store.session.date"
+          />
+        </template>
 
-      <SessionDetailGallery
-        :group-key="(route.params.groupKey as string)"
-        :date="store.session.date"
-        :max-height="400"
-      />
+        <template #right>
+
+        </template>
+      </LayoutColumns>
+
+
+
+
+
+
+
+
 
       <DebugData :item="store.session!" />
     </template>
@@ -86,7 +121,7 @@ import { useSessionDetailStore } from '../stores/sessionDetail'
 import { useAuth } from '../composables/useAuth'
 import { useRole } from '../composables/useRole'
 import { usePageTitle } from '../composables/usePageTitle'
-import PageTitle from '../components/PageTitle.vue'
+import PageHeader from '../components/PageHeader.vue'
 import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
 import SessionDetailExpect from '../components/sessions/SessionDetailExpect.vue'
@@ -100,6 +135,7 @@ import SessionDetailForThis from '../components/sessions/SessionDetailForThis.vu
 import SessionDetailTags from '../components/sessions/SessionDetailTags.vue'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
 import SessionDetailEntries from '../components/sessions/SessionDetailEntries.vue'
+import SectionHeader from '../components/SectionHeader.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()

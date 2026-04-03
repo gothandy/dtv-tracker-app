@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Sessions</h1>
-    <PageTitle>Sessions</PageTitle>
+    <PageHeader>Sessions</PageHeader>
     <div>
       <SessionListFilter :sessions="store.sessions" @filtered="filtered = $event" />
       <SessionListActions :sessions="filtered" v-model:selected="selected" @tagged="store.fetch()" />
@@ -14,7 +14,7 @@
 import { ref } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
-import PageTitle from '../components/PageTitle.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 usePageTitle('Sessions')
 import SessionListFilter from '../components/sessions/SessionListFilter.vue'

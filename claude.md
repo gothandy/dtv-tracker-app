@@ -162,8 +162,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
   - [CLAUDE.md](CLAUDE.md) — project context, file structure, features list
   - [docs/test-script.md](docs/test-script.md) — manual test script (add/update test cases)
   - [docs/permissions.md](docs/permissions.md) — if roles or endpoint access change
-  - [docs/technical-debt.md](docs/technical-debt.md) — code/architecture issues only (not functionality)
-  - [docs/todo.md](docs/todo.md) — planned functionality, feature ideas, and bugs (tagged `**[BUG]**`)
+  - [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues) — bugs, features, and tech debt (replaces `docs/todo.md` and `docs/technical-debt.md`, archived to `docs/legacy/`)
   - [docs/progress.md](docs/progress.md) — development session notes (resolved items tracked here)
   - [docs/sharepoint-schema.md](docs/sharepoint-schema.md) — if SharePoint fields change
   - [readme.md](readme.md) — if dependencies or configuration change
@@ -307,9 +306,7 @@ dtv-tracker-app/
 │   ├── progress.md                # Development session notes
 │   ├── sharepoint-schema.md       # SharePoint list schemas and field names
 │   ├── sharepoint-setup.md        # One-time SharePoint/Entra ID setup (admin)
-│   ├── technical-debt.md          # Performance and optimization tracking
 │   ├── test-script.md             # Manual test script (prioritised)
-│   ├── todo.md                    # Planned work items
 │   ├── requirements.md            # Mobile & field usage requirements
 │   └── legacy/                    # Superseded documentation
 ├── types/

@@ -4,9 +4,10 @@
       v-for="tag in tags"
       :key="tag.termGuid"
       class="stags-pill"
+      :class="{ 'stags-pill--deleting': deletingGuid === tag.termGuid }"
     >
       {{ shortLabel(tag.label) }}
-      <button v-if="canEdit" class="stags-remove" @click="removeTag(tag.termGuid)">×</button>
+      <button v-if="canEdit" class="stags-remove" @click="removeTag(tag.termGuid)" :disabled="deletingGuid === tag.termGuid">×</button>
     </span>
     <div v-if="canEdit" class="stags-add-wrap">
       <TagPicker
@@ -19,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRole } from '../../composables/useRole'
 import TagPicker from '../TagPicker.vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
@@ -37,6 +38,12 @@ const canEdit = computed(() => isAdmin.value || isCheckIn.value)
 
 const tags = computed(() => props.session.metadata ?? [])
 const pickedLabel = ref('')
+const deletingGuid = ref<string | null>(null)
+watch(tags, (newTags) => {
+  if (deletingGuid.value && !newTags.some(t => t.termGuid === deletingGuid.value)) {
+    deletingGuid.value = null
+  }
+})
 
 function shortLabel(label: string): string {
   const parts = label.split(':')
@@ -44,6 +51,7 @@ function shortLabel(label: string): string {
 }
 
 async function removeTag(termGuid: string) {
+  deletingGuid.value = termGuid
   const updated = tags.value.filter(t => t.termGuid !== termGuid)
   await patch(updated)
 }
@@ -100,6 +108,12 @@ async function patch(metadata: Array<{ label: string; termGuid: string }>) {
   line-height: 1;
 }
 .stags-remove:hover { color: var(--color-error); }
+
+.stags-pill--deleting {
+  opacity: 0.45;
+  cursor: wait;
+  text-decoration: line-through;
+}
 
 .stags-add-wrap {
   font-size: 0.85rem;

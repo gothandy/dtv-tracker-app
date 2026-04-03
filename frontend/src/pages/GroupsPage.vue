@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Groups</h1>
-    <PageTitle>Groups</PageTitle>
+    <PageHeader>Groups</PageHeader>
     <div class="px-6">
       <GroupListFilter
         :groups="groupsStore.groups"
@@ -21,7 +21,7 @@
 import { ref, onMounted } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
-import PageTitle from '../components/PageTitle.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 usePageTitle('Groups')
 import GroupListFilter from '../components/groups/GroupListFilter.vue'

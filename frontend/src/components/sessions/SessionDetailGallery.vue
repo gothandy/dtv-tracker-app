@@ -1,19 +1,20 @@
 <template>
-  <div v-if="loading" class="py-6 text-center text-sm" style="color: var(--color-dtv-light); opacity: 0.4">Loading photos…</div>
+  <div v-if="loading" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
   <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
   <MediaGallery v-else-if="items.length" :items="items" />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import MediaGallery from '../../components/MediaGallery.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{ groupKey: string; date: string }>()
 
-const items   = ref<MediaItem[]>([])
-const loading = ref(false)
-const error   = ref<string | null>(null)
+const items          = ref<MediaItem[]>([])
+const loading        = ref(false)
+const error          = ref<string | null>(null)
+const galleryHeight  = computed(() => Math.min(500, window.innerWidth * 0.75))
 
 function measureDimensions(mediaItems: MediaItem[]): Promise<void> {
   return new Promise(resolve => {
@@ -49,3 +50,10 @@ async function loadMedia() {
 
 onMounted(loadMedia)
 </script>
+
+<style scoped>
+.gallery-skeleton {
+  background: var(--color-dtv-dark);
+  width: 100%;
+}
+</style>

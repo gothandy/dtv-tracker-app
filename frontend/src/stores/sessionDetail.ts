@@ -8,9 +8,9 @@ export const useSessionDetailStore = defineStore('sessionDetail', () => {
   const error = ref<string | null>(null)
 
   async function fetch(groupKey: string, date: string) {
-    session.value = null
     loading.value = true
     error.value = null
+    session.value = null
     try {
       const res = await window.fetch(`/api/sessions/${groupKey}/${date}`)
       if (!res.ok) throw new Error(`Failed to load session (${res.status})`)

@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">About</h1>
-    <PageTitle>About</PageTitle>
+    <PageHeader>About</PageHeader>
     <div class="px-6 pt-4 pb-8">
 
       <div class="space-y-3 text-black">
@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
-import PageTitle from '../components/PageTitle.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 usePageTitle('About')
 

@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Terms of Use</h1>
-    <PageTitle>Terms of Use</PageTitle>
+    <PageHeader>Terms of Use</PageHeader>
     <div class="px-6 pt-4 pb-8">
     <p class="text-sm text-gray-500 mb-8">Dean Trail Volunteers &mdash; Registered Charity 1208988<br>Last updated: March 2026</p>
 
@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
-import PageTitle from '../components/PageTitle.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 usePageTitle('Terms of Use')
 </script>

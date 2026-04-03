@@ -1,8 +1,10 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Home</h1>
-    <PageTitle>What's going on?</PageTitle>
     <LayoutColumns class="pt-2">
+      <template #header>
+        <SectionHeader>What's going on?</SectionHeader>
+      </template>
       <!-- CTA card: adapts to user's session history -->
       <template #left>
         <NextActionCard :sessions="store.sessions" @select="onCtaSelect" />
@@ -37,22 +39,24 @@
       </template>
     </LayoutColumns>
 
-    <PageTitle>What's been happening?</PageTitle>
-
-    <!-- Cover photo gallery — all sessions with photos, newest first -->
-    <MediaGallery
-      v-if="coverItems.length"
-      :items="coverItems"
-      :max-height="280"
-      :clickable="true"
-      title="Photos from recent events"
-      @select="onGallerySelect"
-    />
-
-    <PageTitle>What it makes possible?</PageTitle>
+    <section>
+      <SectionHeader>What's been happening?</SectionHeader>
+      <!-- Cover photo gallery — all sessions with photos, newest first -->
+      <MediaGallery
+        v-if="coverItems.length"
+        :items="coverItems"
+        :max-height="280"
+        :clickable="true"
+        title="Photos from recent events"
+        @select="onGallerySelect"
+      />
+    </section>
 
     <!-- Bar chart + Word cloud -->
     <LayoutColumns ratio="2-1">
+      <template #header>
+        <SectionHeader>What it makes possible?</SectionHeader>
+      </template>
       <template #left>
         <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" />
       </template>
@@ -61,14 +65,13 @@
       </template>
     </LayoutColumns>
 
-
   </DefaultLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, watchEffect } from 'vue'
 import { usePageTitle } from '../composables/usePageTitle'
-import PageTitle from '../components/PageTitle.vue'
+import SectionHeader from '../components/SectionHeader.vue'
 
 usePageTitle('Home')
 import { useRoute, useRouter } from 'vue-router'

@@ -1,8 +1,8 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col">
 
     <!-- Table: black on white -->
-    <div class="bg-white px-6 pt-8 pb-12">
+    <div class="bg-white px-6 py-5">
       <dl class="text-sm text-dtv-dark space-y-1">
         <div class="flex gap-3">
           <dt class="text-gray-400 w-20 shrink-0">Date</dt>
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Description: white on green -->
-    <div v-if="session.groupDescription" class="bg-dtv-dark px-6 py-8 mt-auto">
+    <div v-if="session.groupDescription" class="bg-dtv-dark px-6 py-6">
       <p class="text-white text-sm leading-relaxed">{{ session.groupDescription }}</p>
     </div>
 

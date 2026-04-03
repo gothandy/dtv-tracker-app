@@ -45,17 +45,15 @@ Migrate remaining pages to Vue 3 (`frontend/`). Commit and push after each unit.
 - [x] `SessionDetailPage.vue` — wired in all new components
 
 ## 8. Profiles listing
-- [ ] `stores/profiles.ts`
-- [ ] `ProfilesPage.vue` + route `/profiles`
+→ [GitHub issue #1](https://github.com/gothandy/dtv-tracker-app/issues/1)
 
 ## 9. Profile detail
-- [ ] `stores/profileDetail.ts`
-- [ ] `ProfileDetailPage.vue` + route `/profiles/:slug`
+→ [GitHub issue #2](https://github.com/gothandy/dtv-tracker-app/issues/2)
 
 ## 10. Admin page
-- [ ] `AdminPage.vue` + route `/admin`
+→ [GitHub issue #3](https://github.com/gothandy/dtv-tracker-app/issues/3)
 
 ## Tech debt
 - [x] `WordCloudV1.vue` — accepts `TagHoursItem[]`; callers fetch from `/api/tags/hours-by-taxonomy` and pass result in
-- [ ] V1 components to receive clean typed props rather than raw `SessionResponse[]` (post-migration incremental pass)
 - [x] `main.css` colour palette tidy — consolidate `--color-dtv-*` brand colours and `--color-*` neutral/state tokens into a single well-organised block with section comments; remove any unused vars
+- V1 components typed props cleanup → [GitHub issue #4](https://github.com/gothandy/dtv-tracker-app/issues/4)

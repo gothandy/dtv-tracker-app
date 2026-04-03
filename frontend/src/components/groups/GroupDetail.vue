@@ -4,7 +4,7 @@
     <div v-if="store.loading" class="gd-loading">Loading…</div>
     <div v-else-if="store.error" class="gd-error">{{ store.error }}</div>
     <template v-else-if="store.group">
-      <PageTitle>{{ store.group.displayName || store.group.key }}</PageTitle>
+      <PageHeader>{{ store.group.displayName || store.group.key }}</PageHeader>
 
       <!-- Left: header / bar chart / tag cloud  |  Right: actions / regulars / calendar -->
       <LayoutColumns ratio="2-1" align="start">
@@ -39,7 +39,7 @@ import { ref, computed, onMounted, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGroupDetailStore } from '../../stores/groupDetail'
 import { usePageTitle } from '../../composables/usePageTitle'
-import PageTitle from '../PageTitle.vue'
+import PageHeader from '../PageHeader.vue'
 import { useRole } from '../../composables/useRole'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../LayoutColumns.vue'

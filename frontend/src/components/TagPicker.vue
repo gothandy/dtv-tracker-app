@@ -58,12 +58,11 @@ const displayLabel = computed(() => {
   return flatOptions.value.find(o => o.label === props.modelValue)?.displayLabel ?? props.modelValue
 })
 
-function flatten(nodes: TaxNode[], displayPrefix = '', depth = 0): TagOption[] {
+function flatten(nodes: TaxNode[], labelPrefix = '', depth = 0): TagOption[] {
   return nodes.flatMap(node => {
-    const label = displayPrefix ? `${displayPrefix}:${node.label}` : node.label
-    const displayLabel = displayPrefix ? `${displayPrefix} > ${node.label}` : node.label
+    const label = labelPrefix ? `${labelPrefix}:${node.label}` : node.label
     return [
-      { label, displayLabel, depth, termGuid: node.id },
+      { label, displayLabel: node.label, depth, termGuid: node.id },
       ...flatten(node.children ?? [], label, depth + 1)
     ]
   })
@@ -156,6 +155,7 @@ onUnmounted(() => {
   min-width: 220px;
   max-height: 280px;
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
@@ -171,6 +171,7 @@ onUnmounted(() => {
   font-size: 0.85rem;
   color: var(--color-text);
   cursor: pointer;
+  white-space: nowrap;
 }
 .tp-row:hover { background: var(--color-surface-hover); }
 .tp-row.selected { color: var(--color-green-hover); font-weight: 600; background: var(--color-green-tint); }
