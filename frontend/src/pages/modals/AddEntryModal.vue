@@ -15,17 +15,10 @@
       <div class="aem-field">
         <label class="aem-label">Name</label>
         <ProfilePicker
-          v-if="!addNew"
           ref="picker"
           :profiles="profiles"
+          :add-new="addNew"
           @select="onSelect"
-        />
-        <input
-          v-else
-          v-model="nameInput"
-          class="aem-input"
-          placeholder="Full name…"
-          autocomplete="off"
         />
       </div>
 
@@ -69,7 +62,6 @@ const error = ref('')
 
 const selectedProfile = ref<PickerProfile | null>(null)
 const addNew = ref(false)
-const nameInput = ref('')
 const emailInput = ref('')
 
 const canAdd = ref(false)
@@ -97,19 +89,10 @@ function onSelect(profile: PickerProfile) {
   emailInput.value = profile.email ?? ''
 }
 
-// Any edit to the name input in Add New mode is fine — but in search mode the
-// picker owns the input, so we watch nameInput only when addNew is true.
-watch(nameInput, () => {
-  // nameInput is only active in addNew mode — nothing to clear
-})
 
 function onAddNewToggle() {
-  // Carry search text over to name input; clear any prior selection and email
-  if (addNew.value) {
-    nameInput.value = picker.value?.query ?? ''
-    selectedProfile.value = null
-    emailInput.value = ''
-  }
+  selectedProfile.value = null
+  emailInput.value = ''
 }
 
 async function addEntry() {
@@ -119,7 +102,7 @@ async function addEntry() {
     let volunteerId: number
 
     if (addNew.value) {
-      const body: Record<string, string> = { name: nameInput.value }
+      const body: Record<string, string> = { name: picker.value?.query ?? '' }
       if (emailInput.value.trim()) body.email = emailInput.value.trim()
       const createRes = await fetch('/api/profiles', {
         method: 'POST',
@@ -153,7 +136,6 @@ async function addEntry() {
 function resetForm() {
   selectedProfile.value = null
   addNew.value = false
-  nameInput.value = ''
   emailInput.value = ''
   error.value = ''
   picker.value?.reset()
