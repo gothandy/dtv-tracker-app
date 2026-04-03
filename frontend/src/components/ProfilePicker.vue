@@ -89,7 +89,9 @@ defineExpose({ query, reset })
   box-shadow: var(--shadow-md);
   max-height: 240px;
   overflow-y: auto;
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
   z-index: 10;
 }
 

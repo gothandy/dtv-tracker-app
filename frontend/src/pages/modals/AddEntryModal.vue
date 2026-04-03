@@ -166,12 +166,20 @@ function resetForm() {
 
 .aem-field {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.3rem;
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 .aem-field:last-of-type { border-bottom: none; }
+
+@media (min-width: 420px) {
+  .aem-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+}
 
 .aem-label { font-size: 0.85rem; color: var(--color-text-label); min-width: 5rem; flex-shrink: 0; }
 
