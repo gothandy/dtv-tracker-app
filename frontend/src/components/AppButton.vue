@@ -137,7 +137,7 @@ const colorStyle = computed(() =>
 
 
 .app-btn--unselected {
-  background: var(--color-surface-subtle);
+  background: var(--color-dtv-light);
   color: var(--color-text);
 }
 

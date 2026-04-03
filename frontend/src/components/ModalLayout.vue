@@ -25,6 +25,8 @@
           v-if="action"
           :label="action"
           :icon="actionIcon"
+          :disabled="actionDisabled"
+          :working="working"
           @click="emit('action')"
         />
         <AppButton
@@ -45,6 +47,8 @@ defineProps<{
   title: string
   action?: string
   actionIcon?: string
+  actionDisabled?: boolean
+  working?: boolean
   showDelete?: boolean
 }>()
 
@@ -63,12 +67,11 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 100;
 }
 
 .am-panel {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: var(--color-dtv-sand);
   width: 90%;
   max-width: 480px;
   max-height: 85vh;
@@ -83,26 +86,26 @@ const emit = defineEmits<{
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-dtv-green);
   flex-shrink: 0;
 }
 
 .am-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-white);
 }
 
 .am-close {
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--color-white);
   font-size: 1.25rem;
   cursor: pointer;
   line-height: 1;
   padding: 0;
 }
-.am-close:hover { color: var(--color-text); }
+.am-close:hover { opacity: 0.8; }
 
 .am-body {
   padding: 1.5rem;
@@ -116,7 +119,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--color-border);
+  background: var(--color-dtv-light);
   flex-shrink: 0;
 }
 

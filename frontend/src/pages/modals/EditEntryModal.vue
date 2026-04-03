@@ -35,18 +35,7 @@
       <div class="eem-field eem-field--notes">
         <label class="eem-label">Notes</label>
         <textarea class="eem-textarea" v-model="form.notes" rows="2" />
-        <div class="eem-tags">
-          <button
-            v-for="t in tagButtons"
-            :key="t.tag"
-            class="eem-tag-btn"
-            :class="{ active: hasTag(t.tag!) }"
-            :title="t.alt"
-            @click="toggleTag(t.tag!)"
-          >
-            <img :src="'/icons/' + t.icon" :alt="t.alt" :class="t.color ? 'icon-' + t.color : ''" />
-          </button>
-        </div>
+        <EntryTagPicker v-model="form.notes" />
       </div>
 
       <div v-if="saveError" class="eem-error">{{ saveError }}</div>
@@ -66,18 +55,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRole } from '../../composables/useRole'
 import { profilePath } from '../../router/index'
-import { TAG_ICONS } from '../../utils/tagIcons'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
+import EntryTagPicker from '../../components/EntryTagPicker.vue'
 
 const props = defineProps<{ entryId: number }>()
 const emit = defineEmits<{ close: []; saved: []; deleted: [] }>()
 
-const { isAdmin } = useRole()
 const router = useRouter()
 
 interface EntryDetail {
@@ -102,20 +89,6 @@ const deleting = ref(false)
 
 const form = reactive({ checkedIn: false, count: 1, hours: 0, notes: '' })
 
-const tagButtons = TAG_ICONS.filter(t => t.type === 'tag')
-const notes = computed(() => form.notes)
-
-function hasTag(tag: string): boolean {
-  return new RegExp(tag, 'i').test(notes.value)
-}
-
-function toggleTag(tag: string) {
-  if (hasTag(tag)) {
-    form.notes = form.notes.replace(new RegExp('\\s*' + tag, 'gi'), '').trim()
-  } else {
-    form.notes = form.notes ? form.notes.trimEnd() + ' ' + tag : tag
-  }
-}
 
 onMounted(async () => {
   loading.value = true
@@ -189,8 +162,8 @@ async function deleteEntry() {
 
 .eem-input {
   width: 5rem;
-  background: var(--color-white);
-  border: 2px solid var(--color-border);
+  background: var(--color-dtv-light);
+  border: none;
   color: var(--color-text);
   padding: 0.3rem 0.5rem;
   font-family: inherit;
@@ -206,8 +179,8 @@ async function deleteEntry() {
 
 .eem-textarea {
   width: 100%;
-  background: var(--color-white);
-  border: 2px solid var(--color-border);
+  background: var(--color-dtv-light);
+  border: none;
   color: var(--color-text);
   padding: 0.4rem 0.5rem;
   font-family: inherit;
@@ -217,19 +190,4 @@ async function deleteEntry() {
 }
 
 .eem-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-
-.eem-tag-btn {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: var(--color-surface-hover);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem;
-}
-.eem-tag-btn:hover { background: var(--color-surface-subtle); }
-.eem-tag-btn.active { border-color: var(--color-dtv-green); background: var(--color-green-tint); }
-.eem-tag-btn img { width: 1.25rem; height: 1.25rem; object-fit: contain; }
 </style>

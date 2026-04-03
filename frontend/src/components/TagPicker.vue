@@ -1,8 +1,8 @@
 <template>
   <div class="tp-wrap" ref="wrapEl">
-    <button class="tp-btn" :class="{ active: !!modelValue }" @click="togglePanel">
+    <button class="tp-btn" :class="{ active: !!modelValue, open: panelOpen }" @click="togglePanel">
       <span>{{ displayLabel }}</span>
-      <span>{{ panelOpen ? '▲' : '▼' }}</span>
+      <span class="tp-chevron">{{ panelOpen ? '▲' : '▼' }}</span>
     </button>
     <div v-if="panelOpen" class="tp-panel">
       <div v-if="loading" class="tp-loading">Loading…</div>
@@ -130,49 +130,55 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.tp-wrap { position: relative; }
+.tp-wrap { position: relative; width: 100%; }
 
 .tp-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  width: 100%;
   padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  font-size: 0.85rem;
+  border: none;
+  background: var(--color-dtv-light);
+  font-size: 0.95rem;
   font-family: inherit;
   color: var(--color-text);
   cursor: pointer;
-  white-space: nowrap;
+  text-align: left;
+  box-sizing: border-box;
 }
-.tp-btn:hover { background: var(--color-surface-hover); }
-.tp-btn.active { border-color: var(--color-dtv-green); color: var(--color-green-hover); font-weight: 600; }
+.tp-btn.open {
+  outline: 2px solid var(--color-dtv-dark);
+  outline-offset: 3px;
+}
+
+.tp-chevron { font-size: 0.7rem; color: var(--color-text); flex-shrink: 0; margin-left: 0.5rem; }
 
 .tp-panel {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
+  width: 100%;
   min-width: 220px;
   max-height: 280px;
   overflow-y: auto;
   overflow-x: hidden;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: var(--color-dtv-light);
   box-shadow: var(--shadow-md);
   z-index: 50;
 }
 
-.tp-loading { padding: 0.75rem; font-size: 0.85rem; color: var(--color-text-muted); }
+.tp-loading { padding: 0.75rem; font-size: 0.9rem; color: var(--color-text-muted); }
 
 .tp-tree { list-style: none; margin: 0; padding: 0; }
 
 .tp-row {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.95rem;
   color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
 }
-.tp-row:hover { background: var(--color-surface-hover); }
-.tp-row.selected { color: var(--color-green-hover); font-weight: 600; background: var(--color-green-tint); }
+.tp-row:hover { background: var(--color-dtv-sand); }
+.tp-row.selected { background: var(--color-dtv-dark); color: var(--color-dtv-light); }
 </style>

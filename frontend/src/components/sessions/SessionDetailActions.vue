@@ -76,10 +76,9 @@ function onSaved(newGroupKey: string, newDate: string) {
 .sab-wrap {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   background: var(--color-surface-hover);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
 }
 </style>

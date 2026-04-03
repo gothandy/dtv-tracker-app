@@ -8,10 +8,14 @@
   --color-dtv-dark: #000204;
   --color-dtv-green: #4FAF4A;
   --color-dtv-dirt: #B04A4F;
-  --color-dtv-red: var(--color-dtv-dirt); /* deprecated — use dtv-dirt */
   --color-dtv-light: #fffffc;
   --color-dtv-gold: #B0AB4A;
   --color-dtv-sand: #E1E0D1;
+  --color-dtv-sand-dark: #B9B8AC;
+  --color-dtv-sand-light: #EDECD8;
+
+  /* deprecated */
+    --color-dtv-red: var(--color-dtv-dirt); 
   /* Neutrals — light surfaces (V1 components) */
   --color-white: var(--color-dtv-light);
   --color-surface-hover: var(--color-dtv-sand);
@@ -75,6 +79,11 @@
     src: url('https://cdn.jsdelivr.net/fontsource/fonts/momo-trust-display@latest/latin-400-normal.woff2') format('woff2');
   }
 
+  ::placeholder {
+    color: var(--color-dtv-sand-dark);
+  }
+
+
   :focus-visible {
     outline: 2px solid var(--color-dtv-dark);
     outline-offset: 3px;
@@ -98,4 +107,47 @@
   .prose {
     font-family: system-ui, sans-serif;
   }
+}
+
+/* Disabled form elements — unlayered so it overrides component-scoped colour rules */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--color-dtv-sand-dark) !important;
+  background: var(--color-dtv-sand-light) !important;
+}
+
+input[type="number"] {
+  accent-color: var(--color-dtv-dark);
+}
+
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0;
+  border: none;
+  background: var(--color-dtv-light);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+input[type="checkbox"]:checked {
+  background: var(--color-dtv-green);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 8.5l3.5 3.5 6.5-7' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 75%;
+}
+
+input[type="checkbox"]:disabled {
+  background: var(--color-dtv-sand-light) !important;
+  cursor: default;
+}
+
+input[type="checkbox"]:checked:disabled {
+  background-color: var(--color-dtv-sand-light) !important;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 8.5l3.5 3.5 6.5-7' stroke='%23B9B8AC' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }

@@ -170,9 +170,10 @@ async function confirmDelete() {
 <style scoped>
 .gab-wrap {
   display: flex;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  background: var(--color-white);
+  background: var(--color-surface-hover);
 }
 
 

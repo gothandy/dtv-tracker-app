@@ -20,6 +20,7 @@
         </div>
       </div>
       <div class="sa-wrap">
+        <span class="sa-stats">No sessions selected.</span>
         <div class="sa-buttons">
           <AppButton label="Add Tags" icon="add" mode="icon-responsive" disabled />
           <AppButton label="Download CSV" icon="download" mode="icon-responsive" disabled />
@@ -74,33 +75,31 @@ h2 {
 .sab-wrap {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   background: var(--color-surface-hover);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
 }
 
 /* SessionListActions */
 .sa-wrap {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.5rem;
-  background: var(--color-white);
+  background: var(--color-surface-hover);
   padding: 0.75rem 1.5rem;
-  box-shadow: var(--shadow-sm);
 }
-.sa-stats { font-size: 0.85rem; color: var(--color-text-secondary); }
+.sa-stats { font-size: 0.85rem; color: var(--color-text-secondary); margin-right: auto; }
 .sa-buttons { display: flex; gap: 0.5rem; }
 
 /* GroupDetailActions */
 .gab-wrap {
   display: flex;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
 }
 </style>

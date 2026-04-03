@@ -1,8 +1,10 @@
 <template>
   <div v-if="isAdmin" class="sa-wrap">
-    <span class="sa-stats" v-if="selected.length">
-      {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }} selected
-      — {{ selectedHours }}h
+    <span class="sa-stats">
+      <template v-if="selected.length">
+        {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }} selected — {{ selectedHours }}h
+      </template>
+      <template v-else>No sessions selected.</template>
     </span>
 
     <div class="sa-buttons">
@@ -105,12 +107,11 @@ function downloadCsv() {
 .sa-wrap {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.5rem;
-  background: var(--color-white);
+  background: var(--color-surface-hover);
   padding: 0.75rem 1.5rem;
-  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 

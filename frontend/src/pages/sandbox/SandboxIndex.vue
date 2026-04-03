@@ -15,12 +15,14 @@
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 
 const components = [
+  { name: 'Brand Palette', path: '/sandbox/colour-palette' },
   { name: 'AppButton', path: '/sandbox/app-button' },
-  { name: 'Action Bars', path: '/sandbox/action-bars' },
-  { name: 'Modals', path: '/sandbox/modals' },
+  { name: 'All Actions', path: '/sandbox/action-bars' },
+  { name: 'Form Components', path: '/sandbox/form-components' },
   { name: 'Modal Layout', path: '/sandbox/modal-layout' },
-  { name: 'Colour Palette', path: '/sandbox/colour-palette' },
+  { name: 'All Modals', path: '/sandbox/modals' }
 ]
+  
 </script>
 
 <style scoped>

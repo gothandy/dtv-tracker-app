@@ -90,13 +90,19 @@ const mockSession = {
   date: '2026-04-03',
   groupId: 1,
   eventbriteEventId: '',
+  spacesAvailable: 20,
+  registrations: 3,
+  hours: 9,
+  financialYear: '2025/26',
+  coverMediaId: null,
+  statsRaw: null,
   entries: [],
 }
 
 const mockEntries = [
-  { id: 1, volunteerName: 'Jane Smith', checkedIn: true, hours: 0, count: 1 },
-  { id: 2, volunteerName: 'John Doe',   checkedIn: true, hours: 0, count: 1 },
-  { id: 3, volunteerName: 'Alice Brown', checkedIn: false, hours: 3, count: 1 },
+  { id: 1, volunteerName: 'Jane Smith', checkedIn: true, hours: 0, count: 1, isGroup: false, isMember: false },
+  { id: 2, volunteerName: 'John Doe',   checkedIn: true, hours: 0, count: 1, isGroup: false, isMember: false },
+  { id: 3, volunteerName: 'Alice Brown', checkedIn: false, hours: 3, count: 1, isGroup: false, isMember: false },
 ]
 </script>
 
