@@ -71,7 +71,7 @@ function initSignupsSection() {
                 <div style="display:flex; gap:0.5rem;">
                     <div class="dropdown">
                         <button class="dropdown-btn" onclick="toggleDropdown('signupsFilterMenu')">
-                            <img src="/svg/filter.svg" width="16" height="16" alt="">
+                            <img src="/icons/filter.svg" width="16" height="16" alt="">
                             <span id="signupsFilterLabel">Last 24h</span>
                         </button>
                         <div class="dropdown-menu" id="signupsFilterMenu">
@@ -81,7 +81,7 @@ function initSignupsSection() {
                         </div>
                     </div>
                     <button id="refreshSignupsBtn" class="btn-action" title="Refresh" onclick="refreshSignups()">
-                        <img src="/svg/refresh.svg" alt="Refresh" width="16" height="16">
+                        <img src="/icons/refresh.svg" alt="Refresh" width="16" height="16">
                     </button>
                 </div>
             </div>

@@ -9,13 +9,13 @@
       </h2>
       <div class="el-actions">
         <button class="icon-btn" title="Refresh" :disabled="refreshing" @click="refresh">
-          <img src="/svg/refresh.svg" alt="Refresh" />
+          <img src="/icons/refresh.svg" alt="Refresh" />
         </button>
         <button class="icon-btn" title="Set Hours" @click="showSetHours = true">
-          <img src="/svg/clock.svg" alt="Set Hours" />
+          <img src="/icons/clock.svg" alt="Set Hours" />
         </button>
         <button class="icon-btn" title="Add entry" @click="showAdd = true">
-          <img src="/svg/add.svg" alt="Add" />
+          <img src="/icons/add.svg" alt="Add" />
         </button>
       </div>
     </div>
@@ -55,16 +55,16 @@
             </button>
             <!-- Profile badges -->
             <span v-if="entry.isMember && !entry.isGroup" class="el-icon-tag" title="Charity Member">
-              <img src="/svg/member.svg" alt="Member" />
+              <img src="/icons/member.svg" alt="Member" />
             </span>
             <span v-if="entry.cardStatus === 'Accepted'" class="el-icon-tag" title="Benefits Card">
-              <img src="/svg/card.svg" alt="Card" />
+              <img src="/icons/card.svg" alt="Card" />
             </span>
             <span v-if="entry.cardStatus === 'Invited'" class="el-icon-tag icon-orange" title="Card Invited">
-              <img src="/svg/card.svg" alt="Card" />
+              <img src="/icons/card.svg" alt="Card" />
             </span>
             <span v-if="entry.isGroup" class="el-icon-tag" title="Group">
-              <img src="/svg/group.svg" alt="Group" />
+              <img src="/icons/group.svg" alt="Group" />
             </span>
             <!-- Notes hashtag icons -->
             <span
@@ -74,7 +74,7 @@
               :class="t.color ? 'icon-' + t.color : ''"
               :title="t.alt"
             >
-              <img :src="'/svg/' + t.icon" :alt="t.alt" />
+              <img :src="'/icons/' + t.icon" :alt="t.alt" />
             </span>
           </div>
         </div>

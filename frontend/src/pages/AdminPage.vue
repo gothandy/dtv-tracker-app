@@ -104,7 +104,7 @@
               :key="t.alt"
               :class="['ap-legend-item', t.color && `icon-${t.color}`]"
             >
-              <img :src="`/svg/${t.icon}`" :alt="t.alt" class="ap-icon" />
+              <img :src="`/icons/${t.icon}`" :alt="t.alt" class="ap-icon" />
               <span>{{ t.alt }}</span>
             </div>
           </div>

@@ -318,9 +318,9 @@ function displayVolunteers() {
     const html = filtered.map(v => {
         const member = isMember(v);
         const memberForFY = isMemberForFY(v);
-        const groupBadge = v.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
-        const memberBadge = member && !v.isGroup ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
-        const cardBadge = v.cardStatus ? `<img src="/svg/card.svg" class="card-badge${v.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
+        const groupBadge = v.isGroup ? '<img src="/icons/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+        const memberBadge = member && !v.isGroup ? '<img src="/icons/member.svg" class="member-badge" alt="Member" title="Member">' : '';
+        const cardBadge = v.cardStatus ? `<img src="/icons/card.svg" class="card-badge${v.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
         const cardClass = memberForFY && !v.isGroup ? ' is-member' : '';
         const href = v.slug ? `/profiles/${encodeURIComponent(v.slug)}/details.html` : '#';
         const sessions = getSessions(v);

@@ -48,7 +48,7 @@ More aria and remove redundant titles.
   aria-expanded="false"
   aria-controls="site-menu"
 >
-  <img src="/svg/burger.svg" alt="">
+  <img src="/icons/burger.svg" alt="">
 </button>
 
 And change to aria-expanded="true" when expanded.

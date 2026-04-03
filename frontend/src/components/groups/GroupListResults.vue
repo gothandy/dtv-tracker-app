@@ -11,7 +11,7 @@
     >
       <h3>
         {{ g.displayName || g.key }}
-        <img v-if="g.eventbriteSeriesId" src="/svg/eventbrite.svg" class="gr-eb" alt="Eventbrite" title="Linked to Eventbrite" />
+        <img v-if="g.eventbriteSeriesId" src="/icons/eventbrite.svg" class="gr-eb" alt="Eventbrite" title="Linked to Eventbrite" />
       </h3>
       <div v-if="g.description" class="gr-description">{{ g.description }}</div>
       <div class="gr-meta">

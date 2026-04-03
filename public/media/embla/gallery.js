@@ -229,7 +229,7 @@ class MediaGallery {
         const priv = document.createElement('div');
         priv.className = 'mg-tag-pill mg-tag-private';
         priv.title = 'Not in public gallery';
-        priv.innerHTML = '<img src="/svg/nophoto.svg" width="22" height="22" alt="Private">';
+        priv.innerHTML = '<img src="/icons/nophoto.svg" width="22" height="22" alt="Private">';
         infoBar.appendChild(priv);
       }
 
@@ -246,7 +246,7 @@ class MediaGallery {
       if (this._opts.showEditBtn) {
         const editBadge = document.createElement('button');
         editBadge.className = 'mg-edit-badge';
-        editBadge.innerHTML = '<img src="/svg/edit.svg" width="16" height="16" alt="Edit">';
+        editBadge.innerHTML = '<img src="/icons/edit.svg" width="16" height="16" alt="Edit">';
         editBadge.addEventListener('click', e => {
           e.stopPropagation();
           if (this._opts.onEdit) this._opts.onEdit(this._items[i], i);

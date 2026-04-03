@@ -3,7 +3,7 @@
     <button class="v1-btn v1-btn-primary" @click="showAdd = true">+ Add session</button>
     <button class="v1-btn" @click="openEdit">Edit</button>
     <a v-if="group.eventbriteSeriesId" :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`" target="_blank" rel="noopener" class="v1-btn" title="View on Eventbrite">
-      <img src="/svg/eventbrite.svg" alt="Eventbrite" class="gab-eb-icon" />
+      <img src="/icons/eventbrite.svg" alt="Eventbrite" class="gab-eb-icon" />
     </a>
 
     <!-- Edit modal -->

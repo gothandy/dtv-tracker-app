@@ -72,7 +72,8 @@ const staticOptions = { maxAge: '1h' };
 app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOptions));
 app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
-app.use('/svg', express.static(path.join(__dirname, 'public', 'svg'), staticOptions));
+app.use('/svg', express.static(path.join(__dirname, 'frontend', 'public', 'icons'), staticOptions));
+app.use('/icons', express.static(path.join(__dirname, 'frontend', 'public', 'icons'), staticOptions));
 app.use('/media/embla', express.static(path.join(__dirname, 'public', 'media', 'embla'), staticOptions));
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 

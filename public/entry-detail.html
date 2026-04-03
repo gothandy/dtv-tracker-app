@@ -180,8 +180,8 @@
                         `<a href="${sessionHref}">${escapeHtml(sessionLabel)}</a>`;
                 }
 
-                const groupBadge = entry.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
-                const memberBadge = isMember(entry) ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
+                const groupBadge = entry.isGroup ? '<img src="/icons/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+                const memberBadge = isMember(entry) ? '<img src="/icons/member.svg" class="member-badge" alt="Member" title="Member">' : '';
                 const sessionUrl = `/sessions/${encodeURIComponent(entry.groupKey)}/${entry.date.substring(0, 10)}/details.html`;
                 const profileUrl = entry.volunteerSlug ? `/profiles/${encodeURIComponent(entry.volunteerSlug)}/details.html` : '#';
 
@@ -194,12 +194,12 @@
                             </div>
                             <div class="entry-actions">
                                 <button class="btn-action checkin-only" onclick="openUploadPage()" title="Upload photos">
-                                    <img src="/svg/upload.svg" width="20" height="20" alt="">
+                                    <img src="/icons/upload.svg" width="20" height="20" alt="">
                                     Upload
                                 </button>
                                 ${!entry.hasPrivacyConsent && entry.volunteerSlug ? `
                                 <button class="btn-action checkin-or-selfservice" onclick="window.location.href='/profiles/${encodeURIComponent(entry.volunteerSlug)}/consent.html'" title="Collect consent">
-                                    <img src="/svg/checkboxes.svg" width="20" height="20" alt="">
+                                    <img src="/icons/checkboxes.svg" width="20" height="20" alt="">
                                     Consent
                                 </button>` : ''}
                             </div>

@@ -185,10 +185,10 @@ function initStatsSection() {
                 <button class="cal-tb-btn" id="btnShowHistory" onclick="toggleHistory()">Show History</button>
                 <div style="display:flex; gap:0.5rem;">
                     <button class="btn-action" id="refreshBtn" onclick="refreshData()" title="Refresh data">
-                        <img src="/svg/refresh.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Refresh">
+                        <img src="/icons/refresh.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Refresh">
                     </button>
                     <a class="btn-action admin-only" href="/admin.html" title="Admin">
-                        <img src="/svg/settings.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Admin">
+                        <img src="/icons/settings.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Admin">
                     </a>
                 </div>
             </div>

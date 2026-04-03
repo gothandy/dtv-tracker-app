@@ -53,7 +53,7 @@ function updateUserActionButtons() {
     if (registerBtnEl) {
         if (user.role === 'selfservice' && !isPast && !allRegistered) {
             registerBtnEl.innerHTML = `<button class="btn-action" onclick="registerForSession()" title="Register for this session">
-                <img src="/svg/register.svg" style="width:1em;height:1em;filter:brightness(0) invert(1);vertical-align:middle;">
+                <img src="/icons/register.svg" style="width:1em;height:1em;filter:brightness(0) invert(1);vertical-align:middle;">
                 Register
             </button>`;
         } else {
@@ -65,7 +65,7 @@ function updateUserActionButtons() {
     if (uploadBtn) {
         if (myEntries.length > 0) {
             uploadBtn.innerHTML = `<a href="/upload.html?entryId=${myEntries[0].id}" class="btn-action" title="Upload photos" style="text-decoration:none;">
-                <img src="/svg/uploadphoto.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Upload photos">
+                <img src="/icons/uploadphoto.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Upload photos">
             </a>`;
         } else {
             uploadBtn.innerHTML = '';
@@ -521,9 +521,9 @@ async function loadSessionDetail() {
         const entriesHtml = entries.length > 0
             ? entries.map(entry => {
                 const icons = notesToIcons(entry.notes);
-                const groupBadge = entry.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
-                const memberBadge = entry.isMember && !entry.isGroup ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
-                const cardBadge = entry.cardStatus ? `<img src="/svg/card.svg" class="card-badge${entry.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
+                const groupBadge = entry.isGroup ? '<img src="/icons/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+                const memberBadge = entry.isMember && !entry.isGroup ? '<img src="/icons/member.svg" class="member-badge" alt="Member" title="Member">' : '';
+                const cardBadge = entry.cardStatus ? `<img src="/icons/card.svg" class="card-badge${entry.cardStatus === 'Invited' ? ' invited' : ''}" alt="Card" title="Card">` : '';
                 const href = entry.id ? `/entries/${entry.id}/edit.html` : '#';
                 const metaItems = [
                     entry.count > 1 ? `<span class="entry-count"><strong>Count:</strong> ${entry.count}</span>` : '',
@@ -563,7 +563,7 @@ async function loadSessionDetail() {
                         <div id="registerBtn"></div>
                         <div id="uploadPhotoBtn"></div>
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit session">
-                            <img src="/svg/edit.svg" width="18" height="18" alt="Edit">
+                            <img src="/icons/edit.svg" width="18" height="18" alt="Edit">
                         </button>
                     </div>
                 </div>
@@ -584,12 +584,12 @@ async function loadSessionDetail() {
                     <h2 class="entries-heading">${isSelfService ? 'Your Entries' : `Entries (${entries.filter(e => e.checkedIn).length} from ${entries.length})`}</h2>
                     <div class="header-buttons">
                         <button class="btn-action checkin-only" id="refreshBtn" onclick="refreshSession()" title="Refresh session">
-                            <img src="/svg/refresh.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Refresh">
+                            <img src="/icons/refresh.svg" style="width:1.2em;height:1.2em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Refresh">
                         </button>
-                        <button class="btn-action checkin-only btn-action-danger" onclick="deleteUncheckedEntries()" title="Remove no-shows (delete unchecked entries)"><img src="/svg/trash.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;"></button>
-                        <button class="btn-action checkin-only" onclick="openHoursModal()" title="Set default hours"><img src="/svg/clock.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Set Hours"></button>
+                        <button class="btn-action checkin-only btn-action-danger" onclick="deleteUncheckedEntries()" title="Remove no-shows (delete unchecked entries)"><img src="/icons/trash.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;"></button>
+                        <button class="btn-action checkin-only" onclick="openHoursModal()" title="Set default hours"><img src="/icons/clock.svg" style="width:1.4em;height:1.4em;filter:brightness(0) invert(1);vertical-align:middle;" alt="Set Hours"></button>
                         <a class="btn-action checkin-only" href="/sessions/${encodeURIComponent(groupKey)}/${sessionDate}/add-entry.html">
-                            <img src="/svg/add.svg" width="16" height="16" alt="">
+                            <img src="/icons/add.svg" width="16" height="16" alt="">
                         </a>
                     </div>
                 </div>

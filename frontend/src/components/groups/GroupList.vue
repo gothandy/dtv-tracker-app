@@ -11,7 +11,7 @@
           <div style="display:flex; gap:0.5rem; align-items:center">
             <FyFilter v-model="selectedFy" />
             <button v-if="isAdmin" class="icon-btn" @click="showNewGroup = true" title="New group">
-              <img src="/svg/add.svg" alt="New group" />
+              <img src="/icons/add.svg" alt="New group" />
             </button>
           </div>
         </div>
@@ -30,7 +30,7 @@
         >
           <h3>
             {{ group.displayName || group.key }}
-            <img v-if="group.eventbriteSeriesId" src="/svg/eventbrite.svg" class="v1-eb-badge" alt="Eventbrite" title="Linked to Eventbrite" />
+            <img v-if="group.eventbriteSeriesId" src="/icons/eventbrite.svg" class="v1-eb-badge" alt="Eventbrite" title="Linked to Eventbrite" />
           </h3>
           <div v-if="group.description" class="v1-description">{{ group.description }}</div>
           <div class="v1-meta">

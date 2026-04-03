@@ -248,7 +248,7 @@ async function loadGroupDetail() {
 
         const editBtn = `
             <button class="btn-action admin-only" onclick="openEditModal()" title="Edit group">
-                <img src="/svg/edit.svg" width="18" height="18" alt="Edit">
+                <img src="/icons/edit.svg" width="18" height="18" alt="Edit">
             </button>`;
 
         const regulars = group.regulars || [];
@@ -287,7 +287,7 @@ async function loadGroupDetail() {
                         <div class="count" id="sessionCount">-</div>
                     </div>
                     <button class="btn-action admin-only" onclick="openNewSessionModal()">
-                        <img src="/svg/add.svg" width="16" height="16" alt="">
+                        <img src="/icons/add.svg" width="16" height="16" alt="">
                     </button>
                 </div>
                 <div id="fyChart"></div>

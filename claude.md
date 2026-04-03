@@ -55,7 +55,7 @@ Feature-complete volunteer tracking application with:
 - Session taxonomy tag UI: term tree picker, tag pills; supports `onConfirm` callback for bulk tagging from sessions listing ([public/js/session-tags.js](public/js/session-tags.js))
 - Calendar widget for homepage ([public/js/calendar.js](public/js/calendar.js)); accepts optional `personalData` (`myDates`, `regularDates` sets) to render personal dot markers on cells
 - Lightbox photo viewer for session galleries ([public/js/lightbox.js](public/js/lightbox.js))
-- SVG icons for badges and tags ([public/svg/](public/svg/))
+- SVG icons for badges and tags ([public/icons/](public/icons/))
 
 ## Data Model
 

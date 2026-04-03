@@ -139,7 +139,7 @@ function createHeader(subtitle = 'Stats, Sign-ups, Photos .', showBackLink = fal
         <nav class="site-nav">
             <div class="nav-crumbs">${breadcrumbHtml}</div>
             <button class="share-btn" id="shareBtn" style="display:none" title="Share this page">
-                <img src="/svg/share.svg" class="btn-icon" alt="" width="16" height="16">
+                <img src="/icons/share.svg" class="btn-icon" alt="" width="16" height="16">
                 <span class="btn-label">Share</span>
             </button>
         </nav>
@@ -165,17 +165,17 @@ function createHeader(subtitle = 'Stats, Sign-ups, Photos .', showBackLink = fal
                 document.dispatchEvent(new CustomEvent('authReady', { detail: data.user }));
                 if (el) {
                     const profileBtn = data.user.profileSlug
-                        ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="header-btn" title="${escapeHtml(data.user.displayName)}"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></a>`
-                        : `<span class="header-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></span>`;
+                        ? `<a href="/profiles/${encodeURIComponent(data.user.profileSlug)}/details.html" class="header-btn" title="${escapeHtml(data.user.displayName)}"><img src="/icons/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></a>`
+                        : `<span class="header-btn"><img src="/icons/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">${escapeHtml(data.user.displayName)}</span></span>`;
                     el.innerHTML = `
                         ${profileBtn}
-                        <a href="/auth/logout" class="header-btn" title="Logout"><img src="/svg/logout.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Logout</span></a>
+                        <a href="/auth/logout" class="header-btn" title="Logout"><img src="/icons/logout.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Logout</span></a>
                     `;
                 }
             } else {
                 if (el) {
                     const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-                    el.innerHTML = `<a href="/login.html?returnTo=${returnTo}" class="header-btn login-btn"><img src="/svg/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
+                    el.innerHTML = `<a href="/login.html?returnTo=${returnTo}" class="header-btn login-btn"><img src="/icons/profile.svg" class="btn-icon" alt="" width="16" height="16"><span class="btn-label">Log in</span></a>`;
                 }
             }
         })
@@ -391,7 +391,7 @@ function isMember(volunteer) {
  */
 function buildEventbriteLink(url) {
     return `<a class="btn-action btn-eventbrite" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="Eventbrite">
-        <img src="/svg/eventbrite.svg" width="18" height="18" alt="Eventbrite" style="filter: brightness(0) invert(1)">
+        <img src="/icons/eventbrite.svg" width="18" height="18" alt="Eventbrite" style="filter: brightness(0) invert(1)">
     </a>`;
 }
 

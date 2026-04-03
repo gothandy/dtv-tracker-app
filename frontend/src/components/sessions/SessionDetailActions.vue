@@ -1,35 +1,14 @@
 <template>
   <div class="sab-wrap">
+    <AppButton v-if="canUpload" icon="upload" label="Upload Photos" mode="icon-responsive" @click="onUpload" />
+    <AppButton v-if="isCheckIn || isAdmin" icon="edit" label="Edit Session" mode="icon-responsive" @click="showEdit = true" />
 
-    <!-- Upload Photos -->
-    <button v-if="canUpload" class="sab-btn" @click="onUpload">Upload Photos</button>
-
-    <!-- Edit Session -->
-    <button v-if="isCheckIn || isAdmin" class="sab-btn" @click="showEdit = true">Edit Session</button>
-
-    <!-- Entry picker modal for checkin/admin upload -->
-    <div v-if="showPicker" class="dtv-modal-overlay" @click.self="showPicker = false">
-      <div class="dtv-modal">
-        <div class="dtv-modal-header">
-          <span class="dtv-modal-title">Upload photos for…</span>
-          <button class="dtv-modal-close" @click="showPicker = false">×</button>
-        </div>
-        <ul class="sab-entry-list">
-          <li
-            v-for="entry in session.entries"
-            :key="entry.id"
-            class="sab-entry-row"
-            @click="goUpload(entry.id)"
-          >
-            <span>{{ entry.volunteerName ?? 'Unknown' }}</span>
-            <span v-if="entry.checkedIn" class="sab-checked">✓</span>
-          </li>
-        </ul>
-        <div class="dtv-modal-footer">
-          <button class="dtv-btn" @click="showPicker = false">Cancel</button>
-        </div>
-      </div>
-    </div>
+    <UploadPickerModal
+      v-if="showPicker"
+      :entries="session.entries"
+      @close="showPicker = false"
+      @select="goUpload"
+    />
 
     <EditSessionModal
       v-if="showEdit"
@@ -39,7 +18,6 @@
       @close="showEdit = false"
       @saved="onSaved"
     />
-
   </div>
 </template>
 
@@ -49,7 +27,9 @@ import { useRouter } from 'vue-router'
 import { useRole } from '../../composables/useRole'
 import { sessionPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
+import AppButton from '../AppButton.vue'
 import EditSessionModal from '../../pages/modals/EditSessionModal.vue'
+import UploadPickerModal from '../../pages/modals/UploadPickerModal.vue'
 
 const props = defineProps<{
   session: SessionDetailResponse
@@ -86,7 +66,6 @@ function goUpload(entryId: number) {
 function onSaved(newGroupKey: string, newDate: string) {
   showEdit.value = false
   emit('saved', newGroupKey, newDate)
-  // Navigate to updated URL if group/date changed
   if (newGroupKey !== props.groupKey || newDate !== props.date) {
     router.push(sessionPath(newGroupKey, newDate))
   }
@@ -103,37 +82,4 @@ function onSaved(newGroupKey: string, newDate: string) {
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
-
-.sab-entry-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 0.5rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.sab-entry-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0.75rem;
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.9rem;
-}
-.sab-entry-row:hover { background: var(--color-surface-hover); }
-
-.sab-checked { color: var(--color-dtv-green); font-weight: bold; }
-
-.sab-btn {
-  background: var(--color-dtv-green);
-  color: var(--color-white);
-  border: none;
-  padding: 0.5rem 1rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.sab-btn:hover { background: var(--color-green-hover); }
 </style>

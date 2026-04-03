@@ -474,8 +474,8 @@ async function loadProfile() {
 
         allEntries = profile.entries || [];
 
-        const groupBadge = profile.isGroup ? '<img src="/svg/group.svg" class="group-badge" alt="Group" title="Group">' : '';
-        const memberBadge = isMember(profile) ? '<img src="/svg/member.svg" class="member-badge" alt="Member" title="Member">' : '';
+        const groupBadge = profile.isGroup ? '<img src="/icons/group.svg" class="group-badge" alt="Group" title="Group">' : '';
+        const memberBadge = isMember(profile) ? '<img src="/icons/member.svg" class="member-badge" alt="Member" title="Member">' : '';
 
         contentDiv.innerHTML = `
             <div class="profile-detail">
@@ -483,7 +483,7 @@ async function loadProfile() {
                     <h1>${escapeHtml(profile.name || 'Unknown')}${groupBadge}${memberBadge}</h1>
                     <div class="profile-actions">
                         <button class="btn-action checkin-only" onclick="openEditModal()" title="Edit profile">
-                            <img src="/svg/edit.svg" width="18" height="18" alt="Edit"><span class="btn-label">Edit</span>
+                            <img src="/icons/edit.svg" width="18" height="18" alt="Edit"><span class="btn-label">Edit</span>
                         </button>
                     </div>
                 </div>
@@ -506,8 +506,8 @@ async function loadProfile() {
                 <div class="consent-header">
                     <h2>Records</h2>
                     <div style="display:flex; gap:0.5rem; align-items:center;">
-                        ${canCollectConsent ? `<a class="btn-action" href="/profiles/${encodeURIComponent(profileSlug)}/consent.html"><img src="/svg/checkboxes.svg" width="18" height="18" alt="" style="filter:brightness(0) invert(1);"><span class="btn-label">Consent</span></a>` : ''}
-                        <button class="btn-action admin-only" onclick="openAddRecord()"><img src="/svg/add.svg" width="18" height="18" alt="" style="filter:brightness(0) invert(1);"><span class="btn-label">Add</span></button>
+                        ${canCollectConsent ? `<a class="btn-action" href="/profiles/${encodeURIComponent(profileSlug)}/consent.html"><img src="/icons/checkboxes.svg" width="18" height="18" alt="" style="filter:brightness(0) invert(1);"><span class="btn-label">Consent</span></a>` : ''}
+                        <button class="btn-action admin-only" onclick="openAddRecord()"><img src="/icons/add.svg" width="18" height="18" alt="" style="filter:brightness(0) invert(1);"><span class="btn-label">Add</span></button>
                     </div>
                 </div>
                 <div class="consent-pills">

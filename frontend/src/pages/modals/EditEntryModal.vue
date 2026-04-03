@@ -6,7 +6,7 @@
         <span class="dtv-modal-title">
           {{ entry?.volunteerName ?? '…' }}
           <span v-if="entry?.isMember && !entry?.isGroup" class="eem-badge">
-            <img src="/svg/member.svg" alt="Member" class="svg-green" />
+            <img src="/icons/member.svg" alt="Member" class="svg-green" />
           </span>
         </span>
         <button class="dtv-modal-close" @click="emit('close')">×</button>
@@ -50,7 +50,7 @@
               :title="t.alt"
               @click="toggleTag(t.tag!)"
             >
-              <img :src="'/svg/' + t.icon" :alt="t.alt" :class="t.color ? 'icon-' + t.color : ''" />
+              <img :src="'/icons/' + t.icon" :alt="t.alt" :class="t.color ? 'icon-' + t.color : ''" />
             </button>
           </div>
         </div>

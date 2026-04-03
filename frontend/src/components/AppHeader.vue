@@ -9,7 +9,7 @@
 
       <!-- Burger button -->
       <button @click.stop="toggleMenu" class="ml-auto p-2 cursor-pointer" aria-label="Toggle menu">
-        <img v-if="!open" src="/svg/burger.svg" alt="Menu" class="h-8 w-8 brightness-0 invert" />
+        <img v-if="!open" src="/icons/burger.svg" alt="Menu" class="h-8 w-8 brightness-0 invert" />
         <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5">
           <path stroke-linecap="square" stroke-linejoin="miter" d="M6 6l12 12M18 6l-12 12" />
         </svg>

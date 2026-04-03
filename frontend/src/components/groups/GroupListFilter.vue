@@ -5,7 +5,7 @@
       <div class="gf-actions">
         <FyFilter v-model="fy" />
         <button v-if="isAdmin" class="icon-btn" @click="showNew = true" title="New group">
-          <img src="/svg/add.svg" alt="New group" />
+          <img src="/icons/add.svg" alt="New group" />
         </button>
       </div>
     </div>

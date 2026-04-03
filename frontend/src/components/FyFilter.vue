@@ -1,7 +1,7 @@
 <template>
   <div class="fy-filter" ref="el">
     <button class="fy-btn" @click.stop="toggleOpen">
-      <img src="/svg/filter.svg" width="16" height="16" alt="" class="svg-white" />
+      <img src="/icons/filter.svg" width="16" height="16" alt="" class="svg-white" />
       <span>{{ selectedLabel }}</span>
     </button>
     <div v-if="open" class="fy-menu">

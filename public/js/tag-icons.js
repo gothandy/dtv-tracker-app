@@ -19,7 +19,7 @@ const TAG_ICONS = [
 ];
 
 function tagIconImg(entry) {
-    return `<img src="/svg/${entry.icon}" alt="${entry.alt}">`;
+    return `<img src="/icons/${entry.icon}" alt="${entry.alt}">`;
 }
 
 function notesToIcons(notes) {

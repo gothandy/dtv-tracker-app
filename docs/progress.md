@@ -1560,9 +1560,9 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 
 #### 1. SVG Badge & Tag Icons ✓
 - Replaced text-based badge pills (MEMBER, CARD, GROUP) with SVG icon images across all pages
-- Replaced emoji-based entry tag icons (#Child, #Regular, etc.) with SVG images from `public/svg/`
+- Replaced emoji-based entry tag icons (#Child, #Regular, etc.) with SVG images from `public/icons/`
 - Added CSS filter-based coloring: green (default), orange (card invited), red (FirstAider, NoPhoto)
-- Icons are hot-swappable — replace the SVG file in `/public/svg/` and the change appears everywhere
+- Icons are hot-swappable — replace the SVG file in `/public/icons/` and the change appears everywhere
 
 #### 2. Tag Icons Configuration File ✓
 - Extracted `TAG_ICONS` array, `notesToIcons()`, `renderTagButtons()`, and `tagIconImg()` into `public/js/tag-icons.js`

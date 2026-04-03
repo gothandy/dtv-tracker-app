@@ -483,7 +483,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] FirstAider and NoPhoto appear red
 - [ ] Tag toggle buttons use SVG icons on entry detail and add entry
 - [ ] Active buttons highlighted with green border
-- [ ] Replacing SVG in `/public/svg/` changes icon everywhere (no rebuild)
+- [ ] Replacing SVG in `/public/icons/` changes icon everywhere (no rebuild)
 
 ### L7. Icon legend (admin page)
 - [ ] Shows all 12 icons with labels
