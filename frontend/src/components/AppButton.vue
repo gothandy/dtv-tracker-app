@@ -3,31 +3,38 @@
     :type="type"
     :disabled="disabled || working"
     :aria-label="isIconOnly ? label : undefined"
-    :aria-pressed="selected !== undefined ? selected : undefined"
+    :aria-pressed="selected != null ? selected : undefined"
     :aria-busy="working || undefined"
     class="app-btn"
     :class="{
       'app-btn--icon-only': isIconOnly,
-      'app-btn--selected': selected,
+      'app-btn--icon-text': hasIconBox,
+      'app-btn--unselected': selected === false,
       'app-btn--working': working,
+      'app-btn--danger': variant === 'danger',
     }"
     :style="colorStyle"
   >
-    <!-- Working spinner replaces icon -->
-    <span v-if="working" class="app-btn__spinner" aria-hidden="true" />
-    <!-- Icon (when not working) -->
-    <img
-      v-else-if="icon"
-      :src="`/icons/${icon}.svg`"
-      class="app-btn__icon svg-white"
-      aria-hidden="true"
-    />
-    <!-- Label — hidden when icon-only, sr-only on mobile for icon-responsive -->
-    <span
-      v-if="!isIconOnly"
-      class="app-btn__label"
-      :class="{ 'app-btn__label--responsive': icon && mode === 'icon-responsive' }"
-    >{{ label }}</span>
+    <!-- Icon-only -->
+    <template v-if="isIconOnly">
+      <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" aria-hidden="true" />
+    </template>
+
+    <!-- Icon + text: icon centered in a fixed square, label with right padding only -->
+    <template v-else-if="hasIconBox">
+      <span class="app-btn__icon-box" aria-hidden="true">
+        <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" />
+      </span>
+      <span
+        class="app-btn__label"
+        :class="{ 'app-btn__label--responsive': mode === 'icon-responsive' }"
+      >{{ label }}</span>
+    </template>
+
+    <!-- Text only -->
+    <template v-else>
+      <span class="app-btn__label">{{ label }}</span>
+    </template>
   </button>
 </template>
 
@@ -38,19 +45,21 @@ const props = withDefaults(defineProps<{
   label: string
   icon?: string
   mode?: 'icon-only' | 'icon-responsive' | 'icon-text'
+  variant?: 'default' | 'danger'
   color?: string
   disabled?: boolean
   working?: boolean
-  selected?: boolean
+  selected?: boolean | null
   type?: 'button' | 'submit' | 'reset'
 }>(), {
   mode: 'icon-text',
   type: 'button',
+  selected: null,
 })
 
 const isIconOnly = computed(() => !!props.icon && props.mode === 'icon-only')
+const hasIconBox = computed(() => !!props.icon && !isIconOnly.value)
 
-// Only apply inline style when color is explicitly provided; CSS handles the default
 const colorStyle = computed(() =>
   props.color ? { backgroundColor: props.color } : undefined
 )
@@ -61,7 +70,6 @@ const colorStyle = computed(() =>
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
   height: 2.5rem;
   padding: 0 1rem;
   background: var(--color-dtv-green);
@@ -69,7 +77,7 @@ const colorStyle = computed(() =>
   border: none;
   font-family: var(--font-body);
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -81,8 +89,34 @@ const colorStyle = computed(() =>
   width: 2.5rem;
 }
 
+/* Icon + text: no padding — icon box and label own all spacing */
+.app-btn--icon-text {
+  padding: 0;
+}
+
+.app-btn__icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+}
+
+.app-btn__label {
+  padding: 0 1rem 0 0;
+}
+
+.app-btn:not(.app-btn--icon-text) .app-btn__label {
+  padding: 0 1rem;
+}
+
+.app-btn--danger {
+  background: var(--color-dtv-red);
+}
+
 .app-btn:hover:not(:disabled) {
-  filter: brightness(0.9);
+  filter: brightness(var(--brightness-dark));
 }
 
 .app-btn:disabled {
@@ -90,12 +124,23 @@ const colorStyle = computed(() =>
   cursor: default;
 }
 
-/* Keyboard focus and selected/active state share the same indicator */
-.app-btn:focus-visible,
-.app-btn--selected {
-  outline: 2px solid var(--color-white);
-  outline-offset: 2px;
+.app-btn--working {
+  animation: app-btn-pulse 1s ease-in-out infinite;
+  cursor: default;
+  pointer-events: none;
 }
+
+@keyframes app-btn-pulse {
+  0%, 100% { filter: brightness(1); }
+  50%       { filter: brightness(var(--brightness-pulse)); }
+}
+
+
+.app-btn--unselected {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
 
 .app-btn__icon {
   width: 1.1rem;
@@ -104,7 +149,6 @@ const colorStyle = computed(() =>
   flex-shrink: 0;
 }
 
-/* icon-responsive: label visible on desktop, screen-reader-only on mobile */
 @media (max-width: 767px) {
   .app-btn__label--responsive {
     position: absolute;
@@ -117,20 +161,5 @@ const colorStyle = computed(() =>
     white-space: nowrap;
     border: 0;
   }
-}
-
-/* CSS spinner — replaces icon while working */
-.app-btn__spinner {
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: app-btn-spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes app-btn-spin {
-  to { transform: rotate(360deg); }
 }
 </style>

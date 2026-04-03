@@ -36,5 +36,13 @@ export const router = createRouter({
     { path: '/about', component: AboutPage },
     { path: '/login', component: LoginPage },
     { path: '/admin', component: AdminPage },
+    ...(import.meta.env.DEV ? [
+      { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
+      { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
+      { path: '/sandbox/action-bars', component: () => import('../pages/sandbox/SandboxActionBars.vue') },
+      { path: '/sandbox/modals', component: () => import('../pages/sandbox/SandboxModals.vue') },
+      { path: '/sandbox/modal-layout', component: () => import('../pages/sandbox/SandboxModalLayout.vue') },
+      { path: '/sandbox/colour-palette', component: () => import('../pages/sandbox/SandboxColourPalette.vue') },
+    ] : []),
   ]
 })

@@ -1,35 +1,29 @@
 <template>
-  <div class="dtv-modal-overlay" @click.self="emit('close')">
-    <div class="dtv-modal">
-      <div class="dtv-modal-header">
-        <span class="dtv-modal-title">Set Default Hours</span>
-        <button class="dtv-modal-close" @click="emit('close')">×</button>
-      </div>
+  <ModalLayout
+    title="Set Default Hours"
+    action="Save"
+    action-icon="save"
+    @close="emit('close')"
+    @action="apply"
+  >
+    <p class="shm-desc">
+      Sets hours for all checked-in entries where hours are not yet recorded.
+      <strong>{{ eligible }} entries</strong> will be updated.
+    </p>
 
-      <p class="shm-desc">
-        Sets hours for all checked-in entries where hours are not yet recorded.
-        <strong>{{ eligible }} entries</strong> will be updated.
-      </p>
-
-      <div class="dtv-field">
-        <label class="dtv-label">Hours</label>
-        <input v-model.number="hours" type="number" min="0" step="0.5" class="dtv-input" />
-      </div>
-
-      <div v-if="error" class="shm-error">{{ error }}</div>
-
-      <div class="dtv-modal-footer">
-        <button class="dtv-btn dtv-btn-primary" :disabled="saving || eligible === 0" @click="apply">
-          {{ saving ? 'Saving…' : 'Save' }}
-        </button>
-      </div>
+    <div class="dtv-field">
+      <label class="dtv-label">Hours</label>
+      <input v-model.number="hours" type="number" min="0" step="0.5" class="dtv-input" />
     </div>
-  </div>
+
+    <div v-if="error" class="shm-error">{{ error }}</div>
+  </ModalLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { EntryResponse } from '../../../../types/api-responses'
+import ModalLayout from '../../components/ModalLayout.vue'
 
 const props = defineProps<{ entries: EntryResponse[] }>()
 const emit = defineEmits<{ close: []; done: [] }>()

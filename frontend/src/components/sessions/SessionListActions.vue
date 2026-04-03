@@ -6,12 +6,8 @@
     </span>
 
     <div class="sa-buttons">
-      <button class="sa-btn" :disabled="!selected.length" @click="showTagPicker = true">
-        Add Tags{{ selected.length ? ` (${selected.length})` : '' }}
-      </button>
-      <button class="sa-btn" :disabled="!selected.length" @click="downloadCsv">
-        Download CSV
-      </button>
+      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="showTagPicker = true" />
+      <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="downloadCsv" />
     </div>
 
     <!-- Tag picker modal -->
@@ -20,10 +16,8 @@
         <h3>Add tag to {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }}</h3>
         <TagPicker v-model="pickedTag" placeholder="Choose a tag…" />
         <div class="sa-modal-buttons">
-          <button class="sa-btn" @click="showTagPicker = false">Cancel</button>
-          <button class="sa-btn sa-btn--primary" :disabled="!pickedTag || saving" @click="applyTag">
-            {{ saving ? 'Applying…' : 'Apply' }}
-          </button>
+          <AppButton label="Cancel" @click="showTagPicker = false" />
+          <AppButton label="Apply" :disabled="!pickedTag" :working="saving" @click="applyTag" />
         </div>
       </div>
     </div>
@@ -33,6 +27,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import TagPicker from '../TagPicker.vue'
+import AppButton from '../AppButton.vue'
 import { useRole } from '../../composables/useRole'
 import type { Session } from '../../types/session'
 
@@ -122,20 +117,6 @@ function downloadCsv() {
 .sa-stats { font-size: 0.85rem; color: var(--color-text-secondary); }
 
 .sa-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
-
-.sa-btn {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.sa-btn:hover:not(:disabled) { background: var(--color-surface-subtle); }
-.sa-btn--primary { background: var(--color-dtv-green); color: var(--color-white); border-color: var(--color-dtv-green); }
-.sa-btn--primary:hover:not(:disabled) { background: var(--color-green-hover); }
-.sa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .sa-modal-overlay {
   position: fixed; inset: 0; background: var(--color-overlay);

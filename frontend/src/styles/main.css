@@ -5,24 +5,25 @@
 
 @theme {
   /* DTV brand colours */
-  --color-dtv-dark: #0f0e17;
+  --color-dtv-dark: #000204;
   --color-dtv-green: #4FAF4A;
-  --color-dtv-red: #d6472b;
-  --color-dtv-light: #fffffe;
-  --color-dtv-dirt: #91241f;
-
+  --color-dtv-dirt: #B04A4F;
+  --color-dtv-red: var(--color-dtv-dirt); /* deprecated — use dtv-dirt */
+  --color-dtv-light: #fffffc;
+  --color-dtv-gold: #B0AB4A;
+  --color-dtv-sand: #E1E0D1;
   /* Neutrals — light surfaces (V1 components) */
-  --color-white: #ffffff;
-  --color-surface-hover: #f5f5f5;   /* hover state on light surfaces */
-  --color-surface-subtle: #eeeeee;  /* badges, tags, muted areas */
-  --color-border: #dddddd;
+  --color-white: var(--color-dtv-light);
+  --color-surface-hover: var(--color-dtv-sand);
+  --color-surface-subtle: var(--color-dtv-sand);
+  --color-border: var(--color-dtv-sand);
 
   /* Text on light backgrounds */
-  --color-text: #333333;
-  --color-text-secondary: #555555;
-  --color-text-label: #666666;
-  --color-text-muted: #777777;
-  --color-text-faint: #999999;
+  --color-text: var(--color-dtv-dark);
+  --color-text-secondary: var(--color-dtv-dark);
+  --color-text-label: var(--color-dtv-dark);
+  --color-text-muted: var(--color-dtv-dark);
+  --color-text-faint: var(--color-dtv-dark);
 
   /* Shadows */
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
@@ -35,15 +36,20 @@
   --color-nav-bg: rgba(255,255,255,0.88);
 
   /* State / accent */
-  --color-green-hover: #3d9a3d;
-  --color-green-tint: #eef8ee;
-  --color-warning-bg: #fff3cd;
-  --color-warning-text: #856404;
-  --color-error: #ee5555;
+  --color-green-hover: var(--color-dtv-green);
+  --color-green-tint: var(--color-dtv-sand);
+  --color-warning-bg: var(--color-dtv-sand);
+  --color-warning-text: var(--color-dtv-dark);
+  --color-error: var(--color-dtv-dirt);
 
   /* Fonts */
   --font-display: 'Rubik Dirt', cursive;
   --font-body: 'Momo Trust Display', cursive;
+
+  /* Interaction brightness */
+  --brightness-dark: 0.82;
+  --brightness-light: 1.18;
+  --brightness-pulse: 0.6;
 
   /* No border radius — square corners throughout */
   --radius: 0;
@@ -69,9 +75,14 @@
     src: url('https://cdn.jsdelivr.net/fontsource/fonts/momo-trust-display@latest/latin-400-normal.woff2') format('woff2');
   }
 
+  :focus-visible {
+    outline: 2px solid var(--color-dtv-dark);
+    outline-offset: 3px;
+    border-radius: 0;
+  }
+
   html, body {
     background-color: theme(--color-dtv-dark);
-    color: theme(--color-dtv-light);
     font-family: theme(--font-body);
     min-height: 100vh;
   }

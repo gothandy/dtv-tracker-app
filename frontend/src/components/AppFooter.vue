@@ -15,3 +15,9 @@
     </div>
   </footer>
 </template>
+
+<style scoped>
+footer :focus-visible {
+  outline-color: white;
+}
+</style>

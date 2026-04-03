@@ -1,8 +1,8 @@
 <template>
   <div class="gab-wrap">
-    <button class="v1-btn v1-btn-primary" @click="showAdd = true">+ Add session</button>
-    <button class="v1-btn" @click="openEdit">Edit</button>
-    <a v-if="group.eventbriteSeriesId" :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`" target="_blank" rel="noopener" class="v1-btn" title="View on Eventbrite">
+    <AppButton label="Add session" icon="add" mode="icon-responsive" @click="showAdd = true" />
+    <AppButton label="Edit" icon="edit" mode="icon-responsive" @click="openEdit" />
+    <a v-if="group.eventbriteSeriesId" :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`" target="_blank" rel="noopener" class="gab-eb-link" title="View on Eventbrite">
       <img src="/icons/eventbrite.svg" alt="Eventbrite" class="gab-eb-icon" />
     </a>
 
@@ -27,11 +27,9 @@
           <input v-model="editEbId" type="text" />
         </div>
         <div class="v1-modal-buttons">
-          <button class="v1-btn" @click="showEdit = false">Cancel</button>
-          <button class="v1-btn v1-btn-danger" style="margin-right:auto" @click="showEdit = false; showDelete = true">Delete</button>
-          <button class="v1-btn v1-btn-primary" :disabled="saving" @click="saveEdit">
-            {{ saving ? 'Saving…' : 'Save' }}
-          </button>
+          <AppButton label="Cancel" @click="showEdit = false" />
+          <AppButton label="Delete" icon="delete" mode="icon-responsive" variant="danger" style="margin-right:auto" @click="showEdit = false; showDelete = true" />
+          <AppButton label="Save" :working="saving" @click="saveEdit" />
         </div>
       </div>
     </div>
@@ -49,10 +47,8 @@
           <input v-model="newName" type="text" :placeholder="group.displayName || group.key" />
         </div>
         <div class="v1-modal-buttons">
-          <button class="v1-btn" @click="showAdd = false">Cancel</button>
-          <button class="v1-btn v1-btn-primary" :disabled="!newDate || saving" @click="createSession">
-            {{ saving ? 'Creating…' : 'Create' }}
-          </button>
+          <AppButton label="Cancel" @click="showAdd = false" />
+          <AppButton label="Create" :disabled="!newDate" :working="saving" @click="createSession" />
         </div>
       </div>
     </div>
@@ -63,10 +59,8 @@
         <h3>Delete group?</h3>
         <p class="v1-modal-body">This will permanently delete <strong>{{ group.displayName || group.key }}</strong> and cannot be undone.</p>
         <div class="v1-modal-buttons">
-          <button class="v1-btn" @click="showDelete = false">Cancel</button>
-          <button class="v1-btn v1-btn-danger" :disabled="saving" @click="confirmDelete">
-            {{ saving ? 'Deleting…' : 'Delete' }}
-          </button>
+          <AppButton label="Cancel" @click="showDelete = false" />
+          <AppButton label="Delete" icon="delete" mode="icon-responsive" variant="danger" :working="saving" @click="confirmDelete" />
         </div>
       </div>
     </div>
@@ -78,6 +72,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { groupsPath, sessionPath } from '../../router/index'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
+import AppButton from '../AppButton.vue'
 
 const props = defineProps<{ group: GroupDetailResponse }>()
 const emit = defineEmits<{ updated: [] }>()
@@ -180,22 +175,6 @@ async function confirmDelete() {
   background: var(--color-white);
 }
 
-.v1-btn {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.v1-btn:hover { background: var(--color-surface-subtle); }
-.v1-btn-primary { background: var(--color-dtv-green); color: var(--color-white); border-color: var(--color-dtv-green); }
-.v1-btn-primary:hover:not(:disabled) { background: var(--color-green-hover); }
-.v1-btn-danger { background: var(--color-dtv-red); color: var(--color-white); border-color: var(--color-dtv-red); }
-.v1-btn-danger:hover:not(:disabled) { opacity: 0.88; }
-.v1-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .gab-eb-icon { width: 18px; height: 18px; opacity: 0.7; display: block; }
 

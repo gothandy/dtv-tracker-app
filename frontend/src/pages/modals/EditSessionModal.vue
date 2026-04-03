@@ -1,66 +1,57 @@
 <template>
-  <div class="dtv-modal-overlay" @click.self="emit('close')">
-    <div class="dtv-modal">
-      <div class="dtv-modal-header">
-        <span class="dtv-modal-title">Edit Session</span>
-        <button class="dtv-modal-close" @click="emit('close')">×</button>
-      </div>
-
-      <div class="dtv-field">
-        <label class="dtv-label">Display Name</label>
-        <input v-model="form.displayName" class="dtv-input" placeholder="Leave blank to use group name" />
-      </div>
-
-      <div class="dtv-field">
-        <label class="dtv-label">Description</label>
-        <textarea v-model="form.description" class="dtv-textarea" rows="3" />
-      </div>
-
-      <template v-if="isAdmin">
-        <div class="dtv-field">
-          <label class="dtv-label">Date</label>
-          <input v-model="form.date" type="date" class="dtv-input" />
-        </div>
-
-        <div class="dtv-field">
-          <label class="dtv-label">Group</label>
-          <select v-model="form.groupId" class="dtv-select">
-            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-          </select>
-        </div>
-
-        <div class="dtv-field">
-          <label class="dtv-label">Eventbrite Event ID</label>
-          <input v-model="form.eventbriteEventId" class="dtv-input" />
-        </div>
-      </template>
-
-      <div v-if="error" class="sem-error">{{ error }}</div>
-
-      <div class="dtv-modal-footer">
-        <button v-if="isAdmin" class="dtv-btn dtv-btn-danger" @click="confirmDelete = true">Delete</button>
-        <button class="dtv-btn dtv-btn-primary" :disabled="saving" @click="save">
-          {{ saving ? 'Saving…' : 'Save' }}
-        </button>
-      </div>
+  <ModalLayout
+    title="Edit Session"
+    action="Save"
+    action-icon="save"
+    show-delete
+    @close="emit('close')"
+    @action="save"
+    @delete="confirmDelete = true"
+  >
+    <div class="dtv-field">
+      <label class="dtv-label">Display Name</label>
+      <input v-model="form.displayName" class="dtv-input" placeholder="Leave blank to use group name" />
     </div>
-  </div>
+
+    <div class="dtv-field">
+      <label class="dtv-label">Description</label>
+      <textarea v-model="form.description" class="dtv-textarea" rows="3" />
+    </div>
+
+    <template v-if="isAdmin">
+      <div class="dtv-field">
+        <label class="dtv-label">Date</label>
+        <input v-model="form.date" type="date" class="dtv-input" />
+      </div>
+
+      <div class="dtv-field">
+        <label class="dtv-label">Group</label>
+        <select v-model="form.groupId" class="dtv-select">
+          <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+        </select>
+      </div>
+
+      <div class="dtv-field">
+        <label class="dtv-label">Eventbrite Event ID</label>
+        <input v-model="form.eventbriteEventId" class="dtv-input" />
+      </div>
+    </template>
+
+    <div v-if="error" class="sem-error">{{ error }}</div>
+  </ModalLayout>
 
   <!-- Delete confirmation -->
-  <div v-if="confirmDelete" class="dtv-modal-overlay" @click.self="confirmDelete = false">
-    <div class="dtv-modal">
-      <div class="dtv-modal-header">
-        <span class="dtv-modal-title">Delete Session?</span>
-      </div>
-      <p class="sem-confirm-text">This will permanently delete the session and all its entries.</p>
-      <div class="dtv-modal-footer">
-        <button class="dtv-btn" @click="confirmDelete = false">Cancel</button>
-        <button class="dtv-btn dtv-btn-danger" :disabled="deleting" @click="deleteSession">
-          {{ deleting ? 'Deleting…' : 'Delete' }}
-        </button>
-      </div>
-    </div>
-  </div>
+  <ModalLayout
+    v-if="confirmDelete"
+    title="Delete Session?"
+    action="Cancel"
+    show-delete
+    @close="confirmDelete = false"
+    @action="confirmDelete = false"
+    @delete="deleteSession"
+  >
+    <p class="sem-confirm-text">This will permanently delete the session and all its entries.</p>
+  </ModalLayout>
 </template>
 
 <script setup lang="ts">
@@ -69,6 +60,7 @@ import { useRouter } from 'vue-router'
 import { useRole } from '../../composables/useRole'
 import { groupPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
+import ModalLayout from '../../components/ModalLayout.vue'
 
 interface GroupItem { id: number; name: string; key: string }
 

@@ -13,7 +13,7 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.icon-btn:hover { filter: brightness(0.9); }
+.icon-btn:hover { filter: brightness(var(--brightness-dark)); }
 .icon-btn:disabled { opacity: 0.5; cursor: default; }
 .icon-btn img {
   width: 1.1rem;
@@ -24,6 +24,9 @@
 
 /* Make any SVG white — use on dark/coloured backgrounds */
 .svg-white { filter: brightness(0) invert(1); }
+
+/* Make any SVG black */
+.svg-black { filter: brightness(0); }
 
 /* Make any SVG DTV green */
 .svg-green {

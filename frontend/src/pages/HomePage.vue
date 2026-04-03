@@ -55,7 +55,7 @@
     <!-- Bar chart + Word cloud -->
     <LayoutColumns ratio="2-1">
       <template #header>
-        <SectionHeader>What it makes possible?</SectionHeader>
+        <SectionHeader>What we can do together?</SectionHeader>
       </template>
       <template #left>
         <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" />
