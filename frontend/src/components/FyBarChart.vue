@@ -12,7 +12,7 @@
         <div class="fbc-track">
           <div class="fbc-actual" :style="{ width: fy.pct + '%' }"></div>
         </div>
-        <span class="fbc-hours">{{ fy.hours }}h</span>
+        <span class="fbc-hours">{{ fy.hours }}</span>
       </button>
     </div>
   </div>
@@ -42,7 +42,7 @@ const fyData = computed(() => {
     return {
       key,
       label: `${String(startYear).slice(2)}/${String(startYear + 1).slice(2)}`,
-      hours: Math.round(map[key] * 10) / 10,
+      hours: Math.round(map[key]),
       pct: Math.round((map[key] / max) * 100)
     }
   })
@@ -58,14 +58,52 @@ watch(fyData, data => {
 </script>
 
 <style scoped>
+/*
+ * Component tokens (--fbc-*): semantic roles for this chart only. Defaults map to DTV
+ * globals from main.css (@theme). Override on .fbc-section to experiment without touching
+ * rules below — custom properties inherit to children.
+ *
+ * --fbc-surface          Card background
+ * --fbc-text               Heading; selected row year + hours
+ * --fbc-text-label         Default row year + hours
+ * --fbc-bar                Hours bar (filled segment), default row (defaults to brand gold)
+ * --fbc-filler             Track (empty segment), default row
+ * --fbc-hover-bg           Rollover row background
+ * --fbc-hover-bar          Hours bar on rollover
+ * --fbc-hover-filler       Track on rollover
+ * --fbc-hover-text         Year + hours on rollover
+ * --fbc-selected-bg        Selected row background
+ * --fbc-selected-bar       Hours bar when row is selected
+ * --fbc-selected-filler    Track when row is selected (brand white / --color-dtv-light)
+ */
 .fbc-section {
-  background: var(--color-white);
+  --fbc-surface: var(--color-dtv-light);
+  --fbc-text: var(--color-dtv-dark);
+  --fbc-text-label: var(--color-dtv-dark);
+
+  --fbc-bar: var(--color-dtv-gold);
+  --fbc-filler: var(--color-dtv-sand);
+
+  --fbc-hover-bg: var(--color-dtv-sand);
+  --fbc-hover-bar: var(--color-dtv-gold);
+  --fbc-hover-filler: var(--color-dtv-light);
+  --fbc-hover-text: var(--color-dtv-dark);
+
+  --fbc-selected-bg: var(--color-dtv-sand);
+  --fbc-selected-bar: var(--color-dtv-green);
+  --fbc-selected-filler: var(--color-dtv-light);
+
+  background: var(--fbc-surface);
   padding: 1rem 1.5rem;
-  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 
-.fbc-section h3 { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0 0 0.75rem; }
+.fbc-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fbc-text);
+  margin: 0 0 0.75rem;
+}
 
 .fbc-chart { display: flex; flex-direction: column; gap: 0.25rem; }
 
@@ -80,26 +118,52 @@ watch(fyData, data => {
   cursor: pointer;
   width: 100%;
   text-align: left;
+  color: var(--fbc-text);
 }
 
-.fbc-row:hover { background: var(--color-surface-hover); }
+.fbc-row:hover {
+  background: var(--fbc-hover-bg);
+}
+
+.fbc-row:hover .fbc-label,
+.fbc-row:hover .fbc-hours {
+  color: var(--fbc-hover-text);
+}
+
+.fbc-row:hover .fbc-track {
+  background: var(--fbc-hover-filler);
+}
+
+.fbc-row:hover .fbc-actual {
+  background: var(--fbc-hover-bar);
+}
 
 .fbc-row.selected {
-  background: var(--color-green-tint);
+  background: var(--fbc-selected-bg);
 }
 
 .fbc-row.selected .fbc-label,
-.fbc-row.selected .fbc-hours { color: var(--color-text); font-weight: 700; }
+.fbc-row.selected .fbc-hours {
+  color: var(--fbc-text);
+}
 
-.fbc-label { width: 3rem; font-size: 0.85rem; color: var(--color-text-label); flex-shrink: 0; }
+.fbc-label { width: 3rem; font-size: 0.85rem; color: var(--fbc-text-label); flex-shrink: 0; }
 
 .fbc-track {
   flex: 1;
   height: 12px;
-  background: var(--color-surface-subtle);
+  background: var(--fbc-filler);
 }
 
-.fbc-actual { height: 100%; background: var(--color-dtv-green); }
+.fbc-row.selected .fbc-track {
+  background: var(--fbc-selected-filler);
+}
 
-.fbc-hours { width: 3.5rem; font-size: 0.85rem; color: var(--color-text-label); text-align: right; flex-shrink: 0; }
+.fbc-actual { height: 100%; background: var(--fbc-bar); }
+
+.fbc-row.selected .fbc-actual {
+  background: var(--fbc-selected-bar);
+}
+
+.fbc-hours { width: 3.5rem; font-size: 0.85rem; color: var(--fbc-text-label); text-align: right; flex-shrink: 0; }
 </style>
