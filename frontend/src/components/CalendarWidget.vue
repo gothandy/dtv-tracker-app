@@ -1,5 +1,5 @@
 <template>
-  <div ref="el" class="w-full">
+  <div ref="el" class="w-full bg-dtv-sand p-4">
     <!-- Header -->
     <div class="flex items-center justify-between mb-2 gap-4">
       <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(-1)">
@@ -38,7 +38,7 @@
           v-if="hasPersonalSession(day)"
           :class="[
             'absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full',
-            selectedKey === dateKey(day) ? 'bg-white' : dateKey(day) < todayKey ? 'bg-dtv-green' : 'bg-white'
+            selectedKey === dateKey(day) ? 'bg-white' : 'bg-white'
           ]"
         />
         <!-- Regular-group dot (outline) — only when not already personally registered -->
@@ -46,7 +46,7 @@
           v-else-if="hasRegularSession(day)"
           :class="[
             'absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full border',
-            selectedKey === dateKey(day) ? 'border-white bg-transparent' : dateKey(day) < todayKey ? 'border-dtv-green bg-transparent' : 'border-white bg-transparent'
+            selectedKey === dateKey(day) ? 'border-white bg-transparent' : 'border-white bg-transparent'
           ]"
         />
       </div>
@@ -141,10 +141,9 @@ function cellClasses(day: number): string[] {
   return [
     'relative aspect-square w-full flex flex-col items-center justify-center text-sm select-none',
     isToday ? 'font-bold' : '',
-    hasSession && !isSelected && isPast ? 'bg-white text-dtv-green cursor-pointer hover:bg-dtv-green/10' : '',
-    hasSession && !isSelected && !isPast ? 'bg-dtv-green text-white cursor-pointer hover:bg-dtv-green/80' : '',
-    isSelected ? '!bg-dtv-dirt !text-white cursor-pointer' : '',
-    !hasSession ? 'text-dtv-green/40 cursor-default' : '',
+    hasSession && !isSelected ? 'bg-dtv-gold text-white cursor-pointer hover:brightness-110' : '',
+    isSelected ? '!bg-dtv-green !text-white cursor-pointer' : '',
+    !hasSession ? 'text-dtv-dark/40 cursor-default' : '',
     hasDot ? 'pb-2' : '',
   ].filter(Boolean)
 }

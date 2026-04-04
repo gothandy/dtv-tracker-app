@@ -12,6 +12,8 @@
 </template>
 
 <script setup lang="ts">
+import { usePageTitle } from '../../composables/usePageTitle'
+usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 
 const components = [
@@ -20,7 +22,10 @@ const components = [
   { name: 'All Actions', path: '/sandbox/action-bars' },
   { name: 'Form Components', path: '/sandbox/form-components' },
   { name: 'Modal Layout', path: '/sandbox/modal-layout' },
-  { name: 'All Modals', path: '/sandbox/modals' }
+  { name: 'All Modals', path: '/sandbox/modals' },
+  { name: 'LayoutColumns', path: '/sandbox/layout-columns' },
+  { name: 'CalendarWidget', path: '/sandbox/calendar-widget' },
+  { name: 'FyBarChart', path: '/sandbox/fy-bar-chart' },
 ]
   
 </script>

@@ -5,23 +5,23 @@
   <!-- ratio="1-2":   narrow left, wide right -->
   <!-- reverse:       desktop order preserved; mobile stacks right → middle → left -->
   <section>
-    <slot v-if="slots.header" name="header" />
+    <slot name="header" />
     <div :class="gridClass">
-      <div v-if="slots.left" class="min-w-0 self-stretch" :class="reverse ? 'order-3 md:order-none' : ''">
-        <slot name="left" />
-      </div>
-      <div v-if="slots.middle" class="min-w-0 self-stretch" :class="reverse ? 'order-2 md:order-none' : ''">
-        <slot name="middle" />
-      </div>
-      <div v-if="slots.right" class="min-w-0 self-stretch" :class="reverse ? 'order-1 md:order-none' : ''">
-        <slot name="right" />
-      </div>
+      <template v-if="ratio === '1-1-1'">
+        <div class="min-w-0 self-stretch"><slot name="left" /></div>
+        <div class="min-w-0 self-stretch"><slot name="middle" /></div>
+        <div class="min-w-0 self-stretch"><slot name="right" /></div>
+      </template>
+      <template v-else>
+        <div class="min-w-0 self-stretch" :class="reverse ? 'order-2 md:order-none' : ''"><slot name="left" /></div>
+        <div class="min-w-0 self-stretch" :class="reverse ? 'order-1 md:order-none' : ''"><slot name="right" /></div>
+      </template>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{
   ratio?: '1-1-1' | '2-1' | '1-2'
@@ -32,8 +32,6 @@ const props = withDefaults(defineProps<{
   align: 'stretch',
   reverse: false,
 })
-
-const slots = useSlots()
 
 const gridClass = computed(() => {
   const alignClass = props.align === 'start' ? 'items-start' : 'items-stretch'

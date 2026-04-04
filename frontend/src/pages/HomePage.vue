@@ -14,16 +14,15 @@
 
       <!-- Calendar -->
       <template #middle>
-        <div :class="['bg-dtv-green/25 min-h-[340px] h-full flex items-start justify-center p-2', store.loading ? 'animate-pulse' : '']">
           <CalendarWidget
             v-if="!store.error"
             v-model="selectedDate"
             :sessions="store.sessions"
+            :class="store.loading ? 'animate-pulse' : ''"
             @select="onDateSelect"
             @confirm="onDateConfirm"
           />
           <div v-else class="text-red-500 text-sm">{{ store.error }}</div>
-        </div>
       </template>
 
 

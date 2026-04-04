@@ -38,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import { usePageTitle } from '../../composables/usePageTitle'
+usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import AppButton from '../../components/AppButton.vue'
 </script>

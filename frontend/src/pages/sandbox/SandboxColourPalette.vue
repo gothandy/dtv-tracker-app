@@ -20,6 +20,8 @@
 </template>
 
 <script setup lang="ts">
+import { usePageTitle } from '../../composables/usePageTitle'
+usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 
 const colours = [

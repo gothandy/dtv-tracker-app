@@ -4,7 +4,9 @@
       ref="inputEl"
       v-model="query"
       class="pp-input"
+      :class="{ 'pp-input--disabled': disabled }"
       :placeholder="placeholder"
+      :disabled="disabled"
       autocomplete="off"
       @focus="onFocus"
       @input="onInput"
@@ -36,9 +38,11 @@ const props = withDefaults(defineProps<{
   profiles: PickerProfile[]
   placeholder?: string
   addNew?: boolean
+  disabled?: boolean
 }>(), {
   placeholder: 'Search by name…',
   addNew: false,
+  disabled: false,
 })
 
 const emit = defineEmits<{ select: [profile: PickerProfile] }>()
@@ -108,6 +112,7 @@ defineExpose({ query, reset })
   font-size: 0.95rem;
   box-sizing: border-box;
 }
+.pp-input--disabled { opacity: 0.5; cursor: default; }
 
 .pp-results {
   list-style: none;

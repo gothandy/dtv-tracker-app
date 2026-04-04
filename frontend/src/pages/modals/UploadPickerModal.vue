@@ -1,61 +1,76 @@
 <template>
-  <div class="dtv-modal-overlay" @click.self="emit('close')">
-    <div class="dtv-modal">
-      <div class="dtv-modal-header">
-        <span class="dtv-modal-title">Upload photos for…</span>
-        <button class="dtv-modal-close" @click="emit('close')">×</button>
-      </div>
-      <ul class="upm-entry-list">
-        <li
-          v-for="entry in entries"
-          :key="entry.id"
-          class="upm-entry-row"
-          @click="emit('select', entry.id)"
-        >
-          <span>{{ entry.volunteerName ?? 'Unknown' }}</span>
-          <span v-if="entry.checkedIn" class="upm-checked">✓</span>
-        </li>
-      </ul>
-      <div class="dtv-modal-footer">
-        <AppButton label="Cancel" @click="emit('close')" />
-      </div>
+  <ModalLayout title="Upload photos for…" action="Next" :action-disabled="!selected" @close="emit('close')" @action="onNext">
+    <div class="field">
+      <label class="label" for="upm-select">Volunteer</label>
+      <select id="upm-select" class="select" v-model="selected">
+        <option disabled value="">Select a name…</option>
+        <option v-for="entry in entries" :key="entry.id" :value="entry.id">
+          {{ entry.volunteerName ?? 'Unknown' }}
+        </option>
+      </select>
     </div>
-  </div>
+  </ModalLayout>
 </template>
 
 <script setup lang="ts">
-import AppButton from '../../components/AppButton.vue'
-import type { EntryResponse } from '../../../../types/api-responses'
+import { ref, computed, watch } from 'vue'
+import ModalLayout from '../../components/ModalLayout.vue'
+import { useAuth } from '../../composables/useAuth'
 
-defineProps<{
-  entries: EntryResponse[]
+const props = defineProps<{
+  entries: { id: number; profileId?: number; volunteerName?: string }[]
 }>()
 
 const emit = defineEmits<{
   close: []
   select: [entryId: number]
 }>()
+
+const { user } = useAuth()
+
+const currentProfileId = computed(() => {
+  const slug = user.value?.profileSlug
+  if (!slug) return null
+  const id = parseInt(slug.split('-').pop() ?? '')
+  return isNaN(id) ? null : id
+})
+
+const selected = ref<number | ''>('')
+
+watch(currentProfileId, (id) => {
+  if (id && selected.value === '') {
+    const match = props.entries.find(e => e.profileId === id)
+    if (match) selected.value = match.id
+  }
+}, { immediate: true })
+
+function onNext() {
+  if (selected.value !== '') emit('select', selected.value)
+}
 </script>
 
 <style scoped>
-.upm-entry-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 0.5rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.upm-entry-row {
+.field {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0.75rem;
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.9rem;
+  flex-direction: column;
+  gap: 0.35rem;
 }
-.upm-entry-row:hover { background: var(--color-surface-hover); }
 
-.upm-checked { color: var(--color-dtv-green); font-weight: bold; }
+.label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.select {
+  width: 100%;
+  background: var(--color-dtv-light);
+  border: none;
+  color: var(--color-text);
+  padding: 0.45rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-sizing: border-box;
+}
 </style>

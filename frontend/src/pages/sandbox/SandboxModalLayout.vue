@@ -67,6 +67,8 @@
 </template>
 
 <script setup lang="ts">
+import { usePageTitle } from '../../composables/usePageTitle'
+usePageTitle('Sandbox')
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import ModalLayout from '../../components/ModalLayout.vue'

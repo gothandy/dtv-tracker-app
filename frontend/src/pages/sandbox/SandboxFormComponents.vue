@@ -60,12 +60,34 @@
         </div>
       </div>
 
+      <!-- FY Filter -->
+      <h2>FY Filter</h2>
+      <div class="surface">
+        <div class="field field--inline">
+          <label class="label">All</label>
+          <FyFilter v-model="fyValue" />
+        </div>
+        <div class="field field--inline">
+          <label class="label">Selected</label>
+          <FyFilter v-model="fyValueSelected" />
+        </div>
+      </div>
+
       <!-- Standard Dropdown -->
       <h2>Standard Dropdown</h2>
       <div class="surface">
         <div class="field">
           <label class="label">Option</label>
           <select class="select">
+            <option>Option A</option>
+            <option>Option B</option>
+            <option>Option C</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Disabled Option</label>
+          <select class="select">
+            <option disabled value="">Select an option…</option>
             <option>Option A</option>
             <option>Option B</option>
             <option>Option C</option>
@@ -130,6 +152,10 @@
           <label class="label">Profile</label>
           <ProfilePicker :profiles="profiles" @select="onProfileSelect" />
         </div>
+        <div class="field">
+          <label class="label">Disabled</label>
+          <ProfilePicker :profiles="profiles" disabled />
+        </div>
       </div>
 
     </div>
@@ -137,11 +163,21 @@
 </template>
 
 <script setup lang="ts">
+import { usePageTitle } from '../../composables/usePageTitle'
+usePageTitle('Sandbox')
 import { ref, onMounted } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import FyFilter from '../../components/FyFilter.vue'
 import TagPicker from '../../components/TagPicker.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
+import { useSessionsStore } from '../../stores/sessions'
+
+const sessionsStore = useSessionsStore()
+sessionsStore.fetch()
+
+const fyValue = ref('all')
+const fyValueSelected = ref('FY2024')
 
 const tagValue = ref('')
 const tagValueSelected = ref('Sheepskull')

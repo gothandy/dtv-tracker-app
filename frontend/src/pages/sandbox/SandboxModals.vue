@@ -72,6 +72,8 @@
 </template>
 
 <script setup lang="ts">
+import { usePageTitle } from '../../composables/usePageTitle'
+usePageTitle('Sandbox')
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import AppButton from '../../components/AppButton.vue'
@@ -100,9 +102,9 @@ const mockSession = {
 }
 
 const mockEntries = [
-  { id: 1, volunteerName: 'Jane Smith', checkedIn: true, hours: 0, count: 1, isGroup: false, isMember: false },
-  { id: 2, volunteerName: 'John Doe',   checkedIn: true, hours: 0, count: 1, isGroup: false, isMember: false },
-  { id: 3, volunteerName: 'Alice Brown', checkedIn: false, hours: 3, count: 1, isGroup: false, isMember: false },
+  { id: 1, profileId: 101, volunteerName: 'Jane Smith', checkedIn: true, hours: 0, count: 1, isGroup: false, isMember: false },
+  { id: 2, profileId: 102, volunteerName: 'John Doe',   checkedIn: true, hours: 0, count: 1, isGroup: false, isMember: false },
+  { id: 3, profileId: 103, volunteerName: 'Alice Brown', checkedIn: false, hours: 3, count: 1, isGroup: false, isMember: false },
 ]
 </script>
 

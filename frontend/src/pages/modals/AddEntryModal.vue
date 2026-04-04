@@ -8,16 +8,13 @@
     @close="emit('close')"
     @action="addEntry"
   >
-    <div v-if="loadingProfiles" class="aem-status">Loading…</div>
-
-    <template v-else>
-
-      <div class="aem-field">
+    <div class="aem-field">
         <label class="aem-label">Name</label>
         <ProfilePicker
           ref="picker"
           :profiles="profiles"
           :add-new="addNew"
+          :disabled="loadingProfiles"
           @select="onSelect"
         />
       </div>
@@ -41,7 +38,6 @@
 
       <div v-if="error" class="aem-error">{{ error }}</div>
 
-    </template>
   </ModalLayout>
 </template>
 
@@ -143,7 +139,6 @@ function resetForm() {
 </script>
 
 <style scoped>
-.aem-status { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem; }
 .aem-error { color: var(--color-error); font-size: 0.85rem; margin-top: 0.5rem; }
 
 .aem-field {

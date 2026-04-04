@@ -1,9 +1,6 @@
 <template>
   <div class="fy-filter" ref="el">
-    <button class="fy-btn" @click.stop="toggleOpen">
-      <img src="/icons/filter.svg" width="16" height="16" alt="" class="svg-white" />
-      <span>{{ selectedLabel }}</span>
-    </button>
+    <AppButton icon="filter" mode="icon-text" :label="selectedLabel" @click.stop="toggleOpen" />
     <div v-if="open" class="fy-menu">
       <button
         v-for="opt in options"
@@ -17,6 +14,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import AppButton from './AppButton.vue'
 import { useSessionsStore } from '../stores/sessions'
 
 const props = defineProps<{ modelValue: string }>()
@@ -77,22 +75,6 @@ onUnmounted(() => {
 
 <style scoped>
 .fy-filter { position: relative; }
-
-.fy-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
-  background: var(--color-dtv-green);
-  color: var(--color-white);
-  border: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.fy-btn:hover { background: var(--color-green-hover); }
 
 .fy-menu {
   position: absolute;

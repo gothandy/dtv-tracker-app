@@ -44,6 +44,9 @@ export const router = createRouter({
       { path: '/sandbox/modal-layout', component: () => import('../pages/sandbox/SandboxModalLayout.vue') },
       { path: '/sandbox/colour-palette', component: () => import('../pages/sandbox/SandboxColourPalette.vue') },
       { path: '/sandbox/form-components', component: () => import('../pages/sandbox/SandboxFormComponents.vue') },
+      { path: '/sandbox/calendar-widget', component: () => import('../pages/sandbox/SandboxCalendarWidget.vue') },
+      { path: '/sandbox/layout-columns', component: () => import('../pages/sandbox/SandboxLayoutColumns.vue') },
+      { path: '/sandbox/fy-bar-chart', component: () => import('../pages/sandbox/SandboxFyBarChart.vue') },
     ] : []),
   ]
 })
