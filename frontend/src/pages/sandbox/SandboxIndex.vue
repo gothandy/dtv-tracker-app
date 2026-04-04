@@ -26,6 +26,7 @@ const components = [
   { name: 'LayoutColumns', path: '/sandbox/layout-columns' },
   { name: 'CalendarWidget', path: '/sandbox/calendar-widget' },
   { name: 'FyBarChart', path: '/sandbox/fy-bar-chart' },
+  { name: 'TagCloud', path: '/sandbox/tag-cloud' },
 ]
   
 </script>

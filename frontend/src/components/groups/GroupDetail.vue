@@ -10,8 +10,10 @@
       <LayoutColumns ratio="2-1" align="start">
         <template #left>
           <GroupDetailHeader :group="store.group" />
+          <CardTitle>Hours by year</CardTitle>
           <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" />
-          <WordCloud :tags="tagHours" />
+          <CardTitle>Activity</CardTitle>
+          <TagCloud :tags="tagHours" />
         </template>
         <template #right>
           <GroupDetailActions v-if="isAdmin" :group="store.group" @updated="reload" />
@@ -49,7 +51,8 @@ import GroupDetailHeader from './GroupDetailHeader.vue'
 import GroupDetailActions from './GroupDetailActions.vue'
 import GroupDetailRegulars from './GroupDetailRegulars.vue'
 import FyBarChart from '../FyBarChart.vue'
-import WordCloud from '../WordCloud.vue'
+import TagCloud from '../TagCloud.vue'
+import CardTitle from '../CardTitle.vue'
 import { sessionPath } from '../../router/index'
 import type { Session } from '../../types/session'
 import type { SessionResponse, TagHoursItem } from '../../../../types/api-responses'

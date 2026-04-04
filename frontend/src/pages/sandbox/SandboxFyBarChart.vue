@@ -8,6 +8,7 @@
       <h2>1-1-1 (middle)</h2>
       <LayoutColumns ratio="1-1-1">
         <template #middle>
+          <CardTitle>Hours by year</CardTitle>
           <FyBarChart :sessions="store.sessions" v-model="selectedFy1" />
         </template>
       </LayoutColumns>
@@ -15,6 +16,7 @@
       <h2>2-1 (left)</h2>
       <LayoutColumns ratio="2-1">
         <template #left>
+          <CardTitle>Hours by year</CardTitle>
           <FyBarChart :sessions="store.sessions" v-model="selectedFy2" />
         </template>
       </LayoutColumns>
@@ -29,6 +31,7 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import FyBarChart from '../../components/FyBarChart.vue'
+import CardTitle from '../../components/CardTitle.vue'
 import { useSessionsStore } from '../../stores/sessions'
 
 usePageTitle('Sandbox')

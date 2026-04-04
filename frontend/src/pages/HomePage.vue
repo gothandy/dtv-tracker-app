@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Home</h1>
-    <LayoutColumns class="pt-2">
+    <LayoutColumns class="pt-2 mb-8">
       <template #header>
         <SectionHeader>What's going on?</SectionHeader>
       </template>
@@ -52,15 +52,17 @@
     </section>
 
     <!-- Bar chart + Word cloud -->
-    <LayoutColumns ratio="2-1">
+    <LayoutColumns ratio="2-1" class="mb-16">
       <template #header>
         <SectionHeader>What we can do together?</SectionHeader>
       </template>
       <template #left>
+        <CardTitle>This many hours</CardTitle>
         <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" />
       </template>
       <template #right>
-        <WordCloud :tags="tagHours" />
+        <CardTitle>All these trails</CardTitle>
+        <TagCloud :tags="tagHours" />
       </template>
     </LayoutColumns>
 
@@ -80,7 +82,8 @@ import CalendarWidget from '../components/CalendarWidget.vue'
 import SessionList from '../components/sessions/SessionList.vue'
 import MediaGallery from '../components/MediaGallery.vue'
 import FyBarChart from '../components/FyBarChart.vue'
-import WordCloud from '../components/WordCloud.vue'
+import TagCloud from '../components/TagCloud.vue'
+import CardTitle from '../components/CardTitle.vue'
 import NextActionCard from '../components/homepage/NextActionCard.vue'
 import { useSessionsStore } from '../stores/sessions'
 import { useAuth } from '../composables/useAuth'

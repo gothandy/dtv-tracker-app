@@ -1,6 +1,5 @@
 <template>
   <div v-if="fyData.length > 0" class="fbc-section">
-    <h3>Hours by year</h3>
     <div class="fbc-chart">
       <button
         v-for="fy in fyData"
@@ -77,16 +76,16 @@ watch(fyData, data => {
  * --fbc-selected-filler    Track when row is selected (brand white / --color-dtv-light)
  */
 .fbc-section {
-  --fbc-surface: var(--color-dtv-light);
+  --fbc-surface: var(--color-dtv-sand);
   --fbc-text: var(--color-dtv-dark);
   --fbc-text-label: var(--color-dtv-dark);
 
   --fbc-bar: var(--color-dtv-gold);
-  --fbc-filler: var(--color-dtv-sand);
+  --fbc-filler: var(--color-dtv-light);
 
-  --fbc-hover-bg: var(--color-dtv-sand);
+  --fbc-hover-bg: var(--color-dtv-light);
   --fbc-hover-bar: var(--color-dtv-gold);
-  --fbc-hover-filler: var(--color-dtv-light);
+  --fbc-hover-filler: var(--color-dtv-sand);
   --fbc-hover-text: var(--color-dtv-dark);
 
   --fbc-selected-bg: var(--color-dtv-sand);
@@ -95,14 +94,6 @@ watch(fyData, data => {
 
   background: var(--fbc-surface);
   padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.fbc-section h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--fbc-text);
-  margin: 0 0 0.75rem;
 }
 
 .fbc-chart { display: flex; flex-direction: column; gap: 0.25rem; }

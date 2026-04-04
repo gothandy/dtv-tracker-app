@@ -24,7 +24,7 @@ export const adminPath = () => '/admin'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to, from) => to.path === from.path ? false : { top: 0 },
   routes: [
     { path: '/', component: HomePage },
     { path: '/groups', component: GroupsPage },
@@ -47,6 +47,7 @@ export const router = createRouter({
       { path: '/sandbox/calendar-widget', component: () => import('../pages/sandbox/SandboxCalendarWidget.vue') },
       { path: '/sandbox/layout-columns', component: () => import('../pages/sandbox/SandboxLayoutColumns.vue') },
       { path: '/sandbox/fy-bar-chart', component: () => import('../pages/sandbox/SandboxFyBarChart.vue') },
+      { path: '/sandbox/tag-cloud', component: () => import('../pages/sandbox/SandboxTagCloud.vue') },
     ] : []),
   ]
 })
