@@ -22,6 +22,10 @@
           <h2>Delete confirm</h2>
           <AppButton label="Open" @click="open = 'delete-confirm'" />
         </div>
+        <div>
+          <h2>Form Rows</h2>
+          <AppButton label="Open" @click="open = 'modal-rows'" />
+        </div>
       </div>
 
       <ModalLayout v-if="open === 'close'"
@@ -51,6 +55,26 @@
         Body content here.
       </ModalLayout>
 
+      <ModalLayout v-if="open === 'modal-rows'"
+        title="Example Form Rows"
+        action="Save"
+        @close="open = null"
+        @action="open = null"
+      >
+        <ModalRow title="Name">
+          <input class="demo-input" value="Andrew Davies" />
+        </ModalRow>
+        <ModalRow title="Checked In">
+          <input type="checkbox" class="demo-checkbox" checked />
+        </ModalRow>
+        <ModalRow title="Description" :full-width="true">
+          <textarea class="demo-input" rows="3">Some longer text here.</textarea>
+        </ModalRow>
+        <ModalRow title="Session cover" :disabled="true">
+          <input type="checkbox" class="demo-checkbox" disabled />
+        </ModalRow>
+      </ModalLayout>
+
       <ModalLayout v-if="open === 'delete-confirm'"
         title="Delete Session?"
         action="Cancel"
@@ -73,6 +97,7 @@ import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
+import ModalRow from '../../components/ModalRow.vue'
 
 const open = ref<string | null>(null)
 </script>
@@ -101,5 +126,22 @@ h2 { font-size: 1rem; font-weight: 600; color: #666; margin-bottom: 0.5rem; }
   display: flex;
   flex-wrap: wrap;
   gap: 2rem;
+}
+
+.demo-input {
+  width: 100%;
+  background: var(--color-dtv-light);
+  border: none;
+  color: var(--color-text);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.demo-checkbox {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
 }
 </style>

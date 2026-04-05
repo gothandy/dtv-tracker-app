@@ -8,35 +8,32 @@
     @close="emit('close')"
     @action="addEntry"
   >
-    <div class="aem-field">
-        <label class="aem-label">Name</label>
-        <ProfilePicker
-          ref="picker"
-          :profiles="profiles"
-          :add-new="addNew"
-          :disabled="loadingProfiles"
-          @select="onSelect"
-        />
-      </div>
+    <ModalRow title="Name" :full-width="true">
+      <ProfilePicker
+        ref="picker"
+        :profiles="profiles"
+        :add-new="addNew"
+        :disabled="loadingProfiles"
+        @select="onSelect"
+      />
+    </ModalRow>
 
-      <div class="aem-field">
-        <label class="aem-label">Email</label>
-        <input
-          v-model="emailInput"
-          class="aem-input"
-          :disabled="!addNew"
-          placeholder="email@example.com"
-          type="email"
-          autocomplete="off"
-        />
-      </div>
+    <ModalRow title="Email" :full-width="true">
+      <input
+        v-model="emailInput"
+        class="aem-input"
+        :disabled="!addNew"
+        placeholder="email@example.com"
+        type="email"
+        autocomplete="off"
+      />
+    </ModalRow>
 
-      <div class="aem-field">
-        <label class="aem-label">Add New</label>
-        <input type="checkbox" class="aem-checkbox" v-model="addNew" @change="onAddNewToggle" />
-      </div>
+    <ModalRow title="Add New">
+      <input type="checkbox" class="aem-checkbox" v-model="addNew" @change="onAddNewToggle" />
+    </ModalRow>
 
-      <div v-if="error" class="aem-error">{{ error }}</div>
+    <div v-if="error" class="aem-error">{{ error }}</div>
 
   </ModalLayout>
 </template>
@@ -44,6 +41,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
+import ModalRow from '../../components/ModalRow.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
 import type { EntryResponse } from '../../../../types/api-responses'
 
@@ -80,50 +78,38 @@ onMounted(async () => {
   }
 })
 
-function onSelect(profile: PickerProfile) {
+function onSelect(profile: PickerProfile | null) {
   selectedProfile.value = profile
-  emailInput.value = profile.email ?? ''
 }
-
 
 function onAddNewToggle() {
   selectedProfile.value = null
   emailInput.value = ''
+  picker.value?.reset()
 }
 
 async function addEntry() {
-  error.value = ''
   adding.value = true
+  error.value = ''
   try {
-    let volunteerId: number
-
+    const body: Record<string, unknown> = { groupKey: props.groupKey, date: props.date }
     if (addNew.value) {
-      const body: Record<string, string> = { name: picker.value?.query ?? '' }
-      if (emailInput.value.trim()) body.email = emailInput.value.trim()
-      const createRes = await fetch('/api/profiles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!createRes.ok) throw new Error(`Create profile failed (${createRes.status})`)
-      const created = await createRes.json()
-      volunteerId = created.data.id
-      profiles.value.push({ id: volunteerId, name: created.data.name, email: created.data.email })
+      body.newName = picker.value?.query ?? ''
+      body.newEmail = emailInput.value
     } else {
-      volunteerId = selectedProfile.value!.id
+      body.profileId = selectedProfile.value?.id
     }
-
-    const entryRes = await fetch(`/api/sessions/${props.groupKey}/${props.date}/entries`, {
+    const res = await fetch('/api/entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ volunteerId }),
+      body: JSON.stringify(body),
     })
-    if (!entryRes.ok) throw new Error(`Add entry failed (${entryRes.status})`)
-    const json = await entryRes.json()
+    if (!res.ok) throw new Error(`Failed to add (${res.status})`)
+    const json = await res.json()
     emit('added', json.data)
     resetForm()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Add failed'
+    error.value = e instanceof Error ? e.message : 'Failed to add entry'
   } finally {
     adding.value = false
   }
@@ -141,40 +127,21 @@ function resetForm() {
 <style scoped>
 .aem-error { color: var(--color-error); font-size: 0.85rem; margin-top: 0.5rem; }
 
-.aem-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.aem-field:last-of-type { border-bottom: none; }
-
-@media (min-width: 420px) {
-  .aem-field {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-  }
-}
-
-.aem-label { font-size: 0.85rem; color: var(--color-text-label); min-width: 5rem; flex-shrink: 0; }
-
 .aem-input {
-  flex: 1;
+  width: 100%;
   background: var(--color-dtv-light);
   border: none;
   color: var(--color-text);
   padding: 0.3rem 0.5rem;
   font-family: inherit;
   font-size: 0.95rem;
+  box-sizing: border-box;
 }
 .aem-input:disabled { color: var(--color-text-muted); }
 
 .aem-checkbox {
   width: 1.5rem;
   height: 1.5rem;
-  accent-color: var(--color-dtv-green);
   cursor: pointer;
 }
 </style>

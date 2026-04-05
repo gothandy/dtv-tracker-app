@@ -7,8 +7,8 @@
 
       <h2>Natural aspect ratio</h2>
       <div class="card-row">
-        <MediaCard :item="landscape" :min-ratio="0" :max-ratio="Infinity" />
-        <MediaCard :item="portrait"  :min-ratio="0" :max-ratio="Infinity" />
+        <MediaCard :item="landscape"          :min-ratio="0" :max-ratio="Infinity" />
+        <MediaCard :item="portraitLongTitle"  :min-ratio="0" :max-ratio="Infinity" />
       </div>
 
       <h2>Constrained 3/4 – 4/3</h2>
@@ -19,8 +19,8 @@
 
       <h2>Selected</h2>
       <div class="card-row">
-        <MediaCard :item="landscape" :selected="true" />
-        <MediaCard :item="portrait"  :selected="true" />
+        <MediaCard :item="landscape"       :selected="true" :show-edit-btn="true" />
+        <MediaCard :item="portraitNoTitle" :selected="true" :show-edit-btn="true" />
       </div>
 
       <h2>In layout — constrain width</h2>
@@ -42,6 +42,7 @@
           :item="item"
           :clickable="true"
           :selected="i === pickedIndex"
+          :show-edit-btn="true"
           @select="pickedIndex = i"
         />
       </div>
@@ -82,7 +83,15 @@ const portrait: MediaItem = {
   _w: 2252, _h: 4000,
 }
 
-const all = [landscape, portrait]
+const portraitLongTitle: MediaItem = {
+  ...portrait,
+  id: 'portrait-long',
+  title: 'A very long caption that should be truncated when it runs out of space',
+}
+
+const portraitNoTitle: MediaItem = { ...portrait, id: 'portrait-no-title', title: null }
+
+const all = [landscape, portraitNoTitle]
 </script>
 
 <style scoped>

@@ -2,21 +2,50 @@
   <div v-if="loading" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
   <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
   <MediaCarousel v-else-if="items.length">
-    <MediaCard v-for="item in items" :key="item.id" :item="item" />
+    <MediaCard
+      v-for="(item, i) in items"
+      :key="item.id"
+      :item="item"
+      :clickable="true"
+      :selected="i === selectedIndex"
+      :show-edit-btn="showEditBtn"
+      @select="selectedIndex = i"
+      @edit="editingItem = item"
+    />
   </MediaCarousel>
+
+  <EditMediaModal
+    v-if="editingItem"
+    :item="editingItem"
+    :show-cover="true"
+    :is-cover="editingItem.id === coverMediaId"
+    @close="editingItem = null"
+    @save="onSave"
+    @delete="onDelete"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
 import MediaCard from '../../components/MediaCard.vue'
+import EditMediaModal from '../../pages/modals/EditMediaModal.vue'
 import type { MediaItem } from '../../types/media'
 
-const props = defineProps<{ groupKey: string; date: string }>()
+const props = defineProps<{
+  groupKey: string
+  date: string
+  showEditBtn?: boolean
+  coverMediaId?: string | null
+}>()
+
+const emit = defineEmits<{ coverChanged: [id: string | null] }>()
 
 const items          = ref<MediaItem[]>([])
 const loading        = ref(false)
 const error          = ref<string | null>(null)
+const selectedIndex  = ref<number | null>(null)
+const editingItem    = ref<MediaItem | null>(null)
 const galleryHeight  = computed(() => Math.min(500, window.innerWidth * 0.75))
 
 function measureDimensions(mediaItems: MediaItem[]): Promise<void> {
@@ -45,10 +74,47 @@ async function loadMedia() {
     items.value = images
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load photos'
-    console.error('[PhotoGalleryCard]', error.value)
+    console.error('[SessionDetailGallery]', error.value)
   } finally {
     loading.value = false
   }
+}
+
+async function onSave(data: { title: string; isPublic: boolean; isCover: boolean }) {
+  if (!editingItem.value) return
+  const itemId = editingItem.value.id
+  editingItem.value = null
+
+  await fetch(`/api/media/${itemId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: data.title, isPublic: data.isPublic }),
+  })
+
+  const wasCover = itemId === props.coverMediaId
+  if (data.isCover !== wasCover) {
+    const newCoverId = data.isCover ? itemId : null
+    await fetch(`/api/sessions/${props.groupKey}/${props.date}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coverMediaId: newCoverId }),
+    })
+    emit('coverChanged', newCoverId)
+  }
+
+  await loadMedia()
+}
+
+async function onDelete() {
+  if (!editingItem.value) return
+  const itemId = editingItem.value.id
+  editingItem.value = null
+
+  await fetch(`/api/media/${itemId}?groupKey=${props.groupKey}&date=${props.date}`, {
+    method: 'DELETE',
+  })
+
+  await loadMedia()
 }
 
 onMounted(loadMedia)

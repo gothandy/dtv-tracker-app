@@ -17,26 +17,22 @@
         <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.volunteerSlug!))" />
       </div>
 
-      <div class="eem-field">
-        <label class="eem-label">Checked In</label>
+      <ModalRow title="Checked In">
         <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
-      </div>
+      </ModalRow>
 
-      <div class="eem-field">
-        <label class="eem-label">Count</label>
+      <ModalRow title="Count">
         <input type="number" class="eem-input" v-model.number="form.count" min="1" />
-      </div>
+      </ModalRow>
 
-      <div class="eem-field">
-        <label class="eem-label">Hours</label>
+      <ModalRow title="Hours">
         <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" />
-      </div>
+      </ModalRow>
 
-      <div class="eem-field eem-field--notes">
-        <label class="eem-label">Notes</label>
+      <ModalRow title="Notes" :full-width="true">
         <textarea class="eem-textarea" v-model="form.notes" rows="2" />
         <EntryTagPicker v-model="form.notes" />
-      </div>
+      </ModalRow>
 
       <div v-if="saveError" class="eem-error">{{ saveError }}</div>
 
@@ -59,6 +55,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { profilePath } from '../../router/index'
 import ModalLayout from '../../components/ModalLayout.vue'
+import ModalRow from '../../components/ModalRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
 
@@ -149,17 +146,6 @@ async function deleteEntry() {
 
 .eem-actions { margin-bottom: 1.25rem; }
 
-.eem-field {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.eem-field--notes { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
-
-.eem-label { font-size: 0.85rem; color: var(--color-text-label); min-width: 5rem; }
-
 .eem-input {
   width: 5rem;
   background: var(--color-dtv-light);
@@ -173,7 +159,6 @@ async function deleteEntry() {
 .eem-checkbox {
   width: 1.5rem;
   height: 1.5rem;
-  accent-color: var(--color-dtv-green);
   cursor: pointer;
 }
 
@@ -188,6 +173,4 @@ async function deleteEntry() {
   resize: vertical;
   box-sizing: border-box;
 }
-
-.eem-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 </style>

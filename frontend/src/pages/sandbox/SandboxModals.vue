@@ -26,6 +26,10 @@
           <h2>Upload Picker</h2>
           <AppButton label="Open" @click="open = 'upload-picker'" />
         </div>
+        <div>
+          <h2>Edit Media</h2>
+          <AppButton label="Open" @click="open = 'edit-media'" />
+        </div>
       </div>
 
       <EditSessionModal
@@ -67,6 +71,16 @@
         @select="open = null"
       />
 
+      <EditMediaModal
+        v-if="open === 'edit-media'"
+        :item="mockMediaItem"
+        :show-cover="true"
+        :is-cover="false"
+        @close="open = null"
+        @save="open = null"
+        @delete="open = null"
+      />
+
     </div>
   </DefaultLayout>
 </template>
@@ -82,6 +96,8 @@ import SetHoursModal from '../modals/SetHoursModal.vue'
 import EditEntryModal from '../modals/EditEntryModal.vue'
 import AddEntryModal from '../modals/AddEntryModal.vue'
 import UploadPickerModal from '../modals/UploadPickerModal.vue'
+import EditMediaModal from '../modals/EditMediaModal.vue'
+import type { MediaItem } from '../../types/media'
 
 const open = ref<string | null>(null)
 
@@ -99,6 +115,15 @@ const mockSession = {
   coverMediaId: null,
   statsRaw: null,
   entries: [],
+}
+
+const mockMediaItem: MediaItem = {
+  id: 'mock-media-1',
+  thumbnailUrl: '/media/adhoc/2026-03-26/cover.jpg',
+  largeUrl: '/media/adhoc/2026-03-26/cover.jpg',
+  mimeType: 'image/jpeg',
+  title: 'Sample photo',
+  isPublic: true,
 }
 
 const mockEntries = [

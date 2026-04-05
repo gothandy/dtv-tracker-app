@@ -1,20 +1,20 @@
 <template>
   <ModalLayout title="Upload photos for…" action="Next" :action-disabled="!selected" @close="emit('close')" @action="onNext">
-    <div class="field">
-      <label class="label" for="upm-select">Volunteer</label>
-      <select id="upm-select" class="select" v-model="selected">
+    <ModalRow title="Volunteer" :full-width="true">
+      <select id="upm-select" class="upm-select" v-model="selected">
         <option disabled value="">Select a name…</option>
         <option v-for="entry in entries" :key="entry.id" :value="entry.id">
           {{ entry.volunteerName ?? 'Unknown' }}
         </option>
       </select>
-    </div>
+    </ModalRow>
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
+import ModalRow from '../../components/ModalRow.vue'
 import { useAuth } from '../../composables/useAuth'
 
 const props = defineProps<{
@@ -50,19 +50,7 @@ function onNext() {
 </script>
 
 <style scoped>
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.label {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.select {
+.upm-select {
   width: 100%;
   background: var(--color-dtv-light);
   border: none;

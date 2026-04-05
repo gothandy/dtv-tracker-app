@@ -11,10 +11,9 @@
       <strong>{{ eligible }} entries</strong> will be updated.
     </p>
 
-    <div class="dtv-field">
-      <label class="dtv-label">Hours</label>
-      <input v-model.number="hours" type="number" min="0" step="0.5" class="dtv-input" />
-    </div>
+    <ModalRow title="Hours">
+      <input v-model.number="hours" type="number" min="0" step="0.5" class="shm-input" />
+    </ModalRow>
 
     <div v-if="error" class="shm-error">{{ error }}</div>
   </ModalLayout>
@@ -24,6 +23,7 @@
 import { ref, computed } from 'vue'
 import type { EntryResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
+import ModalRow from '../../components/ModalRow.vue'
 
 const props = defineProps<{ entries: EntryResponse[] }>()
 const emit = defineEmits<{ close: []; done: [] }>()
@@ -63,5 +63,16 @@ async function apply() {
   margin-bottom: 1rem;
   line-height: 1.5;
 }
+
+.shm-input {
+  width: 5rem;
+  background: var(--color-dtv-light);
+  border: none;
+  color: var(--color-text);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
 .shm-error { color: var(--color-error); font-size: 0.85rem; margin-top: 0.5rem; }
 </style>

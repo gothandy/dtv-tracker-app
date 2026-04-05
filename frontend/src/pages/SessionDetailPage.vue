@@ -73,8 +73,8 @@
           <SessionDetailGallery
             :group-key="(route.params.groupKey as string)"
             :date="store.session.date"
-            :max-height="400"
-            title="Your photos from the day"
+            :show-edit-btn="isCheckIn || isAdmin"
+            :cover-media-id="store.session.coverMediaId"
           />
         </template>
 

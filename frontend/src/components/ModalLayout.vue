@@ -1,5 +1,5 @@
 <template>
-  <div class="am-overlay" @click.self="emit('close')">
+  <div class="am-overlay">
     <div class="am-panel">
 
       <div class="am-header">
@@ -19,6 +19,7 @@
           mode="icon-responsive"
           variant="danger"
           class="am-delete"
+          :disabled="deleteDisabled"
           @click="emit('delete')"
         />
         <AppButton
@@ -50,6 +51,7 @@ defineProps<{
   actionDisabled?: boolean
   working?: boolean
   showDelete?: boolean
+  deleteDisabled?: boolean
 }>()
 
 const emit = defineEmits<{

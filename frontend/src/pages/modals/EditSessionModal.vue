@@ -8,33 +8,28 @@
     @action="save"
     @delete="confirmDelete = true"
   >
-    <div class="dtv-field">
-      <label class="dtv-label">Display Name</label>
-      <input v-model="form.displayName" class="dtv-input" placeholder="Leave blank to use group name" />
-    </div>
+    <ModalRow title="Display Name" :full-width="true">
+      <input v-model="form.displayName" class="sem-input" placeholder="Leave blank to use group name" />
+    </ModalRow>
 
-    <div class="dtv-field">
-      <label class="dtv-label">Description</label>
-      <textarea v-model="form.description" class="dtv-textarea" rows="3" />
-    </div>
+    <ModalRow title="Description" :full-width="true">
+      <textarea v-model="form.description" class="sem-textarea" rows="3" />
+    </ModalRow>
 
     <template v-if="isAdmin">
-      <div class="dtv-field">
-        <label class="dtv-label">Date</label>
-        <input v-model="form.date" type="date" class="dtv-input" />
-      </div>
+      <ModalRow title="Date" :full-width="true">
+        <input v-model="form.date" type="date" class="sem-input" />
+      </ModalRow>
 
-      <div class="dtv-field">
-        <label class="dtv-label">Group</label>
-        <select v-model="form.groupId" class="dtv-select">
+      <ModalRow title="Group" :full-width="true">
+        <select v-model="form.groupId" class="sem-select">
           <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
         </select>
-      </div>
+      </ModalRow>
 
-      <div class="dtv-field">
-        <label class="dtv-label">Eventbrite Event ID</label>
-        <input v-model="form.eventbriteEventId" class="dtv-input" />
-      </div>
+      <ModalRow title="Eventbrite Event ID" :full-width="true">
+        <input v-model="form.eventbriteEventId" class="sem-input" />
+      </ModalRow>
     </template>
 
     <div v-if="error" class="sem-error">{{ error }}</div>
@@ -61,6 +56,7 @@ import { useRole } from '../../composables/useRole'
 import { groupPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
+import ModalRow from '../../components/ModalRow.vue'
 
 interface GroupItem { id: number; name: string; key: string }
 
@@ -141,11 +137,28 @@ async function deleteSession() {
 </script>
 
 <style scoped>
+.sem-input,
+.sem-select,
+.sem-textarea {
+  width: 100%;
+  background: var(--color-dtv-light);
+  border: none;
+  color: var(--color-text);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.sem-select { cursor: pointer; }
+.sem-textarea { resize: vertical; }
+
 .sem-error {
   color: var(--color-error);
   font-size: 0.85rem;
   margin-top: 0.5rem;
 }
+
 .sem-confirm-text {
   font-size: 0.9rem;
   margin-bottom: 1rem;

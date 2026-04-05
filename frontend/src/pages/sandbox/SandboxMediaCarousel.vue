@@ -30,9 +30,28 @@
         v-else-if="sessionGalleryItems.length"
         title="adhoc · 26 Mar 2026"
       >
-        <MediaCard v-for="item in sessionGalleryItems" :key="item.id" :item="item" />
+        <MediaCard
+          v-for="(item, i) in sessionGalleryItems"
+          :key="item.id"
+          :item="item"
+          :clickable="true"
+          :selected="i === selectedGalleryIndex"
+          :show-edit-btn="true"
+          @select="selectedGalleryIndex = i"
+          @edit="editingItem = item"
+        />
       </MediaCarousel>
       <div v-else class="placeholder">No photos found</div>
+
+      <EditMediaModal
+        v-if="editingItem"
+        :item="editingItem"
+        :show-cover="true"
+        :is-cover="false"
+        @close="editingItem = null"
+        @save="editingItem = null"
+        @delete="editingItem = null"
+      />
 
     </div>
   </DefaultLayout>
@@ -43,6 +62,7 @@ import { ref, onMounted } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
 import MediaCard from '../../components/MediaCard.vue'
+import EditMediaModal from '../modals/EditMediaModal.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { MediaItem } from '../../types/media'
 import type { Session } from '../../types/session'
@@ -81,6 +101,8 @@ async function loadSessionItems() {
 }
 
 // ── Single session gallery ─────────────────────────────────────────────────
+const selectedGalleryIndex = ref<number | null>(null)
+const editingItem          = ref<MediaItem | null>(null)
 const sessionGalleryItems   = ref<MediaItem[]>([])
 const sessionGalleryLoading = ref(false)
 const sessionGalleryError   = ref<string | null>(null)
