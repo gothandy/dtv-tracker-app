@@ -22,8 +22,19 @@
         class="text-center text-xs text-black/60 pb-1 uppercase tracking-wide"
       >{{ name }}</div>
 
-      <!-- Blank offset cells (start) -->
-      <div v-for="n in monthOffset" :key="`blank-${n}`" class="aspect-square" />
+      <!-- Previous month overflow days -->
+      <div
+        v-for="day in prevMonthDays"
+        :key="`prev-${day}`"
+        :class="adjacentCellClasses(prevMonthDateKey(day))"
+        @click="handleAdjacentDayClick(prevMonthDateKey(day), -1)"
+      >
+        <span class="leading-none">{{ day }}</span>
+        <span
+          v-if="sessionIndex.has(prevMonthDateKey(day))"
+          class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white/50"
+        />
+      </div>
 
       <!-- Day cells -->
       <div
@@ -33,26 +44,35 @@
         @click="handleDayClick(day)"
       >
         <span class="leading-none">{{ day }}</span>
-        <!-- Registered/attended dot (filled) -->
+        <!-- One dot per session: filled = registered/attended, outline = not registered -->
         <span
-          v-if="hasPersonalSession(day)"
-          :class="[
-            'absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full',
-            selectedKey === dateKey(day) ? 'bg-white' : 'bg-white'
-          ]"
-        />
-        <!-- Regular-group dot (outline) — only when not already personally registered -->
-        <span
-          v-else-if="hasRegularSession(day)"
-          :class="[
-            'absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full border',
-            selectedKey === dateKey(day) ? 'border-white bg-transparent' : 'border-white bg-transparent'
-          ]"
-        />
+          v-if="sessionIndex.has(dateKey(day))"
+          class="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5"
+        >
+          <span
+            v-for="s in sessionIndex.get(dateKey(day))"
+            :key="s.id"
+            :class="[
+              'w-1.5 h-1.5 rounded-full',
+              (s.isRegistered || s.isAttended) ? 'bg-white' : 'border border-white bg-transparent'
+            ]"
+          />
+        </span>
       </div>
 
-      <!-- Trailing blanks to always fill 6 rows -->
-      <div v-for="n in trailingBlanks" :key="`trail-${n}`" class="aspect-square" />
+      <!-- Next month overflow days -->
+      <div
+        v-for="day in nextMonthDays"
+        :key="`next-${day}`"
+        :class="adjacentCellClasses(nextMonthDateKey(day))"
+        @click="handleAdjacentDayClick(nextMonthDateKey(day), 1)"
+      >
+        <span class="leading-none">{{ day }}</span>
+        <span
+          v-if="sessionIndex.has(nextMonthDateKey(day))"
+          class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white/50"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -114,20 +134,52 @@ const monthOffset = computed(() => {
   return (firstDay + 6) % 7
 })
 
+// Previous month
+const prevMonthYear = computed(() => currentMonth.value === 0 ? currentYear.value - 1 : currentYear.value)
+const prevMonth = computed(() => currentMonth.value === 0 ? 11 : currentMonth.value - 1)
+const daysInPrevMonth = computed(() => new Date(prevMonthYear.value, prevMonth.value + 1, 0).getDate())
+const prevMonthDays = computed(() =>
+  Array.from({ length: monthOffset.value }, (_, i) => daysInPrevMonth.value - monthOffset.value + 1 + i)
+)
+
+// Next month
+const nextMonthYear = computed(() => currentMonth.value === 11 ? currentYear.value + 1 : currentYear.value)
+const nextMonth = computed(() => currentMonth.value === 11 ? 0 : currentMonth.value + 1)
+const nextMonthDays = computed(() =>
+  Array.from({ length: trailingBlanks.value }, (_, i) => i + 1)
+)
+
+function prevMonthDateKey(day: number): string {
+  const m = String(prevMonth.value + 1).padStart(2, '0')
+  const d = String(day).padStart(2, '0')
+  return `${prevMonthYear.value}-${m}-${d}`
+}
+
+function nextMonthDateKey(day: number): string {
+  const m = String(nextMonth.value + 1).padStart(2, '0')
+  const d = String(day).padStart(2, '0')
+  return `${nextMonthYear.value}-${m}-${d}`
+}
+
+function adjacentCellClasses(key: string): string[] {
+  const hasSession = sessionIndex.value.has(key)
+  const hasDot = sessionIndex.value.get(key)?.some(s => s.isRegistered || s.isAttended || s.isRegular) ?? false
+  return [
+    'relative aspect-square w-full flex flex-col items-center justify-center text-sm select-none',
+    hasSession ? 'bg-dtv-gold/40 text-white/70 cursor-pointer hover:brightness-110' : 'text-dtv-dark/25 cursor-default',
+    hasDot ? 'pb-2' : '',
+  ].filter(Boolean)
+}
+
+function handleAdjacentDayClick(key: string, delta: number) {
+  navigateMonth(delta)
+  if (sessionIndex.value.has(key)) selectDate(key)
+}
+
 function dateKey(day: number): string {
   const m = String(currentMonth.value + 1).padStart(2, '0')
   const d = String(day).padStart(2, '0')
   return `${currentYear.value}-${m}-${d}`
-}
-
-// Any session on this day where user is registered or attended
-function hasPersonalSession(day: number): boolean {
-  return sessionIndex.value.get(dateKey(day))?.some(s => s.isRegistered || s.isAttended) ?? false
-}
-
-// Any session on this day where user is a regular (and not already personally registered)
-function hasRegularSession(day: number): boolean {
-  return sessionIndex.value.get(dateKey(day))?.some(s => s.isRegular) ?? false
 }
 
 function cellClasses(day: number): string[] {
@@ -135,15 +187,14 @@ function cellClasses(day: number): string[] {
   const hasSession = sessionIndex.value.has(key)
   const isSelected = key === selectedKey.value
   const isToday = key === todayKey
-  const isPast = key < todayKey
-  const hasDot = hasPersonalSession(day) || hasRegularSession(day)
+  const hasDot = hasSession
 
   return [
     'relative aspect-square w-full flex flex-col items-center justify-center text-sm select-none',
     isToday ? 'font-bold' : '',
     hasSession && !isSelected ? 'bg-dtv-gold text-white cursor-pointer hover:brightness-110' : '',
     isSelected ? '!bg-dtv-green !text-white cursor-pointer' : '',
-    !hasSession ? 'text-dtv-dark/40 cursor-default' : '',
+    !hasSession ? 'bg-white text-dtv-dark/40 cursor-default' : '',
     hasDot ? 'pb-2' : '',
   ].filter(Boolean)
 }

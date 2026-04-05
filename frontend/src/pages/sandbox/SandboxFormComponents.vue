@@ -73,6 +73,19 @@
         </div>
       </div>
 
+      <!-- Date Picker -->
+      <h2>Date Picker</h2>
+      <div class="surface">
+        <div class="field">
+          <label class="label">Date</label>
+          <input type="date" class="input" v-model="dateValue" />
+        </div>
+        <div class="field">
+          <label class="label">Disabled</label>
+          <input type="date" class="input" value="2026-04-05" disabled />
+        </div>
+      </div>
+
       <!-- Standard Dropdown -->
       <h2>Standard Dropdown</h2>
       <div class="surface">
@@ -178,6 +191,8 @@ sessionsStore.fetch()
 
 const fyValue = ref('all')
 const fyValueSelected = ref('FY2024')
+
+const dateValue = ref('2026-03-15')
 
 const tagValue = ref('')
 const tagValueSelected = ref('Sheepskull')
