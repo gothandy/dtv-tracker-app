@@ -138,6 +138,7 @@ const coverItems = computed<MediaItem[]>(() =>
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(s => ({
       id: String(s.id),
+      listItemId: 0,
       thumbnailUrl: `/media/${s.groupKey}/${s.date}/cover.jpg`,
       largeUrl: `/media/${s.groupKey}/${s.date}/cover.jpg`,
       mimeType: 'image/jpeg',

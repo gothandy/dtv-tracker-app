@@ -32,8 +32,17 @@
         <span class="leading-none">{{ day }}</span>
         <span
           v-if="sessionIndex.has(prevMonthDateKey(day))"
-          class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white/50"
-        />
+          class="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5"
+        >
+          <span
+            v-for="s in sessionIndex.get(prevMonthDateKey(day))"
+            :key="s.id"
+            :class="[
+              'w-1.5 h-1.5 rounded-full',
+              (s.isRegistered || s.isAttended) ? 'bg-white/70' : 'border border-white/70 bg-transparent'
+            ]"
+          />
+        </span>
       </div>
 
       <!-- Day cells -->
@@ -70,8 +79,17 @@
         <span class="leading-none">{{ day }}</span>
         <span
           v-if="sessionIndex.has(nextMonthDateKey(day))"
-          class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white/50"
-        />
+          class="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5"
+        >
+          <span
+            v-for="s in sessionIndex.get(nextMonthDateKey(day))"
+            :key="s.id"
+            :class="[
+              'w-1.5 h-1.5 rounded-full',
+              (s.isRegistered || s.isAttended) ? 'bg-white/70' : 'border border-white/70 bg-transparent'
+            ]"
+          />
+        </span>
       </div>
     </div>
   </div>

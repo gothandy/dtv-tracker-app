@@ -92,6 +92,7 @@ async function loadSessionItems() {
   coverSessions.value = sessions
   sessionItems.value = sessions.map(s => ({
     id: String(s.id),
+    listItemId: 0,
     thumbnailUrl: `/media/${s.groupKey}/${s.date}/cover.jpg`,
     largeUrl:     `/media/${s.groupKey}/${s.date}/cover.jpg`,
     mimeType: 'image/jpeg',

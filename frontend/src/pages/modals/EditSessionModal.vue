@@ -90,7 +90,7 @@ onMounted(async () => {
   const res = await fetch('/api/groups')
   if (!res.ok) return
   const json = await res.json()
-  groups.value = (json.data ?? []).map((g: any) => ({ id: g.id, name: g.displayName, key: g.key })).sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+  groups.value = (json.data ?? []).map((g: any) => ({ id: g.id as number, name: g.displayName as string, key: g.key as string })).sort((a: GroupItem, b: GroupItem) => (a.name ?? '').localeCompare(b.name ?? ''))
 })
 
 async function save() {

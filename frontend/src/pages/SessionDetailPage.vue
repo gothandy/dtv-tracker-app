@@ -88,6 +88,7 @@
         :show-edit-btn="isCheckIn || isAdmin"
         :cover-media-id="store.session.coverMediaId"
         @cover-item="coverItem = $event"
+        @cover-changed="(id) => { if (store.session) store.session.coverMediaId = id }"
       />
 
 
