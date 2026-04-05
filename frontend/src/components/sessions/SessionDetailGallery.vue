@@ -1,12 +1,15 @@
 <template>
   <div v-if="loading" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
   <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
-  <MediaCarousel v-else-if="items.length" :items="items" />
+  <MediaCarousel v-else-if="items.length">
+    <MediaCard v-for="item in items" :key="item.id" :item="item" />
+  </MediaCarousel>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
+import MediaCard from '../../components/MediaCard.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{ groupKey: string; date: string }>()

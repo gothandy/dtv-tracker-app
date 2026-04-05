@@ -8,12 +8,18 @@
       <h2>Sessions with photos (homepage style)</h2>
       <MediaCarousel
         v-if="sessionItems.length"
-        :items="sessionItems"
         :max-height="280"
-        :clickable="true"
         title="Photos from recent events"
-        @select="i => onSessionSelect(i)"
-      />
+      >
+        <MediaCard
+          v-for="(item, i) in sessionItems"
+          :key="item.id"
+          :item="item"
+          :clickable="true"
+          :selected="i === selectedSessionIndex"
+          @select="onSessionSelect(i)"
+        />
+      </MediaCarousel>
       <div v-else class="placeholder">Loading sessions…</div>
       <p v-if="selectedSession" class="note">Selected: {{ selectedSession }}</p>
 
@@ -22,9 +28,10 @@
       <div v-else-if="sessionGalleryError" class="error">{{ sessionGalleryError }}</div>
       <MediaCarousel
         v-else-if="sessionGalleryItems.length"
-        :items="sessionGalleryItems"
         title="adhoc · 26 Mar 2026"
-      />
+      >
+        <MediaCard v-for="item in sessionGalleryItems" :key="item.id" :item="item" />
+      </MediaCarousel>
       <div v-else class="placeholder">No photos found</div>
 
     </div>
@@ -35,6 +42,7 @@
 import { ref, onMounted } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
+import MediaCard from '../../components/MediaCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { MediaItem } from '../../types/media'
 import type { Session } from '../../types/session'
@@ -45,8 +53,10 @@ usePageTitle('Sandbox')
 const sessionItems    = ref<MediaItem[]>([])
 const coverSessions   = ref<Session[]>([])
 const selectedSession = ref<string | null>(null)
+const selectedSessionIndex = ref<number | null>(null)
 
 function onSessionSelect(index: number) {
+  selectedSessionIndex.value = index
   const s = coverSessions.value[index]
   if (s) selectedSession.value = `${s.groupKey}/${s.date}`
 }

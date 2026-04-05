@@ -30,7 +30,9 @@
       </LayoutColumns>
 
       <!-- Gallery: full width -->
-      <MediaCarousel v-if="coverItems.length" :items="coverItems" :max-height="280" />
+      <MediaCarousel v-if="coverItems.length" :max-height="280">
+        <MediaCard v-for="item in coverItems" :key="item.id" :item="item" />
+      </MediaCarousel>
 
     </template>
   </DefaultLayout>
@@ -47,6 +49,7 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../LayoutColumns.vue'
 import CalendarWidget from '../CalendarWidget.vue'
 import MediaCarousel from '../MediaCarousel.vue'
+import MediaCard from '../MediaCard.vue'
 import GroupDetailHeader from './GroupDetailHeader.vue'
 import GroupDetailActions from './GroupDetailActions.vue'
 import GroupDetailRegulars from './GroupDetailRegulars.vue'

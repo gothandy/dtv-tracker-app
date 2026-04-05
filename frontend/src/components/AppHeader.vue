@@ -24,7 +24,7 @@
           <RouterLink v-if="isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Volunteers</RouterLink>
           <RouterLink v-if="isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
           <RouterLink to="/about" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">About</RouterLink>
-          <RouterLink v-if="isDev" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
+          <RouterLink v-if="isDev || isAdmin" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
 
           <template v-if="ready">
             <RouterLink v-if="user?.profileSlug" :to="`/profiles/${user.profileSlug}`"

@@ -28,6 +28,7 @@ const components = [
   { name: 'CalendarWidget', path: '/sandbox/calendar-widget' },
   { name: 'FyBarChart', path: '/sandbox/fy-bar-chart' },
   { name: 'TagCloud', path: '/sandbox/tag-cloud' },
+  { name: 'MediaCard', path: '/sandbox/media-card' },
   { name: 'MediaCarousel', path: '/sandbox/media-carousel' },
 ]
   

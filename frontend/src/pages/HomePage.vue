@@ -43,12 +43,18 @@
       <!-- Cover photo gallery — all sessions with photos, newest first -->
       <MediaCarousel
         v-if="coverItems.length"
-        :items="coverItems"
         :max-height="280"
-        :clickable="true"
         title="Photos from recent events"
-        @select="onGallerySelect"
-      />
+      >
+        <MediaCard
+          v-for="(item, i) in coverItems"
+          :key="item.id"
+          :item="item"
+          :clickable="true"
+          :selected="i === selectedGalleryIndex"
+          @select="onGallerySelect(i)"
+        />
+      </MediaCarousel>
     </section>
 
     <!-- Bar chart + Word cloud -->
@@ -81,6 +87,7 @@ import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
 import SessionList from '../components/sessions/SessionList.vue'
 import MediaCarousel from '../components/MediaCarousel.vue'
+import MediaCard from '../components/MediaCard.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TagCloud from '../components/TagCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
@@ -103,6 +110,7 @@ const selectedSessions = ref<Session[]>([])
 const sessionListEl = ref<{ $el: HTMLElement } | null>(null)
 const selectedFy = ref('')
 const tagHours = ref<TagHoursItem[]>([])
+const selectedGalleryIndex = ref<number | null>(null)
 
 function onDateSelect(sessions: Session[]) {
   selectedSessions.value = sessions
@@ -146,6 +154,7 @@ const coverSessions = computed<Session[]>(() =>
 )
 
 function onGallerySelect(index: number) {
+  selectedGalleryIndex.value = index
   const s = coverSessions.value[index]
   if (s?.groupKey) router.push(sessionPath(s.groupKey, s.date))
 }

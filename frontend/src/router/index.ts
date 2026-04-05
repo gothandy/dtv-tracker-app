@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ensureAuth, user } from '../composables/useAuth'
 import HomePage from '../pages/HomePage.vue'
 import GroupsPage from '../pages/GroupsPage.vue'
 import PrivacyPage from '../pages/PrivacyPage.vue'
@@ -36,20 +37,26 @@ export const router = createRouter({
     { path: '/about', component: AboutPage },
     { path: '/login', component: LoginPage },
     { path: '/admin', component: AdminPage },
-    ...(import.meta.env.DEV ? [
-      { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
-      { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
-      { path: '/sandbox/action-bars', component: () => import('../pages/sandbox/SandboxActionBars.vue') },
-      { path: '/sandbox/modals', component: () => import('../pages/sandbox/SandboxModals.vue') },
-      { path: '/sandbox/modal-layout', component: () => import('../pages/sandbox/SandboxModalLayout.vue') },
-      { path: '/sandbox/colour-palette', component: () => import('../pages/sandbox/SandboxColourPalette.vue') },
-      { path: '/sandbox/form-components', component: () => import('../pages/sandbox/SandboxFormComponents.vue') },
-      { path: '/sandbox/calendar-widget', component: () => import('../pages/sandbox/SandboxCalendarWidget.vue') },
-      { path: '/sandbox/layout-columns', component: () => import('../pages/sandbox/SandboxLayoutColumns.vue') },
-      { path: '/sandbox/concertina-layout', component: () => import('../pages/sandbox/SandboxConcertinaLayout.vue') },
-      { path: '/sandbox/fy-bar-chart', component: () => import('../pages/sandbox/SandboxFyBarChart.vue') },
-      { path: '/sandbox/tag-cloud', component: () => import('../pages/sandbox/SandboxTagCloud.vue') },
-      { path: '/sandbox/media-carousel', component: () => import('../pages/sandbox/SandboxMediaCarousel.vue') },
-    ] : []),
+    { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
+    { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
+    { path: '/sandbox/action-bars', component: () => import('../pages/sandbox/SandboxActionBars.vue') },
+    { path: '/sandbox/modals', component: () => import('../pages/sandbox/SandboxModals.vue') },
+    { path: '/sandbox/modal-layout', component: () => import('../pages/sandbox/SandboxModalLayout.vue') },
+    { path: '/sandbox/colour-palette', component: () => import('../pages/sandbox/SandboxColourPalette.vue') },
+    { path: '/sandbox/form-components', component: () => import('../pages/sandbox/SandboxFormComponents.vue') },
+    { path: '/sandbox/calendar-widget', component: () => import('../pages/sandbox/SandboxCalendarWidget.vue') },
+    { path: '/sandbox/layout-columns', component: () => import('../pages/sandbox/SandboxLayoutColumns.vue') },
+    { path: '/sandbox/concertina-layout', component: () => import('../pages/sandbox/SandboxConcertinaLayout.vue') },
+    { path: '/sandbox/fy-bar-chart', component: () => import('../pages/sandbox/SandboxFyBarChart.vue') },
+    { path: '/sandbox/tag-cloud', component: () => import('../pages/sandbox/SandboxTagCloud.vue') },
+    { path: '/sandbox/media-card', component: () => import('../pages/sandbox/SandboxMediaCard.vue') },
+    { path: '/sandbox/media-carousel', component: () => import('../pages/sandbox/SandboxMediaCarousel.vue') },
   ]
+})
+
+router.beforeEach(async (to) => {
+  if (!to.path.startsWith('/sandbox')) return
+  if (import.meta.env.DEV) return
+  await ensureAuth()
+  if (user.value?.role !== 'admin') return '/'
 })

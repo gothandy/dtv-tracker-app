@@ -15,8 +15,9 @@ export interface AuthUser {
   }
 }
 
-const user = ref<AuthUser | null>(null)
+export const user = ref<AuthUser | null>(null)
 const ready = ref(false)
+let fetchPromise: Promise<void> | null = null
 
 async function fetchMe() {
   try {
@@ -29,6 +30,13 @@ async function fetchMe() {
   } finally {
     ready.value = true
   }
+}
+
+// Ensures auth is resolved — safe to call from router guards (outside components)
+export async function ensureAuth(): Promise<void> {
+  if (ready.value) return
+  if (!fetchPromise) fetchPromise = fetchMe()
+  return fetchPromise
 }
 
 export function useAuth() {
