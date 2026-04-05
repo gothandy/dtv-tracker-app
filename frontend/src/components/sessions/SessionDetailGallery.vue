@@ -1,12 +1,12 @@
 <template>
   <div v-if="loading" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
   <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
-  <MediaGallery v-else-if="items.length" :items="items" />
+  <MediaCarousel v-else-if="items.length" :items="items" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import MediaGallery from '../../components/MediaGallery.vue'
+import MediaCarousel from '../../components/MediaCarousel.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{ groupKey: string; date: string }>()

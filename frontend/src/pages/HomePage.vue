@@ -41,7 +41,7 @@
     <section>
       <SectionHeader>What's been happening?</SectionHeader>
       <!-- Cover photo gallery — all sessions with photos, newest first -->
-      <MediaGallery
+      <MediaCarousel
         v-if="coverItems.length"
         :items="coverItems"
         :max-height="280"
@@ -80,7 +80,7 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
 import SessionList from '../components/sessions/SessionList.vue'
-import MediaGallery from '../components/MediaGallery.vue'
+import MediaCarousel from '../components/MediaCarousel.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TagCloud from '../components/TagCloud.vue'
 import CardTitle from '../components/CardTitle.vue'

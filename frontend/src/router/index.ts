@@ -49,6 +49,7 @@ export const router = createRouter({
       { path: '/sandbox/concertina-layout', component: () => import('../pages/sandbox/SandboxConcertinaLayout.vue') },
       { path: '/sandbox/fy-bar-chart', component: () => import('../pages/sandbox/SandboxFyBarChart.vue') },
       { path: '/sandbox/tag-cloud', component: () => import('../pages/sandbox/SandboxTagCloud.vue') },
+      { path: '/sandbox/media-carousel', component: () => import('../pages/sandbox/SandboxMediaCarousel.vue') },
     ] : []),
   ]
 })
