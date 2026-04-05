@@ -1,24 +1,28 @@
 <template>
   <div v-if="loading" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
   <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
-  <MediaCarousel v-else-if="items.length">
-    <MediaCard
-      v-for="(item, i) in items"
-      :key="item.id"
-      :item="item"
-      :clickable="true"
-      :selected="i === selectedIndex"
-      :show-edit-btn="showEditBtn"
-      @select="selectedIndex = i"
-      @edit="editingItem = item"
-    />
-  </MediaCarousel>
+  <div v-else-if="items.length" class="tall-gallery">
+    <MediaCarousel>
+      <MediaCard
+        v-for="(item, i) in items"
+        :key="item.id"
+        :item="item"
+        :clickable="true"
+        :selected="i === selectedIndex"
+        :show-edit-btn="showEditBtn"
+        :min-ratio="3/4"
+        :max-ratio="4/3"
+        @select="selectedIndex = i"
+        @edit="editingItem = item"
+      />
+    </MediaCarousel>
+  </div>
 
   <EditMediaModal
     v-if="editingItem"
     :item="editingItem"
     :show-cover="true"
-    :is-cover="editingItem.id === coverMediaId"
+    :is-cover="editingItem.listItemId === coverMediaId"
     @close="editingItem = null"
     @save="onSave"
     @delete="onDelete"
@@ -36,10 +40,13 @@ const props = defineProps<{
   groupKey: string
   date: string
   showEditBtn?: boolean
-  coverMediaId?: string | null
+  coverMediaId?: number | null
 }>()
 
-const emit = defineEmits<{ coverChanged: [id: string | null] }>()
+const emit = defineEmits<{
+  coverChanged: [id: number | null]
+  coverItem: [item: MediaItem | null]
+}>()
 
 const items          = ref<MediaItem[]>([])
 const loading        = ref(false)
@@ -72,6 +79,7 @@ async function loadMedia() {
     const images: MediaItem[] = (json.data ?? []).filter((i: MediaItem) => i.mimeType.startsWith('image/'))
     await measureDimensions(images)
     items.value = images
+    emit('coverItem', images.find(i => i.listItemId === props.coverMediaId) ?? null)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load photos'
     console.error('[SessionDetailGallery]', error.value)
@@ -83,6 +91,7 @@ async function loadMedia() {
 async function onSave(data: { title: string; isPublic: boolean; isCover: boolean }) {
   if (!editingItem.value) return
   const itemId = editingItem.value.id
+  const itemListId = editingItem.value.listItemId
   editingItem.value = null
 
   await fetch(`/api/media/${itemId}`, {
@@ -91,9 +100,9 @@ async function onSave(data: { title: string; isPublic: boolean; isCover: boolean
     body: JSON.stringify({ title: data.title, isPublic: data.isPublic }),
   })
 
-  const wasCover = itemId === props.coverMediaId
+  const wasCover = itemListId === props.coverMediaId
   if (data.isCover !== wasCover) {
-    const newCoverId = data.isCover ? itemId : null
+    const newCoverId = data.isCover ? itemListId : null
     await fetch(`/api/sessions/${props.groupKey}/${props.date}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -124,5 +133,9 @@ onMounted(loadMedia)
 .gallery-skeleton {
   background: var(--color-dtv-dark);
   width: 100%;
+}
+
+.tall-gallery :deep(.mg-viewport) {
+  height: 300px !important;
 }
 </style>

@@ -60,7 +60,8 @@ onUnmounted(() => embla?.destroy())
 <style scoped>
 .mg-wrap {
   position: relative;
-  background: var(--color-dtv-dark);
+  background: black;
+  padding: 0 1.5rem;
 }
 
 .mg-title {
@@ -68,13 +69,14 @@ onUnmounted(() => embla?.destroy())
   color: var(--color-white);
   font-size: 0.85rem;
   font-weight: 600;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0;
   letter-spacing: 0.03em;
 }
 
 .mg-footer {
   background: black;
   height: 8px;
+  margin: 0 -1.5rem;
 }
 
 .mg-viewport {
@@ -109,8 +111,8 @@ onUnmounted(() => embla?.destroy())
   transition: opacity 0.15s;
 }
 
-.mg-nav-prev { left: 10px; }
-.mg-nav-next { right: 10px; }
+.mg-nav-prev { left: calc(1.5rem + 10px); }
+.mg-nav-next { right: calc(1.5rem + 10px); }
 
 .mg-nav:hover:not(:disabled) { opacity: 1; }
 .mg-nav:disabled { opacity: 0.08; cursor: default; }

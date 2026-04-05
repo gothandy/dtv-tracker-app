@@ -23,18 +23,12 @@
         <template #right>
 
 
+          <MediaCard v-if="coverItem" :item="coverItem" constrain="width" :selected="true" />
           <SessionDetailBook v-if="isBookable && !store.session.isRegistered" :session="store.session" />
           <SessionDetailForThis v-if="isBookable && store.session.isRegistered" :session="store.session" />
           <SessionDetailLogin v-if="isBookable && !user" />
 
-          <!-- Action buttons — upload/edit for checkin/admin/self-service -->
-          <SessionDetailActions
-            v-if="isCheckIn || isAdmin || isSelfService"
-            :session="store.session"
-            :group-key="(route.params.groupKey as string)"
-            :date="store.session.date"
-            @saved="(gk, d) => store.fetch(gk, d)"
-          />
+
           
         </template>
       </LayoutColumns>
@@ -42,13 +36,28 @@
       
 
       <!-- SECOND ROW -->
-      <LayoutColumns ratio="1-2">
+      <LayoutColumns ratio="1-2" v-if="isBookable">
         <template #header>
-          <SectionHeader v-if="isBookable">What to Expect</SectionHeader>
+          <SectionHeader >What to Expect</SectionHeader>
         </template>
 
         <template #left>
-          <SessionDetailCover v-if="store.session.coverMediaId" :group-key="(route.params.groupKey as string)" :date="store.session.date" :alt="store.session.groupName" />
+          <SessionDetailStats :session="store.session" />
+        </template>
+
+        <template #right>
+          <SessionDetailExpect v-if="isBookable" />
+        </template>
+
+      </LayoutColumns>
+
+      <LayoutColumns ratio="1-2" v-if="!isBookable">
+
+        <template #header>
+          <SectionHeader>What we got up to?</SectionHeader>
+        </template>
+
+        <template #left>
           <SessionDetailStats :session="store.session" />
           <SessionDetailGroupTeaser
             v-if="!isBookable && store.session.nextSession"
@@ -59,31 +68,33 @@
         </template>
 
         <template #right>
-          <SessionDetailExpect v-if="isBookable" />
-          <SessionDetailWriteUp v-if="!isBookable && store.session.description" :description="store.session.description!" />
+          <CardTitle v-if="store.session.displayName">{{ store.session.displayName }}</CardTitle>
+          <div v-if="store.session.description" class="prose px-6 pb-6">
+            <p class="text-dtv-dark text-large leading-relaxed pb-4" style="white-space: pre-line">{{ store.session.description }}</p>
           
-          <!-- Tags — visible to all -->
-          <SessionDetailTags
-            :session="store.session"
-            :group-key="(route.params.groupKey as string)"
-            :date="store.session.date"
-            @updated="store.fetch(route.params.groupKey as string, store.session!.date)"
-          />
-
-          <SessionDetailGallery
-            :group-key="(route.params.groupKey as string)"
-            :date="store.session.date"
-            :show-edit-btn="isCheckIn || isAdmin"
-            :cover-media-id="store.session.coverMediaId"
-          />
+            <SessionDetailTags
+              :session="store.session"
+              :group-key="(route.params.groupKey as string)"
+              :date="store.session.date"
+              @updated="store.fetch(route.params.groupKey as string, store.session!.date)"
+            />
+          </div>
         </template>
-
       </LayoutColumns>
+
+      <SessionDetailGallery
+        :group-key="(route.params.groupKey as string)"
+        :date="store.session.date"
+        :show-edit-btn="isCheckIn || isAdmin"
+        :cover-media-id="store.session.coverMediaId"
+        @cover-item="coverItem = $event"
+      />
 
 
 
       <!-- BOTTOM ROW -->
-      <LayoutColumns ratio="2-1" :reverse="true">
+      <LayoutColumns ratio="2-1" :reverse="true" v-if="isCheckIn || isAdmin">
+        <template #header><SectionHeader>Registrations and Check-in</SectionHeader></template>
         <template #left>
           <!-- Entries — checkin/admin only -->
           <SessionDetailEntries
@@ -94,7 +105,13 @@
         </template>
 
         <template #right>
-
+          <SessionDetailActions
+            v-if="isCheckIn || isAdmin"
+            :session="store.session"
+            :group-key="(route.params.groupKey as string)"
+            :date="store.session.date"
+            @saved="(gk, d) => store.fetch(gk, d)"
+          />
         </template>
       </LayoutColumns>
 
@@ -112,7 +129,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import type { MediaItem } from '../types/media'
 import { useRoute } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
@@ -125,8 +143,7 @@ import PageHeader from '../components/PageHeader.vue'
 import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
 import SessionDetailExpect from '../components/sessions/SessionDetailExpect.vue'
-import SessionDetailCover from '../components/sessions/SessionDetailCover.vue'
-import SessionDetailWriteUp from '../components/sessions/SessionDetailWriteUp.vue'
+import MediaCard from '../components/MediaCard.vue'
 import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
 import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
@@ -136,11 +153,13 @@ import SessionDetailTags from '../components/sessions/SessionDetailTags.vue'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
 import SessionDetailEntries from '../components/sessions/SessionDetailEntries.vue'
 import SectionHeader from '../components/SectionHeader.vue'
+import CardTitle from '../components/CardTitle.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()
 const { user } = useAuth()
 const { isAdmin, isCheckIn, isSelfService } = useRole()
+const coverItem = ref<MediaItem | null>(null)
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })

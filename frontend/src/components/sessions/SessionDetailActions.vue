@@ -1,7 +1,7 @@
 <template>
   <div class="sab-wrap">
-    <AppButton v-if="canUpload" icon="upload" label="Upload Photos" mode="icon-responsive" @click="onUpload" />
-    <AppButton v-if="isCheckIn || isAdmin" icon="edit" label="Edit Session" mode="icon-responsive" @click="showEdit = true" />
+    <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-responsive" @click="onUpload" />
+    <AppButton v-if="isCheckIn || isAdmin" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
 
     <UploadPickerModal
       v-if="showPicker"
