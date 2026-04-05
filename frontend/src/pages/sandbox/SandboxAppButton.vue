@@ -45,6 +45,12 @@
         <AppButton label="Info" icon="edit" color="var(--color-dtv-gold)" />
       </div>
 
+      <h2>Full Width</h2>
+      <AppButton label="Submit" icon="edit" style="width: 100%" />
+      <AppButton label="Submit" icon="edit" mode="icon-responsive" style="width: 100%" />
+      <AppButton label="Submit" style="width: 100%" />
+      <AppButton label="This is a very long button label that should be truncated with an ellipsis" icon="edit" style="width: 100%" />
+
     </div>
   </DefaultLayout>
 </template>

@@ -13,7 +13,7 @@
       'app-btn--working': working,
       'app-btn--danger': variant === 'danger',
     }"
-    :style="colorStyle"
+    :style="buttonStyle"
   >
     <!-- Icon-only -->
     <template v-if="isIconOnly">
@@ -60,9 +60,10 @@ const props = withDefaults(defineProps<{
 const isIconOnly = computed(() => !!props.icon && props.mode === 'icon-only')
 const hasIconBox = computed(() => !!props.icon && !isIconOnly.value)
 
-const colorStyle = computed(() =>
-  props.color ? { backgroundColor: props.color } : undefined
-)
+const buttonStyle = computed(() => ({
+  ...(props.color ? { backgroundColor: props.color } : {}),
+  justifyContent: props.icon && props.mode !== 'icon-only' ? 'flex-start' : 'center',
+}))
 </script>
 
 <style scoped>
@@ -80,6 +81,7 @@ const colorStyle = computed(() =>
   font-weight: 400;
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
@@ -105,6 +107,9 @@ const colorStyle = computed(() =>
 
 .app-btn__label {
   padding: 0 1rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .app-btn:not(.app-btn--icon-text) .app-btn__label {

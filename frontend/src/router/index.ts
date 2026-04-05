@@ -46,6 +46,7 @@ export const router = createRouter({
       { path: '/sandbox/form-components', component: () => import('../pages/sandbox/SandboxFormComponents.vue') },
       { path: '/sandbox/calendar-widget', component: () => import('../pages/sandbox/SandboxCalendarWidget.vue') },
       { path: '/sandbox/layout-columns', component: () => import('../pages/sandbox/SandboxLayoutColumns.vue') },
+      { path: '/sandbox/concertina-layout', component: () => import('../pages/sandbox/SandboxConcertinaLayout.vue') },
       { path: '/sandbox/fy-bar-chart', component: () => import('../pages/sandbox/SandboxFyBarChart.vue') },
       { path: '/sandbox/tag-cloud', component: () => import('../pages/sandbox/SandboxTagCloud.vue') },
     ] : []),

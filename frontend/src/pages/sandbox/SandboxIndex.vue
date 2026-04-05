@@ -24,6 +24,7 @@ const components = [
   { name: 'Modal Layout', path: '/sandbox/modal-layout' },
   { name: 'All Modals', path: '/sandbox/modals' },
   { name: 'LayoutColumns', path: '/sandbox/layout-columns' },
+  { name: 'ConcertinaLayout', path: '/sandbox/concertina-layout' },
   { name: 'CalendarWidget', path: '/sandbox/calendar-widget' },
   { name: 'FyBarChart', path: '/sandbox/fy-bar-chart' },
   { name: 'TagCloud', path: '/sandbox/tag-cloud' },
