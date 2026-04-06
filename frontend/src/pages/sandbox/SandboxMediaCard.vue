@@ -47,6 +47,13 @@
         />
       </div>
 
+      <h2>Private (isPublic: false)</h2>
+      <div class="card-row">
+        <MediaCard :item="landscapePrivate" />
+        <MediaCard :item="portraitPrivateNoTitle" />
+        <MediaCard :item="landscapePrivate" :selected="true" :show-edit-btn="true" />
+      </div>
+
     </div>
   </DefaultLayout>
 </template>
@@ -92,6 +99,9 @@ const portraitLongTitle: MediaItem = {
 }
 
 const portraitNoTitle: MediaItem = { ...portrait, id: 'portrait-no-title', title: null }
+
+const landscapePrivate: MediaItem = { ...landscape, id: 'landscape-private', isPublic: false, title: 'Private with title' }
+const portraitPrivateNoTitle: MediaItem = { ...portrait, id: 'portrait-private-no-title', isPublic: false, title: null }
 
 const all = [landscape, portraitNoTitle]
 </script>

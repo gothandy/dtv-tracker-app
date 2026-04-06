@@ -18,9 +18,9 @@
       @load="e => fadeIn(e.target as HTMLImageElement)"
     />
 
-    <!-- Caption bar: title + edit icon (when selected) -->
+    <!-- Caption bar: lock icon (private) + title + edit icon (when selected) -->
     <div
-      v-if="item.title || (showEditBtn && selected)"
+      v-if="!item.isPublic || item.title || (showEditBtn && selected)"
       ref="captionEl"
       class="mg-caption"
       :class="{
@@ -30,6 +30,9 @@
       :style="{ left: captionLeft + 'px' }"
       @click.stop="showEditBtn && selected ? emit('edit') : undefined"
     >
+      <span v-if="!item.isPublic" class="mg-caption-lock">
+        <img src="/icons/locked.svg" aria-label="Private" />
+      </span>
       <span v-if="item.title" class="mg-caption-text">{{ item.title }}</span>
       <span v-if="showEditBtn && selected" class="mg-caption-edit">
         <img src="/icons/edit.svg" aria-hidden="true" />
@@ -141,6 +144,21 @@ function handleClick() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mg-caption-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.mg-caption-lock img {
+  width: 0.75rem;
+  height: 0.75rem;
+  filter: brightness(0) invert(1);
 }
 
 .mg-caption-edit {
