@@ -41,7 +41,7 @@ function handleClick() {
   if (isSelected.value) {
     props.onSelectedClick?.()
   } else {
-    concertina.toggle(myIndex)
+    concertina!.toggle(myIndex)
   }
 }
 </script>
