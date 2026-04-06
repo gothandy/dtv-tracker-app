@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-03-29
+**Last Updated**: 2026-04-06
 
 > **Frontend migration in progress**: A new Vue 3 + Vite frontend is being built in `frontend/`. During migration the old site continues to run from `public/` at `/`. The new frontend is accessible at `/v2/` on the live site (built with `VITE_BASE_PATH=/v2/`). At cut-over, `public/` will be deleted and Express will serve `frontend/dist/` at `/`.
 
@@ -183,6 +183,14 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - **`isOperational`** = Admin or Check-In (the main distinction for UI branching — operational users see stats/management UI; others see public-facing availability).
 - ESLint guard: `frontend/eslint.config.js` blocks `useAuth`/`useRole` imports everywhere except `src/composables/useProfile.ts` and `src/router/index.ts`. Run `npm run lint` from `frontend/`.
 
+### Vue Frontend: Page and Store Pattern
+
+- **Pages own stores and profile**: pages call `useSessionDetailStore()` or `useSessionsStore()`, call `useProfile()`, and wire both together. Components receive data as props only.
+- **`SessionDetailResponse` flows through the store as-is**: `sessionDetail.ts` stores the raw API response directly — no mapping layer. Components that take `session: SessionDetailResponse` get all server-computed fields (`isBookable`, `financialYear`, `regularsCount`, `limits`) without any client-side derivation.
+- **`SessionResponse` is mapped**: the sessions listing store maps `SessionResponse` → `Session` (frontend domain type) in `mapSession()`. This is the only place that translation happens.
+- **Server-computed enrichment**: fields like `isBookable`, `financialYear`, `regularsCount`, and derived limits (`deriveLimits`) are computed once server-side in the route handler and included in the response — not re-derived on the client. This keeps UI components simple and ensures consistency across all consumers (listing, detail, group detail).
+- **Session capacity limits**: stored in the `Limits` single-line text field on the Sessions list as JSON (e.g. `{"new":4,"total":20}`). All fields optional. `deriveLimits()` in `data-layer.ts` fills in a missing limit from the other two using the formula `total - new - regularsCount = repeat`. Applied server-side before the response is built. Limits are configuration — never stored in the Stats field.
+
 ### Vue Frontend: URL / Path Conventions
 - **Path builders live in `frontend/src/router/index.ts`**, colocated with the route definitions they describe. This is the single source of truth for URL structure — independent of data concerns (stores) and design concerns (components).
 - Export a named function for each entity, e.g. `sessionPath(groupKey, date)`. Import these wherever a `RouterLink` or programmatic navigation needs a URL. Never construct entity URLs inline in components or stores.
@@ -242,6 +250,8 @@ Four independent caches with different TTLs and invalidation strategies:
 The Profiles list also has a `Stats` field (used by the dashboard stats endpoint) but the volunteers listing (`GET /api/profiles`) computes hours live from entries — the group filter and FY filter must be consistent across all combinations.
 
 Detail pages (session detail, profile detail) always fetch live entry data — Stats are only used by listing and aggregate views. See [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the JSON schema of each Stats field.
+
+**Stats vs. config fields**: Only computed aggregates belong in the Stats JSON (count, hours, new, child, regular, eventbrite, media). Editable configuration fields (e.g. `Limits`) must not be stored in Stats — they would go stale the moment an admin edits them directly via the API, because stats are only refreshed on entry writes, not on session edits.
 
 ### SharePoint Integration
 - Use the documented GUIDs and internal field names from [docs/sharepoint-schema.md](docs/sharepoint-schema.md)
@@ -532,4 +542,4 @@ npm run frontend:build:staging   # Staging build served at /v2/ on live site (ba
 
 ---
 
-*Last Updated: 2026-03-30*
+*Last Updated: 2026-04-06*

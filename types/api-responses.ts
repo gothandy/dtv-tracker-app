@@ -5,6 +5,8 @@
  * independent of SharePoint column names and internal domain types.
  */
 
+import type { SessionLimits } from '../services/data-layer';
+
 export interface GroupRegularResponse {
   name: string;
   slug: string;
@@ -29,15 +31,17 @@ export interface SessionResponse {
   groupId?: number;
   groupKey?: string;
   groupName?: string;
-  spacesAvailable: number;
+  limits: SessionLimits;
   registrations: number;
   hours: number;
   newCount?: number;
   childCount?: number;
   regularCount?: number;
+  regularsCount?: number;
   eventbriteCount?: number;
   mediaCount?: number;
   financialYear: string;
+  isBookable: boolean;
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
   // Per-user status — only present when request is authenticated and user has a profile
@@ -165,7 +169,7 @@ export interface SessionDetailResponse {
   groupId?: number;
   groupName?: string;
   groupDescription?: string;
-  spacesAvailable: number; // TODO: replace with real Capacity field from SharePoint (set in convertSession, data-layer.ts)
+  limits: SessionLimits;
   registrations: number;
   hours: number;
   newCount?: number;
@@ -173,9 +177,11 @@ export interface SessionDetailResponse {
   regularCount?: number;
   eventbriteCount?: number;
   financialYear: string;
+  isBookable: boolean;
   eventbriteEventId?: string;
   groupEventbriteSeriesId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
+  regularsCount?: number;
   coverMediaId: number | null;
   statsRaw: string | null;
   entries: EntryResponse[];

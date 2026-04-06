@@ -2,6 +2,13 @@
 // Mapped from SessionResponse (types/api-responses.ts) in the sessions store.
 // To add a field: add it here, then map it in src/stores/sessions.ts.
 
+export interface SessionLimits {
+  new?: number
+  repeat?: number
+  total?: number
+  child?: number
+}
+
 export interface Session {
   id: number
   date: string           // YYYY-MM-DD
@@ -12,13 +19,15 @@ export interface Session {
   displayName?: string   // override title; falls back to groupName + date when absent
   description?: string
   financialYear: string
-  spacesAvailable: number
+  isBookable: boolean
+  limits: SessionLimits
   registrations: number
   hours: number
   mediaCount?: number
   newCount?: number
   childCount?: number
   regularCount?: number
+  regularsCount?: number
   eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
 

@@ -76,7 +76,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           new: entryStats?.newCount || 0,
           child: entryStats?.childCount || 0,
           regular: entryStats?.regularCount || 0,
-          eventbrite: entryStats?.eventbriteCount || 0
+          eventbrite: entryStats?.eventbriteCount || 0,
         };
 
         // Skip if stored stats already match — avoids unnecessary Graph writes

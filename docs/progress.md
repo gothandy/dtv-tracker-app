@@ -1,5 +1,63 @@
 # Development Progress
 
+## Session: 2026-04-06c (Session capacity limits, server-computed enrichment, SessionDetailStats)
+
+### Completed Tasks
+
+#### Session capacity limits ✓
+
+Flexible optional limits per category (`new`, `repeat`, `total`, `child`) stored as JSON in the `Limits` single-line text field on the Sessions list. No defaults. Admin edits via raw JSON field in the edit modal.
+
+**Key decisions:**
+- `SessionLimits` interface: all fields optional — if absent, no limit for that category
+- `parseSessionLimits()` in `data-layer.ts`: parses the Limits field, returns only present numeric fields
+- `deriveLimits(limits, regularsCount?)` in `data-layer.ts`: derives a missing limit from the other two (`total - new - regularsCount = repeat`, or `total - repeat - regularsCount = new`). Applied server-side so all consumers get the derived value automatically
+- Limits are **not** stored in the Stats JSON field — they are editable config, not computed aggregates. Storing them in Stats caused stale reads when the Limits field was edited directly
+- `Limits` field added to `selectFields` in `sessions-repository.ts` so it is fetched from SharePoint
+
+**Files changed:**
+- `services/field-names.ts` — `SESSION_LIMITS` constant
+- `services/data-layer.ts` — `SessionLimits` interface, `parseSessionLimits()`, `deriveLimits()`
+- `services/repositories/sessions-repository.ts` — added `SESSION_LIMITS` to select fields
+- `services/session-stats.ts` — removed `limits` from Stats JSON; removed `parseSessionLimits` import
+- `routes/sessions.ts` — applies `deriveLimits` in listing + detail routes; regulars always fetched for `groupRegularsCountMap`; PATCH handler saves `Limits` field
+- `routes/groups.ts` — applies `deriveLimits` with `regulars.length`
+- `types/api-responses.ts` — `SessionResponse` + `SessionDetailResponse` get `limits`, `regularsCount`, `isBookable`
+- `frontend/src/types/session.ts` — `SessionLimits`, `regularsCount`, `isBookable` on `Session`
+- `frontend/src/stores/sessions.ts` — maps new fields in `mapSession()`
+- `frontend/src/components/groups/GroupDetail.vue` — maps new fields in local `mapSession()`
+- `frontend/src/pages/modals/EditSessionModal.vue` — Limits JSON field (admin-only), validates JSON, sends null to clear
+- `public/session-detail.html` + `public/js/session-detail.js` — Limits JSON field in edit modal (old frontend)
+
+#### Server-computed enrichment pattern ✓
+
+Fields that are derived from session data (not user-specific) are now computed server-side and included in the response, rather than being re-derived on the client.
+
+- `isBookable: date >= today` — computed in all three session routes (listing, detail, groups). Replaces the client-side computed in `SessionDetailPage.vue`. Available on `session.isBookable` for any component receiving the session prop — mockable in sandbox
+- `financialYear` — same pattern, already established
+- `regularsCount` — group's Regulars list count, included on session responses so the `X/Y Regular` stat can show the denominator
+
+**Key decision**: removing the `const isBookable = computed(...)` from `SessionDetailPage.vue` and reading `store.session.isBookable` directly in the template. No local constant needed — the session object is the source of truth.
+
+#### SessionDetailStats redesign ✓
+
+Renamed from "The Day In Stats" to dynamic title: "Who's Going?" (isBookable) / "Who Went?" (!isBookable).
+
+Stats now show `X/Y` format for operational users (Admin/Check-In), count only for public/self-service:
+- Total (registrations / limits.total)
+- New (newCount / limits.new)
+- Repeat (derived count / limits.repeat)
+- Children (childCount / limits.child)
+- Regulars (regularCount / regularsCount from Regulars list)
+
+Accepts `profile?: RoleContext` prop — same pattern as `SessionCard`. Page passes `:profile="profile.context"`.
+
+#### Tech debt logged ✓
+
+- gothandy/dtv-tracker-app#70 — derive `isRegistered`/`isRegular` client-side from `useProfile()` rather than embedding in `SessionResponse`
+
+---
+
 ## Session: 2026-04-06b (useProfile composable, ESLint guard, SessionCard role-aware stats)
 
 ### Completed Tasks

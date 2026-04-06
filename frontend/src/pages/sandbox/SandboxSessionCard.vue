@@ -57,7 +57,8 @@ const base: Session = {
   displayName: undefined,
   description: undefined,
   financialYear: '2026-27',
-  spacesAvailable: 12,
+  isBookable: true,
+  limits: { new: 4, total: 16 },
   registrations: 3,
   hours: 0,
   isRegistered: false,
@@ -72,7 +73,9 @@ const adminSession: Session = {
   newCount: 1,
   childCount: 2,
   regularCount: 12,
+  regularsCount: 14,
   eventbriteCount: 6,
+  limits: { new: 4, total: 20 },
 }
 
 const futureWithDescription: Session = { ...base }
@@ -86,7 +89,7 @@ const futureNoDescription: Session = {
 const futureFullyBooked: Session = {
   ...base,
   id: 3,
-  spacesAvailable: 0,
+  registrations: 16,
 }
 </script>
 

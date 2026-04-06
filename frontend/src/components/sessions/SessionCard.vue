@@ -9,10 +9,21 @@
 
     <div class="session-card__footer">
       <ul v-if="isOperational" class="session-card__stats">
-        <li>{{ session.registrations }}/{{ session.spacesAvailable }} Registrations</li>
-        <li v-if="session.newCount">{{ session.newCount }} New</li>
-        <li v-if="session.childCount">{{ session.childCount }} Child</li>
-        <li v-if="session.regularCount">{{ session.regularCount }} Regular</li>
+        <li v-if="session.registrations || session.limits.total">
+          {{ session.registrations }}<template v-if="session.limits.total">/{{ session.limits.total }}</template> Total
+        </li>
+        <li v-if="session.newCount || session.limits.new">
+          {{ session.newCount ?? 0 }}<template v-if="session.limits.new">/{{ session.limits.new }}</template> New
+        </li>
+        <li v-if="repeatCount || session.limits.repeat">
+          {{ repeatCount }}<template v-if="session.limits.repeat">/{{ session.limits.repeat }}</template> Repeat
+        </li>
+        <li v-if="session.regularCount || session.regularsCount">
+          {{ session.regularCount ?? 0 }}<template v-if="session.regularsCount">/{{ session.regularsCount }}</template> Regular
+        </li>
+        <li v-if="session.childCount || session.limits.child">
+          {{ session.childCount ?? 0 }}<template v-if="session.limits.child">/{{ session.limits.child }}</template> Child
+        </li>
         <li v-if="session.eventbriteCount">{{ session.eventbriteCount }} Eventbrite</li>
       </ul>
       <span v-else class="session-card__availability" :class="availabilityClass">{{ availabilityLabel }}</span>
@@ -44,15 +55,17 @@ function formatDate(dateStr: string): string {
   })
 }
 
-const spacesLeft = computed(() => props.session.spacesAvailable - props.session.registrations)
+const repeatCount = computed(() => Math.max(0, props.session.registrations - (props.session.newCount ?? 0) - (props.session.regularCount ?? 0)))
+const spacesLeft = computed(() => props.session.limits.total !== undefined ? props.session.limits.total - props.session.registrations : null)
 
 const availabilityLabel = computed(() => {
   const n = spacesLeft.value
-  return n > 0 ? `${n} spaces available` : 'Fully booked'
+  if (n === null) return 'Spaces Available'
+  return n > 0 ? `${n} spaces available` : 'Fully Booked'
 })
 
 const availabilityClass = computed(() => ({
-  'session-card__availability--full': spacesLeft.value <= 0,
+  'session-card__availability--full': spacesLeft.value !== null && spacesLeft.value <= 0,
 }))
 </script>
 

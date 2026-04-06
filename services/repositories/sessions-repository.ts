@@ -6,7 +6,7 @@
 
 import { SharePointSession } from '../../types/session';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
-import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS } from '../field-names';
+import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS } from '../field-names';
 
 
 class SessionsRepository {
@@ -17,7 +17,7 @@ class SessionsRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${SESSION_COVER_MEDIA},${SESSION_STATS},Created,Modified`;
+    return `ID,Title,Name,Date,${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${SESSION_COVER_MEDIA},${SESSION_STATS},${SESSION_LIMITS},Created,Modified`;
   }
 
   private readonly dateOnlyFields = ['Date'];

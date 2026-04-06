@@ -43,7 +43,7 @@ const sessions: Session[] = [
   {
     id: 1, date: '2026-04-08', groupId: 1, groupKey: 'wed-dig', groupName: 'Wednesday Dig',
     groupDescription: 'Our popular mid-week dig.', financialYear: '2026-27',
-    spacesAvailable: 20, registrations: 15, hours: 45,
+    isBookable: false, limits: {}, registrations: 15, hours: 45,
     newCount: 1, regularCount: 13, eventbriteCount: 2,
     metadata: [{ label: 'DH:Sheepskull', termGuid: 'aaa' }],
     isRegistered: false, isAttended: false, isRegular: false,
@@ -51,13 +51,13 @@ const sessions: Session[] = [
   {
     id: 2, date: '2026-04-15', groupId: 1, groupKey: 'wed-dig', groupName: 'Wednesday Dig',
     groupDescription: 'Our popular mid-week dig.', financialYear: '2026-27',
-    spacesAvailable: 20, registrations: 8, hours: 0,
+    isBookable: true, limits: {}, registrations: 8, hours: 0,
     isRegistered: false, isAttended: false, isRegular: false,
   },
   {
     id: 3, date: '2026-03-20', groupId: 2, groupKey: 'trail-crew', groupName: 'Trail Crew',
     groupDescription: 'General trail maintenance across the forest.', financialYear: '2025-26',
-    spacesAvailable: 20, registrations: 20, hours: 80,
+    isBookable: false, limits: {}, registrations: 20, hours: 80,
     regularCount: 18, childCount: 2,
     metadata: [{ label: 'DH', termGuid: 'bbb' }],
     isRegistered: false, isAttended: false, isRegular: false,
@@ -65,7 +65,7 @@ const sessions: Session[] = [
   {
     id: 4, date: '2026-03-06', groupId: 3, groupKey: 'family-ride', groupName: 'Family Ride',
     groupDescription: 'Easy-going rides for families with children.', financialYear: '2025-26',
-    spacesAvailable: 20, registrations: 12, hours: 24,
+    isBookable: false, limits: {}, registrations: 12, hours: 24,
     newCount: 4, childCount: 8,
     metadata: [{ label: 'Family', termGuid: 'ccc' }],
     isRegistered: false, isAttended: false, isRegular: false,
@@ -73,7 +73,7 @@ const sessions: Session[] = [
   {
     id: 5, date: '2026-04-22', groupId: 2, groupKey: 'trail-crew', groupName: 'Trail Crew',
     groupDescription: 'General trail maintenance across the forest.', financialYear: '2026-27',
-    spacesAvailable: 20, registrations: 5, hours: 0,
+    isBookable: true, limits: {}, registrations: 5, hours: 0,
     isRegistered: false, isAttended: false, isRegular: false,
   },
 ]

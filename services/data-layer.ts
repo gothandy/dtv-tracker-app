@@ -24,8 +24,47 @@ import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_DISPLAY,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  SESSION_NOTES
+  SESSION_NOTES, SESSION_LIMITS
 } from './field-names';
+
+// ============================================================================
+// Session Limits
+// ============================================================================
+
+export interface SessionLimits {
+  new?: number;
+  repeat?: number;
+  total?: number;
+  child?: number;
+}
+
+/** Parse the Limits JSON field from a SharePoint session. Returns only numeric fields that are present. */
+export function parseSessionLimits(spSession: SharePointSession): SessionLimits {
+  try {
+    const raw = JSON.parse(spSession[SESSION_LIMITS] || '{}');
+    const result: SessionLimits = {};
+    if (typeof raw.new    === 'number') result.new    = raw.new;
+    if (typeof raw.repeat === 'number') result.repeat = raw.repeat;
+    if (typeof raw.total  === 'number') result.total  = raw.total;
+    if (typeof raw.child  === 'number') result.child  = raw.child;
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Derive a missing limit from the other two: total - new - regulars = repeat, total - repeat - regulars = new.
+ * Only fills in if exactly the target field is missing and the other two are present.
+ */
+export function deriveLimits(limits: SessionLimits, regularsCount?: number): SessionLimits {
+  const { total, new: n, repeat } = limits;
+  if (repeat === undefined && total !== undefined && n !== undefined && regularsCount !== undefined)
+    return { ...limits, repeat: Math.max(0, total - n - regularsCount) };
+  if (n === undefined && total !== undefined && repeat !== undefined && regularsCount !== undefined)
+    return { ...limits, new: Math.max(0, total - repeat - regularsCount) };
+  return limits;
+}
 
 // ============================================================================
 // Conversion Functions: SharePoint -> Domain Types
@@ -74,7 +113,7 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
     groupId: safeParseLookupId(spSession[GROUP_LOOKUP]),
     financialYear: calculateFinancialYear(sessionDate),
     eventbriteEventId: spSession.EventbriteEventID,
-    spacesAvailable: 20,
+    limits: parseSessionLimits(spSession),
   };
 }
 
@@ -225,22 +264,18 @@ export function enrichSessions(
   spEntries: SharePointEntry[],
   spGroups: SharePointGroup[]
 ): Session[] {
-  // Build lookup maps
   const groupMap = buildGroupLookupMap(spGroups);
   const statsMap = calculateSessionStats(spEntries);
 
-  // Convert and enrich each session
   return spSessions.map(spSession => {
     const baseSession = convertSession(spSession);
     const sessionId = String(spSession.ID);
     const stats = statsMap.get(sessionId);
 
-    // Build the enriched session
     const session: Session = {
       ...baseSession,
-      // Add calculated stats
       registrations: stats?.registrations || 0,
-      hours: stats ? Math.round(stats.hours * 10) / 10 : 0, // Round to 1 decimal
+      hours: stats ? Math.round(stats.hours * 10) / 10 : 0,
       newCount: stats?.newCount || 0,
       childCount: stats?.childCount || 0,
       regularCount: stats?.regularCount || 0,

@@ -5,6 +5,7 @@
  */
 
 import { SharePointBaseItem } from './group';
+import type { SessionLimits } from '../services/data-layer';
 
 /**
  * Raw Session entity as returned by SharePoint REST API
@@ -47,8 +48,8 @@ export interface Session {
   groupId?: number;
   /** Group display name (enriched from Groups list) */
   groupName?: string;
-  /** TODO: replace with real Capacity field from SharePoint when available */
-  spacesAvailable: number;
+  /** Per-session capacity limits (from Limits JSON field + Regulars list count) */
+  limits: SessionLimits;
   /** Calculated from Entries list */
   registrations: number;
   /** Calculated from Entries list (rounded to 1 decimal) */

@@ -24,9 +24,9 @@
 
 
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" :selected="true" />
-          <SessionDetailBook v-if="isBookable && !store.session.isRegistered" :session="store.session" />
-          <SessionDetailForThis v-if="isBookable && store.session.isRegistered" :session="store.session" />
-          <SessionDetailLogin v-if="isBookable && !profile.user" />
+          <SessionDetailBook v-if="store.session.isBookable && !store.session.isRegistered" :session="store.session" />
+          <SessionDetailForThis v-if="store.session.isBookable && store.session.isRegistered" :session="store.session" />
+          <SessionDetailLogin v-if="store.session.isBookable && !profile.user" />
 
 
           
@@ -36,31 +36,31 @@
       
 
       <!-- SECOND ROW -->
-      <LayoutColumns ratio="1-2" v-if="isBookable">
+      <LayoutColumns ratio="1-2" v-if="store.session.isBookable">
         <template #header>
           <SectionHeader >What to Expect</SectionHeader>
         </template>
 
         <template #left>
-          <SessionDetailStats :session="store.session" />
+          <SessionDetailStats :session="store.session" :profile="profile.context" />
         </template>
 
         <template #right>
-          <SessionDetailExpect v-if="isBookable" />
+          <SessionDetailExpect v-if="store.session.isBookable" />
         </template>
 
       </LayoutColumns>
 
-      <LayoutColumns ratio="1-2" v-if="!isBookable">
+      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable">
 
         <template #header>
           <SectionHeader>What we got up to?</SectionHeader>
         </template>
 
         <template #left>
-          <SessionDetailStats :session="store.session" />
+          <SessionDetailStats :session="store.session" :profile="profile.context" />
           <SessionDetailGroupTeaser
-            v-if="!isBookable && store.session.nextSession"
+            v-if="!store.session.isBookable && store.session.nextSession"
             :group-name="store.session.groupName!"
             :group-description="store.session.groupDescription"
             :next-session="store.session.nextSession"
@@ -170,12 +170,6 @@ const titleText = computed(() => {
 })
 usePageTitle(titleText)
 
-// Open on day of session, closed from next day onwards (time field TBD)
-const isBookable = computed(() => {
-  if (!store.session) return false
-  const today = new Date().toISOString().slice(0, 10)
-  return store.session.date >= today
-})
 
 function load() {
   store.fetch(route.params.groupKey as string, route.params.date as string)

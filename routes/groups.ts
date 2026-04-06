@@ -13,6 +13,7 @@ import {
   validateGroup,
   convertGroup,
   convertSession,
+  deriveLimits,
   groupRegularsByCrewId,
   calculateCurrentFY,
   calculateFinancialYear,
@@ -167,6 +168,8 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     }
 
     // Build session responses from Stats field — no entries or media calls needed
+    const today = new Date().toISOString().slice(0, 10);
+
     const allSessionResponses: SessionResponse[] = groupSessions
       .map(s => {
         let stats: Record<string, any> = {};
@@ -181,11 +184,12 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
           groupId,
           groupKey: key,
           groupName: group.displayName,
-          spacesAvailable: convertSession(s).spacesAvailable,
+          limits: deriveLimits(convertSession(s).limits, regulars.length),
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           mediaCount: stats.media || undefined,
           financialYear: `FY${calculateFinancialYear(new Date(date))}`,
+          isBookable: date >= today,
           eventbriteEventId: s.EventbriteEventID,
           metadata: tags.length ? tags : undefined
         };
