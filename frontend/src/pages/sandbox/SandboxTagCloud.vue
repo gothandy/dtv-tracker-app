@@ -9,7 +9,7 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="sampleTags" @select="onSelect" />
+          <TagCloud :tags="sampleTags" @click="onSelect" />
         </template>
       </LayoutColumns>
       <p class="selected">last click: <strong>{{ lastLabel || '—' }}</strong></p>
@@ -45,6 +45,7 @@ import type { TagHoursItem } from '../../../../types/api-responses'
 
 usePageTitle('Sandbox')
 
+const selected = ref('')
 const lastLabel = ref('')
 function onSelect(_termGuid: string, label: string) { selected.value = label; lastLabel.value = label }
 

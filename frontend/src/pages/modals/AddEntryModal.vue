@@ -85,7 +85,7 @@ function onSelect(profile: PickerProfile | null) {
 function onAddNewToggle() {
   selectedProfile.value = null
   emailInput.value = ''
-  picker.value?.reset()
+  if (!addNew.value) picker.value?.reset()
 }
 
 async function addEntry() {
@@ -99,7 +99,7 @@ async function addEntry() {
     } else {
       body.profileId = selectedProfile.value?.id
     }
-    const res = await fetch('/api/entries', {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(props.groupKey)}/${encodeURIComponent(props.date)}/entries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

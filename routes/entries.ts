@@ -483,10 +483,12 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { volunteerId, notes } = req.body;
+    // TODO: remove volunteerId fallback once v1 (public/) is retired
+    const { profileId, volunteerId: legacyVolunteerId, notes } = req.body;
+    const volunteerId: number = profileId ?? legacyVolunteerId;
 
     if (!volunteerId || typeof volunteerId !== 'number') {
-      res.status(400).json({ success: false, error: 'volunteerId is required and must be a number' });
+      res.status(400).json({ success: false, error: 'profileId is required and must be a number' });
       return;
     }
 
