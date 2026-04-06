@@ -19,10 +19,7 @@ export interface Session {
   displayName?: string   // override title; falls back to groupName + date when absent
   description?: string
   financialYear: string
-<<<<<<< HEAD
   isBookable: boolean
-=======
->>>>>>> e36968749c560210849d30e8f2c7734d2dfbc153
   limits: SessionLimits
   registrations: number
   hours: number
