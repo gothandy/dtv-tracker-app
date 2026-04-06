@@ -3,9 +3,9 @@
     <PageHeader>Admin</PageHeader>
     <div class="pt-3 pb-8">
 
-      <div v-if="!ready" class="ap-status">Loading…</div>
+      <div v-if="!profile.ready" class="ap-status">Loading…</div>
 
-      <template v-else-if="isAdmin">
+      <template v-else-if="profile.isAdmin">
 
         <!-- Eventbrite -->
         <div class="ap-section">
@@ -121,17 +121,17 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
-import { useRole } from '../composables/useRole'
+import { useProfile } from '../composables/useProfile'
 import { usePageTitle } from '../composables/usePageTitle'
 import { TAG_ICONS } from '../utils/tagIcons'
 
 usePageTitle('Admin')
 
 const router = useRouter()
-const { ready, isAdmin } = useRole()
+const profile = useProfile()
 
-watch(ready, (r) => {
-  if (r && !isAdmin.value) router.replace('/')
+watch(() => profile.ready, (r) => {
+  if (r && !profile.isAdmin) router.replace('/')
 }, { immediate: true })
 
 // ── Eventbrite ─────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 <template>
   <!-- Admin / check-in: full regulars list -->
-  <div v-if="(isAdmin || isCheckIn) && group.regulars.length > 0" class="gr-section">
+  <div v-if="(profile.isAdmin || profile.isCheckIn) && group.regulars.length > 0" class="gr-section">
     <div class="gr-title-row">
       <h3>Regulars</h3>
       <span class="gr-count">{{ group.regulars.length }}</span>
@@ -16,19 +16,19 @@
   </div>
 
   <!-- Self-service: personalised message -->
-  <div v-else-if="isSelfService && group.isCurrentUserRegular" class="gr-section gr-self">
+  <div v-else-if="profile.isSelfService && group.isCurrentUserRegular" class="gr-section gr-self">
     <span>✓ You are a regular volunteer for this group</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import { profilePath } from '../../router/index'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 
 defineProps<{ group: GroupDetailResponse }>()
 
-const { isAdmin, isCheckIn, isSelfService } = useRole()
+const profile = useProfile()
 </script>
 
 <style scoped>

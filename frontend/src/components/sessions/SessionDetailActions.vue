@@ -1,7 +1,7 @@
 <template>
   <div class="sab-wrap">
     <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-responsive" @click="onUpload" />
-    <AppButton v-if="isCheckIn || isAdmin" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
+    <AppButton v-if="profile.isCheckIn || profile.isAdmin" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
 
     <UploadPickerModal
       v-if="showPicker"
@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import { sessionPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import AppButton from '../AppButton.vue'
@@ -40,19 +40,19 @@ const props = defineProps<{
 const emit = defineEmits<{ saved: [groupKey: string, date: string] }>()
 
 const router = useRouter()
-const { isAdmin, isCheckIn, isSelfService } = useRole()
+const profile = useProfile()
 
 const showPicker = ref(false)
 const showEdit = ref(false)
 
 const canUpload = computed(() =>
-  (isSelfService.value && !!props.session.userEntryId) ||
-  isCheckIn.value ||
-  isAdmin.value
+  (profile.isSelfService && !!props.session.userEntryId) ||
+  profile.isCheckIn ||
+  profile.isAdmin
 )
 
 function onUpload() {
-  if (isSelfService.value && props.session.userEntryId) {
+  if (profile.isSelfService && props.session.userEntryId) {
     window.location.href = `/upload.html?entryId=${props.session.userEntryId}`
     return
   }

@@ -1,5 +1,50 @@
 # Development Progress
 
+## Session: 2026-04-06b (useProfile composable, ESLint guard, SessionCard role-aware stats)
+
+### Completed Tasks
+
+#### useProfile composable + ESLint guard ✓
+
+Introduced `useProfile()` as the single UI-facing auth composable, replacing `useRole.ts`. All pages and components now import from `useProfile` only — `useAuth` and `useRole` are blocked by ESLint.
+
+**Key decisions:**
+- `useProfile()` returns `reactive({...})` so boolean helpers (`isAdmin`, `isCheckIn`, `isOperational`, etc.) auto-unwrap in both templates and script — no `.value` needed
+- `RoleContext` interface: plain snapshot object for passing auth context as a component prop (explicit contract, easy to mock in sandbox)
+- `isOperational` = Admin or Check-In (the primary UI branch — stats/management vs. public availability)
+- ESLint v9 flat config (`eslint.config.js`) with `no-restricted-imports` rule; exempts `useProfile.ts` and `router/index.ts`; `"type": "module"` added to `frontend/package.json`
+
+**New files:**
+- `frontend/src/composables/useProfile.ts` — replaces `useRole.ts`; exports `useProfile()` + `RoleContext` interface
+- `frontend/eslint.config.js` — blocks `useAuth`/`useRole` imports outside of permitted files
+
+**Deleted files:**
+- `frontend/src/composables/useRole.ts`
+
+**Updated files (useRole → useProfile):**
+- `AppHeader.vue`, `AdminPage.vue`, `GroupDetail.vue`, `GroupDetailRegulars.vue`, `GroupList.vue`, `GroupListFilter.vue`, `SessionDetailPage.vue`, `SessionDetailActions.vue`, `SessionDetailTags.vue`, `SessionListResults.vue`, `SessionListActions.vue`, `EditSessionModal.vue`
+
+**Updated files (useAuth → useProfile):**
+- `HomePage.vue`, `UploadPickerModal.vue`, `SessionDetailForThis.vue`, `SandboxSessionCard.vue`
+
+**Updated files (package.json):**
+- Added `"type": "module"`, `"lint": "eslint src"` script, `eslint` + `typescript-eslint` devDependencies
+
+#### SessionCard role-aware stats + groupDescription ✓
+
+SessionCard now shows operational stats (registrations, new, child, regular, Eventbrite counts) for Admin/Check-In users, and availability message for everyone else. `groupDescription` now surfaces on all cards.
+
+**Changes:**
+- `SessionCard.vue` — `profile?: RoleContext` prop replaces old `user` prop; footer shows stats list or availability based on `isOperational`; layout: Group / Long Date / Description / [Stats or Availability] + View button
+- `SessionListResults.vue` — passes `:profile="profile.context"` to each SessionCard
+- `SessionConcertina.vue` — `profile?: RoleContext` prop, passes down to SessionCard
+- `HomePage.vue` — passes `:profile="profile.context"` to SessionConcertina
+- `SandboxSessionCard.vue` — mocks `adminProfile: RoleContext`; public cards have no profile prop
+- `routes/sessions.ts` — added `groupDescriptionMap` to listing endpoint; `groupDescription` included in each session response
+- `frontend/src/stores/sessions.ts` — added `groupDescription` to `SessionResponse` interface and `mapSession`
+
+---
+
 ## Session: 2026-04-06 (Vue Groups & Sessions — card grid layouts)
 
 ### Completed Tasks

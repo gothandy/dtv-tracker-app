@@ -4,7 +4,7 @@
       <span class="gf-count">{{ filtered.length }}</span>
       <div class="gf-actions">
         <FyFilter v-model="fy" />
-        <button v-if="isAdmin" class="icon-btn" @click="showNew = true" title="New group">
+        <button v-if="profile.isAdmin" class="icon-btn" @click="showNew = true" title="New group">
           <img src="/icons/add.svg" alt="New group" />
         </button>
       </div>
@@ -41,7 +41,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import { useGroupsStore } from '../../stores/groups'
 import { groupPath } from '../../router/index'
 import type { GroupResponse } from '../../../../types/api-responses'
@@ -55,7 +55,7 @@ export interface GroupWithStats extends GroupResponse {
 const props = defineProps<{ groups: GroupResponse[]; sessions: Session[] }>()
 const emit = defineEmits<{ filtered: [groups: GroupWithStats[]] }>()
 
-const { isAdmin } = useRole()
+const profile = useProfile()
 const router = useRouter()
 const groupsStore = useGroupsStore()
 

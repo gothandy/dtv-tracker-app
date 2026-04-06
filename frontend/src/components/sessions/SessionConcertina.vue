@@ -6,7 +6,7 @@
       :label="session.groupName ?? ''"
       :on-selected-click="() => router.push(sessionPath(session.groupKey!, session.date))"
     >
-      <SessionCard :session="session" />
+      <SessionCard :session="session" :profile="profile" />
     </ConcertinaItem>
   </ConcertinaLayout>
 </template>
@@ -18,9 +18,11 @@ import ConcertinaItem from '../ConcertinaItem.vue'
 import SessionCard from './SessionCard.vue'
 import { sessionPath } from '../../router'
 import type { Session } from '../../types/session'
+import type { RoleContext } from '../../composables/useProfile'
 
 defineProps<{
   sessions: Session[]
+  profile?: RoleContext
   loading?: boolean
 }>()
 

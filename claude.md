@@ -173,6 +173,16 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - **Comments explain why, not what**: Use comments for things developers need to know that aren't obvious from the code (SharePoint quirks, business rules, workarounds)
 - **Comments as a tech debt flag**: If you need a comment to explain what code does, consider whether the code itself could be clearer
 
+### Vue Frontend: Auth Context Pattern
+
+- **`useProfile()`** is the single UI-facing composable for auth/role state. Pages and components must import only from `useProfile` — never directly from `useAuth` or `useRole` (ESLint `no-restricted-imports` enforces this).
+- `useProfile()` returns a `reactive({...})` object so all boolean helpers auto-unwrap in both templates and script: `profile.isAdmin`, `profile.isCheckIn`, `profile.isOperational`, etc.
+- **`RoleContext`** interface — plain snapshot object for passing auth context into components as a prop: `isAdmin`, `isCheckIn`, `isReadOnly`, `isSelfService`, `isTrusted`, `isAuthenticated`, `isPublic`, `isOperational`.
+- **Pages**: `const profile = useProfile()` → use `profile.isAdmin` directly in template `v-if`; pass `:profile="profile.context"` to any child component that needs role context.
+- **Components**: accept `profile?: RoleContext` as an explicit prop — never call `useProfile()` inside a component. This makes auth dependencies explicit and easy to mock in sandbox.
+- **`isOperational`** = Admin or Check-In (the main distinction for UI branching — operational users see stats/management UI; others see public-facing availability).
+- ESLint guard: `frontend/eslint.config.js` blocks `useAuth`/`useRole` imports everywhere except `src/composables/useProfile.ts` and `src/router/index.ts`. Run `npm run lint` from `frontend/`.
+
 ### Vue Frontend: URL / Path Conventions
 - **Path builders live in `frontend/src/router/index.ts`**, colocated with the route definitions they describe. This is the single source of truth for URL structure — independent of data concerns (stores) and design concerns (components).
 - Export a named function for each entity, e.g. `sessionPath(groupKey, date)`. Import these wherever a `RouterLink` or programmatic navigation needs a URL. Never construct entity URLs inline in components or stores.
@@ -286,7 +296,8 @@ dtv-tracker-app/
 │       ├── App.vue                 # Root component
 │       ├── router/index.ts         # Vue Router route definitions + path builder functions
 │       ├── composables/
-│       │   └── useAuth.ts          # Auth state composable — fetches /auth/me, exposes user + ready
+│       │   ├── useAuth.ts          # Auth state composable — fetches /auth/me, exposes user + ready (internal; use useProfile in UI)
+│       │   └── useProfile.ts       # Single UI auth composable — wraps useAuth, exposes isAdmin/isCheckIn/isOperational etc. + RoleContext snapshot
 │       ├── stores/
 │       │   ├── sessions.ts         # Sessions listing store
 │       │   └── sessionDetail.ts    # Session detail store — normalises isRegistered/isAttended/isRegular

@@ -10,7 +10,7 @@
           </div>
           <div style="display:flex; gap:0.5rem; align-items:center">
             <FyFilter v-model="selectedFy" />
-            <button v-if="isAdmin" class="icon-btn" @click="showNewGroup = true" title="New group">
+            <button v-if="profile.isAdmin" class="icon-btn" @click="showNewGroup = true" title="New group">
               <img src="/icons/add.svg" alt="New group" />
             </button>
           </div>
@@ -83,12 +83,12 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FyFilter from '../FyFilter.vue'
 import { useGroupsStore } from '../../stores/groups'
 import { useSessionsStore } from '../../stores/sessions'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import { groupPath } from '../../router/index'
 
 const store = useGroupsStore()
 const sessionsStore = useSessionsStore()
-const { isAdmin } = useRole()
+const profile = useProfile()
 const router = useRouter()
 
 const selectedFy = ref('all')

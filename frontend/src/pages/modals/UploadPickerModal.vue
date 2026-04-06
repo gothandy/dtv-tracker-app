@@ -15,7 +15,7 @@
 import { ref, computed, watch } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import ModalRow from '../../components/ModalRow.vue'
-import { useAuth } from '../../composables/useAuth'
+import { useProfile } from '../../composables/useProfile'
 
 const props = defineProps<{
   entries: { id: number; profileId?: number; volunteerName?: string }[]
@@ -26,10 +26,10 @@ const emit = defineEmits<{
   select: [entryId: number]
 }>()
 
-const { user } = useAuth()
+const { user } = useProfile()
 
 const currentProfileId = computed(() => {
-  const slug = user.value?.profileSlug
+  const slug = user?.profileSlug
   if (!slug) return null
   const id = parseInt(slug.split('-').pop() ?? '')
   return isNaN(id) ? null : id

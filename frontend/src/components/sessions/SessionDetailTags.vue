@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import TagPicker from '../TagPicker.vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 
@@ -33,8 +33,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{ updated: [] }>()
 
-const { isAdmin, isCheckIn } = useRole()
-const canEdit = computed(() => isAdmin.value || isCheckIn.value)
+const profile = useProfile()
+const canEdit = computed(() => profile.isAdmin || profile.isCheckIn)
 
 const tags = computed(() => props.session.metadata ?? [])
 const pickedLabel = ref('')

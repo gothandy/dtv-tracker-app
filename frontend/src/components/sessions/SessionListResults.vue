@@ -4,7 +4,7 @@
     <div v-else-if="!sessions.length" class="sr-empty">No sessions found.</div>
     <template v-else>
       <!-- Select all — admin only -->
-      <div v-if="isAdmin && selected" class="sr-select-row">
+      <div v-if="profile.isAdmin && selected" class="sr-select-row">
         <button class="sr-select-all" @click="toggleSelectAll">
           {{ allSelected ? 'Deselect all' : 'Select all' }}
         </button>
@@ -13,13 +13,13 @@
       <div class="sr-grid">
         <div v-for="s in sessions" :key="s.id" class="sr-item">
           <input
-            v-if="isAdmin && selected"
+            v-if="profile.isAdmin && selected"
             type="checkbox"
             class="sr-checkbox"
             :checked="selected.includes(s.id)"
             @change="toggle(s.id)"
           />
-          <SessionCard :session="s" />
+          <SessionCard :session="s" :profile="profile.context" />
         </div>
       </div>
     </template>
@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import type { Session } from '../../types/session'
 import SessionCard from './SessionCard.vue'
 
@@ -40,7 +40,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:selected': [ids: number[]] }>()
 
-const { isAdmin } = useRole()
+const profile = useProfile()
 
 const allSelected = computed(() =>
   props.sessions.length > 0 && props.sessions.every(s => props.selected?.includes(s.id))

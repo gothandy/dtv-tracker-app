@@ -5,9 +5,12 @@
       <template #header>
         <SectionHeader>What's going on?</SectionHeader>
       </template>
-      <!-- CTA card: adapts to user's session history -->
       <template #left>
-        <NextActionCard :sessions="store.sessions" @select="onCtaSelect" />
+        <div class="cta cta-right">
+          <div class="cta-title cta-green w-fit text-4xl p-6"><h2>Pick a date</h2></div>
+          <div class="cta-body cta-dark w-1/2 text-2xl p-4 -mt-2">Choose a session</div>
+          <div class="cta-body cta-white w-2/3 text-base m-4 p-4">Use the calendar to book your spot</div>
+        </div>
       </template>
 
       
@@ -31,6 +34,7 @@
       <template #right>
         <SessionConcertina
           :sessions="selectedSessions"
+          :profile="profile.context"
           :loading="store.loading"
         />
       </template>
@@ -89,9 +93,8 @@ import MediaCard from '../components/MediaCard.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TagCloud from '../components/TagCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
-import NextActionCard from '../components/homepage/NextActionCard.vue'
 import { useSessionsStore } from '../stores/sessions'
-import { useAuth } from '../composables/useAuth'
+import { useProfile } from '../composables/useProfile'
 import { sessionPath } from '../router'
 import type { Session } from '../types/session'
 import type { TagHoursItem } from '../../../types/api-responses'
@@ -100,7 +103,7 @@ import type { MediaItem } from '../types/media'
 const route = useRoute()
 const router = useRouter()
 const store = useSessionsStore()
-const { user } = useAuth()
+const profile = useProfile()
 
 const initialDate = typeof route.query.date === 'string' ? route.query.date : undefined
 const selectedDate = ref<string | undefined>(initialDate)
@@ -117,10 +120,6 @@ function onDateConfirm(sessions: Session[]) {
   if (sessions.length === 1) {
     router.push(sessionPath(sessions[0].groupKey!, sessions[0].date))
   }
-}
-
-function onCtaSelect(date: string) {
-  selectedDate.value = date
 }
 
 watch(selectedDate, (date) => {

@@ -57,6 +57,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
     const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
     const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
+    const groupDescriptionMap = new Map(groupsRaw.map(g => [g.ID, g.Description || undefined]));
 
     // Build per-user lookup maps — from profile stats if available, otherwise from fetched entries/regulars
     const registeredSessionIds = new Set<number>(profileStats?.sessionIds ?? []);
@@ -93,6 +94,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupId,
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
+          groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
           spacesAvailable: 20,
           registrations: stats.count || 0,
           hours: stats.hours || 0,

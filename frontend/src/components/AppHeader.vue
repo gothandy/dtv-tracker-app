@@ -21,18 +21,18 @@
           <RouterLink to="/" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Home</RouterLink>
           <RouterLink to="/sessions" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sessions</RouterLink>
           <RouterLink to="/groups" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Groups</RouterLink>
-          <RouterLink v-if="isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Volunteers</RouterLink>
-          <RouterLink v-if="isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
+          <RouterLink v-if="profile.isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Volunteers</RouterLink>
+          <RouterLink v-if="profile.isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
           <RouterLink to="/about" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">About</RouterLink>
-          <RouterLink v-if="isDev || isAdmin" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
+          <RouterLink v-if="isDev || profile.isAdmin" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
 
-          <template v-if="ready">
-            <RouterLink v-if="user?.profileSlug" :to="`/profiles/${user.profileSlug}`"
+          <template v-if="profile.ready">
+            <RouterLink v-if="profile.user?.profileSlug" :to="`/profiles/${profile.user.profileSlug}`"
               @click="open = false"
               class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
-              {{ user.displayName }}
+              {{ profile.user.displayName }}
             </RouterLink>
-            <a v-if="user" href="/auth/logout" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
+            <a v-if="profile.user" href="/auth/logout" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
               Logout
             </a>
             <RouterLink v-else to="/login" @click="open = false" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
@@ -47,12 +47,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRole } from '../composables/useRole'
+import { useProfile } from '../composables/useProfile'
 
 const isDev = import.meta.env.DEV
 
 const open = ref(false)
-const { user, ready, isAdmin, isTrusted } = useRole()
+const profile = useProfile()
 
 function toggleMenu() {
   open.value = !open.value

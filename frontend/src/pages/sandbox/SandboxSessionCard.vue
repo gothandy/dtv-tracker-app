@@ -19,6 +19,14 @@
         </template>
       </LayoutColumns>
 
+      <h2>Admin / Check-In</h2>
+
+      <LayoutColumns ratio="1-1-1">
+        <template #left>
+          <SessionCard :session="adminSession" :profile="adminProfile" />
+        </template>
+      </LayoutColumns>
+
     </div>
   </DefaultLayout>
 </template>
@@ -29,8 +37,15 @@ import LayoutColumns from '../../components/LayoutColumns.vue'
 import SessionCard from '../../components/sessions/SessionCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { Session } from '../../types/session'
+import type { RoleContext } from '../../composables/useProfile'
 
 usePageTitle('Sandbox')
+
+const adminProfile: RoleContext = {
+  isAdmin: true, isCheckIn: false, isReadOnly: false,
+  isSelfService: false, isTrusted: true, isAuthenticated: true,
+  isPublic: false, isOperational: true,
+}
 
 const base: Session = {
   id: 1,
@@ -48,6 +63,16 @@ const base: Session = {
   isRegistered: false,
   isAttended: false,
   isRegular: false,
+}
+
+const adminSession: Session = {
+  ...base,
+  id: 4,
+  registrations: 18,
+  newCount: 1,
+  childCount: 2,
+  regularCount: 12,
+  eventbriteCount: 6,
 }
 
 const futureWithDescription: Session = { ...base }

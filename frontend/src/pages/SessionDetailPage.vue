@@ -26,7 +26,7 @@
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" :selected="true" />
           <SessionDetailBook v-if="isBookable && !store.session.isRegistered" :session="store.session" />
           <SessionDetailForThis v-if="isBookable && store.session.isRegistered" :session="store.session" />
-          <SessionDetailLogin v-if="isBookable && !user" />
+          <SessionDetailLogin v-if="isBookable && !profile.user" />
 
 
           
@@ -85,7 +85,7 @@
       <SessionDetailGallery
         :group-key="(route.params.groupKey as string)"
         :date="store.session.date"
-        :show-edit-btn="isCheckIn || isAdmin"
+        :show-edit-btn="profile.isCheckIn || profile.isAdmin"
         :cover-media-id="store.session.coverMediaId"
         @cover-item="coverItem = $event"
         @cover-changed="(id) => { if (store.session) store.session.coverMediaId = id }"
@@ -94,12 +94,12 @@
 
 
       <!-- BOTTOM ROW -->
-      <LayoutColumns ratio="2-1" :reverse="true" v-if="isCheckIn || isAdmin">
+      <LayoutColumns ratio="2-1" :reverse="true" v-if="profile.isCheckIn || profile.isAdmin">
         <template #header><SectionHeader>Registrations and Check-in</SectionHeader></template>
         <template #left>
           <!-- Entries — checkin/admin only -->
           <SessionDetailEntries
-            v-if="isCheckIn || isAdmin"
+            v-if="profile.isCheckIn || profile.isAdmin"
             :group-key="(route.params.groupKey as string)"
             :date="store.session.date"
           />
@@ -107,7 +107,7 @@
 
         <template #right>
           <SessionDetailActions
-            v-if="isCheckIn || isAdmin"
+            v-if="profile.isCheckIn || profile.isAdmin"
             :session="store.session"
             :group-key="(route.params.groupKey as string)"
             :date="store.session.date"
@@ -137,8 +137,7 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
-import { useAuth } from '../composables/useAuth'
-import { useRole } from '../composables/useRole'
+import { useProfile } from '../composables/useProfile'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
 import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
@@ -158,8 +157,7 @@ import CardTitle from '../components/CardTitle.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()
-const { user } = useAuth()
-const { isAdmin, isCheckIn, isSelfService } = useRole()
+const profile = useProfile()
 const coverItem = ref<MediaItem | null>(null)
 
 function formatDate(dateStr: string): string {

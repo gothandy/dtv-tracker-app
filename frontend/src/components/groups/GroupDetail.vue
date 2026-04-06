@@ -16,8 +16,8 @@
           <TagCloud :tags="tagHours" />
         </template>
         <template #right>
-          <GroupDetailActions v-if="isAdmin" :group="store.group" @updated="reload" />
-          <GroupDetailRegulars v-if="isAdmin || isCheckIn" :group="store.group" />
+          <GroupDetailActions v-if="profile.isAdmin" :group="store.group" @updated="reload" />
+          <GroupDetailRegulars v-if="profile.isAdmin || profile.isCheckIn" :group="store.group" />
           <div class="bg-dtv-green/25 flex items-start justify-center p-2">
             <CalendarWidget
               v-model="selectedDate"
@@ -44,7 +44,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGroupDetailStore } from '../../stores/groupDetail'
 import { usePageTitle } from '../../composables/usePageTitle'
 import PageHeader from '../PageHeader.vue'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../LayoutColumns.vue'
 import CalendarWidget from '../CalendarWidget.vue'
@@ -64,7 +64,7 @@ import type { MediaItem } from '../../types/media'
 const route = useRoute()
 const router = useRouter()
 const store = useGroupDetailStore()
-const { isAdmin, isCheckIn } = useRole()
+const profile = useProfile()
 
 const titleText = computed(() => store.group?.displayName || store.group?.key || '')
 usePageTitle(titleText)

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isAdmin" class="sa-wrap">
+  <div v-if="profile.isAdmin" class="sa-wrap">
     <span class="sa-stats">
       <template v-if="selected.length">
         {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }} selected — {{ selectedHours }}h
@@ -30,7 +30,7 @@
 import { ref, computed } from 'vue'
 import TagPicker from '../TagPicker.vue'
 import AppButton from '../AppButton.vue'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import type { Session } from '../../types/session'
 
 const props = defineProps<{
@@ -40,7 +40,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:selected': [ids: number[]]; tagged: [] }>()
 
-const { isAdmin } = useRole()
+const profile = useProfile()
 const showTagPicker = ref(false)
 const pickedTag = ref('')
 const saving = ref(false)

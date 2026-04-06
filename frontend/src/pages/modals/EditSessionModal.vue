@@ -16,7 +16,7 @@
       <textarea v-model="form.description" class="sem-textarea" rows="3" />
     </ModalRow>
 
-    <template v-if="isAdmin">
+    <template v-if="profile.isAdmin">
       <ModalRow title="Date" :full-width="true">
         <input v-model="form.date" type="date" class="sem-input" />
       </ModalRow>
@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRole } from '../../composables/useRole'
+import { useProfile } from '../../composables/useProfile'
 import { groupPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
@@ -69,7 +69,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: []; saved: [groupKey: string, date: string] }>()
 
 const router = useRouter()
-const { isAdmin } = useRole()
+const profile = useProfile()
 
 const saving = ref(false)
 const deleting = ref(false)
@@ -86,7 +86,7 @@ const form = reactive({
 })
 
 onMounted(async () => {
-  if (!isAdmin.value) return
+  if (!profile.isAdmin) return
   const res = await fetch('/api/groups')
   if (!res.ok) return
   const json = await res.json()
@@ -101,7 +101,7 @@ async function save() {
       displayName: form.displayName,
       description: form.description,
     }
-    if (isAdmin.value) {
+    if (profile.isAdmin) {
       body.date = form.date
       body.groupId = form.groupId
       body.eventbriteEventId = form.eventbriteEventId

@@ -31,15 +31,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
-import { useAuth } from '../../composables/useAuth'
+import { useProfile } from '../../composables/useProfile'
 
 const props = defineProps<{ session: SessionDetailResponse }>()
 
-const { user } = useAuth()
+const { user } = useProfile()
 const cancelling = ref(false)
 
 const isRegular = computed(() => props.session.isRegular ?? false)
-const sessionCount = computed(() => user.value?.profileStats?.sessionIds?.length ?? 0)
+const sessionCount = computed(() => user?.profileStats?.sessionIds?.length ?? 0)
 const isNew = computed(() => sessionCount.value === 1)
 
 function ordinal(n: number): string {

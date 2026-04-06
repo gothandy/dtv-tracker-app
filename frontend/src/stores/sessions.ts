@@ -8,6 +8,7 @@ interface SessionResponse {
   groupId?: number
   groupKey?: string
   groupName?: string
+  groupDescription?: string
   displayName?: string
   description?: string
   financialYear: string
@@ -32,6 +33,7 @@ function mapSession(r: SessionResponse): Session {
     groupId: r.groupId,
     groupKey: r.groupKey,
     groupName: r.groupName,
+    groupDescription: r.groupDescription,
     displayName: r.displayName,
     description: r.description,
     financialYear: r.financialYear,
