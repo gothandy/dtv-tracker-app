@@ -66,11 +66,11 @@
       </template>
       <template #left>
         <CardTitle>This many hours</CardTitle>
-        <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" />
+        <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" @click-selected="onSelectedBarClick" />
       </template>
       <template #right>
         <CardTitle>All these trails</CardTitle>
-        <TagCloud :tags="tagHours" />
+        <TagCloud :tags="tagHours" @click="onTagClick" />
       </template>
     </LayoutColumns>
 
@@ -168,6 +168,16 @@ watchEffect(async () => {
     console.error('[HomePage] tag hours', e)
   }
 })
+
+function onSelectedBarClick() {
+  router.push({ path: '/sessions', query: { fy: 'all' } })
+}
+
+function onTagClick(_termGuid: string, label: string) {
+  const query: Record<string, string> = { tag: label }
+  if (selectedFy.value && selectedFy.value !== 'all') query.fy = selectedFy.value
+  router.push({ path: '/sessions', query })
+}
 
 store.fetch()
 </script>

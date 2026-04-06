@@ -5,7 +5,7 @@
         v-for="fy in fyData"
         :key="fy.key"
         :class="['fbc-row', { selected: modelValue === fy.key }]"
-        @click="emit('update:modelValue', fy.key)"
+        @click="handleClick(fy.key)"
       >
         <span class="fbc-label">{{ fy.label }}</span>
         <div class="fbc-track">
@@ -26,7 +26,12 @@ const props = defineProps<{
   modelValue: string
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: string]; clickSelected: [value: string] }>()
+
+function handleClick(key: string) {
+  if (props.modelValue === key) emit('clickSelected', key)
+  else emit('update:modelValue', key)
+}
 
 const fyData = computed(() => {
   const map: Record<string, number> = {}

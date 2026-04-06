@@ -9,10 +9,10 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="sampleTags" :selected="selected" @select="onSelect" />
+          <TagCloud :tags="sampleTags" @select="onSelect" />
         </template>
       </LayoutColumns>
-      <p v-if="selected" class="selected">Selected: {{ selected }}</p>
+      <p class="selected">last click: <strong>{{ lastLabel || '—' }}</strong></p>
 
       <h2>1-1-1 (middle)</h2>
       <LayoutColumns ratio="1-1-1">
@@ -45,8 +45,8 @@ import type { TagHoursItem } from '../../../../types/api-responses'
 
 usePageTitle('Sandbox')
 
-const selected = ref('')
-function onSelect(termGuid: string) { selected.value = termGuid }
+const lastLabel = ref('')
+function onSelect(_termGuid: string, label: string) { selected.value = label; lastLabel.value = label }
 
 const sampleTags: TagHoursItem[] = [
   { label: 'DH', hours: 420, depth: 0, termGuid: 'guid-dh' },

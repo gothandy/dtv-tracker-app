@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import TagPicker from '../TagPicker.vue'
 import type { Session } from '../../types/session'
@@ -29,10 +30,11 @@ import type { Session } from '../../types/session'
 const props = defineProps<{ sessions: Session[] }>()
 const emit = defineEmits<{ filtered: [sessions: Session[]] }>()
 
-const fy       = ref('all')
+const route = useRoute()
+const fy       = ref((route.query.fy as string) || 'all')
 const search   = ref('')
-const groupKey = ref('')
-const tagLabel = ref('')
+const groupKey = ref((route.query.group as string) || '')
+const tagLabel = ref((route.query.tag as string) || '')
 
 function applyBase(list: Session[]): Session[] {
   let r = list

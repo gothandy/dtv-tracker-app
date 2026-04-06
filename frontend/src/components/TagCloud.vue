@@ -6,11 +6,11 @@
         v-for="tag in shuffled"
         :key="tag.label"
         class="wc-tag"
-        :class="{ 'wc-tag--clickable': tag.termGuid, 'wc-tag--selected': tag.termGuid && tag.termGuid === selected }"
+        :class="{ 'wc-tag--clickable': tag.termGuid }"
         :data-depth="tag.depth"
         :style="{ fontSize: tagSize(tag.hours) + 'rem', marginTop: tag.mt + 'px' }"
         :title="tag.label + ' — ' + tag.hours + 'h'"
-        @click="tag.termGuid && emit('select', tag.termGuid)"
+        @click="tag.termGuid && emit('click', tag.termGuid, tag.label)"
       >{{ shortLabel(tag.label) }}</span>
     </div>
   </div>
@@ -20,9 +20,9 @@
 import { computed } from 'vue'
 import type { TagHoursItem } from '../../../types/api-responses'
 
-const props = withDefaults(defineProps<{ tags: TagHoursItem[], selected?: string, height?: string }>(), { height: '350px' })
+const props = withDefaults(defineProps<{ tags: TagHoursItem[], height?: string }>(), { height: '350px' })
 const height = computed(() => props.height)
-const emit = defineEmits<{ select: [termGuid: string] }>()
+const emit = defineEmits<{ click: [termGuid: string, label: string] }>()
 
 // Sort by hours (for sizing), shuffle for layout variety, add random vertical offset
 // Dividing by font size naturally gives small tags more jitter, large tags less
@@ -85,15 +85,8 @@ function shortLabel(label: string): string {
 
 .wc-tag--clickable { cursor: pointer; }
 
-.wc-tag--clickable:hover,
-.wc-tag--selected {
-  color: var(--color-dtv-light);
-  background: var(--color-dtv-sand-dark);
-}
+.wc-tag--clickable:hover { color: var(--color-dtv-light); background: var(--color-dtv-sand-dark); }
 
-.wc-tag--clickable[data-depth="0"]:hover,
-.wc-tag--selected[data-depth="0"] { background: var(--color-dtv-green); }
-
-.wc-tag--clickable[data-depth="1"]:hover,
-.wc-tag--selected[data-depth="1"] { background: var(--color-dtv-gold); }
+.wc-tag--clickable[data-depth="0"]:hover { background: var(--color-dtv-green); }
+.wc-tag--clickable[data-depth="1"]:hover { background: var(--color-dtv-gold); }
 </style>

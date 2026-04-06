@@ -11,9 +11,9 @@
         <template #left>
           <GroupDetailHeader :group="store.group" />
           <CardTitle>Hours by year</CardTitle>
-          <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" />
+          <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" @click-selected="onSelectedBarClick" />
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="tagHours" />
+          <TagCloud :tags="tagHours" @click="onTagClick" />
         </template>
         <template #right>
           <GroupDetailActions v-if="profile.isAdmin" :group="store.group" @updated="reload" />
@@ -142,6 +142,20 @@ watchEffect(async () => {
     console.error('[GroupDetailV1] tag hours', e)
   }
 })
+
+function onSelectedBarClick() {
+  const key = store.group?.key
+  if (!key) return
+  router.push({ path: '/sessions', query: { fy: 'all', group: key } })
+}
+
+function onTagClick(_termGuid: string, label: string) {
+  const key = store.group?.key
+  if (!key) return
+  const query: Record<string, string> = { group: key, tag: label }
+  if (selectedFy.value && selectedFy.value !== 'all') query.fy = selectedFy.value
+  router.push({ path: '/sessions', query })
+}
 
 function reload() {
   store.fetch(route.params.key as string)
