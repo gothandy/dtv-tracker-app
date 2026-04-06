@@ -349,7 +349,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M3. Groups listing
 - [ ] `GET /api/groups` — all groups with regulars counts
-- [ ] Cards show display name, description, regulars count, Eventbrite link
+- [ ] Groups display as 3-column grid (1-column on mobile); sand background on cards
+- [ ] Cards show: display name, Eventbrite icon (if linked), description (3-line clamp), regulars/sessions/hrs stats stacked left, View button bottom-right
+- [ ] Hours shown as rounded integers (no decimals)
+- [ ] Bottom padding present (cards don't sit flush against footer)
 
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group
@@ -357,8 +360,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M5. Sessions listing
 - [ ] `GET /api/sessions` — all sessions (includes `metadata` tags array)
-- [ ] Cards show date, group, registrations, hours
-- [ ] Next session highlighted with countdown
+- [ ] Sessions display as 3-column grid (1-column on mobile); sand background on cards
+- [ ] Cards show: group name, date, description (3-line clamp), availability, View button
+- [ ] Bottom padding present (cards don't sit flush against footer)
 - [ ] Text search (min 3 chars) filters by session title and description
 - [ ] Calendar view shows sessions as dots; clicking navigates to that date range
 

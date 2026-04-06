@@ -293,7 +293,9 @@ dtv-tracker-app/
 │       ├── components/
 │       │   ├── LayoutColumns.vue   # Responsive 2-col / 3-col grid layout
 │       │   ├── SessionList.vue     # Session list with grouped dates and status tabs
-│       │   └── DebugData.vue       # Dev-only JSON data dump
+│       │   ├── DebugData.vue       # Dev-only JSON data dump
+│       │   ├── sessions/SessionCard.vue  # Session summary card (sand bg, group/date/description/availability/View)
+│       │   └── groups/GroupCard.vue      # Group summary card (sand bg, name/description/stats stacked/View)
 │       ├── layouts/
 │       │   └── DefaultLayout.vue   # Page shell with header/footer
 │       └── pages/

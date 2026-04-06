@@ -39,6 +39,7 @@ const base: GroupWithStats = {
   description: 'Our popular mid-week dig, usually working on some of our best-loved red trails, rounded off with a cuppa and a ride.',
   eventbriteSeriesId: 'eb-123',
   regularsCount: 0,
+  regulars: [],
   sessionCount: 27,
   hours: 1290.8,
 }

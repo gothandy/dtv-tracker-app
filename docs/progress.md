@@ -1,5 +1,27 @@
 # Development Progress
 
+## Session: 2026-04-06 (Vue Groups & Sessions — card grid layouts)
+
+### Completed Tasks
+
+#### GroupCard component + Groups/Sessions grid layout ✓
+
+Replaced the inline card markup in both listing pages with dedicated card components displayed in a 3-column grid, matching the style of the existing `SessionCard`.
+
+**New files:**
+- `frontend/src/components/groups/GroupCard.vue` — mirrors `SessionCard` layout; body shows name + Eventbrite icon + description (3-line clamp); footer shows regulars/sessions/hrs stats stacked vertically left, View button bottom-right; hours rendered as rounded integers
+- `frontend/src/pages/sandbox/SandboxGroupCard.vue` — sandbox at `/sandbox/group-card` with three mock variants
+
+**Updated files:**
+- `frontend/src/components/groups/GroupListResults.vue` — now delegates to `GroupCard`; card background overridden to `dtv-sand` via `:deep()`
+- `frontend/src/components/sessions/SessionListResults.vue` — replaced vertical list with 3-column grid using `SessionCard`; card background overridden to `dtv-sand` via `:deep()`; admin checkbox repositioned as absolute overlay
+- `frontend/src/pages/GroupsPage.vue` — added `pb-6` bottom padding
+- `frontend/src/pages/SessionsPage.vue` — added `px-6 pb-6` padding
+- `frontend/src/router/index.ts` — registered `/sandbox/group-card` route
+- `frontend/src/pages/sandbox/SandboxIndex.vue` — added GroupCard link
+
+
+
 ## Session: 2026-03-30 (Vue session detail page — component architecture)
 
 ### Completed Tasks
