@@ -45,6 +45,7 @@ export interface SessionResponse {
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
   // Per-user status — only present when request is authenticated and user has a profile
+  // TODO #70: remove after public/ migration — Vue frontend derives these from profileStats in sessions store
   isRegistered?: boolean;
   isAttended?: boolean;
   isRegular?: boolean;

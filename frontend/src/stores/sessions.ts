@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { useProfile } from '../composables/useProfile'
 import type { Session, SessionLimits } from '../types/session'
 
 interface SessionResponse {
@@ -23,12 +24,9 @@ interface SessionResponse {
   regularsCount?: number
   eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
-  isRegistered?: boolean
-  isAttended?: boolean
-  isRegular?: boolean
 }
 
-function mapSession(r: SessionResponse): Session {
+function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; regularGroupIds?: number[] } | undefined): Session {
   return {
     id: r.id,
     date: r.date,
@@ -50,16 +48,21 @@ function mapSession(r: SessionResponse): Session {
     regularsCount: r.regularsCount,
     eventbriteCount: r.eventbriteCount,
     metadata: r.metadata,
-    isRegistered: r.isRegistered ?? false,
-    isAttended: r.isAttended ?? false,
-    isRegular: r.isRegular ?? false,
+    isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
+    isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),
+    isRegular: profileStats?.regularGroupIds?.includes(r.groupId ?? -1) ?? false,
   }
 }
 
 export const useSessionsStore = defineStore('sessions', () => {
-  const sessions = ref<Session[]>([])
+  const profile = useProfile()
+  const raw = ref<SessionResponse[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  const sessions = computed(() =>
+    raw.value.map(r => mapSession(r, profile.user?.profileStats))
+  )
 
   async function fetch() {
     if (loading.value) return
@@ -69,7 +72,7 @@ export const useSessionsStore = defineStore('sessions', () => {
       const res = await window.fetch('/api/sessions')
       if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`)
       const json: { data: SessionResponse[] } = await res.json()
-      sessions.value = json.data.map(mapSession)
+      raw.value = json.data
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
       console.error('[sessions store]', error.value)

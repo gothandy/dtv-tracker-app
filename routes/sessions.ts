@@ -45,6 +45,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
   try {
     const profileId = req.session.user?.profileId;
 
+    // TODO #70: remove per-user flag embedding after public/ migration — Vue frontend derives from profileStats client-side
     const profileStats = req.session.user?.profileStats;
     const hasProfileStats = profileId !== undefined && profileStats !== undefined;
 
