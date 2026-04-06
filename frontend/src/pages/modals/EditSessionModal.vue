@@ -27,6 +27,10 @@
         </select>
       </ModalRow>
 
+      <ModalRow title="Limits JSON" :full-width="true">
+        <input v-model="form.limitsRaw" class="sem-input" placeholder='{"new":4,"total":20}' />
+      </ModalRow>
+
       <ModalRow title="Eventbrite Event ID" :full-width="true">
         <input v-model="form.eventbriteEventId" class="sem-input" />
       </ModalRow>
@@ -82,6 +86,7 @@ const form = reactive({
   description: props.session.description ?? '',
   date: props.session.date,
   groupId: props.session.groupId ?? null as number | null,
+  limitsRaw: props.session.limits && Object.keys(props.session.limits).length ? JSON.stringify(props.session.limits) : '',
   eventbriteEventId: props.session.eventbriteEventId ?? '',
 })
 
@@ -104,6 +109,16 @@ async function save() {
     if (profile.isAdmin) {
       body.date = form.date
       body.groupId = form.groupId
+      const limitsRaw = form.limitsRaw.trim()
+      if (limitsRaw === '') {
+        body.limits = null
+      } else {
+        try { JSON.parse(limitsRaw); body.limits = limitsRaw } catch {
+          error.value = 'Limits JSON is invalid'
+          saving.value = false
+          return
+        }
+      }
       body.eventbriteEventId = form.eventbriteEventId
     }
     const res = await fetch(`/api/sessions/${props.groupKey}/${props.date}`, {

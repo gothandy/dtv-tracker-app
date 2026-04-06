@@ -106,6 +106,8 @@ async function openEditModal() {
     document.getElementById('editName').value = currentSession.displayName || '';
     document.getElementById('editDescription').value = currentSession.description || '';
     document.getElementById('editEventbriteId').value = currentSession.eventbriteEventId || '';
+    const limits = currentSession.limits && Object.keys(currentSession.limits).length ? JSON.stringify(currentSession.limits) : '';
+    document.getElementById('editLimits').value = limits;
     document.getElementById('editModal').classList.add('visible');
     document.getElementById('editName').focus();
 }
@@ -130,12 +132,23 @@ async function saveSessionEdit() {
         if (!confirm(`Move this session to "${groupName}"? All existing entries will remain attached.`)) return;
     }
 
+    const limitsRaw = document.getElementById('editLimits').value.trim();
+    let limits;
+    if (limitsRaw === '') {
+        limits = null;
+    } else {
+        try { JSON.parse(limitsRaw); limits = limitsRaw; } catch {
+            alert('Limits JSON is not valid. Please fix it or clear the field.');
+            return;
+        }
+    }
+
     const btn = document.getElementById('confirmEditBtn');
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
     try {
-        const body = { displayName, description, eventbriteEventId, date: date || undefined };
+        const body = { displayName, description, eventbriteEventId, date: date || undefined, limits };
         if (groupChanged) body.groupId = selectedGroupId;
 
         const res = await apiFetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(sessionDate)}`, {

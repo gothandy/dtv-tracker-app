@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { Session } from '../types/session'
+import type { Session, SessionLimits } from '../types/session'
 
 interface SessionResponse {
   id: number
@@ -12,13 +12,14 @@ interface SessionResponse {
   displayName?: string
   description?: string
   financialYear: string
-  spacesAvailable: number
+  limits: SessionLimits
   registrations: number
   hours: number
   mediaCount?: number
   newCount?: number
   childCount?: number
   regularCount?: number
+  regularsCount?: number
   eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
   isRegistered?: boolean
@@ -37,13 +38,14 @@ function mapSession(r: SessionResponse): Session {
     displayName: r.displayName,
     description: r.description,
     financialYear: r.financialYear,
-    spacesAvailable: r.spacesAvailable,
+    limits: r.limits,
     registrations: r.registrations,
     hours: r.hours,
     mediaCount: r.mediaCount,
     newCount: r.newCount,
     childCount: r.childCount,
     regularCount: r.regularCount,
+    regularsCount: r.regularsCount,
     eventbriteCount: r.eventbriteCount,
     metadata: r.metadata,
     isRegistered: r.isRegistered ?? false,

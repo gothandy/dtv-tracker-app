@@ -18,9 +18,9 @@
         <dt class="text-white/60 w-28 shrink-0">Children</dt>
         <dd>{{ session.childCount }}</dd>
       </div>
-      <div v-if="session.regularCount" class="flex gap-3">
+      <div v-if="session.regularCount || session.regularsCount" class="flex gap-3">
         <dt class="text-white/60 w-28 shrink-0">Regulars</dt>
-        <dd>{{ session.regularCount }}</dd>
+        <dd>{{ session.regularCount ?? 0 }}<template v-if="session.regularsCount">/{{ session.regularsCount }}</template></dd>
       </div>
     </dl>
   </div>

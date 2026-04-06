@@ -16,6 +16,7 @@ import {
   validateProfile,
   convertGroup,
   convertSession,
+  deriveLimits,
   calculateCurrentFY,
   calculateFinancialYear,
   findGroupByKey,
@@ -28,7 +29,7 @@ import {
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
-  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS,
+  SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
   PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
@@ -52,13 +53,19 @@ router.get('/sessions', async (req: Request, res: Response) => {
       groupsRepository.getAll(),
       // Skip broad entries fetch when profile stats give us session IDs
       profileId !== undefined && !hasProfileStats ? entriesRepository.getAll() : Promise.resolve([]),
-      // Skip regulars fetch when profile stats give us regular group IDs
-      profileId !== undefined && !hasProfileStats ? regularsRepository.getAll() : Promise.resolve([]),
+      regularsRepository.getAll(),
     ]);
 
     const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
     const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
     const groupDescriptionMap = new Map(groupsRaw.map(g => [g.ID, g.Description || undefined]));
+
+    // Count regulars per group for the X/Y Regular stat
+    const groupRegularsCountMap = new Map<number, number>();
+    for (const r of regularsRaw) {
+      const gid = safeParseLookupId(r[GROUP_LOOKUP]);
+      if (gid !== undefined) groupRegularsCountMap.set(gid, (groupRegularsCountMap.get(gid) ?? 0) + 1);
+    }
 
     // Build per-user lookup maps — from profile stats if available, otherwise from fetched entries/regulars
     const registeredSessionIds = new Set<number>(profileStats?.sessionIds ?? []);
@@ -96,7 +103,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
           groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
-          spacesAvailable: convertSession(s).spacesAvailable,
+          limits: deriveLimits(stats.limits ?? convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined),
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           newCount: stats.new || undefined,
@@ -104,6 +111,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
           regularCount: stats.regular || undefined,
           eventbriteCount: stats.eventbrite || undefined,
           mediaCount: stats.media || undefined,
+          regularsCount: groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined,
           financialYear: `FY${calculateFinancialYear(new Date(s.Date!))}`,
           eventbriteEventId: s.EventbriteEventID,
           metadata: tags.length ? tags : undefined,
@@ -397,10 +405,11 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     // Phase 1: resolve group + session
     // getBySlug uses a 1h slug lookup cache; on miss does a single targeted OData query by Title.
-    const [rawGroups, spSession, rawSessions] = await Promise.all([
+    const [rawGroups, spSession, rawSessions, rawRegulars] = await Promise.all([
       groupsRepository.getAll(),
       sessionsRepository.getBySlug(groupKey, dateParam),
-      sessionsRepository.getAll()
+      sessionsRepository.getAll(),
+      regularsRepository.getAll()
     ]);
 
     if (!spSession) {
@@ -417,6 +426,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const groupId = spGroup.ID;
     const group = convertGroup(spGroup);
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
+    const regularsCount = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === groupId).length || undefined;
+    const sessionLimits = deriveLimits(convertSession(spSession).limits, regularsCount);
 
     const today = new Date().toISOString().slice(0, 10);
     const isPast = spSession.Date < today;
@@ -437,7 +448,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         groupId: groupId,
         groupName: group.displayName,
         groupDescription: group.description,
-        spacesAvailable: convertSession(spSession).spacesAvailable,
+        limits: sessionLimits,
+        regularsCount,
         registrations: statsJson.count ?? 0,
         hours: statsJson.hours ?? 0,
         newCount: statsJson.new || undefined,
@@ -529,7 +541,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupId: groupId,
       groupName: group.displayName,
       groupDescription: group.description,
-      spacesAvailable: convertSession(spSession).spacesAvailable,
+      limits: sessionLimits,
+      regularsCount,
       registrations: isSelfService ? (JSON.parse(spSession[SESSION_STATS] || '{}').count ?? 0) : sessionEntries.length,
       hours: Math.round(totalHours * 10) / 10,
       newCount: newCount || undefined,
@@ -567,7 +580,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId, date, groupId, metadata, coverMediaId } = req.body;
+    const { displayName, description, eventbriteEventId, date, groupId, metadata, coverMediaId, limits } = req.body;
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
@@ -579,6 +592,11 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
     if (typeof coverMediaId === 'number') fields[SESSION_COVER_MEDIA] = String(coverMediaId);
     if (coverMediaId === null) fields[SESSION_COVER_MEDIA] = null;
+    if (limits === null) {
+      fields[SESSION_LIMITS] = null;
+    } else if (typeof limits === 'string') {
+      try { JSON.parse(limits); fields[SESSION_LIMITS] = limits; } catch { /* ignore invalid JSON */ }
+    }
 
     // Metadata is a Managed Metadata column — handled separately via the hidden companion field.
     // Graph API rejects direct writes to taxonomy fields but accepts writes to the hidden "_0" field.

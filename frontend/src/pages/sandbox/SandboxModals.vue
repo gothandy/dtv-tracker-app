@@ -108,7 +108,7 @@ const mockSession = {
   date: '2026-04-03',
   groupId: 1,
   eventbriteEventId: '',
-  spacesAvailable: 20,
+  limits: { new: 4, total: 20 },
   registrations: 3,
   hours: 9,
   financialYear: '2025/26',

@@ -14,7 +14,7 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 ## Current State
 
-**Last Updated**: 2026-03-29
+**Last Updated**: 2026-04-06
 
 > **Frontend migration in progress**: A new Vue 3 + Vite frontend is being built in `frontend/`. During migration the old site continues to run from `public/` at `/`. The new frontend is accessible at `/v2/` on the live site (built with `VITE_BASE_PATH=/v2/`). At cut-over, `public/` will be deleted and Express will serve `frontend/dist/` at `/`.
 
@@ -532,4 +532,4 @@ npm run frontend:build:staging   # Staging build served at /v2/ on live site (ba
 
 ---
 
-*Last Updated: 2026-03-30*
+*Last Updated: 2026-04-06*

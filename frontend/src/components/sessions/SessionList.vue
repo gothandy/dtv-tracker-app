@@ -28,9 +28,9 @@
             <span v-else-if="session.isRegistered" class="session-tab bg-dtv-dark opacity-70">Registered</span>
             <span v-else-if="session.isRegular"    class="session-tab bg-dtv-dark opacity-70">Regular</span>
             <!-- Spaces left (future) or attended count (past) -->
-            <span v-if="session.date >= todayKey"
+            <span v-if="session.date >= todayKey && session.limits.total !== undefined"
               :class="['session-tab bg-dtv-dark', (session.isRegistered || session.isAttended) ? 'opacity-70' : '']">
-              {{ session.spacesAvailable - session.registrations }} spaces left
+              {{ session.limits.total - session.registrations }} spaces left
             </span>
             <span v-else class="session-tab bg-dtv-dark">{{ session.registrations }} attended</span>
           </div>
