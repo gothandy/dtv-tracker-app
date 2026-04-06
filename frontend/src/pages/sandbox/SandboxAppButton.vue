@@ -40,6 +40,12 @@
         <AppButton label="Submit" working />
       </div>
 
+      <h2>Link (href)</h2>
+      <div class="row">
+        <AppButton label="External Link" href="https://example.com" target="_blank" />
+        <AppButton label="Download" icon="edit" href="/api/sessions/export" />
+      </div>
+
       <h2>Custom Color</h2>
       <div class="row">
         <AppButton label="Info" icon="edit" color="var(--color-dtv-gold)" />

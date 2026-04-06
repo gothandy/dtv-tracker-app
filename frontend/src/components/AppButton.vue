@@ -1,7 +1,7 @@
 <template>
-  <button
-    :type="type"
-    :disabled="disabled || working"
+  <component
+    :is="href ? 'a' : 'button'"
+    v-bind="href ? { href, target } : { type, disabled: disabled || working }"
     :aria-label="isIconOnly ? label : undefined"
     :aria-pressed="selected != null ? selected : undefined"
     :aria-busy="working || undefined"
@@ -35,7 +35,7 @@
     <template v-else>
       <span class="app-btn__label">{{ label }}</span>
     </template>
-  </button>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -51,6 +51,8 @@ const props = withDefaults(defineProps<{
   working?: boolean
   selected?: boolean | null
   type?: 'button' | 'submit' | 'reset'
+  href?: string
+  target?: string
 }>(), {
   mode: 'icon-text',
   type: 'button',

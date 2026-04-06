@@ -13,21 +13,11 @@
             <a href="https://dtv.eventbrite.co.uk/" target="_blank" rel="noopener">Eventbrite</a>
           </h2>
           <div class="ap-actions">
-            <button class="ap-btn" :disabled="runningAll" @click="runAll">
-              {{ runningAll ? 'Running…' : 'Run All' }}
-            </button>
-            <button class="ap-btn" :disabled="sessionsLoading" @click="syncSessions">
-              {{ sessionsLoading ? 'Syncing…' : 'Refresh Events' }}
-            </button>
-            <button class="ap-btn" :disabled="attendeesLoading" @click="syncAttendees">
-              {{ attendeesLoading ? 'Syncing…' : 'Fetch New Attendees' }}
-            </button>
-            <button class="ap-btn" :disabled="unmatchedLoading" @click="loadUnmatched">
-              {{ unmatchedLoading ? 'Loading…' : 'Unmatched Events' }}
-            </button>
-            <button class="ap-btn" :disabled="configLoading" @click="checkConfig">
-              {{ configLoading ? 'Checking…' : 'Check Config' }}
-            </button>
+            <AppButton label="Run All" :working="runningAll" @click="runAll" />
+            <AppButton label="Refresh Events" :working="sessionsLoading" @click="syncSessions" />
+            <AppButton label="Fetch New Attendees" :working="attendeesLoading" @click="syncAttendees" />
+            <AppButton label="Unmatched Events" :working="unmatchedLoading" @click="loadUnmatched" />
+            <AppButton label="Check Config" :working="configLoading" @click="checkConfig" />
           </div>
           <div v-if="sessionsResult" :class="['ap-result', sessionsResultError && 'ap-error']">{{ sessionsResult }}</div>
           <div v-if="attendeesResult" :class="['ap-result', attendeesResultError && 'ap-error']">{{ attendeesResult }}</div>
@@ -60,8 +50,8 @@
         <div class="ap-section">
           <h2 class="ap-title">Exports</h2>
           <div class="ap-actions">
-            <a class="ap-btn" href="/api/sessions/export">FE Hours Download</a>
-            <a class="ap-btn" href="/api/records/export">Records Download</a>
+            <AppButton label="FE Hours Download" href="/api/sessions/export" />
+            <AppButton label="Records Download" href="/api/records/export" />
           </div>
         </div>
 
@@ -69,12 +59,8 @@
         <div class="ap-section">
           <h2 class="ap-title">Stats Cache</h2>
           <div class="ap-actions">
-            <button class="ap-btn" :disabled="sessionStatsLoading" @click="refreshSessionStats">
-              {{ sessionStatsLoading ? 'Refreshing…' : 'Refresh Session Stats' }}
-            </button>
-            <button class="ap-btn" :disabled="profileStatsLoading" @click="refreshProfileStats">
-              {{ profileStatsLoading ? 'Refreshing…' : 'Refresh Profile Stats' }}
-            </button>
+            <AppButton label="Refresh Session Stats" :working="sessionStatsLoading" @click="refreshSessionStats" />
+            <AppButton label="Refresh Profile Stats" :working="profileStatsLoading" @click="refreshProfileStats" />
           </div>
           <div v-if="sessionStatsResult" :class="['ap-result', sessionStatsError && 'ap-error']">{{ sessionStatsResult }}</div>
           <div v-if="profileStatsResult" :class="['ap-result', profileStatsError && 'ap-error']">{{ profileStatsResult }}</div>
@@ -86,11 +72,9 @@
             <a :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
           </h2>
           <div class="ap-actions">
-            <a class="ap-btn" :href="siteContentsUrl" target="_blank" rel="noopener">Site Contents</a>
-            <a class="ap-btn" :href="termStoreUrl" target="_blank" rel="noopener">Term Store</a>
-            <button class="ap-btn" :disabled="backupLoading" @click="exportBackup">
-              {{ backupLoading ? 'Exporting…' : 'Backup' }}
-            </button>
+            <AppButton label="Site Contents" :href="siteContentsUrl" target="_blank" />
+            <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
+            <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
           <div v-if="backupResult" :class="['ap-result', backupError && 'ap-error']">{{ backupResult }}</div>
         </div>
@@ -121,6 +105,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
+import AppButton from '../components/AppButton.vue'
 import { useProfile } from '../composables/useProfile'
 import { usePageTitle } from '../composables/usePageTitle'
 import { TAG_ICONS } from '../utils/tagIcons'
@@ -360,30 +345,6 @@ onMounted(loadSiteConfig)
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-}
-
-.ap-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.6rem 1.1rem;
-  border: 2px solid var(--color-dtv-green);
-  background: var(--color-white);
-  color: var(--color-dtv-green);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  min-height: 44px;
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-}
-.ap-btn:hover {
-  background: var(--color-dtv-green);
-  color: var(--color-white);
-}
-.ap-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .ap-result {
