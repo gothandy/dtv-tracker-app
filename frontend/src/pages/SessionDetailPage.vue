@@ -124,7 +124,8 @@
 
 
 
-      <DebugData :item="store.session!" />
+      <DebugData label="Session" :item="store.session!" />
+      <DebugData v-if="profile.user" label="Profile" :item="profile.user" />
     </template>
   </DefaultLayout>
 </template>

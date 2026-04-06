@@ -20,6 +20,10 @@
           <label class="label">Disabled</label>
           <input class="input" value="gothandy@hotmail.com" disabled />
         </div>
+        <div class="field">
+          <label class="label">Multiline</label>
+          <textarea class="input input--multiline" rows="4">This is a longer note that spans multiple lines. It can contain descriptions, session write-ups, or any free-form text the user needs to enter.</textarea>
+        </div>
       </div>
 
       <!-- Number -->
@@ -300,6 +304,7 @@ h2 {
   box-sizing: border-box;
 }
 .input--narrow { width: 5rem; }
+.input--multiline { resize: vertical; }
 
 .checkbox {
   width: 1.5rem;

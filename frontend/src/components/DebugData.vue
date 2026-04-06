@@ -1,7 +1,7 @@
 <template>
   <div v-if="isLocalhost" class="p-4">
     <button @click="open = !open" class="text-xs text-gray-400 hover:text-gray-600 uppercase tracking-widest cursor-pointer">
-      {{ open ? '▲ Debug' : '▼ Debug' }}
+      {{ open ? '▲' : '▼' }} Debug{{ label ? `: ${label}` : '' }}
     </button>
     <dl v-if="open" class="mt-1 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-dtv-dark">
       <template v-for="(value, key) in (item as Record<string, unknown>)" :key="key">
@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-defineProps<{ item: object }>()
+defineProps<{ item: object; label?: string }>()
 const isLocalhost = window.location.hostname === 'localhost'
 const open = ref(false)
 const openArrays = ref(new Set<string | number>())

@@ -114,6 +114,11 @@
   }
 }
 
+/* Textareas use prose font so long-form text is readable — !important overrides font-family: inherit on .input */
+textarea {
+  font-family: system-ui, sans-serif !important;
+}
+
 /* Disabled form elements — unlayered so it overrides component-scoped colour rules */
 input:disabled,
 select:disabled,
