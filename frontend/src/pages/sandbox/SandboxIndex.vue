@@ -32,6 +32,7 @@ const components = [
   { name: 'MediaCarousel', path: '/sandbox/media-carousel' },
   { name: 'SessionCard', path: '/sandbox/session-card' },
   { name: 'GroupCard', path: '/sandbox/group-card' },
+  { name: 'Filter Components', path: '/sandbox/filter-components' },
 ]
   
 </script>

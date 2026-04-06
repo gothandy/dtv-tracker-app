@@ -165,7 +165,7 @@ export interface SessionDetailResponse {
   groupId?: number;
   groupName?: string;
   groupDescription?: string;
-  spacesAvailable: number; // TODO: replace hardcoded 20 with real capacity field when available
+  spacesAvailable: number; // TODO: replace with real Capacity field from SharePoint (set in convertSession, data-layer.ts)
   registrations: number;
   hours: number;
   newCount?: number;

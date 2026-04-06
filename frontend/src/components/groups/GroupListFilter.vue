@@ -1,7 +1,7 @@
 <template>
   <div class="gf-wrap">
     <div class="gf-title-row">
-      <span class="gf-count">{{ filtered.length }}</span>
+      <span class="gf-count">{{ filtered.length }} {{ filtered.length === 1 ? 'Group' : 'Groups' }}</span>
       <div class="gf-actions">
         <FyFilter v-model="fy" />
         <button v-if="profile.isAdmin" class="icon-btn" @click="showNew = true" title="New group">
@@ -114,9 +114,8 @@ async function createGroup() {
 
 <style scoped>
 .gf-wrap {
-  background: var(--color-white);
+  background: var(--color-dtv-sand);
   padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
 }
 

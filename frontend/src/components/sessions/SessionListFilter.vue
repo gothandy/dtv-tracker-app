@@ -1,27 +1,22 @@
 <template>
   <div class="sf-wrap">
-    <div class="sf-title-row">
-      <span class="sf-count">{{ filtered.length }}</span>
-      <FyFilter v-model="fy" />
-    </div>
-    <div class="sf-filters">
-      <input
-        v-model="search"
-        type="text"
-        class="sf-search"
-        placeholder="Search sessions…"
-        autocomplete="off"
-      />
-      <select v-model="groupKey" class="sf-select">
-        <option value="">All groups</option>
-        <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
-      </select>
-      <TagPicker
-        v-model="tagLabel"
-        :show-no-tags="true"
-        :available-labels="availableTagLabels"
-      />
-    </div>
+    <input
+      v-model="search"
+      type="text"
+      class="sf-search"
+      placeholder="Search sessions…"
+      autocomplete="off"
+    />
+    <FyFilter v-model="fy" />
+    <select v-model="groupKey" class="sf-select">
+      <option value="">All groups</option>
+      <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
+    </select>
+    <TagPicker
+      v-model="tagLabel"
+      :show-no-tags="true"
+      :available-labels="availableTagLabels"
+    />
   </div>
 </template>
 
@@ -90,29 +85,9 @@ watch(filtered, list => emit('filtered', list), { immediate: true })
 
 <style scoped>
 .sf-wrap {
-  background: var(--color-white);
+  background: var(--color-dtv-sand);
   padding: 1rem 1.5rem;
-  box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
-}
-
-.sf-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.sf-heading { font-size: 1.1rem; font-weight: 700; color: var(--color-text); margin: 0; }
-
-.sf-count {
-  background: var(--color-surface-subtle); color: var(--color-text-label);
-  font-size: 0.8rem; font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  margin-right: auto;
-}
-
-.sf-filters {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -142,6 +117,6 @@ watch(filtered, list => emit('filtered', list), { immediate: true })
   cursor: pointer;
 }
 
-.sf-filters :deep(.tp-wrap) { flex: 1 1 140px; display: flex; flex-direction: column; }
-.sf-filters :deep(.tp-btn) { flex: 1; width: 100%; justify-content: space-between; }
+.sf-wrap :deep(.tp-wrap) { flex: 1 1 140px; display: flex; flex-direction: column; }
+.sf-wrap :deep(.tp-btn) { flex: 1; width: 100%; justify-content: space-between; }
 </style>

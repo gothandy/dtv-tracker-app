@@ -4,12 +4,12 @@
     <div class="session-card__body">
       <p class="session-card__group">{{ session.groupName }}</p>
       <p class="session-card__date">{{ formatDate(session.date) }}</p>
-      <p v-if="session.groupDescription" class="session-card__description">{{ session.groupDescription }}</p>
+      <p v-if="session.groupDescription" class="session-card__description prose">{{ session.groupDescription }}</p>
     </div>
 
     <div class="session-card__footer">
       <ul v-if="isOperational" class="session-card__stats">
-        <li>{{ session.registrations }} Registrations</li>
+        <li>{{ session.registrations }}/{{ session.spacesAvailable }} Registrations</li>
         <li v-if="session.newCount">{{ session.newCount }} New</li>
         <li v-if="session.childCount">{{ session.childCount }} Child</li>
         <li v-if="session.regularCount">{{ session.regularCount }} Regular</li>
@@ -44,14 +44,15 @@ function formatDate(dateStr: string): string {
   })
 }
 
+const spacesLeft = computed(() => props.session.spacesAvailable - props.session.registrations)
+
 const availabilityLabel = computed(() => {
-  const n = props.session.spacesAvailable
-  if (n == null) return ''
+  const n = spacesLeft.value
   return n > 0 ? `${n} spaces available` : 'Fully booked'
 })
 
 const availabilityClass = computed(() => ({
-  'session-card__availability--full': props.session.spacesAvailable === 0,
+  'session-card__availability--full': spacesLeft.value <= 0,
 }))
 </script>
 
@@ -82,7 +83,7 @@ const availabilityClass = computed(() => ({
 }
 
 .session-card__description {
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--color-dtv-dark);
   margin-top: 0.25rem;
   display: -webkit-box;
@@ -93,8 +94,9 @@ const availabilityClass = computed(() => ({
 
 .session-card__footer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: 1.5rem;
   padding: 0.75rem 1.5rem;
 }
 
@@ -104,16 +106,14 @@ const availabilityClass = computed(() => ({
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.85rem;
   color: var(--color-dtv-dark);
 }
 
 .session-card__availability {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--color-dtv-green);
-  font-weight: 600;
 }
 
 .session-card__availability--full {

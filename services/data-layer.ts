@@ -73,7 +73,8 @@ export function convertSession(spSession: SharePointSession): Omit<Session, 'reg
     sessionDate: sessionDate,
     groupId: safeParseLookupId(spSession[GROUP_LOOKUP]),
     financialYear: calculateFinancialYear(sessionDate),
-    eventbriteEventId: spSession.EventbriteEventID
+    eventbriteEventId: spSession.EventbriteEventID,
+    spacesAvailable: 20,
   };
 }
 

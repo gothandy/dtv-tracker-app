@@ -47,6 +47,8 @@ export interface Session {
   groupId?: number;
   /** Group display name (enriched from Groups list) */
   groupName?: string;
+  /** TODO: replace with real Capacity field from SharePoint when available */
+  spacesAvailable: number;
   /** Calculated from Entries list */
   registrations: number;
   /** Calculated from Entries list (rounded to 1 decimal) */

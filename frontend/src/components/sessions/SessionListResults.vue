@@ -92,8 +92,8 @@ function toggle(id: number) {
 
 .sr-checkbox {
   position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
+  top: 1rem;
+  right: 1.5rem;
   z-index: 1;
   width: 16px; height: 16px;
   cursor: pointer;

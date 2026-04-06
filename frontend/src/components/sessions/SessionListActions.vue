@@ -107,15 +107,14 @@ function downloadCsv() {
 .sa-wrap {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.5rem;
-  background: var(--color-surface-hover);
+  background: var(--color-dtv-sand);
   padding: 0.75rem 1.5rem;
   margin-bottom: 1.5rem;
 }
 
-.sa-stats { font-size: 0.85rem; color: var(--color-text-secondary); }
+.sa-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
 
 .sa-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
 
