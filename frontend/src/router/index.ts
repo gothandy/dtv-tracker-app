@@ -52,6 +52,7 @@ export const router = createRouter({
     { path: '/sandbox/media-card', component: () => import('../pages/sandbox/SandboxMediaCard.vue') },
     { path: '/sandbox/media-carousel', component: () => import('../pages/sandbox/SandboxMediaCarousel.vue') },
     { path: '/sandbox/session-card', component: () => import('../pages/sandbox/SandboxSessionCard.vue') },
+    { path: '/sandbox/group-card', component: () => import('../pages/sandbox/SandboxGroupCard.vue') },
   ]
 })
 

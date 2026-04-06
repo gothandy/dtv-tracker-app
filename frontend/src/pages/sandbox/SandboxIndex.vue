@@ -31,6 +31,7 @@ const components = [
   { name: 'MediaCard', path: '/sandbox/media-card' },
   { name: 'MediaCarousel', path: '/sandbox/media-carousel' },
   { name: 'SessionCard', path: '/sandbox/session-card' },
+  { name: 'GroupCard', path: '/sandbox/group-card' },
 ]
   
 </script>

@@ -2,7 +2,7 @@
   <DefaultLayout>
     <h1 class="sr-only">Groups</h1>
     <PageHeader>Groups</PageHeader>
-    <div class="px-6">
+    <div class="px-6 pb-6">
       <GroupListFilter
         :groups="groupsStore.groups"
         :sessions="sessionsStore.sessions"
