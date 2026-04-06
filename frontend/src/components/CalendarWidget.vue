@@ -98,6 +98,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Session } from '../types/session'
+import { belowBreakpointMd } from '../utils/breakpoints'
 
 const props = defineProps<{
   sessions: Session[]
@@ -226,7 +227,7 @@ function handleDayClick(day: number) {
     return
   }
   selectDate(key)
-  el.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (belowBreakpointMd()) el.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function selectDate(key: string) {

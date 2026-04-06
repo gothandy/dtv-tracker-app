@@ -210,11 +210,7 @@ async function createGroup() {
   gap: 1.5rem;
 }
 
-@media (max-width: 900px) {
-  .v1-groups-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 600px) {
+@media (width < 48em) {
   .v1-groups-grid { grid-template-columns: 1fr; }
 }
 

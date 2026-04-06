@@ -43,8 +43,7 @@ defineProps<{
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
 }
-@media (max-width: 900px) { .gr-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .gr-grid { grid-template-columns: 1fr; } }
+@media (width < 48em) { .gr-grid { grid-template-columns: 1fr; } }
 
 .gr-card {
   background: var(--color-white);

@@ -55,6 +55,11 @@
   --brightness-light: 1.18;
   --brightness-pulse: 0.6;
 
+  /* Breakpoints — em preferred over rem for media query reliability */
+  --breakpoint-sm: 30em;
+  --breakpoint-md: 48em;
+  --breakpoint-lg: 64em;
+
   /* No border radius — square corners throughout */
   --radius: 0;
 }

@@ -182,6 +182,13 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 - Scoped styles (`<style scoped>`) belong in the component that owns them. Promote to `frontend/src/styles/` only when a pattern is shared across two or more components.
 - `main.css` holds design tokens and global base styles only. Shared component patterns go in a separate file (e.g. `list.css`) imported from `main.css`.
 
+### Vue Frontend: Responsive Strategy
+- Three breakpoints defined in `@theme` in `main.css`: `--breakpoint-sm: 30em`, `--breakpoint-md: 48em`, `--breakpoint-lg: 64em`
+- **`em` not `px` or `rem`** — `em` is more reliable than `rem` in media queries (avoids root font size issues in some browsers); more predictable than `px` for accessibility scaling
+- **CSS media queries**: write the literal `em` value — e.g. `@media (width < 48em)` or `@media (width >= 48em)`. Tailwind's `theme()` function is only resolved in `main.css` and cannot be used in scoped component styles.
+- **JS breakpoint checks**: use `belowBreakpointMd()` from `frontend/src/utils/breakpoints.ts` — reads `--breakpoint-md` from `getComputedStyle` at runtime so it stays in sync with `@theme` automatically. Add sibling functions there if `sm`/`lg` checks are ever needed in JS.
+- All layouts currently use `md` as the single breakpoint. `sm` and `lg` are defined for future use — shift individual components earlier or later as testing requires.
+
 ### Code Style
 - TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
 - Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)

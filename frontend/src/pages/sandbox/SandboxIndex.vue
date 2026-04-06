@@ -30,6 +30,7 @@ const components = [
   { name: 'TagCloud', path: '/sandbox/tag-cloud' },
   { name: 'MediaCard', path: '/sandbox/media-card' },
   { name: 'MediaCarousel', path: '/sandbox/media-carousel' },
+  { name: 'SessionCard', path: '/sandbox/session-card' },
 ]
   
 </script>

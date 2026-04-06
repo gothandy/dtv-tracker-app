@@ -58,7 +58,7 @@ function shortLabel(label: string): string {
   justify-content: center;
 }
 
-@media (min-width: 768px) {
+@media (width >= 48em) {
   .wc-section { height: v-bind(height); }
 }
 

@@ -7,11 +7,7 @@
 <script setup lang="ts">
 import { ref, provide } from 'vue'
 
-const props = defineProps<{
-  initialSelected?: number
-}>()
-
-const selectedIndex = ref<number | null>(props.initialSelected ?? null)
+const selectedIndex = ref<number | null>(0)
 let nextIndex = 0
 
 function registerItem(): number {
@@ -19,7 +15,8 @@ function registerItem(): number {
 }
 
 function toggle(index: number) {
-  selectedIndex.value = selectedIndex.value === index ? null : index
+  if (selectedIndex.value === index) return
+  selectedIndex.value = index
 }
 
 provide('concertina', { selectedIndex, registerItem, toggle })

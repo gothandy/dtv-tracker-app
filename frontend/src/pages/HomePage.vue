@@ -29,10 +29,8 @@
 
       <!-- Session picker -->
       <template #right>
-        <SessionList
-          ref="sessionListEl"
+        <SessionConcertina
           :sessions="selectedSessions"
-          :selected-date="selectedDate"
           :loading="store.loading"
         />
       </template>
@@ -85,7 +83,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
-import SessionList from '../components/sessions/SessionList.vue'
+import SessionConcertina from '../components/sessions/SessionConcertina.vue'
 import MediaCarousel from '../components/MediaCarousel.vue'
 import MediaCard from '../components/MediaCard.vue'
 import FyBarChart from '../components/FyBarChart.vue'
@@ -107,7 +105,6 @@ const { user } = useAuth()
 const initialDate = typeof route.query.date === 'string' ? route.query.date : undefined
 const selectedDate = ref<string | undefined>(initialDate)
 const selectedSessions = ref<Session[]>([])
-const sessionListEl = ref<{ $el: HTMLElement } | null>(null)
 const selectedFy = ref('')
 const tagHours = ref<TagHoursItem[]>([])
 const selectedGalleryIndex = ref<number | null>(null)
@@ -119,8 +116,6 @@ function onDateSelect(sessions: Session[]) {
 function onDateConfirm(sessions: Session[]) {
   if (sessions.length === 1) {
     router.push(sessionPath(sessions[0].groupKey!, sessions[0].date))
-  } else {
-    sessionListEl.value?.$el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 

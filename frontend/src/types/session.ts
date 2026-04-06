@@ -8,6 +8,7 @@ export interface Session {
   groupId?: number
   groupKey?: string
   groupName?: string
+  groupDescription?: string
   displayName?: string   // override title; falls back to groupName + date when absent
   description?: string
   financialYear: string

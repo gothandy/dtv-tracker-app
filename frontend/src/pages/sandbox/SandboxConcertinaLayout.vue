@@ -8,7 +8,7 @@
       <h2>1-2 (left) — icon-text, initial open</h2>
       <LayoutColumns ratio="1-2">
         <template #left>
-          <ConcertinaLayout :initial-selected="0">
+          <ConcertinaLayout>
             <ConcertinaItem label="Button 1" icon="group"><div class="card">Card 1</div></ConcertinaItem>
             <ConcertinaItem label="Button 2" icon="group"><div class="card">Card 2</div></ConcertinaItem>
             <ConcertinaItem label="Button 3" icon="group"><div class="card">Card 3</div></ConcertinaItem>
@@ -17,11 +17,11 @@
         <template #right><div class="placeholder">Right</div></template>
       </LayoutColumns>
 
-      <h2>2-1 (left) — text-only, initial closed</h2>
+      <h2>2-1 (left) — text-only, onSelectedClick on Button 1</h2>
       <LayoutColumns ratio="2-1">
         <template #left>
           <ConcertinaLayout>
-            <ConcertinaItem label="Button 1"><div class="card">Card 1</div></ConcertinaItem>
+            <ConcertinaItem label="Button 1" :on-selected-click="() => onSelectedClick()"><div class="card">Card 1</div></ConcertinaItem>
             <ConcertinaItem label="Button 2"><div class="card">Card 2</div></ConcertinaItem>
             <ConcertinaItem label="Button 3"><div class="card">Card 3</div></ConcertinaItem>
           </ConcertinaLayout>
@@ -41,6 +41,10 @@ import ConcertinaItem from '../../components/ConcertinaItem.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 
 usePageTitle('Sandbox')
+
+function onSelectedClick() {
+  window.alert('Button 1 selected click')
+}
 </script>
 
 <style scoped>

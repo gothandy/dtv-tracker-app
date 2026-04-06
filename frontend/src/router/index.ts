@@ -51,6 +51,7 @@ export const router = createRouter({
     { path: '/sandbox/tag-cloud', component: () => import('../pages/sandbox/SandboxTagCloud.vue') },
     { path: '/sandbox/media-card', component: () => import('../pages/sandbox/SandboxMediaCard.vue') },
     { path: '/sandbox/media-carousel', component: () => import('../pages/sandbox/SandboxMediaCarousel.vue') },
+    { path: '/sandbox/session-card', component: () => import('../pages/sandbox/SandboxSessionCard.vue') },
   ]
 })
 

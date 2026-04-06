@@ -154,7 +154,7 @@ const buttonStyle = computed(() => ({
   flex-shrink: 0;
 }
 
-@media (max-width: 767px) {
+@media (width < 48em) {
   .app-btn__label--responsive {
     position: absolute;
     width: 1px;

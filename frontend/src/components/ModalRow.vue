@@ -31,7 +31,7 @@ withDefaults(defineProps<{
   border-bottom: none;
 }
 
-@media (min-width: 420px) {
+@media (width >= 48em) {
   .fr:not(.fr--full) {
     flex-direction: row;
     align-items: center;
