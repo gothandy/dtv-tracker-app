@@ -57,7 +57,10 @@ const base: Session = {
   displayName: undefined,
   description: undefined,
   financialYear: '2026-27',
+<<<<<<< HEAD
   isBookable: true,
+=======
+>>>>>>> e36968749c560210849d30e8f2c7734d2dfbc153
   limits: { new: 4, total: 16 },
   registrations: 3,
   hours: 0,

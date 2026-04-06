@@ -105,7 +105,11 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
           groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
+<<<<<<< HEAD
           limits: deriveLimits(convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined),
+=======
+          limits: deriveLimits(stats.limits ?? convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined),
+>>>>>>> e36968749c560210849d30e8f2c7734d2dfbc153
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           newCount: stats.new || undefined,

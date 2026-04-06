@@ -6,7 +6,7 @@ import { sessionsRepository } from './repositories/sessions-repository';
 import { entriesRepository } from './repositories/entries-repository';
 import { groupsRepository } from './repositories/groups-repository';
 import { sharePointClient } from './sharepoint-client';
-import { calculateSessionStats, safeParseLookupId } from './data-layer';
+import { calculateSessionStats, safeParseLookupId, parseSessionLimits } from './data-layer';
 import { GROUP_LOOKUP, SESSION_STATS } from './field-names';
 
 export interface SessionStatsRefreshResult {
@@ -77,6 +77,10 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           child: entryStats?.childCount || 0,
           regular: entryStats?.regularCount || 0,
           eventbrite: entryStats?.eventbriteCount || 0,
+<<<<<<< HEAD
+=======
+          limits: parseSessionLimits(spSession)
+>>>>>>> e36968749c560210849d30e8f2c7734d2dfbc153
         };
 
         // Skip if stored stats already match — avoids unnecessary Graph writes
@@ -91,7 +95,8 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
               existing.new        === newStats.new &&
               existing.child      === newStats.child &&
               existing.regular    === newStats.regular &&
-              existing.eventbrite === newStats.eventbrite
+              existing.eventbrite === newStats.eventbrite &&
+              JSON.stringify(existing.limits) === JSON.stringify(newStats.limits)
             ) {
               return; // unchanged — skip write
             }

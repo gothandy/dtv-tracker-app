@@ -83,7 +83,10 @@ function mapSession(r: SessionResponse): Session {
     displayName: r.displayName,
     description: r.description,
     financialYear: r.financialYear,
+<<<<<<< HEAD
     isBookable: r.isBookable,
+=======
+>>>>>>> e36968749c560210849d30e8f2c7734d2dfbc153
     limits: r.limits,
     registrations: r.registrations,
     hours: r.hours,

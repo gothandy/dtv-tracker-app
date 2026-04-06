@@ -22,9 +22,15 @@
         <dt class="text-white/60 w-28 shrink-0">Children</dt>
         <dd>{{ session.childCount ?? 0 }}<template v-if="isOperational && session.limits.child">/{{ session.limits.child }}</template></dd>
       </div>
+<<<<<<< HEAD
       <div v-if="session.regularCount || (isOperational && session.regularsCount)" class="flex gap-3">
         <dt class="text-white/60 w-28 shrink-0">Regulars</dt>
         <dd>{{ session.regularCount ?? 0 }}<template v-if="isOperational && session.regularsCount">/{{ session.regularsCount }}</template></dd>
+=======
+      <div v-if="session.regularCount || session.regularsCount" class="flex gap-3">
+        <dt class="text-white/60 w-28 shrink-0">Regulars</dt>
+        <dd>{{ session.regularCount ?? 0 }}<template v-if="session.regularsCount">/{{ session.regularsCount }}</template></dd>
+>>>>>>> e36968749c560210849d30e8f2c7734d2dfbc153
       </div>
     </dl>
   </div>
