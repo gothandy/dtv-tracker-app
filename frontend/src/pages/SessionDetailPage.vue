@@ -21,12 +21,29 @@
 
         <!-- Right: booking panel -->
         <template #right>
+          <ConcertinaLayout>
+            <ConcertinaItem label="Check-In" v-if="profile.isOperational">
+              <SessionDetailActions
+                v-if="profile.isCheckIn || profile.isAdmin"
+                :session="store.session"
+                :group-key="(route.params.groupKey as string)"
+                :date="store.session.date"
+                @saved="(gk, d) => store.fetch(gk, d)"
+              />
+            </ConcertinaItem>
+            <ConcertinaItem label="Book" v-if="store.session.isBookable && !store.session.isRegistered" >
+              <SessionDetailBook :session="store.session" />
+            </ConcertinaItem>
+            <ConcertinaItem label="Cancel" v-if="store.session.isBookable && store.session.isRegistered">
+            </ConcertinaItem>
+
+          </ConcertinaLayout>
 
 
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" :selected="true" />
-          <SessionDetailBook v-if="store.session.isBookable && !store.session.isRegistered" :session="store.session" />
+          <!--
           <SessionDetailForThis v-if="store.session.isBookable && store.session.isRegistered" :session="store.session" />
-          <SessionDetailLogin v-if="store.session.isBookable && !profile.user" />
+          -->
 
 
           
@@ -36,25 +53,56 @@
       
 
       <!-- SECOND ROW -->
-      <LayoutColumns ratio="1-2" v-if="store.session.isBookable">
+       <!-- TODO display a different set of text depending on the session category (dig, fund raising, behind the scenes etc.) -->
+      <LayoutColumns ratio="1-1-1" v-if="store.session.isBookable">
         <template #header>
-          <SectionHeader >What to Expect</SectionHeader>
+          <SectionHeader >What to expect?</SectionHeader>
         </template>
 
         <template #left>
-          <SessionDetailStats :session="store.session" :profile="profile.context" />
+          <div class="p-6">
+            <h3 class="text-dtv-dark text-xl leading-none mb-4">On the day</h3>
+            <ul class="prose text-sm text-dtv-dark space-y-2 list-disc list-inside">
+              <li>Follow anyone in a high-viz to the DTV containers.</li>
+              <li>We start by sorting out tools and registration.</li>
+              <li>Before we set off there will be a dig briefing to kick things off</li>
+              <li>Then a bit of walk to where we'll be working.</li>
+            </ul>
+          </div>
+        </template>
+
+        <template #middle>
+          <div class="p-6">
+            <h3 class="text-dtv-dark text-xl leading-none mb-4">What to bring</h3>
+            <ul class="prose text-sm text-dtv-dark space-y-2 list-disc list-inside">
+              <li>Sturdy boots, steel toe caps are ideal.</li>
+              <li>Gardening gloves great for picking up rocks.</li>
+              <li>Clothes you don't mind getting muddy.</li>
+              <li>Water, waterproofs and sun cream.</li>
+              <li>We provide tools and hi-viz.</li>
+            </ul>
+          </div>
         </template>
 
         <template #right>
-          <SessionDetailExpect v-if="store.session.isBookable" />
+          <div class="p-6">
+            <h3 class="text-dtv-dark text-xl leading-none mb-4">Your first time?</h3>
+            <ul class="prose text-sm text-dtv-dark space-y-2 list-disc list-inside">
+              <li>You'll get paired up with an experienced regular.</li>
+              <li>All sorts of tasks available to suit your level of fitness.</li>
+              <li>There is some paperwork needed at the beginning.</li>
+              <li>Don't forget to have fun and work at your own pace.</li>
+            </ul>
+          </div>
         </template>
 
       </LayoutColumns>
 
-      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable">
+      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null">
 
         <template #header>
-          <SectionHeader>What we got up to?</SectionHeader>
+          <SectionHeader v-if="!store.session.isBookable">What we got up to?</SectionHeader>
+          <SectionHeader v-if="store.session.isBookable">What we got planned?</SectionHeader>
         </template>
 
         <template #left>
@@ -106,13 +154,7 @@
         </template>
 
         <template #right>
-          <SessionDetailActions
-            v-if="profile.isCheckIn || profile.isAdmin"
-            :session="store.session"
-            :group-key="(route.params.groupKey as string)"
-            :date="store.session.date"
-            @saved="(gk, d) => store.fetch(gk, d)"
-          />
+
         </template>
       </LayoutColumns>
 
@@ -143,7 +185,6 @@ import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
 import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
-import SessionDetailExpect from '../components/sessions/SessionDetailExpect.vue'
 import MediaCard from '../components/MediaCard.vue'
 import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
@@ -155,6 +196,8 @@ import SessionDetailActions from '../components/sessions/SessionDetailActions.vu
 import SessionDetailEntries from '../components/sessions/SessionDetailEntries.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import CardTitle from '../components/CardTitle.vue'
+import ConcertinaLayout from '../components/ConcertinaLayout.vue'
+import ConcertinaItem from '../components/ConcertinaItem.vue'
 
 const route = useRoute()
 const store = useSessionDetailStore()
