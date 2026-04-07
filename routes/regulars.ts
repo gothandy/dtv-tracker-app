@@ -7,7 +7,7 @@ import {
   validateGroup,
   validateProfile,
   safeParseLookupId,
-  nameToSlug
+  profileIdFromSlug
 } from '../services/data-layer';
 import { GROUP_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
 import type { ApiResponse } from '../types/sharepoint';
@@ -31,7 +31,10 @@ router.post('/profiles/:slug/regulars', async (req: Request, res: Response) => {
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const spProfile = profiles.find(p => nameToSlug(p.Title) === slug);
+    const profileId = profileIdFromSlug(slug);
+    const spProfile = profileId !== undefined
+      ? profiles.find(p => p.ID === profileId)
+      : undefined;
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;
