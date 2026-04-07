@@ -6,6 +6,7 @@ export interface TagIcon {
   type: 'badge' | 'tag'
   tag?: string       // hashtag to match in entry.notes, e.g. '#New'
   color?: string     // css modifier: 'orange' | 'red' | 'dark-green'
+  context?: 'session' | 'profile' | 'both'  // which entry display variant shows this icon; defaults to 'session'
 }
 
 export const TAG_ICONS: TagIcon[] = [
