@@ -144,6 +144,9 @@ export interface GroupDetailResponse {
     newVolunteers: number;
     children: number;
     totalVolunteers: number;
+    // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
+    newProfiles?: number;
+    totalProfiles?: number;
   };
   sessions: SessionResponse[];
 }
@@ -153,6 +156,9 @@ export interface EntryResponse {
   profileId?: number;
   volunteerName?: string;
   volunteerSlug?: string;
+  // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
+  profileName?: string;
+  profileSlug?: string;
   isGroup: boolean;
   isMember: boolean;
   cardStatus?: string;
@@ -201,10 +207,16 @@ export interface EntryDetailResponse {
   volunteerSlug?: string;
   volunteerEmail?: string;
   volunteerEmails?: string[];
+  volunteerEntryCount: number;
+  // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
+  profileName?: string;
+  profileSlug?: string;
+  profileEmail?: string;
+  profileEmails?: string[];
+  profileEntryCount?: number;
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
-  volunteerEntryCount: number;
   count: number;
   hours: number;
   checkedIn: boolean;
@@ -221,6 +233,8 @@ export interface FYStatsResponse {
   sessions: number;
   hours: number;
   volunteers: number;
+  // v2 field name (v1 compat: old name kept alongside until public/ is deleted)
+  profiles?: number;
   financialYear: string;
   label: string;
   /** Hours from fully-completed months only (excludes current partial month) */
@@ -240,6 +254,9 @@ export interface RecentSignupResponse {
   id: number;
   volunteerName: string;
   volunteerSlug: string;
+  // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
+  profileName?: string;
+  profileSlug?: string;
   date: string;
   groupKey: string;
   groupName: string;
