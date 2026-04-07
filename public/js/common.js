@@ -293,6 +293,7 @@ function getStoredFY(fallback) {
     const params = new URLSearchParams(window.location.search);
     const fy = params.get('fy');
     if (fy === 'all') return 'all';
+    if (fy === 'rolling') return 'rolling';
     if (fy) {
         const startYear = parseInt(fy.split('-')[0]);
         if (!isNaN(startYear)) return `FY${startYear}`;

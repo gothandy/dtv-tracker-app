@@ -166,6 +166,12 @@ async function loadFYOptions() {
             btn.onclick = () => setFilter(fyKey);
             menu.appendChild(btn);
         });
+
+        const btnRolling = document.createElement('button');
+        btnRolling.id = 'fyBtn_rolling';
+        btnRolling.textContent = 'Rolling';
+        btnRolling.onclick = () => setFilter('rolling');
+        menu.appendChild(btnRolling);
     } catch (e) {
         console.error('Error loading FY options:', e);
     }
@@ -217,6 +223,8 @@ function persistFilters() {
         url.searchParams.delete('fy');
     } else if (currentFilter === 'all') {
         url.searchParams.set('fy', 'all');
+    } else if (currentFilter === 'rolling') {
+        url.searchParams.set('fy', 'rolling');
     } else {
         const startYear = parseInt(currentFilter.replace('FY', ''));
         if (!isNaN(startYear)) url.searchParams.set('fy', `${startYear}-${startYear + 1}`);
@@ -250,8 +258,10 @@ function persistFilters() {
 function setFilter(filter) {
     currentFilter = filter;
     setCookie('fyFilter', filter);
-    const label = filter === 'all' ? 'All' : fyKeyToLabel(filter);
+    const label = filter === 'all' ? 'All' : filter === 'rolling' ? 'Rolling' : fyKeyToLabel(filter);
     document.getElementById('filterLabel').textContent = label;
+    const csvBtn = document.getElementById('downloadCsvBtn');
+    if (csvBtn) csvBtn.disabled = filter === 'rolling';
     document.querySelectorAll('#filterMenu button').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById(`fyBtn_${filter}`);
     if (activeBtn) activeBtn.classList.add('active');
@@ -404,6 +414,7 @@ function setRecordType(val) { currentRecordType = val; persistFilters(); display
 function setRecordStatus(val) { currentRecordStatus = val; persistFilters(); displayVolunteers(); }
 
 function downloadCSV() {
+    if (currentFilter === 'rolling') return; // CSV not supported for rolling (v2)
     if (selectedVolunteers.size > 0) {
         window.location.href = '/api/profiles/export?profileIds=' + [...selectedVolunteers].join(',');
         return;

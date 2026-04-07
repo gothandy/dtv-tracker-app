@@ -41,8 +41,23 @@ router.get('/profiles', async (req: Request, res: Response) => {
 
     const fy = calculateCurrentFY();
     const fyParam = req.query.fy ? String(req.query.fy) : null;
-    const thisFYStart = (fyParam && fyParam.startsWith('FY')) ? parseInt(fyParam.replace('FY', '')) : fy.startYear;
-    const lastFYStart = thisFYStart - 1;
+    const isRolling = fyParam === 'rolling';
+    let thisFYStart: number;
+    let lastFYStart: number;
+    let rollingStart: string | undefined;
+    let rollingEnd: string | undefined;
+    if (isRolling) {
+      const today = new Date();
+      rollingEnd = today.toISOString().substring(0, 10);
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
+      rollingStart = oneYearAgo.toISOString().substring(0, 10);
+      thisFYStart = -1;
+      lastFYStart = -2;
+    } else {
+      thisFYStart = (fyParam && fyParam.startsWith('FY')) ? parseInt(fyParam.replace('FY', '')) : fy.startYear;
+      lastFYStart = thisFYStart - 1;
+    }
 
     const [rawProfiles, rawEntries, rawSessions, rawGroups, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
@@ -78,7 +93,6 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const session = sessionMap.get(sessionId);
       if (!session) return;
       const hours = parseHours(e.Hours);
-      const sessionFY = calculateFinancialYear(new Date(session.Date));
 
       if (!profileStats.has(volunteerId)) {
         profileStats.set(volunteerId, { hoursThisFY: 0, hoursLastFY: 0, hoursAll: 0, sessionsThisFY: new Set(), sessionsLastFY: new Set(), sessionsAll: new Set() });
@@ -86,12 +100,21 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const ps = profileStats.get(volunteerId)!;
       ps.hoursAll += hours;
       ps.sessionsAll.add(sessionId);
-      if (sessionFY === thisFYStart) {
-        ps.hoursThisFY += hours;
-        ps.sessionsThisFY.add(sessionId);
-      } else if (sessionFY === lastFYStart) {
-        ps.hoursLastFY += hours;
-        ps.sessionsLastFY.add(sessionId);
+      if (isRolling) {
+        const sessionDate = session.Date.substring(0, 10);
+        if (sessionDate >= rollingStart! && sessionDate <= rollingEnd!) {
+          ps.hoursThisFY += hours;
+          ps.sessionsThisFY.add(sessionId);
+        }
+      } else {
+        const sessionFY = calculateFinancialYear(new Date(session.Date));
+        if (sessionFY === thisFYStart) {
+          ps.hoursThisFY += hours;
+          ps.sessionsThisFY.add(sessionId);
+        } else if (sessionFY === lastFYStart) {
+          ps.hoursLastFY += hours;
+          ps.sessionsLastFY.add(sessionId);
+        }
       }
     });
 
