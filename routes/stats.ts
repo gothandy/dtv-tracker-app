@@ -75,12 +75,15 @@ router.get('/stats', async (req: Request, res: Response) => {
       profilesRepository.getAll()
     ]);
 
+    const thisFYProfiles = volunteersFromStats(rawProfiles, fy.key);
+    const lastFYProfiles = volunteersFromStats(rawProfiles, lastFYKey);
     const data: StatsResponse = {
       thisFY: {
         activeGroups: activeGroupsFromSessions(sessionsThisFY),
         sessions: sessionsThisFY.length,
         hours: hoursFromStats(sessionsThisFY),
-        volunteers: volunteersFromStats(rawProfiles, fy.key),
+        volunteers: thisFYProfiles,
+        profiles: thisFYProfiles,
         financialYear: `${fy.startYear}-${fy.endYear}`,
         label: 'This FY'
       },
@@ -88,7 +91,8 @@ router.get('/stats', async (req: Request, res: Response) => {
         activeGroups: activeGroupsFromSessions(sessionsLastFY),
         sessions: sessionsLastFY.length,
         hours: hoursFromStats(sessionsLastFY),
-        volunteers: volunteersFromStats(rawProfiles, lastFYKey),
+        volunteers: lastFYProfiles,
+        profiles: lastFYProfiles,
         financialYear: `${lastFYStartYear}-${fy.startYear}`,
         label: 'Last FY'
       }
@@ -171,11 +175,13 @@ router.get('/stats/history', async (req: Request, res: Response) => {
           predictedHours = Math.round((completed + additional) * 10) / 10;
         }
 
+        const fyProfiles = volunteersFromStats(rawProfiles, `FY${startYear}`);
         return {
           activeGroups: activeGroupsFromSessions(sessions),
           sessions: sessions.length,
           hours: hoursFromStats(sessions),
-          volunteers: volunteersFromStats(rawProfiles, `FY${startYear}`),
+          volunteers: fyProfiles,
+          profiles: fyProfiles,
           financialYear: `${startYear}-${endYear}`,
           label: isCurrentFY ? 'This FY' : `FY ${String(startYear).slice(2)}/${String(endYear).slice(2)}`,
           completedHours,

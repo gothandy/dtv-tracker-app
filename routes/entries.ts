@@ -111,10 +111,13 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
         if (!group) return [];
         const name = e[PROFILE_DISPLAY] || 'Unknown';
         const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
+        const slug = vid !== undefined ? profileSlug(name, vid) : nameToSlug(name);
         return [{
           id: e.ID,
           volunteerName: name,
-          volunteerSlug: vid !== undefined ? profileSlug(name, vid) : nameToSlug(name),
+          volunteerSlug: slug,
+          profileName: name,
+          profileSlug: slug,
           date: session.Date,
           groupKey: group.Title,
           groupName: group.Name || group.Title,
@@ -205,16 +208,22 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
     const group = convertGroup(spGroup);
     const emails = parseEmails(profile?.Email);
 
+    const vSlug = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]);
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
-      volunteerSlug: volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]),
+      volunteerSlug: vSlug,
       volunteerEmail: emails[0],
       volunteerEmails: emails.length > 0 ? emails : undefined,
+      volunteerEntryCount: volunteerEntries.length,
+      profileName: spEntry[PROFILE_DISPLAY],
+      profileSlug: vSlug,
+      profileEmail: emails[0],
+      profileEmails: emails.length > 0 ? emails : undefined,
+      profileEntryCount: volunteerEntries.length,
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,
-      volunteerEntryCount: volunteerEntries.length,
       count: spEntry.Count || 1,
       hours: parseHours(spEntry.Hours),
       checkedIn: spEntry.Checked || false,
@@ -317,16 +326,22 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       : [];
     const hasPrivacyConsent = profileRecords.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
 
+    const vSlug2 = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]);
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
-      volunteerSlug: volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]),
+      volunteerSlug: vSlug2,
       volunteerEmail: emails[0],
       volunteerEmails: emails.length > 0 ? emails : undefined,
+      volunteerEntryCount: volunteerEntries.length,
+      profileName: spEntry[PROFILE_DISPLAY],
+      profileSlug: vSlug2,
+      profileEmail: emails[0],
+      profileEmails: emails.length > 0 ? emails : undefined,
+      profileEntryCount: volunteerEntries.length,
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,
-      volunteerEntryCount: volunteerEntries.length,
       count: spEntry.Count || 1,
       hours: parseHours(spEntry.Hours),
       checkedIn: spEntry.Checked || false,

@@ -223,7 +223,9 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
         hours: Math.round(totalHours * 10) / 10,
         newVolunteers,
         children,
-        totalVolunteers: totalRegistrations  // total registrations — unique volunteer count deferred to Phase 2
+        totalVolunteers: totalRegistrations,  // total registrations — unique volunteer count deferred to Phase 2
+        newProfiles: newVolunteers,
+        totalProfiles: totalRegistrations
       },
       sessions: allSessionResponses
     };

@@ -501,6 +501,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         profileId: volunteerId,
         volunteerName: e[PROFILE_DISPLAY],
         volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
+        profileName: e[PROFILE_DISPLAY],
+        profileSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
         isGroup: profile?.IsGroup || false,
         isMember: stats.isMember === true,
         cardStatus: stats.cardStatus ?? undefined,
