@@ -51,7 +51,7 @@
         <div class="el-card" :class="{ 'el-card--checked': entry.checkedIn }">
           <div class="el-card-left">
             <button class="el-name" @click="editingEntryId = entry.id">
-              {{ entry.volunteerName ?? 'Unknown' }}
+              {{ entry.profileName ?? 'Unknown' }}
             </button>
             <!-- Profile badges -->
             <span v-if="entry.isMember && !entry.isGroup" class="el-icon-tag" title="Charity Member">

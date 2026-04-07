@@ -1,6 +1,6 @@
 <template>
   <ModalLayout
-    :title="entry?.volunteerName ?? '…'"
+    :title="entry?.profileName ?? '…'"
     action="Save"
     action-icon="save"
     show-delete
@@ -13,8 +13,8 @@
 
     <template v-else-if="entry">
 
-      <div v-if="entry.volunteerSlug" class="eem-actions">
-        <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.volunteerSlug!))" />
+      <div v-if="entry.profileSlug" class="eem-actions">
+        <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.profileSlug!))" />
       </div>
 
       <ModalRow title="Checked In">
@@ -66,8 +66,8 @@ const router = useRouter()
 
 interface EntryDetail {
   id: number
-  volunteerName?: string
-  volunteerSlug?: string
+  profileName?: string
+  profileSlug?: string
   isGroup: boolean
   isMember: boolean
   checkedIn: boolean

@@ -4,7 +4,7 @@
       <select id="upm-select" class="upm-select" v-model="selected">
         <option disabled value="">Select a name…</option>
         <option v-for="entry in entries" :key="entry.id" :value="entry.id">
-          {{ entry.volunteerName ?? 'Unknown' }}
+          {{ entry.profileName ?? 'Unknown' }}
         </option>
       </select>
     </ModalRow>
@@ -18,7 +18,7 @@ import ModalRow from '../../components/ModalRow.vue'
 import { useProfile } from '../../composables/useProfile'
 
 const props = defineProps<{
-  entries: { id: number; profileId?: number; volunteerName?: string }[]
+  entries: { id: number; profileId?: number; profileName?: string }[]
 }>()
 
 const emit = defineEmits<{
