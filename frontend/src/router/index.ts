@@ -10,6 +10,8 @@ import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
 import SessionsPage from '../pages/SessionsPage.vue'
 import AdminPage from '../pages/AdminPage.vue'
+import ProfileListPage from '../pages/ProfileListPage.vue'
+import ProfileDetailPage from '../pages/ProfileDetailPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.
@@ -37,6 +39,8 @@ export const router = createRouter({
     { path: '/about', component: AboutPage },
     { path: '/login', component: LoginPage },
     { path: '/admin', component: AdminPage },
+    { path: '/profiles', component: ProfileListPage },
+    { path: '/profiles/:slug', component: ProfileDetailPage },
     { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
     { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
     { path: '/sandbox/action-bars', component: () => import('../pages/sandbox/SandboxActionBars.vue') },
