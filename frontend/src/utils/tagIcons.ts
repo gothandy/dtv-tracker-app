@@ -36,3 +36,20 @@ export function iconsFromNotes(notes: string | undefined): TagIcon[] {
     t.tag && new RegExp(t.tag.replace('#', '#'), 'i').test(notes)
   )
 }
+
+interface EntryIconSource {
+  isMember?: boolean
+  isGroup?: boolean
+  cardStatus?: string
+  notes?: string
+}
+
+/** Builds the full icon list for an entry: profile badges + notes tags */
+export function iconsForEntry(e: EntryIconSource): TagIcon[] {
+  const icons: TagIcon[] = []
+  if (e.isMember && !e.isGroup) icons.push({ icon: 'member.svg', alt: 'Charity Member', type: 'badge' })
+  if (e.cardStatus === 'Accepted')  icons.push({ icon: 'card.svg', alt: 'Benefits Card', type: 'badge' })
+  if (e.cardStatus === 'Invited')   icons.push({ icon: 'card.svg', alt: 'Card Invited', type: 'badge', color: 'orange' })
+  if (e.isGroup) icons.push({ icon: 'group.svg', alt: 'Group / Company', type: 'badge' })
+  return [...icons, ...iconsFromNotes(e.notes)]
+}

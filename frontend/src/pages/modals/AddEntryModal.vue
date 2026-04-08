@@ -8,30 +8,32 @@
     @close="emit('close')"
     @action="addEntry"
   >
-    <ModalRow title="Name" :full-width="true">
-      <ProfilePicker
-        ref="picker"
-        :profiles="profiles"
-        :add-new="addNew"
-        :disabled="loadingProfiles"
-        @select="onSelect"
-      />
-    </ModalRow>
+    <FormLayout :disabled="adding">
+      <FormRow title="Name" :full-width="true">
+        <ProfilePicker
+          ref="picker"
+          :profiles="profiles"
+          :add-new="addNew"
+          :disabled="loadingProfiles"
+          @select="onSelect"
+        />
+      </FormRow>
 
-    <ModalRow title="Email" :full-width="true">
-      <input
-        v-model="emailInput"
-        class="aem-input"
-        :disabled="!addNew"
-        placeholder="email@example.com"
-        type="email"
-        autocomplete="off"
-      />
-    </ModalRow>
+      <FormRow title="Email" :full-width="true">
+        <input
+          v-model="emailInput"
+          class="aem-input"
+          :disabled="!addNew"
+          placeholder="email@example.com"
+          type="email"
+          autocomplete="off"
+        />
+      </FormRow>
 
-    <ModalRow title="Add New">
-      <input type="checkbox" class="aem-checkbox" v-model="addNew" @change="onAddNewToggle" />
-    </ModalRow>
+      <FormRow title="Add New">
+        <input type="checkbox" class="aem-checkbox" v-model="addNew" @change="onAddNewToggle" />
+      </FormRow>
+    </FormLayout>
 
     <div v-if="error" class="aem-error">{{ error }}</div>
 
@@ -41,7 +43,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
-import ModalRow from '../../components/ModalRow.vue'
+import FormLayout from '../../components/FormLayout.vue'
+import FormRow from '../../components/FormRow.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
 import type { EntryResponse } from '../../../../types/api-responses'
 

@@ -1,6 +1,6 @@
 <template>
   <div class="tp-wrap" ref="wrapEl">
-    <button class="tp-btn" :class="{ active: !!modelValue, open: panelOpen }" @click="togglePanel">
+    <button class="tp-btn" :class="{ active: !!modelValue, open: panelOpen }" :disabled="disabled" @click="togglePanel">
       <span>{{ displayLabel }}</span>
       <span class="tp-chevron">{{ panelOpen ? '▲' : '▼' }}</span>
     </button>
@@ -40,6 +40,7 @@ const props = defineProps<{
   showNoTags?: boolean      // show "No tags" option (useful for filter contexts)
   placeholder?: string
   availableLabels?: Set<string> // if set, only show tags present in this set (or with descendants in it)
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{

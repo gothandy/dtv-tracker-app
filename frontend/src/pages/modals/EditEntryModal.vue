@@ -4,6 +4,7 @@
     action="Save"
     action-icon="save"
     show-delete
+    :working="saving || deleting"
     @close="emit('close')"
     @action="save"
     @delete="confirmDelete = true"
@@ -17,22 +18,24 @@
         <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.profileSlug!))" />
       </div>
 
-      <ModalRow title="Checked In">
-        <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
-      </ModalRow>
+      <FormLayout :disabled="saving || deleting">
+        <FormRow title="Checked In">
+          <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
+        </FormRow>
 
-      <ModalRow title="Count">
-        <input type="number" class="eem-input" v-model.number="form.count" min="1" />
-      </ModalRow>
+        <FormRow title="Count">
+          <input type="number" class="eem-input" v-model.number="form.count" min="1" />
+        </FormRow>
 
-      <ModalRow title="Hours">
-        <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" />
-      </ModalRow>
+        <FormRow title="Hours">
+          <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" />
+        </FormRow>
 
-      <ModalRow title="Notes" :full-width="true">
-        <textarea class="eem-textarea" v-model="form.notes" rows="2" />
-        <EntryTagPicker v-model="form.notes" />
-      </ModalRow>
+        <FormRow title="Notes" :full-width="true">
+          <textarea class="eem-textarea" v-model="form.notes" rows="2" />
+          <EntryTagPicker v-model="form.notes" />
+        </FormRow>
+      </FormLayout>
 
       <div v-if="saveError" class="eem-error">{{ saveError }}</div>
 
@@ -55,7 +58,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { profilePath } from '../../router/index'
 import ModalLayout from '../../components/ModalLayout.vue'
-import ModalRow from '../../components/ModalRow.vue'
+import FormLayout from '../../components/FormLayout.vue'
+import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
 

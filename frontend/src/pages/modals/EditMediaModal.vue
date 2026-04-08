@@ -9,17 +9,17 @@
     @action="save"
     @delete="confirmDelete = true"
   >
-    <ModalRow title="Public" :disabled="form.isCover">
+    <FormRow title="Public" :disabled="form.isCover">
       <input id="emm-public" v-model="form.isPublic" type="checkbox" class="emm-checkbox" :disabled="form.isCover" @change="onPublicChange" />
-    </ModalRow>
+    </FormRow>
 
-    <ModalRow v-if="showCover" title="Cover" :disabled="!form.isPublic">
+    <FormRow v-if="showCover" title="Cover" :disabled="!form.isPublic">
       <input id="emm-cover" v-model="form.isCover" type="checkbox" class="emm-checkbox" :disabled="!form.isPublic" @change="onCoverChange" />
-    </ModalRow>
+    </FormRow>
 
-    <ModalRow title="Title" :full-width="true">
+    <FormRow title="Title" :full-width="true">
       <textarea v-model="form.title" class="emm-input emm-textarea" placeholder="Optional caption" rows="2" />
-    </ModalRow>
+    </FormRow>
   </ModalLayout>
 
   <ModalLayout
@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
-import ModalRow from '../../components/ModalRow.vue'
+import FormRow from '../../components/FormRow.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{

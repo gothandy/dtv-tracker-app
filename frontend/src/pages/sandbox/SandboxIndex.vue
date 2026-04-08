@@ -34,6 +34,7 @@ const components = [
   { name: 'GroupCard', path: '/sandbox/group-card' },
   { name: 'Filter Components', path: '/sandbox/filter-components' },
   { name: 'EntryCard', path: '/sandbox/entry-card' },
+  { name: 'EntryList', path: '/sandbox/entry-list' },
 ]
   
 </script>

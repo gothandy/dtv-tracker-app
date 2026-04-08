@@ -81,6 +81,7 @@
         @delete="open = null"
       />
 
+
     </div>
   </DefaultLayout>
 </template>

@@ -4,11 +4,12 @@
 
       <div class="am-header">
         <span class="am-title">{{ title }}</span>
-        <button class="am-close" aria-label="Close" @click="emit('close')">×</button>
+        <button class="am-close" aria-label="Close" :disabled="working" @click="emit('close')">×</button>
       </div>
 
       <div class="am-body">
         <slot />
+        <div v-if="working" class="am-body-blocker" />
       </div>
 
       <div class="am-footer">
@@ -19,20 +20,22 @@
           mode="icon-responsive"
           variant="danger"
           class="am-delete"
-          :disabled="deleteDisabled"
-          @click="emit('delete')"
+          :disabled="deleteDisabled || working"
+          :working="working && activeButton === 'delete'"
+          @click="onDelete"
         />
         <AppButton
           v-if="action"
           :label="action"
           :icon="actionIcon"
-          :disabled="actionDisabled"
-          :working="working"
-          @click="emit('action')"
+          :disabled="actionDisabled || working"
+          :working="working && activeButton === 'action'"
+          @click="onAction"
         />
         <AppButton
           v-else
           label="Close"
+          :disabled="working"
           @click="emit('close')"
         />
       </div>
@@ -42,9 +45,10 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import AppButton from './AppButton.vue'
 
-defineProps<{
+const props = defineProps<{
   title: string
   action?: string
   actionIcon?: string
@@ -59,6 +63,22 @@ const emit = defineEmits<{
   action: []
   delete: []
 }>()
+
+const activeButton = ref<'delete' | 'action' | null>(null)
+
+watch(() => props.working, (val) => {
+  if (!val) activeButton.value = null
+})
+
+function onDelete() {
+  activeButton.value = 'delete'
+  emit('delete')
+}
+
+function onAction() {
+  activeButton.value = 'action'
+  emit('action')
+}
 </script>
 
 <style scoped>
@@ -107,12 +127,20 @@ const emit = defineEmits<{
   line-height: 1;
   padding: 0;
 }
-.am-close:hover { opacity: 0.8; }
+.am-close:hover:not(:disabled) { opacity: 0.8; }
+.am-close:disabled { opacity: 0.4; cursor: default; }
 
 .am-body {
+  position: relative;
   padding: 1.5rem;
   flex: 1;
   overflow-y: auto;
+}
+
+.am-body-blocker {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 .am-footer {

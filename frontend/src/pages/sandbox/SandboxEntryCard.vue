@@ -5,51 +5,100 @@
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
       <h1>EntryCard</h1>
 
-      <!-- Full width -->
-      <h2>Session — Operational (full width)</h2>
+      <h2>Operational — unchecked</h2>
       <div class="demo">
-        <EntryList display-type="session" :entries="sessionEntries" :allow-edit="true" :working-id="workingId"
-          @update="onUpdate"
+        <EntryCard
+          title="Alice Bowen"
+          :title-to="profilePath('alice-bowen-42')"
+          :checked-in="false"
+          :hours="0"
+          :icons="[]"
+          :allow-edit="true"
+          :working="working1"
+          @update="(c, h) => onUpdate(1, c, h)"
+          @edit-entry="log('editEntry: Alice Bowen')"
         />
       </div>
 
-      <!-- 2-1 -->
-      <h2>Session — Read-only (2-1)</h2>
-      <LayoutColumns ratio="2-1">
-        <template #left>
-          <div class="demo">
-            <EntryList display-type="session" :entries="sessionEntries" />
-          </div>
-        </template>
-        <template #right>
-          <div class="demo demo--placeholder">other content</div>
-        </template>
-      </LayoutColumns>
-
-      <!-- 1-2 -->
-      <h2>Session — allowCancel (1-2)</h2>
-      <LayoutColumns ratio="1-2">
-        <template #left>
-          <div class="demo">
-            <EntryList display-type="session" :entries="sessionEntries" :allow-cancel="true"
-              @cancel="onCancel"
-            />
-          </div>
-        </template>
-        <template #right>
-          <div class="demo demo--placeholder">other content</div>
-        </template>
-      </LayoutColumns>
-
-      <h2>Profile (full width)</h2>
+      <h2>Operational — checked in, no hours</h2>
       <div class="demo">
-        <EntryList display-type="profile" :entries="profileEntries" />
+        <EntryCard
+          title="Bob Carter"
+          :title-to="profilePath('bob-carter-7')"
+          :checked-in="true"
+          :hours="0"
+          :icons="iconsForEntry({ isMember: true, cardStatus: 'Accepted', notes: '#New' })"
+          :allow-edit="true"
+          :working="working2"
+          @update="(c, h) => onUpdate(2, c, h)"
+          @edit-entry="log('editEntry: Bob Carter')"
+        />
+      </div>
+
+      <h2>Operational — checked in with hours</h2>
+      <div class="demo">
+        <EntryCard
+          title="Carol Davies"
+          :title-to="profilePath('carol-davies-18')"
+          :checked-in="true"
+          :hours="3.5"
+          :icons="iconsForEntry({ isMember: true, cardStatus: 'Invited', notes: '#Regular #DigLead' })"
+          :allow-edit="true"
+          :working="working3"
+          @update="(c, h) => onUpdate(3, c, h)"
+          @edit-entry="log('editEntry: Carol Davies')"
+        />
+      </div>
+
+      <h2>Read-only</h2>
+      <div class="demo">
+        <EntryCard
+          title="Alice Bowen"
+          :title-to="profilePath('alice-bowen-42')"
+          :checked-in="true"
+          :hours="2"
+          :icons="iconsForEntry({ isMember: false, notes: '#New' })"
+        />
+      </div>
+
+      <h2>No slug — no link</h2>
+      <div class="demo">
+        <EntryCard
+          title="Dean Heritage Volunteers Ltd"
+          :checked-in="false"
+          :hours="0"
+          :icons="iconsForEntry({ isGroup: true })"
+        />
+      </div>
+
+      <h2>Allow cancel</h2>
+      <div class="demo">
+        <EntryCard
+          title="Alice Bowen"
+          :title-to="profilePath('alice-bowen-42')"
+          :checked-in="false"
+          :hours="0"
+          :icons="[]"
+          :allow-cancel="true"
+          @cancel="log('cancel: Alice Bowen')"
+        />
+      </div>
+
+      <h2>Profile display (session as title)</h2>
+      <div class="demo">
+        <EntryCard
+          title="2026-04-19 Sheepskull"
+          :title-to="sessionPath('dhsc', '2026-04-19')"
+          :checked-in="true"
+          :hours="4"
+          :icons="iconsForEntry({ notes: '#Regular' })"
+        />
       </div>
 
       <h2>Event log</h2>
       <div class="event-log">
         <div v-if="!events.length" class="event-log-empty">No events yet.</div>
-        <div v-for="(e, i) in events" :key="i" class="event-log-entry">{{ e }}</div>
+        <div v-for="(e, i) in events" :key="i">{{ e }}</div>
       </div>
 
     </div>
@@ -59,109 +108,32 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
-import LayoutColumns from '../../components/LayoutColumns.vue'
-import EntryList from '../../components/EntryList.vue'
+import EntryCard from '../../components/EntryCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
-import type { EntryItem } from '../../types/entry'
+import { profilePath, sessionPath } from '../../router/index'
+import { iconsForEntry } from '../../utils/tagIcons'
 
 usePageTitle('Sandbox')
 
-const dhsc = { groupKey: 'dhsc', groupName: 'Dean Heritage Sheepskull Crew', date: '2026-04-19' }
-const fod = { groupKey: 'fod', groupName: 'Forest of Dean Crew', date: '2026-03-15' }
-
-const sessionEntries = ref<EntryItem[]>([
-  {
-    id: 1,
-    checkedIn: false,
-    hours: 0,
-    count: 1,
-    notes: undefined,
-    profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false },
-    session: dhsc,
-  },
-  {
-    id: 2,
-    checkedIn: true,
-    hours: 0,
-    count: 1,
-    notes: '#New',
-    profile: { name: 'Bob Carter', slug: 'bob-carter-7', isMember: true, cardStatus: 'Accepted', isGroup: false },
-    session: dhsc,
-  },
-  {
-    id: 3,
-    checkedIn: true,
-    hours: 3.5,
-    count: 1,
-    notes: '#Regular #DigLead',
-    profile: { name: 'Carol Davies', slug: 'carol-davies-18', isMember: true, cardStatus: 'Invited', isGroup: false },
-    session: dhsc,
-  },
-  {
-    id: 4,
-    checkedIn: false,
-    hours: 0,
-    count: 1,
-    notes: '#Duplicate',
-    profile: { name: 'Dean Heritage Volunteers Ltd', slug: undefined, isMember: false, cardStatus: undefined, isGroup: true },
-    session: dhsc,
-  },
-  {
-    id: 5,
-    checkedIn: true,
-    hours: 2,
-    count: 1,
-    notes: '#FirstAider',
-    profile: { name: 'Emma Fox', slug: 'emma-fox-99', isMember: false, cardStatus: undefined, isGroup: false },
-    session: dhsc,
-  },
-])
-
-const profileEntries = ref<EntryItem[]>([
-  {
-    id: 10,
-    checkedIn: true,
-    hours: 4,
-    count: 1,
-    notes: '#Regular',
-    profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false },
-    session: dhsc,
-  },
-  {
-    id: 11,
-    checkedIn: true,
-    hours: 3,
-    count: 1,
-    notes: '#New',
-    profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false },
-    session: fod,
-  },
-  {
-    id: 12,
-    checkedIn: false,
-    hours: 0,
-    count: 1,
-    notes: undefined,
-    profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false },
-    session: { groupKey: 'dhsc', groupName: 'Dean Heritage Sheepskull Crew', date: '2026-05-10' },
-  },
-])
-
+const working1 = ref(false)
+const working2 = ref(false)
+const working3 = ref(false)
 const events = ref<string[]>([])
-const workingId = ref<number | null>(null)
 
-async function onUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
-  workingId.value = entry.id
-  events.value.unshift(`update: id=${entry.id} "${entry.profile.name}" → saving…`)
-  await new Promise(r => setTimeout(r, 2000))
-  entry.checkedIn = checkedIn
-  entry.hours = hours
-  workingId.value = null
-  events.value[0] = `update: id=${entry.id} "${entry.profile.name}" → checkedIn=${checkedIn}, hours=${hours}`
+function log(msg: string) {
+  events.value.unshift(msg)
 }
 
-function onCancel(entry: EntryItem) {
-  events.value.unshift(`cancel: id=${entry.id} "${entry.profile.name}"`)
+async function onUpdate(id: number, checkedIn: boolean, hours: number) {
+  if (id === 1) working1.value = true
+  if (id === 2) working2.value = true
+  if (id === 3) working3.value = true
+  log(`update: id=${id} → saving…`)
+  await new Promise(r => setTimeout(r, 2000))
+  if (id === 1) working1.value = false
+  if (id === 2) working2.value = false
+  if (id === 3) working3.value = false
+  log(`update: id=${id} → checkedIn=${checkedIn}, hours=${hours}`)
 }
 </script>
 
@@ -179,10 +151,7 @@ function onCancel(entry: EntryItem) {
 h1 { font-size: 1.5rem; font-weight: 700; }
 h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.25rem; }
 
-.demo {
-  border: 1px solid var(--color-border);
-  padding: 0.5rem;
-}
+.demo { border: 1px solid var(--color-border); padding: 0.5rem; }
 
 .event-log {
   border: 1px solid var(--color-border);
@@ -194,21 +163,5 @@ h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); margin-b
   gap: 0.25rem;
   min-height: 3rem;
 }
-
-.event-log-empty {
-  color: var(--color-text-faint);
-}
-
-.event-log-entry {
-  color: var(--color-text);
-}
-
-.demo--placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-faint);
-  font-size: 0.85rem;
-  min-height: 4rem;
-}
+.event-log-empty { color: var(--color-text-faint); }
 </style>

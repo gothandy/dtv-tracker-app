@@ -49,8 +49,9 @@ withDefaults(defineProps<{
   min-width: 6rem;
 }
 
-.fr-label--disabled {
-  opacity: 0.4;
+.fr-label--disabled,
+.fr:has(:disabled) .fr-label {
+  color: var(--color-dtv-sand-dark);
 }
 
 .fr-control {

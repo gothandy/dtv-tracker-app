@@ -7,173 +7,177 @@
 
       <!-- Textbox -->
       <h2>Textbox</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Name</label>
-          <input class="input" value="Andrew Davies" />
-        </div>
-        <div class="field">
-          <label class="label">Placeholder</label>
-          <input class="input" placeholder="Search by name…" />
-        </div>
-        <div class="field">
-          <label class="label">Disabled</label>
-          <input class="input" value="gothandy@hotmail.com" disabled />
-        </div>
-        <div class="field">
-          <label class="label">Multiline</label>
-          <textarea class="input input--multiline" rows="4">This is a longer note that spans multiple lines. It can contain descriptions, session write-ups, or any free-form text the user needs to enter.</textarea>
-        </div>
-      </div>
+      <FormLayout>
+        <FormRow title="Name">
+          <input class="sfc-input" value="Andrew Davies" />
+        </FormRow>
+        <FormRow title="Placeholder">
+          <input class="sfc-input" placeholder="Search by name…" />
+        </FormRow>
+        <FormRow title="Disabled">
+          <input class="sfc-input" value="gothandy@hotmail.com" disabled />
+        </FormRow>
+        <FormRow title="Multiline" :full-width="true">
+          <textarea class="sfc-input sfc-input--multiline" rows="4">This is a longer note that spans multiple lines. It can contain descriptions, session write-ups, or any free-form text the user needs to enter.</textarea>
+        </FormRow>
+        <FormRow title="Multiline disabled" :full-width="true">
+          <textarea class="sfc-input sfc-input--multiline" rows="4" disabled>This field is disabled.</textarea>
+        </FormRow>
+      </FormLayout>
 
-      <!-- Number -->
+      <!--Number -->
       <h2>Number</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Count</label>
-          <input type="number" class="input input--narrow" value="3" min="0" />
-        </div>
-        <div class="field">
-          <label class="label">Hours</label>
-          <input type="number" class="input input--narrow" value="2.5" min="0" step="0.5" />
-        </div>
-        <div class="field">
-          <label class="label">Disabled</label>
-          <input type="number" class="input input--narrow" value="1" disabled />
-        </div>
-      </div>
+      <FormLayout>
+        <FormRow title="Count">
+          <input type="number" class="sfc-input sfc-input--narrow" value="3" min="0" />
+        </FormRow>
+        <FormRow title="Hours">
+          <input type="number" class="sfc-input sfc-input--narrow" value="2.5" min="0" step="0.5" />
+        </FormRow>
+        <FormRow title="Disabled">
+          <input type="number" class="sfc-input sfc-input--narrow" value="1" disabled />
+        </FormRow>
+      </FormLayout>
 
-      <!-- Checkbox -->
+      <!--Checkbox -->
       <h2>Checkbox</h2>
-      <div class="surface">
-        <div class="field field--inline">
-          <input type="checkbox" class="checkbox" />
-          <label class="label">Unselected</label>
-        </div>
-        <div class="field field--inline">
-          <input type="checkbox" class="checkbox" checked />
-          <label class="label">Selected</label>
-        </div>
-        <div class="field field--inline">
-          <input type="checkbox" class="checkbox" disabled />
-          <label class="label">Disabled</label>
-        </div>
-        <div class="field field--inline">
-          <input type="checkbox" class="checkbox" disabled checked />
-          <label class="label">Disabled checked</label>
-        </div>
-      </div>
+      <FormLayout>
+        <FormRow title="Unselected">
+          <input type="checkbox" class="sfc-checkbox" />
+        </FormRow>
+        <FormRow title="Selected">
+          <input type="checkbox" class="sfc-checkbox" checked />
+        </FormRow>
+        <FormRow title="Disabled">
+          <input type="checkbox" class="sfc-checkbox" disabled />
+        </FormRow>
+        <FormRow title="Disabled checked">
+          <input type="checkbox" class="sfc-checkbox" disabled checked />
+        </FormRow>
+      </FormLayout>
 
-      <!-- FY Filter -->
+      <!--FY Filter -->
       <h2>FY Filter</h2>
-      <div class="surface">
-        <div class="field field--inline">
-          <label class="label">All</label>
+      <FormLayout>
+        <FormRow title="All">
           <FyFilter v-model="fyValue" />
-        </div>
-        <div class="field field--inline">
-          <label class="label">Selected</label>
+        </FormRow>
+        <FormRow title="Selected">
           <FyFilter v-model="fyValueSelected" />
-        </div>
-      </div>
+        </FormRow>
+        <FormRow title="Disabled">
+          <FyFilter v-model="fyValue" disabled />
+        </FormRow>
+      </FormLayout>
 
-      <!-- Date Picker -->
+      <!--Date Picker -->
       <h2>Date Picker</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Date</label>
-          <input type="date" class="input" v-model="dateValue" />
-        </div>
-        <div class="field">
-          <label class="label">Disabled</label>
-          <input type="date" class="input" value="2026-04-05" disabled />
-        </div>
-      </div>
+      <FormLayout>
+        <FormRow title="Date">
+          <input type="date" class="sfc-input" v-model="dateValue" />
+        </FormRow>
+        <FormRow title="Disabled">
+          <input type="date" class="sfc-input" value="2026-04-05" disabled />
+        </FormRow>
+      </FormLayout>
 
-      <!-- Standard Dropdown -->
+      <!--Standard Dropdown -->
       <h2>Standard Dropdown</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Option</label>
-          <select class="select">
+      <FormLayout>
+        <FormRow title="Option">
+          <select class="sfc-select">
             <option>Option A</option>
             <option>Option B</option>
             <option>Option C</option>
           </select>
-        </div>
-        <div class="field">
-          <label class="label">Disabled Option</label>
-          <select class="select">
-            <option disabled value="">Select an option…</option>
-            <option>Option A</option>
-            <option>Option B</option>
-            <option>Option C</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="label">Disabled</label>
-          <select class="select" disabled>
+        </FormRow>
+        <FormRow title="Disabled">
+          <select class="sfc-select" disabled>
             <option>Option A</option>
           </select>
-        </div>
-      </div>
+        </FormRow>
+      </FormLayout>
 
-      <!-- Group Dropdown -->
+      <!--Group Dropdown -->
       <h2>Group Dropdown</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Group</label>
-          <select class="select" v-model="selectedGroup">
+      <FormLayout>
+        <FormRow title="Group">
+          <select class="sfc-select" v-model="selectedGroup">
             <option value="">All groups</option>
             <option v-for="g in groups" :key="g.key" :value="g.key">{{ g.name }}</option>
           </select>
-        </div>
-        <div class="field">
-          <label class="label">Disabled</label>
-          <select class="select" disabled>
+        </FormRow>
+        <FormRow title="Disabled">
+          <select class="sfc-select" disabled>
             <option>All groups</option>
           </select>
-        </div>
-      </div>
+        </FormRow>
+      </FormLayout>
 
-      <!-- Tag Picker -->
+      <!--Tag Picker -->
       <h2>Tag Picker</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Unselected</label>
+      <FormLayout>
+        <FormRow title="Unselected">
           <TagPicker v-model="tagValue" />
-        </div>
-        <div class="field">
-          <label class="label">Selected</label>
+        </FormRow>
+        <FormRow title="Selected">
           <TagPicker v-model="tagValueSelected" />
-        </div>
-      </div>
+        </FormRow>
+        <FormRow title="Disabled">
+          <TagPicker v-model="tagValue" disabled />
+        </FormRow>
+      </FormLayout>
 
-      <!-- Entry Tag Picker -->
-      <h2>Entry Tag Picker</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">None selected</label>
+      <!--Entry Icon Picker -->
+      <h2>Entry Icon Picker</h2>
+      <FormLayout>
+        <FormRow title="None selected" :full-width="true">
           <EntryTagPicker v-model="tagNotes" />
-        </div>
-        <div class="field">
-          <label class="label">Some selected</label>
+        </FormRow>
+        <FormRow title="Some selected" :full-width="true">
           <EntryTagPicker v-model="tagNotesSelected" />
-        </div>
-      </div>
+        </FormRow>
+        <FormRow title="Disabled" :full-width="true">
+          <EntryTagPicker v-model="tagNotesSelected" disabled />
+        </FormRow>
+      </FormLayout>
 
-      <!-- Profile Picker -->
+      <!--Profile Picker -->
       <h2>Profile Picker</h2>
-      <div class="surface">
-        <div class="field">
-          <label class="label">Profile</label>
+      <FormLayout>
+        <FormRow title="Profile" :full-width="true">
           <ProfilePicker :profiles="profiles" @select="onProfileSelect" />
-        </div>
-        <div class="field">
-          <label class="label">Disabled</label>
+        </FormRow>
+        <FormRow title="Disabled" :full-width="true">
           <ProfilePicker :profiles="profiles" disabled />
-        </div>
-      </div>
+        </FormRow>
+      </FormLayout>
+
+      <!-- FormLayout disabled -->
+      <h2>FormLayout disabled</h2>
+      <FormLayout disabled>
+        <FormRow title="Name">
+          <input class="sfc-input" value="Andrew Davies" />
+        </FormRow>
+        <FormRow title="Checked In">
+          <input type="checkbox" class="sfc-checkbox" checked />
+        </FormRow>
+        <FormRow title="Notes" :full-width="true">
+          <textarea class="sfc-input sfc-input--multiline" rows="3">Some notes here.</textarea>
+        </FormRow>
+        <FormRow title="FY Filter">
+          <FyFilter v-model="fyValueSelected" />
+        </FormRow>
+        <FormRow title="Tag Picker">
+          <TagPicker v-model="tagValueSelected" />
+        </FormRow>
+        <FormRow title="Entry Icon Picker" :full-width="true">
+          <EntryTagPicker v-model="tagNotesSelected" />
+        </FormRow>
+        <FormRow title="Profile Picker" :full-width="true">
+          <ProfilePicker :profiles="profiles" @select="onProfileSelect" />
+        </FormRow>
+      </FormLayout>
 
     </div>
   </DefaultLayout>
@@ -182,8 +186,10 @@
 <script setup lang="ts">
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import FormLayout from '../../components/FormLayout.vue'
+import FormRow from '../../components/FormRow.vue'
 import FyFilter from '../../components/FyFilter.vue'
 import TagPicker from '../../components/TagPicker.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
@@ -204,30 +210,19 @@ const tagValueSelected = ref('Sheepskull')
 const tagNotes = ref('')
 const tagNotesSelected = ref('#New #Regular')
 
-const groups = ref<{ key: string; name: string }[]>([])
+const groups = ref([
+  { key: 'sheepskull', name: 'Sheepskull' },
+  { key: 'diglis', name: 'Diglis' },
+  { key: 'adhoc', name: 'Ad Hoc' },
+])
 const selectedGroup = ref('')
 
-const profiles = ref<PickerProfile[]>([])
+const profiles = ref<PickerProfile[]>([
+  { id: 1, name: 'Jane Smith', email: 'jane@example.com' },
+  { id: 2, name: 'John Doe', email: 'john@example.com' },
+  { id: 3, name: 'Alice Brown', email: 'alice@example.com' },
+])
 const selectedProfile = ref<PickerProfile | null>(null)
-
-onMounted(async () => {
-  try {
-    const [profilesRes, groupsRes] = await Promise.all([
-      fetch('/api/profiles?fy=all'),
-      fetch('/api/groups'),
-    ])
-    if (profilesRes.ok) {
-      const json = await profilesRes.json()
-      profiles.value = (json.data ?? []).map((p: any) => ({ id: p.id, name: p.name, email: p.email }))
-    }
-    if (groupsRes.ok) {
-      const json = await groupsRes.json()
-      groups.value = (json.data ?? []).map((g: any) => ({ key: g.key, name: g.displayName }))
-    }
-  } catch (e) {
-    console.error('[SandboxFormComponents]', e)
-  }
-})
 
 function onProfileSelect(p: PickerProfile) {
   selectedProfile.value = p
@@ -263,67 +258,27 @@ h2 {
   color: var(--color-text-muted);
 }
 
-.surface {
-  background: var(--color-dtv-sand);
-  padding: 0 1.5rem;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Stacked: bold label above, full-width field below */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--color-border);
-}
-.field:last-child { border-bottom: none; }
-
-/* Inline variant for checkbox rows */
-.field--inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.label {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.input {
+.sfc-input,
+.sfc-select {
   width: 100%;
   background: var(--color-dtv-light);
   border: none;
   color: var(--color-text);
-  padding: 0.45rem 0.6rem;
+  padding: 0.3rem 0.5rem;
   font-family: inherit;
   font-size: 0.95rem;
   box-sizing: border-box;
 }
-.input--narrow { width: 5rem; }
-.input--multiline { resize: vertical; }
 
-.checkbox {
+.sfc-select { cursor: pointer; }
+.sfc-input--narrow { width: 5rem; }
+.sfc-input--multiline { resize: vertical; }
+
+.sfc-checkbox {
   width: 1.5rem;
   height: 1.5rem;
   accent-color: var(--color-dtv-green);
   cursor: pointer;
   flex-shrink: 0;
 }
-
-.select {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.45rem 0.6rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-.select:disabled { color: var(--color-text-muted); cursor: default; }
 </style>

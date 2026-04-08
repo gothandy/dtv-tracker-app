@@ -4,37 +4,40 @@
     action="Save"
     action-icon="save"
     show-delete
+    :working="saving || deleting"
     @close="emit('close')"
     @action="save"
     @delete="confirmDelete = true"
   >
-    <ModalRow title="Display Name" :full-width="true">
-      <input v-model="form.displayName" class="sem-input" placeholder="Leave blank to use group name" />
-    </ModalRow>
+    <FormLayout :disabled="saving || deleting">
+      <FormRow title="Display Name" :full-width="true">
+        <input v-model="form.displayName" class="sem-input" placeholder="Leave blank to use group name" />
+      </FormRow>
 
-    <ModalRow title="Description" :full-width="true">
-      <textarea v-model="form.description" class="sem-textarea" rows="3" />
-    </ModalRow>
+      <FormRow title="Description" :full-width="true">
+        <textarea v-model="form.description" class="sem-textarea" rows="3" />
+      </FormRow>
 
-    <template v-if="profile.isAdmin">
-      <ModalRow title="Date" :full-width="true">
-        <input v-model="form.date" type="date" class="sem-input" />
-      </ModalRow>
+      <template v-if="profile.isAdmin">
+        <FormRow title="Date" :full-width="true">
+          <input v-model="form.date" type="date" class="sem-input" />
+        </FormRow>
 
-      <ModalRow title="Group" :full-width="true">
-        <select v-model="form.groupId" class="sem-select">
-          <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-        </select>
-      </ModalRow>
+        <FormRow title="Group" :full-width="true">
+          <select v-model="form.groupId" class="sem-select">
+            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
+        </FormRow>
 
-      <ModalRow title="Limits JSON" :full-width="true">
-        <input v-model="form.limitsRaw" class="sem-input" placeholder='{"new":4,"total":20}' />
-      </ModalRow>
+        <FormRow title="Limits JSON" :full-width="true">
+          <input v-model="form.limitsRaw" class="sem-input" placeholder='{"new":4,"total":20}' />
+        </FormRow>
 
-      <ModalRow title="Eventbrite Event ID" :full-width="true">
-        <input v-model="form.eventbriteEventId" class="sem-input" />
-      </ModalRow>
-    </template>
+        <FormRow title="Eventbrite Event ID" :full-width="true">
+          <input v-model="form.eventbriteEventId" class="sem-input" />
+        </FormRow>
+      </template>
+    </FormLayout>
 
     <div v-if="error" class="sem-error">{{ error }}</div>
   </ModalLayout>
@@ -60,7 +63,8 @@ import { useProfile } from '../../composables/useProfile'
 import { groupPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
-import ModalRow from '../../components/ModalRow.vue'
+import FormLayout from '../../components/FormLayout.vue'
+import FormRow from '../../components/FormRow.vue'
 
 interface GroupItem { id: number; name: string; key: string }
 

@@ -26,6 +26,10 @@
           <h2>Form Rows</h2>
           <AppButton label="Open" @click="open = 'modal-rows'" />
         </div>
+        <div>
+          <h2>Working state</h2>
+          <AppButton label="Open" @click="open = 'working'" />
+        </div>
       </div>
 
       <ModalLayout v-if="open === 'close'"
@@ -61,18 +65,18 @@
         @close="open = null"
         @action="open = null"
       >
-        <ModalRow title="Name">
+        <FormRow title="Name">
           <input class="demo-input" value="Andrew Davies" />
-        </ModalRow>
-        <ModalRow title="Checked In">
+        </FormRow>
+        <FormRow title="Checked In">
           <input type="checkbox" class="demo-checkbox" checked />
-        </ModalRow>
-        <ModalRow title="Description" :full-width="true">
+        </FormRow>
+        <FormRow title="Description" :full-width="true">
           <textarea class="demo-input" rows="3">Some longer text here.</textarea>
-        </ModalRow>
-        <ModalRow title="Session cover" :disabled="true">
+        </FormRow>
+        <FormRow title="Session cover" :disabled="true">
           <input type="checkbox" class="demo-checkbox" disabled />
-        </ModalRow>
+        </FormRow>
       </ModalLayout>
 
       <ModalLayout v-if="open === 'delete-confirm'"
@@ -86,6 +90,22 @@
         This will permanently delete the session and all its entries.
       </ModalLayout>
 
+      <ModalLayout v-if="open === 'working'"
+        title="Working state demo"
+        action="Save"
+        show-delete
+        :working="workingDemo"
+        @close="open = null"
+        @action="startWorkingDemo('action')"
+        @delete="startWorkingDemo('delete')"
+      >
+        <p>Click Save or Delete to see the working state for 3 seconds.</p>
+        <label style="display:block; margin-top:1rem">
+          Sample field
+          <input type="text" class="demo-input" placeholder="Interactable until working..." style="margin-top:0.25rem" />
+        </label>
+      </ModalLayout>
+
     </div>
   </DefaultLayout>
 </template>
@@ -97,9 +117,18 @@ import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
-import ModalRow from '../../components/ModalRow.vue'
+import FormRow from '../../components/FormRow.vue'
 
 const open = ref<string | null>(null)
+const workingDemo = ref(false)
+
+function startWorkingDemo(_button: 'action' | 'delete') {
+  workingDemo.value = true
+  setTimeout(() => {
+    workingDemo.value = false
+    open.value = null
+  }, 3000)
+}
 </script>
 
 <style scoped>

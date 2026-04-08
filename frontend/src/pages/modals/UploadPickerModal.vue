@@ -1,20 +1,20 @@
 <template>
   <ModalLayout title="Upload photos for…" action="Next" :action-disabled="!selected" @close="emit('close')" @action="onNext">
-    <ModalRow title="Volunteer" :full-width="true">
+    <FormRow title="Volunteer" :full-width="true">
       <select id="upm-select" class="upm-select" v-model="selected">
         <option disabled value="">Select a name…</option>
         <option v-for="entry in entries" :key="entry.id" :value="entry.id">
           {{ entry.profileName ?? 'Unknown' }}
         </option>
       </select>
-    </ModalRow>
+    </FormRow>
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
-import ModalRow from '../../components/ModalRow.vue'
+import FormRow from '../../components/FormRow.vue'
 import { useProfile } from '../../composables/useProfile'
 
 const props = defineProps<{

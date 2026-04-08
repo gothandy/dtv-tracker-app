@@ -1,166 +1,115 @@
 <template>
   <div class="ec-row">
 
-    <!-- Check/hours control (both variants) -->
-    <!-- State 1: unchecked → click checks in -->
-    <!-- State 2: checked, no hours → shows ✓, click opens hours input -->
-    <!-- State 3: hours input → clear to empty to revert to ✓ -->
+    <!-- Check/hours control -->
     <template v-if="allowEdit">
-      <div v-if="working && (showHours || entry.hours > 0)" class="ec-check ec-check--on">
+      <div v-if="working && (showHours || hours > 0)" class="ec-check ec-check--on">
         <span class="ec-spinner ec-spinner--white" />
       </div>
       <input
-        v-else-if="showHours || entry.hours > 0"
+        v-else-if="showHours || hours > 0"
         ref="hoursInput"
         type="number"
         class="ec-check ec-check--hours"
-        :value="entry.hours > 0 ? entry.hours : 3"
+        :value="hours > 0 ? hours : 3"
         min="0"
         step="0.5"
-        @blur="onHoursChange(entry, ($event.target as HTMLInputElement))"
-        @keydown.enter.prevent="onHoursChange(entry, ($event.target as HTMLInputElement))"
+        @blur="onHoursChange(($event.target as HTMLInputElement))"
+        @keydown.enter.prevent="onHoursChange(($event.target as HTMLInputElement))"
       />
       <button
         v-else
         class="ec-check"
-        :class="{ 'ec-check--on': entry.checkedIn, 'ec-check--working': working }"
-        @click="onCheckClick(entry)"
+        :class="{ 'ec-check--on': checkedIn, 'ec-check--working': working }"
+        @click="onCheckClick"
       >
         <span v-if="working" class="ec-spinner" />
-        <span v-else-if="entry.checkedIn">✓</span>
+        <span v-else-if="checkedIn">✓</span>
       </button>
     </template>
-    <div v-else-if="entry.hours > 0" class="ec-check ec-check--hours-static">
-      {{ entry.hours }}h
+    <div v-else-if="hours > 0" class="ec-check ec-check--hours-static">
+      {{ hours }}h
     </div>
-    <div v-else class="ec-check ec-check--static" :class="{ 'ec-check--on': entry.checkedIn }">
-      <span v-if="entry.checkedIn">✓</span>
+    <div v-else class="ec-check ec-check--static" :class="{ 'ec-check--on': checkedIn }">
+      <span v-if="checkedIn">✓</span>
     </div>
 
-    <!-- Entry card body -->
-    <div class="ec-card" :class="{ 'ec-card--checked': entry.checkedIn }">
+    <!-- Card body -->
+    <div class="ec-card" :class="{ 'ec-card--checked': checkedIn }">
+      <div class="ec-card-left">
 
-      <!-- Session variant: profile name + badges -->
-      <template v-if="displayType === 'session'">
-        <div class="ec-card-left">
-          <RouterLink v-if="entry.profile.slug" :to="profilePath(entry.profile.slug)" class="ec-name">
-            {{ entry.profile.name ?? 'Unknown' }}
-          </RouterLink>
-          <span v-else class="ec-name ec-name--plain">{{ entry.profile.name ?? 'Unknown' }}</span>
-          <!-- Profile badges -->
-          <span v-if="entry.profile.isMember && !entry.profile.isGroup" class="ec-icon" title="Charity Member">
-            <img src="/icons/member.svg" alt="Member" />
-          </span>
-          <span v-if="entry.profile.cardStatus === 'Accepted'" class="ec-icon" title="Benefits Card">
-            <img src="/icons/card.svg" alt="Card" />
-          </span>
-          <span v-if="entry.profile.cardStatus === 'Invited'" class="ec-icon icon-orange" title="Card Invited">
-            <img src="/icons/card.svg" alt="Card" />
-          </span>
-          <span v-if="entry.profile.isGroup" class="ec-icon" title="Group">
-            <img src="/icons/group.svg" alt="Group" />
-          </span>
-          <!-- Notes tag icons -->
-          <span
-            v-for="t in iconsFromNotes(entry.notes)"
-            :key="t.tag"
-            class="ec-icon"
-            :class="t.color ? 'icon-' + t.color : ''"
-            :title="t.alt"
-          >
-            <img :src="'/icons/' + t.icon" :alt="t.alt" />
-          </span>
-        </div>
-        <div class="ec-card-right">
-          <button v-if="allowCancel" class="ec-cancel" @click="emit('cancel', entry)" title="Remove">✕</button>
-        </div>
-      </template>
+        <button v-if="allowEdit" class="ec-name ec-name--btn" @click="emit('editEntry')">
+          {{ title }}
+        </button>
+        <RouterLink v-else-if="titleTo" :to="titleTo" class="ec-name">
+          {{ title }}
+        </RouterLink>
+        <span v-else class="ec-name ec-name--plain">{{ title }}</span>
 
-      <!-- Profile variant: date + group name as single linked title -->
-      <template v-else>
-        <div class="ec-card-left">
-          <RouterLink :to="sessionPath(entry.session.groupKey, entry.session.date)" class="ec-name">
-            {{ entry.session.date }} {{ entry.session.groupName }}
-          </RouterLink>
-          <!-- Profile badges -->
-          <span v-if="entry.profile.isMember && !entry.profile.isGroup" class="ec-icon" title="Charity Member">
-            <img src="/icons/member.svg" alt="Member" />
-          </span>
-          <span v-if="entry.profile.cardStatus === 'Accepted'" class="ec-icon" title="Benefits Card">
-            <img src="/icons/card.svg" alt="Card" />
-          </span>
-          <span v-if="entry.profile.cardStatus === 'Invited'" class="ec-icon icon-orange" title="Card Invited">
-            <img src="/icons/card.svg" alt="Card" />
-          </span>
-          <span v-if="entry.profile.isGroup" class="ec-icon" title="Group">
-            <img src="/icons/group.svg" alt="Group" />
-          </span>
-          <!-- Notes tag icons -->
-          <span
-            v-for="t in iconsFromNotes(entry.notes)"
-            :key="t.tag"
-            class="ec-icon"
-            :class="t.color ? 'icon-' + t.color : ''"
-            :title="t.alt"
-          >
-            <img :src="'/icons/' + t.icon" :alt="t.alt" />
-          </span>
-        </div>
-        <div class="ec-card-right">
-          <button v-if="allowCancel" class="ec-cancel" @click="emit('cancel', entry)" title="Remove">✕</button>
-        </div>
-      </template>
+        <span
+          v-for="icon in icons"
+          :key="icon.alt"
+          class="ec-icon"
+          :class="icon.color ? 'icon-' + icon.color : ''"
+          :title="icon.alt"
+        >
+          <img :src="'/icons/' + icon.icon" :alt="icon.alt" />
+        </span>
 
+      </div>
+      <div class="ec-card-right">
+        <button v-if="allowCancel" class="ec-cancel" @click="emit('cancel')" title="Remove">✕</button>
+      </div>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import { RouterLink } from 'vue-router'
-import { profilePath, sessionPath } from '../router/index'
-import type { EntryItem } from '../types/entry'
-import { iconsFromNotes } from '../utils/tagIcons'
+import { RouterLink, type RouteLocationRaw } from 'vue-router'
+import type { TagIcon } from '../utils/tagIcons'
 
 const props = defineProps<{
-  entry: EntryItem
-  displayType: 'session' | 'profile'
+  title: string
+  titleTo?: RouteLocationRaw
+  checkedIn: boolean
+  hours: number
+  icons?: TagIcon[]
   allowEdit?: boolean
   allowCancel?: boolean
   working?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update': [entry: EntryItem, checkedIn: boolean, hours: number]
-  'cancel': [entry: EntryItem]
+  'update': [checkedIn: boolean, hours: number]
+  'editEntry': []
+  'cancel': []
 }>()
 
 const showHours = ref(false)
 const hoursInput = ref<HTMLInputElement | null>(null)
 const handlingHours = ref(false)
 
-function onCheckClick(entry: EntryItem) {
-  if (!entry.checkedIn) {
-    // State 1 → 2: check in
-    emit('update', entry, true, entry.hours)
+function onCheckClick() {
+  if (!props.checkedIn) {
+    emit('update', true, props.hours)
   } else {
-    // State 2 → 3: open hours input and focus it
     showHours.value = true
     nextTick(() => hoursInput.value?.focus())
   }
 }
 
-function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
+function onHoursChange(input: HTMLInputElement) {
   if (handlingHours.value) return
   handlingHours.value = true
   const val = input.value.trim()
   if (val === '') {
-    // Deleted — revert all the way to unchecked
     showHours.value = false
-    emit('update', entry, false, 0)
+    emit('update', false, 0)
   } else {
-    const hours = parseFloat(val)
-    if (!isNaN(hours) && hours > 0 && hours !== entry.hours) emit('update', entry, true, hours)
+    const h = parseFloat(val)
+    if (!isNaN(h) && h > 0 && h !== props.hours) emit('update', true, h)
   }
   handlingHours.value = false
 }
@@ -173,13 +122,12 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
   gap: 0.5rem;
 }
 
-/* Check/hours control */
 .ec-check {
   width: 2.5rem;
   height: 2.5rem;
   flex-shrink: 0;
   align-self: flex-start;
-  background: var(--color-dtv-sand);
+  background: var(--color-dtv-light);
   border: 2px solid var(--color-dtv-sand-dark);
   cursor: pointer;
   font-size: 1.1rem;
@@ -208,16 +156,12 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
   border-radius: 50%;
   animation: ec-spin 0.7s linear infinite;
 }
-
 .ec-check--on .ec-spinner,
 .ec-spinner--white {
   border-color: rgba(255, 255, 255, 0.4);
   border-top-color: white;
 }
-
-@keyframes ec-spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes ec-spin { to { transform: rotate(360deg); } }
 
 .ec-check--hours {
   background: var(--color-dtv-green);
@@ -243,7 +187,6 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
   border: 2px solid var(--color-dtv-sand-dark);
 }
 
-/* Card body */
 .ec-card {
   flex: 1;
   min-width: 0;
@@ -255,9 +198,7 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
   border-left: 4px solid transparent;
   gap: 0.5rem;
 }
-.ec-card--checked {
-  border-left-color: var(--color-dtv-green);
-}
+.ec-card--checked { border-left-color: var(--color-dtv-green); }
 
 .ec-card-left {
   flex: 1;
@@ -276,7 +217,6 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
   flex-shrink: 0;
 }
 
-/* Name */
 .ec-name {
   color: var(--color-text);
   font-size: 0.95rem;
@@ -291,8 +231,14 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
 .ec-name:hover { text-decoration: underline; }
 .ec-name--plain { cursor: default; }
 .ec-name--plain:hover { text-decoration: none; }
+.ec-name--btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
 
-/* SVG icon tags */
 .ec-icon {
   display: inline-flex;
   align-items: center;
@@ -300,13 +246,8 @@ function onHoursChange(entry: EntryItem, input: HTMLInputElement) {
   height: 1.25rem;
   flex-shrink: 0;
 }
-.ec-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
+.ec-icon img { width: 100%; height: 100%; object-fit: contain; }
 
-/* Cancel button */
 .ec-cancel {
   background: none;
   border: none;

@@ -7,7 +7,8 @@
       :icon="t.icon.replace('.svg', '')"
       mode="icon-only"
       :selected="hasTag(t.tag!)"
-      @click="toggleTag(t.tag!)"
+      :disabled="disabled"
+      @click="!disabled && toggleTag(t.tag!)"
     />
   </div>
 </template>
@@ -17,7 +18,7 @@ import { computed } from 'vue'
 import { TAG_ICONS } from '../utils/tagIcons'
 import AppButton from './AppButton.vue'
 
-const props = defineProps<{ modelValue: string }>()
+const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const tagButtons = TAG_ICONS.filter(t => t.type === 'tag')

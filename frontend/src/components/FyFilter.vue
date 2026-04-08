@@ -1,6 +1,6 @@
 <template>
   <div class="fy-filter" ref="el">
-    <AppButton icon="filter" mode="icon-text" :label="selectedLabel" @click.stop="toggleOpen" />
+    <AppButton icon="filter" mode="icon-text" :label="selectedLabel" :disabled="disabled" @click.stop="toggleOpen" />
     <div v-if="open" class="fy-menu">
       <button
         v-for="opt in options"
@@ -17,7 +17,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AppButton from './AppButton.vue'
 import { useSessionsStore } from '../stores/sessions'
 
-const props = defineProps<{ modelValue: string }>()
+const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const sessionsStore = useSessionsStore()

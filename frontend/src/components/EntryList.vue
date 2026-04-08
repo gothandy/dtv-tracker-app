@@ -1,50 +1,33 @@
 <template>
   <div class="entry-list">
-    <div v-if="!entries.length" class="entry-list-empty">No entries yet.</div>
-    <div v-else class="entry-list-rows">
-      <EntryCard
-        v-for="entry in entries"
-        :key="entry.id"
-        :entry="entry"
-        :display-type="displayType"
-        :allow-edit="allowEdit"
-        :allow-cancel="allowCancel"
-        :working="workingId === entry.id"
-        @update="(e, c, h) => emit('update', e, c, h)"
-        @cancel="(e) => emit('cancel', e)"
-      />
-    </div>
+    <slot />
   </div>
 </template>
 
-<script setup lang="ts">
-import EntryCard from './EntryCard.vue'
-import type { EntryItem } from '../types/entry'
-
-defineProps<{
-  entries: EntryItem[]
-  displayType: 'session' | 'profile'
-  allowEdit?: boolean
-  allowCancel?: boolean
-  workingId?: number | null
-}>()
-
-const emit = defineEmits<{
-  'update': [entry: EntryItem, checkedIn: boolean, hours: number]
-  'cancel': [entry: EntryItem]
-}>()
-</script>
-
 <style scoped>
-.entry-list-empty {
-  font-size: 0.9rem;
-  color: var(--color-text-faint);
-  padding: 0.5rem 0;
-}
-
-.entry-list-rows {
+.entry-list {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 0.5rem;
+}
+
+/* 44em to 64em is specific to the 1/3 > 1/2 > 1 layout */
+@media (width >= 44em) {
+  .entry-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+
+  .entry-list > :deep(*) {
+    min-width: 0;
+  }
+}
+
+@media (width >= 64em) {
+  .entry-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 </style>
