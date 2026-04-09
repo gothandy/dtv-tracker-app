@@ -81,5 +81,16 @@ export const useSessionsStore = defineStore('sessions', () => {
     }
   }
 
-  return { sessions, loading, error, fetch }
+  function applyTag(sessionIds: number[], tag: { label: string; termGuid: string }) {
+    for (const s of raw.value) {
+      if (sessionIds.includes(s.id)) {
+        const meta = s.metadata ?? []
+        if (!meta.some(t => t.termGuid === tag.termGuid)) {
+          s.metadata = [...meta, tag]
+        }
+      }
+    }
+  }
+
+  return { sessions, loading, error, fetch, applyTag }
 })

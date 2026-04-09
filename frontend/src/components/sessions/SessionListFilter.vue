@@ -14,6 +14,8 @@
     </select>
     <TagPicker
       v-model="tagLabel"
+      :tree="taxonomyTree"
+      :loading="taxonomyLoading"
       :show-no-tags="true"
       :available-labels="availableTagLabels"
     />
@@ -25,10 +27,13 @@ import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import TagPicker from '../TagPicker.vue'
+import { useTaxonomy } from '../../composables/useTaxonomy'
 import type { Session } from '../../types/session'
 
 const props = defineProps<{ sessions: Session[] }>()
 const emit = defineEmits<{ filtered: [sessions: Session[]] }>()
+
+const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 const route = useRoute()
 const fy       = ref((route.query.fy as string) || 'rolling')

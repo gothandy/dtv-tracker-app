@@ -30,13 +30,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { TaxNode } from '../composables/useTaxonomy'
 
-interface TaxNode { label: string; id: string; children?: TaxNode[] }
 interface TagOption { label: string; displayLabel: string; depth: number; termGuid: string }
 
 const props = defineProps<{
   modelValue: string        // '' = all tags, '__none__' = untagged, or colon-path label
+  tree: TaxNode[]
+  loading?: boolean
   showNoTags?: boolean      // show "No tags" option (useful for filter contexts)
   placeholder?: string
   availableLabels?: Set<string> // if set, only show tags present in this set (or with descendants in it)
@@ -49,8 +51,6 @@ const emit = defineEmits<{
 }>()
 
 const panelOpen = ref(false)
-const loading = ref(false)
-const tree = ref<TaxNode[]>([])
 const wrapEl = ref<HTMLElement | null>(null)
 
 const displayLabel = computed(() => {
@@ -76,24 +76,9 @@ function isAvailable(label: string): boolean {
 }
 
 const flatOptions = computed(() => {
-  const all = flatten(tree.value)
+  const all = flatten(props.tree)
   return props.availableLabels ? all.filter(o => isAvailable(o.label)) : all
 })
-
-async function loadTree() {
-  if (tree.value.length || loading.value) return
-  loading.value = true
-  try {
-    const res = await fetch('/api/tags/taxonomy')
-    if (!res.ok) return
-    const json = await res.json()
-    tree.value = json.data ?? []
-  } catch (e) {
-    console.error('[TagPickerV1]', e)
-  } finally {
-    loading.value = false
-  }
-}
 
 function togglePanel() {
   if (!panelOpen.value) {
@@ -105,8 +90,6 @@ function togglePanel() {
 function onDropdownOpened(e: Event) {
   if (wrapEl.value && !wrapEl.value.contains(e.target as Node)) panelOpen.value = false
 }
-
-watch(panelOpen, open => { if (open) loadTree() })
 
 function select(label: string, _display: string) {
   const termGuid = flatOptions.value.find(o => o.label === label)?.termGuid ?? ''
@@ -151,6 +134,11 @@ onUnmounted(() => {
 .tp-btn.open {
   outline: 2px solid var(--color-dtv-dark);
   outline-offset: 3px;
+}
+.tp-btn:disabled {
+  background: var(--color-dtv-sand-light);
+  color: var(--color-dtv-sand-dark);
+  cursor: default;
 }
 
 .tp-chevron { font-size: 0.7rem; color: var(--color-text); flex-shrink: 0; margin-left: 0.5rem; }

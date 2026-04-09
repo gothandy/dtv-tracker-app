@@ -5,14 +5,22 @@
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
       <h1>Action Bars</h1>
 
+      <div class="sandbox-login-warning">Login to view some components</div>
+
       <h2>SessionDetailActions</h2>
       <SessionDetailActions :session="mockSession" group-key="sheepskull" date="2025-03-01" />
 
       <h2>SessionListActions (none selected)</h2>
-      <SessionListActions :sessions="mockSessions" v-model:selected="noneSelected" />
+      <SessionListActions :sessions="mockSessions" :can-bulk-tag="true" v-model:selected="noneSelected" />
 
       <h2>SessionListActions (some selected)</h2>
-      <SessionListActions :sessions="mockSessions" v-model:selected="someSelected" />
+      <SessionListActions
+        ref="listActionsRef"
+        :sessions="mockSessions"
+        :can-bulk-tag="true"
+        v-model:selected="someSelected"
+        @apply-tag="label => onListAction(listActionsRef, label)"
+      />
 
       <h2>GroupDetailActions (with Eventbrite)</h2>
       <GroupDetailActions
@@ -60,6 +68,7 @@ import type { Session } from '../../types/session'
 
 const actionsWithEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
 const actionsWithoutEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
+const listActionsRef = ref<InstanceType<typeof SessionListActions> | null>(null)
 
 const failNext = ref(false)
 const events = ref<string[]>([])
@@ -85,6 +94,21 @@ async function onGroupAction(actions: ActionsInstance, label: string, data?: unk
   else if (label === 'add-session') actions?.onAddSuccess()
   else if (label === 'delete-group') actions?.onDeleteSuccess()
   log(`${label} → done`)
+}
+
+type ListActionsInstance = InstanceType<typeof SessionListActions> | null
+
+async function onListAction(actions: ListActionsInstance, label: string) {
+  log(`apply-tag: "${label}" → saving…`)
+  await new Promise(r => setTimeout(r, 2000))
+  if (failNext.value) {
+    failNext.value = false
+    actions?.onTagError('Server error — please try again')
+    log(`apply-tag → failed`)
+    return
+  }
+  actions?.onTagSuccess()
+  log(`apply-tag → done`)
 }
 
 const mockSession: SessionDetailResponse = {

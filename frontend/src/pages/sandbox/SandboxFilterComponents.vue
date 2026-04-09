@@ -9,10 +9,10 @@
       <SessionListFilter :sessions="sessions" @filtered="filteredSessions = $event" />
 
       <h2>SessionListActions — empty</h2>
-      <SessionListActions :sessions="sessions" v-model:selected="emptySelected" @tagged="emptySelected = []" />
+      <SessionListActions :sessions="sessions" :can-bulk-tag="true" v-model:selected="emptySelected" />
 
       <h2>SessionListActions — active (3 selected)</h2>
-      <SessionListActions :sessions="sessions" v-model:selected="activeSelected" @tagged="activeSelected = []" />
+      <SessionListActions :sessions="sessions" :can-bulk-tag="true" v-model:selected="activeSelected" />
 
       <h2>GroupListFilter (Admin: New Group button visible)</h2>
       <GroupListFilter :groups="groups" :sessions="sessions" @filtered="filteredGroups = $event" />

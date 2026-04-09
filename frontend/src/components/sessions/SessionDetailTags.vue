@@ -12,6 +12,8 @@
     <div v-if="canEdit" class="stags-add-wrap">
       <TagPicker
         v-model="pickedLabel"
+        :tree="taxonomyTree"
+        :loading="taxonomyLoading"
         placeholder="+ Add tag"
         @select="onPick"
       />
@@ -23,6 +25,7 @@
 import { ref, computed, watch } from 'vue'
 import { useProfile } from '../../composables/useProfile'
 import TagPicker from '../TagPicker.vue'
+import { useTaxonomy } from '../../composables/useTaxonomy'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 
 const props = defineProps<{
@@ -35,6 +38,7 @@ const emit = defineEmits<{ updated: [] }>()
 
 const profile = useProfile()
 const canEdit = computed(() => profile.isAdmin || profile.isCheckIn)
+const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 const tags = computed(() => props.session.metadata ?? [])
 const pickedLabel = ref('')

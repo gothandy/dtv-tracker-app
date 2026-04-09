@@ -118,13 +118,13 @@
       <h2>Tag Picker</h2>
       <FormLayout>
         <FormRow title="Unselected">
-          <TagPicker v-model="tagValue" />
+          <TagPicker v-model="tagValue" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Selected">
-          <TagPicker v-model="tagValueSelected" />
+          <TagPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Disabled">
-          <TagPicker v-model="tagValue" disabled />
+          <TagPicker v-model="tagValue" :tree="taxonomyTree" :loading="taxonomyLoading" disabled />
         </FormRow>
       </FormLayout>
 
@@ -169,7 +169,7 @@
           <FyFilter v-model="fyValueSelected" />
         </FormRow>
         <FormRow title="Tag Picker">
-          <TagPicker v-model="tagValueSelected" />
+          <TagPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Entry Icon Picker" :full-width="true">
           <EntryTagPicker v-model="tagNotesSelected" />
@@ -196,9 +196,20 @@ import TagPicker from '../../components/TagPicker.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
 import { useSessionsStore } from '../../stores/sessions'
+import type { TaxNode } from '../../composables/useTaxonomy'
 
 const sessionsStore = useSessionsStore()
 sessionsStore.fetch()
+
+const taxonomyTree: TaxNode[] = [
+  { label: 'Sheepskull', id: 'uuid-1', children: [
+    { label: 'Top', id: 'uuid-1-1' },
+    { label: 'Bottom', id: 'uuid-1-2' },
+  ]},
+  { label: 'City Park', id: 'uuid-2' },
+  { label: 'DofE', id: 'uuid-3' },
+]
+const taxonomyLoading = false
 
 const fyValue = ref('all')
 const fyValueSelected = ref('FY2024')

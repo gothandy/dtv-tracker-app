@@ -1,78 +1,71 @@
 <template>
-  <div v-if="profile.isAdmin" class="sa-wrap">
+  <div v-if="canBulkTag" class="sa-wrap">
     <span class="sa-stats">
       {{ selected.length }} / {{ sessions.length }} sessions &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
 
     <div class="sa-buttons">
-      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="showTagPicker = true" />
+      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="showTagModal = true" />
       <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="downloadCsv" />
     </div>
 
-    <!-- Tag picker modal -->
-    <div v-if="showTagPicker" class="sa-modal-overlay" @click.self="showTagPicker = false">
-      <div class="sa-modal">
-        <h3>Add tag to {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }}</h3>
-        <TagPicker v-model="pickedTag" placeholder="Choose a tag…" />
-        <div class="sa-modal-buttons">
-          <AppButton label="Cancel" @click="showTagPicker = false" />
-          <AppButton label="Apply" :disabled="!pickedTag" :working="saving" @click="applyTag" />
-        </div>
-      </div>
-    </div>
+    <SessionAddTagsModal
+      v-if="showTagModal"
+      :count="selected.length"
+      :working="tagWorking"
+      :error="tagError"
+      @close="showTagModal = false"
+      @save="onSave"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import TagPicker from '../TagPicker.vue'
 import AppButton from '../AppButton.vue'
-import { useProfile } from '../../composables/useProfile'
+import SessionAddTagsModal from '../../pages/modals/SessionAddTagsModal.vue'
 import type { Session } from '../../types/session'
 
 const props = defineProps<{
-  sessions: Session[]   // full filtered list (for CSV + hours summary)
+  sessions: Session[]
   selected: number[]
+  canBulkTag: boolean
 }>()
 
-const emit = defineEmits<{ 'update:selected': [ids: number[]]; tagged: [] }>()
+const emit = defineEmits<{
+  'update:selected': [ids: number[]]
+  applyTag: [label: string, termGuid: string]
+}>()
 
-const profile = useProfile()
-const showTagPicker = ref(false)
-const pickedTag = ref('')
-const saving = ref(false)
+const showTagModal = ref(false)
+const tagWorking = ref(false)
+const tagError = ref('')
 
 const selectedSessions = computed(() => props.sessions.filter(s => props.selected.includes(s.id)))
 
 const selectedHours = computed(() =>
-  (Math.round(selectedSessions.value.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10))
+  Math.round(selectedSessions.value.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10)
 
 const totalHours = computed(() =>
-  (Math.round(props.sessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10))
+  Math.round(props.sessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10)
 
-async function applyTag() {
-  if (!pickedTag.value || !props.selected.length) return
-  saving.value = true
-  try {
-    const res = await fetch('/api/sessions/bulk-tag', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionIds: props.selected,
-        tags: [{ label: pickedTag.value, termGuid: '' }]
-      })
-    })
-    if (!res.ok) throw new Error('Bulk tag failed')
-    showTagPicker.value = false
-    pickedTag.value = ''
-    emit('update:selected', [])
-    emit('tagged')
-  } catch (e) {
-    console.error('[SessionActionsV1] bulk tag', e)
-  } finally {
-    saving.value = false
-  }
+function onSave(label: string, termGuid: string) {
+  tagWorking.value = true
+  tagError.value = ''
+  emit('applyTag', label, termGuid)
 }
+
+defineExpose({
+  onTagSuccess() {
+    showTagModal.value = false
+    tagWorking.value = false
+    tagError.value = ''
+  },
+  onTagError(msg: string) {
+    tagWorking.value = false
+    tagError.value = msg
+  },
+})
 
 function downloadCsv() {
   const headers = ['Date', 'Group', 'Name', 'Registrations', 'Hours', 'New', 'Children', 'Regulars', 'Financial Year']
@@ -116,16 +109,4 @@ function downloadCsv() {
 .sa-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
 
 .sa-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
-
-.sa-modal-overlay {
-  position: fixed; inset: 0; background: var(--color-overlay);
-  z-index: 100; display: flex; align-items: center; justify-content: center;
-}
-.sa-modal {
-  background: var(--color-white); padding: 1.5rem;
-  box-shadow: var(--shadow-lg); width: 90%; max-width: 360px;
-  display: flex; flex-direction: column; gap: 1rem;
-}
-.sa-modal h3 { color: var(--color-text); margin: 0; font-size: 1rem; }
-.sa-modal-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
 </style>

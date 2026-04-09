@@ -42,6 +42,10 @@
           <h2>Group Add Session</h2>
           <AppButton label="Open" @click="open = 'group-add-session'" />
         </div>
+        <div>
+          <h2>Session Add Tags</h2>
+          <AppButton label="Open" @click="open = 'session-add-tags'" />
+        </div>
       </div>
 
       <label class="fail-toggle">
@@ -124,6 +128,15 @@
         @add="onGroupAddSession"
       />
 
+      <SessionAddTagsModal
+        v-if="open === 'session-add-tags'"
+        :count="3"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @save="onAddTags"
+      />
+
       <DeleteModal
         v-if="open === 'delete'"
         title="Delete something?"
@@ -158,6 +171,7 @@ import MediaEditModal from '../modals/MediaEditModal.vue'
 import DeleteModal from '../modals/DeleteModal.vue'
 import GroupEditModal from '../modals/GroupEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
+import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
@@ -228,6 +242,10 @@ function onGroupEditSave(payload: unknown) {
 
 function onGroupAddSession(payload: unknown) {
   simulate(`group-add-session: add → ${JSON.stringify(payload)}`)
+}
+
+function onAddTags(label: string) {
+  simulate(`session-add-tags: "${label}"`)
 }
 
 function onAdd(payload: { profileId: number } | { newName: string; newEmail: string }) {
