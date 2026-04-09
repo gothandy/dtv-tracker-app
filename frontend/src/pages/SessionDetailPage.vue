@@ -144,7 +144,7 @@
 
       <!-- BOTTOM ROW -->
       <LayoutColumns ratio="1" :reverse="true" v-if="profile.isOperational">
-        <template #header><SectionHeader>Registrations and Check-in</SectionHeader></template>
+        <template #header><SectionHeader>Who's booked on?</SectionHeader></template>
         <template #left>
           <SessionEntryList
             ref="entryListRef"

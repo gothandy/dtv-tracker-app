@@ -4,19 +4,13 @@
     <!-- Header -->
     <div class="sel-header">
       <h2 class="sel-title">
-        Entries
-        <span v-if="entries.length" class="sel-count">({{ checkedCount }} from {{ entries.length }})</span>
+        Check-ins
+        <span v-if="entries.length" class="sel-count">({{ checkedCount }} / {{ entries.length }})</span>
       </h2>
       <div v-if="allowEdit" class="sel-actions">
-        <button class="icon-btn" title="Refresh" @click="emit('refreshRequest')">
-          <img src="/icons/refresh.svg" alt="Refresh" />
-        </button>
-        <button class="icon-btn" title="Set Hours" :disabled="eligibleCount === 0" @click="showSetHours = true">
-          <img src="/icons/clock.svg" alt="Set Hours" />
-        </button>
-        <button class="icon-btn" title="Add entry" @click="showAdd = true">
-          <img src="/icons/add.svg" alt="Add" />
-        </button>
+        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" @click="emit('refreshRequest')" />
+        <AppButton label="Set Hours" icon="clock" mode="icon-responsive" :disabled="eligibleCount === 0" @click="showSetHours = true" />
+        <AppButton label="Add" icon="add" mode="icon-responsive" @click="showAdd = true" />
       </div>
     </div>
 
@@ -72,6 +66,7 @@
 import { ref, computed } from 'vue'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../ProfilePicker.vue'
+import AppButton from '../AppButton.vue'
 import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
 import EditEntryModal from '../../pages/modals/EditEntryModal.vue'
