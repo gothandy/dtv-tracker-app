@@ -9,7 +9,7 @@
         <ProfileEntryList
           v-if="pageProfile"
           :entries="entries"
-          :profile="profile.context"
+          :allow-edit="profile.isOperational"
           :working-id="workingId"
           ref="entryListRef"
           @update="onEntryUpdate"

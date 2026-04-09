@@ -86,6 +86,8 @@ Good examples:
 - `canToggleCheckin`
 - `canSetHours`
 
+
+
 This keeps components focused on what they may do, not on wider app policy.
 
 ### 6. Keep data flow one-way
@@ -158,7 +160,7 @@ Examples:
 - `EntryCard`
 - `EditEntryModal`
 - `AddEntryModal`
-- `IconPicker`
+- `EntryTagPicker`
 
 These components should stay as independent as practical.
 
@@ -281,7 +283,7 @@ This gives:
 - easier mocking and sandbox work
 - simpler testing
 - less hidden API behaviour
-- better reuse when creating `ProfileEntryList` later
+- better reuse when creating `ProfileEntryList` (now built, same pattern)
 
 ### Important lesson
 The key decision was not "make one smart Entry component do everything".

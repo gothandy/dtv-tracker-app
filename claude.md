@@ -158,6 +158,7 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 
 ### Workflow
 - **Always plan first**: Use plan mode before implementing any non-trivial change. Explore the codebase, understand existing patterns, and get approval before writing code.
+- **Frontend architecture**: Read [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) before designing a new Vue feature — layering model, component boundaries, modals as stateless forms, capabilities over roles.
 - **Documentation review after every change**: After completing any update, review all relevant documentation and update it to reflect the current state:
   - [CLAUDE.md](CLAUDE.md) — project context, file structure, features list
   - [docs/test-script.md](docs/test-script.md) — manual test script (add/update test cases)
@@ -310,19 +311,46 @@ dtv-tracker-app/
 │       │   └── useProfile.ts       # Single UI auth composable — wraps useAuth, exposes isAdmin/isCheckIn/isOperational etc. + RoleContext snapshot
 │       ├── stores/
 │       │   ├── sessions.ts         # Sessions listing store
-│       │   └── sessionDetail.ts    # Session detail store — normalises isRegistered/isAttended/isRegular
+│       │   ├── sessionDetail.ts    # Session detail store — normalises isRegistered/isAttended/isRegular
+│       │   ├── groups.ts           # Groups listing store
+│       │   ├── groupDetail.ts      # Group detail store
+│       │   └── profiles.ts         # Profiles listing store
+│       ├── types/
+│       │   ├── session.ts          # Session frontend domain type (mapped from SessionResponse)
+│       │   ├── entry.ts            # EntryItem, EntryProfileSummary, EntrySessionSummary
+│       │   └── media.ts            # Media types
+│       ├── utils/
+│       │   ├── tagIcons.ts         # TagIcon type, TAG_ICONS list, iconsForEntry(), iconsFromNotes()
+│       │   └── breakpoints.ts      # belowBreakpointMd() — reads --breakpoint-md from CSS at runtime
 │       ├── components/
 │       │   ├── LayoutColumns.vue   # Responsive 2-col / 3-col grid layout
 │       │   ├── SessionList.vue     # Session list with grouped dates and status tabs
 │       │   ├── DebugData.vue       # Dev-only JSON data dump
-│       │   ├── sessions/SessionCard.vue  # Session summary card (sand bg, group/date/description/availability/View)
-│       │   └── groups/GroupCard.vue      # Group summary card (sand bg, name/description/stats stacked/View)
+│       │   ├── FyFilter.vue        # FY filter <select> — All FY / FY YY/YY / Rolling FY; rolling defaults
+│       │   ├── EntryCard.vue       # Entry row: check/hours control + title link/button + tag icons
+│       │   ├── EntryList.vue       # Layout wrapper for EntryCard rows (responsive grid)
+│       │   ├── EntryTagPicker.vue  # Tag toggle buttons (type=tag only); v-model binds to Notes string
+│       │   ├── sessions/SessionCard.vue        # Session summary card
+│       │   ├── sessions/SessionEntryList.vue   # Session entry workflow: check-in, hours, edit/add/set-hours modals; emits up to page
+│       │   ├── sessions/SessionListFilter.vue  # Sessions filter bar: search, FY, group, tag
+│       │   ├── sessions/SessionListActions.vue # Sessions action bar: X/N sessions, X/N hours, tag, CSV
+│       │   ├── sessions/SessionListResults.vue # Session card grid with checkbox overlay (admin)
+│       │   ├── groups/GroupCard.vue            # Group summary card
+│       │   ├── groups/GroupList.vue            # Groups list with FY filter (admin variant)
+│       │   ├── groups/GroupListFilter.vue      # Groups filter bar: FY, new group modal
+│       │   └── profiles/ProfileEntryList.vue   # Profile entry list: session links for read-only, edit modal for admin/check-in; badge icons suppressed (type=badge)
 │       ├── layouts/
 │       │   └── DefaultLayout.vue   # Page shell with header/footer
 │       └── pages/
-│           ├── HomePage.vue        # Calendar + session list
-│           ├── SessionDetailPage.vue  # Public-facing session detail (sign-up focused)
-│           └── sessions/           # Page-specific components for SessionDetailPage
+│           ├── HomePage.vue           # Calendar + session list
+│           ├── GroupsPage.vue         # Groups listing
+│           ├── GroupDetailPage.vue    # Group detail with stats, sessions, regulars
+│           ├── SessionsPage.vue       # Sessions listing with filters and action bar
+│           ├── SessionDetailPage.vue  # Session detail — sign-up (public) and check-in (operational)
+│           ├── ProfileListPage.vue    # Profiles listing (stub + DebugData)
+│           ├── ProfileDetailPage.vue  # Profile detail — page title, PageHeader, entry list, debug data
+│           ├── AdminPage.vue          # Admin actions (sync, cache, exports)
+│           └── sessions/             # Page-specific components for SessionDetailPage
 │               ├── SessionHeaderCard.vue   # Group name / date-time-location / description
 │               ├── CoverPhotoCard.vue      # Cover photo at 2:3 aspect ratio
 │               ├── BookCard.vue            # Booking CTA (days-to-go, button, spaces left)

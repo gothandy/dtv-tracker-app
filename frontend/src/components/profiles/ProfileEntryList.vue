@@ -24,11 +24,11 @@
         v-for="e in filteredEntries"
         :key="e.id"
         :title="cardTitle(e)"
-        :title-to="profile?.isOperational ? undefined : sessionPath(e.session.groupKey, e.session.date)"
+        :title-to="allowEdit ? undefined : sessionPath(e.session.groupKey, e.session.date)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
         :icons="iconsForEntry({ ...e.profile, notes: e.notes }).filter(i => i.type !== 'badge')"
-        :allow-edit="profile?.isOperational ?? false"
+        :allow-edit="allowEdit ?? false"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"
         @edit-entry="editingEntry = e"
@@ -52,7 +52,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { EntryItem } from '../../types/entry'
-import type { RoleContext } from '../../composables/useProfile'
 import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
 import EditEntryModal from '../../pages/modals/EditEntryModal.vue'
@@ -63,7 +62,7 @@ type EditData = { checkedIn: boolean; count: number; hours: number; notes: strin
 
 const props = defineProps<{
   entries: EntryItem[]
-  profile?: RoleContext
+  allowEdit?: boolean
   workingId?: number | null
 }>()
 

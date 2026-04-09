@@ -1,5 +1,33 @@
 # Development Progress
 
+## Session: 2026-04-09 (ProfileEntryList, FyFilter Rolling, session action bar)
+
+### Completed Tasks
+
+#### ProfileEntryList + ProfileDetailPage wired ✓ (closes #76, #77)
+
+`SessionEntryList` refactor plan (docs/plans/session-entry-list.md) fully implemented. Plan archived to `docs/legacy/`.
+
+- `ProfileEntryList.vue` (`components/profiles/`) — session entries on profile page; `allowEdit` gates admin/check-in (inline hours + `EditEntryModal`) vs. self-service/read-only (click-through `RouterLink` to session); badge icons suppressed via `type=badge` filter (redundant on profile page — same for every row); `cardTitle()` formats as `date · groupName`
+- `ProfileDetailPage.vue` — `mapProfileEntry()` maps `ProfileEntryResponse` → `EntryItem`; `onEntryUpdate`/`onEditEntry` handlers PATCH/DELETE `/api/entries/:id`; `PageHeader` + `usePageTitle` wired; DebugData kept for dev
+- `EditEntryModal` — optional `title` prop added; profile page passes `cardTitle(editingEntry)` so modal shows date · group instead of profile name
+
+**Key decisions:**
+- `type: 'badge'` already distinguishes profile-derived icons from note-based tags — no new field needed
+- `isMember` hard-coded `false` in `mapProfileEntry` (not in `ProfileDetailResponse`) — cosmetic only in modal, noted as follow-up
+
+#### FyFilter simplified + Rolling FY default ✓
+
+- `FyFilter.vue` replaced custom dropdown with standard `<select>` (matches groups filter style)
+- Options: `All FY` / `FY YY/YY` (from sessions store) / `Rolling FY` — Rolling is the new default
+- Rolling = last 12 months by date range; client-side filter in `SessionListFilter`, `GroupListFilter`, `GroupList`; sessions page already passes `fy` to API which handles it server-side
+
+#### Session action bar stats ✓
+
+Replaced "No sessions selected." with `X / N sessions   X / N hours` — always visible, updates as selection changes.
+
+---
+
 ## Session: 2026-04-06c (Session capacity limits, server-computed enrichment, SessionDetailStats)
 
 ### Completed Tasks
