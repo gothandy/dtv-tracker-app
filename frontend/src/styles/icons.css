@@ -13,7 +13,7 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.icon-btn:hover { filter: brightness(var(--brightness-dark)); }
+.icon-btn:hover { background: var(--color-dtv-green-dark); }
 .icon-btn:disabled { opacity: 0.5; cursor: default; }
 .icon-btn img {
   width: 1.1rem;

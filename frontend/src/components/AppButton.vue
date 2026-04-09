@@ -123,7 +123,11 @@ const buttonStyle = computed(() => ({
 }
 
 .app-btn:hover:not(:disabled) {
-  filter: brightness(var(--brightness-dark));
+  background: var(--color-dtv-green-dark);
+}
+
+.app-btn--danger:hover:not(:disabled) {
+  background: var(--color-dtv-dirt-dark);
 }
 
 .app-btn:disabled {
@@ -138,8 +142,8 @@ const buttonStyle = computed(() => ({
 }
 
 @keyframes app-btn-pulse {
-  0%, 100% { filter: brightness(1); }
-  50%       { filter: brightness(var(--brightness-pulse)); }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
 }
 
 

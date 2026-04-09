@@ -7,10 +7,15 @@
   /* DTV brand colours */
   --color-dtv-dark: #000204;
   --color-dtv-green: #4FAF4A;
+  --color-dtv-green-light: #5DCF57;
+  --color-dtv-green-dark: #41903D;
   --color-dtv-dirt: #B04A4F;
   --color-dtv-dirt-light: #F2DADA;
+  --color-dtv-dirt-dark: #903D41;
   --color-dtv-light: #fffffc;
   --color-dtv-gold: #B0AB4A;
+  --color-dtv-gold-light: #D0CA57;
+  --color-dtv-gold-dark: #908C3D;
   --color-dtv-sand: #E1E0D1;
   --color-dtv-sand-dark: #B9B8AC;
   --color-dtv-sand-light: #EDECD8;
@@ -50,11 +55,6 @@
   /* Fonts */
   --font-display: 'Rubik Dirt', cursive;
   --font-body: 'Momo Trust Display', cursive;
-
-  /* Interaction brightness */
-  --brightness-dark: 0.82;
-  --brightness-light: 1.18;
-  --brightness-pulse: 0.6;
 
   /* Breakpoints — em preferred over rem for media query reliability */
   --breakpoint-sm: 30em;
