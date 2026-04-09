@@ -16,7 +16,14 @@
           <TagCloud :tags="tagHours" @click="onTagClick" />
         </template>
         <template #right>
-          <GroupDetailActions v-if="profile.isAdmin" :group="store.group" @updated="reload" />
+          <GroupDetailActions
+            v-if="profile.isAdmin"
+            ref="actionsRef"
+            :group="store.group"
+            @edit-group="onEditGroup"
+            @add-session="onAddSession"
+            @delete-group="onDeleteGroup"
+          />
           <GroupDetailRegulars v-if="profile.isAdmin || profile.isCheckIn" :group="store.group" />
           <div class="bg-dtv-green/25 flex items-start justify-center p-2">
             <CalendarWidget
@@ -56,15 +63,20 @@ import GroupDetailRegulars from '../components/groups/GroupDetailRegulars.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TagCloud from '../components/TagCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
-import { sessionPath } from '../router/index'
+import { sessionPath, groupPath, groupsPath } from '../router/index'
 import type { Session } from '../types/session'
 import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
 import type { MediaItem } from '../types/media'
+
+type EditGroupPayload = { name?: string; key: string; description?: string; eventbriteSeriesId?: string }
+type AddSessionPayload = { groupId: number; date: string; name?: string }
 
 const route = useRoute()
 const router = useRouter()
 const store = useGroupDetailStore()
 const profile = useProfile()
+
+const actionsRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
 
 const titleText = computed(() => store.group?.displayName || store.group?.key || '')
 usePageTitle(titleText)
@@ -159,6 +171,56 @@ function onTagClick(_termGuid: string, label: string) {
 
 function reload() {
   store.fetch(route.params.key as string)
+}
+
+async function onEditGroup(data: EditGroupPayload) {
+  const currentKey = store.group!.key
+  try {
+    const res = await fetch(`/api/groups/${currentKey}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error('Failed to save')
+    const json = await res.json()
+    actionsRef.value?.onEditSuccess()
+    if (json.data?.key && json.data.key !== currentKey) {
+      router.push(groupPath(json.data.key))
+    } else {
+      reload()
+    }
+  } catch (e) {
+    console.error('[GroupDetailPage] edit group', e)
+    actionsRef.value?.onEditError('Failed to save group')
+  }
+}
+
+async function onAddSession(data: AddSessionPayload) {
+  try {
+    const res = await fetch('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error('Failed to create session')
+    const json = await res.json()
+    actionsRef.value?.onAddSuccess()
+    router.push(sessionPath(store.group!.key, json.data?.date ?? data.date))
+  } catch (e) {
+    console.error('[GroupDetailPage] add session', e)
+    actionsRef.value?.onAddError('Failed to create session')
+  }
+}
+
+async function onDeleteGroup() {
+  try {
+    const res = await fetch(`/api/groups/${store.group!.key}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Failed to delete')
+    actionsRef.value?.onDeleteSuccess()
+    router.push(groupsPath())
+  } catch (e) {
+    console.error('[GroupDetailPage] delete group', e)
+  }
 }
 
 onMounted(reload)

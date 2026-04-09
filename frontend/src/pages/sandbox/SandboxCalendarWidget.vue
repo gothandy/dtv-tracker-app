@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
@@ -36,22 +37,5 @@ const selectedDate = ref('')
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; }
-.back:hover { text-decoration: underline; }
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: 0.5rem;
-}
-
 .selected { font-size: 0.85rem; color: var(--color-text-muted); padding: 1rem; }
 </style>

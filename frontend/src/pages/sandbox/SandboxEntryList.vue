@@ -94,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import EntryList from '../../components/EntryList.vue'
@@ -155,34 +156,15 @@ async function onUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
 </script>
 
 <style scoped>
-.sandbox {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; padding: 2rem 2rem 0; }
-.back:hover { text-decoration: underline; }
-
-h1 { font-size: 1.5rem; font-weight: 700; padding: 0 2rem; }
-h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); padding: 0 2rem; }
+/* EntryList has no outer padding — content bleeds edge to edge */
+.sandbox { padding: 0; }
+.back { padding: 2rem 2rem 0; }
+.sandbox h1 { padding: 0 2rem; }
+.sandbox h2 { padding: 0 2rem; }
 
 .demo { border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
-
 .empty { font-size: 0.9rem; color: var(--color-text-faint); }
-
-.event-log {
-  margin: 0 2rem 2rem;
-  border: 1px solid var(--color-border);
-  padding: 0.75rem;
-  font-family: monospace;
-  font-size: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-height: 3rem;
-}
-.event-log-empty { color: var(--color-text-faint); }
+.event-log { margin: 0 2rem 2rem; }
 
 .grid-ref {
   display: flex;

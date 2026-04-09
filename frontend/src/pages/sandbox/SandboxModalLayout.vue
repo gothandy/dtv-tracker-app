@@ -128,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import { ref } from 'vue'
@@ -166,24 +167,7 @@ async function startErrorDemo(_button: 'action' | 'delete') {
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; }
-.back:hover { text-decoration: underline; }
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 0.5rem;
-}
-
-h2 { font-size: 1rem; font-weight: 600; color: #666; margin-bottom: 0.5rem; }
+.sandbox { gap: 2rem; }
 
 .row {
   display: flex;

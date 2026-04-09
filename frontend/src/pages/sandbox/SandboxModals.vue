@@ -102,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
@@ -222,24 +223,7 @@ const mockEntries: EntryItem[] = [
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; }
-.back:hover { text-decoration: underline; }
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 0.5rem;
-}
-
-h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+.sandbox { gap: 2rem; }
 
 .row {
   display: flex;
@@ -255,16 +239,4 @@ h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); margin-b
   color: var(--color-text-muted);
   cursor: pointer;
 }
-
-.event-log {
-  border: 1px solid var(--color-border);
-  padding: 0.75rem;
-  font-family: monospace;
-  font-size: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-height: 3rem;
-}
-.event-log-empty { color: var(--color-text-faint); }
 </style>

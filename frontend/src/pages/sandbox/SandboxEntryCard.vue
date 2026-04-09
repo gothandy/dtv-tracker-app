@@ -106,6 +106,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import EntryCard from '../../components/EntryCard.vue'
@@ -138,30 +139,5 @@ async function onUpdate(id: number, checkedIn: boolean, hours: number) {
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; }
-.back:hover { text-decoration: underline; }
-
-h1 { font-size: 1.5rem; font-weight: 700; }
-h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.25rem; }
-
 .demo { border: 1px solid var(--color-border); padding: 0.5rem; }
-
-.event-log {
-  border: 1px solid var(--color-border);
-  padding: 0.75rem;
-  font-family: monospace;
-  font-size: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-height: 3rem;
-}
-.event-log-empty { color: var(--color-text-faint); }
 </style>

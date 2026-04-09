@@ -44,6 +44,7 @@
       <div class="row">
         <AppButton label="External Link" href="https://example.com" target="_blank" />
         <AppButton label="Download" icon="edit" href="/api/sessions/export" />
+        <AppButton label="View on Eventbrite" icon="eventbrite" mode="icon-only" href="https://www.eventbrite.co.uk" target="_blank" />
       </div>
 
       <h2>Custom Color</h2>
@@ -62,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
@@ -69,37 +71,7 @@ import AppButton from '../../components/AppButton.vue'
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.back {
-  color: var(--color-dtv-green);
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.back:hover {
-  text-decoration: underline;
-}
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #666;
-  margin-bottom: 0.25rem;
-}
+.sandbox { gap: 1rem; }
 
 .row {
   display: flex;

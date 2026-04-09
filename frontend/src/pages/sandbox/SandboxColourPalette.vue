@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
@@ -36,26 +37,8 @@ const colours = [
 
 <style scoped>
 .sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
   gap: 0.75rem;
   background: #ffffff;
-}
-
-.back {
-  color: var(--color-dtv-green);
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-.back:hover { text-decoration: underline; }
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .colour-row {

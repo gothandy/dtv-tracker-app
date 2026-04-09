@@ -1,0 +1,41 @@
+/* Shared chrome for all sandbox pages — import once per sandbox page */
+
+.sandbox {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.back {
+  color: var(--color-dtv-green);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.back:hover { text-decoration: underline; }
+
+.sandbox h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+.sandbox h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* Event log: shows emitted events; used by EntryCard, EntryList, Modals sandboxes */
+.event-log {
+  border: 1px solid var(--color-border);
+  padding: 0.75rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 3rem;
+}
+.event-log-empty { color: var(--color-text-faint); }

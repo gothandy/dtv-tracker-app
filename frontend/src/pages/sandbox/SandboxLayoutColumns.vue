@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import LayoutColumns from '../../components/LayoutColumns.vue'
@@ -57,25 +58,6 @@ usePageTitle('Sandbox')
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; }
-.back:hover { text-decoration: underline; }
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: 0.5rem;
-}
-
-h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); }
-
 .col {
   display: flex;
   align-items: center;

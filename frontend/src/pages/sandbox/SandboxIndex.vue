@@ -59,31 +59,17 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 </script>
 
 <style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-h2 {
+.sandbox h2 {
   font-size: 0.8rem;
-  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  margin-bottom: 0.5rem;
 }
 
 nav {

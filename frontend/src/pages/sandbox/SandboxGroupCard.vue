@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import GroupCard from '../../components/groups/GroupCard.vue'
@@ -70,21 +71,3 @@ const withRegulars: GroupWithStats = {
 }
 </script>
 
-<style scoped>
-.sandbox {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.back { color: var(--color-dtv-green); text-decoration: none; font-size: 0.9rem; }
-.back:hover { text-decoration: underline; }
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.5rem; }
-</style>

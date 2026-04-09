@@ -2,9 +2,14 @@
   <div class="gab-wrap">
     <AppButton label="Add session" icon="add" mode="icon-responsive" @click="showAdd = true" />
     <AppButton label="Edit" icon="edit" mode="icon-responsive" @click="openEdit" />
-    <a v-if="group.eventbriteSeriesId" :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`" target="_blank" rel="noopener" class="gab-eb-link" title="View on Eventbrite">
-      <img src="/icons/eventbrite.svg" alt="Eventbrite" class="gab-eb-icon" />
-    </a>
+    <AppButton
+      v-if="group.eventbriteSeriesId"
+      label="View on Eventbrite"
+      icon="eventbrite"
+      mode="icon-only"
+      :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`"
+      target="_blank"
+    />
 
     <!-- Edit modal -->
     <div v-if="showEdit" class="v1-modal-overlay" @click.self="showEdit = false">
@@ -26,10 +31,11 @@
           <label>Eventbrite series ID</label>
           <input v-model="editEbId" type="text" />
         </div>
+        <p v-if="editError" class="v1-modal-error">{{ editError }}</p>
         <div class="v1-modal-buttons">
           <AppButton label="Cancel" @click="showEdit = false" />
           <AppButton label="Delete" icon="delete" mode="icon-responsive" variant="danger" style="margin-right:auto" @click="showEdit = false; showDelete = true" />
-          <AppButton label="Save" :working="saving" @click="saveEdit" />
+          <AppButton label="Save" :working="workingEdit" @click="saveEdit" />
         </div>
       </div>
     </div>
@@ -46,9 +52,10 @@
           <label>Display name (optional)</label>
           <input v-model="newName" type="text" :placeholder="group.displayName || group.key" />
         </div>
+        <p v-if="addError" class="v1-modal-error">{{ addError }}</p>
         <div class="v1-modal-buttons">
           <AppButton label="Cancel" @click="showAdd = false" />
-          <AppButton label="Create" :disabled="!newDate" :working="saving" @click="createSession" />
+          <AppButton label="Create" :disabled="!newDate" :working="workingAdd" @click="submitAddSession" />
         </div>
       </div>
     </div>
@@ -60,7 +67,7 @@
         <p class="v1-modal-body">This will permanently delete <strong>{{ group.displayName || group.key }}</strong> and cannot be undone.</p>
         <div class="v1-modal-buttons">
           <AppButton label="Cancel" @click="showDelete = false" />
-          <AppButton label="Delete" icon="delete" mode="icon-responsive" variant="danger" :working="saving" @click="confirmDelete" />
+          <AppButton label="Delete" icon="delete" mode="icon-responsive" variant="danger" :working="workingDelete" @click="confirmDelete" />
         </div>
       </div>
     </div>
@@ -69,20 +76,28 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { groupsPath, sessionPath } from '../../router/index'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 import AppButton from '../AppButton.vue'
 
-const props = defineProps<{ group: GroupDetailResponse }>()
-const emit = defineEmits<{ updated: [] }>()
+type EditGroupPayload = { name?: string; key: string; description?: string; eventbriteSeriesId?: string }
+type AddSessionPayload = { groupId: number; date: string; name?: string }
 
-const router = useRouter()
+const props = defineProps<{ group: GroupDetailResponse }>()
+const emit = defineEmits<{
+  editGroup: [data: EditGroupPayload]
+  addSession: [data: AddSessionPayload]
+  deleteGroup: []
+}>()
 
 const showEdit = ref(false)
 const showDelete = ref(false)
 const showAdd = ref(false)
-const saving = ref(false)
+
+const workingEdit = ref(false)
+const workingAdd = ref(false)
+const workingDelete = ref(false)
+const editError = ref('')
+const addError = ref('')
 
 const newDate = ref('')
 const newName = ref('')
@@ -100,71 +115,58 @@ function openEdit() {
   showEdit.value = true
 }
 
-async function saveEdit() {
-  saving.value = true
-  try {
-    const res = await fetch(`/api/groups/${props.group.key}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: editName.value || undefined,
-        key: editKey.value,
-        description: editDesc.value || undefined,
-        eventbriteSeriesId: editEbId.value || undefined
-      })
-    })
-    if (!res.ok) throw new Error('Failed to save')
-    const json = await res.json()
-    showEdit.value = false
-    if (json.data?.key && json.data.key !== props.group.key) {
-      router.push(`/groups/${json.data.key}`)
-    } else {
-      emit('updated')
-    }
-  } catch (e) {
-    console.error('[GroupActionButtonsV1] save', e)
-  } finally {
-    saving.value = false
-  }
+function saveEdit() {
+  workingEdit.value = true
+  editError.value = ''
+  emit('editGroup', {
+    name: editName.value || undefined,
+    key: editKey.value,
+    description: editDesc.value || undefined,
+    eventbriteSeriesId: editEbId.value || undefined,
+  })
 }
 
-async function createSession() {
-  saving.value = true
-  try {
-    const res = await fetch('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        groupId: props.group.id,
-        date: newDate.value,
-        name: newName.value || undefined
-      })
-    })
-    if (!res.ok) throw new Error('Failed to create session')
-    const json = await res.json()
+function submitAddSession() {
+  workingAdd.value = true
+  addError.value = ''
+  emit('addSession', {
+    groupId: props.group.id,
+    date: newDate.value,
+    name: newName.value || undefined,
+  })
+}
+
+function confirmDelete() {
+  workingDelete.value = true
+  emit('deleteGroup')
+}
+
+defineExpose({
+  onEditSuccess() {
+    showEdit.value = false
+    workingEdit.value = false
+    editError.value = ''
+  },
+  onEditError(msg: string) {
+    workingEdit.value = false
+    editError.value = msg
+  },
+  onAddSuccess() {
     showAdd.value = false
+    workingAdd.value = false
+    addError.value = ''
     newDate.value = ''
     newName.value = ''
-    router.push(sessionPath(props.group.key, json.data?.date ?? newDate.value))
-  } catch (e) {
-    console.error('[GroupActionButtonsV1] create session', e)
-  } finally {
-    saving.value = false
-  }
-}
-
-async function confirmDelete() {
-  saving.value = true
-  try {
-    const res = await fetch(`/api/groups/${props.group.key}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error('Failed to delete')
-    router.push(groupsPath())
-  } catch (e) {
-    console.error('[GroupActionButtonsV1] delete', e)
-  } finally {
-    saving.value = false
-  }
-}
+  },
+  onAddError(msg: string) {
+    workingAdd.value = false
+    addError.value = msg
+  },
+  onDeleteSuccess() {
+    showDelete.value = false
+    workingDelete.value = false
+  },
+})
 </script>
 
 <style scoped>
@@ -175,9 +177,6 @@ async function confirmDelete() {
   padding: 1rem 1.5rem;
   background: var(--color-surface-hover);
 }
-
-
-.gab-eb-icon { width: 18px; height: 18px; opacity: 0.7; display: block; }
 
 .v1-modal-overlay {
   position: fixed; inset: 0; background: var(--color-overlay);
@@ -192,6 +191,8 @@ async function confirmDelete() {
 .v1-modal h3 { color: var(--color-text); margin-bottom: 1rem; font-size: 1.1rem; }
 
 .v1-modal-body { color: var(--color-text-secondary); margin-bottom: 1rem; line-height: 1.5; }
+
+.v1-modal-error { color: var(--color-dtv-red); font-size: 0.85rem; margin-bottom: 0.75rem; }
 
 .v1-modal-field { margin-bottom: 1rem; }
 
