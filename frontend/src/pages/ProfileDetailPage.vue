@@ -1,17 +1,25 @@
 <template>
   <DefaultLayout>
-    <h1 class="sr-only">Profile</h1>
+    <h1 class="sr-only">{{ pageProfile?.name ?? 'Profile' }}</h1>
+    <PageHeader>{{ pageProfile?.name ?? 'Profile' }}</PageHeader>
+
+    <LayoutColumns ratio="1">
+      <template #header><SectionHeader>Your volunteering</SectionHeader></template>
+      <template #left>
+        <ProfileEntryList
+          v-if="pageProfile"
+          :entries="entries"
+          :profile="profile.context"
+          :working-id="workingId"
+          ref="entryListRef"
+          @update="onEntryUpdate"
+          @edit-entry="onEditEntry"
+        />
+      </template>
+    </LayoutColumns>
+
     <DebugData :item="pageProfile ?? {}" label="pageProfile" />
     <DebugData :item="profile.context" label="userProfile" />
-    <ProfileEntryList
-      v-if="pageProfile"
-      :entries="entries"
-      :profile="profile.context"
-      :working-id="workingId"
-      ref="entryListRef"
-      @update="onEntryUpdate"
-      @edit-entry="onEditEntry"
-    />
   </DefaultLayout>
 </template>
 
@@ -20,16 +28,22 @@ import { ref, computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import DebugData from '../components/DebugData.vue'
+import PageHeader from '../components/PageHeader.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import { useProfile } from '../composables/useProfile'
+import { usePageTitle } from '../composables/usePageTitle'
 import type { ProfileDetailResponse, ProfileEntryResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
+import LayoutColumns from '../components/LayoutColumns.vue'
+import SectionHeader from '../components/SectionHeader.vue'
 
 const route = useRoute()
 const profile = useProfile()
 
 const pageProfile = ref<ProfileDetailResponse | null>(null)
 const workingId = ref<number | null>(null)
+
+usePageTitle(computed(() => pageProfile.value?.name ?? 'Profile'))
 const entryListRef = ref<InstanceType<typeof ProfileEntryList> | null>(null)
 
 watchEffect(async () => {

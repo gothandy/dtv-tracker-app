@@ -59,22 +59,32 @@ const profile = useProfile()
 const router = useRouter()
 const groupsStore = useGroupsStore()
 
-const fy = ref('all')
+const fy = ref('rolling')
 const showNew = ref(false)
 const newKey = ref('')
 const newName = ref('')
 const newDesc = ref('')
 const saving = ref(false)
 
+function rollingStart(): string {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+function matchesFy(s: Session): boolean {
+  if (fy.value === 'all') return true
+  if (fy.value === 'rolling') return s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10)
+  return s.financialYear === fy.value
+}
+
 const filtered = computed<GroupWithStats[]>(() => {
   const fyGroups = fy.value === 'all'
     ? props.groups
-    : props.groups.filter(g => props.sessions.some(s => s.groupId === g.id && s.financialYear === fy.value))
+    : props.groups.filter(g => props.sessions.some(s => s.groupId === g.id && matchesFy(s)))
 
   return fyGroups.map(g => {
-    const groupSessions = props.sessions.filter(s =>
-      s.groupId === g.id && (fy.value === 'all' || s.financialYear === fy.value)
-    )
+    const groupSessions = props.sessions.filter(s => s.groupId === g.id && matchesFy(s))
     return {
       ...g,
       sessionCount: groupSessions.length,

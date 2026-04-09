@@ -91,7 +91,7 @@ const sessionsStore = useSessionsStore()
 const profile = useProfile()
 const router = useRouter()
 
-const selectedFy = ref('all')
+const selectedFy = ref('rolling')
 const showNewGroup = ref(false)
 const newGroupName = ref('')
 const newGroupKey = ref('')
@@ -103,29 +103,33 @@ onMounted(() => {
   sessionsStore.fetch()
 })
 
+function rollingStart(): string {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+function matchesFy(s: { financialYear: string; date: string }): boolean {
+  if (selectedFy.value === 'all') return true
+  if (selectedFy.value === 'rolling') return s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10)
+  return s.financialYear === selectedFy.value
+}
+
 const filteredGroups = computed(() => {
   if (selectedFy.value === 'all') return store.groups
   const activeIds = new Set(
-    sessionsStore.sessions
-      .filter(s => s.financialYear === selectedFy.value && s.groupId)
-      .map(s => s.groupId)
+    sessionsStore.sessions.filter(s => s.groupId && matchesFy(s)).map(s => s.groupId)
   )
   return store.groups.filter(g => activeIds.has(g.id))
 })
 
 function sessionCount(groupId: number): number {
-  return sessionsStore.sessions.filter(s =>
-    s.groupId === groupId &&
-    (selectedFy.value === 'all' || s.financialYear === selectedFy.value)
-  ).length
+  return sessionsStore.sessions.filter(s => s.groupId === groupId && matchesFy(s)).length
 }
 
 function groupHours(groupId: number): number {
   const total = sessionsStore.sessions
-    .filter(s =>
-      s.groupId === groupId &&
-      (selectedFy.value === 'all' || s.financialYear === selectedFy.value)
-    )
+    .filter(s => s.groupId === groupId && matchesFy(s))
     .reduce((sum, s) => sum + (s.hours || 0), 0)
   return Math.round(total * 10) / 10
 }

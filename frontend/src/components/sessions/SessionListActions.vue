@@ -1,10 +1,7 @@
 <template>
   <div v-if="profile.isAdmin" class="sa-wrap">
     <span class="sa-stats">
-      <template v-if="selected.length">
-        {{ selected.length }} session{{ selected.length === 1 ? '' : 's' }} selected — {{ selectedHours }}h
-      </template>
-      <template v-else>No sessions selected.</template>
+      {{ selected.length }} / {{ sessions.length }} sessions &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
 
     <div class="sa-buttons">
@@ -48,8 +45,10 @@ const saving = ref(false)
 const selectedSessions = computed(() => props.sessions.filter(s => props.selected.includes(s.id)))
 
 const selectedHours = computed(() =>
-  Math.round(selectedSessions.value.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10
-)
+  (Math.round(selectedSessions.value.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10))
+
+const totalHours = computed(() =>
+  (Math.round(props.sessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10))
 
 async function applyTag() {
   if (!pickedTag.value || !props.selected.length) return

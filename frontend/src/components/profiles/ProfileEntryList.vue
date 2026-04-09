@@ -3,16 +3,25 @@
 
     <div class="pel-header">
       <h2 class="pel-title">
-        Sessions
-        <span v-if="entries.length" class="pel-count">({{ entries.length }})</span>
+        {{ filteredEntries.length }} Sessions
+        <span v-if="totalHours" class="pel-hours">{{ totalHours }} hours</span>
       </h2>
+      <div class="pel-filters">
+        <select v-model="groupKey" class="pel-select">
+          <option value="">All groups</option>
+          <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
+        </select>
+        <select v-model="fy" class="pel-select">
+          <option v-for="opt in fyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
     </div>
 
-    <p v-if="!entries.length" class="pel-empty">No sessions yet.</p>
+    <p v-if="!filteredEntries.length" class="pel-empty">No sessions yet.</p>
 
     <EntryList v-else>
       <EntryCard
-        v-for="e in entries"
+        v-for="e in filteredEntries"
         :key="e.id"
         :title="cardTitle(e)"
         :title-to="profile?.isOperational ? undefined : sessionPath(e.session.groupKey, e.session.date)"
@@ -29,6 +38,7 @@
     <EditEntryModal
       v-if="editingEntry"
       :entry="editingEntry"
+      :title="cardTitle(editingEntry)"
       :working="workingEdit"
       :error="editError"
       @close="closeEditModal"
@@ -40,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { EntryItem } from '../../types/entry'
 import type { RoleContext } from '../../composables/useProfile'
 import EntryList from '../EntryList.vue'
@@ -62,13 +72,70 @@ const emit = defineEmits<{
   editEntry: [id: number, data: EditData | null]
 }>()
 
+const fy = ref('rolling')
+const groupKey = ref('')
+
+const groupOptions = computed(() => {
+  const map = new Map<string, string>()
+  for (const e of props.entries) {
+    if (e.session.groupKey && e.session.groupName) map.set(e.session.groupKey, e.session.groupName)
+  }
+  return [...map.entries()].map(([key, name]) => ({ key, name })).sort((a, b) => a.name.localeCompare(b.name))
+})
+
+function financialYearOf(date: string): string {
+  const d = new Date(date)
+  const year = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1
+  return `FY${year}`
+}
+
+function fyLabel(fyKey: string): string {
+  const y = parseInt(fyKey.replace('FY', ''))
+  return `FY ${String(y).slice(2)}/${String(y + 1).slice(2)}`
+}
+
+function rollingStart(): string {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+const fyOptions = computed(() => {
+  const keys = [...new Set(props.entries.map(e => financialYearOf(e.session.date)))]
+    .filter(k => k.startsWith('FY'))
+    .sort()
+  return [
+    { value: 'all', label: 'All FY' },
+    ...keys.map(k => ({ value: k, label: fyLabel(k) })),
+    { value: 'rolling', label: 'Rolling FY' },
+  ]
+})
+
+const totalHours = computed(() => {
+  const sum = filteredEntries.value.reduce((acc, e) => acc + (e.hours ?? 0), 0)
+  return sum > 0 ? Math.round(sum * 10) / 10 : 0
+})
+
+const filteredEntries = computed(() => {
+  let result = props.entries
+  if (fy.value === 'rolling') {
+    const start = rollingStart()
+    const today = new Date().toISOString().slice(0, 10)
+    result = result.filter(e => e.session.date >= start && e.session.date <= today)
+  } else if (fy.value !== 'all') {
+    result = result.filter(e => financialYearOf(e.session.date) === fy.value)
+  }
+  if (groupKey.value) result = result.filter(e => e.session.groupKey === groupKey.value)
+  return result
+})
+
 const editingEntry = ref<EntryItem | null>(null)
 const workingEdit = ref(false)
 const editError = ref('')
 
 function cardTitle(e: EntryItem): string {
   const date = new Date(e.session.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  return `${e.session.groupName} · ${date}`
+  return groupKey.value ? date : `${date} · ${e.session.groupName}`
 }
 
 function closeEditModal() {
@@ -117,14 +184,31 @@ defineExpose({
   margin: 0;
 }
 
-.pel-count {
+.pel-hours {
+  margin-left: 0.4rem;
   font-weight: 400;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--color-text-secondary);
 }
 
 .pel-empty {
   color: var(--color-text-secondary);
   margin: 0;
+}
+
+.pel-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.pel-select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  cursor: pointer;
 }
 </style>

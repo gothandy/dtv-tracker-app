@@ -31,14 +31,22 @@ const props = defineProps<{ sessions: Session[] }>()
 const emit = defineEmits<{ filtered: [sessions: Session[]] }>()
 
 const route = useRoute()
-const fy       = ref((route.query.fy as string) || 'all')
+const fy       = ref((route.query.fy as string) || 'rolling')
 const search   = ref('')
 const groupKey = ref((route.query.group as string) || '')
 const tagLabel = ref((route.query.tag as string) || '')
 
+function rollingStart(): string {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
 function applyBase(list: Session[]): Session[] {
   let r = list
-  if (fy.value && fy.value !== 'all')
+  if (fy.value === 'rolling')
+    r = r.filter(s => s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10))
+  else if (fy.value && fy.value !== 'all')
     r = r.filter(s => s.financialYear === fy.value)
   if (search.value.length >= 3) {
     const q = search.value.toLowerCase()

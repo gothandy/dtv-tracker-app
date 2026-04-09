@@ -1,6 +1,6 @@
 <template>
   <ModalLayout
-    :title="entry.profile.name"
+    :title="title ?? entry.profile.name"
     action="Save"
     action-icon="save"
     show-delete
@@ -56,7 +56,7 @@ import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
 
-const props = defineProps<{ entry: EntryItem; working: boolean; error?: string }>()
+const props = defineProps<{ entry: EntryItem; working: boolean; error?: string; title?: string }>()
 const emit = defineEmits<{
   close: []
   save: [data: { checkedIn: boolean; count: number; hours: number; notes: string }]
