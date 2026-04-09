@@ -5,6 +5,8 @@
     action-icon="save"
     show-delete
     :delete-disabled="form.isCover"
+    :working="working"
+    :error="error"
     @close="emit('close')"
     @action="save"
     @delete="confirmDelete = true"
@@ -42,6 +44,8 @@ const props = defineProps<{
   item: MediaItem
   showCover?: boolean
   isCover?: boolean
+  working?: boolean
+  error?: string
 }>()
 
 const emit = defineEmits<{

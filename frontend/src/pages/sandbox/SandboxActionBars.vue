@@ -15,10 +15,32 @@
       <SessionListActions :sessions="mockSessions" v-model:selected="someSelected" />
 
       <h2>GroupDetailActions (with Eventbrite)</h2>
-      <GroupDetailActions :group="mockGroupWithEb" />
+      <GroupDetailActions
+        ref="actionsWithEbRef"
+        :group="mockGroupWithEb"
+        @edit-group="data => onGroupAction(actionsWithEbRef, 'edit-group', data)"
+        @add-session="data => onGroupAction(actionsWithEbRef, 'add-session', data)"
+        @delete-group="onGroupAction(actionsWithEbRef, 'delete-group')"
+      />
 
       <h2>GroupDetailActions (without Eventbrite)</h2>
-      <GroupDetailActions :group="mockGroup" />
+      <GroupDetailActions
+        ref="actionsWithoutEbRef"
+        :group="mockGroup"
+        @edit-group="data => onGroupAction(actionsWithoutEbRef, 'edit-group', data)"
+        @add-session="data => onGroupAction(actionsWithoutEbRef, 'add-session', data)"
+        @delete-group="onGroupAction(actionsWithoutEbRef, 'delete-group')"
+      />
+
+      <label class="fail-toggle">
+        <input type="checkbox" v-model="failNext" /> Fail next action
+      </label>
+
+      <h2>Event log</h2>
+      <div class="event-log">
+        <div v-if="!events.length" class="event-log-empty">No events yet.</div>
+        <div v-for="(e, i) in events" :key="i">{{ e }}</div>
+      </div>
 
     </div>
   </DefaultLayout>
@@ -35,6 +57,35 @@ import SessionListActions from '../../components/sessions/SessionListActions.vue
 import GroupDetailActions from '../../components/groups/GroupDetailActions.vue'
 import type { GroupDetailResponse, SessionDetailResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
+
+const actionsWithEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
+const actionsWithoutEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
+
+const failNext = ref(false)
+const events = ref<string[]>([])
+
+function log(msg: string) {
+  events.value.unshift(msg)
+}
+
+type ActionsInstance = InstanceType<typeof GroupDetailActions> | null
+
+async function onGroupAction(actions: ActionsInstance, label: string, data?: unknown) {
+  const payload = data ? ` → ${JSON.stringify(data)}` : ''
+  log(`${label}${payload} → saving…`)
+  await new Promise(r => setTimeout(r, 2000))
+  if (failNext.value) {
+    failNext.value = false
+    if (label === 'edit-group') actions?.onEditError('Server error — please try again')
+    else if (label === 'add-session') actions?.onAddError('Server error — please try again')
+    log(`${label} → failed`)
+    return
+  }
+  if (label === 'edit-group') actions?.onEditSuccess()
+  else if (label === 'add-session') actions?.onAddSuccess()
+  else if (label === 'delete-group') actions?.onDeleteSuccess()
+  log(`${label} → done`)
+}
 
 const mockSession: SessionDetailResponse = {
   id: 1,
@@ -82,4 +133,3 @@ const mockGroup: GroupDetailResponse = {
   eventbriteSeriesId: undefined,
 }
 </script>
-

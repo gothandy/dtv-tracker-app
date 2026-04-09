@@ -67,9 +67,8 @@ import { sessionPath, groupPath, groupsPath } from '../router/index'
 import type { Session } from '../types/session'
 import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
 import type { MediaItem } from '../types/media'
-
-type EditGroupPayload = { name?: string; key: string; description?: string; eventbriteSeriesId?: string }
-type AddSessionPayload = { groupId: number; date: string; name?: string }
+import type { EditGroupPayload } from './modals/GroupEditModal.vue'
+import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
 
 const route = useRoute()
 const router = useRouter()

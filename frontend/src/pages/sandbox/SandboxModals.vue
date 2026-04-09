@@ -34,6 +34,14 @@
           <h2>Delete</h2>
           <AppButton label="Open" @click="open = 'delete'" />
         </div>
+        <div>
+          <h2>Group Edit</h2>
+          <AppButton label="Open" @click="open = 'group-edit'" />
+        </div>
+        <div>
+          <h2>Group Add Session</h2>
+          <AppButton label="Open" @click="open = 'group-add-session'" />
+        </div>
       </div>
 
       <label class="fail-toggle">
@@ -90,9 +98,30 @@
         :item="mockMediaItem"
         :show-cover="true"
         :is-cover="false"
+        :working="working"
+        :error="error"
         @close="closeModal('close')"
-        @save="closeModal('media-edit: save')"
-        @delete="closeModal('media-edit: delete')"
+        @save="onMediaEditSave"
+        @delete="onMediaEditDelete"
+      />
+
+      <GroupEditModal
+        v-if="open === 'group-edit'"
+        :group="mockGroup"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @save="onGroupEditSave"
+        @delete="open = 'delete'; log('group-edit: delete → confirm')"
+      />
+
+      <GroupAddSessionModal
+        v-if="open === 'group-add-session'"
+        :group="mockGroup"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @add="onGroupAddSession"
       />
 
       <DeleteModal
@@ -127,6 +156,8 @@ import EntryAddModal from '../modals/EntryAddModal.vue'
 import EntryUploadPickerModal from '../modals/EntryUploadPickerModal.vue'
 import MediaEditModal from '../modals/MediaEditModal.vue'
 import DeleteModal from '../modals/DeleteModal.vue'
+import GroupEditModal from '../modals/GroupEditModal.vue'
+import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
@@ -183,6 +214,22 @@ function onDelete() {
   simulate('delete: confirm')
 }
 
+function onMediaEditSave(payload: unknown) {
+  simulate(`media-edit: save → ${JSON.stringify(payload)}`)
+}
+
+function onMediaEditDelete() {
+  simulate('media-edit: delete')
+}
+
+function onGroupEditSave(payload: unknown) {
+  simulate(`group-edit: save → ${JSON.stringify(payload)}`)
+}
+
+function onGroupAddSession(payload: unknown) {
+  simulate(`group-add-session: add → ${JSON.stringify(payload)}`)
+}
+
 function onAdd(payload: { profileId: number } | { newName: string; newEmail: string }) {
   simulate(`entry-add: ${JSON.stringify(payload)}`)
 }
@@ -230,6 +277,18 @@ const mockMediaItem: MediaItem = {
   mimeType: 'image/jpeg',
   title: 'Sample photo',
   isPublic: true,
+}
+
+const mockGroup = {
+  id: 1,
+  key: 'sheepskull',
+  displayName: 'Sheepskull',
+  description: 'A volunteer crew.',
+  eventbriteSeriesId: '',
+  regulars: [],
+  financialYear: '2025/26',
+  stats: { sessions: 12, hours: 240, newVolunteers: 5, children: 2, totalVolunteers: 30 },
+  sessions: [],
 }
 
 const session = { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' }
