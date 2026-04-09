@@ -136,6 +136,6 @@ onMounted(loadMedia)
 }
 
 .tall-gallery :deep(.mg-viewport) {
-  height: 300px !important;
+  height: 250px !important;
 }
 </style>

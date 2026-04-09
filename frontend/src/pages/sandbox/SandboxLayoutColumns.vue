@@ -39,6 +39,11 @@
         <template #left><div class="col col--green">Left</div></template>
       </LayoutColumns>
 
+      <h2>1 (left only)</h2>
+      <LayoutColumns ratio="1">
+        <template #left><div class="col col--green">Left</div></template>
+      </LayoutColumns>
+
     </div>
   </DefaultLayout>
 </template>

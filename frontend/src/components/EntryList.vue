@@ -10,6 +10,7 @@
   flex-direction: column;
   gap: 0.4rem;
   padding: 0.5rem;
+  background: var(--color-dtv-sand-light);
 }
 
 /* 44em to 64em is specific to the 1/3 > 1/2 > 1 layout */

@@ -21,16 +21,8 @@
 
         <!-- Right: booking panel -->
         <template #right>
+          <MediaCard v-if="coverItem" :item="coverItem" constrain="width" />
           <ConcertinaLayout>
-            <ConcertinaItem label="Check-In" v-if="profile.isOperational">
-              <SessionDetailActions
-                v-if="profile.isCheckIn || profile.isAdmin"
-                :session="store.session"
-                :group-key="(route.params.groupKey as string)"
-                :date="store.session.date"
-                @saved="(gk, d) => store.fetch(gk, d)"
-              />
-            </ConcertinaItem>
             <ConcertinaItem label="Book" v-if="store.session.isBookable && !store.session.isRegistered" >
               <SessionDetailBook :session="store.session" />
             </ConcertinaItem>
@@ -40,7 +32,7 @@
           </ConcertinaLayout>
 
 
-          <MediaCard v-if="coverItem" :item="coverItem" constrain="width" :selected="true" />
+          
           <!--
           <SessionDetailForThis v-if="store.session.isBookable && store.session.isRegistered" :session="store.session" />
           -->
@@ -113,6 +105,14 @@
             :group-description="store.session.groupDescription"
             :next-session="store.session.nextSession"
           />
+          <SessionDetailActions
+            v-if="profile.isCheckIn || profile.isAdmin"
+            :session="store.session"
+            :group-key="(route.params.groupKey as string)"
+            :date="store.session.date"
+            @saved="(gk, d) => store.fetch(gk, d)"
+          />
+
         </template>
 
         <template #right>
@@ -137,34 +137,29 @@
         :cover-media-id="store.session.coverMediaId"
         @cover-item="coverItem = $event"
         @cover-changed="(id) => { if (store.session) store.session.coverMediaId = id }"
+
       />
 
 
 
       <!-- BOTTOM ROW -->
-      <LayoutColumns ratio="2-1" :reverse="true" v-if="profile.isCheckIn || profile.isAdmin">
+      <LayoutColumns ratio="1" :reverse="true" v-if="profile.isOperational">
         <template #header><SectionHeader>Registrations and Check-in</SectionHeader></template>
         <template #left>
-          <!-- Entries — checkin/admin only -->
-          <SessionDetailEntries
-            v-if="profile.isCheckIn || profile.isAdmin"
-            :group-key="(route.params.groupKey as string)"
-            :date="store.session.date"
+          <SessionEntryList
+            ref="entryListRef"
+            :entries="entries"
+            :allow-edit="profile.isOperational"
+            :profiles="profiles"
+            :working-id="workingId"
+            @refresh-request="onRefreshRequest"
+            @update="onEntryUpdate"
+            @set-hours="onSetHours"
+            @add-entry="onAddEntry"
+            @edit-entry="onEditEntry"
           />
         </template>
-
-        <template #right>
-
-        </template>
       </LayoutColumns>
-
-
-
-
-
-
-
-
 
       <DebugData label="Session" :item="store.session!" />
       <DebugData v-if="profile.user" label="Profile" :item="profile.user" />
@@ -175,6 +170,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import type { MediaItem } from '../types/media'
+import type { EntryItem } from '../types/entry'
+import type { PickerProfile } from '../components/ProfilePicker.vue'
+import type { EntryResponse } from '../../../types/api-responses'
 import { useRoute } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
@@ -193,7 +191,7 @@ import SessionDetailGallery from '../components/sessions/SessionDetailGallery.vu
 import SessionDetailForThis from '../components/sessions/SessionDetailForThis.vue'
 import SessionDetailTags from '../components/sessions/SessionDetailTags.vue'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
-import SessionDetailEntries from '../components/sessions/SessionDetailEntries.vue'
+import SessionEntryList from '../components/sessions/SessionEntryList.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import CardTitle from '../components/CardTitle.vue'
 import ConcertinaLayout from '../components/ConcertinaLayout.vue'
@@ -203,6 +201,33 @@ const route = useRoute()
 const store = useSessionDetailStore()
 const profile = useProfile()
 const coverItem = ref<MediaItem | null>(null)
+const profiles = ref<PickerProfile[]>([])
+const workingId = ref<number | null>(null)
+const entryListRef = ref<InstanceType<typeof SessionEntryList> | null>(null)
+
+function mapEntry(e: EntryResponse): EntryItem {
+  return {
+    id: e.id,
+    checkedIn: e.checkedIn,
+    hours: e.hours,
+    count: e.count,
+    notes: e.notes,
+    profile: {
+      name: e.profileName ?? e.volunteerName ?? 'Unknown',
+      slug: e.profileSlug ?? e.volunteerSlug,
+      isMember: e.isMember,
+      cardStatus: e.cardStatus,
+      isGroup: e.isGroup,
+    },
+    session: {
+      groupKey: route.params.groupKey as string,
+      groupName: store.session?.groupName ?? '',
+      date: store.session?.date ?? '',
+    },
+  }
+}
+
+const entries = computed<EntryItem[]>(() => (store.session?.entries ?? []).map(mapEntry))
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -214,11 +239,115 @@ const titleText = computed(() => {
 })
 usePageTitle(titleText)
 
+async function fetchProfiles() {
+  try {
+    const res = await fetch('/api/profiles')
+    if (!res.ok) throw new Error(`Failed to load profiles (${res.status})`)
+    const json = await res.json()
+    profiles.value = (json.data ?? []).map((p: { id: number; name?: string; email?: string }) => ({
+      id: p.id,
+      name: p.name ?? '',
+      email: p.email,
+    }))
+  } catch (e) {
+    console.error('[SessionDetailPage] fetchProfiles failed', e)
+  }
+}
 
 function load() {
   store.fetch(route.params.groupKey as string, route.params.date as string)
 }
 
-onMounted(load)
+function onRefreshRequest() {
+  store.fetch(route.params.groupKey as string, store.session!.date)
+}
+
+async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
+  workingId.value = entry.id
+  try {
+    const res = await fetch(`/api/entries/${entry.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkedIn, hours }),
+    })
+    if (!res.ok) throw new Error(`Update failed (${res.status})`)
+    const stored = store.session?.entries.find(e => e.id === entry.id)
+    if (stored) { stored.checkedIn = checkedIn; stored.hours = hours }
+  } catch (e) {
+    console.error('[SessionDetailPage] onEntryUpdate failed', e)
+  } finally {
+    workingId.value = null
+  }
+}
+
+async function onSetHours(hours: number) {
+  const eligible = store.session?.entries.filter(e => e.checkedIn && !e.hours) ?? []
+  try {
+    await Promise.all(eligible.map(e =>
+      fetch(`/api/entries/${e.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkedIn: true, hours }),
+      })
+    ))
+    await store.fetch(route.params.groupKey as string, store.session!.date)
+    entryListRef.value?.onSetHoursSuccess()
+  } catch (e) {
+    console.error('[SessionDetailPage] onSetHours failed', e)
+    entryListRef.value?.onSetHoursError('Failed to set hours — please try again')
+  }
+}
+
+async function onAddEntry(payload: { profileId: number } | { newName: string; newEmail: string }) {
+  const groupKey = route.params.groupKey as string
+  const date = store.session!.date
+  try {
+    const res = await fetch(`/api/sessions/${groupKey}/${date}/entries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    await store.fetch(groupKey, date)
+    entryListRef.value?.onAddSuccess()
+  } catch (e) {
+    console.error('[SessionDetailPage] onAddEntry failed', e)
+    entryListRef.value?.onAddError('Failed to add entry — please try again')
+  }
+}
+
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string }
+
+async function onEditEntry(id: number, data: EditData | null) {
+  try {
+    if (data === null) {
+      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+      if (store.session) {
+        store.session.entries = store.session.entries.filter(e => e.id !== id)
+      }
+    } else {
+      const res = await fetch(`/api/entries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error(`Save failed (${res.status})`)
+      const stored = store.session?.entries.find(e => e.id === id)
+      if (stored) {
+        stored.checkedIn = data.checkedIn
+        stored.hours = data.hours
+        stored.count = data.count
+        stored.notes = data.notes
+      }
+    }
+    entryListRef.value?.onEditSuccess()
+  } catch (e) {
+    console.error('[SessionDetailPage] onEditEntry failed', e)
+    entryListRef.value?.onEditError('Failed to save — please try again')
+  }
+}
+
+onMounted(() => { load(); fetchProfiles() })
 watch(() => [route.params.groupKey, route.params.date], load)
 </script>

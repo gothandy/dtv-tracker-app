@@ -12,6 +12,8 @@
         <div v-if="working" class="am-body-blocker" />
       </div>
 
+      <div v-if="error" class="am-error">{{ error }}</div>
+
       <div class="am-footer">
         <AppButton
           v-if="showDelete"
@@ -56,6 +58,7 @@ const props = defineProps<{
   working?: boolean
   showDelete?: boolean
   deleteDisabled?: boolean
+  error?: string
 }>()
 
 const emit = defineEmits<{
@@ -87,27 +90,40 @@ function onAction() {
   inset: 0;
   background: var(--color-overlay);
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   z-index: 100;
 }
 
+@media (width >= 48em) {
+  .am-overlay {
+    align-items: center;
+  }
+}
+
 .am-panel {
   background: var(--color-dtv-sand);
-  width: 90%;
-  max-width: 480px;
-  max-height: 85vh;
-  overflow-y: auto;
+  width: 100%;
+  height: 100%;
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
+}
+
+@media (width >= 48em) {
+  .am-panel {
+    width: 90%;
+    max-width: 480px;
+    height: auto;
+    max-height: 85vh;
+  }
 }
 
 .am-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1rem;
   background: var(--color-dtv-green);
   flex-shrink: 0;
 }
@@ -132,7 +148,7 @@ function onAction() {
 
 .am-body {
   position: relative;
-  padding: 1.5rem;
+  padding: 1rem;
   flex: 1;
   overflow-y: auto;
 }
@@ -148,8 +164,16 @@ function onAction() {
   justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   background: var(--color-dtv-light);
+  flex-shrink: 0;
+}
+
+.am-error {
+  padding: 0.5rem 1rem;
+  background: var(--color-dtv-dirt-light);
+  color: var(--color-dtv-dirt);
+  font-size: 0.85rem;
   flex-shrink: 0;
 }
 

@@ -30,6 +30,10 @@
           <h2>Working state</h2>
           <AppButton label="Open" @click="open = 'working'" />
         </div>
+        <div>
+          <h2>Error state</h2>
+          <AppButton label="Open" @click="open = 'error'" />
+        </div>
       </div>
 
       <ModalLayout v-if="open === 'close'"
@@ -106,6 +110,19 @@
         </label>
       </ModalLayout>
 
+      <ModalLayout v-if="open === 'error'"
+        title="Error state demo"
+        action="Save"
+        show-delete
+        :working="workingDemo"
+        :error="errorMsg"
+        @close="open = null; errorMsg = ''"
+        @action="startErrorDemo('action')"
+        @delete="startErrorDemo('delete')"
+      >
+        <p>Click Save or Delete — it will fail and show an error. Click again to succeed.</p>
+      </ModalLayout>
+
     </div>
   </DefaultLayout>
 </template>
@@ -121,6 +138,8 @@ import FormRow from '../../components/FormRow.vue'
 
 const open = ref<string | null>(null)
 const workingDemo = ref(false)
+const errorMsg = ref('')
+let errorDemoFailed = false
 
 function startWorkingDemo(_button: 'action' | 'delete') {
   workingDemo.value = true
@@ -128,6 +147,21 @@ function startWorkingDemo(_button: 'action' | 'delete') {
     workingDemo.value = false
     open.value = null
   }, 3000)
+}
+
+async function startErrorDemo(_button: 'action' | 'delete') {
+  workingDemo.value = true
+  errorMsg.value = ''
+  await new Promise(r => setTimeout(r, 2000))
+  if (!errorDemoFailed) {
+    errorDemoFailed = true
+    workingDemo.value = false
+    errorMsg.value = 'Server error (500) — please try again'
+  } else {
+    errorDemoFailed = false
+    workingDemo.value = false
+    open.value = null
+  }
 }
 </script>
 

@@ -167,7 +167,7 @@ async function onUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
 h1 { font-size: 1.5rem; font-weight: 700; padding: 0 2rem; }
 h2 { font-size: 1rem; font-weight: 600; color: var(--color-text-muted); padding: 0 2rem; }
 
-.demo { border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); background: var(--color-dtv-sand-light); }
+.demo { border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 
 .empty { font-size: 0.9rem; color: var(--color-text-faint); }
 

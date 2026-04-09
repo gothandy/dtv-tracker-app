@@ -1,45 +1,37 @@
 <template>
   <ModalLayout
-    :title="entry?.profileName ?? '…'"
+    :title="entry.profile.name"
     action="Save"
     action-icon="save"
     show-delete
-    :working="saving || deleting"
+    :working="working"
+    :error="error"
     @close="emit('close')"
     @action="save"
     @delete="confirmDelete = true"
   >
-    <div v-if="loading" class="eem-status">Loading…</div>
-    <div v-else-if="loadError" class="eem-status eem-error">{{ loadError }}</div>
+    <div v-if="entry.profile.slug" class="eem-actions">
+      <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.profile.slug!))" />
+    </div>
 
-    <template v-else-if="entry">
+    <FormLayout :disabled="working">
+      <FormRow title="Checked In">
+        <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
+      </FormRow>
 
-      <div v-if="entry.profileSlug" class="eem-actions">
-        <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.profileSlug!))" />
-      </div>
+      <FormRow title="Count">
+        <input type="number" class="eem-input" v-model.number="form.count" min="1" />
+      </FormRow>
 
-      <FormLayout :disabled="saving || deleting">
-        <FormRow title="Checked In">
-          <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
-        </FormRow>
+      <FormRow title="Hours">
+        <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" />
+      </FormRow>
 
-        <FormRow title="Count">
-          <input type="number" class="eem-input" v-model.number="form.count" min="1" />
-        </FormRow>
-
-        <FormRow title="Hours">
-          <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" />
-        </FormRow>
-
-        <FormRow title="Notes" :full-width="true">
-          <textarea class="eem-textarea" v-model="form.notes" rows="2" />
-          <EntryTagPicker v-model="form.notes" />
-        </FormRow>
-      </FormLayout>
-
-      <div v-if="saveError" class="eem-error">{{ saveError }}</div>
-
-    </template>
+      <FormRow title="Notes" :full-width="true">
+        <textarea class="eem-textarea" v-model="form.notes" rows="2" />
+        <EntryTagPicker v-model="form.notes" />
+      </FormRow>
+    </FormLayout>
   </ModalLayout>
 
   <ModalLayout
@@ -54,100 +46,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { profilePath } from '../../router/index'
+import type { EntryItem } from '../../types/entry'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
 
-const props = defineProps<{ entryId: number }>()
-const emit = defineEmits<{ close: []; saved: []; deleted: [] }>()
+const props = defineProps<{ entry: EntryItem; working: boolean; error?: string }>()
+const emit = defineEmits<{
+  close: []
+  save: [data: { checkedIn: boolean; count: number; hours: number; notes: string }]
+  delete: []
+}>()
 
 const router = useRouter()
-
-interface EntryDetail {
-  id: number
-  profileName?: string
-  profileSlug?: string
-  isGroup: boolean
-  isMember: boolean
-  checkedIn: boolean
-  count: number
-  hours: number
-  notes?: string
-}
-
-const entry = ref<EntryDetail | null>(null)
-const loading = ref(false)
-const loadError = ref('')
-const saveError = ref('')
-const saving = ref(false)
 const confirmDelete = ref(false)
-const deleting = ref(false)
 
-const form = reactive({ checkedIn: false, count: 1, hours: 0, notes: '' })
-
-
-onMounted(async () => {
-  loading.value = true
-  try {
-    const res = await fetch(`/api/entries/${props.entryId}`)
-    if (!res.ok) throw new Error(`Failed to load (${res.status})`)
-    const json = await res.json()
-    entry.value = json.data
-    form.checkedIn = json.data.checkedIn
-    form.count = json.data.count
-    form.hours = json.data.hours
-    form.notes = json.data.notes ?? ''
-  } catch (e) {
-    loadError.value = e instanceof Error ? e.message : 'Load failed'
-  } finally {
-    loading.value = false
-  }
+const form = reactive({
+  checkedIn: props.entry.checkedIn,
+  count: props.entry.count,
+  hours: props.entry.hours,
+  notes: props.entry.notes ?? '',
 })
 
-async function save() {
-  saving.value = true
-  saveError.value = ''
-  try {
-    const res = await fetch(`/api/entries/${props.entryId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ checkedIn: form.checkedIn, count: form.count, hours: form.hours, notes: form.notes }),
-    })
-    if (!res.ok) throw new Error(`Save failed (${res.status})`)
-    emit('saved')
-    emit('close')
-  } catch (e) {
-    saveError.value = e instanceof Error ? e.message : 'Save failed'
-  } finally {
-    saving.value = false
-  }
+watch(() => props.entry, (e) => {
+  form.checkedIn = e.checkedIn
+  form.count = e.count
+  form.hours = e.hours
+  form.notes = e.notes ?? ''
+})
+
+function save() {
+  emit('save', { checkedIn: form.checkedIn, count: form.count, hours: form.hours, notes: form.notes })
 }
 
-async function deleteEntry() {
-  deleting.value = true
-  try {
-    const res = await fetch(`/api/entries/${props.entryId}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-    emit('deleted')
-    emit('close')
-  } catch (e) {
-    saveError.value = e instanceof Error ? e.message : 'Delete failed'
-    confirmDelete.value = false
-  } finally {
-    deleting.value = false
-  }
+function deleteEntry() {
+  confirmDelete.value = false
+  emit('delete')
 }
 </script>
 
 <style scoped>
-.eem-status { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1rem; }
-.eem-error { color: var(--color-error); }
-
 .eem-actions { margin-bottom: 1.25rem; }
 
 .eem-input {

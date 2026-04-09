@@ -3,60 +3,37 @@
     title="Set Default Hours"
     action="Save"
     action-icon="save"
-    :working="saving"
+    :working="working"
+    :error="error"
     @close="emit('close')"
     @action="apply"
   >
     <p class="shm-desc">
       Sets hours for all checked-in entries where hours are not yet recorded.
-      <strong>{{ eligible }} entries</strong> will be updated.
+      <strong>{{ entryCount }} entries</strong> will be updated.
     </p>
 
-    <FormLayout :disabled="saving">
+    <FormLayout :disabled="working">
       <FormRow title="Hours">
         <input v-model.number="hours" type="number" min="0" step="0.5" class="shm-input" />
       </FormRow>
     </FormLayout>
-
-    <div v-if="error" class="shm-error">{{ error }}</div>
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { EntryResponse } from '../../../../types/api-responses'
+import { ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 
-const props = defineProps<{ entries: EntryResponse[] }>()
-const emit = defineEmits<{ close: []; done: [] }>()
+const props = defineProps<{ entryCount: number; defaultHours: number; working: boolean; error?: string }>()
+const emit = defineEmits<{ close: []; setHours: [hours: number] }>()
 
-const hours = ref(3)
-const saving = ref(false)
-const error = ref('')
+const hours = ref(props.defaultHours)
 
-const eligible = computed(() => props.entries.filter(e => e.checkedIn && e.hours === 0).length)
-
-async function apply() {
-  saving.value = true
-  error.value = ''
-  const targets = props.entries.filter(e => e.checkedIn && e.hours === 0)
-  try {
-    await Promise.all(targets.map(e =>
-      fetch(`/api/entries/${e.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hours: hours.value }),
-      })
-    ))
-    emit('done')
-    emit('close')
-  } catch (e) {
-    error.value = 'Some updates failed — please retry'
-  } finally {
-    saving.value = false
-  }
+function apply() {
+  emit('setHours', hours.value)
 }
 </script>
 
@@ -77,6 +54,4 @@ async function apply() {
   font-family: inherit;
   font-size: 0.95rem;
 }
-
-.shm-error { color: var(--color-error); font-size: 0.85rem; margin-top: 0.5rem; }
 </style>

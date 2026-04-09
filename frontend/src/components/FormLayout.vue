@@ -11,7 +11,7 @@ defineProps<{ disabled?: boolean }>()
 <style scoped>
 .form-layout {
   background: var(--color-dtv-sand);
-  padding: 0 1.5rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   border: none;

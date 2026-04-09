@@ -26,6 +26,5 @@ provide('concertina', { selectedIndex, registerItem, toggle })
 .concertina {
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 </style>
