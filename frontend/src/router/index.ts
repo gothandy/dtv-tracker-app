@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ensureAuth, user } from '../composables/useAuth'
 import HomePage from '../pages/HomePage.vue'
-import GroupsPage from '../pages/GroupsPage.vue'
+import GroupListPage from '../pages/GroupListPage.vue'
 import PrivacyPage from '../pages/PrivacyPage.vue'
 import TermsPage from '../pages/TermsPage.vue'
 import AboutPage from '../pages/AboutPage.vue'
 import LoginPage from '../pages/LoginPage.vue'
 import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
-import SessionsPage from '../pages/SessionsPage.vue'
+import SessionListPage from '../pages/SessionListPage.vue'
 import AdminPage from '../pages/AdminPage.vue'
 import ProfileListPage from '../pages/ProfileListPage.vue'
 import ProfileDetailPage from '../pages/ProfileDetailPage.vue'
@@ -30,9 +30,9 @@ export const router = createRouter({
   scrollBehavior: (to, from) => to.path === from.path ? false : { top: 0 },
   routes: [
     { path: '/', component: HomePage },
-    { path: '/groups', component: GroupsPage },
+    { path: '/groups', component: GroupListPage },
     { path: '/groups/:key', component: GroupDetailPage },
-    { path: '/sessions', component: SessionsPage },
+    { path: '/sessions', component: SessionListPage },
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },
     { path: '/privacy', component: PrivacyPage },
     { path: '/terms', component: TermsPage },
