@@ -7,28 +7,32 @@
 
       <div class="row">
         <div>
-          <h2>Edit Session</h2>
-          <AppButton label="Open" @click="open = 'edit-session'" />
+          <h2>Session Edit</h2>
+          <AppButton label="Open" @click="open = 'session-edit'" />
         </div>
         <div>
-          <h2>Set Hours</h2>
-          <AppButton label="Open" @click="open = 'set-hours'" />
+          <h2>Session Set Hours</h2>
+          <AppButton label="Open" @click="open = 'session-set-hours'" />
         </div>
         <div>
-          <h2>Edit Entry</h2>
-          <AppButton label="Open" @click="open = 'edit-entry'" />
+          <h2>Entry Edit</h2>
+          <AppButton label="Open" @click="open = 'entry-edit'" />
         </div>
         <div>
-          <h2>Add Entry</h2>
-          <AppButton label="Open" @click="open = 'add-entry'" />
+          <h2>Entry Add</h2>
+          <AppButton label="Open" @click="open = 'entry-add'" />
         </div>
         <div>
-          <h2>Upload Picker</h2>
-          <AppButton label="Open" @click="open = 'upload-picker'" />
+          <h2>Entry Upload Picker</h2>
+          <AppButton label="Open" @click="open = 'entry-upload-picker'" />
         </div>
         <div>
-          <h2>Edit Media</h2>
-          <AppButton label="Open" @click="open = 'edit-media'" />
+          <h2>Media Edit</h2>
+          <AppButton label="Open" @click="open = 'media-edit'" />
+        </div>
+        <div>
+          <h2>Delete</h2>
+          <AppButton label="Open" @click="open = 'delete'" />
         </div>
       </div>
 
@@ -36,17 +40,17 @@
         <input type="checkbox" v-model="failNext" /> Fail next action
       </label>
 
-      <EditSessionModal
-        v-if="open === 'edit-session'"
+      <SessionEditModal
+        v-if="open === 'session-edit'"
         :session="mockSession"
         group-key="sheepskull"
         date="2026-04-03"
         @close="closeModal('close')"
-        @saved="closeModal('edit-session: saved')"
+        @saved="closeModal('session-edit: saved')"
       />
 
-      <SetHoursModal
-        v-if="open === 'set-hours'"
+      <SessionSetHoursModal
+        v-if="open === 'session-set-hours'"
         :entry-count="2"
         :default-hours="3"
         :working="working"
@@ -55,8 +59,8 @@
         @set-hours="onSetHours"
       />
 
-      <EditEntryModal
-        v-if="open === 'edit-entry'"
+      <EntryEditModal
+        v-if="open === 'entry-edit'"
         :entry="mockEntry"
         :working="working"
         :error="error"
@@ -65,8 +69,8 @@
         @delete="onEditDelete"
       />
 
-      <AddEntryModal
-        v-if="open === 'add-entry'"
+      <EntryAddModal
+        v-if="open === 'entry-add'"
         :profiles="mockProfiles"
         :working="working"
         :error="error"
@@ -74,21 +78,30 @@
         @add="onAdd"
       />
 
-      <UploadPickerModal
-        v-if="open === 'upload-picker'"
+      <EntryUploadPickerModal
+        v-if="open === 'entry-upload-picker'"
         :entries="mockEntries"
         @close="closeModal('close')"
-        @select="closeModal('upload-picker: select')"
+        @select="closeModal('entry-upload-picker: select')"
       />
 
-      <EditMediaModal
-        v-if="open === 'edit-media'"
+      <MediaEditModal
+        v-if="open === 'media-edit'"
         :item="mockMediaItem"
         :show-cover="true"
         :is-cover="false"
         @close="closeModal('close')"
-        @save="closeModal('edit-media: save')"
-        @delete="closeModal('edit-media: delete')"
+        @save="closeModal('media-edit: save')"
+        @delete="closeModal('media-edit: delete')"
+      />
+
+      <DeleteModal
+        v-if="open === 'delete'"
+        title="Delete something?"
+        body="This will permanently delete this thing and cannot be undone."
+        :working="working"
+        @close="closeModal('close')"
+        @confirm="onDelete"
       />
 
       <h2>Event log</h2>
@@ -107,12 +120,13 @@ import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import AppButton from '../../components/AppButton.vue'
-import EditSessionModal from '../modals/EditSessionModal.vue'
-import SetHoursModal from '../modals/SetHoursModal.vue'
-import EditEntryModal from '../modals/EditEntryModal.vue'
-import AddEntryModal from '../modals/AddEntryModal.vue'
-import UploadPickerModal from '../modals/UploadPickerModal.vue'
-import EditMediaModal from '../modals/EditMediaModal.vue'
+import SessionEditModal from '../modals/SessionEditModal.vue'
+import SessionSetHoursModal from '../modals/SessionSetHoursModal.vue'
+import EntryEditModal from '../modals/EntryEditModal.vue'
+import EntryAddModal from '../modals/EntryAddModal.vue'
+import EntryUploadPickerModal from '../modals/EntryUploadPickerModal.vue'
+import MediaEditModal from '../modals/MediaEditModal.vue'
+import DeleteModal from '../modals/DeleteModal.vue'
 import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
@@ -158,15 +172,19 @@ function onSetHours(hours: number) {
 }
 
 function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string }) {
-  simulate(`edit-entry save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}"`)
+  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}"`)
 }
 
 function onEditDelete() {
-  simulate('edit-entry: delete')
+  simulate('entry-edit: delete')
+}
+
+function onDelete() {
+  simulate('delete: confirm')
 }
 
 function onAdd(payload: { profileId: number } | { newName: string; newEmail: string }) {
-  simulate(`add-entry: ${JSON.stringify(payload)}`)
+  simulate(`entry-add: ${JSON.stringify(payload)}`)
 }
 
 // --- mock data ---

@@ -3,14 +3,14 @@
     <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-responsive" @click="onUpload" />
     <AppButton v-if="profile.isCheckIn || profile.isAdmin" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
 
-    <UploadPickerModal
+    <EntryUploadPickerModal
       v-if="showPicker"
       :entries="session.entries"
       @close="showPicker = false"
       @select="goUpload"
     />
 
-    <EditSessionModal
+    <SessionEditModal
       v-if="showEdit"
       :session="session"
       :group-key="groupKey"
@@ -28,8 +28,8 @@ import { useProfile } from '../../composables/useProfile'
 import { sessionPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import AppButton from '../AppButton.vue'
-import EditSessionModal from '../../pages/modals/EditSessionModal.vue'
-import UploadPickerModal from '../../pages/modals/UploadPickerModal.vue'
+import SessionEditModal from '../../pages/modals/SessionEditModal.vue'
+import EntryUploadPickerModal from '../../pages/modals/EntryUploadPickerModal.vue'
 
 const props = defineProps<{
   session: SessionDetailResponse

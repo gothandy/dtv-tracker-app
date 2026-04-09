@@ -18,7 +18,7 @@
     </MediaCarousel>
   </div>
 
-  <EditMediaModal
+  <MediaEditModal
     v-if="editingItem"
     :item="editingItem"
     :show-cover="true"
@@ -33,7 +33,7 @@
 import { ref, onMounted, computed } from 'vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
 import MediaCard from '../../components/MediaCard.vue'
-import EditMediaModal from '../../pages/modals/EditMediaModal.vue'
+import MediaEditModal from '../../pages/modals/MediaEditModal.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{

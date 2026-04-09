@@ -34,14 +34,11 @@
     </FormLayout>
   </ModalLayout>
 
-  <ModalLayout
+  <DeleteModal
     v-if="confirmDelete"
     title="Delete entry?"
-    action="Cancel"
-    show-delete
     @close="confirmDelete = false"
-    @action="confirmDelete = false"
-    @delete="deleteEntry"
+    @confirm="deleteEntry"
   />
 </template>
 
@@ -55,6 +52,7 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryTagPicker from '../../components/EntryTagPicker.vue'
+import DeleteModal from './DeleteModal.vue'
 
 const props = defineProps<{ entry: EntryItem; working: boolean; error?: string; title?: string }>()
 const emit = defineEmits<{

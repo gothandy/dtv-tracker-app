@@ -42,18 +42,13 @@
     <div v-if="error" class="sem-error">{{ error }}</div>
   </ModalLayout>
 
-  <!-- Delete confirmation -->
-  <ModalLayout
+  <DeleteModal
     v-if="confirmDelete"
     title="Delete Session?"
-    action="Cancel"
-    show-delete
+    body="This will permanently delete the session and all its entries."
     @close="confirmDelete = false"
-    @action="confirmDelete = false"
-    @delete="deleteSession"
-  >
-    <p class="sem-confirm-text">This will permanently delete the session and all its entries.</p>
-  </ModalLayout>
+    @confirm="deleteSession"
+  />
 </template>
 
 <script setup lang="ts">
@@ -65,6 +60,7 @@ import type { SessionDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import DeleteModal from './DeleteModal.vue'
 
 interface GroupItem { id: number; name: string; key: string }
 
@@ -176,11 +172,5 @@ async function deleteSession() {
   color: var(--color-error);
   font-size: 0.85rem;
   margin-top: 0.5rem;
-}
-
-.sem-confirm-text {
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-  opacity: 0.8;
 }
 </style>

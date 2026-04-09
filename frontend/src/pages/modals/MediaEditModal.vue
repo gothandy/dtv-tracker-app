@@ -22,23 +22,20 @@
     </FormRow>
   </ModalLayout>
 
-  <ModalLayout
+  <DeleteModal
     v-if="confirmDelete"
     title="Delete photo?"
-    action="Cancel"
-    show-delete
+    body="This will permanently delete the photo."
     @close="confirmDelete = false"
-    @action="confirmDelete = false"
-    @delete="doDelete"
-  >
-    <p class="emm-confirm-text">This will permanently delete the photo.</p>
-  </ModalLayout>
+    @confirm="doDelete"
+  />
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import DeleteModal from './DeleteModal.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{
@@ -99,10 +96,5 @@ function doDelete() {
   width: 1.5rem;
   height: 1.5rem;
   cursor: pointer;
-}
-
-.emm-confirm-text {
-  font-size: 0.9rem;
-  opacity: 0.8;
 }
 </style>

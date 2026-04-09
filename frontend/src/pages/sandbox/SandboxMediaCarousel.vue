@@ -43,7 +43,7 @@
       </MediaCarousel>
       <div v-else class="placeholder">No photos found</div>
 
-      <EditMediaModal
+      <MediaEditModal
         v-if="editingItem"
         :item="editingItem"
         :show-cover="true"
@@ -63,7 +63,7 @@ import { ref, onMounted } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
 import MediaCard from '../../components/MediaCard.vue'
-import EditMediaModal from '../modals/EditMediaModal.vue'
+import MediaEditModal from '../modals/MediaEditModal.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { MediaItem } from '../../types/media'
 import type { Session } from '../../types/session'

@@ -30,7 +30,7 @@
       />
     </EntryList>
 
-    <EditEntryModal
+    <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
       :working="workingEdit"
@@ -40,7 +40,7 @@
       @delete="onDelete"
     />
 
-    <AddEntryModal
+    <EntryAddModal
       v-if="showAdd"
       :profiles="profiles"
       :working="workingAdd"
@@ -49,7 +49,7 @@
       @add="onAdd"
     />
 
-    <SetHoursModal
+    <SessionSetHoursModal
       v-if="showSetHours"
       :entry-count="eligibleCount"
       :default-hours="3"
@@ -69,9 +69,9 @@ import type { PickerProfile } from '../ProfilePicker.vue'
 import AppButton from '../AppButton.vue'
 import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
-import EditEntryModal from '../../pages/modals/EditEntryModal.vue'
-import AddEntryModal from '../../pages/modals/AddEntryModal.vue'
-import SetHoursModal from '../../pages/modals/SetHoursModal.vue'
+import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
+import EntryAddModal from '../../pages/modals/EntryAddModal.vue'
+import SessionSetHoursModal from '../../pages/modals/SessionSetHoursModal.vue'
 import { profilePath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 

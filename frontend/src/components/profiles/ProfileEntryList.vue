@@ -35,7 +35,7 @@
       />
     </EntryList>
 
-    <EditEntryModal
+    <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
@@ -54,7 +54,7 @@ import { ref, computed } from 'vue'
 import type { EntryItem } from '../../types/entry'
 import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
-import EditEntryModal from '../../pages/modals/EditEntryModal.vue'
+import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
 import { sessionPath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 
