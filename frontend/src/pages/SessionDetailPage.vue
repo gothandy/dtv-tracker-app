@@ -131,13 +131,13 @@
       </LayoutColumns>
 
       <SessionDetailGallery
-        :group-key="(route.params.groupKey as string)"
-        :date="store.session.date"
+        :media="mediaItems"
+        :working="mediaLoading"
+        :error="mediaError ?? undefined"
         :show-edit-btn="profile.isCheckIn || profile.isAdmin"
         :cover-media-id="store.session.coverMediaId"
-        @cover-item="coverItem = $event"
-        @cover-changed="(id) => { if (store.session) store.session.coverMediaId = id }"
-
+        @save="onMediaSave"
+        @delete="onMediaDelete"
       />
 
 
@@ -181,14 +181,12 @@ import { useSessionDetailStore } from '../stores/sessionDetail'
 import { useProfile } from '../composables/useProfile'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
-import SessionDetailLogin from '../components/sessions/SessionDetailLogin.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
 import MediaCard from '../components/MediaCard.vue'
 import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
 import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
 import SessionDetailGallery from '../components/sessions/SessionDetailGallery.vue'
-import SessionDetailForThis from '../components/sessions/SessionDetailForThis.vue'
 import SessionDetailTags from '../components/sessions/SessionDetailTags.vue'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
 import SessionEntryList from '../components/sessions/SessionEntryList.vue'
@@ -200,7 +198,12 @@ import ConcertinaItem from '../components/ConcertinaItem.vue'
 const route = useRoute()
 const store = useSessionDetailStore()
 const profile = useProfile()
-const coverItem = ref<MediaItem | null>(null)
+const mediaItems   = ref<MediaItem[]>([])
+const mediaLoading = ref(false)
+const mediaError   = ref<string | null>(null)
+const coverItem    = computed<MediaItem | null>(() =>
+  mediaItems.value.find(i => i.listItemId === store.session?.coverMediaId) ?? null
+)
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const entryListRef = ref<InstanceType<typeof SessionEntryList> | null>(null)
@@ -348,6 +351,72 @@ async function onEditEntry(id: number, data: EditData | null) {
   }
 }
 
-onMounted(() => { load(); fetchProfiles() })
-watch(() => [route.params.groupKey, route.params.date], load)
+async function fetchMedia(groupKey: string, date: string) {
+  mediaLoading.value = true
+  mediaError.value   = null
+  try {
+    const res  = await fetch(`/api/media?groupKey=${groupKey}&date=${date}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+    mediaItems.value = (json.data ?? []).filter((i: MediaItem) => i.mimeType.startsWith('image/'))
+  } catch (e) {
+    mediaError.value = e instanceof Error ? e.message : 'Failed to load photos'
+    console.error('[SessionDetailPage] fetchMedia failed', e)
+  } finally {
+    mediaLoading.value = false
+  }
+}
+
+async function onMediaSave(item: MediaItem, data: { title: string; isPublic: boolean; isCover: boolean }) {
+  const groupKey = route.params.groupKey as string
+  const date     = store.session!.date
+  try {
+    const res = await fetch(`/api/media/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: data.title, isPublic: data.isPublic }),
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const wasCover = item.listItemId === store.session?.coverMediaId
+    if (data.isCover !== wasCover) {
+      const newCoverId = data.isCover ? item.listItemId : null
+      const coverRes = await fetch(`/api/sessions/${groupKey}/${date}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverMediaId: newCoverId }),
+      })
+      if (!coverRes.ok) throw new Error(`HTTP ${coverRes.status}`)
+      if (store.session) store.session.coverMediaId = newCoverId
+    }
+
+    await fetchMedia(groupKey, date)
+  } catch (e) {
+    console.error('[SessionDetailPage] onMediaSave failed', e)
+  }
+}
+
+async function onMediaDelete(item: MediaItem) {
+  const groupKey = route.params.groupKey as string
+  const date     = store.session!.date
+  try {
+    const res = await fetch(`/api/media/${item.id}?groupKey=${groupKey}&date=${date}`, {
+      method: 'DELETE',
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    await fetchMedia(groupKey, date)
+  } catch (e) {
+    console.error('[SessionDetailPage] onMediaDelete failed', e)
+  }
+}
+
+onMounted(() => {
+  load()
+  fetchProfiles()
+  fetchMedia(route.params.groupKey as string, route.params.date as string)
+})
+watch(() => [route.params.groupKey, route.params.date], () => {
+  load()
+  fetchMedia(route.params.groupKey as string, route.params.date as string)
+})
 </script>

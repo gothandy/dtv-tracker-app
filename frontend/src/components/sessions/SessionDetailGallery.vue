@@ -1,10 +1,10 @@
 <template>
-  <div v-if="loading" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
+  <div v-if="working" class="gallery-skeleton" :style="{ height: galleryHeight + 'px' }"></div>
   <div v-else-if="error" class="py-4 px-6 text-sm" style="color: var(--color-dtv-red)">{{ error }}</div>
-  <div v-else-if="items.length" class="tall-gallery">
+  <div v-else-if="enrichedItems.length" class="tall-gallery">
     <MediaCarousel>
       <MediaCard
-        v-for="(item, i) in items"
+        v-for="(item, i) in enrichedItems"
         :key="item.id"
         :item="item"
         :clickable="true"
@@ -24,36 +24,35 @@
     :show-cover="true"
     :is-cover="editingItem.listItemId === coverMediaId"
     @close="editingItem = null"
-    @save="onSave"
-    @delete="onDelete"
+    @save="onModalSave"
+    @delete="onModalDelete"
   />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
 import MediaCard from '../../components/MediaCard.vue'
 import MediaEditModal from '../../pages/modals/MediaEditModal.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = defineProps<{
-  groupKey: string
-  date: string
+  media: MediaItem[]
+  working?: boolean
+  error?: string
   showEditBtn?: boolean
   coverMediaId?: number | null
 }>()
 
 const emit = defineEmits<{
-  coverChanged: [id: number | null]
-  coverItem: [item: MediaItem | null]
+  save: [item: MediaItem, data: { title: string; isPublic: boolean; isCover: boolean }]
+  delete: [item: MediaItem]
 }>()
 
-const items          = ref<MediaItem[]>([])
-const loading        = ref(false)
-const error          = ref<string | null>(null)
-const selectedIndex  = ref<number | null>(null)
-const editingItem    = ref<MediaItem | null>(null)
-const galleryHeight  = computed(() => Math.min(500, window.innerWidth * 0.75))
+const enrichedItems = ref<MediaItem[]>([])
+const selectedIndex = ref<number | null>(null)
+const editingItem   = ref<MediaItem | null>(null)
+const galleryHeight = computed(() => Math.min(500, window.innerWidth * 0.75))
 
 function measureDimensions(mediaItems: MediaItem[]): Promise<void> {
   return new Promise(resolve => {
@@ -69,64 +68,23 @@ function measureDimensions(mediaItems: MediaItem[]): Promise<void> {
   })
 }
 
-async function loadMedia() {
-  loading.value = true
-  error.value   = null
-  try {
-    const res  = await fetch(`/api/media?groupKey=${props.groupKey}&date=${props.date}`)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const json = await res.json()
-    const images: MediaItem[] = (json.data ?? []).filter((i: MediaItem) => i.mimeType.startsWith('image/'))
-    await measureDimensions(images)
-    items.value = images
-    emit('coverItem', images.find(i => i.listItemId === props.coverMediaId) ?? null)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load photos'
-    console.error('[SessionDetailGallery]', error.value)
-  } finally {
-    loading.value = false
-  }
-}
+watch(() => props.media, async (newMedia) => {
+  const copies = newMedia.map(item => ({ ...item }))
+  await measureDimensions(copies)
+  enrichedItems.value = copies
+}, { immediate: true })
 
-async function onSave(data: { title: string; isPublic: boolean; isCover: boolean }) {
+function onModalSave(data: { title: string; isPublic: boolean; isCover: boolean }) {
   if (!editingItem.value) return
-  const itemId = editingItem.value.id
-  const itemListId = editingItem.value.listItemId
+  emit('save', editingItem.value, data)
   editingItem.value = null
-
-  await fetch(`/api/media/${itemId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: data.title, isPublic: data.isPublic }),
-  })
-
-  const wasCover = itemListId === props.coverMediaId
-  if (data.isCover !== wasCover) {
-    const newCoverId = data.isCover ? itemListId : null
-    await fetch(`/api/sessions/${props.groupKey}/${props.date}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ coverMediaId: newCoverId }),
-    })
-    emit('coverChanged', newCoverId)
-  }
-
-  await loadMedia()
 }
 
-async function onDelete() {
+function onModalDelete() {
   if (!editingItem.value) return
-  const itemId = editingItem.value.id
+  emit('delete', editingItem.value)
   editingItem.value = null
-
-  await fetch(`/api/media/${itemId}?groupKey=${props.groupKey}&date=${props.date}`, {
-    method: 'DELETE',
-  })
-
-  await loadMedia()
 }
-
-onMounted(loadMedia)
 </script>
 
 <style scoped>
