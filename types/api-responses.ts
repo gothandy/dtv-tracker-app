@@ -104,10 +104,7 @@ export interface ProfileDetailResponse {
   id: number;
   slug: string;
   name?: string;
-  /** First email — primary for display */
-  email?: string;
-  /** All emails on the profile */
-  emails?: string[];
+  emails: string[];
   matchName?: string;
   user?: string;
   isGroup: boolean;

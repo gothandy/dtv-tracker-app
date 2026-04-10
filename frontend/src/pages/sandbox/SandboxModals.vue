@@ -43,6 +43,10 @@
           <AppButton label="Open" @click="open = 'media-edit'" />
         </div>
         <div>
+          <h2>Profile Edit</h2>
+          <AppButton label="Open" @click="open = 'profile-edit'" />
+        </div>
+        <div>
           <h2>Delete</h2>
           <AppButton label="Open" @click="open = 'delete'" />
         </div>
@@ -111,6 +115,16 @@
         @delete="onMediaEditDelete"
       />
 
+      <ProfileEditModal
+        v-if="open === 'profile-edit'"
+        :profile="mockProfile"
+        :show-user="true"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @save="onProfileEditSave"
+      />
+
       <GroupEditModal
         v-if="open === 'group-edit'"
         :group="mockGroup"
@@ -172,6 +186,7 @@ import EntryUploadPickerModal from '../modals/EntryUploadPickerModal.vue'
 import MediaEditModal from '../modals/MediaEditModal.vue'
 import DeleteModal from '../modals/DeleteModal.vue'
 import GroupEditModal from '../modals/GroupEditModal.vue'
+import ProfileEditModal from '../modals/ProfileEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import type { MediaItem } from '../../types/media'
@@ -237,6 +252,10 @@ function onMediaEditSave(payload: unknown) {
 
 function onMediaEditDelete() {
   simulate('media-edit: delete')
+}
+
+function onProfileEditSave(payload: unknown) {
+  simulate(`profile-edit: save → ${JSON.stringify(payload)}`)
 }
 
 function onGroupEditSave(payload: unknown) {
@@ -312,6 +331,23 @@ const mockMediaItem: MediaItem = {
   mimeType: 'image/jpeg',
   title: 'Sample photo',
   isPublic: true,
+}
+
+const mockProfile = {
+  id: 1,
+  slug: 'alice-bowen-1',
+  name: 'Alice Bowen',
+  emails: ['alice@example.com', 'alice.bowen@old.example.com'],
+  matchName: 'alice bowen',
+  user: 'alice.bowen@dtv.org.uk',
+  isGroup: false,
+  isMember: true,
+  hoursLastFY: 40,
+  hoursThisFY: 12,
+  hoursAll: 120,
+  groupHours: [],
+  entries: [],
+  records: [],
 }
 
 const mockGroup = {

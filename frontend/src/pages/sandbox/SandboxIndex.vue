@@ -57,7 +57,7 @@
 
       <section>
         <h2>Not included — test on main site</h2>
-        <ul class="not-included">
+        <ul class="prose">
           <li>SessionDetailGallery — requires live SharePoint media; test via session detail page</li>
           <li>SessionDetailBook — booking CTA; test via session detail (future bookable session)</li>
           <li>SessionDetailHeader — session info display; test via session detail page</li>
@@ -116,20 +116,4 @@ a:hover {
   text-decoration: underline;
 }
 
-.not-included {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.not-included li {
-  background: var(--color-dtv-light);
-  padding: 0.3rem 0.75rem;
-  border-radius: 2px;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-}
 </style>

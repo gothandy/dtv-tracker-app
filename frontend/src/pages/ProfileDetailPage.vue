@@ -6,6 +6,26 @@
       <h1 class="sr-only">{{ store.profile.name ?? 'Profile' }}</h1>
       <PageHeader>{{ store.profile.name ?? 'Profile' }}</PageHeader>
 
+      <!-- Profile header -->
+      <div class="pd-header">
+        <div class="pd-title-row">
+          <div class="pd-badges">
+            <img v-if="isMember" src="/icons/member.svg" class="pd-badge" alt="Member" title="Member" />
+            <img v-if="store.profile.isGroup" src="/icons/group.svg" class="pd-badge" alt="Group" title="Group" />
+          </div>
+          <ProfileDetailActions
+            v-if="viewer.isCheckIn || viewer.isAdmin"
+            ref="actionsRef"
+            :profile="store.profile"
+            :show-user="viewer.isAdmin"
+            @edit-profile="onEditProfile"
+          />
+        </div>
+        <div v-for="email in store.profile.emails" :key="email" class="pd-email">
+          <a :href="`mailto:${email}`">{{ email }}</a>
+        </div>
+      </div>
+
       <LayoutColumns ratio="1">
         <template #header><SectionHeader>Your volunteering</SectionHeader></template>
         <template #left>
@@ -33,10 +53,12 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
+import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
 import type { ProfileEntryResponse } from '../../../types/api-responses'
+import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
 import type { EntryItem } from '../types/entry'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'
@@ -45,12 +67,38 @@ const route = useRoute()
 const viewer = useViewer()
 const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
+const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)
 
 usePageTitle(computed(() => store.profile?.name ?? 'Profile'))
 const entryListRef = ref<InstanceType<typeof ProfileEntryList> | null>(null)
 
 onMounted(() => store.fetch(route.params.slug as string))
 watch(() => route.params.slug, slug => { if (slug) store.fetch(slug as string) })
+
+const isMember = computed(() =>
+  store.profile?.records?.some(r => r.type === 'Charity Membership' && r.status === 'Accepted') ?? false
+)
+
+async function onEditProfile(data: EditProfilePayload) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/profiles/${store.profile.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    store.profile.name = data.name
+    store.profile.emails = data.emails
+    store.profile.matchName = data.matchName
+    store.profile.user = data.user
+    store.profile.isGroup = data.isGroup
+    actionsRef.value?.onEditSuccess()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onEditProfile failed', e)
+    actionsRef.value?.onEditError('Failed to save — please try again')
+  }
+}
 
 function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
   return {
@@ -126,3 +174,36 @@ async function onEditEntry(id: number, data: EditData | null) {
   }
 }
 </script>
+
+<style scoped>
+.pd-loading,
+.pd-error { padding: 1.5rem; color: var(--color-text-label); }
+.pd-error { color: var(--color-dtv-dirt); }
+
+.pd-header {
+  background: var(--color-white);
+  padding: 1.25rem 1.5rem;
+}
+
+.pd-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pd-badges {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.pd-badge { width: 20px; height: 20px; }
+
+.pd-email {
+  font-size: 0.9rem;
+  margin-top: 0.35rem;
+  color: var(--color-text-secondary);
+}
+.pd-email a { color: inherit; }
+.pd-email a:hover { color: var(--color-dtv-green); }
+</style>
