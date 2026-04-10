@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-dtv-green px-6 py-4">
+  <div class="bg-dtv-gold px-6 py-4">
     <h2 class="font-display text-white text-xl uppercase leading-none mb-4">{{ session.isBookable ? "Who's Going?" : "Who Went?" }}</h2>
     <dl class="text-sm text-white space-y-1">
       <div class="flex gap-3">

@@ -15,6 +15,10 @@
           <AppButton label="Open" @click="open = 'session-set-hours'" />
         </div>
         <div>
+          <h2>Session Add Tags</h2>
+          <AppButton label="Open" @click="open = 'session-add-tags'" />
+        </div>
+        <div>
           <h2>Entry Edit</h2>
           <AppButton label="Open" @click="open = 'entry-edit'" />
         </div>
@@ -27,14 +31,6 @@
           <AppButton label="Open" @click="open = 'entry-upload-picker'" />
         </div>
         <div>
-          <h2>Media Edit</h2>
-          <AppButton label="Open" @click="open = 'media-edit'" />
-        </div>
-        <div>
-          <h2>Delete</h2>
-          <AppButton label="Open" @click="open = 'delete'" />
-        </div>
-        <div>
           <h2>Group Edit</h2>
           <AppButton label="Open" @click="open = 'group-edit'" />
         </div>
@@ -43,8 +39,12 @@
           <AppButton label="Open" @click="open = 'group-add-session'" />
         </div>
         <div>
-          <h2>Session Add Tags</h2>
-          <AppButton label="Open" @click="open = 'session-add-tags'" />
+          <h2>Media Edit</h2>
+          <AppButton label="Open" @click="open = 'media-edit'" />
+        </div>
+        <div>
+          <h2>Delete</h2>
+          <AppButton label="Open" @click="open = 'delete'" />
         </div>
       </div>
 
@@ -55,10 +55,12 @@
       <SessionEditModal
         v-if="open === 'session-edit'"
         :session="mockSession"
-        group-key="sheepskull"
-        date="2026-04-03"
+        :groups="mockGroups"
+        :working="working"
+        :error="error"
         @close="closeModal('close')"
-        @saved="closeModal('session-edit: saved')"
+        @save="onSessionEditSave"
+        @delete="onSessionEditDelete"
       />
 
       <SessionSetHoursModal
@@ -175,6 +177,7 @@ import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
+import type { SessionSaveData } from '../modals/SessionEditModal.vue'
 
 usePageTitle('Sandbox')
 
@@ -252,7 +255,21 @@ function onAdd(payload: { profileId: number } | { newName: string; newEmail: str
   simulate(`entry-add: ${JSON.stringify(payload)}`)
 }
 
+function onSessionEditSave(data: SessionSaveData) {
+  simulate(`session-edit: save → ${JSON.stringify(data)}`)
+}
+
+function onSessionEditDelete() {
+  simulate('session-edit: delete')
+}
+
 // --- mock data ---
+
+const mockGroups = [
+  { id: 1, name: 'Sheepskull', key: 'sheepskull' },
+  { id: 2, name: 'Adhoc', key: 'adhoc' },
+  { id: 3, name: 'Fundraising', key: 'fundraising' },
+]
 
 const mockSession = {
   id: 1,

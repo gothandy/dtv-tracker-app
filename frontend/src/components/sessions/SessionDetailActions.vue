@@ -13,20 +13,21 @@
     <SessionEditModal
       v-if="showEdit"
       :session="session"
-      :group-key="groupKey"
-      :date="date"
+      :groups="groups"
+      :working="editWorking"
+      :error="editError"
       @close="showEdit = false"
-      @saved="onSaved"
+      @save="emit('session-save', $event)"
+      @delete="emit('session-delete')"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useProfile } from '../../composables/useProfile'
-import { sessionPath } from '../../router/index'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
+import type { GroupItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
 import AppButton from '../AppButton.vue'
 import SessionEditModal from '../../pages/modals/SessionEditModal.vue'
 import EntryUploadPickerModal from '../../pages/modals/EntryUploadPickerModal.vue'
@@ -35,11 +36,16 @@ const props = defineProps<{
   session: SessionDetailResponse
   groupKey: string
   date: string
+  groups: GroupItem[]
+  editWorking: boolean
+  editError?: string
 }>()
 
-const emit = defineEmits<{ saved: [groupKey: string, date: string] }>()
+const emit = defineEmits<{
+  'session-save': [data: SessionSaveData]
+  'session-delete': []
+}>()
 
-const router = useRouter()
 const profile = useProfile()
 
 const showPicker = ref(false)
@@ -63,13 +69,11 @@ function goUpload(entryId: number) {
   window.location.href = `/upload.html?entryId=${entryId}`
 }
 
-function onSaved(newGroupKey: string, newDate: string) {
+function closeEdit() {
   showEdit.value = false
-  emit('saved', newGroupKey, newDate)
-  if (newGroupKey !== props.groupKey || newDate !== props.date) {
-    router.push(sessionPath(newGroupKey, newDate))
-  }
 }
+
+defineExpose({ closeEdit })
 </script>
 
 <style scoped>

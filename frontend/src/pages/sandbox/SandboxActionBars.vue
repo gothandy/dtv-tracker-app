@@ -8,7 +8,13 @@
       <div class="sandbox-warning">Login to view some components</div>
 
       <h2>SessionDetailActions</h2>
-      <SessionDetailActions :session="mockSession" group-key="sheepskull" date="2025-03-01" />
+      <SessionDetailActions
+        :session="mockSession"
+        group-key="sheepskull"
+        date="2025-03-01"
+        :groups="mockGroups"
+        :edit-working="false"
+      />
 
       <h2>SessionListActions (none selected)</h2>
       <SessionListActions :sessions="mockSessions" :can-bulk-tag="true" v-model:selected="noneSelected" />
@@ -110,6 +116,11 @@ async function onListAction(actions: ListActionsInstance, label: string) {
   actions?.onTagSuccess()
   log(`apply-tag → done`)
 }
+
+const mockGroups = [
+  { id: 1, name: 'Sheepskull', key: 'sheepskull' },
+  { id: 2, name: 'Adhoc', key: 'adhoc' },
+]
 
 const mockSession: SessionDetailResponse = {
   id: 1,

@@ -107,10 +107,15 @@
           />
           <SessionDetailActions
             v-if="profile.isCheckIn || profile.isAdmin"
+            ref="actionsRef"
             :session="store.session"
             :group-key="(route.params.groupKey as string)"
             :date="store.session.date"
-            @saved="(gk, d) => store.fetch(gk, d)"
+            :groups="editGroups"
+            :edit-working="editWorking"
+            :edit-error="editError"
+            @session-save="onSessionSave"
+            @session-delete="onSessionDelete"
           />
 
         </template>
@@ -177,13 +182,16 @@ import type { MediaItem } from '../types/media'
 import type { EntryItem } from '../types/entry'
 import type { PickerProfile } from '../components/ProfilePicker.vue'
 import type { EntryResponse } from '../../../types/api-responses'
-import { useRoute } from 'vue-router'
+import type { GroupItem, SessionSaveData } from './modals/SessionEditModal.vue'
+import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
+import { useGroupsStore } from '../stores/groups'
 import { useProfile } from '../composables/useProfile'
 import { usePageTitle } from '../composables/usePageTitle'
+import { groupPath, sessionPath } from '../router/index'
 import PageHeader from '../components/PageHeader.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
 import MediaCard from '../components/MediaCard.vue'
@@ -201,11 +209,20 @@ import ConcertinaLayout from '../components/ConcertinaLayout.vue'
 import ConcertinaItem from '../components/ConcertinaItem.vue'
 
 const route = useRoute()
+const router = useRouter()
 const store = useSessionDetailStore()
+const groupsStore = useGroupsStore()
 const profile = useProfile()
 const mediaItems   = ref<MediaItem[]>([])
 const mediaLoading = ref(false)
 const mediaError   = ref<string | null>(null)
+const actionsRef = ref<InstanceType<typeof SessionDetailActions> | null>(null)
+const editWorking = ref(false)
+const editError = ref<string | undefined>()
+const editGroups = computed<GroupItem[]>(() =>
+  groupsStore.groups.map(g => ({ id: g.id, name: g.displayName ?? g.key, key: g.key }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+)
 const coverItem    = computed<MediaItem | null>(() =>
   mediaItems.value.find(i => i.listItemId === store.session?.coverMediaId) ?? null
 )
@@ -439,10 +456,66 @@ async function onMediaDelete(item: MediaItem) {
   }
 }
 
+async function onSessionSave(data: SessionSaveData) {
+  const groupKey = route.params.groupKey as string
+  const date = store.session!.date
+  editWorking.value = true
+  editError.value = undefined
+  try {
+    const body: Record<string, unknown> = {
+      displayName: data.displayName,
+      description: data.description,
+    }
+    if (profile.isAdmin) {
+      body.date = data.date
+      body.groupId = data.groupId
+      body.limits = data.limits
+      body.eventbriteEventId = data.eventbriteEventId
+    }
+    const res = await fetch(`/api/sessions/${groupKey}/${date}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    const json = await res.json()
+    const newGroupKey = json.data?.groupKey ?? groupKey
+    const newDate = json.data?.date ?? date
+    actionsRef.value?.closeEdit()
+    if (newGroupKey !== groupKey || newDate !== date) {
+      router.push(sessionPath(newGroupKey, newDate))
+    } else {
+      await store.fetch(newGroupKey, newDate)
+    }
+  } catch (e) {
+    editError.value = e instanceof Error ? e.message : 'Save failed'
+    console.error('[SessionDetailPage] onSessionSave failed', e)
+  } finally {
+    editWorking.value = false
+  }
+}
+
+async function onSessionDelete() {
+  const groupKey = route.params.groupKey as string
+  const date = store.session!.date
+  editWorking.value = true
+  editError.value = undefined
+  try {
+    const res = await fetch(`/api/sessions/${groupKey}/${date}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    router.push(groupPath(groupKey))
+  } catch (e) {
+    editError.value = e instanceof Error ? e.message : 'Delete failed'
+    console.error('[SessionDetailPage] onSessionDelete failed', e)
+    editWorking.value = false
+  }
+}
+
 onMounted(() => {
   load()
   fetchProfiles()
   fetchMedia(route.params.groupKey as string, route.params.date as string)
+  if (profile.isAdmin) groupsStore.fetch()
 })
 watch(() => [route.params.groupKey, route.params.date], () => {
   load()
