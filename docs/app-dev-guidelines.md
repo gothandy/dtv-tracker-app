@@ -166,6 +166,21 @@ These components should stay as independent as practical.
 
 ---
 
+## Component padding and background
+
+Each component owns its own horizontal padding. This is because background colours must extend edge-to-edge with the viewport (or their containing column) — a parent cannot clip them.
+
+The rule:
+
+- **Background fills the full width** of the component's container
+- **Content is inset by `px-6` (1.5rem)** on left and right — text, cards, buttons all respect this margin
+- **This padding is set once, on the component itself**, not on any parent wrapper
+- **No responsive override needed** — `px-6` applies at all screen sizes
+
+`LayoutColumns` and `DefaultLayout` add no horizontal padding, so there is no double-padding risk. The component is the sole owner of its horizontal spacing.
+
+---
+
 ## Modals and forms
 
 The preferred default is:

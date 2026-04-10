@@ -8,9 +8,9 @@
 .entry-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.5rem;
-  background: var(--color-dtv-sand-light);
+  gap: 1rem;
+  padding: 0;
+  background: var(--color-dtv-light);
 }
 
 /* 44em to 64em is specific to the 1/3 > 1/2 > 1 layout */
@@ -18,7 +18,7 @@
   .entry-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.4rem;
+    gap: 1rem;
   }
 
   .entry-list > :deep(*) {

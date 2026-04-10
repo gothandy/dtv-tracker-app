@@ -1,6 +1,34 @@
 <template>
   <div class="ec-row">
 
+    <!-- Card body -->
+    <div class="ec-card" :class="{ 'ec-card--checked': checkedIn }">
+      <div class="ec-card-left">
+
+        <button v-if="allowEdit" class="ec-name ec-name--btn" @click="emit('editEntry')">
+          {{ title }}
+        </button>
+        <RouterLink v-else-if="titleTo" :to="titleTo" class="ec-name">
+          {{ title }}
+        </RouterLink>
+        <span v-else class="ec-name ec-name--plain">{{ title }}</span>
+
+        <span
+          v-for="icon in icons"
+          :key="icon.alt"
+          class="ec-icon"
+          :class="icon.color ? 'icon-' + icon.color : ''"
+          :title="icon.alt"
+        >
+          <img :src="'/icons/' + icon.icon" :alt="icon.alt" />
+        </span>
+
+      </div>
+      <div class="ec-card-right">
+        <button v-if="allowCancel" class="ec-cancel" @click="emit('cancel')" title="Remove">✕</button>
+      </div>
+    </div>
+
     <!-- Check/hours control -->
     <template v-if="allowEdit">
       <div v-if="working && (showHours || hours > 0)" class="ec-check ec-check--on">
@@ -32,34 +60,6 @@
     </div>
     <div v-else class="ec-check ec-check--static" :class="{ 'ec-check--on': checkedIn }">
       <span v-if="checkedIn">✓</span>
-    </div>
-
-    <!-- Card body -->
-    <div class="ec-card" :class="{ 'ec-card--checked': checkedIn }">
-      <div class="ec-card-left">
-
-        <button v-if="allowEdit" class="ec-name ec-name--btn" @click="emit('editEntry')">
-          {{ title }}
-        </button>
-        <RouterLink v-else-if="titleTo" :to="titleTo" class="ec-name">
-          {{ title }}
-        </RouterLink>
-        <span v-else class="ec-name ec-name--plain">{{ title }}</span>
-
-        <span
-          v-for="icon in icons"
-          :key="icon.alt"
-          class="ec-icon"
-          :class="icon.color ? 'icon-' + icon.color : ''"
-          :title="icon.alt"
-        >
-          <img :src="'/icons/' + icon.icon" :alt="icon.alt" />
-        </span>
-
-      </div>
-      <div class="ec-card-right">
-        <button v-if="allowCancel" class="ec-cancel" @click="emit('cancel')" title="Remove">✕</button>
-      </div>
     </div>
 
   </div>
@@ -119,7 +119,7 @@ function onHoursChange(input: HTMLInputElement) {
 .ec-row {
   display: flex;
   align-items: stretch;
-  gap: 0.5rem;
+  gap: 0;
 }
 
 .ec-check {
@@ -127,8 +127,8 @@ function onHoursChange(input: HTMLInputElement) {
   height: 2.5rem;
   flex-shrink: 0;
   align-self: flex-start;
-  background: var(--color-dtv-light);
-  border: 2px solid var(--color-dtv-sand-dark);
+  background: var(--color-dtv-gold);
+  border: none;
   cursor: pointer;
   font-size: 1.1rem;
   color: var(--color-white);
@@ -138,7 +138,6 @@ function onHoursChange(input: HTMLInputElement) {
 }
 .ec-check--on {
   background: var(--color-dtv-green);
-  border-color: var(--color-dtv-green);
 }
 .ec-check--working { pointer-events: none; cursor: default; }
 .ec-check:focus-visible,
@@ -165,7 +164,7 @@ function onHoursChange(input: HTMLInputElement) {
 
 .ec-check--hours {
   background: var(--color-dtv-green);
-  border-color: var(--color-dtv-green);
+  border: none;
   color: var(--color-white);
   font-size: 0.85rem;
   font-family: inherit;
@@ -184,7 +183,7 @@ function onHoursChange(input: HTMLInputElement) {
   font-weight: 600;
   color: var(--color-text-muted);
   background: var(--color-dtv-sand);
-  border: 2px solid var(--color-dtv-sand-dark);
+  border: none;
 }
 
 .ec-card {
@@ -194,7 +193,7 @@ function onHoursChange(input: HTMLInputElement) {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem;
-  background: var(--color-white);
+  background: var(--color-dtv-sand);
   border-left: 4px solid transparent;
   gap: 0.5rem;
 }
@@ -241,10 +240,11 @@ function onHoursChange(input: HTMLInputElement) {
 
 .ec-icon {
   display: inline-flex;
-  align-items: center;
-  width: 1.25rem;
-  height: 1.25rem;
+  align-items: flex-start;
+  width: 0.875rem;
+  height: 0.875rem;
   flex-shrink: 0;
+  align-self: flex-start;
 }
 .ec-icon img { width: 100%; height: 100%; object-fit: contain; }
 
