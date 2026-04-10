@@ -15,7 +15,7 @@
       <SessionListActions :sessions="sessions" :can-bulk-tag="true" v-model:selected="activeSelected" />
 
       <h2>GroupListFilter (Admin: New Group button visible)</h2>
-      <GroupListFilter :groups="groups" :sessions="sessions" @filtered="filteredGroups = $event" />
+      <GroupListFilter :groups="groups" :sessions="sessions" :can-add-group="true" @filtered="filteredGroups = $event" />
 
     </div>
   </DefaultLayout>
