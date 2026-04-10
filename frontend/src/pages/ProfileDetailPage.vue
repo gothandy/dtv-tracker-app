@@ -27,8 +27,7 @@
       </div>
 
       <ProfileRecordList
-        v-if="store.profile.records"
-        :records="store.profile.records"
+        :records="store.profile.records ?? []"
         :profile-id="store.profile.id"
         :profile-slug="store.profile.slug"
         :profile="viewer.context"
