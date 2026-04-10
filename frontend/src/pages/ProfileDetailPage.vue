@@ -30,7 +30,7 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
-import { useProfile } from '../composables/useProfile'
+import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import type { ProfileDetailResponse, ProfileEntryResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
@@ -38,7 +38,7 @@ import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 
 const route = useRoute()
-const profile = useProfile()
+const profile = useViewer()
 
 const pageProfile = ref<ProfileDetailResponse | null>(null)
 const workingId = ref<number | null>(null)

@@ -31,11 +31,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
-import { useProfile } from '../../composables/useProfile'
+import { useViewer } from '../../composables/useViewer'
 
 const props = defineProps<{ session: SessionDetailResponse }>()
 
-const { user } = useProfile()
+const { user } = useViewer()
 const cancelling = ref(false)
 
 const isRegular = computed(() => props.session.isRegular ?? false)

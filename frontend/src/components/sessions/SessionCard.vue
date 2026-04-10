@@ -38,7 +38,7 @@ import { computed } from 'vue'
 import { sessionPath } from '../../router/index'
 import type { Session } from '../../types/session'
 import AppButton from '../AppButton.vue'
-import type { RoleContext } from '../../composables/useProfile'
+import type { RoleContext } from '../../composables/useViewer'
 
 const props = defineProps<{
   session: Session

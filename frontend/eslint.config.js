@@ -7,15 +7,15 @@ export default tseslint.config(
       'no-restricted-imports': ['error', {
         patterns: [{
           group: ['**/composables/useAuth', '**/composables/useRole'],
-          message: 'Use useProfile() instead.'
+          message: 'Use useViewer() instead.'
         }]
       }]
     }
   },
   {
-    // useProfile and the router guard are the only permitted consumers of useAuth/useRole
+    // useViewer and the router guard are the only permitted consumers of useAuth/useRole
     files: [
-      'src/composables/useProfile.ts',
+      'src/composables/useViewer.ts',
       'src/router/index.ts',
     ],
     rules: { 'no-restricted-imports': 'off' }

@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ProfileResponse } from '../../../types/api-responses'
 
-export const useProfilesStore = defineStore('profiles', () => {
+export const useProfileListStore = defineStore('profiles', () => {
   const profiles = ref<ProfileResponse[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -18,7 +18,7 @@ export const useProfilesStore = defineStore('profiles', () => {
       profiles.value = json.data
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[profiles store]', error.value)
+      console.error('[profileList store]', error.value)
     } finally {
       loading.value = false
     }

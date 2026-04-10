@@ -24,14 +24,14 @@ import PageHeader from '../components/PageHeader.vue'
 import SessionListFilter from '../components/sessions/SessionListFilter.vue'
 import SessionListActions from '../components/sessions/SessionListActions.vue'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
-import { useSessionsStore } from '../stores/sessions'
-import { useProfile } from '../composables/useProfile'
+import { useSessionListStore } from '../stores/sessionList'
+import { useViewer } from '../composables/useViewer'
 import type { Session } from '../types/session'
 
 usePageTitle('Sessions')
 
-const store = useSessionsStore()
-const profile = useProfile()
+const store = useSessionListStore()
+const profile = useViewer()
 const filtered = ref<Session[]>([])
 const selected = ref<number[]>([])
 const actionsRef = ref<InstanceType<typeof SessionListActions> | null>(null)

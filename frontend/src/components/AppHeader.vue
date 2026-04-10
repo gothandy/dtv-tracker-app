@@ -47,12 +47,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useProfile } from '../composables/useProfile'
+import { useViewer } from '../composables/useViewer'
 
 const isDev = import.meta.env.DEV
 
 const open = ref(false)
-const profile = useProfile()
+const profile = useViewer()
 
 function toggleMenu() {
   open.value = !open.value

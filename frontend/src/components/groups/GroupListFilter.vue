@@ -41,7 +41,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
-import { useGroupsStore } from '../../stores/groups'
+import { useGroupListStore } from '../../stores/groupList'
 import { groupPath } from '../../router/index'
 import type { GroupResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
@@ -55,7 +55,7 @@ const props = defineProps<{ groups: GroupResponse[]; sessions: Session[]; canAdd
 const emit = defineEmits<{ filtered: [groups: GroupWithStats[]] }>()
 
 const router = useRouter()
-const groupsStore = useGroupsStore()
+const groupsStore = useGroupListStore()
 
 const fy = ref('rolling')
 const showNew = ref(false)

@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useProfile } from '../../composables/useProfile'
+import { useViewer } from '../../composables/useViewer'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
@@ -86,7 +86,7 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const profile = useProfile()
+const profile = useViewer()
 
 const confirmDelete = ref(false)
 const validationError = ref('')

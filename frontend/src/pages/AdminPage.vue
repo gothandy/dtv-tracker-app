@@ -106,14 +106,14 @@ import { useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
-import { useProfile } from '../composables/useProfile'
+import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { TAG_ICONS } from '../utils/tagIcons'
 
 usePageTitle('Admin')
 
 const router = useRouter()
-const profile = useProfile()
+const profile = useViewer()
 
 watch(() => profile.ready, (r) => {
   if (r && !profile.isAdmin) router.replace('/')

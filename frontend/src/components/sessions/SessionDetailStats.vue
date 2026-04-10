@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
-import type { RoleContext } from '../../composables/useProfile'
+import type { RoleContext } from '../../composables/useViewer'
 
 const props = defineProps<{
   session: SessionDetailResponse

@@ -195,10 +195,10 @@ import FyFilter from '../../components/FyFilter.vue'
 import TermPicker from '../../components/TermPicker.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
-import { useSessionsStore } from '../../stores/sessions'
+import { useSessionListStore } from '../../stores/sessionList'
 import type { TaxNode } from '../../composables/useTaxonomy'
 
-const sessionsStore = useSessionsStore()
+const sessionsStore = useSessionListStore()
 sessionsStore.fetch()
 
 const taxonomyTree: TaxNode[] = [

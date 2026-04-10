@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { useProfile } from '../composables/useProfile'
+import { useViewer } from '../composables/useViewer'
 import type { Session, SessionLimits } from '../types/session'
 
 interface SessionResponse {
@@ -54,14 +54,14 @@ function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; r
   }
 }
 
-export const useSessionsStore = defineStore('sessions', () => {
-  const profile = useProfile()
+export const useSessionListStore = defineStore('sessions', () => {
+  const viewer = useViewer()
   const raw = ref<SessionResponse[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   const sessions = computed(() =>
-    raw.value.map(r => mapSession(r, profile.user?.profileStats))
+    raw.value.map(r => mapSession(r, viewer.user?.profileStats))
   )
 
   async function fetch() {
@@ -75,7 +75,7 @@ export const useSessionsStore = defineStore('sessions', () => {
       raw.value = json.data
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[sessions store]', error.value)
+      console.error('[sessionList store]', error.value)
     } finally {
       loading.value = false
     }

@@ -176,17 +176,17 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 
 ### Vue Frontend: Auth Context Pattern
 
-- **`useProfile()`** is the single UI-facing composable for auth/role state. Pages and components must import only from `useProfile` — never directly from `useAuth` or `useRole` (ESLint `no-restricted-imports` enforces this).
-- `useProfile()` returns a `reactive({...})` object so all boolean helpers auto-unwrap in both templates and script: `profile.isAdmin`, `profile.isCheckIn`, `profile.isOperational`, etc.
+- **`useViewer()`** is the single UI-facing composable for auth/role state of the logged-in viewer. Pages and components must import only from `useViewer` — never directly from `useAuth` or `useRole` (ESLint `no-restricted-imports` enforces this).
+- `useViewer()` returns a `reactive({...})` object so all boolean helpers auto-unwrap in both templates and script: `profile.isAdmin`, `profile.isCheckIn`, `profile.isOperational`, etc.
 - **`RoleContext`** interface — plain snapshot object for passing auth context into components as a prop: `isAdmin`, `isCheckIn`, `isReadOnly`, `isSelfService`, `isTrusted`, `isAuthenticated`, `isPublic`, `isOperational`.
-- **Pages**: `const profile = useProfile()` → use `profile.isAdmin` directly in template `v-if`; pass `:profile="profile.context"` to any child component that needs role context.
-- **Components**: accept `profile?: RoleContext` as an explicit prop — never call `useProfile()` inside a component. This makes auth dependencies explicit and easy to mock in sandbox.
+- **Pages**: `const profile = useViewer()` → use `profile.isAdmin` directly in template `v-if`; pass `:profile="profile.context"` to any child component that needs role context.
+- **Components**: accept `profile?: RoleContext` as an explicit prop — never call `useViewer()` inside a component. This makes auth dependencies explicit and easy to mock in sandbox.
 - **`isOperational`** = Admin or Check-In (the main distinction for UI branching — operational users see stats/management UI; others see public-facing availability).
-- ESLint guard: `frontend/eslint.config.js` blocks `useAuth`/`useRole` imports everywhere except `src/composables/useProfile.ts` and `src/router/index.ts`. Run `npm run lint` from `frontend/`.
+- ESLint guard: `frontend/eslint.config.js` blocks `useAuth`/`useRole` imports everywhere except `src/composables/useViewer.ts` and `src/router/index.ts`. Run `npm run lint` from `frontend/`.
 
 ### Vue Frontend: Page and Store Pattern
 
-- **Pages own stores and profile**: pages call `useSessionDetailStore()` or `useSessionsStore()`, call `useProfile()`, and wire both together. Components receive data as props only.
+- **Pages own stores and profile**: pages call `useSessionDetailStore()` or `useSessionListStore()`, call `useViewer()`, and wire both together. Components receive data as props only.
 - **`SessionDetailResponse` flows through the store as-is**: `sessionDetail.ts` stores the raw API response directly — no mapping layer. Components that take `session: SessionDetailResponse` get all server-computed fields (`isBookable`, `financialYear`, `regularsCount`, `limits`) without any client-side derivation.
 - **`SessionResponse` is mapped**: the sessions listing store maps `SessionResponse` → `Session` (frontend domain type) in `mapSession()`. This is the only place that translation happens.
 - **Server-computed enrichment**: fields like `isBookable`, `financialYear`, `regularsCount`, and derived limits (`deriveLimits`) are computed once server-side in the route handler and included in the response — not re-derived on the client. This keeps UI components simple and ensures consistency across all consumers (listing, detail, group detail).
@@ -307,14 +307,15 @@ dtv-tracker-app/
 │       ├── App.vue                 # Root component
 │       ├── router/index.ts         # Vue Router route definitions + path builder functions
 │       ├── composables/
-│       │   ├── useAuth.ts          # Auth state composable — fetches /auth/me, exposes user + ready (internal; use useProfile in UI)
-│       │   └── useProfile.ts       # Single UI auth composable — wraps useAuth, exposes isAdmin/isCheckIn/isOperational etc. + RoleContext snapshot
+│       │   ├── useAuth.ts          # Auth state composable — fetches /auth/me, exposes user + ready (internal; use useViewer in UI)
+│       │   └── useViewer.ts        # Single UI auth composable — wraps useAuth, exposes isAdmin/isCheckIn/isOperational etc. + RoleContext snapshot
 │       ├── stores/
-│       │   ├── sessions.ts         # Sessions listing store
+│       │   ├── sessionList.ts      # Sessions listing store
 │       │   ├── sessionDetail.ts    # Session detail store — normalises isRegistered/isAttended/isRegular
-│       │   ├── groups.ts           # Groups listing store
+│       │   ├── groupList.ts        # Groups listing store
 │       │   ├── groupDetail.ts      # Group detail store
-│       │   └── profiles.ts         # Profiles listing store
+│       │   ├── profileList.ts      # Profiles listing store
+│       │   └── profileDetail.ts    # Profile detail store (fetch by slug)
 │       ├── types/
 │       │   ├── session.ts          # Session frontend domain type (mapped from SessionResponse)
 │       │   ├── entry.ts            # EntryItem, EntryProfileSummary, EntrySessionSummary

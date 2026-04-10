@@ -27,14 +27,14 @@ import PageHeader from '../components/PageHeader.vue'
 usePageTitle('Groups')
 import GroupListFilter from '../components/groups/GroupListFilter.vue'
 import GroupListResults from '../components/groups/GroupListResults.vue'
-import { useGroupsStore } from '../stores/groups'
-import { useSessionsStore } from '../stores/sessions'
-import { useProfile } from '../composables/useProfile'
+import { useGroupListStore } from '../stores/groupList'
+import { useSessionListStore } from '../stores/sessionList'
+import { useViewer } from '../composables/useViewer'
 import type { GroupWithStats } from '../components/groups/GroupListFilter.vue'
 
-const groupsStore = useGroupsStore()
-const sessionsStore = useSessionsStore()
-const profile = useProfile()
+const groupsStore = useGroupListStore()
+const sessionsStore = useSessionListStore()
+const profile = useViewer()
 const filtered = ref<GroupWithStats[]>([])
 
 onMounted(() => {

@@ -22,13 +22,13 @@
 </template>
 
 <script setup lang="ts">
-import { useProfile } from '../../composables/useProfile'
+import { useViewer } from '../../composables/useViewer'
 import { profilePath } from '../../router/index'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 
 defineProps<{ group: GroupDetailResponse }>()
 
-const profile = useProfile()
+const profile = useViewer()
 </script>
 
 <style scoped>

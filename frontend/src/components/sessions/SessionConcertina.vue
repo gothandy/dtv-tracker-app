@@ -18,7 +18,7 @@ import ConcertinaItem from '../ConcertinaItem.vue'
 import SessionCard from './SessionCard.vue'
 import { sessionPath } from '../../router'
 import type { Session } from '../../types/session'
-import type { RoleContext } from '../../composables/useProfile'
+import type { RoleContext } from '../../composables/useViewer'
 
 defineProps<{
   sessions: Session[]

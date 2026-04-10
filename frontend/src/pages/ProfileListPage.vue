@@ -11,13 +11,13 @@ import { onMounted } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import DebugData from '../components/DebugData.vue'
 import { usePageTitle } from '../composables/usePageTitle'
-import { useProfile } from '../composables/useProfile'
-import { useProfilesStore } from '../stores/profiles'
+import { useViewer } from '../composables/useViewer'
+import { useProfileListStore } from '../stores/profileList'
 
 usePageTitle('Profiles')
 
-const profile = useProfile()
-const profilesStore = useProfilesStore()
+const profile = useViewer()
+const profilesStore = useProfileListStore()
 
 onMounted(() => profilesStore.fetch())
 </script>

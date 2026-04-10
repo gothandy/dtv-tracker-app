@@ -93,8 +93,8 @@ import MediaCard from '../components/MediaCard.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TermCloud from '../components/TermCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
-import { useSessionsStore } from '../stores/sessions'
-import { useProfile } from '../composables/useProfile'
+import { useSessionListStore } from '../stores/sessionList'
+import { useViewer } from '../composables/useViewer'
 import { sessionPath } from '../router'
 import type { Session } from '../types/session'
 import type { TagHoursItem } from '../../../types/api-responses'
@@ -102,8 +102,8 @@ import type { MediaItem } from '../types/media'
 
 const route = useRoute()
 const router = useRouter()
-const store = useSessionsStore()
-const profile = useProfile()
+const store = useSessionListStore()
+const profile = useViewer()
 
 const initialDate = typeof route.query.date === 'string' ? route.query.date : undefined
 const selectedDate = ref<string | undefined>(initialDate)

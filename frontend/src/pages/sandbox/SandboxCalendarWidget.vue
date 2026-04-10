@@ -26,11 +26,11 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import CalendarWidget from '../../components/CalendarWidget.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
-import { useSessionsStore } from '../../stores/sessions'
+import { useSessionListStore } from '../../stores/sessionList'
 
 usePageTitle('Sandbox')
 
-const store = useSessionsStore()
+const store = useSessionListStore()
 store.fetch()
 
 const selectedDate = ref('')

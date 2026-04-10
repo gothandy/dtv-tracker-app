@@ -15,7 +15,7 @@
 import { ref, computed, watch } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormRow from '../../components/FormRow.vue'
-import { useProfile } from '../../composables/useProfile'
+import { useViewer } from '../../composables/useViewer'
 
 const props = defineProps<{
   entries: { id: number; profileId?: number; profileName?: string }[]
@@ -26,7 +26,7 @@ const emit = defineEmits<{
   select: [entryId: number]
 }>()
 
-const { user } = useProfile()
+const { user } = useViewer()
 
 const currentProfileId = computed(() => {
   const slug = user?.profileSlug

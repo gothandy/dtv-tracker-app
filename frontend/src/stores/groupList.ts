@@ -4,7 +4,7 @@ import type { GroupResponse } from '../../../types/api-responses'
 
 export { GroupResponse }
 
-export const useGroupsStore = defineStore('groups', () => {
+export const useGroupListStore = defineStore('groups', () => {
   const groups = ref<GroupResponse[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -20,7 +20,7 @@ export const useGroupsStore = defineStore('groups', () => {
       groups.value = json.data
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[groups store]', error.value)
+      console.error('[groupList store]', error.value)
     } finally {
       loading.value = false
     }

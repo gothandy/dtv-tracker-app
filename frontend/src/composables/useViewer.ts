@@ -1,4 +1,4 @@
-// Single UI composable for auth/profile context.
+// Single UI composable for auth/role context of the logged-in viewer.
 // Pages and components import from here only — never from useAuth or useRole directly.
 import { computed, reactive } from 'vue'
 import { useAuth } from './useAuth'
@@ -14,7 +14,7 @@ export interface RoleContext {
   isOperational: boolean
 }
 
-export function useProfile() {
+export function useViewer() {
   const { user, ready } = useAuth()
 
   const role = computed(() => user.value?.role ?? null)

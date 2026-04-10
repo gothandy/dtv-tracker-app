@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useProfile } from '../../composables/useProfile'
+import { useViewer } from '../../composables/useViewer'
 import type { Session } from '../../types/session'
 import SessionCard from './SessionCard.vue'
 
@@ -40,7 +40,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:selected': [ids: number[]] }>()
 
-const profile = useProfile()
+const profile = useViewer()
 
 const allSelected = computed(() =>
   props.sessions.length > 0 && props.sessions.every(s => props.selected?.includes(s.id))

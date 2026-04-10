@@ -51,7 +51,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGroupDetailStore } from '../stores/groupDetail'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
-import { useProfile } from '../composables/useProfile'
+import { useViewer } from '../composables/useViewer'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
@@ -73,7 +73,7 @@ import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useGroupDetailStore()
-const profile = useProfile()
+const profile = useViewer()
 
 const actionsRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
 

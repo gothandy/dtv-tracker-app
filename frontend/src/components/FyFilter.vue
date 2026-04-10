@@ -6,12 +6,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useSessionsStore } from '../stores/sessions'
+import { useSessionListStore } from '../stores/sessionList'
 
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
-const sessionsStore = useSessionsStore()
+const sessionsStore = useSessionListStore()
 
 function fyKeyToLabel(fyKey: string): string {
   const startYear = parseInt(fyKey.replace('FY', ''))

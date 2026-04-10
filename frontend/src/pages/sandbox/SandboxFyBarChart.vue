@@ -35,11 +35,11 @@ import { usePageTitle } from '../../composables/usePageTitle'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import FyBarChart from '../../components/FyBarChart.vue'
 import CardTitle from '../../components/CardTitle.vue'
-import { useSessionsStore } from '../../stores/sessions'
+import { useSessionListStore } from '../../stores/sessionList'
 
 usePageTitle('Sandbox')
 
-const store = useSessionsStore()
+const store = useSessionListStore()
 store.fetch()
 
 const selectedFy1 = ref('')

@@ -38,7 +38,7 @@ import LayoutColumns from '../../components/LayoutColumns.vue'
 import SessionCard from '../../components/sessions/SessionCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { Session } from '../../types/session'
-import type { RoleContext } from '../../composables/useProfile'
+import type { RoleContext } from '../../composables/useViewer'
 
 usePageTitle('Sandbox')
 

@@ -190,8 +190,8 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
-import { useGroupsStore } from '../stores/groups'
-import { useProfile } from '../composables/useProfile'
+import { useGroupListStore } from '../stores/groupList'
+import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { groupPath, sessionPath } from '../router/index'
 import PageHeader from '../components/PageHeader.vue'
@@ -213,8 +213,8 @@ import ConcertinaItem from '../components/ConcertinaItem.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useSessionDetailStore()
-const groupsStore = useGroupsStore()
-const profile = useProfile()
+const groupsStore = useGroupListStore()
+const profile = useViewer()
 const mediaItems   = ref<MediaItem[]>([])
 const mediaLoading = ref(false)
 const mediaError   = ref<string | null>(null)
