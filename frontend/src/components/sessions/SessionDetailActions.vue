@@ -1,7 +1,7 @@
 <template>
   <div class="sab-wrap">
     <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-responsive" @click="onUpload" />
-    <AppButton v-if="profile.isCheckIn || profile.isAdmin" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
+    <AppButton v-if="allowEdit" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
 
     <EntryUploadPickerModal
       v-if="showPicker"
@@ -25,7 +25,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useProfile } from '../../composables/useProfile'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import type { GroupItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
 import AppButton from '../AppButton.vue'
@@ -39,6 +38,8 @@ const props = defineProps<{
   groups: GroupItem[]
   editWorking: boolean
   editError?: string
+  allowEdit: boolean
+  isSelfService: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,19 +47,15 @@ const emit = defineEmits<{
   'session-delete': []
 }>()
 
-const profile = useProfile()
-
 const showPicker = ref(false)
 const showEdit = ref(false)
 
 const canUpload = computed(() =>
-  (profile.isSelfService && !!props.session.userEntryId) ||
-  profile.isCheckIn ||
-  profile.isAdmin
+  (props.isSelfService && !!props.session.userEntryId) || props.allowEdit
 )
 
 function onUpload() {
-  if (profile.isSelfService && props.session.userEntryId) {
+  if (props.isSelfService && props.session.userEntryId) {
     window.location.href = `/upload.html?entryId=${props.session.userEntryId}`
     return
   }

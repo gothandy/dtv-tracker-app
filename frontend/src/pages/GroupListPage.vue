@@ -6,6 +6,7 @@
       <GroupListFilter
         :groups="groupsStore.groups"
         :sessions="sessionsStore.sessions"
+        :can-add-group="profile.isAdmin"
         @filtered="filtered = $event"
       />
       <GroupListResults
@@ -28,10 +29,12 @@ import GroupListFilter from '../components/groups/GroupListFilter.vue'
 import GroupListResults from '../components/groups/GroupListResults.vue'
 import { useGroupsStore } from '../stores/groups'
 import { useSessionsStore } from '../stores/sessions'
+import { useProfile } from '../composables/useProfile'
 import type { GroupWithStats } from '../components/groups/GroupListFilter.vue'
 
 const groupsStore = useGroupsStore()
 const sessionsStore = useSessionsStore()
+const profile = useProfile()
 const filtered = ref<GroupWithStats[]>([])
 
 onMounted(() => {

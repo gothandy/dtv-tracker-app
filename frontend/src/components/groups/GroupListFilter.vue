@@ -4,7 +4,7 @@
       <span class="gf-count">{{ filtered.length }} {{ filtered.length === 1 ? 'Group' : 'Groups' }}</span>
       <div class="gf-actions">
         <FyFilter v-model="fy" />
-        <button v-if="profile.isAdmin" class="icon-btn" @click="showNew = true" title="New group">
+        <button v-if="canAddGroup" class="icon-btn" @click="showNew = true" title="New group">
           <img src="/icons/add.svg" alt="New group" />
         </button>
       </div>
@@ -28,8 +28,8 @@
         </div>
         <div class="gf-modal-buttons">
           <button class="gf-btn" @click="showNew = false">Cancel</button>
-          <button class="gf-btn gf-btn--primary" :disabled="!newKey || saving" @click="createGroup">
-            {{ saving ? 'Creating…' : 'Create' }}
+          <button class="gf-btn gf-btn--primary" :disabled="!newKey || saving" @click="addGroup">
+            {{ saving ? 'Adding…' : 'Add' }}
           </button>
         </div>
       </div>
@@ -41,7 +41,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
-import { useProfile } from '../../composables/useProfile'
 import { useGroupsStore } from '../../stores/groups'
 import { groupPath } from '../../router/index'
 import type { GroupResponse } from '../../../../types/api-responses'
@@ -52,10 +51,9 @@ export interface GroupWithStats extends GroupResponse {
   hours: number
 }
 
-const props = defineProps<{ groups: GroupResponse[]; sessions: Session[] }>()
+const props = defineProps<{ groups: GroupResponse[]; sessions: Session[]; canAddGroup: boolean }>()
 const emit = defineEmits<{ filtered: [groups: GroupWithStats[]] }>()
 
-const profile = useProfile()
 const router = useRouter()
 const groupsStore = useGroupsStore()
 
@@ -95,7 +93,7 @@ const filtered = computed<GroupWithStats[]>(() => {
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
-async function createGroup() {
+async function addGroup() {
   if (!newKey.value) return
   saving.value = true
   try {
@@ -115,7 +113,7 @@ async function createGroup() {
     await groupsStore.fetch()
     if (json.data?.key) router.push(groupPath(json.data.key))
   } catch (e) {
-    console.error('[GroupsFilterV1] create', e)
+    console.error('[GroupListFilter] addGroup', e)
   } finally {
     saving.value = false
   }

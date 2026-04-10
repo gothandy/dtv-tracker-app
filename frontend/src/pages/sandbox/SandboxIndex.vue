@@ -31,7 +31,7 @@
           <RouterLink to="/sandbox/term-cloud">TermCloud</RouterLink>   
           <RouterLink to="/sandbox/media-card">MediaCard</RouterLink>
           <RouterLink to="/sandbox/media-carousel">MediaCarousel</RouterLink>
-          <RouterLink to="/sandbox/session-view-tags">SessionViewTags</RouterLink>
+          <RouterLink to="/sandbox/session-term-list">SessionTermList</RouterLink>
         </nav>
       </section>
 
@@ -59,6 +59,22 @@
         <h2>Not included — test on main site</h2>
         <ul class="not-included">
           <li>SessionDetailGallery — requires live SharePoint media; test via session detail page</li>
+          <li>SessionDetailBook — booking CTA; test via session detail (future bookable session)</li>
+          <li>SessionDetailHeader — session info display; test via session detail page</li>
+          <li>SessionDetailLogin — auth prompt; test via session detail page (logged out)</li>
+          <li>SessionDetailStats — stats table; test via session detail page (past session)</li>
+          <li>SessionDetailGroupTeaser — next session teaser; test via session detail page (past session)</li>
+          <li>SessionEntryList — check-in entry workflow; test via session detail page (operational user)</li>
+          <li>SessionConcertina — concertina session picker; test via home page calendar</li>
+          <li>SessionList — session list with grouped dates; test via home or sessions page</li>
+          <li>SessionListResults — session card grid with checkboxes; test via sessions page</li>
+          <li>GroupDetailHeader — group info display; test via group detail page</li>
+          <li>GroupDetailRegulars — regulars management; test via group detail page</li>
+          <li>GroupListResults — group card grid; test via groups page</li>
+          <li>ProfileEntryList — profile entry list; test via profile detail page</li>
+          <li>EntryIconPicker — tag toggle buttons; test via entry detail or session entry list</li>
+          <li>ProfilePicker — volunteer search/select; test via add entry or entry edit modal</li>
+          <li>TermPicker — term store tag picker; test via session view tags</li>
         </ul>
       </section>
 

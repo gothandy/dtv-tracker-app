@@ -106,7 +106,7 @@
             :next-session="store.session.nextSession"
           />
           <SessionDetailActions
-            v-if="profile.isCheckIn || profile.isAdmin"
+            v-if="profile.isCheckIn || profile.isAdmin || (profile.isSelfService && !!store.session.userEntryId)"
             ref="actionsRef"
             :session="store.session"
             :group-key="(route.params.groupKey as string)"
@@ -114,6 +114,8 @@
             :groups="editGroups"
             :edit-working="editWorking"
             :edit-error="editError"
+            :allow-edit="profile.isCheckIn || profile.isAdmin"
+            :is-self-service="profile.isSelfService"
             @session-save="onSessionSave"
             @session-delete="onSessionDelete"
           />
@@ -126,7 +128,7 @@
             <p class="text-dtv-dark text-large leading-relaxed pb-4" style="white-space: pre-line">{{ store.session.description }}</p>
           </div>
           <div class="px-6 pb-6">
-            <SessionViewTags
+            <SessionTermList
               :session="store.session"
               :allow-edit="profile.isCheckIn || profile.isAdmin"
               :working="tagWorking"
@@ -199,7 +201,7 @@ import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
 import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
 import SessionDetailGallery from '../components/sessions/SessionDetailGallery.vue'
-import SessionViewTags from '../components/sessions/SessionViewTags.vue'
+import SessionTermList from '../components/sessions/SessionTermList.vue'
 import { useTaxonomy } from '../composables/useTaxonomy'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
 import SessionEntryList from '../components/sessions/SessionEntryList.vue'

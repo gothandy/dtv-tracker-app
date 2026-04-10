@@ -8,12 +8,37 @@
       <div class="sandbox-warning">Login to view some components</div>
 
       <h2>SessionDetailActions</h2>
+      <h3>Admin / Check-In view</h3>
       <SessionDetailActions
         :session="mockSession"
         group-key="sheepskull"
         date="2025-03-01"
         :groups="mockGroups"
         :edit-working="false"
+        :allow-edit="true"
+        :is-self-service="false"
+      />
+
+      <h3>Self-service view (registered)</h3>
+      <SessionDetailActions
+        :session="mockSessionRegistered"
+        group-key="sheepskull"
+        date="2025-03-01"
+        :groups="mockGroups"
+        :edit-working="false"
+        :allow-edit="false"
+        :is-self-service="true"
+      />
+
+      <h3>Public view (no actions)</h3>
+      <SessionDetailActions
+        :session="mockSession"
+        group-key="sheepskull"
+        date="2025-03-01"
+        :groups="mockGroups"
+        :edit-working="false"
+        :allow-edit="false"
+        :is-self-service="false"
       />
 
       <h2>SessionListActions (none selected)</h2>
@@ -136,6 +161,11 @@ const mockSession: SessionDetailResponse = {
   coverMediaId: null,
   statsRaw: null,
   entries: [],
+}
+
+const mockSessionRegistered: SessionDetailResponse = {
+  ...mockSession,
+  userEntryId: 42,
 }
 
 const mockSessions: Session[] = [

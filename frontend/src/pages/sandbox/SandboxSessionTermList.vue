@@ -3,13 +3,13 @@
     <div class="sandbox">
 
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
-      <h1>SessionViewTags</h1>
+      <h1>SessionTermList</h1>
 
       <h2>Read-only (allowEdit: false)</h2>
       <LayoutColumns ratio="2-1">
         <template #left>
           <div class="p-6">
-            <SessionViewTags
+            <SessionTermList
               :session="{ ...baseSession, metadata: deepTags }"
               :allow-edit="false"
               :working="false"
@@ -25,7 +25,7 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <div class="p-6">
-            <SessionViewTags
+            <SessionTermList
               :session="{ ...baseSession, metadata: editableTags }"
               :allow-edit="true"
               :working="false"
@@ -42,7 +42,7 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <div class="p-6">
-            <SessionViewTags
+            <SessionTermList
               :session="{ ...baseSession, metadata: deepTags }"
               :allow-edit="true"
               :working="false"
@@ -59,7 +59,7 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <div class="p-6">
-            <SessionViewTags
+            <SessionTermList
               :session="{ ...baseSession, metadata: overlapTags }"
               :allow-edit="true"
               :working="false"
@@ -74,7 +74,7 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <div class="p-6">
-            <SessionViewTags
+            <SessionTermList
               :session="{ ...baseSession, metadata: [] }"
               :allow-edit="false"
               :working="false"
@@ -90,7 +90,7 @@
       <LayoutColumns ratio="2-1">
         <template #left>
           <div class="p-6">
-            <SessionViewTags
+            <SessionTermList
               :session="{ ...baseSession, metadata: [] }"
               :allow-edit="true"
               :working="false"
@@ -109,7 +109,7 @@
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
-import SessionViewTags from '../../components/sessions/SessionViewTags.vue'
+import SessionTermList from '../../components/sessions/SessionTermList.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
@@ -118,7 +118,7 @@ import type { SessionDetailResponse } from '../../../../types/api-responses'
 usePageTitle('Sandbox')
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
-// Minimal session shell — SessionViewTags only reads `metadata`
+// Minimal session shell — SessionTermList only reads `metadata`
 const baseSession = {
   id: 1,
   date: '2025-06-01',
