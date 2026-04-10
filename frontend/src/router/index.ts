@@ -61,6 +61,7 @@ export const router = createRouter({
     { path: '/sandbox/entry-list', component: () => import('../pages/sandbox/SandboxEntryList.vue') },
     { path: '/sandbox/filter-components', component: () => import('../pages/sandbox/SandboxFilterComponents.vue') },
     { path: '/sandbox/session-term-list', component: () => import('../pages/sandbox/SandboxSessionTermList.vue') },
+    { path: '/sandbox/profile-record-list', component: () => import('../pages/sandbox/SandboxProfileRecordList.vue') },
   ]
 })
 

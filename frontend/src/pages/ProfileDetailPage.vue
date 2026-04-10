@@ -26,6 +26,20 @@
         </div>
       </div>
 
+      <ProfileRecordList
+        v-if="store.profile.records"
+        :records="store.profile.records"
+        :profile-id="store.profile.id"
+        :profile-slug="store.profile.slug"
+        :profile="viewer.context"
+        :types="recordTypes"
+        :statuses="recordStatuses"
+        ref="recordListRef"
+        @add-record="onAddRecord"
+        @save-record="onSaveRecord"
+        @delete-record="onDeleteRecord"
+      />
+
       <LayoutColumns ratio="1">
         <template #header><SectionHeader>Your volunteering</SectionHeader></template>
         <template #left>
@@ -54,11 +68,14 @@ import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
+import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
 import type { ProfileEntryResponse } from '../../../types/api-responses'
 import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
+import type { AddRecordPayload } from './modals/RecordAddModal.vue'
+import type { SaveRecordPayload } from './modals/RecordEditModal.vue'
 import type { EntryItem } from '../types/entry'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'
@@ -68,11 +85,26 @@ const viewer = useViewer()
 const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
 const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)
+const recordListRef = ref<InstanceType<typeof ProfileRecordList> | null>(null)
+const recordTypes = ref<string[]>([])
+const recordStatuses = ref<string[]>([])
 
 usePageTitle(computed(() => store.profile?.name ?? 'Profile'))
 const entryListRef = ref<InstanceType<typeof ProfileEntryList> | null>(null)
 
-onMounted(() => store.fetch(route.params.slug as string))
+onMounted(async () => {
+  store.fetch(route.params.slug as string)
+  try {
+    const res = await fetch('/api/profiles/records/options')
+    if (res.ok) {
+      const json = await res.json()
+      recordTypes.value = json.data?.types ?? []
+      recordStatuses.value = json.data?.statuses ?? []
+    }
+  } catch (e) {
+    console.error('[ProfileDetailPage] Failed to load record options', e)
+  }
+})
 watch(() => route.params.slug, slug => { if (slug) store.fetch(slug as string) })
 
 const isMember = computed(() =>
@@ -97,6 +129,55 @@ async function onEditProfile(data: EditProfilePayload) {
   } catch (e) {
     console.error('[ProfileDetailPage] onEditProfile failed', e)
     actionsRef.value?.onEditError('Failed to save — please try again')
+  }
+}
+
+async function onAddRecord(payload: AddRecordPayload) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/profiles/${store.profile.id}/records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    const json = await res.json()
+    store.profile.records = [...(store.profile.records ?? []), { id: json.data.id, ...payload }]
+    recordListRef.value?.onAddSuccess()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onAddRecord failed', e)
+    recordListRef.value?.onAddError('Failed to add — please try again')
+  }
+}
+
+async function onSaveRecord(id: number, payload: SaveRecordPayload) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/records/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    const stored = store.profile.records?.find(r => r.id === id)
+    if (stored) { stored.status = payload.status; stored.date = payload.date }
+    recordListRef.value?.onSaveSuccess()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onSaveRecord failed', e)
+    recordListRef.value?.onSaveError('Failed to save — please try again')
+  }
+}
+
+async function onDeleteRecord(id: number) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/records/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    store.profile.records = store.profile.records?.filter(r => r.id !== id)
+    recordListRef.value?.onDeleteSuccess()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onDeleteRecord failed', e)
+    recordListRef.value?.onSaveError('Failed to delete — please try again')
   }
 }
 
