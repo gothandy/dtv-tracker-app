@@ -51,6 +51,7 @@
           <RouterLink to="/sandbox/concertina-layout">ConcertinaLayout</RouterLink>
           <RouterLink to="/sandbox/entry-card">EntryCard</RouterLink>
           <RouterLink to="/sandbox/entry-list">EntryList</RouterLink>
+          <RouterLink to="/sandbox/profile-record-list">ProfileRecordList</RouterLink>
         </nav>
       </section>
 

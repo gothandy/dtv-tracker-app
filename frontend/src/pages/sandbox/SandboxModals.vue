@@ -47,6 +47,14 @@
           <AppButton label="Open" @click="open = 'profile-edit'" />
         </div>
         <div>
+          <h2>Record Add</h2>
+          <AppButton label="Open" @click="open = 'record-add'" />
+        </div>
+        <div>
+          <h2>Record Edit</h2>
+          <AppButton label="Open" @click="open = 'record-edit'" />
+        </div>
+        <div>
           <h2>Delete</h2>
           <AppButton label="Open" @click="open = 'delete'" />
         </div>
@@ -125,6 +133,27 @@
         @save="onProfileEditSave"
       />
 
+      <RecordAddModal
+        v-if="open === 'record-add'"
+        :types="mockRecordTypes"
+        :statuses="mockRecordStatuses"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @add="onRecordAdd"
+      />
+
+      <RecordEditModal
+        v-if="open === 'record-edit'"
+        :record="mockRecord"
+        :statuses="mockRecordStatuses"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @save="onRecordSave"
+        @delete="onRecordDelete"
+      />
+
       <GroupEditModal
         v-if="open === 'group-edit'"
         :group="mockGroup"
@@ -187,6 +216,8 @@ import MediaEditModal from '../modals/MediaEditModal.vue'
 import DeleteModal from '../modals/DeleteModal.vue'
 import GroupEditModal from '../modals/GroupEditModal.vue'
 import ProfileEditModal from '../modals/ProfileEditModal.vue'
+import RecordAddModal from '../modals/RecordAddModal.vue'
+import RecordEditModal from '../modals/RecordEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import type { MediaItem } from '../../types/media'
@@ -252,6 +283,18 @@ function onMediaEditSave(payload: unknown) {
 
 function onMediaEditDelete() {
   simulate('media-edit: delete')
+}
+
+function onRecordAdd(payload: unknown) {
+  simulate(`record-add: add → ${JSON.stringify(payload)}`)
+}
+
+function onRecordSave(payload: unknown) {
+  simulate(`record-edit: save → ${JSON.stringify(payload)}`)
+}
+
+function onRecordDelete() {
+  simulate('record-edit: delete')
 }
 
 function onProfileEditSave(payload: unknown) {
@@ -361,6 +404,12 @@ const mockGroup = {
   stats: { sessions: 12, hours: 240, newVolunteers: 5, children: 2, totalVolunteers: 30 },
   sessions: [],
 }
+
+const mockRecordTypes = [
+  'Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card',
+]
+const mockRecordStatuses = ['Accepted', 'Invited', 'Declined', 'Pending']
+const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', date: '2026-01-15T00:00:00Z' }
 
 const session = { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' }
 const mockEntries: EntryItem[] = [
