@@ -28,7 +28,7 @@
         <nav>
           <RouterLink to="/sandbox/calendar-widget">CalendarWidget</RouterLink>
           <RouterLink to="/sandbox/fy-bar-chart">FyBarChart</RouterLink>
-          <RouterLink to="/sandbox/tag-cloud">TagCloud</RouterLink>   
+          <RouterLink to="/sandbox/term-cloud">TermCloud</RouterLink>   
           <RouterLink to="/sandbox/media-card">MediaCard</RouterLink>
           <RouterLink to="/sandbox/media-carousel">MediaCarousel</RouterLink>
           <RouterLink to="/sandbox/session-view-tags">SessionViewTags</RouterLink>

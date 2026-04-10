@@ -13,7 +13,7 @@
           <CardTitle>Hours by year</CardTitle>
           <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" @click-selected="onSelectedBarClick" />
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="tagHours" @click="onTagClick" />
+          <TermCloud :tags="tagHours" @click="onTagClick" />
         </template>
         <template #right>
           <GroupDetailActions
@@ -61,7 +61,7 @@ import GroupDetailHeader from '../components/groups/GroupDetailHeader.vue'
 import GroupDetailActions from '../components/groups/GroupDetailActions.vue'
 import GroupDetailRegulars from '../components/groups/GroupDetailRegulars.vue'
 import FyBarChart from '../components/FyBarChart.vue'
-import TagCloud from '../components/TagCloud.vue'
+import TermCloud from '../components/TermCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
 import { sessionPath, groupPath, groupsPath } from '../router/index'
 import type { Session } from '../types/session'

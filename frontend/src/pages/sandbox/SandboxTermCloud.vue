@@ -3,13 +3,13 @@
     <div class="sandbox">
 
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
-      <h1>TagCloud</h1>
+      <h1>TermCloud</h1>
 
       <h2>2-1 (left)</h2>
       <LayoutColumns ratio="2-1">
         <template #left>
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="sampleTags" @click="onSelect" />
+          <TermCloud :tags="sampleTags" @click="onSelect" />
         </template>
       </LayoutColumns>
       <p class="selected">last click: <strong>{{ lastLabel || '—' }}</strong></p>
@@ -18,7 +18,7 @@
       <LayoutColumns ratio="1-1-1">
         <template #middle>
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="sampleTags" />
+          <TermCloud :tags="sampleTags" />
         </template>
       </LayoutColumns>
 
@@ -26,7 +26,7 @@
       <LayoutColumns ratio="2-1">
         <template #right>
           <CardTitle>Activity</CardTitle>
-          <TagCloud :tags="[]" />
+          <TermCloud :tags="[]" />
         </template>
       </LayoutColumns>
 
@@ -38,7 +38,7 @@
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
-import TagCloud from '../../components/TagCloud.vue'
+import TermCloud from '../../components/TermCloud.vue'
 import CardTitle from '../../components/CardTitle.vue'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'

@@ -70,7 +70,7 @@
       </template>
       <template #right>
         <CardTitle>All these trails</CardTitle>
-        <TagCloud :tags="tagHours" @click="onTagClick" />
+        <TermCloud :tags="tagHours" @click="onTagClick" />
       </template>
     </LayoutColumns>
 
@@ -91,7 +91,7 @@ import SessionConcertina from '../components/sessions/SessionConcertina.vue'
 import MediaCarousel from '../components/MediaCarousel.vue'
 import MediaCard from '../components/MediaCard.vue'
 import FyBarChart from '../components/FyBarChart.vue'
-import TagCloud from '../components/TagCloud.vue'
+import TermCloud from '../components/TermCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
 import { useSessionsStore } from '../stores/sessions'
 import { useProfile } from '../composables/useProfile'
