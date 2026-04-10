@@ -27,13 +27,13 @@
   color: var(--color-text-muted);
 }
 
-/* Warning banner for pages with auth-gated components */
-.sandbox-login-warning {
-  background: var(--color-dtv-sand);
-  border-left: 3px solid var(--color-dtv-sand-dark);
+/* Warning note — for limitations, auth gates, etc. */
+.sandbox-warning {
+  background: var(--color-dtv-dirt-light);
+  border-left: 3px solid var(--color-dtv-dirt);
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
-  color: var(--color-text-muted);
+  color: var(--color-dtv-dirt-dark);
 }
 
 /* Event log: shows emitted events; used by EntryCard, EntryList, Modals sandboxes */

@@ -5,7 +5,7 @@
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
       <h1>Action Bars</h1>
 
-      <div class="sandbox-login-warning">Login to view some components</div>
+      <div class="sandbox-warning">Login to view some components</div>
 
       <h2>SessionDetailActions</h2>
       <SessionDetailActions :session="mockSession" group-key="sheepskull" date="2025-03-01" />

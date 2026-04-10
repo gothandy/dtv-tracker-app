@@ -4,6 +4,7 @@
 
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
       <h1>EntryCard</h1>
+      <p class="sandbox-warning">Visual reference only — see <RouterLink to="/sandbox/entry-list">Entry List</RouterLink> for full functionality.</p>
 
       <h2>Operational — unchecked</h2>
       <div class="demo">
