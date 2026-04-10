@@ -29,7 +29,7 @@
 
       <FormRow title="Notes" :full-width="true">
         <textarea class="eem-textarea" v-model="form.notes" rows="2" />
-        <EntryTagPicker v-model="form.notes" />
+        <EntryIconPicker v-model="form.notes" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -51,7 +51,7 @@ import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
-import EntryTagPicker from '../../components/EntryTagPicker.vue'
+import EntryIconPicker from '../../components/EntryIconPicker.vue'
 import DeleteModal from './DeleteModal.vue'
 
 const props = defineProps<{ entry: EntryItem; working: boolean; error?: string; title?: string }>()

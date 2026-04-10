@@ -10,7 +10,7 @@
       <button v-if="canEdit" class="stags-remove" @click="removeTag(tag.termGuid)" :disabled="deletingGuid === tag.termGuid">×</button>
     </span>
     <div v-if="canEdit" class="stags-add-wrap">
-      <TagPicker
+      <TermPicker
         v-model="pickedLabel"
         :tree="taxonomyTree"
         :loading="taxonomyLoading"
@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useProfile } from '../../composables/useProfile'
-import TagPicker from '../TagPicker.vue'
+import TermPicker from '../TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 

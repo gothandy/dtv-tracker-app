@@ -10,14 +10,14 @@
     @action="save"
   >
     <p class="satm-count">{{ count }} session{{ count === 1 ? '' : 's' }} selected</p>
-    <TagPicker v-model="pickedLabel" :tree="taxonomyTree" :loading="taxonomyLoading" placeholder="Choose a tag…" @select="onSelect" />
+    <TermPicker v-model="pickedLabel" :tree="taxonomyTree" :loading="taxonomyLoading" placeholder="Choose a tag…" @select="onSelect" />
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
-import TagPicker from '../../components/TagPicker.vue'
+import TermPicker from '../../components/TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 
 defineProps<{

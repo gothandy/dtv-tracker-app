@@ -12,7 +12,7 @@
       <option value="">All groups</option>
       <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
     </select>
-    <TagPicker
+    <TermPicker
       v-model="tagLabel"
       :tree="taxonomyTree"
       :loading="taxonomyLoading"
@@ -26,7 +26,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
-import TagPicker from '../TagPicker.vue'
+import TermPicker from '../TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import type { Session } from '../../types/session'
 

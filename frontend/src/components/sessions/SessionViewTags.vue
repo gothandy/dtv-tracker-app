@@ -15,7 +15,7 @@
       >×</button>
     </span>
     <div v-if="allowEdit" class="stags-add-wrap">
-      <TagPicker
+      <TermPicker
         v-model="pickedLabel"
         :tree="tree"
         :loading="taxonomyLoading"
@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import TagPicker from '../TagPicker.vue'
+import TermPicker from '../TermPicker.vue'
 import type { TaxNode } from '../../composables/useTaxonomy'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 

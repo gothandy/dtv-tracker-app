@@ -114,17 +114,17 @@
         </FormRow>
       </FormLayout>
 
-      <!--Tag Picker -->
-      <h2>Tag Picker</h2>
+      <!--Term Picker -->
+      <h2>Term Picker</h2>
       <FormLayout>
         <FormRow title="Unselected">
-          <TagPicker v-model="tagValue" :tree="taxonomyTree" :loading="taxonomyLoading" />
+          <TermPicker v-model="tagValue" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Selected">
-          <TagPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
+          <TermPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Disabled">
-          <TagPicker v-model="tagValue" :tree="taxonomyTree" :loading="taxonomyLoading" disabled />
+          <TermPicker v-model="tagValue" :tree="taxonomyTree" :loading="taxonomyLoading" disabled />
         </FormRow>
       </FormLayout>
 
@@ -132,13 +132,13 @@
       <h2>Entry Icon Picker</h2>
       <FormLayout>
         <FormRow title="None selected" :full-width="true">
-          <EntryTagPicker v-model="tagNotes" />
+          <EntryIconPicker v-model="tagNotes" />
         </FormRow>
         <FormRow title="Some selected" :full-width="true">
-          <EntryTagPicker v-model="tagNotesSelected" />
+          <EntryIconPicker v-model="tagNotesSelected" />
         </FormRow>
         <FormRow title="Disabled" :full-width="true">
-          <EntryTagPicker v-model="tagNotesSelected" disabled />
+          <EntryIconPicker v-model="tagNotesSelected" disabled />
         </FormRow>
       </FormLayout>
 
@@ -168,11 +168,11 @@
         <FormRow title="FY Filter">
           <FyFilter v-model="fyValueSelected" />
         </FormRow>
-        <FormRow title="Tag Picker">
-          <TagPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
+        <FormRow title="Term Picker">
+          <TermPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Entry Icon Picker" :full-width="true">
-          <EntryTagPicker v-model="tagNotesSelected" />
+          <EntryIconPicker v-model="tagNotesSelected" />
         </FormRow>
         <FormRow title="Profile Picker" :full-width="true">
           <ProfilePicker :profiles="profiles" @select="onProfileSelect" />
@@ -192,8 +192,8 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import FyFilter from '../../components/FyFilter.vue'
-import TagPicker from '../../components/TagPicker.vue'
-import EntryTagPicker from '../../components/EntryTagPicker.vue'
+import TermPicker from '../../components/TermPicker.vue'
+import EntryIconPicker from '../../components/EntryIconPicker.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
 import { useSessionsStore } from '../../stores/sessions'
 import type { TaxNode } from '../../composables/useTaxonomy'
