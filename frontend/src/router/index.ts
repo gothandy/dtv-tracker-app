@@ -60,6 +60,7 @@ export const router = createRouter({
     { path: '/sandbox/entry-card', component: () => import('../pages/sandbox/SandboxEntryCard.vue') },
     { path: '/sandbox/entry-list', component: () => import('../pages/sandbox/SandboxEntryList.vue') },
     { path: '/sandbox/filter-components', component: () => import('../pages/sandbox/SandboxFilterComponents.vue') },
+    { path: '/sandbox/session-view-tags', component: () => import('../pages/sandbox/SandboxSessionViewTags.vue') },
   ]
 })
 

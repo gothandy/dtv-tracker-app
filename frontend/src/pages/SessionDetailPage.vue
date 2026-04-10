@@ -90,7 +90,7 @@
 
       </LayoutColumns>
 
-      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null">
+      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null || (store.session.metadata?.length ?? 0) > 0 || profile.isOperational">
 
         <template #header>
           <SectionHeader v-if="!store.session.isBookable">What we got up to?</SectionHeader>
@@ -119,12 +119,16 @@
           <CardTitle v-if="store.session.displayName">{{ store.session.displayName }}</CardTitle>
           <div v-if="store.session.description" class="prose px-6 pb-6">
             <p class="text-dtv-dark text-large leading-relaxed pb-4" style="white-space: pre-line">{{ store.session.description }}</p>
-          
-            <SessionDetailTags
+          </div>
+          <div class="px-6 pb-6">
+            <SessionViewTags
               :session="store.session"
-              :group-key="(route.params.groupKey as string)"
-              :date="store.session.date"
-              @updated="store.fetch(route.params.groupKey as string, store.session!.date)"
+              :allow-edit="profile.isCheckIn || profile.isAdmin"
+              :working="tagWorking"
+              :error="tagError"
+              :tree="taxonomyTree"
+              :taxonomy-loading="taxonomyLoading"
+              @save-tags="onSaveTags"
             />
           </div>
         </template>
@@ -187,7 +191,8 @@ import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
 import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
 import SessionDetailGallery from '../components/sessions/SessionDetailGallery.vue'
-import SessionDetailTags from '../components/sessions/SessionDetailTags.vue'
+import SessionViewTags from '../components/sessions/SessionViewTags.vue'
+import { useTaxonomy } from '../composables/useTaxonomy'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
 import SessionEntryList from '../components/sessions/SessionEntryList.vue'
 import SectionHeader from '../components/SectionHeader.vue'
@@ -207,6 +212,9 @@ const coverItem    = computed<MediaItem | null>(() =>
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const entryListRef = ref<InstanceType<typeof SessionEntryList> | null>(null)
+const tagWorking = ref(false)
+const tagError = ref<string | undefined>()
+const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 function mapEntry(e: EntryResponse): EntryItem {
   return {
@@ -241,6 +249,27 @@ const titleText = computed(() => {
   return `${formatDate(store.session.date)} | ${store.session.groupName}`
 })
 usePageTitle(titleText)
+
+async function onSaveTags(tags: Array<{ label: string; termGuid: string }>) {
+  const groupKey = route.params.groupKey as string
+  const date = store.session!.date
+  tagWorking.value = true
+  tagError.value = undefined
+  try {
+    const res = await fetch(`/api/sessions/${groupKey}/${date}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata: tags }),
+    })
+    if (!res.ok) throw new Error(`PATCH failed (${res.status})`)
+    if (store.session) store.session.metadata = tags
+  } catch (e) {
+    tagError.value = 'Failed to save tags — please try again'
+    console.error('[SessionDetailPage] onSaveTags failed', e)
+  } finally {
+    tagWorking.value = false
+  }
+}
 
 async function fetchProfiles() {
   try {

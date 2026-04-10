@@ -31,6 +31,7 @@
           <RouterLink to="/sandbox/tag-cloud">TagCloud</RouterLink>   
           <RouterLink to="/sandbox/media-card">MediaCard</RouterLink>
           <RouterLink to="/sandbox/media-carousel">MediaCarousel</RouterLink>
+          <RouterLink to="/sandbox/session-view-tags">SessionViewTags</RouterLink>
         </nav>
       </section>
 
