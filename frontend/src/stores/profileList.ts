@@ -7,12 +7,18 @@ export const useProfileListStore = defineStore('profiles', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetch() {
+  async function fetch(fy?: string, group?: string) {
     if (loading.value) return
     loading.value = true
     error.value = null
     try {
-      const res = await window.fetch('/api/profiles')
+      const params = new URLSearchParams()
+      if (fy === 'rolling') params.set('fy', 'rolling')
+      else if (fy && fy.startsWith('FY')) params.set('fy', fy)
+      // 'all' → omit fy param; API always returns hoursAll regardless
+      if (group) params.set('group', group)
+      const query = params.toString()
+      const res = await window.fetch(`/api/profiles${query ? `?${query}` : ''}`)
       if (!res.ok) throw new Error(`Failed to load profiles (${res.status})`)
       const json: { data: ProfileResponse[] } = await res.json()
       profiles.value = json.data

@@ -36,12 +36,14 @@
       </section>
 
       <section>
-        <h2>Group and Session Lists</h2>
+        <h2>Group, Session and Profile Lists</h2>
         <nav>
           <RouterLink to="/sandbox/action-bars">Action Bars</RouterLink>
           <RouterLink to="/sandbox/filter-components">Filter Components</RouterLink>
           <RouterLink to="/sandbox/session-card">SessionCard</RouterLink>
           <RouterLink to="/sandbox/group-card">GroupCard</RouterLink>
+          <RouterLink to="/sandbox/profile-list-item">ProfileListItem</RouterLink>
+          <RouterLink to="/sandbox/profile-list-results">ProfileListResults</RouterLink>
         </nav>
       </section>
 

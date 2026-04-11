@@ -46,11 +46,10 @@
 
       <h2>SessionListActions (some selected)</h2>
       <SessionListActions
-        ref="listActionsRef"
         :sessions="mockSessions"
         :can-bulk-tag="true"
         v-model:selected="someSelected"
-        @apply-tag="label => onListAction(listActionsRef, label)"
+        @add-tags="onListAddTags"
       />
 
       <h2>GroupDetailActions (with Eventbrite)</h2>
@@ -99,7 +98,6 @@ import type { Session } from '../../types/session'
 
 const actionsWithEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
 const actionsWithoutEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
-const listActionsRef = ref<InstanceType<typeof SessionListActions> | null>(null)
 
 const failNext = ref(false)
 const events = ref<string[]>([])
@@ -127,19 +125,8 @@ async function onGroupAction(actions: ActionsInstance, label: string, data?: unk
   log(`${label} → done`)
 }
 
-type ListActionsInstance = InstanceType<typeof SessionListActions> | null
-
-async function onListAction(actions: ListActionsInstance, label: string) {
-  log(`apply-tag: "${label}" → saving…`)
-  await new Promise(r => setTimeout(r, 2000))
-  if (failNext.value) {
-    failNext.value = false
-    actions?.onTagError('Server error — please try again')
-    log(`apply-tag → failed`)
-    return
-  }
-  actions?.onTagSuccess()
-  log(`apply-tag → done`)
+function onListAddTags() {
+  log('add-tags → (modal would open on real page)')
 }
 
 const mockGroups = [
