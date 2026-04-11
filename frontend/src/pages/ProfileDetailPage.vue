@@ -194,7 +194,7 @@ async function onDeleteRecord(id: number) {
 async function onAddRegular(groupId: number) {
   if (!store.profile) return
   try {
-    const res = await fetch(`/api/profiles/${store.profile.slug}/regulars`, {
+    const res = await fetch(`/api/profiles/${route.params.slug}/regulars`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ groupId }),
