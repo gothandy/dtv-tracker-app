@@ -36,7 +36,7 @@
   /* ── Title ── */
 
   .cta-title {
-    font-family: theme(--font-body);
+    font-family: theme(--font-head);
     font-size: 2.5rem;
     line-height: 1.1;
   }
@@ -45,8 +45,8 @@
 
   .cta-title.cta-sm { font-size: 1.5rem; }
 
-  /* Rubik Dirt display font variant */
-  .cta-title.cta-dirt { font-family: theme(--font-display); }
+  /* Rubik Dirt hero font variant */
+  .cta-title.cta-dirt { font-family: theme(--font-hero); }
 
 
   /* ── Body ── */
@@ -66,7 +66,7 @@
 
   .cta-button button,
   .cta-button a {
-    font-family: theme(--font-body);
+    font-family: theme(--font-head);
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;

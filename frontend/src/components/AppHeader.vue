@@ -4,7 +4,7 @@
       <!-- Logo — overflows 25% below header -->
       <RouterLink to="/" class="flex items-center gap-3 no-underline relative z-[60]" style="margin-bottom: -10px">
         <img src="/img/logo.png" alt="DTV" class="h-20 w-20" style="transform: translateY(5%)" />
-        <span class="font-display text-white text-2xl md:text-3xl uppercase tracking-wide -translate-y-1">DTV Tracker</span>
+        <span class="font-hero text-white text-2xl md:text-3xl uppercase tracking-wide -translate-y-1">DTV Tracker</span>
       </RouterLink>
 
       <!-- Burger button -->
