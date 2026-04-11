@@ -113,7 +113,8 @@ jobs:
             --name DTVTrackerApp \
             --src-path release.zip \
             --type zip \
-            --clean true
+            --clean true \
+            --async
 
       - name: Configure app settings
         run: |
@@ -125,3 +126,18 @@ jobs:
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \
             --setting-names WEBSITE_RUN_FROM_PACKAGE 2>/dev/null || true
+
+      - name: Wait for app to be healthy
+        run: |
+          echo "Waiting for app to start..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://dtvtrackerapp.azurewebsites.net/api/health)
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "App is healthy."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "App did not become healthy within 5 minutes."
+          exit 1
