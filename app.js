@@ -302,7 +302,7 @@ if (siteMode === 'v2') {
 
     if (!isDev) {
         // Production: SPA fallback for client-side routes
-        app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
+        app.get('/*path', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
     }
     // Dev: Vite middleware handles SPA routing (added during server startup below)
 }
