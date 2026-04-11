@@ -26,11 +26,20 @@
         </div>
       </div>
 
+      <ProfileGroupList
+        :groups="store.profile.groupHours"
+        :allow-toggle-regular="viewer.isOperational"
+        ref="groupListRef"
+        @add-regular="onAddRegular"
+        @remove-regular="onRemoveRegular"
+      />
+
       <ProfileRecordList
         :records="store.profile.records ?? []"
         :profile-id="store.profile.id"
         :profile-slug="store.profile.slug"
-        :profile="viewer.context"
+        :show-consent-link="viewer.isOperational || viewer.isSelfService"
+        :allow-edit="viewer.isAdmin"
         :types="recordTypes"
         :statuses="recordStatuses"
         ref="recordListRef"
@@ -68,6 +77,7 @@ import PageHeader from '../components/PageHeader.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
+import ProfileGroupList from '../components/profiles/ProfileGroupList.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
@@ -85,6 +95,7 @@ const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
 const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)
 const recordListRef = ref<InstanceType<typeof ProfileRecordList> | null>(null)
+const groupListRef = ref<InstanceType<typeof ProfileGroupList> | null>(null)
 const recordTypes = ref<string[]>([])
 const recordStatuses = ref<string[]>([])
 
@@ -177,6 +188,39 @@ async function onDeleteRecord(id: number) {
   } catch (e) {
     console.error('[ProfileDetailPage] onDeleteRecord failed', e)
     recordListRef.value?.onSaveError('Failed to delete — please try again')
+  }
+}
+
+async function onAddRegular(groupId: number) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/profiles/${store.profile.slug}/regulars`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId }),
+    })
+    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    const json = await res.json()
+    const group = store.profile.groupHours.find(g => g.groupId === groupId)
+    if (group) { group.isRegular = true; group.regularId = json.data.id }
+    groupListRef.value?.onSuccess(groupId)
+  } catch (e) {
+    console.error('[ProfileDetailPage] onAddRegular failed', e)
+    groupListRef.value?.onError(groupId, 'Failed to update — please try again')
+  }
+}
+
+async function onRemoveRegular(regularId: number, groupId: number) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/regulars/${regularId}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    const group = store.profile.groupHours.find(g => g.groupId === groupId)
+    if (group) { group.isRegular = false; group.regularId = undefined }
+    groupListRef.value?.onSuccess(groupId)
+  } catch (e) {
+    console.error('[ProfileDetailPage] onRemoveRegular failed', e)
+    groupListRef.value?.onError(groupId, 'Failed to update — please try again')
   }
 }
 

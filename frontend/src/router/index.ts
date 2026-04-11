@@ -62,6 +62,8 @@ export const router = createRouter({
     { path: '/sandbox/filter-components', component: () => import('../pages/sandbox/SandboxFilterComponents.vue') },
     { path: '/sandbox/session-term-list', component: () => import('../pages/sandbox/SandboxSessionTermList.vue') },
     { path: '/sandbox/profile-record-list', component: () => import('../pages/sandbox/SandboxProfileRecordList.vue') },
+    { path: '/sandbox/profile-group-list', component: () => import('../pages/sandbox/SandboxProfileGroupList.vue') },
+    { path: '/sandbox/profile-group-item', component: () => import('../pages/sandbox/SandboxProfileGroupItem.vue') },
   ]
 })
 

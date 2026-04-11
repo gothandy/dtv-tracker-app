@@ -5,6 +5,7 @@
     action-icon="add"
     :working="working"
     :error="error"
+    :action-disabled="!form.type || !form.status"
     @close="emit('close')"
     @action="add"
   >
