@@ -11,8 +11,10 @@ router.use(magicRouter);
 // GET /auth/logout — clear app session and cookie, return to homepage
 router.get('/logout', (req: Request, res: Response) => {
   res.clearCookie('dtv-auth');
+  const name = req.session.user?.displayName;
   req.session.destroy(() => {
-    res.redirect('/');
+    const qs = name ? `?notice=signed-out&name=${encodeURIComponent(name)}` : '?notice=signed-out';
+    res.redirect(`/${qs}`);
   });
 });
 

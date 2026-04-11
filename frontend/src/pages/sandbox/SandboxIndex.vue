@@ -22,6 +22,7 @@
           <RouterLink to="/sandbox/modal-layout">ModalLayout</RouterLink>
           <RouterLink to="/sandbox/modals">All Modals</RouterLink>
           <RouterLink to="/sandbox/form-components">Form Layout and Components</RouterLink>
+          <RouterLink to="/sandbox/flash-message">FlashMessage</RouterLink>
         </nav>
       </section>
 

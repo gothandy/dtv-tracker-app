@@ -56,14 +56,14 @@ const canUpload = computed(() =>
 
 function onUpload() {
   if (props.isSelfService && props.session.userEntryId) {
-    window.location.href = `/upload.html?entryId=${props.session.userEntryId}`
+    window.location.href = `/upload?entryId=${props.session.userEntryId}`
     return
   }
   showPicker.value = true
 }
 
 function goUpload(entryId: number) {
-  window.location.href = `/upload.html?entryId=${entryId}`
+  window.location.href = `/upload?entryId=${entryId}`
 }
 
 function closeEdit() {

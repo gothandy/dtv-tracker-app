@@ -1,79 +1,81 @@
 <template>
-  <DefaultLayout>
+  <TaskLayout>
     <h1 class="sr-only">Login</h1>
-    <div class="prose flex flex-col items-center">
+
+    <div class="login-stack">
 
       <!-- Reason banner -->
-      <div v-if="reasonMessage" class="w-full max-w-sm mb-4 p-4 pl-10 border-2 border-amber-400 bg-amber-50 text-amber-900 text-base font-medium leading-relaxed relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xl">⚠</span>
-        {{ reasonMessage }}
-      </div>
+      <AlertBanner v-if="reasonMessage" :message="reasonMessage" />
 
       <!-- Login cards -->
       <template v-if="!sent">
 
-        <div class="grid grid-cols-1 gap-4 w-full max-w-sm">
-
-          <!-- Volunteer sign-in (magic link) -->
-          <div v-if="magicEnabled" class="bg-gray-50 p-6 border border-gray-200 text-center">
-            <h2 class="text-2xl font-bold text-black mb-1">Volunteer Sign In</h2>
-            <p class="text-base text-gray-500 mb-4 leading-snug">View your volunteer profile, register for sessions, and upload photos.</p>
-            <input
-              v-model="email"
-              type="email"
-              placeholder="your@email.com"
-              autocomplete="email"
-              :disabled="sending"
-              @keydown.enter="sendMagicLink"
-              class="block w-full px-3 py-3 mb-2 border-2 border-gray-300 text-black bg-white text-base focus:outline-none focus:border-dtv-green disabled:opacity-50 text-left"
-            />
-            <button
-              @click="sendMagicLink"
-              :disabled="sending"
-              class="inline-block px-6 py-3 bg-dtv-green text-white font-bold text-base uppercase tracking-wide hover:opacity-90 disabled:opacity-50 cursor-pointer disabled:cursor-default"
-            >
+        <!-- Volunteer sign-in (magic link) -->
+        <FormCard
+          v-if="magicEnabled"
+          title="Volunteer Sign In"
+          subtitle="View your volunteer profile, register for sessions, and upload photos."
+        >
+          <FormInput
+            v-model="email"
+            type="email"
+            placeholder="your@email.com"
+            autocomplete="email"
+            :disabled="sending"
+            @enter="sendMagicLink"
+          />
+          <FormSubmitRow>
+            <FormButton :disabled="!emailValid || sending" :working="sending" @click="sendMagicLink">
               {{ sending ? 'Sending…' : 'Send sign-in link' }}
-            </button>
-            <p v-if="magicError" class="mt-2 text-base text-red-700">{{ magicError }}</p>
-          </div>
+            </FormButton>
+            <p v-if="magicError" class="form-error">{{ magicError }}</p>
+          </FormSubmitRow>
+        </FormCard>
 
-          <!-- DTV Teams account (Microsoft) -->
-          <div class="bg-gray-50 p-6 border border-gray-200 text-center">
-            <h2 class="text-2xl font-bold text-black mb-1">DTV Teams Account</h2>
-            <p class="text-base text-gray-500 mb-4 leading-snug">For dig leads, coordinators and admins — use your <strong>@dtv.org.uk</strong> Microsoft account.</p>
-            <a :href="microsoftHref" class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 bg-white text-black text-base hover:border-gray-400 transition-colors no-underline">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" />
+        <!-- DTV Teams account (Microsoft) -->
+        <FormCard
+          title="DTV Teams Account"
+          subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account."
+        >
+          <FormSubmitRow>
+            <FormButton color="var(--color-dtv-gold)" :href="microsoftHref">
+              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
               Continue with Microsoft
-            </a>
-          </div>
-
-        </div>
+            </FormButton>
+          </FormSubmitRow>
+        </FormCard>
 
       </template>
 
       <!-- Sent confirmation -->
-      <div v-else class="bg-gray-50 p-6 border border-gray-200 text-center">
-        <h2 class="text-xl font-bold text-black mb-3">Check your email</h2>
-        <p class="text-base text-gray-500 mb-2 leading-relaxed">A sign-in link is on its way — click it to continue. The link expires in:</p>
-        <div class="text-4xl font-bold text-dtv-green tracking-wider my-4">{{ countdown }}</div>
-        <p class="text-base text-gray-500 mb-4 leading-relaxed">Already clicked the link? If you're signed in you can close this tab.</p>
-        <button @click="backToLogin" class="text-dtv-green text-sm font-bold underline cursor-pointer">
-          Didn't receive the link? Back to Login
-        </button>
-        <p class="text-sm text-gray-400 mt-4">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk" class="text-gray-400">Contact us</a></p>
-      </div>
+      <FormCard v-else title="Check your email">
+        <p class="sent-body">A sign-in link is on its way — click it to continue. The link expires in:</p>
+        <div class="sent-countdown">{{ countdown }}</div>
+        <p class="sent-body">Already clicked the link? If you're signed in you can close this tab.</p>
+        <FormSubmitRow>
+          <button class="form-btn--link" @click="backToLogin">
+            Didn't receive the link? Back to Login
+          </button>
+          <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
+        </FormSubmitRow>
+      </FormCard>
 
     </div>
-  </DefaultLayout>
+  </TaskLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { usePageTitle } from '../composables/usePageTitle'
+import TaskLayout from '../layouts/TaskLayout.vue'
+import AlertBanner from '../components/forms/AlertBanner.vue'
+import FormCard from '../components/forms/FormCard.vue'
+import FormInput from '../components/forms/FormInput.vue'
+import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
+import FormButton from '../components/forms/FormButton.vue'
 
 usePageTitle('Login')
-import { useRoute } from 'vue-router'
-import DefaultLayout from '../layouts/DefaultLayout.vue'
 
 const route = useRoute()
 const email = ref('')
@@ -89,6 +91,8 @@ const returnTo = computed(() => {
   const r = route.query.returnTo as string | undefined
   return r?.startsWith('/') ? r : undefined
 })
+
+const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()))
 
 const microsoftHref = computed(() =>
   returnTo.value ? `/auth/login?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/login'
@@ -159,3 +163,61 @@ onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer)
 })
 </script>
+
+<style scoped>
+.login-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+
+.form-btn--link {
+  background: none;
+  border: none;
+  color: var(--color-dtv-green-dark);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  text-align: center;
+}
+
+.form-error {
+  font-size: 0.875rem;
+  color: var(--color-dtv-dirt);
+  text-align: center;
+  margin: 0;
+}
+
+.sent-body {
+  font-size: 0.9rem;
+  color: var(--color-dtv-dark);
+  opacity: 0.7;
+  text-align: center;
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.sent-countdown {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-dtv-green);
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin: 0.75rem 0;
+}
+
+.sent-contact {
+  font-size: 0.8rem;
+  color: var(--color-dtv-dark);
+  opacity: 0.5;
+  text-align: center;
+  margin: 0;
+}
+
+.sent-contact a {
+  color: inherit;
+}
+</style>

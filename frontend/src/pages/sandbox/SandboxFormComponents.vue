@@ -153,6 +153,59 @@
         </FormRow>
       </FormLayout>
 
+      <!-- ─── Form page components (TaskLayout pattern) ─── -->
+
+      <h2>FormCard</h2>
+      <div class="sfc-narrow">
+        <FormCard title="Card title" subtitle="Optional subtitle or description text." />
+        <FormCard title="Card with content">
+          <p style="font-size:0.9rem;margin:0;opacity:0.7">Slot content goes here.</p>
+        </FormCard>
+        <FormCard />
+      </div>
+
+      <h2>AlertBanner</h2>
+      <div class="sfc-narrow">
+        <AlertBanner message="We don't have an account for that email. Contact your group organiser." type="warning" />
+        <AlertBanner message="That sign-in link has expired — enter your email below to get a new one." type="info" />
+        <AlertBanner message="You do not have permission to access this page." type="error" />
+      </div>
+
+      <h2>FormInput</h2>
+      <div class="sfc-narrow">
+        <FormInput v-model="formInputValue" type="email" placeholder="your@email.com" autocomplete="email" />
+        <FormInput v-model="formInputValue" type="text" placeholder="Disabled" :disabled="true" />
+      </div>
+
+      <h2>FormCheckboxItem</h2>
+      <div class="sfc-narrow">
+        <FormCard>
+          <FormCheckboxItem v-model="consentPrivacy" label="I agree to my personal data being stored and used for volunteer coordination." description="This includes your name, email address, and session attendance records." :required="true" />
+          <FormCheckboxItem v-model="consentPhoto" label="I agree to photos and videos of me being used in DTV communications." description="Photos may appear on social media, newsletters, and the DTV website." />
+        </FormCard>
+      </div>
+
+      <h2>FormButton</h2>
+      <div class="sfc-narrow">
+        <FormSubmitRow>
+          <FormButton>Primary button</FormButton>
+        </FormSubmitRow>
+        <FormSubmitRow>
+          <FormButton color="var(--color-dtv-gold)">
+            <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
+            Gold with icon
+          </FormButton>
+        </FormSubmitRow>
+        <FormSubmitRow>
+          <FormButton :disabled="true">Disabled</FormButton>
+        </FormSubmitRow>
+        <FormSubmitRow>
+          <FormButton :working="true">Working…</FormButton>
+        </FormSubmitRow>
+      </div>
+
+      <!-- ─── Modal form components (FormLayout pattern) ─── -->
+
       <!-- FormLayout disabled -->
       <h2>FormLayout disabled</h2>
       <FormLayout disabled>
@@ -195,6 +248,12 @@ import FyFilter from '../../components/FyFilter.vue'
 import TermPicker from '../../components/TermPicker.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
+import FormCard from '../../components/forms/FormCard.vue'
+import AlertBanner from '../../components/forms/AlertBanner.vue'
+import FormInput from '../../components/forms/FormInput.vue'
+import FormCheckboxItem from '../../components/forms/FormCheckboxItem.vue'
+import FormButton from '../../components/forms/FormButton.vue'
+import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
 import { useSessionListStore } from '../../stores/sessionList'
 import type { TaxNode } from '../../composables/useTaxonomy'
 
@@ -239,10 +298,22 @@ const selectedProfile = ref<PickerProfile | null>(null)
 function onProfileSelect(p: PickerProfile) {
   selectedProfile.value = p
 }
+
+const formInputValue = ref('')
+const consentPrivacy = ref(false)
+const consentPhoto = ref(false)
 </script>
 
 <style scoped>
 .sandbox { gap: 1rem; }
+
+/* Narrow wrapper to preview form-page components at their intended width */
+.sfc-narrow {
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
 .sfc-input,
 .sfc-select {

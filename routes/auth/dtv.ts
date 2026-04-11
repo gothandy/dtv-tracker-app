@@ -19,6 +19,7 @@ router.get('/login', async (req: Request, res: Response) => {
       scopes: AUTH_SCOPES,
       redirectUri: getRedirectUri(req),
       prompt: 'select_account',
+      domainHint: 'dtv.org.uk',
     });
     res.redirect(authCodeUrl);
   } catch (error: any) {
@@ -85,7 +86,8 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     const returnTo = req.session.returnTo || process.env.FRONTEND_URL || '/';
     delete req.session.returnTo;
-    res.redirect(returnTo);
+    const returnToWithNotice = returnTo.includes('?') ? `${returnTo}&notice=signed-in` : `${returnTo}?notice=signed-in`;
+    res.redirect(returnToWithNotice);
   } catch (error: any) {
     console.error('Error in auth callback:', error.message);
     res.status(500).send('Authentication failed');

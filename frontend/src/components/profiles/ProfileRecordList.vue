@@ -5,7 +5,7 @@
       <div class="prl-actions">
         <a
           v-if="showConsentLink"
-          :href="`/profiles/${profileSlug}/consent.html`"
+          :href="`/profiles/${profileSlug}/consent`"
           class="prl-link"
         >Consent</a>
         <button

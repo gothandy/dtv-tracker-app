@@ -99,7 +99,8 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
   }
 
   setAuthCookie(res, rawToken);
-  res.redirect(dest);
+  const destWithNotice = dest.includes('?') ? `${dest}&notice=signed-in` : `${dest}?notice=signed-in`;
+  res.redirect(destWithNotice);
 });
 
 export = router;

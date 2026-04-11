@@ -23,6 +23,8 @@ export const profilePath = (slug: string) => `/profiles/${slug}`
 export const addEntryPath = (groupKey: string, date: string) => `/sessions/${groupKey}/${date}/add-entry`
 export const entryPath = (id: number) => `/entries/${id}`
 export const adminPath = () => '/admin'
+export const consentPath = (slug: string) => `/profiles/${slug}/consent`
+export const uploadPath  = (entryId: number) => `/upload?entryId=${entryId}`
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,6 +41,8 @@ export const router = createRouter({
     { path: '/admin', component: AdminPage },
     { path: '/profiles', component: ProfileListPage },
     { path: '/profiles/:slug', component: ProfileDetailPage },
+    { path: '/profiles/:slug/consent', component: () => import('../pages/ConsentPage.vue') },
+    { path: '/upload', component: () => import('../pages/UploadPage.vue') },
     { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
     { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
     { path: '/sandbox/action-bars', component: () => import('../pages/sandbox/SandboxActionBars.vue') },
@@ -66,6 +70,7 @@ export const router = createRouter({
     { path: '/sandbox/profile-list-results', component: () => import('../pages/sandbox/SandboxProfileListResults.vue') },
     { path: '/sandbox/profile-group-list', component: () => import('../pages/sandbox/SandboxProfileGroupList.vue') },
     { path: '/sandbox/profile-group-item', component: () => import('../pages/sandbox/SandboxProfileGroupItem.vue') },
+    { path: '/sandbox/flash-message', component: () => import('../pages/sandbox/SandboxFlashMessage.vue') },
   ]
 })
 

@@ -167,6 +167,15 @@ if (siteMode === 'v2') {
         res.redirect(302, `/sessions/${req.params.group}/${req.params.date}`);
     });
 
+    app.get('/profiles/:slug/consent.html', (req, res) => {
+        res.redirect(302, `/profiles/${req.params.slug}/consent`);
+    });
+
+    app.get('/upload.html', (req, res) => {
+        const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+        res.redirect(302, `/upload${qs}`);
+    });
+
     if (!isDev) {
         // Production: serve built static assets before API routes for performance.
         // Dev: Vite middleware (added during server startup) handles asset serving and HMR.

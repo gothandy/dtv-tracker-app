@@ -123,7 +123,7 @@ function onDateConfirm(sessions: Session[]) {
 }
 
 watch(selectedDate, (date) => {
-  router.replace({ query: date ? { date } : {} })
+  router.replace({ query: { ...route.query, ...(date ? { date } : { date: undefined }) } })
 })
 
 const coverItems = computed<MediaItem[]>(() =>
