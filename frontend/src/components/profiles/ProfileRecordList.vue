@@ -4,12 +4,12 @@
       <h2 class="prl-title">Records</h2>
       <div class="prl-actions">
         <a
-          v-if="profile.isOperational || profile.isSelfService"
+          v-if="showConsentLink"
           :href="`/profiles/${profileSlug}/consent.html`"
           class="prl-link"
         >Consent</a>
         <button
-          v-if="profile.isAdmin"
+          v-if="allowEdit"
           class="prl-add-btn"
           @click="openAdd"
         >+ Add</button>
@@ -24,8 +24,8 @@
         :key="r.id"
         class="prl-pill"
         :class="`prl-pill--${r.status.toLowerCase().replace(/\s+/g, '-')}`"
-        :disabled="!profile.isAdmin"
-        @click="profile.isAdmin && openEdit(r)"
+        :disabled="!allowEdit"
+        @click="allowEdit && openEdit(r)"
       >
         {{ r.type }} · {{ r.status }} · {{ formatDate(r.date) }}
       </button>
@@ -57,7 +57,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { ConsentRecordResponse } from '../../../../types/api-responses'
-import type { RoleContext } from '../../composables/useViewer'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
 
@@ -65,7 +64,8 @@ const props = withDefaults(defineProps<{
   records: ConsentRecordResponse[]
   profileId: number
   profileSlug: string
-  profile: RoleContext
+  showConsentLink?: boolean
+  allowEdit?: boolean
   types?: string[]
   statuses?: string[]
 }>(), {

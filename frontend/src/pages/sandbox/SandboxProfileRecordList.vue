@@ -11,7 +11,8 @@
           :records="mockRecords"
           :profile-id="1"
           profile-slug="alice-bowen-1"
-          :profile="adminContext"
+          :show-consent-link="true"
+          :allow-edit="true"
           :types="mockTypes"
           :statuses="mockStatuses"
           ref="adminRef"
@@ -27,7 +28,7 @@
           :records="mockRecords"
           :profile-id="1"
           profile-slug="alice-bowen-1"
-          :profile="checkInContext"
+          :show-consent-link="true"
           :types="mockTypes"
           :statuses="mockStatuses"
         />
@@ -39,7 +40,7 @@
           :records="mockRecords"
           :profile-id="1"
           profile-slug="alice-bowen-1"
-          :profile="selfServiceContext"
+          :show-consent-link="true"
           :types="mockTypes"
           :statuses="mockStatuses"
         />
@@ -51,7 +52,6 @@
           :records="mockRecords"
           :profile-id="1"
           profile-slug="alice-bowen-1"
-          :profile="readOnlyContext"
           :types="mockTypes"
           :statuses="mockStatuses"
         />
@@ -63,7 +63,8 @@
           :records="[]"
           :profile-id="1"
           profile-slug="alice-bowen-1"
-          :profile="adminContext"
+          :show-consent-link="true"
+          :allow-edit="true"
           :types="mockTypes"
           :statuses="mockStatuses"
         />
@@ -85,7 +86,6 @@ import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import ProfileRecordList from '../../components/profiles/ProfileRecordList.vue'
-import type { RoleContext } from '../../composables/useViewer'
 import type { AddRecordPayload } from '../modals/RecordAddModal.vue'
 import type { SaveRecordPayload } from '../modals/RecordEditModal.vue'
 
@@ -111,30 +111,6 @@ function onSaveRecord(id: number, payload: SaveRecordPayload) {
 function onDeleteRecord(id: number) {
   log(`deleteRecord id=${id}`)
   setTimeout(() => adminRef.value?.onDeleteSuccess(), 1000)
-}
-
-const adminContext: RoleContext = {
-  isAdmin: true, isCheckIn: false, isReadOnly: false,
-  isSelfService: false, isTrusted: true, isAuthenticated: true,
-  isPublic: false, isOperational: true,
-}
-
-const checkInContext: RoleContext = {
-  isAdmin: false, isCheckIn: true, isReadOnly: false,
-  isSelfService: false, isTrusted: true, isAuthenticated: true,
-  isPublic: false, isOperational: true,
-}
-
-const selfServiceContext: RoleContext = {
-  isAdmin: false, isCheckIn: false, isReadOnly: false,
-  isSelfService: true, isTrusted: false, isAuthenticated: true,
-  isPublic: false, isOperational: false,
-}
-
-const readOnlyContext: RoleContext = {
-  isAdmin: false, isCheckIn: false, isReadOnly: true,
-  isSelfService: false, isTrusted: true, isAuthenticated: true,
-  isPublic: false, isOperational: false,
 }
 
 const mockTypes = [
