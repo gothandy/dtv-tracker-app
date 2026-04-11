@@ -80,8 +80,9 @@ const recordType  = ref((route.query.recordType as string)   || '')
 const recordStatus = ref((route.query.recordStatus as string) || '')
 
 // FY and group changes require a store re-fetch — emit upward
-watch(fy, val => emit('fy-change', val))
-watch(group, val => emit('group-change', val))
+// immediate: true ensures deep-linked query params are emitted on first load
+watch(fy, val => emit('fy-change', val), { immediate: true })
+watch(group, val => emit('group-change', val), { immediate: true })
 
 // Clear record status when record type is cleared
 watch(recordType, val => { if (!val) recordStatus.value = '' })

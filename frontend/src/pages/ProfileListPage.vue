@@ -116,7 +116,7 @@ async function onBulkSave(payload: BulkRecordPayload) {
 
 onMounted(async () => {
   groupsStore.fetch()
-  store.fetch(fy.value, group.value)
+  // Initial profiles fetch is driven by the immediate fy/group watchers in ProfileListFilter
   try {
     const res = await fetch('/api/records/options')
     if (res.ok) {
