@@ -4,6 +4,8 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs').promises;
+const http = require('http');
+const { pathToFileURL } = require('url');
 const apiRoutes = require('./dist/routes/api');
 const authRoutes = require('./dist/routes/auth');
 const { requireAuth } = require('./dist/middleware/require-auth');
@@ -16,6 +18,11 @@ const { mediaDriveId } = require('./dist/services/media-upload');
 const { sharePointClient } = require('./dist/services/sharepoint-client');
 const { getCoverCache, setCoverCache } = require('./dist/services/cover-cache');
 const axios = require('axios');
+
+// v1 or v2 — controls which frontend is served at /
+// Set SITE_MODE in .env locally. Defaults to v1.
+const siteMode = process.env.SITE_MODE || 'v1';
+const isDev = process.env.NODE_ENV !== 'production';
 
 // Cache the session-detail HTML template in memory (read once, reuse across requests)
 let _sessionDetailHtml = null;
@@ -63,90 +70,110 @@ app.get('/api/health', (req, res) => {
 // Auth routes (unprotected — login/callback/logout/me)
 app.use('/auth', authRoutes);
 
-// Serve static assets that must be public (manifest, icons, CSS, JS)
+// Static assets shared by both modes (icons come from frontend/dist)
+const staticOptions = { maxAge: '1h' };
+app.use('/svg', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
+app.use('/icons', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
+
+// Serve in both modes — Vue index.html requests it and auth error paths may redirect to /login.html
 app.get('/site.webmanifest', (req, res) => {
     res.setHeader('Content-Type', 'application/manifest+json');
     res.sendFile(path.join(__dirname, 'public', 'site.webmanifest'));
 });
-const staticOptions = { maxAge: '1h' };
-app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOptions));
-app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
-app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
-app.use('/svg', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
-app.use('/icons', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
-app.use('/media/embla', express.static(path.join(__dirname, 'public', 'media', 'embla'), staticOptions));
-app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
-// frontend staging at /v2/ — remove at cut-over
-app.use('/v2', express.static(path.join(__dirname, 'frontend', 'dist')));
-app.get('/v2/*path', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
+if (siteMode === 'v1') {
+    // v1-specific static assets
+    app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOptions));
+    app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
+    app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
+    app.use('/media/embla', express.static(path.join(__dirname, 'public', 'media', 'embla'), staticOptions));
+    app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
-// Public pages — volunteer-facing, no login required (auth handled client-side via /auth/me)
-app.get('/upload.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'upload.html'));
-});
-app.get('/login.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
+    // Vue frontend at /v2/
+    app.use('/v2', express.static(path.join(__dirname, 'frontend', 'dist')));
+    app.get('/v2/*path', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
 
-// Public pages — served before auth so unauthenticated visitors can browse
-app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/sessions.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sessions.html')));
-app.get('/groups.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'groups.html')));
-app.get('/groups/:key/detail.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'group-detail.html')));
-// Session detail: server-side OG meta tag injection so social crawlers (Facebook etc.) get real content
-app.get('/sessions/:group/:date/details.html', async (req, res) => {
-    const groupKey = req.params.group.toLowerCase();
-    const dateParam = req.params.date;
-    try {
-        const [rawGroups, rawSessions] = await Promise.all([
-            groupsRepository.getAll(),
-            sessionsRepository.getAll()
-        ]);
+    // Public pages — served before auth so unauthenticated visitors can browse
+    app.get('/upload.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+    });
+    app.get('/login.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    });
+    app.get(['/', '/index.html'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+    app.get('/sessions.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sessions.html')));
+    app.get('/groups.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'groups.html')));
+    app.get('/groups/:key/detail.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'group-detail.html')));
 
-        const spGroup = findGroupByKey(rawGroups, groupKey);
-        const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
-
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const canonicalUrl = `${baseUrl}${req.path}`;
-
-        // Use stable proxy URL if any media exists; proxy handles cover selection internally
-        let imageUrl = `${baseUrl}/img/logo-930.jpg`;
+    // Session detail: server-side OG meta tag injection so social crawlers (Facebook etc.) get real content
+    app.get('/sessions/:group/:date/details.html', async (req, res) => {
+        const groupKey = req.params.group.toLowerCase();
+        const dateParam = req.params.date;
         try {
-            const driveId = mediaDriveId();
-            const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
-            if (photos.length > 0) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg`;
-        } catch { /* media library not configured or folder missing */ }
+            const [rawGroups, rawSessions] = await Promise.all([
+                groupsRepository.getAll(),
+                sessionsRepository.getAll()
+            ]);
 
-        let title = 'Session Details - DTV Tracker';
-        let description = 'DTV volunteer session';
+            const spGroup = findGroupByKey(rawGroups, groupKey);
+            const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
 
-        if (spGroup && spSession) {
-            const group = convertGroup(spGroup);
-            const sessionName = spSession.Name || spSession.Title || group.displayName;
-            const date = new Date(dateParam);
-            const formattedDate = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-            title = `${sessionName} — ${formattedDate}`;
-            description = spSession[SESSION_NOTES] || `${group.displayName} volunteer session on ${formattedDate}`;
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const canonicalUrl = `${baseUrl}${req.path}`;
+
+            // Use stable proxy URL if any media exists; proxy handles cover selection internally
+            let imageUrl = `${baseUrl}/img/logo-930.jpg`;
+            try {
+                const driveId = mediaDriveId();
+                const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
+                if (photos.length > 0) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg`;
+            } catch { /* media library not configured or folder missing */ }
+
+            let title = 'Session Details - DTV Tracker';
+            let description = 'DTV volunteer session';
+
+            if (spGroup && spSession) {
+                const group = convertGroup(spGroup);
+                const sessionName = spSession.Name || spSession.Title || group.displayName;
+                const date = new Date(dateParam);
+                const formattedDate = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                title = `${sessionName} — ${formattedDate}`;
+                description = spSession[SESSION_NOTES] || `${group.displayName} volunteer session on ${formattedDate}`;
+            }
+
+            let html = await getSessionDetailTemplate();
+            html = html
+                .replace('<title>Session Details - DTV Tracker</title>', `<title>${escapeHtmlAttr(title)}</title>`)
+                .replace('property="og:title" content=""', `property="og:title" content="${escapeHtmlAttr(title)}"`)
+                .replace('property="og:description" content=""', `property="og:description" content="${escapeHtmlAttr(description)}"`)
+                .replace('property="og:url" content=""', `property="og:url" content="${canonicalUrl}"`)
+                .replace('property="og:image" content=""', `property="og:image" content="${escapeHtmlAttr(imageUrl)}"`);
+
+            res.set('Content-Type', 'text/html').send(html);
+        } catch (err) {
+            console.error(`Error rendering session meta tags for ${groupKey}/${dateParam}:`, err);
+            res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
         }
+    });
+}
 
-        let html = await getSessionDetailTemplate();
-        html = html
-            .replace('<title>Session Details - DTV Tracker</title>', `<title>${escapeHtmlAttr(title)}</title>`)
-            .replace('property="og:title" content=""', `property="og:title" content="${escapeHtmlAttr(title)}"`)
-            .replace('property="og:description" content=""', `property="og:description" content="${escapeHtmlAttr(description)}"`)
-            .replace('property="og:url" content=""', `property="og:url" content="${canonicalUrl}"`)
-            .replace('property="og:image" content=""', `property="og:image" content="${escapeHtmlAttr(imageUrl)}"`);
+if (siteMode === 'v2') {
+    // Redirect /login.html to /login — auth error paths in magic.ts still redirect to /login.html
+    app.get('/login.html', (_req, res) => res.redirect(302, '/login'));
 
-        res.set('Content-Type', 'text/html').send(html);
-    } catch (err) {
-        console.error(`Error rendering session meta tags for ${groupKey}/${dateParam}:`, err);
-        res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
+    // Redirect v1 session detail URLs to v2 equivalents (bookmarked or shared links).
+    // 302 not 301 — browser-cached 301s would survive a rollback to v1 where /details.html is valid again.
+    app.get('/sessions/:group/:date/details.html', (req, res) => {
+        res.redirect(302, `/sessions/${req.params.group}/${req.params.date}`);
+    });
+
+    if (!isDev) {
+        // Production: serve built static assets before API routes for performance.
+        // Dev: Vite middleware (added during server startup) handles asset serving and HMR.
+        app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
     }
-});
+}
 
-// Public cover image proxy — stable URL for og:image in social share previews
-// Serves the CoverMedia item (or first public item, or first item) for the session.
 // Public cover image proxy — stable URL for og:image and public gallery slides.
 // Authenticated users (admin/check-in): cover photo served regardless of isPublic; not cached.
 // Unauthenticated users: cover photo only served if isPublic is true; response cached 1h.
@@ -206,53 +233,107 @@ app.get('/media/:group/:date/cover.jpg', async (req, res) => {
     }
 });
 
-// Policy pages — public, required for Google OAuth consent screen
-app.get('/privacy.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
-app.get('/terms.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
-app.get('/build.json', (req, res) => res.sendFile(path.join(__dirname, 'public', 'build.json')));
+if (siteMode === 'v1') {
+    // Policy pages — public, required for Google OAuth consent screen
+    app.get('/privacy.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+    app.get('/terms.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+    app.get('/build.json', (req, res) => res.sendFile(path.join(__dirname, 'public', 'build.json')));
 
-// Everything below requires login
-app.use(requireAuth);
+    // Everything below requires login (v1 pages)
+    app.use(requireAuth);
 
-app.use(express.static('public'));
+    app.use(express.static('public'));
 
-// Serve group detail page at /groups/:key/detail.html
-app.get('/groups/:key/detail.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'group-detail.html'));
-});
+    // Serve group detail page at /groups/:key/detail.html
+    app.get('/groups/:key/detail.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'group-detail.html'));
+    });
 
-// Serve session detail page at /sessions/:group/:date/details.html
-app.get('/sessions/:group/:date/details.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
-});
+    // Serve session detail page at /sessions/:group/:date/details.html
+    app.get('/sessions/:group/:date/details.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'session-detail.html'));
+    });
 
-// Serve add entry page at /sessions/:group/:date/add-entry.html
-app.get('/sessions/:group/:date/add-entry.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'add-entry.html'));
-});
+    // Serve add entry page at /sessions/:group/:date/add-entry.html
+    app.get('/sessions/:group/:date/add-entry.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'add-entry.html'));
+    });
 
-// Serve entry edit page — ID-based URL (preferred) and legacy group/date/slug URL
-app.get('/entries/:id/edit.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));
-});
-app.get('/entries/:group/:date/:slug/edit.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));
-});
+    // Serve entry edit page — ID-based URL (preferred) and legacy group/date/slug URL
+    app.get('/entries/:id/edit.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));
+    });
+    app.get('/entries/:group/:date/:slug/edit.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'entry-detail.html'));
+    });
 
-// Serve profile detail page at /profiles/:slug/details.html
-app.get('/profiles/:slug/details.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'profile-detail.html'));
-});
+    // Serve profile detail page at /profiles/:slug/details.html
+    app.get('/profiles/:slug/details.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'profile-detail.html'));
+    });
 
-// Serve consent collection page at /profiles/:slug/consent.html
-app.get('/profiles/:slug/consent.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'consent.html'));
-});
+    // Serve consent collection page at /profiles/:slug/consent.html
+    app.get('/profiles/:slug/consent.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'consent.html'));
+    });
+}
 
-// Mount API routes
+// Mount API routes.
+// requireAuth checks req.path for its whitelist (/api/stats, /api/sessions etc.) and for
+// its 401-vs-redirect logic (/api/ → JSON, other → redirect to login.html). Both break if
+// requireAuth is mounted inline at /api, because req.path loses its /api prefix inside a
+// sub-path mount. Always apply requireAuth as a global (un-prefixed) middleware so req.path
+// stays intact.
+//
+// v1: global requireAuth already registered above covers everything including API routes.
+// v2: no global requireAuth (SPA handles its own auth for pages), so apply it here but only
+//     for /api paths to avoid incorrectly gating SPA page routes.
+if (siteMode === 'v2') {
+    app.use((req, res, next) => {
+        if (req.path.startsWith('/api/') || req.path === '/api') return requireAuth(req, res, next);
+        next();
+    });
+}
 app.use('/api', apiRoutes);
 
+if (siteMode === 'v2') {
+    // Catch unmatched /api/* before the SPA fallback to avoid returning HTML for API 404s
+    app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+
+    if (!isDev) {
+        // Production: SPA fallback for client-side routes
+        app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
+    }
+    // Dev: Vite middleware handles SPA routing (added during server startup below)
+}
+
+// Start server — async to support Vite middleware in v2 dev mode
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`Running at http://localhost:${port}`);
-});
+(async () => {
+    if (siteMode === 'v2' && isDev) {
+        // Load Vite from frontend/node_modules (it's installed there, not at root)
+        const viteDir = pathToFileURL(path.join(__dirname, 'frontend', 'node_modules', 'vite', 'dist', 'node', 'index.js')).href;
+        const { createServer: createViteServer } = await import(viteDir);
+
+        // Create the HTTP server explicitly so Vite can attach its HMR WebSocket to it
+        const httpServer = http.createServer(app);
+
+        const vite = await createViteServer({
+            configFile: path.join(__dirname, 'frontend', 'vite.config.ts'),
+            root: path.join(__dirname, 'frontend'),
+            server: { middlewareMode: true, hmr: { server: httpServer } },
+            appType: 'spa',
+        });
+
+        // Vite middleware handles asset serving, HMR, and SPA routing (catch-all index.html)
+        app.use(vite.middlewares);
+
+        httpServer.listen(port, () => {
+            console.log(`Running at http://localhost:${port} [SITE_MODE=${siteMode}, Vite HMR active]`);
+        });
+    } else {
+        app.listen(port, () => {
+            console.log(`Running at http://localhost:${port} [SITE_MODE=${siteMode}]`);
+        });
+    }
+})();
