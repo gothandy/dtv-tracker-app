@@ -5,25 +5,15 @@
     </span>
 
     <div class="sa-buttons">
-      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="showTagModal = true" />
+      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="emit('add-tags')" />
       <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="downloadCsv" />
     </div>
-
-    <SessionAddTagsModal
-      v-if="showTagModal"
-      :count="selected.length"
-      :working="tagWorking"
-      :error="tagError"
-      @close="showTagModal = false"
-      @save="onSave"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import AppButton from '../AppButton.vue'
-import SessionAddTagsModal from '../../pages/modals/SessionAddTagsModal.vue'
 import type { Session } from '../../types/session'
 
 const props = defineProps<{
@@ -34,12 +24,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selected': [ids: number[]]
-  applyTag: [label: string, termGuid: string]
+  'add-tags': []
 }>()
-
-const showTagModal = ref(false)
-const tagWorking = ref(false)
-const tagError = ref('')
 
 const selectedSessions = computed(() => props.sessions.filter(s => props.selected.includes(s.id)))
 
@@ -48,24 +34,6 @@ const selectedHours = computed(() =>
 
 const totalHours = computed(() =>
   Math.round(props.sessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10)
-
-function onSave(label: string, termGuid: string) {
-  tagWorking.value = true
-  tagError.value = ''
-  emit('applyTag', label, termGuid)
-}
-
-defineExpose({
-  onTagSuccess() {
-    showTagModal.value = false
-    tagWorking.value = false
-    tagError.value = ''
-  },
-  onTagError(msg: string) {
-    tagWorking.value = false
-    tagError.value = msg
-  },
-})
 
 function downloadCsv() {
   const headers = ['Date', 'Group', 'Name', 'Registrations', 'Hours', 'New', 'Children', 'Regulars', 'Financial Year']

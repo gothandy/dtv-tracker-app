@@ -8,6 +8,7 @@
         <nav>
           <RouterLink to="/sandbox/colour-palette">Brand Palette</RouterLink>
           <RouterLink to="/sandbox/icons">Icons</RouterLink>
+          <RouterLink to="/sandbox/font-stack">Font Stack</RouterLink>
           <RouterLink to="/sandbox/app-button">AppButton</RouterLink>
           <RouterLink to="/sandbox/layout-columns">LayoutColumns</RouterLink>
           
@@ -37,12 +38,14 @@
       </section>
 
       <section>
-        <h2>Group and Session Lists</h2>
+        <h2>Group, Session and Profile Lists</h2>
         <nav>
           <RouterLink to="/sandbox/action-bars">Action Bars</RouterLink>
           <RouterLink to="/sandbox/filter-components">Filter Components</RouterLink>
           <RouterLink to="/sandbox/session-card">SessionCard</RouterLink>
           <RouterLink to="/sandbox/group-card">GroupCard</RouterLink>
+          <RouterLink to="/sandbox/profile-list-item">ProfileListItem</RouterLink>
+          <RouterLink to="/sandbox/profile-list-results">ProfileListResults</RouterLink>
         </nav>
       </section>
 
@@ -53,6 +56,8 @@
           <RouterLink to="/sandbox/entry-card">EntryCard</RouterLink>
           <RouterLink to="/sandbox/entry-list">EntryList</RouterLink>
           <RouterLink to="/sandbox/profile-record-list">ProfileRecordList</RouterLink>
+          <RouterLink to="/sandbox/profile-group-list">ProfileGroupList</RouterLink>
+          <RouterLink to="/sandbox/profile-group-item">ProfileGroupItem</RouterLink>
         </nav>
       </section>
 

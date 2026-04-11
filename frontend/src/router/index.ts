@@ -48,6 +48,7 @@ export const router = createRouter({
     { path: '/sandbox/modal-layout', component: () => import('../pages/sandbox/SandboxModalLayout.vue') },
     { path: '/sandbox/colour-palette', component: () => import('../pages/sandbox/SandboxColourPalette.vue') },
     { path: '/sandbox/icons', component: () => import('../pages/sandbox/SandboxIcons.vue') },
+    { path: '/sandbox/font-stack', component: () => import('../pages/sandbox/SandboxFontStack.vue') },
     { path: '/sandbox/form-components', component: () => import('../pages/sandbox/SandboxFormComponents.vue') },
     { path: '/sandbox/calendar-widget', component: () => import('../pages/sandbox/SandboxCalendarWidget.vue') },
     { path: '/sandbox/layout-columns', component: () => import('../pages/sandbox/SandboxLayoutColumns.vue') },
@@ -63,6 +64,10 @@ export const router = createRouter({
     { path: '/sandbox/filter-components', component: () => import('../pages/sandbox/SandboxFilterComponents.vue') },
     { path: '/sandbox/session-term-list', component: () => import('../pages/sandbox/SandboxSessionTermList.vue') },
     { path: '/sandbox/profile-record-list', component: () => import('../pages/sandbox/SandboxProfileRecordList.vue') },
+    { path: '/sandbox/profile-list-item', component: () => import('../pages/sandbox/SandboxProfileListItem.vue') },
+    { path: '/sandbox/profile-list-results', component: () => import('../pages/sandbox/SandboxProfileListResults.vue') },
+    { path: '/sandbox/profile-group-list', component: () => import('../pages/sandbox/SandboxProfileGroupList.vue') },
+    { path: '/sandbox/profile-group-item', component: () => import('../pages/sandbox/SandboxProfileGroupItem.vue') },
   ]
 })
 

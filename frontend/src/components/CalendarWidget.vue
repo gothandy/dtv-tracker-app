@@ -5,7 +5,7 @@
       <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(-1)">
         🞀
       </button>
-      <span class="font-body text-black text-base uppercase tracking-wide">
+      <span class="font-head text-black text-base uppercase tracking-wide">
         {{ formatMonthYear(currentYear, currentMonth) }}
       </span>
       <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(1)">

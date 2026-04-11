@@ -9,13 +9,13 @@
 }
 
 .v1-root h1 {
-  font-family: theme(--font-display);
+  font-family: theme(--font-hero);
   text-transform: uppercase;
 }
 
 .v1-root h2,
 .v1-root h3,
 .v1-root h4 {
-  font-family: theme(--font-body);
+  font-family: theme(--font-head);
   text-transform: lowercase;
 }

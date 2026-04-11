@@ -19,7 +19,6 @@ import {
   buildBadgeLookups,
   safeParseLookupId,
   parseHours,
-  nameToSlug,
   profileSlug,
   profileIdFromSlug,
   toMatchName,
@@ -604,9 +603,11 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileId = profileIdFromSlug(slug);
-    const spProfile = profileId !== undefined
-      ? profiles.find(p => p.ID === profileId)
-      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
+    if (profileId === undefined) {
+      res.status(404).json({ success: false, error: 'Invalid profile slug' });
+      return;
+    }
+    const spProfile = profiles.find(p => p.ID === profileId);
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;
@@ -781,7 +782,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
     const data: ProfileDetailResponse = {
       id: profile.id,
-      slug: nameToSlug(profile.name),
+      slug: profileSlug(profile.name, profile.id),
       name: profile.name,
       emails: profile.emails,
       matchName: spProfile.MatchName,
@@ -837,9 +838,11 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
     const rawProfiles = await profilesRepository.getAll();
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileId = profileIdFromSlug(slug);
-    const spProfile = profileId !== undefined
-      ? profiles.find(p => p.ID === profileId)
-      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
+    if (profileId === undefined) {
+      res.status(404).json({ success: false, error: 'Invalid profile slug' });
+      return;
+    }
+    const spProfile = profiles.find(p => p.ID === profileId);
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;
@@ -876,9 +879,11 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileId = profileIdFromSlug(slug);
-    const sourceProfile = profileId !== undefined
-      ? profiles.find(p => p.ID === profileId)
-      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
+    if (profileId === undefined) {
+      res.status(404).json({ success: false, error: 'Invalid profile slug' });
+      return;
+    }
+    const sourceProfile = profiles.find(p => p.ID === profileId);
     if (!sourceProfile) {
       res.status(404).json({ success: false, error: 'Source profile not found' });
       return;
@@ -1002,9 +1007,11 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileId = profileIdFromSlug(slug);
-    const spProfile = profileId !== undefined
-      ? profiles.find(p => p.ID === profileId)
-      : profiles.find(p => nameToSlug(p.Title) === slug); // legacy: slug without ID
+    if (profileId === undefined) {
+      res.status(404).json({ success: false, error: 'Invalid profile slug' });
+      return;
+    }
+    const spProfile = profiles.find(p => p.ID === profileId);
     if (!spProfile) {
       res.status(404).json({ success: false, error: 'Profile not found' });
       return;
