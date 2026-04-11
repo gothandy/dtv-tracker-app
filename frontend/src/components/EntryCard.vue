@@ -25,14 +25,14 @@
 
       </div>
       <div class="ec-card-right">
-        <button v-if="allowCancel" class="ec-cancel" @click="emit('cancel')" title="Remove">✕</button>
+        <span v-if="!allowEdit && allowCancel && hours > 0" class="ec-hours-label">{{ hours }}h</span>
       </div>
     </div>
 
     <!-- Check/hours control -->
     <template v-if="allowEdit">
-      <div v-if="working && (showHours || hours > 0)" class="ec-check ec-check--on">
-        <span class="ec-spinner ec-spinner--white" />
+      <div v-if="working" class="ec-check ec-check--on">
+        <img src="/icons/gear.svg" class="ec-spinner svg-white" />
       </div>
       <input
         v-else-if="showHours || hours > 0"
@@ -45,22 +45,20 @@
         @blur="onHoursChange(($event.target as HTMLInputElement))"
         @keydown.enter.prevent="onHoursChange(($event.target as HTMLInputElement))"
       />
-      <button
+      <label
         v-else
-        class="ec-check"
-        :class="{ 'ec-check--on': checkedIn, 'ec-check--working': working }"
-        @click="onCheckClick"
+        class="ec-check ec-check--checkbox"
+        :class="{ 'ec-check--on': checkedIn }"
       >
-        <span v-if="working" class="ec-spinner" />
-        <span v-else-if="checkedIn">✓</span>
-      </button>
+        <input type="checkbox" class="ec-check__input" :checked="checkedIn" @click.prevent="onCheckClick" />
+        <img v-if="checkedIn" src="/icons/tick.svg" class="ec-tick svg-white" />
+      </label>
     </template>
-    <div v-else-if="hours > 0" class="ec-check ec-check--hours-static">
-      {{ hours }}h
-    </div>
-    <div v-else class="ec-check ec-check--static" :class="{ 'ec-check--on': checkedIn }">
-      <span v-if="checkedIn">✓</span>
-    </div>
+    <button v-else-if="allowCancel" class="ec-check ec-check--cancel" @click="emit('cancel')" title="Cancel">
+      <img src="/icons/close.svg" class="ec-tick svg-dirt-dark" />
+    </button>
+    <div v-else-if="hours > 0" class="ec-check ec-check--hours-static">{{ hours }}h</div>
+    <div v-else class="ec-check ec-check--static" :class="{ 'ec-check--on': checkedIn }" />
 
   </div>
 </template>
@@ -123,6 +121,7 @@ function onHoursChange(input: HTMLInputElement) {
 }
 
 .ec-check {
+  position: relative;
   width: 2.5rem;
   height: 2.5rem;
   flex-shrink: 0;
@@ -140,25 +139,36 @@ function onHoursChange(input: HTMLInputElement) {
   background: var(--color-dtv-green);
 }
 .ec-check--working { pointer-events: none; cursor: default; }
-.ec-check:focus-visible,
 .ec-check--hours:focus-visible {
   outline: 2px solid var(--color-dtv-dark);
   outline-offset: 3px;
 }
 
+.ec-check__input {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.ec-check--checkbox:has(.ec-check__input:focus-visible) {
+  outline: 2px solid var(--color-dtv-dark);
+  outline-offset: 3px;
+}
+
+.ec-tick {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 .ec-spinner {
   display: block;
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid var(--color-dtv-sand-dark);
-  border-top-color: var(--color-dtv-green);
-  border-radius: 50%;
-  animation: ec-spin 0.7s linear infinite;
-}
-.ec-check--on .ec-spinner,
-.ec-spinner--white {
-  border-color: rgba(255, 255, 255, 0.4);
-  border-top-color: white;
+  width: 1.75rem;
+  height: 1.75rem;
+  animation: ec-spin 1.5s linear infinite;
 }
 @keyframes ec-spin { to { transform: rotate(360deg); } }
 
@@ -215,6 +225,11 @@ function onHoursChange(input: HTMLInputElement) {
   gap: 0.25rem;
   flex-shrink: 0;
 }
+.ec-hours-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
 
 .ec-name {
   color: var(--color-text);
@@ -248,14 +263,10 @@ function onHoursChange(input: HTMLInputElement) {
 }
 .ec-icon img { width: 100%; height: 100%; object-fit: contain; }
 
-.ec-cancel {
-  background: none;
-  border: none;
+.ec-check--cancel {
+  background: var(--color-dtv-dirt-light);
   cursor: pointer;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  padding: 0.25rem;
-  line-height: 1;
 }
-.ec-cancel:hover { color: var(--color-error); }
+.ec-check--cancel:hover { background: var(--color-dtv-dirt); }
+.ec-check--cancel:hover img { filter: brightness(0) invert(1); }
 </style>

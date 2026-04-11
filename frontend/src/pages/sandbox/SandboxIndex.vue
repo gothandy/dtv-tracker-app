@@ -7,6 +7,7 @@
         <h2>Foundation</h2>
         <nav>
           <RouterLink to="/sandbox/colour-palette">Brand Palette</RouterLink>
+          <RouterLink to="/sandbox/icons">Icons</RouterLink>
           <RouterLink to="/sandbox/font-stack">Font Stack</RouterLink>
           <RouterLink to="/sandbox/app-button">AppButton</RouterLink>
           <RouterLink to="/sandbox/layout-columns">LayoutColumns</RouterLink>
