@@ -23,7 +23,7 @@ watch(() => route.query.notice as string, (key) => {
     if (typeof route.query[p] === 'string') params[p] = route.query[p] as string
   }
 
-  const cleaned = { ...route.query, notice: undefined }
+  const cleaned: Record<string, string | string[] | null | undefined> = { ...route.query, notice: undefined }
   for (const p of COMPANION_PARAMS) cleaned[p] = undefined
   router.replace({ query: cleaned })
 
