@@ -58,6 +58,10 @@
           <h2>Delete</h2>
           <AppButton label="Open" @click="open = 'delete'" />
         </div>
+        <div>
+          <h2>About</h2>
+          <AppButton label="Open" @click="open = 'about'" />
+        </div>
       </div>
 
       <label class="fail-toggle">
@@ -191,6 +195,11 @@
         @confirm="onDelete"
       />
 
+      <AboutModal
+        v-if="open === 'about'"
+        @close="closeModal('close')"
+      />
+
       <h2>Event log</h2>
       <div class="event-log">
         <div v-if="!events.length" class="event-log-empty">No events yet.</div>
@@ -220,6 +229,7 @@ import RecordAddModal from '../modals/RecordAddModal.vue'
 import RecordEditModal from '../modals/RecordEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
+import AboutModal from '../../components/AboutModal.vue'
 import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
