@@ -18,7 +18,7 @@
     <div class="flex flex-col gap-1">
       <p class="text-dtv-dark/50 text-xs">Can't make it?</p>
       <button
-        class="self-end bg-dtv-dark text-white font-body text-sm uppercase tracking-wide py-2 px-4 cursor-pointer hover:bg-dtv-dark/80 transition-colors"
+        class="self-end bg-dtv-dark text-white font-head text-sm uppercase tracking-wide py-2 px-4 cursor-pointer hover:bg-dtv-dark/80 transition-colors"
         :disabled="cancelling"
         @click="cancelBooking"
       >

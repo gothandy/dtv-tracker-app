@@ -15,7 +15,7 @@
             :to="sessionPath(session.groupKey!, session.date)"
             class="bg-dtv-green px-4 py-4 flex items-center justify-between gap-2 hover:bg-dtv-green/80 transition-colors no-underline"
           >
-            <p class="font-body text-white text-sm uppercase leading-tight">
+            <p class="font-head text-white text-sm uppercase leading-tight">
               {{ session.groupName }} 🞂
             </p>
             

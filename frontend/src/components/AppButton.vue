@@ -78,7 +78,7 @@ const buttonStyle = computed(() => ({
   background: var(--color-dtv-green);
   color: var(--color-white);
   border: none;
-  font-family: var(--font-body);
+  font-family: var(--font-head);
   font-size: 0.9rem;
   font-weight: 400;
   cursor: pointer;
