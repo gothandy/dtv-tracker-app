@@ -311,6 +311,34 @@ That is the preferred pattern for similar features elsewhere in the app.
 
 ---
 
+## No legacy fallbacks
+
+The v2 frontend and its API route handlers must not carry legacy fallback code paths from v1. Fallbacks exist to paper over old data or old callers — in v2 they hide bugs and create hidden risk, particularly around privacy.
+
+**The rule:** if input does not meet the expected format, fail immediately with a clear error. Do not guess, coerce, or fall back to a looser resolution.
+
+**Why this matters for profile slugs specifically:** Profile slugs must include the numeric ID suffix (e.g. `alice-bowen-42`). A fallback that resolves by name alone can silently return the wrong profile if two volunteers share a name — exposing one volunteer's data to another viewer. Even if middleware currently blocks the path for self-service users, the fallback must not exist.
+
+**The pattern:**
+```typescript
+// Good — fail early
+const profileId = profileIdFromSlug(slug);
+if (profileId === undefined) {
+  res.status(404).json({ error: 'Invalid profile slug' });
+  return;
+}
+
+// Bad — legacy fallback, do not use
+const profileId = profileIdFromSlug(slug);
+const profile = profileId !== undefined
+  ? profiles.find(p => p.ID === profileId)
+  : profiles.find(p => nameToSlug(p.Title) === slug); // silent privacy risk
+```
+
+This applies to all entity resolution — slugs, IDs, keys. If the caller supplies something malformed, the right response is a 404, not a creative attempt to find a match.
+
+---
+
 ## Quick test for future work
 
 When designing a new feature, ask:
