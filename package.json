@@ -9,7 +9,7 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "dev:v1": "cross-env SITE_MODE=v1 nodemon app.js",
-    "dev:v2": "cross-env SITE_MODE=v2 nodemon app.js",
+    "dev:v2": "cross-env NODE_ENV=development SITE_MODE=v2 nodemon app.js",
     "dev:members": "dotenv -e .env.members -- nodemon app.js",
     "dev:tracker": "dotenv -e .env.tracker -- nodemon app.js",
     "test": "echo \"No automated tests (run npm run test:live for integration tests)\"",

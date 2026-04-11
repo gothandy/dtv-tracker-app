@@ -22,7 +22,7 @@ const axios = require('axios');
 // v1 or v2 — controls which frontend is served at /
 // Set SITE_MODE in .env locally. Defaults to v1.
 const siteMode = process.env.SITE_MODE || 'v1';
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
 // Cache the session-detail HTML template in memory (read once, reuse across requests)
 let _sessionDetailHtml = null;

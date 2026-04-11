@@ -111,7 +111,7 @@ jobs:
           az webapp config appsettings set \
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false NODE_ENV=production SITE_MODE=${{ needs.build.outputs.site_mode }}
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false SITE_MODE=${{ needs.build.outputs.site_mode }}
           az webapp config appsettings delete \
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \
