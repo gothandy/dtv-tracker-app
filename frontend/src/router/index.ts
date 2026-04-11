@@ -4,7 +4,6 @@ import HomePage from '../pages/HomePage.vue'
 import GroupListPage from '../pages/GroupListPage.vue'
 import PrivacyPage from '../pages/PrivacyPage.vue'
 import TermsPage from '../pages/TermsPage.vue'
-import AboutPage from '../pages/AboutPage.vue'
 import LoginPage from '../pages/LoginPage.vue'
 import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
@@ -36,7 +35,6 @@ export const router = createRouter({
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },
     { path: '/privacy', component: PrivacyPage },
     { path: '/terms', component: TermsPage },
-    { path: '/about', component: AboutPage },
     { path: '/login', component: LoginPage },
     { path: '/admin', component: AdminPage },
     { path: '/profiles', component: ProfileListPage },

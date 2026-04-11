@@ -23,7 +23,7 @@
           <RouterLink to="/groups" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Groups</RouterLink>
           <RouterLink v-if="profile.isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Profiles</RouterLink>
           <RouterLink v-if="profile.isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
-          <RouterLink to="/about" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">About</RouterLink>
+          <button @click="openAbout" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors text-left">About</button>
           <RouterLink v-if="isDev || profile.isAdmin" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
 
           <template v-if="profile.ready">
@@ -43,19 +43,27 @@
       </div>
     </div>
   </header>
+  <AboutModal v-if="showAbout" @close="showAbout = false" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useViewer } from '../composables/useViewer'
+import AboutModal from './AboutModal.vue'
 
 const isDev = import.meta.env.DEV
 
 const open = ref(false)
+const showAbout = ref(false)
 const profile = useViewer()
 
 function toggleMenu() {
   open.value = !open.value
+}
+
+function openAbout() {
+  open.value = false
+  showAbout.value = true
 }
 
 function onClickOutside(e: MouseEvent) {
