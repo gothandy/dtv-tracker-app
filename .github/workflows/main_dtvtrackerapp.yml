@@ -131,7 +131,7 @@ jobs:
         run: |
           echo "Waiting for app to start..."
           for i in $(seq 1 30); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://dtvtrackerapp.azurewebsites.net/api/health)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://dtvtrackerapp.azurewebsites.net/api/health || echo "000")
             echo "Attempt $i: HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
               echo "App is healthy."
