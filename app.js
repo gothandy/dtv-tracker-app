@@ -75,12 +75,14 @@ const staticOptions = { maxAge: '1h' };
 app.use('/svg', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
 app.use('/icons', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
 
+// Serve in both modes — Vue index.html requests it and auth error paths may redirect to /login.html
+app.get('/site.webmanifest', (req, res) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.sendFile(path.join(__dirname, 'public', 'site.webmanifest'));
+});
+
 if (siteMode === 'v1') {
     // v1-specific static assets
-    app.get('/site.webmanifest', (req, res) => {
-        res.setHeader('Content-Type', 'application/manifest+json');
-        res.sendFile(path.join(__dirname, 'public', 'site.webmanifest'));
-    });
     app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOptions));
     app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
     app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
@@ -156,9 +158,13 @@ if (siteMode === 'v1') {
 }
 
 if (siteMode === 'v2') {
-    // Redirect v1 session detail URLs to v2 equivalents (bookmarked or shared links)
+    // Redirect /login.html to /login — auth error paths in magic.ts still redirect to /login.html
+    app.get('/login.html', (_req, res) => res.redirect(302, '/login'));
+
+    // Redirect v1 session detail URLs to v2 equivalents (bookmarked or shared links).
+    // 302 not 301 — browser-cached 301s would survive a rollback to v1 where /details.html is valid again.
     app.get('/sessions/:group/:date/details.html', (req, res) => {
-        res.redirect(301, `/sessions/${req.params.group}/${req.params.date}`);
+        res.redirect(302, `/sessions/${req.params.group}/${req.params.date}`);
     });
 
     if (!isDev) {
