@@ -106,6 +106,15 @@ jobs:
           RG=$(az webapp list --query "[?name=='DTVTrackerApp'].resourceGroup" -o tsv)
           echo "resource_group=$RG" >> $GITHUB_OUTPUT
 
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp deploy \
+            --resource-group ${{ steps.get-rg.outputs.resource_group }} \
+            --name DTVTrackerApp \
+            --src-path release.zip \
+            --type zip \
+            --clean true
+
       - name: Configure app settings
         run: |
           az webapp config appsettings set \
@@ -116,12 +125,3 @@ jobs:
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \
             --setting-names WEBSITE_RUN_FROM_PACKAGE 2>/dev/null || true
-
-      - name: Deploy to Azure Web App
-        run: |
-          az webapp deploy \
-            --resource-group ${{ steps.get-rg.outputs.resource_group }} \
-            --name DTVTrackerApp \
-            --src-path release.zip \
-            --type zip \
-            --clean true
