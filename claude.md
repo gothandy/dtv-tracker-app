@@ -16,7 +16,13 @@ This is a volunteer hours tracking and registration system for managing voluntee
 
 **Last Updated**: 2026-04-06
 
-> **Frontend migration in progress**: A new Vue 3 + Vite frontend is being built in `frontend/`. During migration the old site continues to run from `public/` at `/`. The new frontend is accessible at `/v2/` on the live site (built with `VITE_BASE_PATH=/v2/`). At cut-over, `public/` will be deleted and Express will serve `frontend/dist/` at `/`.
+> **Frontend migration in progress**: A new Vue 3 + Vite frontend is being built in `frontend/`. A `SITE_MODE` env var controls which frontend is primary:
+> - `SITE_MODE=v1` (default): v1 (`public/`) at `/`, Vue at `/v2/`
+> - `SITE_MODE=v2`: Vue (`frontend/dist/`) at `/`, v1 session detail URLs redirect to v2 equivalents
+>
+> **To cut over**: set the `SITE_MODE` repository variable to `v2` in GitHub Settings → Secrets and variables → Variables, then re-run the last workflow. **To roll back**: set it back to `v1` and re-run. No code push needed.
+>
+> At cut-over, `public/` and the `SITE_MODE` switch will be removed.
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
