@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>SessionTermList</h1>
 
       <h2>Read-only (allowEdit: false)</h2>
@@ -108,6 +108,7 @@
 <script setup lang="ts">
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import SessionTermList from '../../components/sessions/SessionTermList.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'

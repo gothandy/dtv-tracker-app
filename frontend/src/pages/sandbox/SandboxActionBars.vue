@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Action Bars</h1>
 
       <div class="sandbox-warning">Login to view some components</div>
@@ -90,6 +90,7 @@ import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import SessionDetailActions from '../../components/sessions/SessionDetailActions.vue'
 import SessionListActions from '../../components/sessions/SessionListActions.vue'
 import GroupDetailActions from '../../components/groups/GroupDetailActions.vue'

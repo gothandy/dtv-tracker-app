@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <div class="sandbox">
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Colour Palette</h1>
 
       <div v-for="row in palette" class="group">
@@ -21,6 +21,7 @@ import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 
 
 

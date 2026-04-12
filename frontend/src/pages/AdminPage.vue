@@ -38,7 +38,9 @@
                 <span>{{ e.eventName }}</span>
                 <span class="ap-checks">
                   <span v-for="c in eventChecks(e)" :key="c.label" :class="c.ok ? 'ap-ok' : 'ap-fail'">
-                    {{ c.ok ? '✓' : '✗' }} {{ c.label }}
+                    <img v-if="c.ok" src="/icons/tick.svg" width="12" height="12" alt="" class="svg-green" />
+                    <img v-else src="/icons/status/error.svg" width="12" height="12" alt="" class="svg-dirt-dark" />
+                    {{ c.label }}
                   </span>
                 </span>
               </div>

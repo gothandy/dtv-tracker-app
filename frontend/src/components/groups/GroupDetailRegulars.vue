@@ -17,7 +17,8 @@
 
   <!-- Self-service: personalised message -->
   <div v-else-if="profile.isSelfService && group.isCurrentUserRegular" class="gr-section gr-self">
-    <span>✓ You are a regular volunteer for this group</span>
+    <img src="/icons/tick.svg" width="14" height="14" alt="" class="svg-green" />
+    <span>You are a regular volunteer for this group</span>
   </div>
 </template>
 

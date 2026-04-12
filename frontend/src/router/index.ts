@@ -83,3 +83,4 @@ router.beforeEach(async (to) => {
   await ensureAuth()
   if (user.value?.role !== 'admin') return '/'
 })
+

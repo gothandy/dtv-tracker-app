@@ -62,7 +62,11 @@
           <ul v-if="files.length > 0" class="file-list">
             <li v-for="f in files" :key="f.name" class="file-item">
               <span class="file-name">{{ f.name }}</span>
-              <span class="file-status" :class="`file-status--${f.status}`">{{ statusLabel(f.status) }}</span>
+              <span class="file-status" :class="`file-status--${f.status}`">
+                <img v-if="f.status === 'ok'"    src="/icons/tick.svg"          width="12" height="12" alt="" class="svg-green" />
+                <img v-if="f.status === 'error'" src="/icons/status/error.svg"  width="12" height="12" alt="" class="svg-dirt-dark" />
+                {{ statusLabel(f.status) }}
+              </span>
             </li>
           </ul>
 
@@ -143,8 +147,8 @@ const galleryHref = computed(() => sessionPath(ctx.value.groupKey, ctx.value.dat
 function statusLabel(status: FileItem['status']) {
   if (status === 'pending')   return 'Pending'
   if (status === 'uploading') return 'Uploading…'
-  if (status === 'ok')        return '✓ Done'
-  return '✕ Failed'
+  if (status === 'ok')        return 'Done'
+  return 'Failed'
 }
 
 function addFiles(incoming: FileList | null) {
@@ -325,6 +329,9 @@ onMounted(async () => {
   flex-shrink: 0;
   font-weight: 600;
   font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .file-status--pending   { color: var(--color-dtv-dark); opacity: 0.4; }

@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>ProfileGroupList</h1>
 
       <h2>Admin/Check-In — regular checkbox</h2>
@@ -53,6 +53,7 @@ import '../../styles/sandbox.css'
 import { ref, reactive } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import ProfileGroupList from '../../components/profiles/ProfileGroupList.vue'
 import type { ProfileGroupHours } from '../../../../types/api-responses'
 

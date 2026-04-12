@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <div class="sandbox" :class="{ fallback }">
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Font Stack</h1>
 
       <button class="toggle" @click="fallback = !fallback">
@@ -31,6 +31,7 @@ import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 
 const fallback = ref(false)
 

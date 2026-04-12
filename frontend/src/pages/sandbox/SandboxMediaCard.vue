@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>MediaCard</h1>
 
       <h2>Natural aspect ratio</h2>
@@ -62,6 +62,7 @@
 import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import MediaCard from '../../components/MediaCard.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import { usePageTitle } from '../../composables/usePageTitle'

@@ -3,13 +3,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-2 gap-4">
       <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(-1)">
-        <img src="/icons/prev.svg" width="16" height="16" alt="Previous month">
+        <img src="/icons/arrows/left.svg" width="16" height="16" alt="Previous month">
       </button>
       <span class="font-head text-black text-base uppercase tracking-wide">
         {{ formatMonthYear(currentYear, currentMonth) }}
       </span>
       <button class="w-9 h-9 flex items-center justify-center bg-transparent border-none cursor-pointer text-dtv-dark hover:bg-dtv-green/20" @click="navigateMonth(1)">
-        <img src="/icons/next.svg" width="16" height="16" alt="Next month">
+        <img src="/icons/arrows/right.svg" width="16" height="16" alt="Next month">
       </button>
     </div>
 

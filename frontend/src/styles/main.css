@@ -107,10 +107,29 @@ textarea {
 
 /* Disabled form elements — unlayered so it overrides component-scoped colour rules */
 input:disabled,
-select:disabled,
 textarea:disabled {
   color: var(--color-dtv-sand-dark) !important;
   background: var(--color-dtv-sand-light) !important;
+}
+
+/* Select — custom arrow, unlayered to override component-scoped background/padding rules */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.75rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 11.305l-7.997 11.39L8 11.305z' fill='%23000204'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.5rem center !important;
+  background-size: 0.75rem !important;
+}
+
+select:disabled {
+  color: var(--color-dtv-sand-dark) !important;
+  background-color: var(--color-dtv-sand-light) !important;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 11.305l-7.997 11.39L8 11.305z' fill='%23B9B8AC'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.5rem center !important;
+  background-size: 0.75rem !important;
 }
 
 input[type="number"] {

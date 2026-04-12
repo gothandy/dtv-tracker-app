@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>EntryList</h1>
 
       <h2>Grid reference</h2>
@@ -97,6 +97,7 @@
 import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import EntryList from '../../components/EntryList.vue'
 import EntryCard from '../../components/EntryCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'

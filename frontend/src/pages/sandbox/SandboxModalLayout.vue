@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>ModalLayout</h1>
 
       <div class="row">
@@ -133,6 +133,7 @@ import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
 import FormRow from '../../components/FormRow.vue'

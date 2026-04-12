@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <div class="sandbox">
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>CalendarWidget</h1>
 
       <LayoutColumns ratio="1-1-1">
@@ -23,6 +23,7 @@
 import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import CalendarWidget from '../../components/CalendarWidget.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'

@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>MediaCarousel</h1>
 
       <h2>Sessions with photos (homepage style)</h2>
@@ -61,6 +61,7 @@
 import '../../styles/sandbox.css'
 import { ref, onMounted } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import MediaCarousel from '../../components/MediaCarousel.vue'
 import MediaCard from '../../components/MediaCard.vue'
 import MediaEditModal from '../modals/MediaEditModal.vue'

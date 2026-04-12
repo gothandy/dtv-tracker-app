@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>ProfileGroupItem</h1>
 
       <h2>Toggle allowed — idle, not regular</h2>
@@ -73,6 +73,7 @@ import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import ProfileGroupItem from '../../components/profiles/ProfileGroupItem.vue'
 
 usePageTitle('Sandbox')

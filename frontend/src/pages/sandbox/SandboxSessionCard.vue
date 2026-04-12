@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>SessionCard</h1>
 
       <h2>Public</h2>
@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import SessionCard from '../../components/sessions/SessionCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'

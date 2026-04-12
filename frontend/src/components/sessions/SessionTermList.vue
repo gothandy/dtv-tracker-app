@@ -10,9 +10,12 @@
       <button
         v-if="allowEdit && pill.termGuid !== null"
         class="stags-remove"
+        aria-label="Remove tag"
         @click="removeTag(pill.termGuid)"
         :disabled="working || deletingGuids.has(pill.termGuid)"
-      >×</button>
+      >
+        <img src="/icons/close.svg" width="10" height="10" alt="" class="svg-black" />
+      </button>
     </span>
     <div v-if="allowEdit" class="stags-add-wrap">
       <TermPicker
@@ -131,12 +134,12 @@ function onPick(label: string, termGuid: string) {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--color-text-faint);
   padding: 0;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.stags-remove:hover { color: var(--color-error); }
+.stags-remove:hover img { filter: invert(20%) sepia(95%) saturate(5000%) hue-rotate(0deg) brightness(90%) contrast(90%); }
 
 .stags-pill--deleting {
   opacity: 0.45;

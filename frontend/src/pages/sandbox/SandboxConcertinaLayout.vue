@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>ConcertinaLayout</h1>
 
       <h2>1-2 (left) — icon-text, initial open</h2>
@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import ConcertinaLayout from '../../components/ConcertinaLayout.vue'
 import ConcertinaItem from '../../components/ConcertinaItem.vue'

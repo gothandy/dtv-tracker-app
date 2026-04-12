@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <div class="sandbox">
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>FlashMessage</h1>
 
       <h2>Variants</h2>
@@ -35,6 +35,7 @@ import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 import { useRouter } from 'vue-router'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import FlashMessage from '../../components/FlashMessage.vue'
 
 usePageTitle('Sandbox')

@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>ProfileRecordList</h1>
 
       <h2>Admin — consent link, add, edit</h2>
@@ -85,6 +85,7 @@ import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import ProfileRecordList from '../../components/profiles/ProfileRecordList.vue'
 import type { AddRecordPayload } from '../modals/RecordAddModal.vue'
 import type { SaveRecordPayload } from '../modals/RecordEditModal.vue'

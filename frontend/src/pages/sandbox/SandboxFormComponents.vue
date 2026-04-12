@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Form Components</h1>
 
       <!-- Textbox -->
@@ -192,7 +192,7 @@
         </FormSubmitRow>
         <FormSubmitRow>
           <FormButton color="var(--color-dtv-gold)">
-            <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
+            <img src="/icons/brands/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
             Gold with icon
           </FormButton>
         </FormSubmitRow>
@@ -242,6 +242,7 @@ import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import FyFilter from '../../components/FyFilter.vue'

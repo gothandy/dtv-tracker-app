@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>AppButton</h1>
 
       <h2>Icon Only</h2>
@@ -67,6 +67,7 @@ import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import AppButton from '../../components/AppButton.vue'
 </script>
 

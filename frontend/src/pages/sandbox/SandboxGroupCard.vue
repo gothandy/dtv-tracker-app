@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>GroupCard</h1>
 
       <h2>With description and Eventbrite</h2>
@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import GroupCard from '../../components/groups/GroupCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'

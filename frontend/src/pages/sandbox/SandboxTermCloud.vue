@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>TermCloud</h1>
 
       <h2>2-1 (left)</h2>
@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import LayoutColumns from '../../components/LayoutColumns.vue'
 import TermCloud from '../../components/TermCloud.vue'
 import CardTitle from '../../components/CardTitle.vue'
