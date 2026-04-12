@@ -97,8 +97,8 @@ class MediaGallery {
     this._viewport.appendChild(this._track);
     wrap.appendChild(this._viewport);
 
-    this._btnPrev = this._navBtn('‹', 'Previous', 'mg-nav-prev');
-    this._btnNext = this._navBtn('›', 'Next', 'mg-nav-next');
+    this._btnPrev = this._navBtn('prev', 'Previous', 'mg-nav-prev');
+    this._btnNext = this._navBtn('next', 'Next', 'mg-nav-next');
     this._btnPrev.addEventListener('click', () => this._embla && this._embla.scrollPrev());
     this._btnNext.addEventListener('click', () => this._embla && this._embla.scrollNext());
     wrap.appendChild(this._btnPrev);
@@ -127,11 +127,11 @@ class MediaGallery {
 
   }
 
-  _navBtn(label, ariaLabel, posClass) {
+  _navBtn(direction, ariaLabel, posClass) {
     const btn = document.createElement('button');
     btn.className = `mg-btn-nav ${posClass}`;
     btn.setAttribute('aria-label', ariaLabel);
-    btn.textContent = label;
+    btn.innerHTML = `<img src="/icons/${direction}.svg" width="16" height="16" alt="">`;
     btn.disabled = true;
     return btn;
   }

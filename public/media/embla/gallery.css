@@ -136,8 +136,6 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.88);
   color: #444;
-  font-size: 1.5rem;
-  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -149,6 +147,8 @@
 
 .mg-nav-prev { left: 10px; }
 .mg-nav-next { right: 10px; }
+
+.mg-btn-nav img { display: block; filter: brightness(0); }
 
 .mg-btn-nav:hover:not(:disabled) {
   background: rgba(255, 255, 255, 1);

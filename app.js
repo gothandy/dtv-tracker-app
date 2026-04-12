@@ -72,7 +72,6 @@ app.use('/auth', authRoutes);
 
 // Static assets shared by both modes (icons come from frontend/dist)
 const staticOptions = { maxAge: '1h' };
-app.use('/svg', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
 app.use('/icons', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
 
 // Serve in both modes — Vue index.html requests it and auth error paths may redirect to /login.html
@@ -83,6 +82,7 @@ app.get('/site.webmanifest', (req, res) => {
 
 if (siteMode === 'v1') {
     // v1-specific static assets
+    app.use('/svg', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions)); // legacy alias — v1 only
     app.use('/img', express.static(path.join(__dirname, 'public', 'img'), staticOptions));
     app.use('/css', express.static(path.join(__dirname, 'public', 'css'), staticOptions));
     app.use('/js', express.static(path.join(__dirname, 'public', 'js'), staticOptions));
