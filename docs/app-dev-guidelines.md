@@ -311,6 +311,39 @@ That is the preferred pattern for similar features elsewhere in the app.
 
 ---
 
+## Icons
+
+All icons must come from `/icons/`. This is the single source of truth for the app's visual icon language, equivalent in status to the brand colour palette and typeface.
+
+**Never use:**
+- Unicode symbols as icons (e.g. `×`, `✓`, `▲`, `▼`, `←`, `→`)
+- Emoji as icons (e.g. `🞀`, `🞂`)
+- HTML entities as icons (e.g. `&#8592;`, `&times;`)
+
+These render inconsistently across platforms — confirmed broken on Android for several Unicode ranges.
+
+**Always use:**
+```html
+<img src="/icons/close.svg"   width="16" height="16" alt="">
+<img src="/icons/prev.svg"    width="16" height="16" alt="Previous">
+<img src="/icons/next.svg"    width="16" height="16" alt="Next">
+<img src="/icons/tick.svg"    width="16" height="16" alt="">
+<img src="/icons/warning.svg" width="16" height="16" alt="">
+```
+
+If the icon you need doesn't exist in `/icons/`, add it there rather than substituting a Unicode character.
+
+Icons used as pure decoration (e.g. next to a labelled button) should have `alt=""`. Icons used as the sole content of a button must either have descriptive `alt` text or the button must have `aria-label`.
+
+**In Vue components**, `AppButton` handles icon rendering via the `icon` prop — prefer it over raw `<img>` for interactive controls:
+```html
+<AppButton label="Delete" icon="delete" />
+```
+
+Use raw `<img src="/icons/...">` for non-button icon usages (status indicators, decorative labels, info bars).
+
+---
+
 ## No legacy fallbacks
 
 The v2 frontend and its API route handlers must not carry legacy fallback code paths from v1. Fallbacks exist to paper over old data or old callers — in v2 they hide bugs and create hidden risk, particularly around privacy.
