@@ -1,5 +1,14 @@
 <template>
-  <DefaultLayout :padded="false">
+  <TaskLayout v-if="store.httpStatus === 404">
+    <FormCard title="Session not found">
+      <p class="sd-task-message">This session doesn't exist.</p>
+      <FormSubmitRow>
+        <FormButton href="/sessions">Back to sessions</FormButton>
+      </FormSubmitRow>
+    </FormCard>
+  </TaskLayout>
+
+  <DefaultLayout v-else :padded="false">
     <h1 v-if="store.session" class="sr-only">{{ store.session.groupName }}, {{ formatDate(store.session.date) }}</h1>
     <div v-if="store.loading && !store.session" class="text-gray-400 p-6">Loading…</div>
     <div v-else-if="store.error" class="text-red-500 p-6">{{ store.error }}</div>
@@ -188,6 +197,10 @@ import type { EntryResponse } from '../../../types/api-responses'
 import type { GroupItem, SessionSaveData } from './modals/SessionEditModal.vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import TaskLayout from '../layouts/TaskLayout.vue'
+import FormCard from '../components/forms/FormCard.vue'
+import FormButton from '../components/forms/FormButton.vue'
+import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
@@ -540,3 +553,13 @@ watch(() => [route.params.groupKey, route.params.date], () => {
   fetchMedia(route.params.groupKey as string, route.params.date as string)
 })
 </script>
+
+<style scoped>
+.sd-task-message {
+  font-size: 0.9rem;
+  color: var(--color-dtv-dark);
+  opacity: 0.7;
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+</style>

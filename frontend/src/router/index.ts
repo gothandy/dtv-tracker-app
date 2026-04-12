@@ -1,5 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ensureAuth, user } from '../composables/useAuth'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresTrusted?: boolean  // Admin / Check In / Read Only only
+    requiresAuth?: boolean     // Any authenticated user (self-service included)
+  }
+}
 import HomePage from '../pages/HomePage.vue'
 import GroupListPage from '../pages/GroupListPage.vue'
 import PrivacyPage from '../pages/PrivacyPage.vue'
@@ -39,9 +46,11 @@ export const router = createRouter({
     { path: '/terms', component: TermsPage },
     { path: '/login', component: LoginPage },
     { path: '/admin', component: AdminPage },
-    { path: '/profiles', component: ProfileListPage },
-    { path: '/profiles/:slug', component: ProfileDetailPage },
-    { path: '/profiles/:slug/consent', component: () => import('../pages/ConsentPage.vue') },
+    { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
+    { path: '/forbidden', component: () => import('../pages/ForbiddenPage.vue') },
+    { path: '/profiles', component: ProfileListPage, meta: { requiresTrusted: true } },
+    { path: '/profiles/:slug', component: ProfileDetailPage, meta: { requiresAuth: true } },
+    { path: '/profiles/:slug/consent', component: () => import('../pages/ConsentPage.vue'), meta: { requiresAuth: true } },
     { path: '/upload', component: () => import('../pages/UploadPage.vue') },
     { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
     { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
@@ -74,10 +83,19 @@ export const router = createRouter({
     { path: '/sandbox/login-page', component: () => import('../pages/sandbox/SandboxLoginPage.vue') },
     { path: '/sandbox/consent-page', component: () => import('../pages/sandbox/SandboxConsentPage.vue') },
     { path: '/sandbox/upload-page', component: () => import('../pages/sandbox/SandboxUploadPage.vue') },
+    { path: '/sandbox/error-pages', component: () => import('../pages/sandbox/SandboxErrorPages.vue') },
+    { path: '/:pathMatch(.*)*', component: () => import('../pages/NotFoundPage.vue') },
   ]
 })
 
 router.beforeEach(async (to) => {
+  if (to.meta.requiresTrusted || to.meta.requiresAuth) {
+    await ensureAuth()
+    if (!user.value) return '/not-found'
+    if (to.meta.requiresTrusted && user.value.role === 'selfservice') return '/forbidden'
+    return
+  }
+
   if (!to.path.startsWith('/sandbox')) return
   if (import.meta.env.DEV) return
   await ensureAuth()

@@ -6,13 +6,16 @@ export const useGroupDetailStore = defineStore('groupDetail', () => {
   const group = ref<GroupDetailResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const httpStatus = ref<number | null>(null)
 
   async function fetch(key: string) {
     loading.value = true
     error.value = null
+    httpStatus.value = null
     group.value = null
     try {
       const res = await window.fetch(`/api/groups/${key}`)
+      httpStatus.value = res.status
       if (!res.ok) throw new Error(`Failed to load group (${res.status})`)
       const json: { data: GroupDetailResponse } = await res.json()
       group.value = json.data
@@ -24,5 +27,5 @@ export const useGroupDetailStore = defineStore('groupDetail', () => {
     }
   }
 
-  return { group, loading, error, fetch }
+  return { group, loading, error, httpStatus, fetch }
 })
