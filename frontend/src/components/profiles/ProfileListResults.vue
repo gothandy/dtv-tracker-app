@@ -95,16 +95,18 @@ function toggle(id: number) {
   gap: 0.5rem;
 }
 
-.plr-item:hover { background: var(--color-dtv-sand-light); }
+/* Hover only on pointer devices — avoids sticky hover on touch */
+@media (hover: hover) {
+  .plr-item:hover { background: var(--color-dtv-sand-light); }
+  .plr-item:hover :deep(.pli-wrap) { background: inherit; }
+  .plr-item:hover .plr-checkbox:not(:checked) { background: var(--color-dtv-light); border-color: transparent; }
+}
 
-/* pli-wrap as first child (no checkbox) — needs full horizontal padding */
-.plr-item :deep(.pli-wrap:first-child) { padding: 0 1.5rem; flex: 1; min-width: 0; }
+/* pli-wrap as first child (no checkbox) — override horizontal padding only; vertical comes from pli-wrap itself */
+.plr-item :deep(.pli-wrap:first-child) { padding-left: 1.5rem; padding-right: 1.5rem; flex: 1; min-width: 0; }
 
 /* pli-wrap after checkbox — checkbox provides left offset, keep right padding */
 .plr-item :deep(.pli-wrap:not(:first-child)) { padding-left: 0; padding-right: 1.5rem; flex: 1; min-width: 0; }
-
-/* Suppress pli-wrap's own hover — parent row handles it */
-.plr-item :deep(.pli-wrap:hover) { background: inherit; }
 
 .plr-checkbox {
   flex-shrink: 0;
@@ -116,8 +118,6 @@ function toggle(id: number) {
   background: var(--color-dtv-sand);
   cursor: pointer;
 }
-
-.plr-item:hover .plr-checkbox { background: var(--color-dtv-light); }
 
 .plr-checkbox:checked {
   background: var(--color-dtv-green);
