@@ -29,7 +29,7 @@ function dismiss() {
 }
 
 // Pick up ?notice= query param, clean URL, activate message
-watch(() => route.query.notice as string, (key) => {
+watch(() => route.query.flashKey as string, (key) => {
   if (!key) return
 
   const extracted: Record<string, string> = {}
@@ -37,7 +37,7 @@ watch(() => route.query.notice as string, (key) => {
     if (typeof route.query[p] === 'string') extracted[p] = route.query[p] as string
   }
 
-  const cleaned: Record<string, string | string[] | null | undefined> = { ...route.query, notice: undefined }
+  const cleaned: Record<string, string | string[] | null | undefined> = { ...route.query, flashKey: undefined }
   for (const p of props.params ?? []) cleaned[p] = undefined
   router.replace({ query: cleaned })
 

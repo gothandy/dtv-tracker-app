@@ -13,7 +13,7 @@ router.get('/logout', (req: Request, res: Response) => {
   res.clearCookie('dtv-auth');
   const name = req.session.user?.displayName;
   req.session.destroy(() => {
-    const qs = name ? `?notice=signed-out&flashName=${encodeURIComponent(name)}` : '?notice=signed-out';
+    const qs = name ? `?flashKey=signed-out&flashName=${encodeURIComponent(name)}` : '?flashKey=signed-out';
     res.redirect(`/${qs}`);
   });
 });

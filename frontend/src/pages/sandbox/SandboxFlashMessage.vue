@@ -22,9 +22,9 @@
 
       <h2>Live trigger</h2>
       <div class="fm-buttons">
-        <button class="fm-btn" @click="router.push({ query: { notice: 'signed-in' } })">signed-in</button>
-        <button class="fm-btn" @click="router.push({ query: { notice: 'signed-out', flashName: 'Andrew' } })">signed-out</button>
-        <button class="fm-btn" @click="router.push({ query: { notice: 'server-error' } })">server-error</button>
+        <button class="fm-btn" @click="router.push({ query: { flashKey: 'signed-in' } })">signed-in</button>
+        <button class="fm-btn" @click="router.push({ query: { flashKey: 'signed-out', flashName: 'Andrew' } })">signed-out</button>
+        <button class="fm-btn" @click="router.push({ query: { flashKey: 'server-error' } })">server-error</button>
       </div>
     </div>
   </DefaultLayout>
