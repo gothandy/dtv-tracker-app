@@ -70,9 +70,15 @@ app.get('/api/health', (req, res) => {
 // Auth routes (unprotected — login/callback/logout/me)
 app.use('/auth', authRoutes);
 
-// Static assets shared by both modes (icons come from frontend/dist)
 const staticOptions = { maxAge: '1h' };
-app.use('/icons', express.static(path.join(__dirname, 'frontend', 'dist', 'icons'), staticOptions));
+
+// Icons — each mode owns its own set so they can evolve independently
+app.use('/icons', express.static(
+    siteMode === 'v2'
+        ? path.join(__dirname, 'frontend', 'dist', 'icons')
+        : path.join(__dirname, 'public', 'icons'),
+    staticOptions
+));
 
 // Serve in both modes — Vue index.html requests it and auth error paths may redirect to /login.html
 app.get('/site.webmanifest', (req, res) => {
