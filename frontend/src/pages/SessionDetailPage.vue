@@ -309,8 +309,18 @@ function load() {
   store.fetch(route.params.groupKey as string, route.params.date as string)
 }
 
-function onRefreshRequest() {
-  store.fetch(route.params.groupKey as string, store.session!.date)
+async function onRefreshRequest() {
+  const groupKey = route.params.groupKey as string
+  const date = store.session!.date
+  try {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(groupKey)}/${encodeURIComponent(date)}/refresh`, {
+      method: 'POST',
+    })
+    if (!res.ok) console.error('[SessionDetailPage] refresh failed', res.status)
+  } catch (e) {
+    console.error('[SessionDetailPage] refresh error', e)
+  }
+  store.fetch(groupKey, date)
 }
 
 async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {

@@ -2,32 +2,30 @@
   <DefaultLayout>
     <h1 class="sr-only">Profiles</h1>
     <PageHeader>Volunteers</PageHeader>
-    <div class="px-6 pb-6">
-      <ProfileListFilter
-        :profiles="store.profiles"
-        :groups="groupsStore.groups"
-        :record-options="recordOptions"
-        @filtered="filtered = $event"
-        @fy-change="onFyChange"
-        @group-change="onGroupChange"
-      />
-      <ProfileListActions
-        :filtered-profiles="filtered"
-        :selected="selected"
-        :can-bulk-edit="profile.isAdmin"
-        :fy="fy"
-        @add-records="showBulkModal = true"
-        @update:selected="selected = $event"
-      />
-      <ProfileListResults
-        :profiles="filtered"
-        :loading="store.loading"
-        :selected="selected"
-        :can-select="profile.isAdmin"
-        :fy="fy"
-        @update:selected="selected = $event"
-      />
-    </div>
+    <ProfileListFilter
+      :profiles="store.profiles"
+      :groups="groupsStore.groups"
+      :record-options="recordOptions"
+      @filtered="filtered = $event"
+      @fy-change="onFyChange"
+      @group-change="onGroupChange"
+    />
+    <ProfileListActions
+      :filtered-profiles="filtered"
+      :selected="selected"
+      :can-bulk-edit="profile.isAdmin"
+      :fy="fy"
+      @add-records="showBulkModal = true"
+      @update:selected="selected = $event"
+    />
+    <ProfileListResults
+      :profiles="filtered"
+      :loading="store.loading"
+      :selected="selected"
+      :can-select="profile.isAdmin"
+      :fy="fy"
+      @update:selected="selected = $event"
+    />
 
     <ProfileBulkRecordsModal
       v-if="showBulkModal"

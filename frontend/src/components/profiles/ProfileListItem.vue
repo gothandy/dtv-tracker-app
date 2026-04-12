@@ -16,8 +16,9 @@
       </span>
     </span>
     <span class="pli-meta">
-      <span class="pli-stat">{{ displaySessions }} <span class="pli-stat-label">sessions</span></span>
-      <span class="pli-stat">{{ displayHoursFormatted }} <span class="pli-stat-label">hours</span></span>
+      <span class="pli-stat pli-stat--full">{{ displaySessions }} <span class="pli-stat-label">sessions</span></span>
+      <span class="pli-stat pli-stat--full">{{ displayHoursFormatted }} <span class="pli-stat-label">hours</span></span>
+      <span class="pli-stat pli-stat--compact"><span class="pli-compact-sessions">{{ displaySessions }}</span> · {{ displayHoursFormatted }}h</span>
     </span>
   </RouterLink>
 </template>
@@ -94,11 +95,17 @@ const displayHoursFormatted = computed(() =>
 
 .pli-stat { white-space: nowrap; }
 .pli-stat-label { color: var(--color-text-muted); }
+.pli-stat--full:first-child { color: var(--color-dtv-gold-dark); font-weight: 600; }
+.pli-stat--full:first-child .pli-stat-label { color: var(--color-dtv-gold-dark); }
 
 .svg-green { filter: invert(40%) sepia(80%) saturate(400%) hue-rotate(90deg) brightness(90%); }
 .svg-orange { filter: invert(65%) sepia(80%) saturate(600%) hue-rotate(5deg) brightness(95%); }
 
+.pli-stat--compact { display: none; }
+.pli-compact-sessions { color: var(--color-dtv-gold-dark); font-weight: 600; }
+
 @media (width < 48em) {
-  .pli-meta { gap: 0.5rem; }
+  .pli-stat--full { display: none; }
+  .pli-stat--compact { display: inline; }
 }
 </style>
