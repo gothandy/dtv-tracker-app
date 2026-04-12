@@ -140,7 +140,7 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
   <script>
     if (typeof BroadcastChannel !== 'undefined') {
       const ch = new BroadcastChannel('dtv-auth');
-      ch.postMessage({ type: 'auth-success', source: 'magic-link', ts: Date.now(), flashName: '${escapeHtml(displayName)}' });
+      ch.postMessage({ type: 'auth-success', source: 'magic-link', ts: Date.now(), flashName: ${JSON.stringify(displayName)} });
       ch.close();
     }
   <\/script>
