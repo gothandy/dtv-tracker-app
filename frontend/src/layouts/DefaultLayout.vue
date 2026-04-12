@@ -4,8 +4,8 @@
     <main class="flex-1 bg-white">
       <div class="max-w-5xl mx-auto">
         <FlashContainer :params="['flashName']" v-slot="{ flashKey, params, dismiss }">
-          <FlashMessage :show="flashKey === 'signed-in'"    type="info"    @dismiss="dismiss">Welcome back, {{ params.flashName || profile.user?.displayName }}.</FlashMessage>
-          <FlashMessage :show="flashKey === 'signed-out'"   type="neutral" @dismiss="dismiss">Goodbye, {{ params.flashName }}.</FlashMessage>
+          <FlashMessage :show="flashKey === 'signed-in'"    type="info"    @dismiss="dismiss">{{ params.flashName || profile.user?.displayName }} logged in</FlashMessage>
+          <FlashMessage :show="flashKey === 'signed-out'"   type="neutral" @dismiss="dismiss">{{ params.flashName }} logged out</FlashMessage>
           <FlashMessage :show="flashKey === 'server-error'" type="error"   @dismiss="dismiss">Server could not be reached. Please try again.</FlashMessage>
         </FlashContainer>
         <slot />

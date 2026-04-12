@@ -13,8 +13,8 @@
         <!-- Volunteer sign-in (magic link) -->
         <FormCard
           v-if="magicEnabled"
-          title="Volunteer Sign In"
-          subtitle="View your volunteer profile, register for sessions, and upload photos."
+          title="Self-service log-in"
+          subtitle="View your volunteer profile, manage your sessions, and upload photos."
         >
           <FormInput
             v-model="email"
@@ -26,7 +26,7 @@
           />
           <FormSubmitRow>
             <FormButton :disabled="!emailValid || sending" :working="sending" @click="sendMagicLink">
-              {{ sending ? 'Sending…' : 'Send sign-in link' }}
+              {{ sending ? 'Sending…' : 'Send log-in email' }}
             </FormButton>
             <p v-if="magicError" class="form-error">{{ magicError }}</p>
           </FormSubmitRow>
@@ -47,14 +47,23 @@
 
       </template>
 
+      <!-- Expired -->
+      <FormCard v-else-if="expired" title="This log-in link has expired">
+        <p class="sent-body">Click below to send a new log-in email.</p>
+        <FormSubmitRow>
+          <FormButton :working="sending" @click="sendMagicLink">Send a new log-in email</FormButton>
+        </FormSubmitRow>
+      </FormCard>
+
       <!-- Sent confirmation -->
       <FormCard v-else title="Check your email">
-        <p class="sent-body">A sign-in link is on its way — click it to continue. The link expires in:</p>
-        <div class="sent-countdown">{{ countdown }}</div>
-        <p class="sent-body">Already clicked the link? If you're signed in you can close this tab.</p>
+        <p class="sent-body">We've sent you a log-in link and a confirmation code.</p>
+        <div class="sent-code">{{ confirmCode }}</div>
+        <p class="sent-body sent-expiry">This link expires in {{ countdown }}.</p>
+        <p class="sent-body">Already clicked the link? You can close this tab if you are now logged in.</p>
         <FormSubmitRow>
           <button class="form-btn--link" @click="backToLogin">
-            Didn't receive the link? Back to Login
+            Didn't receive the email? Back to log-in
           </button>
           <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
         </FormSubmitRow>
@@ -85,6 +94,7 @@ const sent = ref(false)
 const magicEnabled = ref(false)
 const reasonMessage = ref('')
 const countdownSeconds = ref(0)
+const confirmCode = ref('')
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const returnTo = computed(() => {
@@ -92,16 +102,46 @@ const returnTo = computed(() => {
   return r?.startsWith('/') ? r : undefined
 })
 
+let broadcastChannel: BroadcastChannel | null = null
+let hasHandledAuthSuccess = false
+
+function closeBroadcastChannel() {
+  broadcastChannel?.close()
+  broadcastChannel = null
+}
+
+function openBroadcastChannel() {
+  closeBroadcastChannel()
+  if (typeof BroadcastChannel === 'undefined') return
+
+  broadcastChannel = new BroadcastChannel('dtv-auth')
+  broadcastChannel.onmessage = (e) => {
+    if (hasHandledAuthSuccess) return
+    if (e.data?.type !== 'auth-success') return
+
+    hasHandledAuthSuccess = true
+    closeBroadcastChannel()
+
+    const flashName = typeof e.data?.flashName === 'string' ? e.data.flashName : ''
+    const dest = returnTo.value || '/'
+    let destWithNotice = dest.includes('?') ? `${dest}&flashKey=signed-in` : `${dest}?flashKey=signed-in`
+    if (flashName) destWithNotice += `&flashName=${encodeURIComponent(flashName)}`
+
+    window.location.href = destWithNotice
+  }
+}
+
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()))
 
 const microsoftHref = computed(() =>
   returnTo.value ? `/auth/login?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/login'
 )
 
+const expired = computed(() => sent.value && countdownSeconds.value <= 0)
+
 const countdown = computed(() => {
-  const m = Math.floor(countdownSeconds.value / 60)
-  const s = countdownSeconds.value % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  const mins = Math.ceil(countdownSeconds.value / 60)
+  return mins === 1 ? '1 minute' : `${mins} minutes`
 })
 
 const reasons: Record<string, (email?: string) => string> = {
@@ -121,8 +161,11 @@ async function sendMagicLink() {
       body: JSON.stringify({ destination: email.value.trim(), returnTo: returnTo.value }),
     })
     if (res.ok) {
+      const data = await res.json()
+      confirmCode.value = data.code ?? ''
       sent.value = true
       startCountdown(15 * 60)
+      openBroadcastChannel()
     } else if (res.status === 429) {
       magicError.value = 'Too many attempts — please try again later.'
     } else {
@@ -147,6 +190,7 @@ function startCountdown(seconds: number) {
 function backToLogin() {
   sent.value = false
   if (countdownTimer) clearInterval(countdownTimer)
+  closeBroadcastChannel()
 }
 
 onMounted(async () => {
@@ -161,6 +205,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer)
+  closeBroadcastChannel()
 })
 </script>
 
@@ -200,13 +245,18 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
-.sent-countdown {
-  font-size: 2.5rem;
+.sent-code {
+  font-size: 3rem;
   font-weight: 700;
   color: var(--color-dtv-green);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-align: center;
   margin: 0.75rem 0;
+}
+
+.sent-expiry {
+  font-size: 0.8rem;
+  opacity: 0.5;
 }
 
 .sent-contact {
