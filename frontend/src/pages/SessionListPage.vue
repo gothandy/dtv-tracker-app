@@ -2,7 +2,7 @@
   <DefaultLayout>
     <h1 class="sr-only">Sessions</h1>
     <PageHeader>Sessions</PageHeader>
-    <div class="px-6 pb-6">
+    <div class="pb-6">
       <SessionListFilter :sessions="store.sessions" @filtered="filtered = $event" />
       <SessionListActions
         :sessions="filtered"

@@ -1,6 +1,6 @@
 <template>
   <div class="sr-section">
-    <div v-if="loading" class="sr-empty">Loading…</div>
+    <LoadingSpinner v-if="loading" />
     <div v-else-if="!sessions.length" class="sr-empty">No sessions found.</div>
     <template v-else>
       <!-- Select all — admin only -->
@@ -31,6 +31,7 @@ import { computed } from 'vue'
 import { useViewer } from '../../composables/useViewer'
 import type { Session } from '../../types/session'
 import SessionCard from './SessionCard.vue'
+import LoadingSpinner from '../LoadingSpinner.vue'
 
 const props = defineProps<{
   sessions: Session[]
@@ -65,9 +66,8 @@ function toggle(id: number) {
 .sr-empty { padding: 1.5rem 0; color: var(--color-text-muted); font-size: 0.9rem; }
 
 .sr-select-row {
-  padding: 0.5rem 0;
+  padding: 0.5rem 1.5rem;
   border-bottom: 1px solid var(--color-surface-hover);
-  margin-bottom: 1rem;
 }
 
 .sr-select-all {
@@ -80,7 +80,7 @@ function toggle(id: number) {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
-  padding: 1.5rem 0;
+  padding: 1.5rem;
 }
 @media (width < 48em) { .sr-grid { grid-template-columns: 1fr; } }
 

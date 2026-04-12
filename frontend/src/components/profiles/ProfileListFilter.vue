@@ -64,8 +64,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   filtered: [profiles: ProfileResponse[]]
-  'fy-change': [fy: string]
-  'group-change': [group: string]
+  'filters-change': [filters: { fy: string; group: string }]
 }>()
 
 const route = useRoute()
@@ -79,10 +78,9 @@ const hoursFilter = ref((route.query.hours as string)        || '')
 const recordType  = ref((route.query.recordType as string)   || '')
 const recordStatus = ref((route.query.recordStatus as string) || '')
 
-// FY and group changes require a store re-fetch — emit upward
+// FY and group changes require a store re-fetch — emit upward as a single event
 // immediate: true ensures deep-linked query params are emitted on first load
-watch(fy, val => emit('fy-change', val), { immediate: true })
-watch(group, val => emit('group-change', val), { immediate: true })
+watch([fy, group], ([newFy, newGroup]) => emit('filters-change', { fy: newFy, group: newGroup }), { immediate: true })
 
 // Clear record status when record type is cleared
 watch(recordType, val => { if (!val) recordStatus.value = '' })
