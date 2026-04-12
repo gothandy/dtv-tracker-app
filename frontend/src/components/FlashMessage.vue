@@ -1,15 +1,18 @@
 <template>
   <Transition name="flash-message">
     <div
-      v-if="active === notice"
+      v-if="show"
+      ref="el"
       class="flash-message"
       :class="`flash-message--${type}`"
       role="button"
       tabindex="0"
       aria-label="Dismiss notification"
-      @click="dismiss"
-      @keydown.enter.prevent="dismiss"
-      @keydown.space.prevent="dismiss"
+      @click="emit('dismiss')"
+      @keydown.enter.prevent="emit('dismiss')"
+      @keydown.space.prevent="emit('dismiss')"
+      @focus="onFocus"
+      @blur="onBlur"
     >
       <span class="flash-message-text"><slot /></span>
       <img src="/icons/close.svg" :class="type === 'neutral' ? 'svg-black' : 'svg-white'" width="14" height="14" alt="" aria-hidden="true" class="flash-message-close" />
@@ -18,15 +21,36 @@
 </template>
 
 <script setup lang="ts">
-import { useFlash } from '../composables/useFlash'
+import { ref, watch, nextTick } from 'vue'
 
-defineProps<{
-  notice: string
-  active: string | null
+const props = defineProps<{
+  show: boolean
   type: 'info' | 'neutral' | 'error'
 }>()
 
-const { dismiss } = useFlash()
+const emit = defineEmits<{ dismiss: [] }>()
+
+const el = ref<HTMLElement | null>(null)
+let blurTimer: ReturnType<typeof setTimeout> | null = null
+
+// Focus when shown — including on initial render (immediate covers page-load case)
+watch(() => props.show, async (val) => {
+  if (val) {
+    await nextTick()
+    el.value?.focus()
+  }
+}, { immediate: true })
+
+function onFocus() {
+  if (blurTimer !== null) {
+    clearTimeout(blurTimer)
+    blurTimer = null
+  }
+}
+
+function onBlur() {
+  blurTimer = setTimeout(() => emit('dismiss'), 200)
+}
 </script>
 
 <style scoped>
@@ -47,7 +71,7 @@ const { dismiss } = useFlash()
 }
 
 .flash-message:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--color-dtv-dark);
   outline-offset: -2px;
 }
 

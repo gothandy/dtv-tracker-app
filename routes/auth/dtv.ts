@@ -86,7 +86,7 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     const returnTo = req.session.returnTo || process.env.FRONTEND_URL || '/';
     delete req.session.returnTo;
-    const returnToWithNotice = returnTo.includes('?') ? `${returnTo}&notice=signed-in` : `${returnTo}?notice=signed-in`;
+    const returnToWithNotice = returnTo.includes('?') ? `${returnTo}&flashKey=signed-in` : `${returnTo}?flashKey=signed-in`;
     res.redirect(returnToWithNotice);
   } catch (error: any) {
     console.error('Error in auth callback:', error.message);
