@@ -163,6 +163,7 @@
             :allow-edit="profile.isOperational"
             :profiles="profiles"
             :working-id="workingId"
+            :refresh-working="refreshWorking"
             @refresh-request="onRefreshRequest"
             @update="onEntryUpdate"
             @set-hours="onSetHours"
@@ -230,6 +231,7 @@ const coverItem    = computed<MediaItem | null>(() =>
 )
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
+const refreshWorking = ref(false)
 const entryListRef = ref<InstanceType<typeof SessionEntryList> | null>(null)
 const tagWorking = ref(false)
 const tagError = ref<string | undefined>()
@@ -310,6 +312,8 @@ function load() {
 }
 
 async function onRefreshRequest() {
+  if (refreshWorking.value) return
+  refreshWorking.value = true
   const groupKey = route.params.groupKey as string
   const date = store.session!.date
   try {
@@ -319,6 +323,8 @@ async function onRefreshRequest() {
     if (!res.ok) console.error('[SessionDetailPage] refresh failed', res.status)
   } catch (e) {
     console.error('[SessionDetailPage] refresh error', e)
+  } finally {
+    refreshWorking.value = false
   }
   store.fetch(groupKey, date)
 }
