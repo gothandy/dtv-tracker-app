@@ -1,5 +1,28 @@
 <template>
-  <DefaultLayout>
+  <TaskLayout v-if="store.httpStatus === 403">
+    <FormCard title="Access denied">
+      <p class="pd-task-message">
+        You don't have permission to view this profile.
+        <a href="mailto:admin@deantrailvolunteers.org.uk" class="pd-task-link">Contact us</a>
+        if you think this is a mistake.
+      </p>
+      <FormSubmitRow>
+        <FormButton href="/">Go to home page</FormButton>
+      </FormSubmitRow>
+    </FormCard>
+  </TaskLayout>
+
+  <TaskLayout v-else-if="store.httpStatus === 404">
+    <FormCard title="Profile not found">
+      <p class="pd-task-message">This profile doesn't exist.</p>
+      <FormSubmitRow>
+        <FormButton v-if="viewer.isTrusted" href="/profiles">Back to profiles</FormButton>
+        <FormButton v-else href="/">Go to home page</FormButton>
+      </FormSubmitRow>
+    </FormCard>
+  </TaskLayout>
+
+  <DefaultLayout v-else>
     <div v-if="store.loading" class="pd-loading">Loading…</div>
     <div v-else-if="store.error" class="pd-error">{{ store.error }}</div>
     <template v-else-if="store.profile">
@@ -72,6 +95,10 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import TaskLayout from '../layouts/TaskLayout.vue'
+import FormCard from '../components/forms/FormCard.vue'
+import FormButton from '../components/forms/FormButton.vue'
+import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
@@ -330,4 +357,18 @@ async function onEditEntry(id: number, data: EditData | null) {
 }
 .pd-email a { color: inherit; }
 .pd-email a:hover { color: var(--color-dtv-green); }
+
+.pd-task-message {
+  font-size: 0.9rem;
+  color: var(--color-dtv-dark);
+  opacity: 0.7;
+  text-align: center;
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.pd-task-link {
+  color: var(--color-dtv-green-dark);
+  opacity: 1;
+}
 </style>

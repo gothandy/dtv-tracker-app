@@ -6,13 +6,16 @@ export const useSessionDetailStore = defineStore('sessionDetail', () => {
   const session = ref<SessionDetailResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const httpStatus = ref<number | null>(null)
 
   async function fetch(groupKey: string, date: string) {
     loading.value = true
     error.value = null
+    httpStatus.value = null
     session.value = null
     try {
       const res = await window.fetch(`/api/sessions/${groupKey}/${date}`)
+      httpStatus.value = res.status
       if (!res.ok) throw new Error(`Failed to load session (${res.status})`)
       const json = await res.json()
       const d = json.data
@@ -25,5 +28,5 @@ export const useSessionDetailStore = defineStore('sessionDetail', () => {
     }
   }
 
-  return { session, loading, error, fetch }
+  return { session, loading, error, httpStatus, fetch }
 })

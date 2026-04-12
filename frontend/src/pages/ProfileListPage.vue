@@ -20,6 +20,7 @@
     <ProfileListResults
       :profiles="filtered"
       :loading="store.loading"
+      :error="store.error"
       :selected="selected"
       :can-select="profile.isAdmin"
       :fy="fy"

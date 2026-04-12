@@ -17,15 +17,22 @@
       </section>
 
       <section>
-        <h2>Forms and Modals</h2>
+        <h2>Modals and Forms</h2>
         <nav>
           <RouterLink to="/sandbox/modal-layout">ModalLayout</RouterLink>
           <RouterLink to="/sandbox/modals">All Modals</RouterLink>
           <RouterLink to="/sandbox/form-components">Form Layout and Components</RouterLink>
           <RouterLink to="/sandbox/flash-message">FlashMessage</RouterLink>
+        </nav>
+      </section>
+
+      <section>
+        <h2>Task Pages</h2>
+        <nav>
           <RouterLink to="/sandbox/login-page">LoginPage</RouterLink>
           <RouterLink to="/sandbox/consent-page">ConsentPage</RouterLink>
           <RouterLink to="/sandbox/upload-page">UploadPage</RouterLink>
+          <RouterLink to="/sandbox/error-pages">Error Pages</RouterLink>
         </nav>
       </section>
 

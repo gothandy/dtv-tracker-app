@@ -1,5 +1,14 @@
 <template>
-  <DefaultLayout>
+  <TaskLayout v-if="store.httpStatus === 404">
+    <FormCard title="Group not found">
+      <p class="gd-task-message">This group doesn't exist.</p>
+      <FormSubmitRow>
+        <FormButton href="/groups">Back to groups</FormButton>
+      </FormSubmitRow>
+    </FormCard>
+  </TaskLayout>
+
+  <DefaultLayout v-else>
     <h1 v-if="store.group" class="sr-only">{{ store.group.displayName || store.group.key }}</h1>
     <div v-if="store.loading" class="gd-loading">Loading…</div>
     <div v-else-if="store.error" class="gd-error">{{ store.error }}</div>
@@ -53,6 +62,10 @@ import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
 import { useViewer } from '../composables/useViewer'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import TaskLayout from '../layouts/TaskLayout.vue'
+import FormCard from '../components/forms/FormCard.vue'
+import FormButton from '../components/forms/FormButton.vue'
+import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import CalendarWidget from '../components/CalendarWidget.vue'
 import MediaCarousel from '../components/MediaCarousel.vue'
@@ -235,4 +248,12 @@ watch(() => route.params.key, key => {
 <style scoped>
 .gd-loading { padding: 2rem; color: var(--color-text-muted); }
 .gd-error { padding: 2rem; color: var(--color-dtv-red); }
+
+.gd-task-message {
+  font-size: 0.9rem;
+  color: var(--color-dtv-dark);
+  opacity: 0.7;
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
 </style>

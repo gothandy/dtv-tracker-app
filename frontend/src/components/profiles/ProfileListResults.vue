@@ -1,6 +1,7 @@
 <template>
   <div class="plr-section">
     <LoadingSpinner v-if="loading" />
+    <div v-else-if="error" class="plr-state plr-state--error">{{ error }}</div>
     <div v-else-if="!profiles.length" class="plr-empty">No profiles found.</div>
     <template v-else>
       <div v-if="canSelect && selected" class="plr-select-row">
@@ -38,6 +39,7 @@ import type { ProfileResponse } from '../../../../types/api-responses'
 const props = defineProps<{
   profiles: ProfileResponse[]
   loading?: boolean
+  error?: string | null
   selected?: number[]
   canSelect: boolean
   fy: string
@@ -73,6 +75,9 @@ function toggle(id: number) {
 
 <style scoped>
 .plr-section { padding: 0; }
+
+.plr-state { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.9rem; }
+.plr-state--error { color: var(--color-dtv-red); }
 
 .plr-empty { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.9rem; }
 

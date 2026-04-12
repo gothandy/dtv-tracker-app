@@ -82,7 +82,7 @@
   }
 
   html, body {
-    background-color: theme(--color-dtv-dark);
+    background-color: theme(--color-dtv-light);
     font-family: theme(--font-head);
     min-height: 100vh;
   }
