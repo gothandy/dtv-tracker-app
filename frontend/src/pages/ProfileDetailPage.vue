@@ -16,7 +16,8 @@
     <FormCard title="Profile not found">
       <p class="pd-task-message">This profile doesn't exist.</p>
       <FormSubmitRow>
-        <FormButton href="/profiles">Back to profiles</FormButton>
+        <FormButton v-if="viewer.isTrusted" href="/profiles">Back to profiles</FormButton>
+        <FormButton v-else href="/">Go to home page</FormButton>
       </FormSubmitRow>
     </FormCard>
   </TaskLayout>
