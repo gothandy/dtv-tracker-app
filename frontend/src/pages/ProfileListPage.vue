@@ -1,14 +1,13 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Profiles</h1>
-    <PageHeader>Volunteers</PageHeader>
+    <PageHeader>Profiles</PageHeader>
     <ProfileListFilter
       :profiles="store.profiles"
       :groups="groupsStore.groups"
       :record-options="recordOptions"
       @filtered="filtered = $event"
-      @fy-change="onFyChange"
-      @group-change="onGroupChange"
+      @filters-change="onFiltersChange"
     />
     <ProfileListActions
       :filtered-profiles="filtered"
@@ -54,7 +53,7 @@ import { useProfileListStore } from '../stores/profileList'
 import { useGroupListStore } from '../stores/groupList'
 import type { ProfileResponse } from '../../../types/api-responses'
 
-usePageTitle('Volunteers')
+usePageTitle('Profiles')
 
 const profile = useViewer()
 const store = useProfileListStore()
@@ -77,14 +76,10 @@ const individualSelectedCount = computed(() =>
   }).length
 )
 
-function onFyChange(val: string) {
-  fy.value = val
-  store.fetch(val, group.value)
-}
-
-function onGroupChange(val: string) {
-  group.value = val
-  store.fetch(fy.value, val)
+function onFiltersChange({ fy: newFy, group: newGroup }: { fy: string; group: string }) {
+  fy.value = newFy
+  group.value = newGroup
+  store.fetch(newFy, newGroup)
 }
 
 async function onBulkSave(payload: BulkRecordPayload) {
@@ -114,7 +109,7 @@ async function onBulkSave(payload: BulkRecordPayload) {
 
 onMounted(async () => {
   groupsStore.fetch()
-  // Initial profiles fetch is driven by the immediate fy/group watchers in ProfileListFilter
+  // Initial profiles fetch is driven by the immediate filters-change watcher in ProfileListFilter
   try {
     const res = await fetch('/api/records/options')
     if (res.ok) {

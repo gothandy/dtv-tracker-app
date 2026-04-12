@@ -57,7 +57,7 @@ function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; r
 export const useSessionListStore = defineStore('sessions', () => {
   const viewer = useViewer()
   const raw = ref<SessionResponse[]>([])
-  const loading = ref(false)
+  const loading = ref(true)
   const error = ref<string | null>(null)
 
   const sessions = computed(() =>
@@ -65,7 +65,6 @@ export const useSessionListStore = defineStore('sessions', () => {
   )
 
   async function fetch() {
-    if (loading.value) return
     loading.value = true
     error.value = null
     try {

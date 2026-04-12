@@ -1,5 +1,5 @@
 <template>
-  <div v-if="loading" class="gr-state">Loading groups…</div>
+  <LoadingSpinner v-if="loading" />
   <div v-else-if="error" class="gr-state gr-state--error">{{ error }}</div>
   <div v-else-if="!groups.length" class="gr-state">No groups found.</div>
   <div v-else class="gr-grid">
@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import GroupCard from './GroupCard.vue'
 import type { GroupWithStats } from './GroupListFilter.vue'
+import LoadingSpinner from '../LoadingSpinner.vue'
 
 defineProps<{
   groups: GroupWithStats[]
@@ -26,6 +27,7 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  padding: 0 1.5rem;
 }
 @media (width < 48em) { .gr-grid { grid-template-columns: 1fr; } }
 

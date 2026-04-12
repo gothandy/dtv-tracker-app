@@ -354,7 +354,7 @@ dtv-tracker-app/
 │           ├── GroupDetailPage.vue    # Group detail with stats, sessions, regulars
 │           ├── SessionsPage.vue       # Sessions listing with filters and action bar
 │           ├── SessionDetailPage.vue  # Session detail — sign-up (public) and check-in (operational)
-│           ├── ProfileListPage.vue    # Profiles listing (stub + DebugData)
+│           ├── ProfileListPage.vue    # Profiles listing with filters, sort, bulk records, CSV export
 │           ├── ProfileDetailPage.vue  # Profile detail — page title, PageHeader, entry list, debug data
 │           ├── AdminPage.vue          # Admin actions (sync, cache, exports)
 │           └── sessions/             # Page-specific components for SessionDetailPage

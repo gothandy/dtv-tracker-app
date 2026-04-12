@@ -6,11 +6,10 @@ export { GroupResponse }
 
 export const useGroupListStore = defineStore('groups', () => {
   const groups = ref<GroupResponse[]>([])
-  const loading = ref(false)
+  const loading = ref(true)
   const error = ref<string | null>(null)
 
   async function fetch() {
-    if (loading.value) return
     loading.value = true
     error.value = null
     try {

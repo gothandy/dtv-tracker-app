@@ -1,7 +1,7 @@
 <template>
   <div class="plr-section">
-    <div v-if="loading" class="plr-empty">Loading…</div>
-    <div v-else-if="!profiles.length" class="plr-empty">No volunteers found.</div>
+    <LoadingSpinner v-if="loading" />
+    <div v-else-if="!profiles.length" class="plr-empty">No profiles found.</div>
     <template v-else>
       <div v-if="canSelect && selected" class="plr-select-row">
         <button class="plr-select-all" @click="toggleSelectAll">
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ProfileListItem from './ProfileListItem.vue'
+import LoadingSpinner from '../LoadingSpinner.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
 
 
@@ -73,7 +74,7 @@ function toggle(id: number) {
 <style scoped>
 .plr-section { padding: 0; }
 
-.plr-empty { padding: 1.5rem 0; color: var(--color-text-muted); font-size: 0.9rem; }
+.plr-empty { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.9rem; }
 
 .plr-select-row {
   padding: 0.5rem 1.5rem;
@@ -92,15 +93,24 @@ function toggle(id: number) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 1.5rem;
 }
 
-/* Own all horizontal padding here — zero pli-wrap's own to prevent doubling */
-.plr-item :deep(.pli-wrap) { padding-left: 0; padding-right: 0; flex: 1; min-width: 0; }
+/* Hover only on pointer devices — avoids sticky hover on touch */
+@media (hover: hover) {
+  .plr-item:hover { background: var(--color-dtv-sand-light); }
+  .plr-item:hover :deep(.pli-wrap) { background: inherit; }
+  .plr-item:hover .plr-checkbox:not(:checked) { background: var(--color-dtv-light); border-color: transparent; }
+}
 
+/* pli-wrap as first child (no checkbox) — override horizontal padding only; vertical comes from pli-wrap itself */
+.plr-item :deep(.pli-wrap:first-child) { padding-left: 1.5rem; padding-right: 1.5rem; flex: 1; min-width: 0; }
+
+/* pli-wrap after checkbox — checkbox provides left offset, keep right padding */
+.plr-item :deep(.pli-wrap:not(:first-child)) { padding-left: 0; padding-right: 1.5rem; flex: 1; min-width: 0; }
 
 .plr-checkbox {
   flex-shrink: 0;
+  margin-left: 1.5rem;
   appearance: none;
   width: 20px; height: 20px;
   border-radius: 0;

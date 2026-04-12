@@ -123,7 +123,7 @@ async function addGroup() {
 <style scoped>
 .gf-wrap {
   background: var(--color-dtv-sand);
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
 }
 

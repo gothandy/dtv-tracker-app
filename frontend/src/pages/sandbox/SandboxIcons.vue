@@ -43,7 +43,8 @@ const groups = [
   {
     label: 'Badges',
     prefix: 'badges/',
-    icons: ['card', 'child', 'csr', 'dig', 'diglead', 'firstaider', 'group', 'late', 'member', 'new', 'nophoto', 'regular'],
+    icons: ['card', 'child', 'csr', 'dig', 'diglead', 'firstaider', 'group', 'late',
+      'member', 'new', 'nophoto', 'regular'],
   },
   {
     label: 'Brands',
@@ -57,7 +58,7 @@ const groups = [
       'add', 'burger', 'checkboxes', 'clock', 'close',
       'delete', 'download', 'edit',
       'filter', 'gear', 'locked', 'logout',
-      'profile', 'refresh', 'register', 'regular', 'return',
+      'profile', 'refresh', 'register', 'return',
       'save', 'settings', 'share', 'sort', 'tick', 'trash', 'upload', 'uploadphoto',
     ],
   },
