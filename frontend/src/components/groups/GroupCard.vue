@@ -4,7 +4,7 @@
     <div class="group-card__body">
       <p class="group-card__name">
         {{ group.displayName || group.key }}
-        <img v-if="group.eventbriteSeriesId" src="/icons/eventbrite.svg" class="group-card__eb" alt="Eventbrite" title="Linked to Eventbrite" />
+        <img v-if="group.eventbriteSeriesId" src="/icons/brands/eventbrite.svg" class="group-card__eb" alt="Eventbrite" title="Linked to Eventbrite" />
       </p>
       <p v-if="group.description" class="group-card__description">{{ group.description }}</p>
     </div>

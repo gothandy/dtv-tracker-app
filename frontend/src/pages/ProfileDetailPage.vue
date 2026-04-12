@@ -10,8 +10,8 @@
       <div class="pd-header">
         <div class="pd-title-row">
           <div class="pd-badges">
-            <img v-if="isMember" src="/icons/member.svg" class="pd-badge" alt="Member" title="Member" />
-            <img v-if="store.profile.isGroup" src="/icons/group.svg" class="pd-badge" alt="Group" title="Group" />
+            <img v-if="isMember" src="/icons/badges/member.svg" class="pd-badge" alt="Member" title="Member" />
+            <img v-if="store.profile.isGroup" src="/icons/badges/group.svg" class="pd-badge" alt="Group" title="Group" />
           </div>
           <ProfileDetailActions
             v-if="viewer.isCheckIn || viewer.isAdmin"

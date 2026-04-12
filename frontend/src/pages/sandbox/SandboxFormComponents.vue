@@ -192,7 +192,7 @@
         </FormSubmitRow>
         <FormSubmitRow>
           <FormButton color="var(--color-dtv-gold)">
-            <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
+            <img src="/icons/brands/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
             Gold with icon
           </FormButton>
         </FormSubmitRow>

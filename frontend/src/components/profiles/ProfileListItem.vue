@@ -3,11 +3,11 @@
     <span class="pli-left">
       <span class="pli-name">{{ profile.name ?? '(no name)' }}</span>
       <span class="pli-badges">
-        <img v-if="profile.isGroup" src="/icons/group.svg" class="pli-badge svg-black" alt="Group" title="Group" />
-        <img v-if="profile.isMember && !profile.isGroup" src="/icons/member.svg" class="pli-badge svg-black" alt="Member" title="Member" />
+        <img v-if="profile.isGroup" src="/icons/badges/group.svg" class="pli-badge svg-black" alt="Group" title="Group" />
+        <img v-if="profile.isMember && !profile.isGroup" src="/icons/badges/member.svg" class="pli-badge svg-black" alt="Member" title="Member" />
         <img
           v-if="profile.cardStatus"
-          src="/icons/card.svg"
+          src="/icons/badges/card.svg"
           class="pli-badge"
           :class="profile.cardStatus === 'Invited' ? 'svg-orange' : 'svg-green'"
           :alt="`Card: ${profile.cardStatus}`"

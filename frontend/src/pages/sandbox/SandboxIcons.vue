@@ -41,13 +41,22 @@ const groups = [
     icons: ['error', 'info', 'warning'],
   },
   {
+    label: 'Badges',
+    prefix: 'badges/',
+    icons: ['card', 'child', 'csr', 'dig', 'diglead', 'firstaider', 'group', 'late', 'member', 'new', 'nophoto', 'regular'],
+  },
+  {
+    label: 'Brands',
+    prefix: 'brands/',
+    icons: ['eventbrite', 'facebook', 'google', 'microsoft'],
+  },
+  {
     label: 'Icons',
     prefix: '',
     icons: [
-      'add', 'burger', 'card', 'checkboxes', 'child', 'clock', 'close', 'csr',
-      'delete', 'dig', 'diglead', 'download', 'edit', 'eventbrite',
-      'facebook', 'filter', 'firstaider', 'gear', 'google', 'group', 'late',
-      'locked', 'logout', 'member', 'microsoft', 'new', 'nophoto',
+      'add', 'burger', 'checkboxes', 'clock', 'close',
+      'delete', 'download', 'edit',
+      'filter', 'gear', 'locked', 'logout',
       'profile', 'refresh', 'register', 'regular', 'return',
       'save', 'settings', 'share', 'sort', 'tick', 'trash', 'upload', 'uploadphoto',
     ],

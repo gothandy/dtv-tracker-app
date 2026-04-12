@@ -15,6 +15,8 @@ const { show, dismiss } = useFlash()
 
 const COMPANION_PARAMS = ['name', 'email']
 
+watch(() => route.path, () => dismiss())
+
 watch(() => route.query.notice as string, (key) => {
   if (!key) return
 
