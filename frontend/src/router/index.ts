@@ -71,6 +71,9 @@ export const router = createRouter({
     { path: '/sandbox/profile-group-list', component: () => import('../pages/sandbox/SandboxProfileGroupList.vue') },
     { path: '/sandbox/profile-group-item', component: () => import('../pages/sandbox/SandboxProfileGroupItem.vue') },
     { path: '/sandbox/flash-message', component: () => import('../pages/sandbox/SandboxFlashMessage.vue') },
+    { path: '/sandbox/login-page', component: () => import('../pages/sandbox/SandboxLoginPage.vue') },
+    { path: '/sandbox/consent-page', component: () => import('../pages/sandbox/SandboxConsentPage.vue') },
+    { path: '/sandbox/upload-page', component: () => import('../pages/sandbox/SandboxUploadPage.vue') },
   ]
 })
 

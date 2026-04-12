@@ -92,10 +92,12 @@ function toggle(id: number) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-left: 1.5rem;
+  padding: 0 1.5rem;
 }
 
-.plr-item :deep(.pli-wrap) { padding-left: 0; flex: 1; }
+/* Own all horizontal padding here — zero pli-wrap's own to prevent doubling */
+.plr-item :deep(.pli-wrap) { padding-left: 0; padding-right: 0; flex: 1; min-width: 0; }
+
 
 .plr-checkbox {
   flex-shrink: 0;

@@ -23,6 +23,9 @@
           <RouterLink to="/sandbox/modals">All Modals</RouterLink>
           <RouterLink to="/sandbox/form-components">Form Layout and Components</RouterLink>
           <RouterLink to="/sandbox/flash-message">FlashMessage</RouterLink>
+          <RouterLink to="/sandbox/login-page">LoginPage</RouterLink>
+          <RouterLink to="/sandbox/consent-page">ConsentPage</RouterLink>
+          <RouterLink to="/sandbox/upload-page">UploadPage</RouterLink>
         </nav>
       </section>
 

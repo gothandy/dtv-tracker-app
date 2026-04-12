@@ -2,9 +2,9 @@
   <div class="min-h-screen flex flex-col">
     <AppHeader />
     <main class="flex-1 bg-white">
-      <FlashMessageContainer>
-        <FlashMessage notice="signed-in" :active="active" type="info">Welcome back.</FlashMessage>
-      </FlashMessageContainer>
+      <FlashContainer v-slot="{ flashKey, dismiss }">
+        <FlashMessage :show="flashKey === 'signed-in'" type="info" @dismiss="dismiss">Welcome back.</FlashMessage>
+      </FlashContainer>
       <div class="task-layout-body">
         <slot />
       </div>
@@ -16,11 +16,8 @@
 <script setup lang="ts">
 import AppHeader from '../components/AppHeader.vue'
 import AppFooter from '../components/AppFooter.vue'
-import FlashMessageContainer from '../components/FlashMessageContainer.vue'
+import FlashContainer from '../components/FlashContainer.vue'
 import FlashMessage from '../components/FlashMessage.vue'
-import { useFlash } from '../composables/useFlash'
-
-const { active } = useFlash()
 </script>
 
 <style scoped>

@@ -83,9 +83,9 @@ onMounted(async () => {
   if (res.status === 401) { router.push(`/login?returnTo=${encodeURIComponent(route.fullPath)}`); return }
   if (res.status === 403) { loadError.value = 'You do not have permission to collect consent for this profile.'; loading.value = false; return }
   if (!res.ok) { loadError.value = 'Could not load profile. Please try again.'; loading.value = false; return }
-  const data = await res.json()
-  profileId.value = data.id
-  profileName.value = data.name ?? 'this volunteer'
+  const json = await res.json()
+  profileId.value = json.data.id
+  profileName.value = json.data.name ?? 'this volunteer'
   loading.value = false
 })
 

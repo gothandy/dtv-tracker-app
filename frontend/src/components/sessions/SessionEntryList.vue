@@ -8,7 +8,7 @@
         <span v-if="entries.length" class="sel-count">({{ checkedCount }} / {{ entries.length }})</span>
       </h2>
       <div v-if="allowEdit" class="sel-actions">
-        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" @click="emit('refreshRequest')" />
+        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" :working="refreshWorking" @click="emit('refreshRequest')" />
         <AppButton label="Set Hours" icon="clock" mode="icon-responsive" :disabled="eligibleCount === 0" @click="showSetHours = true" />
         <AppButton label="Add" icon="add" mode="icon-responsive" @click="showAdd = true" />
       </div>
@@ -83,6 +83,7 @@ const props = defineProps<{
   allowEdit: boolean
   profiles: PickerProfile[]
   workingId?: number | null
+  refreshWorking?: boolean
 }>()
 
 const emit = defineEmits<{
