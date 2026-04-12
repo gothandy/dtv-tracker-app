@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Filter Components</h1>
 
       <h2>SessionListFilter</h2>
@@ -25,6 +25,7 @@
 import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import SessionListFilter from '../../components/sessions/SessionListFilter.vue'
 import SessionListActions from '../../components/sessions/SessionListActions.vue'
 import GroupListFilter from '../../components/groups/GroupListFilter.vue'

@@ -315,21 +315,26 @@ That is the preferred pattern for similar features elsewhere in the app.
 
 All icons must come from `/icons/`. This is the single source of truth for the app's visual icon language, equivalent in status to the brand colour palette and typeface.
 
+Using SVG files means icons can be updated in one place and the change propagates everywhere automatically — swap in a better arrow set by replacing two files, not hunting down characters scattered across components. Unicode symbols fail this test: they can't be restyled or replaced centrally, and they render inconsistently across platforms (confirmed broken on Android for several Unicode ranges).
+
 **Never use:**
 - Unicode symbols as icons (e.g. `×`, `✓`, `▲`, `▼`, `←`, `→`)
 - Emoji as icons (e.g. `🞀`, `🞂`)
 - HTML entities as icons (e.g. `&#8592;`, `&times;`)
 
-These render inconsistently across platforms — confirmed broken on Android for several Unicode ranges.
-
 **Always use:**
 ```html
-<img src="/icons/close.svg"   width="16" height="16" alt="">
-<img src="/icons/prev.svg"    width="16" height="16" alt="Previous">
-<img src="/icons/next.svg"    width="16" height="16" alt="Next">
-<img src="/icons/tick.svg"    width="16" height="16" alt="">
-<img src="/icons/warning.svg" width="16" height="16" alt="">
+<img src="/icons/close.svg"          width="16" height="16" alt="">
+<img src="/icons/arrows/left.svg"    width="16" height="16" alt="Previous">
+<img src="/icons/arrows/right.svg"   width="16" height="16" alt="Next">
+<img src="/icons/tick.svg"           width="16" height="16" alt="">
+<img src="/icons/status/warning.svg" width="16" height="16" alt="">
 ```
+
+**Folder structure:** Icons are organised into subfolders when a group of related icons belongs together:
+- `arrows/` — directional navigation (down, left, right, up)
+- `status/` — feedback states (error, info, warning)
+- Root — everything else
 
 If the icon you need doesn't exist in `/icons/`, add it there rather than substituting a Unicode character.
 

@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
 
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Modals</h1>
 
       <div class="row">
@@ -215,6 +215,7 @@ import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import AppButton from '../../components/AppButton.vue'
 import SessionEditModal from '../modals/SessionEditModal.vue'
 import SessionSetHoursModal from '../modals/SessionSetHoursModal.vue'

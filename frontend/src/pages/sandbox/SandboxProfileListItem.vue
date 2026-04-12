@@ -1,7 +1,7 @@
 <template>
   <DefaultLayout>
     <div class="sandbox">
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>ProfileListItem</h1>
       <p class="sandbox-warning">Static mocked data — no API calls.</p>
 
@@ -70,6 +70,7 @@
 import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 import ProfileListItem from '../../components/profiles/ProfileListItem.vue'
 import ProfileListResults from '../../components/profiles/ProfileListResults.vue'
 import { usePageTitle } from '../../composables/usePageTitle'

@@ -25,7 +25,7 @@ export const TAG_ICONS: TagIcon[] = [
   { icon: 'late.svg',       alt: 'Late',             tag: '#Late',       type: 'tag' },
   { icon: 'nophoto.svg',    alt: 'No Photo',         tag: '#NoPhoto',    type: 'tag', color: 'red' },
   { icon: 'eventbrite.svg', alt: 'Eventbrite',       tag: '#Eventbrite', type: 'tag' },
-  { icon: 'warning.svg',    alt: 'Duplicate Warning',tag: '#Duplicate',  type: 'tag', color: 'red' },
+  { icon: 'status/warning.svg', alt: 'Duplicate Warning', tag: '#Duplicate', type: 'tag', color: 'red' },
 ]
 
 /** Returns tag icons matched from an entry's notes string */

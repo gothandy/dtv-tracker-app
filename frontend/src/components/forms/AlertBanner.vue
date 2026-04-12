@@ -1,6 +1,6 @@
 <template>
   <div class="alert-banner" :class="`alert-banner--${type}`">
-    <span class="alert-banner-icon" aria-hidden="true">{{ icon }}</span>
+    <img :src="`/icons/status/${iconName}.svg`" class="alert-banner-icon" aria-hidden="true" width="16" height="16" alt="" />
     <span class="alert-banner-message">{{ message }}</span>
   </div>
 </template>
@@ -15,10 +15,10 @@ const props = withDefaults(defineProps<{
   type: 'warning',
 })
 
-const icon = computed(() => {
-  if (props.type === 'error') return '✕'
-  if (props.type === 'info')  return 'ℹ'
-  return '⚠'
+const iconName = computed(() => {
+  if (props.type === 'error') return 'error'
+  if (props.type === 'info')  return 'info'
+  return 'warning'
 })
 </script>
 
@@ -36,8 +36,20 @@ const icon = computed(() => {
 
 .alert-banner-icon {
   flex-shrink: 0;
-  font-size: 1rem;
-  line-height: 1.5;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.25rem; /* align with first line of text */
+}
+
+/* Colour each status icon to match its text colour */
+.alert-banner--warning .alert-banner-icon {
+  filter: brightness(0) saturate(100%) invert(28%) sepia(50%) saturate(800%) hue-rotate(20deg) brightness(90%);
+}
+.alert-banner--error .alert-banner-icon {
+  filter: brightness(0) saturate(100%) invert(22%) sepia(50%) saturate(700%) hue-rotate(320deg) brightness(90%);
+}
+.alert-banner--info .alert-banner-icon {
+  filter: brightness(0);
 }
 
 .alert-banner-message {

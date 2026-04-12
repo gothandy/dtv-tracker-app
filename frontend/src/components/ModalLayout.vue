@@ -4,7 +4,9 @@
 
       <div class="am-header">
         <span class="am-title">{{ title }}</span>
-        <button class="am-close" aria-label="Close" :disabled="working" @click="emit('close')">×</button>
+        <button class="am-close" aria-label="Close" :disabled="working" @click="emit('close')">
+          <img src="/icons/close.svg" width="16" height="16" alt="" class="svg-white" />
+        </button>
       </div>
 
       <div class="am-body">
@@ -137,11 +139,11 @@ function onAction() {
 .am-close {
   background: none;
   border: none;
-  color: var(--color-white);
-  font-size: 1.25rem;
   cursor: pointer;
-  line-height: 1;
   padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .am-close:hover:not(:disabled) { opacity: 0.8; }
 .am-close:disabled { opacity: 0.4; cursor: default; }

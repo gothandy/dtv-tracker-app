@@ -2,7 +2,7 @@
   <div class="tp-wrap" ref="wrapEl">
     <button class="tp-btn" :class="{ active: !!modelValue, open: panelOpen }" :disabled="disabled" @click="togglePanel">
       <span>{{ displayLabel }}</span>
-      <span class="tp-chevron">{{ panelOpen ? '▲' : '▼' }}</span>
+      <img :src="panelOpen ? '/icons/arrows/up.svg' : '/icons/arrows/down.svg'" width="12" height="12" alt="" class="tp-chevron svg-black" />
     </button>
     <div v-if="panelOpen" class="tp-panel">
       <div v-if="loading" class="tp-loading">Loading…</div>
@@ -141,7 +141,7 @@ onUnmounted(() => {
   cursor: default;
 }
 
-.tp-chevron { font-size: 0.7rem; color: var(--color-text); flex-shrink: 0; margin-left: 0.5rem; }
+.tp-chevron { flex-shrink: 0; margin-left: 0.5rem; }
 
 .tp-panel {
   position: absolute;

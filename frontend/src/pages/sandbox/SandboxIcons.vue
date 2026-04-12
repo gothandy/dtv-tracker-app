@@ -1,18 +1,21 @@
 <template>
   <DefaultLayout>
     <div class="sandbox">
-      <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
+      <SandboxBackLink />
       <h1>Icons</h1>
 
-      <div class="si-grid">
-        <div v-for="name in icons" :key="name" class="si-row">
-          <div class="si-swatch si-swatch--dark">
-            <img :src="`/icons/${name}.svg`" :alt="name" class="si-icon svg-white" />
+      <div v-for="group in groups" :key="group.label" class="si-section">
+        <h2 class="si-section-title">{{ group.label }}</h2>
+        <div class="si-grid">
+          <div v-for="name in group.icons" :key="group.prefix + name" class="si-row">
+            <div class="si-swatch si-swatch--dark">
+              <img :src="`/icons/${group.prefix}${name}.svg`" :alt="name" class="si-icon svg-white" />
+            </div>
+            <div class="si-swatch si-swatch--light">
+              <img :src="`/icons/${group.prefix}${name}.svg`" :alt="name" class="si-icon svg-black" />
+            </div>
+            <span class="si-name">{{ group.prefix }}{{ name }}</span>
           </div>
-          <div class="si-swatch si-swatch--light">
-            <img :src="`/icons/${name}.svg`" :alt="name" class="si-icon svg-black" />
-          </div>
-          <span class="si-name">{{ name }}</span>
         </div>
       </div>
     </div>
@@ -24,18 +27,48 @@ import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 usePageTitle('Sandbox')
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
+import SandboxBackLink from './SandboxBackLink.vue'
 
-const icons = [
-  'add', 'burger', 'card', 'checkboxes', 'child', 'clock', 'close', 'csr',
-  'delete', 'dig', 'diglead', 'download', 'edit', 'eventbrite',
-  'facebook', 'filter', 'firstaider', 'gear', 'google', 'group', 'late',
-  'locked', 'logout', 'member', 'microsoft', 'new', 'next', 'nophoto',
-  'prev', 'profile', 'refresh', 'register', 'regular', 'return',
-  'save', 'settings', 'share', 'sort', 'tick', 'trash', 'upload', 'uploadphoto', 'warning',
+const groups = [
+  {
+    label: 'Arrows',
+    prefix: 'arrows/',
+    icons: ['down', 'left', 'right', 'up'],
+  },
+  {
+    label: 'Status',
+    prefix: 'status/',
+    icons: ['error', 'info', 'warning'],
+  },
+  {
+    label: 'Icons',
+    prefix: '',
+    icons: [
+      'add', 'burger', 'card', 'checkboxes', 'child', 'clock', 'close', 'csr',
+      'delete', 'dig', 'diglead', 'download', 'edit', 'eventbrite',
+      'facebook', 'filter', 'firstaider', 'gear', 'google', 'group', 'late',
+      'locked', 'logout', 'member', 'microsoft', 'new', 'nophoto',
+      'profile', 'refresh', 'register', 'regular', 'return',
+      'save', 'settings', 'share', 'sort', 'tick', 'trash', 'upload', 'uploadphoto',
+    ],
+  },
 ]
 </script>
 
 <style scoped>
+.si-section {
+  margin-bottom: 1.5rem;
+}
+
+.si-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.5rem;
+}
+
 .si-grid {
   display: flex;
   flex-direction: column;
