@@ -8,22 +8,22 @@
       <div class="fm-previews">
         <div class="fm-preview">
           <p class="fm-label">info</p>
-          <FlashMessage notice="info" active="info" type="info">Welcome back, Andrew.</FlashMessage>
+          <FlashMessage :show="true" type="info" @dismiss="() => {}">Welcome back, Andrew.</FlashMessage>
         </div>
         <div class="fm-preview">
           <p class="fm-label">neutral</p>
-          <FlashMessage notice="neutral" active="neutral" type="neutral">Goodbye, andrew@dtv.org.uk.</FlashMessage>
+          <FlashMessage :show="true" type="neutral" @dismiss="() => {}">Goodbye, andrew@dtv.org.uk.</FlashMessage>
         </div>
         <div class="fm-preview">
           <p class="fm-label">error</p>
-          <FlashMessage notice="error" active="error" type="error">Server could not be reached. Please try again.</FlashMessage>
+          <FlashMessage :show="true" type="error" @dismiss="() => {}">Server could not be reached. Please try again.</FlashMessage>
         </div>
       </div>
 
       <h2>Live trigger</h2>
       <div class="fm-buttons">
         <button class="fm-btn" @click="router.push({ query: { notice: 'signed-in' } })">signed-in</button>
-        <button class="fm-btn" @click="router.push({ query: { notice: 'signed-out', name: 'Andrew' } })">signed-out</button>
+        <button class="fm-btn" @click="router.push({ query: { notice: 'signed-out', flashName: 'Andrew' } })">signed-out</button>
         <button class="fm-btn" @click="router.push({ query: { notice: 'server-error' } })">server-error</button>
       </div>
     </div>
