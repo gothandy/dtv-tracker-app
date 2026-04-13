@@ -39,7 +39,7 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
       .filter(p => parseEmails(p.Email).some(e => emails.includes(e)))
       .map(p => p.ID);
 
-    let profileStats: NonNullable<typeof req.session.user>['profileStats'];
+    let profileStats: NonNullable<import('express-session').SessionData['user']>['profileStats'];
     if (profile[PROFILE_STATS]) {
       try { profileStats = JSON.parse(profile[PROFILE_STATS]); } catch {}
     }
