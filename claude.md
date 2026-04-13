@@ -50,7 +50,7 @@ Feature-complete volunteer tracking application with:
 - Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
 - Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
 - Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: magic link email (volunteer self-service, shown when `MAIL_SENDER` is configured) and Microsoft (trusted users) options; on successful magic link send, login cards are replaced by a sent-confirmation section with 15-minute countdown and "Back to Login" link; reason codes (`not-approved`, `not-found`, `invalid-state`) shown as warning banners ([public/login.html](public/login.html))
+- Unified sign-in page: two self-service options (shown when `MAIL_SENDER` is configured) and Microsoft (trusted users); method selector (radio group) lets volunteers choose "Send login link" or "Use verification code"; magic link sent card shows confirmation code (usability only) and "close this window" copy; verification code sent card shows code entry input with countdown; reason codes (`not-approved`, `not-found`, `invalid-state`) shown as warning banners ([public/login.html](public/login.html))
 - Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
 - Consent collection page: served at `/profiles/:slug/consent.html`; accessible to check-in, admin, and self-service (own profile only); fetches profile by slug, shows privacy (required) and photo (optional) consent checkboxes plus privacy policy link; submits to `POST /api/profiles/:id/consent` which upserts both records dated today ([public/consent.html](public/consent.html))
 - Media library page (authenticated): lists all sessions with photos as an Embla horizontal carousel using session cover images; clicking a session navigates to its gallery ([public/media/index.html](public/media/index.html))
@@ -416,7 +416,8 @@ dtv-tracker-app/
 │   └── auth/
 │       ├── index.ts               # Auth router: mounts dtv + magic routers; /providers, /me, /logout (clears dtv-auth cookie)
 │       ├── dtv.ts                 # DTV Account (Entra ID / Microsoft) login + callback
-│       └── magic.ts               # Magic link email login: POST /send (15min JWT) + GET /callback (createAuthToken → dtv-auth cookie)
+│       ├── magic.ts               # Magic link email login: POST /send (15min JWT + confirmation code) + GET /callback (direct redirect with flash)
+│       └── verify.ts              # Verification code login: POST /send (4-digit code, in-memory 15min) + POST /check (verifies, sets cookie) + GET /callback (email button link)
 ├── middleware/
 │   ├── auth.ts                    # Cookie auth middleware: reads dtv-auth cookie → validateAuthToken → req.session.user (selfservice)
 │   ├── require-auth.ts            # Auth guard middleware
@@ -506,7 +507,7 @@ dtv-tracker-app/
 - [x] PWA web manifest and icons for Add to Home Screen (Chrome on Android)
 - [x] Volunteer media upload via authenticated entry ID (check-in+ clicks Upload on entry detail; navigates to `/upload.html?entryId=:id`; self-service volunteers can also upload from their profile or session page); accepts photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV); max 10 files, 10 MB each
 - [x] Upload completion screen: shows file count, review notice; link to session gallery
-- [x] Self-service volunteer login via magic link email — `Profile.Email` field controls access (set by admin/check-in); supports comma-separated list so one profile can match multiple email addresses (e.g. personal + old address); volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level
+- [x] Self-service volunteer login via two email methods (magic link + verification code) — `Profile.Email` field controls access (set by admin/check-in); supports comma-separated list so one profile can match multiple email addresses; volunteers can view their own profile only, register for future sessions, and upload photos to their own entries; other volunteers' data is blocked at both middleware and handler level; global rate limit (`EMAIL_RATE_LIMIT_PER_HOUR`, default 60) across both methods
 - [x] Volunteer sign-up for sessions (self-service role): own profile only, future sessions only, duplicate prevention
 - [x] Self-service privacy hardening: regulars list hidden on group pages (shows "You are a regular" message if applicable); profile slugs require numeric ID suffix to prevent path confusion; `GET /api/tags/hours-by-taxonomy?profile=` requires authentication; media `name`/`webUrl` (contain uploader PII) stripped from public API responses
 - [x] Magic link auth: 128-bit random token, SHA-256 hash stored in SharePoint Logins list; 72h TTL; multi-device (each token valid independently); `dtv-auth` cookie read by `middleware/auth.ts` on every request; `passport`, Google OAuth, and Facebook OAuth fully removed
@@ -559,7 +560,8 @@ npm run frontend:build:staging   # Staging build served at /v2/ on live site (ba
 - Always read [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for the complete field definitions before working with SharePoint data
 - The app calculates all derived values (hours, registrations, membership) from source data at query time.
 - The `Code` field on the Entries list is no longer used for uploads (the code-based upload system was replaced by authenticated entry-ID-based upload). The field is left in SharePoint but no longer read or written.
-- `MAIL_SENDER` env var enables magic link email login (optional — the Volunteer Sign In card is hidden when not set). Must be the UPN/address of a mailbox the Azure app has `Mail.Send` permission for. Emails sent via Graph API (`POST /v1.0/users/{sender}/sendMail`); reuses existing app credentials. Add `Mail.Send` application permission in the Azure app registration and grant admin consent.
+- `MAIL_SENDER` env var enables self-service email login (optional — the Volunteer Sign In card is hidden when not set). Must be the UPN/address of a mailbox the Azure app has `Mail.Send` permission for. Emails sent via Graph API (`POST /v1.0/users/{sender}/sendMail`); reuses existing app credentials. Add `Mail.Send` application permission in the Azure app registration and grant admin consent.
+- `EMAIL_RATE_LIMIT_PER_HOUR` env var: global cap on authentication emails sent across all self-service login methods (default `60`). Returns 429 on breach.
 - `AUTH_BASIC_TTL_HOURS` env var: lifetime of `dtv-auth` cookie tokens (default `72`). Tokens are stored as SHA-256 hashes in the SharePoint Logins list (GUID `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57`). Emergency revocation: clear all items from the Logins list.
 - `MEDIA_LIBRARY_DRIVE_ID` env var required for photo uploads (Graph API Drive ID of the SharePoint Media document library).
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.

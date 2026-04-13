@@ -4,12 +4,9 @@ import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../services/graph-mail';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken } from '../../services/auth-store';
+import { checkEmailRateLimit } from '../../services/email-rate-limiter';
 
 const router: Router = express.Router();
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 const AUTH_TTL_MS = parseInt(process.env.AUTH_BASIC_TTL_HOURS || '72', 10) * 60 * 60 * 1000;
 
@@ -36,9 +33,17 @@ router.post('/magic/send', async (req: Request, res: Response) => {
     return;
   }
 
-  const code = String(Math.floor(1000 + Math.random() * 9000));
+  if (!checkEmailRateLimit()) {
+    res.status(429).json({ error: "We've sent too many sign-in emails recently. Please wait a while and try again." });
+    return;
+  }
+
   const secret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
-  const token = jwt.sign({ email, code }, secret, { expiresIn: '15m' });
+  const token = jwt.sign({ email }, secret, { expiresIn: '15m' });
+
+  const tz = process.env.SHAREPOINT_TIMEZONE || 'Europe/London';
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz });
 
   const returnTo = req.body?.returnTo;
   const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/') && returnTo.length <= 200
@@ -52,21 +57,20 @@ router.post('/magic/send', async (req: Request, res: Response) => {
     : `${callbackBase}?token=${token}`;
 
   try {
-    const html = `<p>Your confirmation code is <strong style="font-size:1.2em">${code}</strong></p>
-                  <p>Click the log-in link below to confirm your email and continue to DTV Tracker.</p>
-                  <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Log in with ${code}</a></p>
-                  <p style="color:#888;font-size:0.85em">This link expires in 15 minutes.</p>
-                  <p style="color:#888;font-size:0.85em">If you did not request this, or do not recognise the code, you can safely ignore this email.</p>`;
-    const text = `Your confirmation code is ${code}\n\nClick this link to log in to DTV Tracker (expires in 15 minutes):\n\n${callbackUrl}\n\nIf you did not request this, or do not recognise the code, you can safely ignore this email.`;
-    await sendEmail(email, `DTV Tracker confirmation code ${code}`, html, text);
-    res.json({ ok: true, code });
+    const html = `<p>Your link expires at <strong style="font-size:1.5em;letter-spacing:0.05em">${expiresAt}</strong></p>
+                  <p>Click the log-in link below to continue to DTV Tracker.</p>
+                  <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Log in to DTV Tracker</a></p>
+                  <p style="color:#888;font-size:0.85em">If you did not request this, you can safely ignore this email.</p>`;
+    const text = `Your link expires at ${expiresAt}.\n\nClick this link to log in to DTV Tracker:\n\n${callbackUrl}\n\nIf you did not request this, you can safely ignore this email.`;
+    await sendEmail(email, `DTV Tracker sign-in link — expires ${expiresAt}`, html, text);
+    res.json({ ok: true, expiresAt });
   } catch (err: any) {
     console.error('[Magic] sendEmail error:', err.message);
     res.status(500).json({ error: 'Failed to send log-in email. Please try again.' });
   }
 });
 
-// GET /auth/magic/callback — verify JWT, resolve profile, create auth token, set cookie
+// GET /auth/magic/callback — verify JWT, resolve profile, create auth token, set cookie, redirect
 router.get('/magic/callback', async (req: Request, res: Response) => {
   const token = req.query.token as string | undefined;
   if (!token) {
@@ -81,12 +85,10 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
   delete req.session.returnTo;
 
   let email: string;
-  let code: string;
   try {
     const secret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
-    const payload = jwt.verify(token, secret) as { email: string; code?: string };
+    const payload = jwt.verify(token, secret) as { email: string };
     email = payload.email;
-    code = payload.code ?? '';
   } catch {
     res.redirect('/login.html?reason=invalid-state');
     return;
@@ -111,41 +113,10 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
   const destWithFlash = dest.includes('?')
     ? `${dest}&flashKey=signed-in&flashName=${encodeURIComponent(displayName)}`
     : `${dest}?flashKey=signed-in&flashName=${encodeURIComponent(displayName)}`;
+
   setAuthCookie(res, rawToken);
   res.setHeader('Cache-Control', 'no-store');
-  const safeDest = escapeHtml(encodeURI(destWithFlash));
-  res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Log-in confirmed — DTV Tracker</title>
-  <style>
-    body { font-family: sans-serif; display: flex; align-items: center; justify-content: center;
-           min-height: 100vh; margin: 0; background: #f5f5f5; }
-    .card { background: white; border-radius: 8px; padding: 2rem; text-align: center;
-            max-width: 360px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-    h1 { color: #2d6a27; font-size: 1.4rem; margin: 0 0 0.75rem; }
-    p { color: #555; font-size: 0.95rem; margin: 0 0 1rem; line-height: 1.5; }
-    .subtle { font-size: 0.85rem; color: #888; }
-    a { color: #2d6a27; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Log-in confirmed: ${escapeHtml(code)}</h1>
-    <p>You are now logged in. You can close this window and return to your original tab.</p>
-    <p class="subtle">Original tab unavailable? Open DTV Tracker <a href="${safeDest}">here</a>.</p>
-  </div>
-  <script>
-    if (typeof BroadcastChannel !== 'undefined') {
-      const ch = new BroadcastChannel('dtv-auth');
-      ch.postMessage({ type: 'auth-success', source: 'magic-link', ts: Date.now(), flashName: ${JSON.stringify(displayName)} });
-      ch.close();
-    }
-  <\/script>
-</body>
-</html>`);
+  res.redirect(destWithFlash);
 });
 
 export = router;
