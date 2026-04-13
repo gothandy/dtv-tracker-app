@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { validateAuthToken } from '../services/auth-store';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { profileSlug, parseEmails } from '../services/data-layer';
+import { PROFILE_STATS } from '../services/field-names';
 
 // Populates req.session.user from the dtv-auth cookie for self-service volunteers.
 // DTV account (MSAL) users already have req.session.user set by their own auth flow — skip them.
@@ -38,6 +39,11 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
       .filter(p => parseEmails(p.Email).some(e => emails.includes(e)))
       .map(p => p.ID);
 
+    let profileStats: NonNullable<import('express-session').SessionData['user']>['profileStats'];
+    if (profile[PROFILE_STATS]) {
+      try { profileStats = JSON.parse(profile[PROFILE_STATS]); } catch {}
+    }
+
     req.session.user = {
       id: `auth:${record.profileId}`,
       displayName: profile.Title || primaryEmail,
@@ -47,6 +53,7 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
       profileId: profile.ID,
       profileIds,
       trustedRole,
+      profileStats,
       freshAuthAt: record.createdAt,
     };
   } catch (err: any) {
