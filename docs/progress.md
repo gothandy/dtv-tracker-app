@@ -1,5 +1,32 @@
 # Development Progress
 
+## Session: 2026-04-13 (Login revised — remove BroadcastChannel, add verification code)
+
+### Completed Tasks
+
+#### Login revised approach ✓ (closes #129)
+
+Removed BroadcastChannel entirely and introduced two selectable login methods for self-service volunteers.
+
+**Backend:**
+- `services/email-rate-limiter.ts` — new shared in-memory rate limiter; `EMAIL_RATE_LIMIT_PER_HOUR` env var (default 60); 429 on breach with user-facing message
+- `routes/auth/magic.ts` — added rate limiting; callback now does a direct `res.redirect(destWithFlash)` instead of serving an intermediate HTML page; `escapeHtml` helper removed (no longer needed); BroadcastChannel script removed
+- `routes/auth/verify.ts` — new router: `POST /auth/verify/send` (4-digit code, in-memory store, 15min TTL, email button links to login page with code pre-filled); `POST /auth/verify/check` (verifies code, max 5 attempts, sets dtv-auth cookie, returns flashName)
+- `routes/auth/index.ts` — mounts verifyRouter; providers endpoint now returns `{ magic, verify }` (both true when `MAIL_SENDER` is set)
+
+**Frontend (Vue v2):**
+- `LoginPage.vue` — BroadcastChannel logic removed completely; method selector (radio group) shown when both `magic` and `verify` are available; `sendLoginEmail()` branches to correct endpoint by method; magic link sent card shows confirmation code + static "close this window" copy (no countdown display); verification code sent card shows code entry input + countdown + verify button + error display; `checkCode()` POSTs to `/auth/verify/check` and navigates on success
+
+**Copy:**
+- 429: "We've sent too many sign-in emails recently. Please wait a while and try again."
+- Code expired: "That code has expired or could not be found. Request a new code and try again."
+- Wrong code: "That code does not match. Check the 4 digits and try again."
+- Too many attempts: "Too many incorrect attempts. Request a new code to continue."
+
+**v1 (`public/login.html`) not changed — frozen.**
+
+---
+
 ## Session: 2026-04-09 (ProfileEntryList, FyFilter Rolling, session action bar)
 
 ### Completed Tasks
