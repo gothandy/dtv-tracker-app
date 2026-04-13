@@ -3,7 +3,7 @@ import express, { Request, Response, Router } from 'express';
 import { sendEmail } from '../../services/graph-mail';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken } from '../../services/auth-store';
-import { checkEmailRateLimit } from '../../services/email-rate-limiter';
+import { isEmailRateLimited, recordEmailSent } from '../../services/email-rate-limiter';
 
 const router: Router = express.Router();
 
@@ -79,12 +79,16 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     return;
   }
 
-  if (!checkEmailRateLimit()) {
+  if (isEmailRateLimited()) {
     res.status(429).json({ error: "We've sent too many sign-in emails recently. Please wait a while and try again." });
     return;
   }
 
   const code = String(Math.floor(1000 + Math.random() * 9000));
+  // One code per email — delete any previous entry (expired or not) before storing the new one.
+  // Expired entries for abandoned requests stay in the map until the same email sends again or
+  // /check is called; at volunteer-app scale this is acceptable without a sweep timer.
+  codeStore.delete(email);
   codeStore.set(email, { code, expires: Date.now() + CODE_TTL_MS, attempts: 0 });
 
   const returnTo = req.body?.returnTo;
@@ -109,6 +113,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
                   <p style="color:#888;font-size:0.85em">If you did not request this, you can safely ignore this email.</p>`;
     const text = `Your verification code is ${code}\n\nThis code expires in 15 minutes. Return to DTV Tracker and enter your code, or use this link:\n\n${callbackUrl}\n\nIf you did not request this, you can safely ignore this email.`;
     await sendEmail(email, `DTV Tracker verification code ${code}`, html, text);
+    recordEmailSent();
     res.json({ ok: true });
   } catch (err: any) {
     console.error('[Verify] sendEmail error:', err.message);
