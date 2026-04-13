@@ -1,9 +1,26 @@
 <template>
   <DefaultLayout>
     <h1 class="sr-only">Home</h1>
+
+    <!-- Personal prompt — shown to all logged-in users when a message applies -->
+    <PersonalContainer
+      v-if="profile.isAuthenticated"
+      :is-admin="profile.isAdmin"
+      :is-check-in="profile.isCheckIn"
+      :is-read-only="profile.isReadOnly"
+      :is-self-service="profile.isSelfService"
+      :is-new="isNewVolunteer"
+      :is-repeat="isRepeatVolunteer"
+      :is-regular="isRegularVolunteer"
+      :has-booking="hasBooking"
+      :has-attended="hasAttended"
+      :next-session="nextSession"
+      :previous-session="previousSession"
+    />
+
     <LayoutColumns class="pt-2 mb-8">
       <template #header>
-        <SectionHeader>What's going on?</SectionHeader>
+        <SectionHeader>{{ calendarHeading }}</SectionHeader>
       </template>
       <template #left>
         <div class="cta cta-right">
@@ -13,7 +30,7 @@
         </div>
       </template>
 
-      
+
 
       <!-- Calendar -->
       <template #middle>
@@ -41,7 +58,7 @@
     </LayoutColumns>
 
     <section>
-      <SectionHeader>What's been happening?</SectionHeader>
+      <SectionHeader>{{ recentHeading }}</SectionHeader>
       <!-- Cover photo gallery — all sessions with photos, newest first -->
       <MediaCarousel
         v-if="coverItems.length"
@@ -59,20 +76,56 @@
       </MediaCarousel>
     </section>
 
-    <!-- Bar chart + Word cloud -->
-    <LayoutColumns ratio="2-1" class="mb-16">
+    <!-- Bar chart + Word cloud (+ personal contribution for logged-in users) -->
+    <LayoutColumns :ratio="profile.isAuthenticated ? '1-1-1' : '2-1'" class="mb-16">
       <template #header>
         <SectionHeader>What we can do together?</SectionHeader>
       </template>
       <template #left>
-        <CardTitle>This many hours</CardTitle>
-        <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" @click-selected="onSelectedBarClick" />
+        <template v-if="profile.isAuthenticated">
+          <PersonalContribution
+            :sessions="sessionsRollingYear"
+            :hours="hoursRollingYear"
+            :earned-card="earnedCard"
+            :became-member="becameMember"
+          />
+        </template>
+        <template v-else>
+          <CardTitle>This many hours</CardTitle>
+          <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" @click-selected="onSelectedBarClick" />
+        </template>
+      </template>
+      <template #middle>
+        <template v-if="profile.isAuthenticated">
+          <CardTitle>This many hours</CardTitle>
+          <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" @click-selected="onSelectedBarClick" />
+        </template>
       </template>
       <template #right>
         <CardTitle>All these trails</CardTitle>
         <TermCloud :tags="tagHours" @click="onTagClick" />
       </template>
     </LayoutColumns>
+
+    <DebugData label="homepage personal context" :item="{
+      role: viewer.user?.role,
+      profileSlug: viewer.user?.profileSlug,
+      isAuthenticated: profile.isAuthenticated,
+      profileStats: viewer.user?.profileStats,
+      oneYearAgo: oneYearAgo,
+      sessionsTotal: store.sessions.length,
+      sessionsAttended: store.sessions.filter(s => s.isAttended).length,
+      sessionsRegistered: store.sessions.filter(s => s.isRegistered).length,
+      sessionsRollingYear,
+      hoursRollingYear,
+      hasBooking,
+      hasAttended,
+      isNewVolunteer,
+      isRepeatVolunteer,
+      isRegularVolunteer,
+      nextSession,
+      previousSession,
+    }" />
 
   </DefaultLayout>
 </template>
@@ -93,17 +146,22 @@ import MediaCard from '../components/MediaCard.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TermCloud from '../components/TermCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
+import PersonalContainer from '../components/PersonalContainer.vue'
+import PersonalContribution from '../components/PersonalContribution.vue'
+import DebugData from '../components/DebugData.vue'
 import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
 import { sessionPath } from '../router'
 import type { Session } from '../types/session'
 import type { TagHoursItem } from '../../../types/api-responses'
 import type { MediaItem } from '../types/media'
+import type { SessionSummary } from '../components/PersonalPrompt.vue'
 
 const route = useRoute()
 const router = useRouter()
 const store = useSessionListStore()
 const profile = useViewer()
+const viewer = profile
 
 const initialDate = typeof route.query.date === 'string' ? route.query.date : undefined
 const selectedDate = ref<string | undefined>(initialDate)
@@ -111,6 +169,83 @@ const selectedSessions = ref<Session[]>([])
 const selectedFy = ref('')
 const tagHours = ref<TagHoursItem[]>([])
 const selectedGalleryIndex = ref<number | null>(null)
+
+// ── Personal context ─────────────────────────────────────────────────────────
+
+const oneYearAgo = computed(() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10) // YYYY-MM-DD
+})
+
+const nextPersonalSession = computed<SessionSummary | null>(() =>
+  store.sessions
+    .filter(s => s.isBookable && s.isRegistered)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(s => ({ groupKey: s.groupKey!, groupName: s.groupName, date: s.date }))[0] ?? null
+)
+
+const prevPersonalSession = computed<SessionSummary | null>(() =>
+  store.sessions
+    .filter(s => !s.isBookable && s.isAttended)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(s => ({ groupKey: s.groupKey!, groupName: s.groupName, date: s.date }))[0] ?? null
+)
+
+const nextGlobalSession = computed<SessionSummary | null>(() =>
+  store.sessions
+    .filter(s => s.isBookable)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(s => ({ groupKey: s.groupKey!, groupName: s.groupName, date: s.date }))[0] ?? null
+)
+
+const prevGlobalSession = computed<SessionSummary | null>(() =>
+  store.sessions
+    .filter(s => !s.isBookable)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(s => ({ groupKey: s.groupKey!, groupName: s.groupName, date: s.date }))[0] ?? null
+)
+
+// For admin: use global sessions; for all others: personal
+const nextSession     = computed(() => profile.isAdmin ? nextGlobalSession.value  : nextPersonalSession.value)
+const previousSession = computed(() => profile.isAdmin ? prevGlobalSession.value  : prevPersonalSession.value)
+
+const hasBooking  = computed(() => nextPersonalSession.value  !== null)
+const hasAttended = computed(() => prevPersonalSession.value  !== null)
+
+// Volunteer type — derived from session history (applies to self-service users)
+const pastAttendedCount  = computed(() => store.sessions.filter(s => !s.isBookable && s.isAttended).length)
+const isNewVolunteer     = computed(() => pastAttendedCount.value <= 1)
+const isRegularVolunteer = computed(() => (viewer.user?.profileStats?.regularGroupIds?.length ?? 0) > 0)
+const isRepeatVolunteer  = computed(() => !isNewVolunteer.value && !isRegularVolunteer.value)
+
+// Contribution stats — rolling 12 months
+// Sessions: exact count from store (isAttended && date within last year)
+const sessionsRollingYear = computed(() =>
+  store.sessions.filter(s => !s.isBookable && s.isAttended && s.date >= oneYearAgo.value).length
+)
+// Hours: profileStats is FY-bucketed; prorate the two FYs that overlap the rolling window
+const hoursRollingYear = computed(() => {
+  const hoursByFY = viewer.user?.profileStats?.hoursByFY ?? {}
+  const now = new Date()
+  const currentFYYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+  const fyStart = new Date(currentFYYear, 3, 1) // April 1 of current FY
+  const daysInCurrentFY = Math.round((now.getTime() - fyStart.getTime()) / 86400000)
+  const daysInLastFY = 365 - daysInCurrentFY
+  const thisFYHours = hoursByFY[`FY${currentFYYear}`] ?? 0
+  const lastFYHours = hoursByFY[`FY${currentFYYear - 1}`] ?? 0
+  const total = (daysInCurrentFY / 365) * thisFYHours + (daysInLastFY / 365) * lastFYHours
+  return Math.round(total * 10) / 10
+})
+const earnedCard   = computed(() => viewer.user?.profileStats?.cardStatus === 'Accepted')
+const becameMember = computed(() => viewer.user?.profileStats?.isMember === true)
+
+// ── Section headings ──────────────────────────────────────────────────────────
+
+const calendarHeading = computed(() => hasBooking.value ? 'Your next session' : 'Upcoming sessions')
+const recentHeading   = computed(() => hasAttended.value ? 'Your last session' : "What's been happening?")
+
+// ── Existing page logic ───────────────────────────────────────────────────────
 
 function onDateSelect(sessions: Session[]) {
   selectedSessions.value = sessions

@@ -74,6 +74,14 @@
 
 
       <section>
+        <h2>Homepage</h2>
+        <nav>
+          <RouterLink to="/sandbox/personal-prompt">PersonalPrompt</RouterLink>
+          <RouterLink to="/sandbox/personal-contribution">PersonalContribution</RouterLink>
+        </nav>
+      </section>
+
+      <section>
         <h2>Not included — test on main site</h2>
         <ul class="prose">
           <li>SessionDetailGallery — requires live SharePoint media; test via session detail page</li>
