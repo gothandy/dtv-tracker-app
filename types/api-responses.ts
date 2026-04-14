@@ -116,6 +116,7 @@ export interface ProfileDetailResponse {
   hoursThisFY: number;
   hoursAll: number;
   groupHours: ProfileGroupHours[];
+  regularCount: number;
   entries: ProfileEntryResponse[];
   records?: ConsentRecordResponse[];
   duplicates?: ProfileDuplicateResponse[];

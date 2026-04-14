@@ -787,6 +787,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       hoursAll: Math.round(calculatedAll * 10) / 10,
       groupHours,
+      regularCount: regularsByCrewId.size,
       entries: entryResponses,
       records: records.length > 0 ? records : undefined,
       // duplicates and linkedProfiles expose other volunteers' names/emails — hidden from self-service
@@ -858,7 +859,7 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
 router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
-    const { targetProfileId, deleteAfter } = req.body;
+    const { targetProfileId, deleteAfter, addEmail } = req.body;
 
     if (!targetProfileId || typeof targetProfileId !== 'number') {
       res.status(400).json({ success: false, error: 'targetProfileId is required and must be a number' });
@@ -956,6 +957,28 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       }
     }
 
+    // Add source primary email to target if requested — non-fatal: transfer already committed above
+    let emailAdded: string | null = null;
+    let emailAddError: string | null = null;
+    if (addEmail) {
+      try {
+        const sourceEmails = (sourceProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+        const sourceEmail = sourceEmails[0];
+        if (sourceEmail) {
+          const targetEmails = (targetProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+          if (!targetEmails.includes(sourceEmail)) {
+            await profilesRepository.updateFields(targetProfile.ID, {
+              Email: [...targetEmails, sourceEmail].join(',')
+            });
+            emailAdded = sourceEmail;
+          }
+        }
+      } catch (err: any) {
+        console.error('[Transfer] addEmail step failed (transfer already committed):', err);
+        emailAddError = 'Email could not be added — please add it manually on the target profile';
+      }
+    }
+
     sharePointClient.clearCache();
 
     // Delete source profile if requested
@@ -975,11 +998,11 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
     }
 
     const targetSlug = profileSlug(targetProfile.Title, targetProfile.ID);
-    console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${deleted ? ', deleted source' : ''}`);
+    console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${emailAdded ? `, email ${emailAdded} added` : ''}${deleted ? ', deleted source' : ''}`);
 
     res.json({
       success: true,
-      data: { entriesTransferred, regularsTransferred, recordsTransferred, deleted, targetSlug }
+      data: { entriesTransferred, regularsTransferred, recordsTransferred, emailAdded, emailAddError, deleted, targetSlug }
     });
   } catch (error: any) {
     console.error('Error transferring profile:', error);
@@ -995,9 +1018,11 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
 
-    const [rawProfiles, rawEntries] = await Promise.all([
+    const [rawProfiles, rawEntries, rawRegulars, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
-      entriesRepository.getAll()
+      entriesRepository.getAll(),
+      regularsRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -1016,6 +1041,20 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
     const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === spProfile.ID);
     if (profileEntries.length > 0) {
       res.status(400).json({ success: false, error: 'Cannot delete profile with existing entries' });
+      return;
+    }
+
+    const profileRegulars = rawRegulars.filter(r => safeParseLookupId(r[PROFILE_LOOKUP]) === spProfile.ID);
+    if (profileRegulars.length > 0) {
+      res.status(400).json({ success: false, error: 'Cannot delete profile with existing regulars' });
+      return;
+    }
+
+    const profileRecords = rawRecords.filter(r =>
+      safeParseLookupId(r.ProfileLookupId as unknown as string) === spProfile.ID
+    );
+    if (profileRecords.length > 0) {
+      res.status(400).json({ success: false, error: 'Cannot delete profile with existing records' });
       return;
     }
 

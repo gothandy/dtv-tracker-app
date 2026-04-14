@@ -19,7 +19,8 @@
           class="pp-result"
           @click="select(p)"
         >
-          {{ p.name }}
+          <span class="pp-result-name">{{ p.name }}</span>
+          <span v-if="p.email" class="pp-result-email">{{ p.email }}</span>
         </li>
       </ul>
       <div v-else-if="!addNew && !isSelected && query.length >= 2" class="pp-no-match" :style="dropdownStyle">
@@ -126,11 +127,32 @@ defineExpose({ query, reset })
 
 .pp-result {
   padding: 0.45rem 0.6rem;
-  font-size: 0.95rem;
-  color: var(--color-text);
   cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  overflow: hidden;
 }
 .pp-result:hover { background: var(--color-dtv-sand); }
+
+.pp-result-name {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 50%;
+}
+
+.pp-result-email {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 
 .pp-no-match {
   padding: 0.45rem 0.6rem;

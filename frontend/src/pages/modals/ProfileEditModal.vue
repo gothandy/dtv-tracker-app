@@ -3,10 +3,13 @@
     title="Edit Profile"
     action="Save"
     action-icon="save"
+    :show-delete="showDelete"
+    :delete-disabled="deleteDisabled"
     :working="working"
     :error="error"
     @close="emit('close')"
     @action="save"
+    @delete="emit('delete')"
   >
     <FormLayout :disabled="working">
       <FormRow title="Name" :full-width="true">
@@ -46,6 +49,8 @@ export interface EditProfilePayload {
 const props = defineProps<{
   profile: ProfileDetailResponse
   showUser: boolean
+  showDelete: boolean
+  deleteDisabled?: boolean
   working: boolean
   error?: string
 }>()
@@ -53,6 +58,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   save: [payload: EditProfilePayload]
+  delete: []
 }>()
 
 const form = reactive({

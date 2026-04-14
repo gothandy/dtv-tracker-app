@@ -47,6 +47,10 @@
           <AppButton label="Open" @click="open = 'profile-edit'" />
         </div>
         <div>
+          <h2>Profile Transfer</h2>
+          <AppButton label="Open" @click="open = 'profile-transfer'" />
+        </div>
+        <div>
           <h2>Record Add</h2>
           <AppButton label="Open" @click="open = 'record-add'" />
         </div>
@@ -131,10 +135,22 @@
         v-if="open === 'profile-edit'"
         :profile="mockProfile"
         :show-user="true"
+        :show-delete="true"
         :working="working"
         :error="error"
         @close="closeModal('close')"
         @save="onProfileEditSave"
+        @delete="closeModal('profile-edit: delete')"
+      />
+
+      <ProfileTransferModal
+        v-if="open === 'profile-transfer'"
+        :profile="mockProfile"
+        :profiles="mockTransferProfiles"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @save="onProfileTransferSave"
       />
 
       <RecordAddModal
@@ -226,6 +242,7 @@ import MediaEditModal from '../modals/MediaEditModal.vue'
 import DeleteModal from '../modals/DeleteModal.vue'
 import GroupEditModal from '../modals/GroupEditModal.vue'
 import ProfileEditModal from '../modals/ProfileEditModal.vue'
+import ProfileTransferModal from '../modals/ProfileTransferModal.vue'
 import RecordAddModal from '../modals/RecordAddModal.vue'
 import RecordEditModal from '../modals/RecordEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
@@ -310,6 +327,10 @@ function onRecordDelete() {
 
 function onProfileEditSave(payload: unknown) {
   simulate(`profile-edit: save → ${JSON.stringify(payload)}`)
+}
+
+function onProfileTransferSave(payload: unknown) {
+  simulate(`profile-transfer: save → ${JSON.stringify(payload)}`)
 }
 
 function onGroupEditSave(payload: unknown) {
@@ -400,6 +421,7 @@ const mockProfile = {
   hoursThisFY: 12,
   hoursAll: 120,
   groupHours: [],
+  regularCount: 0,
   entries: [],
   records: [],
 }
@@ -415,6 +437,12 @@ const mockGroup = {
   stats: { sessions: 12, hours: 240, newVolunteers: 5, children: 2, totalVolunteers: 30 },
   sessions: [],
 }
+
+const mockTransferProfiles: PickerProfile[] = [
+  { id: 2, name: 'Bob Carter', email: 'bob@example.com' },
+  { id: 3, name: 'Carol Davies', email: 'carol@example.com' },
+  { id: 4, name: 'David Evans', email: 'david@example.com' },
+]
 
 const mockRecordTypes = [
   'Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card',

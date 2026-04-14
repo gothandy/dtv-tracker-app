@@ -59,7 +59,7 @@ const groups = [
       'delete', 'download', 'edit',
       'filter', 'gear', 'locked', 'logout',
       'profile', 'refresh', 'register', 'return',
-      'save', 'settings', 'share', 'sort', 'tick', 'trash', 'upload', 'uploadphoto',
+      'save', 'settings', 'share', 'sort', 'tick', 'transfer', 'trash', 'upload', 'uploadphoto',
     ],
   },
 ]
