@@ -24,6 +24,7 @@ import type { SessionResponse } from '../../../types/api-responses'
 const props = defineProps<{
   sessions: SessionResponse[]
   modelValue: string
+  minFy?: string
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: string]; clickSelected: [value: string] }>()
@@ -39,7 +40,7 @@ const fyData = computed(() => {
     if (!s.financialYear?.startsWith('FY')) continue
     map[s.financialYear] = (map[s.financialYear] || 0) + (s.hours || 0)
   }
-  const keys = Object.keys(map).sort()
+  const keys = Object.keys(map).sort().filter(k => !props.minFy || k >= props.minFy)
   const max = Math.max(...Object.values(map), 1)
   return keys.map(key => {
     const startYear = parseInt(key.replace('FY', ''))

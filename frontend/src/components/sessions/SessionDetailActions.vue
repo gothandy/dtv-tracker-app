@@ -62,9 +62,9 @@ const canUpload = computed(() =>
 function onShare() {
   const url = window.location.href
   if (navigator.share) {
-    navigator.share({ url })
-  } else {
-    navigator.clipboard.writeText(url)
+    navigator.share({ url }).catch(() => {})
+  } else if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).catch(() => {})
   }
 }
 
