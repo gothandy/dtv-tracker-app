@@ -10,7 +10,7 @@
 
   <DefaultLayout v-else>
     <h1 v-if="store.group" class="sr-only">{{ store.group.displayName || store.group.key }}</h1>
-    <div v-if="store.loading" class="gd-loading">Loading…</div>
+    <LoadingSpinner v-if="store.loading" />
     <div v-else-if="store.error" class="gd-error">{{ store.error }}</div>
     <template v-else-if="store.group">
       <PageHeader>{{ store.group.displayName || store.group.key }}</PageHeader>
@@ -79,6 +79,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useGroupDetailStore } from '../stores/groupDetail'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import { useViewer } from '../composables/useViewer'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import TaskLayout from '../layouts/TaskLayout.vue'
@@ -315,7 +316,6 @@ watch(() => route.params.key, key => {
 </script>
 
 <style scoped>
-.gd-loading { padding: 2rem; color: var(--color-text-muted); }
 .gd-error { padding: 2rem; color: var(--color-dtv-red); }
 
 

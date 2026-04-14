@@ -17,6 +17,7 @@ import {
   groupRegularsByCrewId,
   calculateCurrentFY,
   calculateFinancialYear,
+  calculateRollingYear,
   findGroupByKey,
   safeParseLookupId,
   parseHours,
@@ -129,12 +130,16 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     const key = String(req.params.key).toLowerCase();
     const fy = calculateCurrentFY();
 
+    const role = req.session.user?.role;
+    const isTrusted = !!req.session.user && role !== 'selfservice';
+
     const [rawGroups, rawRegulars, rawSessions, rawEntries, rawProfiles] = await Promise.all([
       groupsRepository.getAll(),
       regularsRepository.getAll(),
       sessionsRepository.getAll(),
-      entriesRepository.getAll(),
-      profilesRepository.getAll()
+      // Only needed to compute rolling-year regulars shown to trusted users
+      isTrusted ? entriesRepository.getAll() : Promise.resolve([]),
+      isTrusted ? profilesRepository.getAll() : Promise.resolve([]),
     ]);
 
     const spGroup = findGroupByKey(rawGroups, key);
@@ -200,11 +205,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       .sort((a, b) => b.date.localeCompare(a.date));
 
     // Rolling-year regulars: profiles with ≥6h in the past 12 months for this group
-    const rollingEnd = new Date();
-    const rollingStart = new Date(rollingEnd);
-    rollingStart.setFullYear(rollingEnd.getFullYear() - 1);
-    const rollingStartStr = rollingStart.toISOString().slice(0, 10);
-    const rollingEndStr = rollingEnd.toISOString().slice(0, 10);
+    const { start: rollingStartStr, end: rollingEndStr } = calculateRollingYear();
 
     const rollingSessionIds = new Set(
       groupSessions
@@ -253,8 +254,6 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     }
     rollingRegulars.sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
 
-    const role = req.session.user?.role;
-    const isTrusted = !!req.session.user && role !== 'selfservice';
     const selfServiceProfileIds = role === 'selfservice'
       ? (req.session.user?.profileIds || [])
       : [];

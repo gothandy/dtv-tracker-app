@@ -16,6 +16,7 @@ import {
   convertProfile,
   calculateCurrentFY,
   calculateFinancialYear,
+  calculateRollingYear,
   buildBadgeLookups,
   safeParseLookupId,
   parseHours,
@@ -46,11 +47,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
     let rollingStart: string | undefined;
     let rollingEnd: string | undefined;
     if (isRolling) {
-      const today = new Date();
-      rollingEnd = today.toISOString().substring(0, 10);
-      const oneYearAgo = new Date(today);
-      oneYearAgo.setFullYear(today.getFullYear() - 1);
-      rollingStart = oneYearAgo.toISOString().substring(0, 10);
+      ({ start: rollingStart, end: rollingEnd } = calculateRollingYear());
       thisFYStart = -1;
       lastFYStart = -2;
     } else {
@@ -651,9 +648,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     let calculatedLastFY = 0;
     let calculatedAll = 0;
 
-    const rollingCutoff = new Date();
-    rollingCutoff.setFullYear(rollingCutoff.getFullYear() - 1);
-    const rollingCutoffStr = rollingCutoff.toISOString().slice(0, 10);
+    const { start: rollingCutoffStr, end: todayStr } = calculateRollingYear();
 
     const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number; hoursAll: number; hoursRolling: number }>();
 
@@ -675,7 +670,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
       const groupId = safeParseLookupId(session[GROUP_LOOKUP]);
       if (groupId !== undefined) {
-        const isRolling = sessionDate >= rollingCutoffStr;
+        const isRolling = sessionDate >= rollingCutoffStr && sessionDate <= todayStr;
         const existing = groupHoursMap.get(groupId);
         if (existing) {
           existing.hoursAll += hours;

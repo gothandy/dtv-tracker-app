@@ -10,7 +10,7 @@
 
   <DefaultLayout v-else :padded="false">
     <h1 v-if="store.session" class="sr-only">{{ store.session.groupName }}, {{ formatDate(store.session.date) }}</h1>
-    <div v-if="store.loading && !store.session" class="text-gray-400 p-6">Loading…</div>
+    <LoadingSpinner v-if="store.loading && !store.session" />
     <div v-else-if="store.error" class="text-red-500 p-6">{{ store.error }}</div>
     <template v-else-if="store.session">
       <PageHeader>{{ store.session.groupName }}</PageHeader>
@@ -209,6 +209,7 @@ import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { groupPath, sessionPath } from '../router/index'
 import PageHeader from '../components/PageHeader.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
 import MediaCard from '../components/MediaCard.vue'
 import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'

@@ -23,7 +23,7 @@
   </TaskLayout>
 
   <DefaultLayout v-else>
-    <div v-if="store.loading" class="pd-loading">Loading…</div>
+    <LoadingSpinner v-if="store.loading" />
     <div v-else-if="store.error" class="pd-error">{{ store.error }}</div>
     <template v-else-if="store.profile">
       <h1 class="sr-only">{{ store.profile.name ?? 'Profile' }}</h1>
@@ -102,6 +102,7 @@ import FormButton from '../components/forms/FormButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
@@ -350,9 +351,7 @@ async function onEditEntry(id: number, data: EditData | null) {
 </script>
 
 <style scoped>
-.pd-loading,
-.pd-error { padding: 1.5rem; color: var(--color-text-label); }
-.pd-error { color: var(--color-dtv-dirt); }
+.pd-error { padding: 1.5rem; color: var(--color-dtv-dirt); }
 
 .pd-header {
   background: var(--color-white);

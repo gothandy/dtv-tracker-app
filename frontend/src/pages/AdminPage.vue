@@ -3,7 +3,7 @@
     <PageHeader>Admin</PageHeader>
     <div class="pt-3 pb-8">
 
-      <div v-if="!profile.ready" class="ap-status">Loading…</div>
+      <LoadingSpinner v-if="!profile.ready" />
 
       <template v-else-if="profile.isAdmin">
 
@@ -106,6 +106,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import { useViewer } from '../composables/useViewer'
@@ -319,12 +320,6 @@ onMounted(loadSiteConfig)
 </script>
 
 <style scoped>
-.ap-status {
-  padding: 2rem;
-  text-align: center;
-  color: var(--color-text-muted);
-}
-
 .ap-section {
   background: var(--color-white);
   padding: 1.5rem;

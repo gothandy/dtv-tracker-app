@@ -378,6 +378,17 @@ export function calculateCurrentFY(): { startYear: number; endYear: number; key:
   return { startYear, endYear: startYear + 1, key: `FY${startYear}` };
 }
 
+/** Returns the inclusive YYYY-MM-DD date range for the rolling 12-month window ending today. */
+export function calculateRollingYear(): { start: string; end: string } {
+  const end = new Date();
+  const start = new Date(end);
+  start.setFullYear(end.getFullYear() - 1);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
 /**
  * Aggregates FY dashboard stats from sessions and entries
  * Filters entries to only those belonging to the given FY sessions,
