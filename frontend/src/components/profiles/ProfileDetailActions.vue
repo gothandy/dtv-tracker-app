@@ -69,7 +69,7 @@ const emit = defineEmits<{
 const canDelete = computed(() =>
   props.profile.entries.length === 0 &&
   !props.profile.records?.length &&
-  !props.profile.groupHours.some(g => g.isRegular)
+  props.profile.regularCount === 0
 )
 
 const showEdit = ref(false)
@@ -117,6 +117,9 @@ defineExpose({
   },
   onDeleteSuccess() {
     showDelete.value = false
+    workingDelete.value = false
+  },
+  onDeleteError() {
     workingDelete.value = false
   },
   onTransferSuccess() {

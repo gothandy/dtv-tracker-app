@@ -421,6 +421,7 @@ const mockProfile = {
   hoursThisFY: 12,
   hoursAll: 120,
   groupHours: [],
+  regularCount: 0,
   entries: [],
   records: [],
 }

@@ -787,6 +787,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       hoursAll: Math.round(calculatedAll * 10) / 10,
       groupHours,
+      regularCount: regularsByCrewId.size,
       entries: entryResponses,
       records: records.length > 0 ? records : undefined,
       // duplicates and linkedProfiles expose other volunteers' names/emails — hidden from self-service
