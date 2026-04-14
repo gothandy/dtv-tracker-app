@@ -15,14 +15,10 @@
     <template v-else-if="store.group">
       <PageHeader>{{ store.group.displayName || store.group.key }}</PageHeader>
 
-      <!-- Left: header / bar chart / tag cloud  |  Right: actions / regulars / calendar -->
+      <!-- Header: description left, actions right -->
       <LayoutColumns ratio="2-1" align="start">
         <template #left>
           <GroupDetailHeader :group="store.group" />
-          <CardTitle>Hours by year</CardTitle>
-          <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" @click-selected="onSelectedBarClick" />
-          <CardTitle>Activity</CardTitle>
-          <TermCloud :tags="tagHours" @click="onTagClick" />
         </template>
         <template #right>
           <GroupDetailActions
@@ -33,22 +29,45 @@
             @add-session="onAddSession"
             @delete-group="onDeleteGroup"
           />
-          <GroupDetailRegulars v-if="profile.isAdmin || profile.isCheckIn" :group="store.group" />
-          <div class="bg-dtv-green/25 flex items-start justify-center p-2">
-            <CalendarWidget
-              v-model="selectedDate"
-              :sessions="groupSessions"
-              :immediate-confirm="true"
-              @confirm="onDateSelect"
-            />
-          </div>
         </template>
       </LayoutColumns>
 
       <!-- Gallery: full width -->
-      <MediaCarousel v-if="coverItems.length" :max-height="280">
+      <MediaCarousel v-if="coverItems.length" title="What we've been up to" :max-height="280">
         <MediaCard v-for="item in coverItems" :key="item.id" :item="item" />
       </MediaCarousel>
+
+      <!-- Repeats and Regulars: full width -->
+      <RegularList
+        v-if="profile.isAdmin || profile.isCheckIn"
+        :items="regularItems"
+        :allow-toggle-regular="profile.isAdmin || profile.isCheckIn"
+        :working-slug="workingRegularSlug ?? undefined"
+        :error="regularError"
+        @add-regular="onGroupAddRegular"
+        @remove-regular="onGroupRemoveRegular"
+      />
+
+      <!-- Group Contribution: bar chart left, word cloud right -->
+      <LayoutColumns ratio="2-1" align="start">
+        <template #header><SectionHeader>Group Contribution</SectionHeader></template>
+        <template #left>
+          <CardTitle>This many hours</CardTitle>
+          <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" @click-selected="onSelectedBarClick" />
+        </template>
+        <template #right>
+          <CardTitle>All these trails</CardTitle>
+          <TermCloud :tags="tagHours" @click="onTagClick" />
+        </template>
+      </LayoutColumns>
+
+      <!-- Find a Session: upcoming sessions full width -->
+      <LayoutColumns ratio="1">
+        <template #header><SectionHeader>Find a Session</SectionHeader></template>
+        <template #left>
+          <SessionListResults :sessions="futureSessions" />
+        </template>
+      </LayoutColumns>
 
     </template>
   </DefaultLayout>
@@ -67,18 +86,20 @@ import FormCard from '../components/forms/FormCard.vue'
 import FormButton from '../components/forms/FormButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
-import CalendarWidget from '../components/CalendarWidget.vue'
 import MediaCarousel from '../components/MediaCarousel.vue'
 import MediaCard from '../components/MediaCard.vue'
 import GroupDetailHeader from '../components/groups/GroupDetailHeader.vue'
 import GroupDetailActions from '../components/groups/GroupDetailActions.vue'
-import GroupDetailRegulars from '../components/groups/GroupDetailRegulars.vue'
+import RegularList from '../components/RegularList.vue'
+import type { RegularListItem } from '../components/RegularList.vue'
+import SessionListResults from '../components/sessions/SessionListResults.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TermCloud from '../components/TermCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
-import { sessionPath, groupPath, groupsPath } from '../router/index'
-import type { Session } from '../types/session'
+import SectionHeader from '../components/SectionHeader.vue'
+import { sessionPath, groupPath, groupsPath, profilePath } from '../router/index'
 import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
+import type { Session } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditGroupPayload } from './modals/GroupEditModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
@@ -89,13 +110,27 @@ const store = useGroupDetailStore()
 const profile = useViewer()
 
 const actionsRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
+const workingRegularSlug = ref<string | null>(null)
+const regularError = ref('')
+
+const regularItems = computed<RegularListItem[]>(() =>
+  (store.group?.regulars ?? []).map(r => ({
+    slug: r.slug,
+    name: r.name,
+    linkTo: profilePath(r.slug),
+    hours: r.hours,
+    isRegular: r.isRegular,
+    regularId: r.regularId,
+  }))
+)
 
 const titleText = computed(() => store.group?.displayName || store.group?.key || '')
 usePageTitle(titleText)
 
 const selectedFy = ref('')
-const selectedDate = ref<string | undefined>(undefined)
 const tagHours = ref<TagHoursItem[]>([])
+
+const today = new Date().toISOString().slice(0, 10)
 
 function mapSession(r: SessionResponse): Session {
   return {
@@ -124,8 +159,12 @@ function mapSession(r: SessionResponse): Session {
   }
 }
 
-const groupSessions = computed<Session[]>(() =>
-  store.group ? store.group.sessions.map(mapSession) : []
+const futureSessions = computed<Session[]>(() =>
+  (store.group?.sessions ?? [])
+    .filter(s => s.date >= today)
+    .map(mapSession)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 6)
 )
 
 const coverItems = computed<MediaItem[]>(() => {
@@ -144,12 +183,6 @@ const coverItems = computed<MediaItem[]>(() => {
     }))
 })
 
-// One-click navigate — on a group page there's at most one session per date
-function onDateSelect(sessions: Session[]) {
-  if (sessions.length === 1) {
-    router.push(sessionPath(sessions[0].groupKey!, sessions[0].date))
-  }
-}
 
 watchEffect(async () => {
   const key = store.group?.key
@@ -235,19 +268,56 @@ async function onDeleteGroup() {
   }
 }
 
+async function onGroupAddRegular(profileSlug: string) {
+  if (!store.group) return
+  workingRegularSlug.value = profileSlug
+  regularError.value = ''
+  try {
+    const res = await fetch(`/api/profiles/${profileSlug}/regulars`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: store.group.id }),
+    })
+    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    const json = await res.json()
+    const item = store.group.regulars.find(r => r.slug === profileSlug)
+    if (item) { item.isRegular = true; item.regularId = json.data.id }
+  } catch (e) {
+    console.error('[GroupDetailPage] onGroupAddRegular failed', e)
+    regularError.value = 'Failed to update — please try again'
+  } finally {
+    workingRegularSlug.value = null
+  }
+}
+
+async function onGroupRemoveRegular(profileSlug: string, regularId: number | undefined) {
+  if (!store.group || regularId === undefined) return
+  workingRegularSlug.value = profileSlug
+  regularError.value = ''
+  try {
+    const res = await fetch(`/api/regulars/${regularId}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    const item = store.group.regulars.find(r => r.slug === profileSlug)
+    if (item) { item.isRegular = false; item.regularId = undefined }
+  } catch (e) {
+    console.error('[GroupDetailPage] onGroupRemoveRegular failed', e)
+    regularError.value = 'Failed to update — please try again'
+  } finally {
+    workingRegularSlug.value = null
+  }
+}
+
 onMounted(reload)
 
 watch(() => route.params.key, key => {
-  if (key) {
-    selectedDate.value = undefined
-    store.fetch(key as string)
-  }
+  if (key) store.fetch(key as string)
 })
 </script>
 
 <style scoped>
 .gd-loading { padding: 2rem; color: var(--color-text-muted); }
 .gd-error { padding: 2rem; color: var(--color-dtv-red); }
+
 
 .gd-task-message {
   font-size: 0.9rem;

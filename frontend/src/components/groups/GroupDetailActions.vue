@@ -5,7 +5,7 @@
     <AppButton
       v-if="group.eventbriteSeriesId"
       label="View on Eventbrite"
-      icon="eventbrite"
+      icon="brands/eventbrite"
       mode="icon-only"
       :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`"
       target="_blank"

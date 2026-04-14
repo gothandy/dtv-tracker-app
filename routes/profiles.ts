@@ -650,7 +650,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     let calculatedThisFY = 0;
     let calculatedLastFY = 0;
     let calculatedAll = 0;
-    const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number; hoursAll: number }>();
+
+    const rollingCutoff = new Date();
+    rollingCutoff.setFullYear(rollingCutoff.getFullYear() - 1);
+    const rollingCutoffStr = rollingCutoff.toISOString().slice(0, 10);
+
+    const groupHoursMap = new Map<number, { groupName: string; hoursThisFY: number; hoursLastFY: number; hoursAll: number; hoursRolling: number }>();
 
     profileEntries.forEach(e => {
       const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
@@ -659,6 +664,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       if (!session) return;
       const hours = parseHours(e.Hours);
       const sessionFY = calculateFinancialYear(new Date(session.Date));
+      const sessionDate = session.Date.substring(0, 10);
 
       calculatedAll += hours;
       if (sessionFY === fy.startYear) {
@@ -669,40 +675,33 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
       const groupId = safeParseLookupId(session[GROUP_LOOKUP]);
       if (groupId !== undefined) {
+        const isRolling = sessionDate >= rollingCutoffStr;
         const existing = groupHoursMap.get(groupId);
         if (existing) {
           existing.hoursAll += hours;
           if (sessionFY === fy.startYear) existing.hoursThisFY += hours;
           else if (sessionFY === lastFYStart) existing.hoursLastFY += hours;
+          if (isRolling) existing.hoursRolling += hours;
         } else {
           const group = groupMap.get(groupId);
           groupHoursMap.set(groupId, {
             groupName: group?.Name || group?.Title || 'Unknown',
             hoursThisFY: sessionFY === fy.startYear ? hours : 0,
             hoursLastFY: sessionFY === lastFYStart ? hours : 0,
-            hoursAll: hours
+            hoursAll: hours,
+            hoursRolling: isRolling ? hours : 0,
           });
         }
       }
     });
 
-    // Include groups where volunteer is a regular but has no hours
-    regularsByCrewId.forEach((_regularId, crewId) => {
-      if (!groupHoursMap.has(crewId)) {
-        const group = groupMap.get(crewId);
-        if (group) {
-          groupHoursMap.set(crewId, {
-            groupName: group.Name || group.Title || 'Unknown',
-            hoursThisFY: 0,
-            hoursLastFY: 0,
-            hoursAll: 0
-          });
-        }
-      }
-    });
+    // Groups where the volunteer is a regular but has no hours in any period are excluded
+    // per #147 — the edge case of regulars with no attendance is ignored for now.
 
+    const MIN_REGULAR_HOURS = 6;
     const groupHours: ProfileGroupHours[] = [...groupHoursMap.entries()]
-      .map(([groupId, { groupName, hoursThisFY, hoursLastFY, hoursAll }]) => {
+      .filter(([, { hoursRolling }]) => hoursRolling >= MIN_REGULAR_HOURS)
+      .map(([groupId, { groupName, hoursThisFY, hoursLastFY, hoursAll, hoursRolling }]) => {
         const regularId = regularsByCrewId.get(groupId);
         return {
           groupId,
@@ -711,11 +710,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           hoursThisFY: Math.round(hoursThisFY * 10) / 10,
           hoursLastFY: Math.round(hoursLastFY * 10) / 10,
           hoursAll: Math.round(hoursAll * 10) / 10,
+          hoursRolling: Math.round(hoursRolling * 10) / 10,
           isRegular: regularId !== undefined,
           regularId
         };
       })
-      .sort((a, b) => b.hoursAll - a.hoursAll);
+      .sort((a, b) => b.hoursRolling - a.hoursRolling);
 
     // Build entry responses sorted by date desc
     const entryResponses: ProfileEntryResponse[] = profileEntries

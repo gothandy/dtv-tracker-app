@@ -44,7 +44,7 @@
       <div class="row">
         <AppButton label="External Link" href="https://example.com" target="_blank" />
         <AppButton label="Download" icon="edit" href="/api/sessions/export" />
-        <AppButton label="View on Eventbrite" icon="eventbrite" mode="icon-only" href="https://www.eventbrite.co.uk" target="_blank" />
+        <AppButton label="View on Eventbrite" icon="brands/eventbrite" mode="icon-only" href="https://www.eventbrite.co.uk" target="_blank" />
       </div>
 
       <h2>Custom Color</h2>
