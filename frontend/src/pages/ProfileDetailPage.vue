@@ -29,25 +29,42 @@
       <h1 class="sr-only">{{ store.profile.name ?? 'Profile' }}</h1>
       <PageHeader>{{ store.profile.name ?? 'Profile' }}</PageHeader>
 
-      <!-- Profile header -->
-      <div class="pd-header">
-        <div class="pd-title-row">
-          <div class="pd-badges">
-            <img v-if="isMember" src="/icons/badges/member.svg" class="pd-badge" alt="Member" title="Member" />
-            <img v-if="store.profile.isGroup" src="/icons/badges/group.svg" class="pd-badge" alt="Group" title="Group" />
+      <!-- Profile header: 2-1 layout — emails/warnings left, actions right -->
+      <LayoutColumns ratio="2-1" align="start">
+        <template #left>
+          <div class="pd-header">
+            <div class="pd-badges">
+              <img v-if="isMember" src="/icons/badges/member.svg" class="pd-badge" alt="Member" title="Member" />
+              <img v-if="store.profile.isGroup" src="/icons/badges/group.svg" class="pd-badge" alt="Group" title="Group" />
+            </div>
+            <div v-for="email in store.profile.emails" :key="email" class="pd-email">
+              <a :href="`mailto:${email}`">{{ email }}</a>
+            </div>
           </div>
+          <ProfileDuplicateWarning
+            v-if="viewer.isAdmin && store.profile.duplicates?.length"
+            :duplicates="store.profile.duplicates"
+          />
+          <ProfileLinkedAccounts
+            v-if="viewer.isOperational && store.profile.linkedProfiles?.length"
+            :linked-profiles="store.profile.linkedProfiles"
+          />
+        </template>
+        <template #right>
           <ProfileDetailActions
             v-if="viewer.isCheckIn || viewer.isAdmin"
             ref="actionsRef"
             :profile="store.profile"
             :show-user="viewer.isAdmin"
+            :allow-transfer="viewer.isAdmin"
+            :profiles="transferProfiles"
             @edit-profile="onEditProfile"
+            @delete-profile="onDeleteProfile"
+            @transfer-open="onTransferOpen"
+            @transfer-profile="onTransferProfile"
           />
-        </div>
-        <div v-for="email in store.profile.emails" :key="email" class="pd-email">
-          <a :href="`mailto:${email}`">{{ email }}</a>
-        </div>
-      </div>
+        </template>
+      </LayoutColumns>
 
       <RegularList
         :items="regularItems"
@@ -94,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
@@ -105,22 +122,27 @@ import PageHeader from '../components/PageHeader.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
+import ProfileDuplicateWarning from '../components/profiles/ProfileDuplicateWarning.vue'
+import ProfileLinkedAccounts from '../components/profiles/ProfileLinkedAccounts.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import RegularList from '../components/RegularList.vue'
 import type { RegularListItem } from '../components/RegularList.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
-import { groupPath } from '../router/index'
+import { groupPath, profilePath, profilesPath } from '../router/index'
 import type { ProfileEntryResponse } from '../../../types/api-responses'
 import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
+import type { TransferProfilePayload } from './modals/ProfileTransferModal.vue'
 import type { AddRecordPayload } from './modals/RecordAddModal.vue'
 import type { SaveRecordPayload } from './modals/RecordEditModal.vue'
 import type { EntryItem } from '../types/entry'
+import type { PickerProfile } from '../components/ProfilePicker.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 
 const route = useRoute()
+const router = useRouter()
 const viewer = useViewer()
 const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
@@ -145,6 +167,9 @@ const recordStatuses = ref<string[]>([])
 usePageTitle(computed(() => store.profile?.name ?? 'Profile'))
 const entryListRef = ref<InstanceType<typeof ProfileEntryList> | null>(null)
 
+// Lazily loaded profiles for transfer picker
+const transferProfiles = ref<PickerProfile[]>([])
+
 onMounted(async () => {
   store.fetch(route.params.slug as string)
   try {
@@ -164,6 +189,34 @@ const isMember = computed(() =>
   store.profile?.records?.some(r => r.type === 'Charity Membership' && r.status === 'Accepted') ?? false
 )
 
+async function onDeleteProfile() {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/profiles/${store.profile.slug}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    actionsRef.value?.onDeleteSuccess()
+    router.push(profilesPath())
+  } catch (e) {
+    console.error('[ProfileDetailPage] onDeleteProfile failed', e)
+  }
+}
+
+async function onTransferOpen() {
+  if (transferProfiles.value.length) return
+  try {
+    const res = await fetch('/api/profiles')
+    if (!res.ok) throw new Error(`Fetch failed (${res.status})`)
+    const json = await res.json()
+    transferProfiles.value = (json.data ?? []).map((p: { id: number; name: string; email?: string }) => ({
+      id: p.id,
+      name: p.name ?? '',
+      email: p.email,
+    }))
+  } catch (e) {
+    console.error('[ProfileDetailPage] Failed to load profiles for transfer', e)
+  }
+}
+
 async function onEditProfile(data: EditProfilePayload) {
   if (!store.profile) return
   try {
@@ -182,6 +235,41 @@ async function onEditProfile(data: EditProfilePayload) {
   } catch (e) {
     console.error('[ProfileDetailPage] onEditProfile failed', e)
     actionsRef.value?.onEditError('Failed to save — please try again')
+  }
+}
+
+async function onTransferProfile(data: TransferProfilePayload) {
+  if (!store.profile) return
+  try {
+    const res = await fetch(`/api/profiles/${store.profile.slug}/transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`Transfer failed (${res.status})`)
+    const json = await res.json()
+
+    if (data.addEmail && store.profile.emails[0]) {
+      const sourceEmail = store.profile.emails[0]
+      const targetRes = await fetch(`/api/profiles/${json.data.targetSlug}`)
+      if (targetRes.ok) {
+        const targetJson = await targetRes.json()
+        const targetEmails: string[] = targetJson.data?.emails ?? []
+        if (!targetEmails.includes(sourceEmail)) {
+          await fetch(`/api/profiles/${targetJson.data.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails: [...targetEmails, sourceEmail] }),
+          })
+        }
+      }
+    }
+
+    actionsRef.value?.onTransferSuccess()
+    router.push(profilePath(json.data.targetSlug))
+  } catch (e) {
+    console.error('[ProfileDetailPage] onTransferProfile failed', e)
+    actionsRef.value?.onTransferError('Failed to transfer — please try again')
   }
 }
 
@@ -354,20 +442,15 @@ async function onEditEntry(id: number, data: EditData | null) {
 .pd-error { padding: 1.5rem; color: var(--color-dtv-dirt); }
 
 .pd-header {
-  background: var(--color-white);
   padding: 1.25rem 1.5rem;
-}
-
-.pd-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background: var(--color-white);
 }
 
 .pd-badges {
   display: flex;
   gap: 0.25rem;
   align-items: center;
+  margin-bottom: 0.35rem;
 }
 
 .pd-badge { width: 20px; height: 20px; }

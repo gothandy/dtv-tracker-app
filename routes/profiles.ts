@@ -995,9 +995,11 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
 
-    const [rawProfiles, rawEntries] = await Promise.all([
+    const [rawProfiles, rawEntries, rawRegulars, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
-      entriesRepository.getAll()
+      entriesRepository.getAll(),
+      regularsRepository.getAll(),
+      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -1016,6 +1018,20 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
     const profileEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === spProfile.ID);
     if (profileEntries.length > 0) {
       res.status(400).json({ success: false, error: 'Cannot delete profile with existing entries' });
+      return;
+    }
+
+    const profileRegulars = rawRegulars.filter(r => safeParseLookupId(r[PROFILE_LOOKUP]) === spProfile.ID);
+    if (profileRegulars.length > 0) {
+      res.status(400).json({ success: false, error: 'Cannot delete profile with existing regulars' });
+      return;
+    }
+
+    const profileRecords = rawRecords.filter(r =>
+      safeParseLookupId(r.ProfileLookupId as unknown as string) === spProfile.ID
+    );
+    if (profileRecords.length > 0) {
+      res.status(400).json({ success: false, error: 'Cannot delete profile with existing records' });
       return;
     }
 
