@@ -859,7 +859,7 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
 router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
-    const { targetProfileId, deleteAfter } = req.body;
+    const { targetProfileId, deleteAfter, addEmail } = req.body;
 
     if (!targetProfileId || typeof targetProfileId !== 'number') {
       res.status(400).json({ success: false, error: 'targetProfileId is required and must be a number' });
@@ -957,6 +957,22 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       }
     }
 
+    // Add source primary email to target if requested
+    let emailAdded: string | null = null;
+    if (addEmail) {
+      const sourceEmails = (sourceProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+      const sourceEmail = sourceEmails[0];
+      if (sourceEmail) {
+        const targetEmails = (targetProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+        if (!targetEmails.includes(sourceEmail)) {
+          await profilesRepository.updateFields(targetProfile.ID, {
+            Email: [...targetEmails, sourceEmail].join(',')
+          });
+          emailAdded = sourceEmail;
+        }
+      }
+    }
+
     sharePointClient.clearCache();
 
     // Delete source profile if requested
@@ -976,11 +992,11 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
     }
 
     const targetSlug = profileSlug(targetProfile.Title, targetProfile.ID);
-    console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${deleted ? ', deleted source' : ''}`);
+    console.log(`[Transfer] ${sourceProfile.Title} → ${targetProfile.Title}: ${entriesTransferred} entries, ${regularsTransferred} regulars, ${recordsTransferred} records${emailAdded ? `, email ${emailAdded} added` : ''}${deleted ? ', deleted source' : ''}`);
 
     res.json({
       success: true,
-      data: { entriesTransferred, regularsTransferred, recordsTransferred, deleted, targetSlug }
+      data: { entriesTransferred, regularsTransferred, recordsTransferred, emailAdded, deleted, targetSlug }
     });
   } catch (error: any) {
     console.error('Error transferring profile:', error);
