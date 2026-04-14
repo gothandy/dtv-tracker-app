@@ -2,7 +2,8 @@
   <component
     :is="href ? 'a' : 'button'"
     v-bind="href ? { href, target } : { type, disabled: disabled || working }"
-    :aria-label="isIconOnly ? label : undefined"
+    :aria-label="isIconOnly || mode === 'icon-responsive' ? label : undefined"
+    :title="isIconOnly ? label : undefined"
     :aria-pressed="selected != null ? selected : undefined"
     :aria-busy="working || undefined"
     class="app-btn"
@@ -17,13 +18,13 @@
   >
     <!-- Icon-only -->
     <template v-if="isIconOnly">
-      <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" aria-hidden="true" />
+      <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" alt="" aria-hidden="true" />
     </template>
 
     <!-- Icon + text: icon centered in a fixed square, label with right padding only -->
     <template v-else-if="hasIconBox">
       <span class="app-btn__icon-box" aria-hidden="true">
-        <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" />
+        <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" alt="" aria-hidden="true" />
       </span>
       <span
         class="app-btn__label"

@@ -34,7 +34,13 @@
 
       <!-- Gallery: full width -->
       <MediaCarousel v-if="coverItems.length" title="What we've been up to" :max-height="280">
-        <MediaCard v-for="item in coverItems" :key="item.id" :item="item" />
+        <MediaCard
+          v-for="(item, i) in coverItems"
+          :key="item.id"
+          :item="item"
+          :clickable="true"
+          @select="onCoverSelect(i)"
+        />
       </MediaCarousel>
 
       <!-- Repeats and Regulars: full width -->
@@ -168,21 +174,29 @@ const futureSessions = computed<Session[]>(() =>
     .slice(0, 6)
 )
 
-const coverItems = computed<MediaItem[]>(() => {
-  if (!store.group) return []
-  return [...store.group.sessions]
+const coverSessions = computed(() =>
+  !store.group ? [] :
+  [...store.group.sessions]
     .filter(s => (s.mediaCount ?? 0) > 0)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map(s => ({
-      id: String(s.id),
-      listItemId: 0,
-      thumbnailUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
-      largeUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
-      mimeType: 'image/jpeg',
-      title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      isPublic: true,
-    }))
-})
+)
+
+const coverItems = computed<MediaItem[]>(() =>
+  coverSessions.value.map(s => ({
+    id: String(s.id),
+    listItemId: 0,
+    thumbnailUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
+    largeUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
+    mimeType: 'image/jpeg',
+    title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    isPublic: true,
+  }))
+)
+
+function onCoverSelect(index: number) {
+  const s = coverSessions.value[index]
+  if (s && store.group) router.push(sessionPath(store.group.key, s.date))
+}
 
 
 watchEffect(async () => {

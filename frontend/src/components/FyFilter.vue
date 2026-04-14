@@ -25,7 +25,8 @@ const options = computed(() => {
   return [
     { value: 'all', label: 'All FY' },
     ...fyKeys.map(k => ({ value: k, label: fyKeyToLabel(k) })),
-    { value: 'rolling', label: 'Rolling FY' },
+    { value: 'rolling', label: 'Rolling' },
+    { value: 'future', label: 'Future' },
   ]
 })
 </script>

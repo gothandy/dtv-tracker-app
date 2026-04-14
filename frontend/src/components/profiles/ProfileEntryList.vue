@@ -39,6 +39,9 @@
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
+      view-label="View Session"
+      view-icon="calendar"
+      :view-to="sessionPath(editingEntry.session.groupKey, editingEntry.session.date)"
       :working="workingEdit"
       :error="editError"
       @close="closeEditModal"
@@ -71,7 +74,7 @@ const emit = defineEmits<{
   editEntry: [id: number, data: EditData | null]
 }>()
 
-const fy = ref('rolling')
+const fy = ref('all')
 const groupKey = ref('')
 
 const groupOptions = computed(() => {
@@ -106,7 +109,8 @@ const fyOptions = computed(() => {
   return [
     { value: 'all', label: 'All FY' },
     ...keys.map(k => ({ value: k, label: fyLabel(k) })),
-    { value: 'rolling', label: 'Rolling FY' },
+    { value: 'rolling', label: 'Rolling' },
+    { value: 'future', label: 'Future' },
   ]
 })
 
@@ -117,7 +121,9 @@ const totalHours = computed(() => {
 
 const filteredEntries = computed(() => {
   let result = props.entries
-  if (fy.value === 'rolling') {
+  if (fy.value === 'future') {
+    result = result.filter(e => e.session.date >= new Date().toISOString().slice(0, 10))
+  } else if (fy.value === 'rolling') {
     const start = rollingStart()
     const today = new Date().toISOString().slice(0, 10)
     result = result.filter(e => e.session.date >= start && e.session.date <= today)

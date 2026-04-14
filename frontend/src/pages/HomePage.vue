@@ -2,6 +2,9 @@
   <DefaultLayout>
     <h1 class="sr-only">Home</h1>
 
+    <LoadingSpinner v-if="store.loading" />
+    <template v-else>
+
     <!-- Personal prompt — shown to all logged-in users when a message applies -->
     <PersonalContainer
       v-if="profile.isAuthenticated"
@@ -92,13 +95,13 @@
         </template>
         <template v-else>
           <CardTitle>This many hours</CardTitle>
-          <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" @click-selected="onSelectedBarClick" />
+          <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" min-fy="FY2020" @click-selected="onSelectedBarClick" />
         </template>
       </template>
       <template #middle>
         <template v-if="profile.isAuthenticated">
           <CardTitle>This many hours</CardTitle>
-          <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" @click-selected="onSelectedBarClick" />
+          <FyBarChart :sessions="(store.sessions as any)" v-model="selectedFy" min-fy="FY2020" @click-selected="onSelectedBarClick" />
         </template>
       </template>
       <template #right>
@@ -106,6 +109,12 @@
         <TermCloud :tags="tagHours" @click="onTagClick" />
       </template>
     </LayoutColumns>
+
+    <!-- Recent sign-ups — admin/check-in only -->
+    <section v-if="profile.isOperational" class="mb-8">
+      <SectionHeader>Recent Sign-ups</SectionHeader>
+      <RecentEntryList />
+    </section>
 
     <DebugData label="homepage personal context" :item="{
       role: viewer.user?.role,
@@ -126,6 +135,8 @@
       nextSession,
       previousSession,
     }" />
+
+    </template><!-- end v-else -->
 
   </DefaultLayout>
 </template>
@@ -149,6 +160,8 @@ import CardTitle from '../components/CardTitle.vue'
 import PersonalContainer from '../components/PersonalContainer.vue'
 import PersonalContribution from '../components/PersonalContribution.vue'
 import DebugData from '../components/DebugData.vue'
+import RecentEntryList from '../components/RecentEntryList.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
 import { sessionPath } from '../router'

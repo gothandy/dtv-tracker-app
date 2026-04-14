@@ -1,7 +1,9 @@
 <template>
   <div class="sab-wrap">
-    <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-responsive" @click="onUpload" />
-    <AppButton v-if="allowEdit" icon="edit" label="Edit" mode="icon-responsive" @click="showEdit = true" />
+    <AppButton icon="share" label="Share" mode="icon-only" @click="onShare" />
+    <AppButton icon="group" label="Group" mode="icon-only" @click="router.push(groupPath(groupKey))" />
+    <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-only" @click="onUpload" />
+    <AppButton v-if="allowEdit" icon="edit" label="Edit" mode="icon-only" @click="showEdit = true" />
 
     <EntryUploadPickerModal
       v-if="showPicker"
@@ -25,11 +27,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import type { GroupItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
 import AppButton from '../AppButton.vue'
 import SessionEditModal from '../../pages/modals/SessionEditModal.vue'
 import EntryUploadPickerModal from '../../pages/modals/EntryUploadPickerModal.vue'
+import { groupPath } from '../../router/index'
 
 const props = defineProps<{
   session: SessionDetailResponse
@@ -47,12 +51,22 @@ const emit = defineEmits<{
   'session-delete': []
 }>()
 
+const router = useRouter()
 const showPicker = ref(false)
 const showEdit = ref(false)
 
 const canUpload = computed(() =>
   (props.isSelfService && !!props.session.userEntryId) || props.allowEdit
 )
+
+function onShare() {
+  const url = window.location.href
+  if (navigator.share) {
+    navigator.share({ url }).catch(() => {})
+  } else if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).catch(() => {})
+  }
+}
 
 function onUpload() {
   if (props.isSelfService && props.session.userEntryId) {
