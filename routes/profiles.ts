@@ -957,19 +957,25 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       }
     }
 
-    // Add source primary email to target if requested
+    // Add source primary email to target if requested — non-fatal: transfer already committed above
     let emailAdded: string | null = null;
+    let emailAddError: string | null = null;
     if (addEmail) {
-      const sourceEmails = (sourceProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
-      const sourceEmail = sourceEmails[0];
-      if (sourceEmail) {
-        const targetEmails = (targetProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
-        if (!targetEmails.includes(sourceEmail)) {
-          await profilesRepository.updateFields(targetProfile.ID, {
-            Email: [...targetEmails, sourceEmail].join(',')
-          });
-          emailAdded = sourceEmail;
+      try {
+        const sourceEmails = (sourceProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+        const sourceEmail = sourceEmails[0];
+        if (sourceEmail) {
+          const targetEmails = (targetProfile.Email ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+          if (!targetEmails.includes(sourceEmail)) {
+            await profilesRepository.updateFields(targetProfile.ID, {
+              Email: [...targetEmails, sourceEmail].join(',')
+            });
+            emailAdded = sourceEmail;
+          }
         }
+      } catch (err: any) {
+        console.error('[Transfer] addEmail step failed (transfer already committed):', err);
+        emailAddError = 'Email could not be added — please add it manually on the target profile';
       }
     }
 
@@ -996,7 +1002,7 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: { entriesTransferred, regularsTransferred, recordsTransferred, emailAdded, deleted, targetSlug }
+      data: { entriesTransferred, regularsTransferred, recordsTransferred, emailAdded, emailAddError, deleted, targetSlug }
     });
   } catch (error: any) {
     console.error('Error transferring profile:', error);

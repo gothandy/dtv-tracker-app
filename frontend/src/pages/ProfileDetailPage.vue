@@ -258,8 +258,10 @@ async function onTransferProfile(data: TransferProfilePayload) {
       `${d.regularsTransferred} ${d.regularsTransferred === 1 ? 'regular' : 'regulars'} transferred`,
     ]
     if (d.emailAdded) summary.push(`Email ${d.emailAdded} added to target`)
+    if (d.emailAddError) summary.push(`Warning: ${d.emailAddError}`)
     if (d.deleted) summary.push('Source profile deleted')
 
+    // Admin-only action — plain alert is appropriate here
     alert(`Transfer complete\n\n${summary.join('\n')}`)
     actionsRef.value?.onTransferSuccess()
     router.push(profilePath(json.data.targetSlug))
