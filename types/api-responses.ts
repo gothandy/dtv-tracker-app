@@ -10,6 +10,9 @@ import type { SessionLimits } from '../services/data-layer';
 export interface GroupRegularResponse {
   name: string;
   slug: string;
+  hours: number;       // rolling-year hours for this group
+  isRegular: boolean;
+  regularId?: number;  // present if isRegular is true
 }
 
 export interface GroupResponse {
@@ -89,6 +92,7 @@ export interface ProfileGroupHours {
   hoursThisFY: number;
   hoursLastFY: number;
   hoursAll: number;
+  hoursRolling: number; // rolling year (today − 1 year) hours for this group
   isRegular: boolean;
   regularId?: number;
 }

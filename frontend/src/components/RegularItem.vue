@@ -1,11 +1,11 @@
 <template>
-  <div class="pgi-card">
+  <div class="ri-card">
     <template v-if="allowToggleRegular">
-      <span v-if="working" class="pgi-spinner" />
+      <span v-if="working" class="ri-spinner" />
       <input
         v-else
         type="checkbox"
-        class="pgi-checkbox"
+        class="ri-checkbox"
         :checked="isRegular"
         @change="onToggle"
       />
@@ -13,25 +13,24 @@
     <input
       v-else-if="isRegular"
       type="checkbox"
-      class="pgi-checkbox pgi-checkbox--static"
+      class="ri-checkbox ri-checkbox--static"
       checked
       tabindex="-1"
       readonly
     />
 
-    <RouterLink :to="groupPath(groupKey)" class="pgi-name">{{ groupName }}</RouterLink>
-    <strong class="pgi-hours">{{ formatHours(hours) }}h</strong>
+    <RouterLink :to="linkTo" class="ri-name">{{ name }}</RouterLink>
+    <strong class="ri-hours">{{ formatHours(hours) }}h</strong>
   </div>
 </template>
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { groupPath } from '../../router/index'
+import type { RouteLocationRaw } from 'vue-router'
 
 const props = defineProps<{
-  groupId: number
-  groupKey: string
-  groupName: string
+  name: string
+  linkTo: RouteLocationRaw
   hours: number
   isRegular: boolean
   regularId?: number
@@ -56,7 +55,7 @@ function onToggle(event: Event) {
 </script>
 
 <style scoped>
-.pgi-card {
+.ri-card {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -64,19 +63,19 @@ function onToggle(event: Event) {
   padding: 0.5rem 0.75rem;
 }
 
-.pgi-checkbox {
+.ri-checkbox {
   accent-color: var(--color-dtv-green);
   width: 1.1rem;
   height: 1.1rem;
   flex-shrink: 0;
   cursor: pointer;
 }
-.pgi-checkbox--static {
+.ri-checkbox--static {
   pointer-events: none;
   cursor: default;
 }
 
-.pgi-spinner {
+.ri-spinner {
   display: block;
   width: 1.1rem;
   height: 1.1rem;
@@ -84,19 +83,19 @@ function onToggle(event: Event) {
   border: 2px solid var(--color-dtv-sand-dark);
   border-top-color: var(--color-dtv-green);
   border-radius: 50%;
-  animation: pgi-spin 0.7s linear infinite;
+  animation: ri-spin 0.7s linear infinite;
 }
-@keyframes pgi-spin { to { transform: rotate(360deg); } }
+@keyframes ri-spin { to { transform: rotate(360deg); } }
 
-.pgi-name {
+.ri-name {
   flex: 1;
   font-size: 0.9rem;
   color: var(--color-text);
   text-decoration: none;
 }
-.pgi-name:hover { text-decoration: underline; }
+.ri-name:hover { text-decoration: underline; }
 
-.pgi-hours {
+.ri-hours {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-dtv-gold-dark);

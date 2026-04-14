@@ -3,23 +3,25 @@ import express, { Request, Response, Router } from 'express';
 import { groupsRepository } from '../services/repositories/groups-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
+import { profilesRepository } from '../services/repositories/profiles-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
 import {
-  enrichSessions,
-  sortSessionsByDate,
   validateArray,
   validateSession,
-  validateEntry,
   validateGroup,
+  validateProfile,
   convertGroup,
   convertSession,
+  convertProfile,
   deriveLimits,
   groupRegularsByCrewId,
   calculateCurrentFY,
   calculateFinancialYear,
+  calculateRollingYear,
   findGroupByKey,
   safeParseLookupId,
   parseHours,
+  profileSlug,
   extractMetadataTags
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NOTES, SESSION_METADATA } from '../services/field-names';
@@ -56,7 +58,7 @@ router.get('/groups', async (req: Request, res: Response) => {
           description: group.description,
           eventbriteSeriesId: group.eventbriteSeriesId,
           regularsCount: regulars.length,
-          regulars
+          regulars: []  // detail endpoint computes rolling-year regulars; listing only needs the count
         };
       }
 
@@ -128,10 +130,16 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     const key = String(req.params.key).toLowerCase();
     const fy = calculateCurrentFY();
 
-    const [rawGroups, rawRegulars, rawSessions] = await Promise.all([
+    const role = req.session.user?.role;
+    const isTrusted = !!req.session.user && role !== 'selfservice';
+
+    const [rawGroups, rawRegulars, rawSessions, rawEntries, rawProfiles] = await Promise.all([
       groupsRepository.getAll(),
       regularsRepository.getAll(),
-      sessionsRepository.getAll()
+      sessionsRepository.getAll(),
+      // Only needed to compute rolling-year regulars shown to trusted users
+      isTrusted ? entriesRepository.getAll() : Promise.resolve([]),
+      isTrusted ? profilesRepository.getAll() : Promise.resolve([]),
     ]);
 
     const spGroup = findGroupByKey(rawGroups, key);
@@ -196,8 +204,56 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
-    const role = req.session.user?.role;
-    const isTrusted = !!req.session.user && role !== 'selfservice';
+    // Rolling-year regulars: profiles with ≥6h in the past 12 months for this group
+    const { start: rollingStartStr, end: rollingEndStr } = calculateRollingYear();
+
+    const rollingSessionIds = new Set(
+      groupSessions
+        .filter(s => s.Date! >= rollingStartStr && s.Date! <= rollingEndStr)
+        .map(s => s.ID)
+    );
+
+    // Accumulate hours per profile from rolling-year sessions
+    const profileHoursMap = new Map<number, number>();
+    for (const e of rawEntries) {
+      const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
+      if (sessionId === undefined || !rollingSessionIds.has(sessionId)) continue;
+      const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (profileId === undefined) continue;
+      const h = parseHours(e.Hours);
+      if (h > 0) profileHoursMap.set(profileId, (profileHoursMap.get(profileId) ?? 0) + h);
+    }
+
+    // Build profile lookup and regulars lookup for this group
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profileMap = new Map(profiles.map(p => [p.ID, p]));
+    const regularsForGroupMap = new Map<number, number>(); // profileId → regularId
+    for (const r of rawRegulars) {
+      if (safeParseLookupId(r[GROUP_LOOKUP]) === groupId) {
+        const pid = safeParseLookupId(r[PROFILE_LOOKUP]);
+        if (pid !== undefined) regularsForGroupMap.set(pid, r.ID);
+      }
+    }
+
+    // Filter to ≥6h, attach name/slug/isRegular/regularId
+    const MIN_REGULAR_HOURS = 6;
+    const rollingRegulars: import('../types/api-responses').GroupRegularResponse[] = [];
+    for (const [profileId, hours] of profileHoursMap) {
+      if (hours < MIN_REGULAR_HOURS) continue;
+      const spProfile = profileMap.get(profileId);
+      if (!spProfile) continue;
+      const p = convertProfile(spProfile);
+      const regularId = regularsForGroupMap.get(profileId);
+      rollingRegulars.push({
+        name: p.name || spProfile.Title || '',
+        slug: profileSlug(p.name, p.id),
+        hours: Math.round(hours * 10) / 10,
+        isRegular: regularId !== undefined,
+        ...(regularId !== undefined && { regularId }),
+      });
+    }
+    rollingRegulars.sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
+
     const selfServiceProfileIds = role === 'selfservice'
       ? (req.session.user?.profileIds || [])
       : [];
@@ -215,7 +271,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       displayName: group.displayName,
       description: group.description,
       eventbriteSeriesId: group.eventbriteSeriesId,
-      regulars: isTrusted ? regulars : [],
+      regulars: isTrusted ? rollingRegulars : [],
       ...(isCurrentUserRegular !== undefined && { isCurrentUserRegular }),
       financialYear: `${fy.startYear}-${fy.endYear}`,
       stats: {

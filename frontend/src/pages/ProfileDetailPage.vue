@@ -23,7 +23,7 @@
   </TaskLayout>
 
   <DefaultLayout v-else>
-    <div v-if="store.loading" class="pd-loading">Loading…</div>
+    <LoadingSpinner v-if="store.loading" />
     <div v-else-if="store.error" class="pd-error">{{ store.error }}</div>
     <template v-else-if="store.profile">
       <h1 class="sr-only">{{ store.profile.name ?? 'Profile' }}</h1>
@@ -49,10 +49,11 @@
         </div>
       </div>
 
-      <ProfileGroupList
-        :groups="store.profile.groupHours"
+      <RegularList
+        :items="regularItems"
         :allow-toggle-regular="viewer.isOperational"
-        ref="groupListRef"
+        :working-slug="workingRegularSlug ?? undefined"
+        :error="regularError"
         @add-regular="onAddRegular"
         @remove-regular="onRemoveRegular"
       />
@@ -101,13 +102,16 @@ import FormButton from '../components/forms/FormButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
-import ProfileGroupList from '../components/profiles/ProfileGroupList.vue'
+import RegularList from '../components/RegularList.vue'
+import type { RegularListItem } from '../components/RegularList.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
+import { groupPath } from '../router/index'
 import type { ProfileEntryResponse } from '../../../types/api-responses'
 import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
 import type { AddRecordPayload } from './modals/RecordAddModal.vue'
@@ -122,7 +126,19 @@ const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
 const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)
 const recordListRef = ref<InstanceType<typeof ProfileRecordList> | null>(null)
-const groupListRef = ref<InstanceType<typeof ProfileGroupList> | null>(null)
+const workingRegularSlug = ref<string | null>(null)
+const regularError = ref('')
+
+const regularItems = computed<RegularListItem[]>(() =>
+  (store.profile?.groupHours ?? []).map(g => ({
+    slug: g.groupKey,
+    name: g.groupName,
+    linkTo: groupPath(g.groupKey),
+    hours: g.hoursRolling,
+    isRegular: g.isRegular,
+    regularId: g.regularId,
+  }))
+)
 const recordTypes = ref<string[]>([])
 const recordStatuses = ref<string[]>([])
 
@@ -218,36 +234,44 @@ async function onDeleteRecord(id: number) {
   }
 }
 
-async function onAddRegular(groupId: number) {
+async function onAddRegular(groupKey: string) {
   if (!store.profile) return
+  workingRegularSlug.value = groupKey
+  regularError.value = ''
   try {
+    const group = store.profile.groupHours.find(g => g.groupKey === groupKey)
+    if (!group) throw new Error('Group not found')
     const res = await fetch(`/api/profiles/${route.params.slug}/regulars`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groupId }),
+      body: JSON.stringify({ groupId: group.groupId }),
     })
     if (!res.ok) throw new Error(`Add failed (${res.status})`)
     const json = await res.json()
-    const group = store.profile.groupHours.find(g => g.groupId === groupId)
-    if (group) { group.isRegular = true; group.regularId = json.data.id }
-    groupListRef.value?.onSuccess(groupId)
+    group.isRegular = true
+    group.regularId = json.data.id
   } catch (e) {
     console.error('[ProfileDetailPage] onAddRegular failed', e)
-    groupListRef.value?.onError(groupId, 'Failed to update — please try again')
+    regularError.value = 'Failed to update — please try again'
+  } finally {
+    workingRegularSlug.value = null
   }
 }
 
-async function onRemoveRegular(regularId: number, groupId: number) {
-  if (!store.profile) return
+async function onRemoveRegular(groupKey: string, regularId: number | undefined) {
+  if (!store.profile || regularId === undefined) return
+  workingRegularSlug.value = groupKey
+  regularError.value = ''
   try {
     const res = await fetch(`/api/regulars/${regularId}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-    const group = store.profile.groupHours.find(g => g.groupId === groupId)
+    const group = store.profile.groupHours.find(g => g.groupKey === groupKey)
     if (group) { group.isRegular = false; group.regularId = undefined }
-    groupListRef.value?.onSuccess(groupId)
   } catch (e) {
     console.error('[ProfileDetailPage] onRemoveRegular failed', e)
-    groupListRef.value?.onError(groupId, 'Failed to update — please try again')
+    regularError.value = 'Failed to update — please try again'
+  } finally {
+    workingRegularSlug.value = null
   }
 }
 
@@ -327,9 +351,7 @@ async function onEditEntry(id: number, data: EditData | null) {
 </script>
 
 <style scoped>
-.pd-loading,
-.pd-error { padding: 1.5rem; color: var(--color-text-label); }
-.pd-error { color: var(--color-dtv-dirt); }
+.pd-error { padding: 1.5rem; color: var(--color-dtv-dirt); }
 
 .pd-header {
   background: var(--color-white);
