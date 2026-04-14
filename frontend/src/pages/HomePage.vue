@@ -107,6 +107,12 @@
       </template>
     </LayoutColumns>
 
+    <!-- Recent sign-ups — admin/check-in only -->
+    <section v-if="profile.isOperational" class="mb-8">
+      <SectionHeader>Recent Sign-ups</SectionHeader>
+      <RecentEntryList />
+    </section>
+
     <DebugData label="homepage personal context" :item="{
       role: viewer.user?.role,
       profileSlug: viewer.user?.profileSlug,
@@ -149,6 +155,7 @@ import CardTitle from '../components/CardTitle.vue'
 import PersonalContainer from '../components/PersonalContainer.vue'
 import PersonalContribution from '../components/PersonalContribution.vue'
 import DebugData from '../components/DebugData.vue'
+import RecentEntryList from '../components/RecentEntryList.vue'
 import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
 import { sessionPath } from '../router'

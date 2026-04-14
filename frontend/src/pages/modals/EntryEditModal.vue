@@ -10,8 +10,8 @@
     @action="save"
     @delete="confirmDelete = true"
   >
-    <div v-if="entry.profile.slug" class="eem-actions">
-      <AppButton label="View Profile" icon="profile" @click="router.push(profilePath(entry.profile.slug!))" />
+    <div v-if="viewLabel && viewTo" class="eem-actions">
+      <AppButton :label="viewLabel" :icon="viewIcon" @click="router.push(viewTo)" />
     </div>
 
     <FormLayout :disabled="working">
@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { profilePath } from '../../router/index'
+import type { RouteLocationRaw } from 'vue-router'
 import type { EntryItem } from '../../types/entry'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
@@ -54,7 +54,7 @@ import AppButton from '../../components/AppButton.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
 import DeleteModal from './DeleteModal.vue'
 
-const props = defineProps<{ entry: EntryItem; working: boolean; error?: string; title?: string }>()
+const props = defineProps<{ entry: EntryItem; working: boolean; error?: string; title?: string; viewLabel?: string; viewTo?: RouteLocationRaw; viewIcon?: string }>()
 const emit = defineEmits<{
   close: []
   save: [data: { checkedIn: boolean; count: number; hours: number; notes: string }]

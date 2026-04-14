@@ -11,9 +11,7 @@
           <option value="">All groups</option>
           <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
         </select>
-        <select v-model="fy" class="pel-select">
-          <option v-for="opt in fyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-        </select>
+        <FyFilter v-model="fy" />
       </div>
     </div>
 
@@ -39,6 +37,9 @@
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
+      view-label="View Session"
+      view-icon="calendar"
+      :view-to="sessionPath(editingEntry.session.groupKey, editingEntry.session.date)"
       :working="workingEdit"
       :error="editError"
       @close="closeEditModal"
@@ -50,11 +51,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { EntryItem } from '../../types/entry'
 import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
 import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
+import FyFilter from '../FyFilter.vue'
 import { sessionPath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 
@@ -71,8 +73,19 @@ const emit = defineEmits<{
   editEntry: [id: number, data: EditData | null]
 }>()
 
-const fy = ref('rolling')
+const fy = ref('future')
 const groupKey = ref('')
+
+// Cascade default: future → rolling → all, whichever first has entries
+let defaultSet = false
+watch(() => props.entries, (entries) => {
+  if (defaultSet || !entries.length) return
+  defaultSet = true
+  const t = new Date().toISOString().slice(0, 10)
+  if (entries.some(e => e.session.date >= t)) { fy.value = 'future'; return }
+  if (entries.some(e => e.session.date >= rollingStart())) { fy.value = 'rolling'; return }
+  fy.value = 'all'
+}, { immediate: true })
 
 const groupOptions = computed(() => {
   const map = new Map<string, string>()
@@ -88,27 +101,11 @@ function financialYearOf(date: string): string {
   return `FY${year}`
 }
 
-function fyLabel(fyKey: string): string {
-  const y = parseInt(fyKey.replace('FY', ''))
-  return `FY ${String(y).slice(2)}/${String(y + 1).slice(2)}`
-}
-
 function rollingStart(): string {
   const d = new Date()
   d.setFullYear(d.getFullYear() - 1)
   return d.toISOString().slice(0, 10)
 }
-
-const fyOptions = computed(() => {
-  const keys = [...new Set(props.entries.map(e => financialYearOf(e.session.date)))]
-    .filter(k => k.startsWith('FY'))
-    .sort()
-  return [
-    { value: 'all', label: 'All FY' },
-    ...keys.map(k => ({ value: k, label: fyLabel(k) })),
-    { value: 'rolling', label: 'Rolling FY' },
-  ]
-})
 
 const totalHours = computed(() => {
   const sum = filteredEntries.value.reduce((acc, e) => acc + (e.hours ?? 0), 0)
@@ -117,7 +114,9 @@ const totalHours = computed(() => {
 
 const filteredEntries = computed(() => {
   let result = props.entries
-  if (fy.value === 'rolling') {
+  if (fy.value === 'future') {
+    result = result.filter(e => e.session.date >= new Date().toISOString().slice(0, 10))
+  } else if (fy.value === 'rolling') {
     const start = rollingStart()
     const today = new Date().toISOString().slice(0, 10)
     result = result.filter(e => e.session.date >= start && e.session.date <= today)

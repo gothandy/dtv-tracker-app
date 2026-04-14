@@ -33,6 +33,9 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
+      view-label="View Profile"
+      view-icon="profile"
+      :view-to="editingEntry.profile.slug ? profilePath(editingEntry.profile.slug) : undefined"
       :working="workingEdit"
       :error="editError"
       @close="closeEditModal"

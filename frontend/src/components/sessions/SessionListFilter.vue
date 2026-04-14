@@ -36,7 +36,7 @@ const emit = defineEmits<{ filtered: [sessions: Session[]] }>()
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 const route = useRoute()
-const fy       = ref((route.query.fy as string) || 'rolling')
+const fy       = ref((route.query.fy as string) || 'future')
 const search   = ref('')
 const groupKey = ref((route.query.group as string) || '')
 const tagLabel = ref((route.query.tag as string) || '')
@@ -49,7 +49,9 @@ function rollingStart(): string {
 
 function applyBase(list: Session[]): Session[] {
   let r = list
-  if (fy.value === 'rolling')
+  if (fy.value === 'future')
+    r = r.filter(s => s.date >= new Date().toISOString().slice(0, 10))
+  else if (fy.value === 'rolling')
     r = r.filter(s => s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10))
   else if (fy.value && fy.value !== 'all')
     r = r.filter(s => s.financialYear === fy.value)
