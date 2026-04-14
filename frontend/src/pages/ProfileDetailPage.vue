@@ -194,6 +194,7 @@ async function onDeleteProfile() {
   try {
     const res = await fetch(`/api/profiles/${store.profile.slug}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    alert(`${store.profile.name} deleted`)
     actionsRef.value?.onDeleteSuccess()
     router.push(profilesPath())
   } catch (e) {
@@ -250,22 +251,38 @@ async function onTransferProfile(data: TransferProfilePayload) {
     if (!res.ok) throw new Error(`Transfer failed (${res.status})`)
     const json = await res.json()
 
+    const { entries, records, regularCount } = store.profile
+    const summary: string[] = [
+      `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} transferred`,
+      `${records?.length ?? 0} ${(records?.length ?? 0) === 1 ? 'record' : 'records'} transferred`,
+      `${regularCount} ${regularCount === 1 ? 'regular' : 'regulars'} transferred`,
+    ]
+
     if (data.addEmail && store.profile.emails[0]) {
       const sourceEmail = store.profile.emails[0]
-      const targetRes = await fetch(`/api/profiles/${json.data.targetSlug}`)
-      if (!targetRes.ok) throw new Error(`Failed to fetch target profile (${targetRes.status})`)
-      const targetJson = await targetRes.json()
-      const targetEmails: string[] = targetJson.data?.emails ?? []
-      if (!targetEmails.includes(sourceEmail)) {
-        const patchRes = await fetch(`/api/profiles/${targetJson.data.slug}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ emails: [...targetEmails, sourceEmail] }),
-        })
-        if (!patchRes.ok) throw new Error(`Failed to add email to target profile (${patchRes.status})`)
+      try {
+        const targetRes = await fetch(`/api/profiles/${json.data.targetSlug}`)
+        if (!targetRes.ok) throw new Error(`Failed to fetch target profile (${targetRes.status})`)
+        const targetJson = await targetRes.json()
+        const targetEmails: string[] = targetJson.data?.emails ?? []
+        if (!targetEmails.includes(sourceEmail)) {
+          const patchRes = await fetch(`/api/profiles/${targetJson.data.slug}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails: [...targetEmails, sourceEmail] }),
+          })
+          if (!patchRes.ok) throw new Error(`Failed to add email to target profile (${patchRes.status})`)
+        }
+        summary.push(`Email ${sourceEmail} added to target`)
+      } catch (emailErr) {
+        console.error('[ProfileDetailPage] addEmail step failed (transfer already succeeded)', emailErr)
+        summary.push(`Email could not be added — please add manually`)
       }
     }
 
+    if (data.deleteAfter) summary.push('Source profile deleted')
+
+    alert(`Transfer complete\n\n${summary.join('\n')}`)
     actionsRef.value?.onTransferSuccess()
     router.push(profilePath(json.data.targetSlug))
   } catch (e) {
