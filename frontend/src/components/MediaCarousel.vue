@@ -7,8 +7,12 @@
       </div>
     </div>
 
-    <button class="mg-nav mg-nav-prev" aria-label="Previous" :disabled="!canScrollPrev" @click="scrollPrev">🞀</button>
-    <button class="mg-nav mg-nav-next" aria-label="Next"     :disabled="!canScrollNext" @click="scrollNext">🞂</button>
+    <button class="mg-nav mg-nav-prev" aria-label="Previous" :disabled="!canScrollPrev" @click="scrollPrev">
+      <img src="/icons/arrows/left.svg" alt="" width="20" height="20" class="svg-white" />
+    </button>
+    <button class="mg-nav mg-nav-next" aria-label="Next" :disabled="!canScrollNext" @click="scrollNext">
+      <img src="/icons/arrows/right.svg" alt="" width="20" height="20" class="svg-white" />
+    </button>
     <div class="mg-footer"></div>
   </div>
 </template>
@@ -100,8 +104,6 @@ onUnmounted(() => embla?.destroy())
   padding: 0;
   border: none;
   background: var(--color-nav-bg);
-  color: var(--color-text-secondary);
-  font-size: 1.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -110,6 +112,7 @@ onUnmounted(() => embla?.destroy())
   opacity: 0.75;
   transition: opacity 0.15s;
 }
+
 
 .mg-nav-prev { left: calc(1.5rem + 10px); }
 .mg-nav-next { right: calc(1.5rem + 10px); }
