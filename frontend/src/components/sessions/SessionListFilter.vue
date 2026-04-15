@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import TermPicker from '../TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
@@ -36,8 +36,9 @@ const emit = defineEmits<{ filtered: [sessions: Session[]] }>()
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 const route = useRoute()
+const router = useRouter()
 const fy       = ref((route.query.fy as string) || 'future')
-const search   = ref('')
+const search   = ref((route.query.search as string) || '')
 const groupKey = ref((route.query.group as string) || '')
 const tagLabel = ref((route.query.tag as string) || '')
 
@@ -95,9 +96,23 @@ const availableTagLabels = computed(() => {
   return labels
 })
 
-const filtered = computed(() => applyTag(applyGroup(base.value)))
+const filtered = computed(() => {
+  const list = applyTag(applyGroup(base.value))
+  return fy.value === 'future'
+    ? [...list].sort((a, b) => a.date.localeCompare(b.date))
+    : list
+})
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
+
+watch([fy, search, groupKey, tagLabel], ([newFy, newSearch, newGroup, newTag]) => {
+  const query: Record<string, string> = {}
+  if (newFy)     query.fy     = newFy
+  if (newSearch) query.search = newSearch
+  if (newGroup)  query.group  = newGroup
+  if (newTag)    query.tag    = newTag
+  router.replace({ query })
+})
 </script>
 
 <style scoped>

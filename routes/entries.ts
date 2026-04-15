@@ -460,7 +460,16 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       fields.Notes = notes;
     }
     if (accompanyingAdultId !== undefined) {
-      fields.AccompanyingAdultLookupId = accompanyingAdultId === null ? null : parseInt(String(accompanyingAdultId), 10);
+      if (accompanyingAdultId !== null) {
+        const adultIdNum = parseInt(String(accompanyingAdultId), 10);
+        if (isNaN(adultIdNum) || adultIdNum <= 0) {
+          res.status(400).json({ success: false, error: 'accompanyingAdultId must be a positive integer or null' });
+          return;
+        }
+        fields.AccompanyingAdultLookupId = adultIdNum;
+      } else {
+        fields.AccompanyingAdultLookupId = null;
+      }
     }
 
     if (Object.keys(fields).length === 0) {

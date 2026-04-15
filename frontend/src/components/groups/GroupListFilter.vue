@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import { useGroupListStore } from '../../stores/groupList'
 import { groupPath } from '../../router/index'
@@ -54,10 +54,11 @@ export interface GroupWithStats extends GroupResponse {
 const props = defineProps<{ groups: GroupResponse[]; sessions: Session[]; canAddGroup: boolean }>()
 const emit = defineEmits<{ filtered: [groups: GroupWithStats[]] }>()
 
+const route = useRoute()
 const router = useRouter()
 const groupsStore = useGroupListStore()
 
-const fy = ref('rolling')
+const fy = ref((route.query.fy as string) || 'rolling')
 const showNew = ref(false)
 const newKey = ref('')
 const newName = ref('')
@@ -92,6 +93,10 @@ const filtered = computed<GroupWithStats[]>(() => {
 })
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
+
+watch(fy, newFy => {
+  router.replace({ query: newFy ? { fy: newFy } : {} })
+})
 
 async function addGroup() {
   if (!newKey.value) return

@@ -33,7 +33,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { onMounted } from 'vue'
 import { useEntryListStore } from '../stores/entryList'
 import type { EntryListItemResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
@@ -58,8 +57,6 @@ const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
 const currentFilter = ref<EntryFilterParams>({ q: '', accompanyingAdult: '' })
-
-onMounted(() => store.fetch())
 
 function onFiltered(params: EntryFilterParams) {
   currentFilter.value = params

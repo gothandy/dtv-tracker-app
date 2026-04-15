@@ -16,7 +16,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 export interface EntryFilterParams {
   q: string
@@ -25,8 +26,11 @@ export interface EntryFilterParams {
 
 const emit = defineEmits<{ filtered: [params: EntryFilterParams] }>()
 
-const q = ref('')
-const accompanyingAdult = ref('')
+const route = useRoute()
+const router = useRouter()
+
+const q = ref((route.query.q as string) || '')
+const accompanyingAdult = ref((route.query.accompanyingAdult as string) || '')
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -38,6 +42,15 @@ function onTextInput() {
 function emitFiltered() {
   emit('filtered', { q: q.value, accompanyingAdult: accompanyingAdult.value })
 }
+
+onMounted(() => emitFiltered())
+
+watch([q, accompanyingAdult], ([newQ, newAdult]) => {
+  const query: Record<string, string> = {}
+  if (newQ)    query.q                  = newQ
+  if (newAdult) query.accompanyingAdult = newAdult
+  router.replace({ query })
+})
 </script>
 
 <style scoped>

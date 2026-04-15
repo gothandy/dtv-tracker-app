@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
 import type { GroupResponse } from '../../../../types/api-responses'
@@ -68,6 +68,7 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
 
 const fy          = ref((route.query.fy as string)           || 'rolling')
 const group       = ref((route.query.group as string)        || '')
@@ -152,6 +153,19 @@ const filtered = computed<ProfileResponse[]>(() => {
 })
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
+
+watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus], ([newFy, newGroup, newSearch, newSort, newType, newHours, newRecordType, newRecordStatus]) => {
+  const query: Record<string, string> = {}
+  if (newFy)           query.fy           = newFy
+  if (newGroup)        query.group        = newGroup
+  if (newSearch)       query.search       = newSearch
+  if (newSort && newSort !== 'az') query.sort = newSort
+  if (newType)         query.type         = newType
+  if (newHours)        query.hours        = newHours
+  if (newRecordType)   query.recordType   = newRecordType
+  if (newRecordStatus) query.recordStatus = newRecordStatus
+  router.replace({ query })
+})
 </script>
 
 <style scoped>
