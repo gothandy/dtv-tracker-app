@@ -82,6 +82,7 @@ export interface ProfileEntryResponse {
   hours: number;
   checkedIn: boolean;
   notes?: string;
+  accompanyingAdultId?: number;
   financialYear: string;
 }
 

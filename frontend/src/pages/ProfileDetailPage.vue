@@ -103,6 +103,36 @@
         </template>
       </LayoutColumns>
 
+      <LayoutColumns v-if="viewer.isAdmin && !store.profile.isGroup && childEntries.length" ratio="1">
+        <template #header><SectionHeader>Accompanying Adult</SectionHeader></template>
+        <template #left>
+          <div class="pd-child-list">
+            <button
+              v-for="e in childEntries"
+              :key="e.id"
+              class="pd-child-btn"
+              @click="openChildEditModal(e)"
+            >
+              <EntryListItem :entry="e" />
+            </button>
+          </div>
+        </template>
+      </LayoutColumns>
+
+      <EntryEditModal
+        v-if="childEditingEntry"
+        :entry="childEditingEntry"
+        :title="childEditingEntry.profile.name"
+        :profile-click="childEditingEntry.profile.slug ? () => router.push(profilePath(childEditingEntry!.profile.slug!)) : undefined"
+        :session-click="() => router.push(sessionPath(childEditingEntry!.session.groupKey, childEditingEntry!.session.date))"
+        :session-adults="childSessionAdults"
+        :working="childEditWorking"
+        :error="childEditError"
+        @close="closeChildEditModal"
+        @save="onChildSave"
+        @delete="onChildDelete"
+      />
+
       <DebugData :item="store.profile" label="pageProfile" />
       <DebugData :item="viewer.context" label="userProfile" />
     </template>
@@ -126,17 +156,20 @@ import ProfileDuplicateWarning from '../components/profiles/ProfileDuplicateWarn
 import ProfileLinkedAccounts from '../components/profiles/ProfileLinkedAccounts.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import RegularList from '../components/RegularList.vue'
+import EntryListItem from '../components/entries/EntryListItem.vue'
+import EntryEditModal from './modals/EntryEditModal.vue'
 import type { RegularListItem } from '../components/RegularList.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
-import { groupPath, profilePath, profilesPath } from '../router/index'
-import type { ProfileEntryResponse } from '../../../types/api-responses'
+import { groupPath, profilePath, profilesPath, sessionPath } from '../router/index'
+import type { ProfileEntryResponse, EntryListItemResponse } from '../../../types/api-responses'
 import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
 import type { TransferProfilePayload } from './modals/ProfileTransferModal.vue'
 import type { AddRecordPayload } from './modals/RecordAddModal.vue'
 import type { SaveRecordPayload } from './modals/RecordEditModal.vue'
 import type { EntryItem } from '../types/entry'
+import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 import type { PickerProfile } from '../components/ProfilePicker.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'
@@ -167,6 +200,13 @@ const recordStatuses = ref<string[]>([])
 usePageTitle(computed(() => store.profile?.name ?? 'Profile'))
 const entryListRef = ref<InstanceType<typeof ProfileEntryList> | null>(null)
 
+// Child entries (this profile as accompanying adult) — admin only
+const childEntries = ref<EntryListItemResponse[]>([])
+const childEditingEntry = ref<EntryItem | null>(null)
+const childSessionAdults = ref<{ id: number; name: string }[]>([])
+const childEditWorking = ref(false)
+const childEditError = ref<string | undefined>()
+
 // Lazily loaded profiles for transfer picker
 const transferProfiles = ref<PickerProfile[]>([])
 
@@ -184,6 +224,21 @@ onMounted(async () => {
   }
 })
 watch(() => route.params.slug, slug => { if (slug) store.fetch(slug as string) })
+
+watch(
+  [() => store.profile, () => viewer.isAdmin],
+  async ([profile, isAdmin]) => {
+    if (!isAdmin || !profile || profile.isGroup) { childEntries.value = []; return }
+    try {
+      const res = await fetch(`/api/entries?accompanyingAdultId=${profile.id}`)
+      if (!res.ok) throw new Error(`Fetch failed (${res.status})`)
+      const json = await res.json()
+      childEntries.value = json.data ?? []
+    } catch (e) {
+      console.error('[ProfileDetailPage] Failed to load child entries', e)
+    }
+  }
+)
 
 const isMember = computed(() =>
   store.profile?.records?.some(r => r.type === 'Charity Membership' && r.status === 'Accepted') ?? false
@@ -368,6 +423,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     hours: e.hours,
     count: e.count,
     notes: e.notes,
+    accompanyingAdultId: e.accompanyingAdultId,
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,
@@ -434,6 +490,85 @@ async function onEditEntry(id: number, data: EditData | null) {
     entryListRef.value?.onEditError('Failed to save — please try again')
   }
 }
+
+function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
+  return {
+    id: e.id,
+    profileId: e.profileId,
+    checkedIn: e.checkedIn,
+    hours: e.hours,
+    count: e.count,
+    notes: e.notes,
+    accompanyingAdultId: e.accompanyingAdultId,
+    profile: {
+      name: e.volunteerName ?? 'Unknown',
+      slug: e.volunteerSlug,
+      isMember: false,
+      isGroup: e.isGroup,
+    },
+    session: {
+      groupKey: e.groupKey,
+      groupName: e.groupName,
+      date: e.date,
+    },
+  }
+}
+
+async function openChildEditModal(e: EntryListItemResponse) {
+  childEditingEntry.value = mapChildEntryToItem(e)
+  childSessionAdults.value = await fetchSessionAdults(e.groupKey, e.date)
+}
+
+function closeChildEditModal() {
+  childEditingEntry.value = null
+  childSessionAdults.value = []
+  childEditWorking.value = false
+  childEditError.value = undefined
+}
+
+async function onChildSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }) {
+  if (!childEditingEntry.value) return
+  childEditWorking.value = true
+  childEditError.value = undefined
+  try {
+    const res = await fetch(`/api/entries/${childEditingEntry.value.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    const stored = childEntries.value.find(e => e.id === childEditingEntry.value!.id)
+    if (stored) {
+      stored.checkedIn = data.checkedIn
+      stored.hours = data.hours
+      stored.count = data.count
+      stored.notes = data.notes
+      stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
+      stored.hasAccompanyingAdult = data.accompanyingAdultId !== null
+    }
+    closeChildEditModal()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onChildSave failed', e)
+    childEditError.value = 'Failed to save — please try again'
+    childEditWorking.value = false
+  }
+}
+
+async function onChildDelete() {
+  if (!childEditingEntry.value) return
+  childEditWorking.value = true
+  childEditError.value = undefined
+  try {
+    const res = await fetch(`/api/entries/${childEditingEntry.value.id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    childEntries.value = childEntries.value.filter(e => e.id !== childEditingEntry.value!.id)
+    closeChildEditModal()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onChildDelete failed', e)
+    childEditError.value = 'Failed to delete — please try again'
+    childEditWorking.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -473,5 +608,22 @@ async function onEditEntry(id: number, data: EditData | null) {
 .pd-task-link {
   color: var(--color-dtv-green-dark);
   opacity: 1;
+}
+
+.pd-child-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-dtv-sand-light);
+}
+
+.pd-child-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 </style>

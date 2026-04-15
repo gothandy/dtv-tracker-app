@@ -137,6 +137,7 @@ router.get('/entries', async (req: Request, res: Response) => {
   try {
     const q = req.query.q ? String(req.query.q).toLowerCase() : '';
     const accompanyingAdult = req.query.accompanyingAdult ? String(req.query.accompanyingAdult) : '';
+    const filterAdultId = req.query.accompanyingAdultId ? parseInt(String(req.query.accompanyingAdultId), 10) : null;
 
     const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
       entriesRepository.getAll(),
@@ -167,6 +168,7 @@ router.get('/entries', async (req: Request, res: Response) => {
         const hasAdult = !!e.AccompanyingAdultLookupId;
         if (accompanyingAdult === 'empty' && hasAdult) return [];
         if (accompanyingAdult === 'notempty' && !hasAdult) return [];
+        if (filterAdultId !== null && Number(e.AccompanyingAdultLookupId) !== filterAdultId) return [];
 
         const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
         const profile = profileId !== undefined ? profileMap.get(profileId) : undefined;
