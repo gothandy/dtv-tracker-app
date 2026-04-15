@@ -23,7 +23,7 @@ export function bookingEmailFor(attendee: EventbriteAttendee): string | undefine
  * finds the SharePoint profile of the accompanying adult (the adult ticket
  * holder in the same order). Returns undefined if the adult cannot be matched.
  *
- * Used by both the historic backfill and ongoing sync.
+ * Used by ongoing sync.
  */
 export function resolveAccompanyingAdult(
   attendees: EventbriteAttendee[],
