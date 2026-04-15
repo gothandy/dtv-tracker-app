@@ -52,11 +52,17 @@ export function resolveAccompanyingAdult(
     if (byNameAndEmail) return byNameAndEmail;
   }
 
-  // Name-only fallback
-  return profiles.find(p =>
+  // Name-only — only when emails are compatible (absent on one/both sides)
+  const byName = profiles.find(p =>
     (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
     (p.Title && toMatchName(p.Title) === nameKey)
   );
+  if (!byName) return undefined;
+
+  const profileEmail = byName.Email?.toLowerCase();
+  if (adultEmail && profileEmail && adultEmail !== profileEmail) return undefined;
+
+  return byName;
 }
 
 /**
@@ -80,10 +86,17 @@ export function findExistingProfile(
     if (byNameAndEmail) return byNameAndEmail;
   }
 
-  return profiles.find(p =>
+  // Name-only — only when emails are compatible (absent on one/both sides)
+  const byName = profiles.find(p =>
     (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
     (p.Title && toMatchName(p.Title) === nameKey)
   );
+  if (!byName) return undefined;
+
+  const profileEmail = byName.Email?.toLowerCase();
+  if (normalizedEmail && profileEmail && normalizedEmail !== profileEmail) return undefined;
+
+  return byName;
 }
 
 /**

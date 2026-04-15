@@ -498,8 +498,7 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
 
 // ---------------------------------------------------------------------------
 // Historic backfill: BookedBy
-// Sets BookedBy on every existing entry that came from Eventbrite, by
-// re-fetching the Eventbrite order contact email for each attendee.
+// Sets BookedBy on every existing entry that came from Eventbrite.
 // Use ?dry=true (default) to preview writes without touching SharePoint.
 // ---------------------------------------------------------------------------
 router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Response) => {
@@ -515,7 +514,6 @@ router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Resp
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
 
-    // Index entries by sessionId+profileId for fast lookup
     const entryIndex = new Map<string, typeof entries[0]>();
     for (const e of entries) {
       const sId = safeParseLookupId(e[SESSION_LOOKUP]);
@@ -534,9 +532,7 @@ router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Resp
         const name = attendee.profile?.name;
         if (!name) continue;
 
-        // Find profile by name+email (read-only — never create)
         const profile = findExistingProfile(name, attendee.profile?.email, profiles);
-
         if (!profile) {
           unmatched.push({ eventId: session.EventbriteEventID!, name, email: attendee.profile?.email || '' });
           continue;
@@ -548,7 +544,6 @@ router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Resp
           continue;
         }
 
-        // Skip if already set (idempotent)
         if (entry.BookedBy) continue;
 
         const bookingEmail = bookingEmailFor(attendee);
@@ -565,16 +560,7 @@ router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Resp
     }
 
     console.log(`[Backfill BookedBy] dry=${dry} sessions=${ebSessions.length} planned=${planned.length} unmatched=${unmatched.length}`);
-    res.json({
-      success: true,
-      data: {
-        dry,
-        sessionsProcessed: ebSessions.length,
-        entriesUpdated: dry ? 0 : planned.length,
-        planned: dry ? planned : undefined,
-        unmatched
-      }
-    });
+    res.json({ success: true, data: { dry, sessionsProcessed: ebSessions.length, entriesUpdated: dry ? 0 : planned.length, planned: dry ? planned : undefined, unmatched } });
   } catch (error: any) {
     console.error('Error in backfill-booking-email:', error);
     res.status(500).json({ success: false, error: error.message || 'Backfill failed' });
@@ -583,8 +569,7 @@ router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Resp
 
 // ---------------------------------------------------------------------------
 // Historic backfill: AccompanyingAdult
-// Sets AccompanyingAdultLookupId on child entries by finding the adult ticket
-// holder in the same Eventbrite order.
+// Sets AccompanyingAdultLookupId on child entries from same-order adult.
 // Use ?dry=true (default) to preview writes without touching SharePoint.
 // ---------------------------------------------------------------------------
 router.post('/eventbrite/backfill-accompanying-adult', async (req: Request, res: Response) => {
@@ -619,9 +604,7 @@ router.post('/eventbrite/backfill-accompanying-adult', async (req: Request, res:
         const name = child.profile?.name;
         if (!name) continue;
 
-        // Find child's SharePoint profile (read-only — never create)
         const childProfile = findExistingProfile(name, child.profile?.email, profiles);
-
         if (!childProfile) {
           unresolved.push({ eventId: session.EventbriteEventID!, childName: name, orderId: child.order_id || '', reason: 'child profile not found' });
           continue;
@@ -633,7 +616,6 @@ router.post('/eventbrite/backfill-accompanying-adult', async (req: Request, res:
           continue;
         }
 
-        // Skip if already set (idempotent)
         if (entry.AccompanyingAdultLookupId) continue;
 
         if (!child.order_id) {
@@ -658,16 +640,7 @@ router.post('/eventbrite/backfill-accompanying-adult', async (req: Request, res:
     }
 
     console.log(`[Backfill AccompanyingAdult] dry=${dry} sessions=${ebSessions.length} planned=${planned.length} unresolved=${unresolved.length}`);
-    res.json({
-      success: true,
-      data: {
-        dry,
-        sessionsProcessed: ebSessions.length,
-        accompanyingAdultSet: dry ? 0 : planned.length,
-        planned: dry ? planned : undefined,
-        unresolved
-      }
-    });
+    res.json({ success: true, data: { dry, sessionsProcessed: ebSessions.length, accompanyingAdultSet: dry ? 0 : planned.length, planned: dry ? planned : undefined, unresolved } });
   } catch (error: any) {
     console.error('Error in backfill-accompanying-adult:', error);
     res.status(500).json({ success: false, error: error.message || 'Backfill failed' });
