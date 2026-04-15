@@ -16,7 +16,7 @@ class EntriesRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,Code,Created,Modified`;
+    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,Created,Modified`;
   }
 
   async getAll(): Promise<SharePointEntry[]> {
@@ -105,19 +105,6 @@ class EntriesRepository {
       this.selectFields,
       filter
     ) as SharePointEntry[];
-  }
-
-  async getByCode(code: string): Promise<SharePointEntry | null> {
-    const sanitized = code.replace(/[^A-Z]/g, '').substring(0, 4);
-    if (sanitized.length !== 4) return null;
-    const items = await this.getAll();
-    return items.find(e => e.Code === sanitized) ?? null;
-  }
-
-  async updateCode(entryId: number, code: string): Promise<void> {
-    await sharePointClient.updateListItem(this.listGuid, entryId, { Code: code });
-    sharePointClient.clearCacheKey('entries');
-    sharePointClient.clearCacheByPrefix('sessions_FY');
   }
 
   async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes'>>): Promise<void> {

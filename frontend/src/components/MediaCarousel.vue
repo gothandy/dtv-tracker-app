@@ -8,10 +8,10 @@
     </div>
 
     <button class="mg-nav mg-nav-prev" aria-label="Previous" :disabled="!canScrollPrev" @click="scrollPrev">
-      <img src="/icons/arrows/left.svg" alt="" width="20" height="20" class="svg-white" />
+      <img src="/icons/arrows/left.svg" alt="" width="20" height="20" class="svg-black" />
     </button>
     <button class="mg-nav mg-nav-next" aria-label="Next" :disabled="!canScrollNext" @click="scrollNext">
-      <img src="/icons/arrows/right.svg" alt="" width="20" height="20" class="svg-white" />
+      <img src="/icons/arrows/right.svg" alt="" width="20" height="20" class="svg-black" />
     </button>
     <div class="mg-footer"></div>
   </div>
