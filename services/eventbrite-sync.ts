@@ -89,6 +89,34 @@ export function isNewVolunteer(
  * Mutates `profiles` by pushing any newly-created profile so subsequent
  * lookups within the same batch stay consistent.
  */
+/**
+ * Find a profile matching an Eventbrite attendee by name + email — find-only, no create.
+ * Uses the same matching priority as findOrCreateProfile (name+email first, name-only second).
+ */
+export function findProfileByAttendee(
+  attendee: EventbriteAttendee,
+  profiles: SharePointProfile[]
+): SharePointProfile | undefined {
+  const attendeeName = attendee.profile?.name;
+  if (!attendeeName) return undefined;
+  const nameKey = toMatchName(attendeeName);
+  const email = bookingEmailFor(attendee)?.toLowerCase();
+
+  if (email) {
+    const byNameAndEmail = profiles.find(p => {
+      const nameMatches = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+                          (p.Title && toMatchName(p.Title) === nameKey);
+      return nameMatches && parseEmails(p.Email).some(e => e.toLowerCase() === email);
+    });
+    if (byNameAndEmail) return byNameAndEmail;
+  }
+
+  return profiles.find(p =>
+    (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+    (p.Title && toMatchName(p.Title) === nameKey)
+  );
+}
+
 export async function findOrCreateProfile(
   attendeeName: string,
   attendeeEmail: string | undefined,
