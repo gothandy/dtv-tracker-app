@@ -2,7 +2,7 @@
   <div class="ec-row">
 
     <!-- Card body -->
-    <div class="ec-card" :class="{ 'ec-card--checked': checkedIn }">
+    <div class="ec-card" :class="{ 'ec-card--checked': checkedIn, 'ec-card--cancelled': cancelled }">
       <div class="ec-card-left">
 
         <button v-if="allowEdit" class="ec-name ec-name--btn" @click="emit('editEntry')">
@@ -77,6 +77,7 @@ const props = defineProps<{
   allowEdit?: boolean
   allowCancel?: boolean
   working?: boolean
+  cancelled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -208,6 +209,8 @@ function onHoursChange(input: HTMLInputElement) {
   gap: 0.5rem;
 }
 .ec-card--checked { border-left-color: var(--color-dtv-green); }
+.ec-card--cancelled { opacity: 0.5; }
+.ec-card--cancelled .ec-name { text-decoration: line-through; }
 
 .ec-card-left {
   flex: 1;

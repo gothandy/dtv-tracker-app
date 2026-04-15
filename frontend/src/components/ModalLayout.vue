@@ -19,7 +19,7 @@
       <div class="am-footer">
         <AppButton
           v-if="showDelete"
-          label="Delete"
+          :label="deleteText ?? 'Delete'"
           icon="delete"
           mode="icon-responsive"
           variant="danger"
@@ -60,6 +60,7 @@ const props = defineProps<{
   working?: boolean
   showDelete?: boolean
   deleteDisabled?: boolean
+  deleteText?: string
   error?: string
 }>()
 

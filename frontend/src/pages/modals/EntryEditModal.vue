@@ -3,13 +3,18 @@
     :title="title ?? entry.profile.name"
     action="Save"
     action-icon="save"
-    show-delete
+    :show-delete="!isCancelled || isAdmin"
+    :delete-text="isCancelled ? 'Delete' : 'Cancel'"
     :working="working"
     :error="error"
     @close="emit('close')"
     @action="save"
-    @delete="confirmDelete = true"
+    @delete="isCancelled ? (confirmDelete = true) : emit('delete')"
   >
+    <div v-if="entry.cancelled" class="eem-cancelled">
+      Cancelled {{ formatCancelled(entry.cancelled) }}
+    </div>
+
     <div v-if="profileClick || sessionClick" class="eem-actions">
       <AppButton v-if="profileClick" label="View Profile" icon="profile" @click="profileClick!()" />
       <AppButton v-if="sessionClick" label="View Session" icon="register" @click="sessionClick!()" />
@@ -70,6 +75,8 @@ const props = defineProps<{
   working: boolean
   error?: string
   title?: string
+  isCancelled?: boolean
+  isAdmin?: boolean
   profileClick?: () => void
   sessionClick?: () => void
   sessionAdults?: { id: number; name: string }[]
@@ -105,6 +112,10 @@ watch(hasChild, (val) => {
   if (!val) form.accompanyingAdultId = null
 })
 
+function formatCancelled(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 function save() {
   emit('save', {
     checkedIn: form.checkedIn,
@@ -122,6 +133,15 @@ function deleteEntry() {
 </script>
 
 <style scoped>
+.eem-cancelled {
+  background: var(--color-dtv-dirt-light);
+  color: var(--color-dtv-dirt-dark, var(--color-dtv-dirt));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
 .eem-actions {
   display: flex;
   gap: 0.5rem;

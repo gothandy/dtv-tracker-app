@@ -17,7 +17,7 @@ import { recordsRepository } from './repositories/records-repository';
 import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear } from './data-layer';
-import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS } from './field-names';
+import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
 
 export interface ProfileStatsRefreshResult {
   total: number;
@@ -55,6 +55,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   const sessionIds: number[] = [];
 
   for (const e of profileEntries) {
+    if (e[ENTRY_CANCELLED]) continue; // cancelled bookings excluded from all stats
     const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
     if (sessionId === undefined) continue;
     sessionIds.push(sessionId);
@@ -123,6 +124,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
   const profileSessionIds = new Map<number, number[]>();             // profileId → [sessionId, ...]
 
   for (const e of entriesRaw) {
+    if (e[ENTRY_CANCELLED]) continue; // cancelled bookings excluded from all stats
     const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
     const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
     if (profileId === undefined || sessionId === undefined) continue;

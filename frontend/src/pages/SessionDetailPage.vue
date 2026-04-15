@@ -32,10 +32,11 @@
         <template #right>
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" />
           <ConcertinaLayout>
-            <ConcertinaItem label="Book" v-if="store.session.isBookable && !store.session.isRegistered" >
-              <SessionDetailBook :session="store.session" />
+            <ConcertinaItem label="Book" v-if="store.session.isBookable && !store.session.isRegistered">
+              <SessionDetailBook :session="store.session" :working="bookWorking" :error="bookError" @book="onBook" />
             </ConcertinaItem>
             <ConcertinaItem label="Cancel" v-if="store.session.isBookable && store.session.isRegistered">
+              <SessionDetailCancel :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
             </ConcertinaItem>
 
           </ConcertinaLayout>
@@ -170,6 +171,7 @@
             ref="entryListRef"
             :entries="entries"
             :allow-edit="profile.isOperational"
+            :is-admin="profile.isAdmin"
             :profiles="profiles"
             :working-id="workingId"
             :refresh-working="refreshWorking"
@@ -178,6 +180,7 @@
             @set-hours="onSetHours"
             @add-entry="onAddEntry"
             @edit-entry="onEditEntry"
+            @cancel-entry="onCancelEntry"
           />
         </template>
       </LayoutColumns>
@@ -211,6 +214,7 @@ import { groupPath, sessionPath } from '../router/index'
 import PageHeader from '../components/PageHeader.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
+import SessionDetailCancel from '../components/sessions/SessionDetailCancel.vue'
 import MediaCard from '../components/MediaCard.vue'
 import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
@@ -246,6 +250,10 @@ const coverItem    = computed<MediaItem | null>(() =>
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const refreshWorking = ref(false)
+const bookWorking = ref(false)
+const bookError = ref<string | undefined>()
+const cancelWorking = ref(false)
+const cancelError = ref<string | undefined>()
 const entryListRef = ref<InstanceType<typeof SessionEntryList> | null>(null)
 const tagWorking = ref(false)
 const tagError = ref<string | undefined>()
@@ -260,6 +268,7 @@ function mapEntry(e: EntryResponse): EntryItem {
     count: e.count,
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
+    cancelled: e.cancelled,
     profile: {
       name: e.profileName ?? e.volunteerName ?? 'Unknown',
       slug: e.profileSlug ?? e.volunteerSlug,
@@ -275,7 +284,16 @@ function mapEntry(e: EntryResponse): EntryItem {
   }
 }
 
-const entries = computed<EntryItem[]>(() => (store.session?.entries ?? []).map(mapEntry))
+const entries = computed<EntryItem[]>(() => {
+  const mapped = (store.session?.entries ?? []).map(mapEntry)
+  return mapped.sort((a, b) => {
+    const aCancelled = !!a.cancelled
+    const bCancelled = !!b.cancelled
+    if (aCancelled !== bCancelled) return aCancelled ? 1 : -1
+    if (aCancelled && bCancelled) return (a.cancelled! < b.cancelled! ? -1 : 1)
+    return 0
+  })
+})
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -429,6 +447,67 @@ async function onEditEntry(id: number, data: EditData | null) {
   } catch (e) {
     console.error('[SessionDetailPage] onEditEntry failed', e)
     entryListRef.value?.onEditError('Failed to save — please try again')
+  }
+}
+
+async function onCancelEntry(id: number) {
+  try {
+    const res = await fetch(`/api/entries/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancelled: true }),
+    })
+    if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+    const stored = store.session?.entries.find(e => e.id === id)
+    if (stored) stored.cancelled = new Date().toISOString()
+    entryListRef.value?.onCancelSuccess()
+  } catch (e) {
+    console.error('[SessionDetailPage] onCancelEntry failed', e)
+    entryListRef.value?.onCancelError('Failed to cancel — please try again')
+  }
+}
+
+async function onBook() {
+  if (!store.session?.userProfileId) return
+  const groupKey = route.params.groupKey as string
+  const date = store.session.date
+  bookWorking.value = true
+  bookError.value = undefined
+  try {
+    const res = await fetch(`/api/sessions/${groupKey}/${date}/entries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileId: store.session.userProfileId }),
+    })
+    if (!res.ok) throw new Error(`Book failed (${res.status})`)
+    await store.fetch(groupKey, date)
+  } catch (e) {
+    console.error('[SessionDetailPage] onBook failed', e)
+    bookError.value = 'Failed to book — please try again'
+  } finally {
+    bookWorking.value = false
+  }
+}
+
+async function onCancel() {
+  if (!store.session?.userEntryId) return
+  const groupKey = route.params.groupKey as string
+  const date = store.session.date
+  cancelWorking.value = true
+  cancelError.value = undefined
+  try {
+    const res = await fetch(`/api/entries/${store.session.userEntryId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancelled: true }),
+    })
+    if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+    await store.fetch(groupKey, date)
+  } catch (e) {
+    console.error('[SessionDetailPage] onCancel failed', e)
+    cancelError.value = 'Failed to cancel — please try again'
+  } finally {
+    cancelWorking.value = false
   }
 }
 

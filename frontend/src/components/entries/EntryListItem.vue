@@ -1,5 +1,5 @@
 <template>
-  <div class="eli-row" :class="{ 'eli-row--checked': entry.checkedIn, 'eli-row--selected': selected }">
+  <div class="eli-row" :class="{ 'eli-row--checked': entry.checkedIn, 'eli-row--selected': selected, 'eli-row--cancelled': !!entry.cancelled }">
     <component
       :is="to ? RouterLink : 'div'"
       v-bind="to ? { to } : {}"
@@ -57,6 +57,12 @@ function formatDate(date: string): string {
 }
 .eli-row--selected {
   background: var(--color-dtv-light);
+}
+.eli-row--cancelled {
+  opacity: 0.5;
+}
+.eli-row--cancelled .eli-name {
+  text-decoration: line-through;
 }
 
 .eli-content {

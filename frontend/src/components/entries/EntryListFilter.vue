@@ -12,6 +12,11 @@
       <option value="notempty">Has Accompanying Adult</option>
       <option value="empty">No Accompanying Adult</option>
     </select>
+    <select v-model="cancelled" class="elf-select" @change="emitFiltered">
+      <option value="false">Not Cancelled</option>
+      <option value="all">Show All</option>
+      <option value="true">Cancelled</option>
+    </select>
   </div>
 </template>
 
@@ -22,6 +27,7 @@ import { useRoute, useRouter } from 'vue-router'
 export interface EntryFilterParams {
   q: string
   accompanyingAdult: string
+  cancelled: string
 }
 
 const emit = defineEmits<{ filtered: [params: EntryFilterParams] }>()
@@ -31,6 +37,7 @@ const router = useRouter()
 
 const q = ref((route.query.q as string) || '')
 const accompanyingAdult = ref((route.query.accompanyingAdult as string) || '')
+const cancelled = ref((route.query.cancelled as string) || 'false')
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -40,15 +47,16 @@ function onTextInput() {
 }
 
 function emitFiltered() {
-  emit('filtered', { q: q.value, accompanyingAdult: accompanyingAdult.value })
+  emit('filtered', { q: q.value, accompanyingAdult: accompanyingAdult.value, cancelled: cancelled.value })
 }
 
 onMounted(() => emitFiltered())
 
-watch([q, accompanyingAdult], ([newQ, newAdult]) => {
+watch([q, accompanyingAdult, cancelled], ([newQ, newAdult, newCancelled]) => {
   const query: Record<string, string> = {}
-  if (newQ)    query.q                  = newQ
-  if (newAdult) query.accompanyingAdult = newAdult
+  if (newQ)       query.q                  = newQ
+  if (newAdult)   query.accompanyingAdult  = newAdult
+  if (newCancelled && newCancelled !== 'false') query.cancelled = newCancelled
   router.replace({ query })
 })
 </script>

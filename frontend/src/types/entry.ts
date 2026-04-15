@@ -20,6 +20,7 @@ export interface EntryItem {
   count: number
   notes?: string
   accompanyingAdultId?: number
+  cancelled?: string // ISO datetime if booking was cancelled
   profile: EntryProfileSummary
   session: EntrySessionSummary
 }

@@ -30,7 +30,7 @@ import {
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
@@ -491,6 +491,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
+    // Active entries: exclude cancelled for stats. All entries returned to operational users (with cancelled flag).
+    const activeEntries = sessionEntries.filter(e => !e[ENTRY_CANCELLED]);
+
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
@@ -510,33 +513,56 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         hours: parseHours(e.Hours),
         checkedIn: e.Checked || false,
         notes: e.Notes,
-        accompanyingAdultId: e.AccompanyingAdultLookupId
+        accompanyingAdultId: e.AccompanyingAdultLookupId,
+        cancelled: e[ENTRY_CANCELLED] || undefined
       };
     });
 
-    const totalHours = sessionEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
-    const newCount = sessionEntries.filter(e => /#New\b/i.test(String(e.Notes || ''))).length;
-    const childCount = sessionEntries.filter(e => /#Child\b/i.test(String(e.Notes || ''))).length;
-    const regularCount = sessionEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
-    const eventbriteCount = sessionEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
+    // Stats use only active (non-cancelled) entries
+    const totalHours = activeEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
+    const newCount = activeEntries.filter(e => /#New\b/i.test(String(e.Notes || ''))).length;
+    const childCount = activeEntries.filter(e => /#Child\b/i.test(String(e.Notes || ''))).length;
+    const regularCount = activeEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
+    const eventbriteCount = activeEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
 
     // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
+    // For self-service: also look up their own entry to return userEntryId (needed for cancel flow)
     let isRegistered: boolean | undefined;
     let isAttended: boolean | undefined;
     let isRegular: boolean | undefined;
     let userEntryId: number | undefined;
+    let userProfileId: number | undefined;
 
     if (selfProfileId !== undefined) {
+      userProfileId = selfProfileId;
       if (selfProfileStats) {
-        isRegistered = selfProfileStats.sessionIds?.includes(spSession.ID) ?? false;
         isRegular = selfProfileStats.regularGroupIds?.includes(groupId) ?? false;
       }
-      if (!isSelfService) {
-        // Admin/checkin: derive live attended status from the fetched entries
+      if (isSelfService) {
+        // Self-service: fetch own entry to get userEntryId and live isRegistered status
+        const selfEntries = await entriesRepository.getByProfileId(selfProfileId);
+        const ownEntry = selfEntries.find(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+        if (ownEntry) {
+          userEntryId = ownEntry.ID;
+          // Cancelled entry: not registered (can re-book), but userEntryId still returned for cancel admin flows
+          isRegistered = !ownEntry[ENTRY_CANCELLED];
+        } else {
+          isRegistered = selfProfileStats?.sessionIds?.includes(spSession.ID) ?? false;
+        }
+        isRegular = isRegular ?? false;
+        isAttended = false; // self-service attended status not computed
+      } else {
+        if (selfProfileStats) {
+          isRegistered = selfProfileStats.sessionIds?.includes(spSession.ID) ?? false;
+        }
+        // Admin/checkin: derive live attended status and userEntryId from the fetched entries
         const ownEntry = entryResponses.find(e => e.profileId === selfProfileId);
         isRegistered = isRegistered ?? ownEntry !== undefined;
         isAttended = ownEntry?.checkedIn ?? false;
+        // userEntryId: use the entry even if cancelled so admin can act on it
         userEntryId = ownEntry?.id;
+        // If the own entry is cancelled, not registered
+        if (ownEntry?.cancelled) isRegistered = false;
         isRegular = isRegular ?? false;
       }
     }
@@ -551,7 +577,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupDescription: group.description,
       limits: sessionLimits,
       regularsCount,
-      registrations: isSelfService ? (JSON.parse(spSession[SESSION_STATS] || '{}').count ?? 0) : sessionEntries.length,
+      registrations: isSelfService ? (JSON.parse(spSession[SESSION_STATS] || '{}').count ?? 0) : activeEntries.length,
       hours: Math.round(totalHours * 10) / 10,
       newCount: newCount || undefined,
       childCount: childCount || undefined,
@@ -570,7 +596,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         isRegistered,
         isAttended,
         isRegular,
-        userEntryId
+        userEntryId,
+        userProfileId
       })
     };
 

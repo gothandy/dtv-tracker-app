@@ -95,10 +95,12 @@
           <ProfileEntryList
             :entries="entries"
             :allow-edit="viewer.isOperational"
+            :is-admin="viewer.isAdmin"
             :working-id="workingId"
             ref="entryListRef"
             @update="onEntryUpdate"
             @edit-entry="onEditEntry"
+            @cancel-entry="onCancelEntry"
           />
         </template>
       </LayoutColumns>
@@ -123,6 +125,8 @@
         v-if="childEditingEntry"
         :entry="childEditingEntry"
         :title="childEditingEntry.profile.name"
+        :is-cancelled="!!childEditingEntry.cancelled"
+        :is-admin="viewer.isAdmin"
         :profile-click="childEditingEntry.profile.slug ? () => router.push(profilePath(childEditingEntry!.profile.slug!)) : undefined"
         :session-click="() => router.push(sessionPath(childEditingEntry!.session.groupKey, childEditingEntry!.session.date))"
         :session-adults="childSessionAdults"
@@ -424,6 +428,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     count: e.count,
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
+    cancelled: e.cancelled,
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,
@@ -491,6 +496,23 @@ async function onEditEntry(id: number, data: EditData | null) {
   }
 }
 
+async function onCancelEntry(id: number) {
+  try {
+    const res = await fetch(`/api/entries/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancelled: true }),
+    })
+    if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+    const stored = store.profile?.entries.find(e => e.id === id)
+    if (stored) stored.cancelled = new Date().toISOString()
+    entryListRef.value?.onCancelSuccess()
+  } catch (e) {
+    console.error('[ProfileDetailPage] onCancelEntry failed', e)
+    entryListRef.value?.onCancelError('Failed to cancel — please try again')
+  }
+}
+
 function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
   return {
     id: e.id,
@@ -500,6 +522,7 @@ function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
     count: e.count,
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
+    cancelled: e.cancelled,
     profile: {
       name: e.volunteerName ?? 'Unknown',
       slug: e.volunteerSlug,
@@ -558,14 +581,27 @@ async function onChildDelete() {
   if (!childEditingEntry.value) return
   childEditWorking.value = true
   childEditError.value = undefined
+  const id = childEditingEntry.value.id
+  const isCancelled = !!childEditingEntry.value.cancelled
   try {
-    const res = await fetch(`/api/entries/${childEditingEntry.value.id}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-    childEntries.value = childEntries.value.filter(e => e.id !== childEditingEntry.value!.id)
+    if (isCancelled) {
+      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+      childEntries.value = childEntries.value.filter(e => e.id !== id)
+    } else {
+      const res = await fetch(`/api/entries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelled: true }),
+      })
+      if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+      const stored = childEntries.value.find(e => e.id === id)
+      if (stored) stored.cancelled = new Date().toISOString()
+    }
     closeChildEditModal()
   } catch (e) {
     console.error('[ProfileDetailPage] onChildDelete failed', e)
-    childEditError.value = 'Failed to delete — please try again'
+    childEditError.value = isCancelled ? 'Failed to delete — please try again' : 'Failed to cancel — please try again'
     childEditWorking.value = false
   }
 }

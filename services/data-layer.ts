@@ -225,6 +225,7 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, S
   const statsMap = new Map<string, SessionStats>();
 
   entries.forEach(entry => {
+    if (entry.Cancelled) return; // cancelled bookings excluded from all stats
     const sessionId = entry[SESSION_LOOKUP];
     if (!sessionId) return;
 
@@ -402,6 +403,7 @@ export function calculateFYStats(
   const sessionIdsFY = new Set(sessionsFY.map(s => s.ID));
 
   const entriesFY = allEntries.filter(entry => {
+    if (entry.Cancelled) return false; // cancelled bookings excluded from all stats
     const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
     return sessionId !== undefined && sessionIdsFY.has(sessionId);
   });

@@ -28,7 +28,8 @@ import {
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
-  PROFILE_LOOKUP, PROFILE_DISPLAY
+  PROFILE_LOOKUP, PROFILE_DISPLAY,
+  ENTRY_CANCELLED
 } from '../services/field-names';
 import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
@@ -732,7 +733,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           checkedIn: e.Checked || false,
           notes: e.Notes,
           accompanyingAdultId: e.AccompanyingAdultLookupId,
-          financialYear: `FY${sessionFY}`
+          financialYear: `FY${sessionFY}`,
+          cancelled: e[ENTRY_CANCELLED] || undefined
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));

@@ -113,7 +113,7 @@
     <!-- Recent sign-ups — admin/check-in only -->
     <section v-if="profile.isOperational" class="mb-8">
       <SectionHeader>Recent Sign-ups</SectionHeader>
-      <RecentEntryList />
+      <RecentEntryList :is-admin="profile.isAdmin" />
     </section>
 
     <DebugData label="homepage personal context" :item="{

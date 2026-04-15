@@ -6,7 +6,7 @@
 
 import { SharePointEntry } from '../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
-import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY } from '../field-names';
+import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY, ENTRY_CANCELLED } from '../field-names';
 
 class EntriesRepository {
   private listGuid: string;
@@ -16,7 +16,7 @@ class EntriesRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,BookedBy,${ACCOMPANYING_ADULT_DISPLAY},${ACCOMPANYING_ADULT_LOOKUP},Created,Modified`;
+    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,BookedBy,${ACCOMPANYING_ADULT_DISPLAY},${ACCOMPANYING_ADULT_LOOKUP},${ENTRY_CANCELLED},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointEntry[]> {
@@ -52,6 +52,15 @@ class EntriesRepository {
   async getRecent(cutoff: Date): Promise<SharePointEntry[]> {
     // Requires a Created index on the Entries list (List Settings → Indexed Columns)
     const filter = `fields/Created ge '${cutoff.toISOString()}'`;
+    return await sharePointClient.getListItems(
+      this.listGuid,
+      this.selectFields,
+      filter
+    ) as SharePointEntry[];
+  }
+
+  async getRecentlyCancelled(cutoff: Date): Promise<SharePointEntry[]> {
+    const filter = `fields/${ENTRY_CANCELLED} ge '${cutoff.toISOString()}'`;
     return await sharePointClient.getListItems(
       this.listGuid,
       this.selectFields,
@@ -107,7 +116,7 @@ class EntriesRepository {
     ) as SharePointEntry[];
   }
 
-  async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes' | 'AccompanyingAdultLookupId'>>): Promise<void> {
+  async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes' | 'AccompanyingAdultLookupId' | 'Cancelled'>> & Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
     sharePointClient.clearCacheKey('entries');
     sharePointClient.clearCacheByPrefix('sessions_FY');
