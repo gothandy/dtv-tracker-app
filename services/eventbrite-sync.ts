@@ -66,19 +66,44 @@ export function resolveAccompanyingAdult(
 }
 
 /**
- * Returns true if this is the volunteer's first-ever session (no entries
- * outside the current session exist in the provided entries snapshot).
+ * Returns true if currentSessionId is the first (oldest) session for this volunteer.
+ * Reads sessionIds from profile Stats — stored oldest-first by profile-stats.ts.
+ * Empty sessionIds (new profile, no stats yet) also returns true.
  */
-export function isNewVolunteer(
-  allEntries: SharePointEntry[],
-  profileId: number,
+export function isFirstSession(
+  profile: SharePointProfile,
   currentSessionId: number
 ): boolean {
-  return !allEntries.some(e => {
-    const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
-    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-    return vid === profileId && sid !== currentSessionId;
-  });
+  try {
+    const stats = JSON.parse(profile.Stats || '{}');
+    const sessionIds: number[] = stats.sessionIds || [];
+    return sessionIds.length === 0 || sessionIds[0] === currentSessionId;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Adds sessionId to a profile's in-memory Stats.sessionIds (oldest-first).
+ * Called after entry creation during a sync batch so subsequent sessions
+ * in the same batch see the updated state when calling isFirstSession.
+ */
+export function addSessionToProfileStats(
+  profile: SharePointProfile,
+  sessionId: number,
+  sessionDateMap: Map<number, string>
+): void {
+  try {
+    const stats = JSON.parse(profile.Stats || '{}');
+    const sessionIds: number[] = stats.sessionIds || [];
+    if (!sessionIds.includes(sessionId)) {
+      sessionIds.push(sessionId);
+      sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
+    }
+    profile.Stats = JSON.stringify({ ...stats, sessionIds });
+  } catch {
+    profile.Stats = JSON.stringify({ sessionIds: [sessionId] });
+  }
 }
 
 /**

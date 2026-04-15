@@ -34,13 +34,15 @@ export interface ProfileStatsRefreshResult {
 export async function computeAndSaveProfileStats(profileId: number): Promise<void> {
   const start = Date.now();
 
-  // Sessions from cache for FY mapping
+  // Sessions from cache for FY mapping and date-ordering sessionIds
   const sessionsRaw = await sessionsRepository.getAll();
   const sessionFYMap = new Map<number, string>();
+  const sessionDateMap = new Map<number, string>();
   for (const s of sessionsRaw) {
     if (!s.Date) continue;
     const fy = calculateFinancialYear(new Date(s.Date));
     sessionFYMap.set(s.ID, `FY${fy}`);
+    sessionDateMap.set(s.ID, s.Date.substring(0, 10));
   }
 
   // Targeted fetches for this profile
@@ -90,6 +92,8 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
   }
 
+  sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
+
   await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, sessionIds, linkedProfileIds });
   sharePointClient.clearCacheKey('profiles');
 
@@ -110,12 +114,14 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
   console.log(`[Stats] Fetched ${profilesRaw.length} profiles, ${entriesRaw.length} entries, ${recordsRaw.length} records in ${Date.now() - start}ms`);
 
-  // session ID → FY key (e.g. "FY2025")
+  // session ID → FY key and date (YYYY-MM-DD) for sessionIds ordering
   const sessionFYMap = new Map<number, string>();
+  const sessionDateMap = new Map<number, string>();
   for (const s of sessionsRaw) {
     if (!s.Date) continue;
     const fy = calculateFinancialYear(new Date(s.Date));
     sessionFYMap.set(s.ID, `FY${fy}`);
+    sessionDateMap.set(s.ID, s.Date.substring(0, 10));
   }
 
   // Aggregate hours, session counts, and session ID lists per profile
@@ -196,7 +202,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
           isMember: memberIds.has(spProfile.ID),
           cardStatus: cardStatusMap.get(spProfile.ID) || null,
           regularGroupIds: profileRegularGroupIds.get(spProfile.ID) || [],
-          sessionIds: profileSessionIds.get(spProfile.ID) || [],
+          sessionIds: (profileSessionIds.get(spProfile.ID) || []).sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || '')),
           linkedProfileIds: profileLinkedIds.get(spProfile.ID) || []
         };
 

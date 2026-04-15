@@ -8,7 +8,7 @@ import { regularsRepository } from '../services/repositories/regulars-repository
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_CANCELLED } from '../services/field-names';
 import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
-import { isNewVolunteer, findOrCreateProfile, findProfileByAttendee, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult } from '../services/eventbrite-sync';
+import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, findProfileByAttendee, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult } from '../services/eventbrite-sync';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
@@ -97,6 +97,11 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   const entries = validateArray(entriesRaw, validateEntry, 'Entry');
   const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
 
+  // Session date map for updating in-memory profile stats after entry creation
+  const sessionDateMap = new Map<number, string>(
+    sessions.map(s => [s.ID, (s.Date || '').substring(0, 10)])
+  );
+
   // Build set of groupId-profileId pairs for quick regular lookups
   const regularSet = new Set<string>();
   for (const r of regularsRaw) {
@@ -114,6 +119,9 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
     sessionDate.setHours(0, 0, 0, 0);
     return sessionDate >= today;
   });
+
+  // Process chronologically so earlier sessions are in the snapshot when later ones are checked
+  liveSessions.sort((a, b) => (a.Date || '').localeCompare(b.Date || ''));
 
   console.log(`[Eventbrite Sync] ${liveSessions.length} live sessions with Eventbrite IDs`);
 
@@ -150,7 +158,7 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       const profileId = profile.ID;
       if (!existingProfileIds.has(profileId)) {
         const noteTags: string[] = [];
-        if (isNewVolunteer(entries, profileId, session.ID)) noteTags.push('#New');
+        if (isFirstSession(profile, session.ID)) noteTags.push('#New');
         const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
         if (isChild) noteTags.push('#Child');
         noteTags.push('#Eventbrite');
@@ -169,6 +177,8 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
         }
         await entriesRepository.create(entryFields);
         existingProfileIds.add(profileId);
+        // Update in-memory profile stats so subsequent sessions in this batch see this entry
+        addSessionToProfileStats(profile, session.ID, sessionDateMap);
         newEntries++;
       }
 

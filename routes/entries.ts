@@ -23,7 +23,7 @@ import {
   parseEmails,
   calculateSessionStats
 } from '../services/data-layer';
-import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
+import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
@@ -697,8 +697,7 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
     };
     let entryNotes = typeof notes === 'string' && notes.trim() ? notes : undefined;
 
-    const rawEntries = await entriesRepository.getAll();
-    if (isNewVolunteer(rawEntries, profile.ID, spSession.ID)) {
+    if (isFirstSession(profile, spSession.ID)) {
       entryNotes = appendNewTag(entryNotes);
     }
     if (entryNotes) fields.Notes = entryNotes;
@@ -765,14 +764,29 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     let updatedRecords = 0;
     let noPhotoTagged = 0;
     let firstAiderTagged = 0;
+    let fixedNewTags = 0;
+
+    // Step 0: Remove incorrect #New tags from existing entries
+    for (const entry of sessionEntries) {
+      const notes = String(entry.Notes || '');
+      if (!/#New\b/i.test(notes)) continue;
+      const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+      if (pid === undefined) continue;
+      const entryProfile = profiles.find(p => p.ID === pid);
+      if (!entryProfile || isFirstSession(entryProfile, spSession.ID)) continue;
+      const fixedNotes = notes.replace(/#New\s*/gi, '').trim();
+      await entriesRepository.updateFields(entry.ID, { Notes: fixedNotes });
+      fixedNewTags++;
+    }
 
     // Step 1: Add missing regulars
     const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
     for (const regular of groupRegulars) {
       const vid = safeParseLookupId(regular[PROFILE_LOOKUP]);
       if (vid !== undefined && !existingVolunteerIds.has(vid)) {
+        const regularProfile = profiles.find(p => p.ID === vid);
         let notes = '#Regular';
-        if (isNewVolunteer(entries, vid, spSession.ID)) notes = appendNewTag(notes);
+        if (regularProfile && isFirstSession(regularProfile, spSession.ID)) notes = appendNewTag(notes);
         await entriesRepository.create({
           [SESSION_LOOKUP]: String(spSession.ID),
           [PROFILE_LOOKUP]: String(vid),
@@ -800,7 +814,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         const profileId = profile.ID;
         if (!existingVolunteerIds.has(profileId)) {
           const noteTags: string[] = [];
-          if (isNewVolunteer(entries, profileId, spSession.ID)) noteTags.push('#New');
+          if (isFirstSession(profile, spSession.ID)) noteTags.push('#New');
           if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
           noteTags.push('#Eventbrite');
           if (clash) noteTags.push('#Duplicate');
@@ -886,10 +900,10 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       );
     }
 
-    console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider`);
+    console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider, ${fixedNewTags} #New fixed`);
     res.json({
       success: true,
-      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged }
+      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged, fixedNewTags }
     });
   } catch (error: any) {
     console.error('Error refreshing session:', error);
