@@ -70,6 +70,9 @@ export interface SharePointEntry extends SharePointBaseItem {
   Checked?: boolean;
   Hours?: number;
   Notes?: string;
+  BookedBy?: string;
+  AccompanyingAdultLookupId?: number;
+  AccompanyingAdult?: string;
   /** Allow bracket access for dynamic field names (SessionLookupId, ProfileLookupId, etc.) */
   [key: string]: any;
 }

@@ -8,7 +8,7 @@ import { regularsRepository } from '../services/repositories/regulars-repository
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
 import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
-import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
+import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult, findExistingProfile } from '../services/eventbrite-sync';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runBackupExport } from '../services/backup-export';
@@ -148,16 +148,23 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       if (!existingProfileIds.has(profileId)) {
         const noteTags: string[] = [];
         if (isNewVolunteer(entries, profileId, session.ID)) noteTags.push('#New');
-        if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
+        const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
+        if (isChild) noteTags.push('#Child');
         noteTags.push('#Eventbrite');
         if (clash) noteTags.push('#Duplicate');
         const sessionGroupId = safeParseLookupId(session[GROUP_LOOKUP]);
         if (sessionGroupId !== undefined && regularSet.has(`${sessionGroupId}-${profileId}`)) noteTags.push('#Regular');
-        await entriesRepository.create({
+        const entryFields: Record<string, any> = {
           [SESSION_LOOKUP]: String(session.ID),
           [PROFILE_LOOKUP]: String(profileId),
-          Notes: noteTags.join(' ')
-        });
+          Notes: noteTags.join(' '),
+          BookedBy: bookingEmailFor(attendee)
+        };
+        if (isChild && attendee.order_id) {
+          const adultProfile = resolveAccompanyingAdult(attendees, attendee.order_id, profiles);
+          if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
+        }
+        await entriesRepository.create(entryFields);
         existingProfileIds.add(profileId);
         newEntries++;
       }
@@ -449,15 +456,23 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
 
         if (!existingProfileIds.has(profile.ID)) {
           const noteTags: string[] = [];
-          if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
+          const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
+          if (isChild) noteTags.push('#Child');
           noteTags.push('#Eventbrite');
           if (clash) noteTags.push('#Duplicate');
           if (sessionGroupId !== undefined && regularSet.has(`${sessionGroupId}-${profile.ID}`)) noteTags.push('#Regular');
-          await entriesRepository.create({
+          const entryFields: Record<string, any> = {
             [SESSION_LOOKUP]: String(session.ID),
             [PROFILE_LOOKUP]: String(profile.ID),
-            Notes: noteTags.join(' ')
-          });
+            Notes: noteTags.join(' '),
+            BookedBy: bookingEmailFor(attendee)
+          };
+          if (isChild && attendee.order_id) {
+            const sessionAttendees = attendeesByEventId.get(session.EventbriteEventID!) ?? [];
+            const adultProfile = resolveAccompanyingAdult(sessionAttendees, attendee.order_id, profiles);
+            if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
+          }
+          await entriesRepository.create(entryFields);
           existingProfileIds.add(profile.ID);
           added++;
         }
@@ -478,6 +493,184 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message || 'Quick sync failed' });
   } finally {
     syncInProgress = false;
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Historic backfill: BookedBy
+// Sets BookedBy on every existing entry that came from Eventbrite, by
+// re-fetching the Eventbrite order contact email for each attendee.
+// Use ?dry=true (default) to preview writes without touching SharePoint.
+// ---------------------------------------------------------------------------
+router.post('/eventbrite/backfill-booking-email', async (req: Request, res: Response) => {
+  const dry = req.query.dry !== 'false';
+  try {
+    const [rawSessions, rawEntries, rawProfiles] = await Promise.all([
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+
+    // Index entries by sessionId+profileId for fast lookup
+    const entryIndex = new Map<string, typeof entries[0]>();
+    for (const e of entries) {
+      const sId = safeParseLookupId(e[SESSION_LOOKUP]);
+      const pId = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (sId !== undefined && pId !== undefined) entryIndex.set(`${sId}-${pId}`, e);
+    }
+
+    const ebSessions = sessions.filter(s => s.EventbriteEventID);
+    const planned: Array<{ entryId: number; bookingEmail: string }> = [];
+    const unmatched: Array<{ eventId: string; name: string; email: string }> = [];
+
+    for (const session of ebSessions) {
+      const attendees = await getAttendees(session.EventbriteEventID!);
+
+      for (const attendee of attendees) {
+        const name = attendee.profile?.name;
+        if (!name) continue;
+
+        // Find profile by name+email (read-only — never create)
+        const profile = findExistingProfile(name, attendee.profile?.email, profiles);
+
+        if (!profile) {
+          unmatched.push({ eventId: session.EventbriteEventID!, name, email: attendee.profile?.email || '' });
+          continue;
+        }
+
+        const entry = entryIndex.get(`${session.ID}-${profile.ID}`);
+        if (!entry) {
+          unmatched.push({ eventId: session.EventbriteEventID!, name, email: attendee.profile?.email || '' });
+          continue;
+        }
+
+        // Skip if already set (idempotent)
+        if (entry.BookedBy) continue;
+
+        const bookingEmail = bookingEmailFor(attendee);
+        if (!bookingEmail) continue;
+
+        planned.push({ entryId: entry.ID, bookingEmail });
+      }
+    }
+
+    if (!dry) {
+      for (const { entryId, bookingEmail } of planned) {
+        await entriesRepository.updateBookingFields(entryId, { BookedBy: bookingEmail });
+      }
+    }
+
+    console.log(`[Backfill BookedBy] dry=${dry} sessions=${ebSessions.length} planned=${planned.length} unmatched=${unmatched.length}`);
+    res.json({
+      success: true,
+      data: {
+        dry,
+        sessionsProcessed: ebSessions.length,
+        entriesUpdated: dry ? 0 : planned.length,
+        planned: dry ? planned : undefined,
+        unmatched
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in backfill-booking-email:', error);
+    res.status(500).json({ success: false, error: error.message || 'Backfill failed' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Historic backfill: AccompanyingAdult
+// Sets AccompanyingAdultLookupId on child entries by finding the adult ticket
+// holder in the same Eventbrite order.
+// Use ?dry=true (default) to preview writes without touching SharePoint.
+// ---------------------------------------------------------------------------
+router.post('/eventbrite/backfill-accompanying-adult', async (req: Request, res: Response) => {
+  const dry = req.query.dry !== 'false';
+  try {
+    const [rawSessions, rawEntries, rawProfiles] = await Promise.all([
+      sessionsRepository.getAll(),
+      entriesRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+
+    const entryIndex = new Map<string, typeof entries[0]>();
+    for (const e of entries) {
+      const sId = safeParseLookupId(e[SESSION_LOOKUP]);
+      const pId = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (sId !== undefined && pId !== undefined) entryIndex.set(`${sId}-${pId}`, e);
+    }
+
+    const ebSessions = sessions.filter(s => s.EventbriteEventID);
+    const planned: Array<{ entryId: number; accompanyingAdultId: number; adultName: string }> = [];
+    const unresolved: Array<{ eventId: string; childName: string; orderId: string; reason: string }> = [];
+
+    for (const session of ebSessions) {
+      const attendees = await getAttendees(session.EventbriteEventID!);
+      const children = attendees.filter(a => a.ticket_class_name?.toLowerCase().includes('child'));
+
+      for (const child of children) {
+        const name = child.profile?.name;
+        if (!name) continue;
+
+        // Find child's SharePoint profile (read-only — never create)
+        const childProfile = findExistingProfile(name, child.profile?.email, profiles);
+
+        if (!childProfile) {
+          unresolved.push({ eventId: session.EventbriteEventID!, childName: name, orderId: child.order_id || '', reason: 'child profile not found' });
+          continue;
+        }
+
+        const entry = entryIndex.get(`${session.ID}-${childProfile.ID}`);
+        if (!entry) {
+          unresolved.push({ eventId: session.EventbriteEventID!, childName: name, orderId: child.order_id || '', reason: 'entry not found' });
+          continue;
+        }
+
+        // Skip if already set (idempotent)
+        if (entry.AccompanyingAdultLookupId) continue;
+
+        if (!child.order_id) {
+          unresolved.push({ eventId: session.EventbriteEventID!, childName: name, orderId: '', reason: 'no order_id on attendee' });
+          continue;
+        }
+
+        const adultProfile = resolveAccompanyingAdult(attendees, child.order_id, profiles);
+        if (!adultProfile) {
+          unresolved.push({ eventId: session.EventbriteEventID!, childName: name, orderId: child.order_id, reason: 'no adult profile found in same order' });
+          continue;
+        }
+
+        planned.push({ entryId: entry.ID, accompanyingAdultId: adultProfile.ID, adultName: adultProfile.Title || '' });
+      }
+    }
+
+    if (!dry) {
+      for (const { entryId, accompanyingAdultId } of planned) {
+        await entriesRepository.updateBookingFields(entryId, { AccompanyingAdultLookupId: accompanyingAdultId });
+      }
+    }
+
+    console.log(`[Backfill AccompanyingAdult] dry=${dry} sessions=${ebSessions.length} planned=${planned.length} unresolved=${unresolved.length}`);
+    res.json({
+      success: true,
+      data: {
+        dry,
+        sessionsProcessed: ebSessions.length,
+        accompanyingAdultSet: dry ? 0 : planned.length,
+        planned: dry ? planned : undefined,
+        unresolved
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in backfill-accompanying-adult:', error);
+    res.status(500).json({ success: false, error: error.message || 'Backfill failed' });
   }
 });
 

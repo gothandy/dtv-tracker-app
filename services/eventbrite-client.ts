@@ -17,6 +17,8 @@ export interface EventbriteAttendee {
   id: string;
   created: string;
   event_id?: string;
+  order_id?: string;
+  order?: { email?: string };
   profile: {
     name: string;
     email: string;
@@ -107,7 +109,7 @@ export async function getOrgAttendees(changedSince: Date): Promise<EventbriteAtt
     const data = await fetchEventbrite<{
       attendees: EventbriteAttendee[];
       pagination: { has_more_items: boolean };
-    }>(`/organizations/${orgId}/attendees/?status=attending&expand=answers&page=${page}${sinceParam}`);
+    }>(`/organizations/${orgId}/attendees/?status=attending&expand=answers,order&page=${page}${sinceParam}`);
 
     all.push(...(data.attendees || []));
     hasMore = data.pagination?.has_more_items || false;
@@ -130,7 +132,7 @@ export async function getAttendees(eventId: string, changedSince?: Date): Promis
     const data = await fetchEventbrite<{
       attendees: EventbriteAttendee[];
       pagination: { has_more_items: boolean; page_number: number };
-    }>(`/events/${eventId}/attendees/?status=attending&expand=answers&page=${page}${sinceParam}`);
+    }>(`/events/${eventId}/attendees/?status=attending&expand=answers,order&page=${page}${sinceParam}`);
 
     all.push(...(data.attendees || []));
     hasMore = data.pagination?.has_more_items || false;

@@ -11,6 +11,82 @@ import type { SharePointProfile, SharePointEntry } from '../types/sharepoint';
 import { SESSION_LOOKUP, PROFILE_LOOKUP } from './field-names';
 
 /**
+ * Returns the booking email for an attendee — the order contact email (whoever
+ * clicked Buy), falling back to the attendee's own profile email if unavailable.
+ */
+export function bookingEmailFor(attendee: EventbriteAttendee): string | undefined {
+  return attendee.order?.email || attendee.profile?.email || undefined;
+}
+
+/**
+ * Given all attendees for a single event and a child attendee's order_id,
+ * finds the SharePoint profile of the accompanying adult (the adult ticket
+ * holder in the same order). Returns undefined if the adult cannot be matched.
+ *
+ * Used by both the historic backfill and ongoing sync.
+ */
+export function resolveAccompanyingAdult(
+  attendees: EventbriteAttendee[],
+  childOrderId: string,
+  profiles: SharePointProfile[]
+): SharePointProfile | undefined {
+  const orderMates = attendees.filter(a => a.order_id === childOrderId);
+  const adults = orderMates.filter(a => !a.ticket_class_name?.toLowerCase().includes('child'));
+  if (!adults.length) return undefined;
+
+  // Use the first adult in the order. If multiple adults exist (unlikely), first is fine.
+  const adult = adults[0];
+  const adultName = adult.profile?.name;
+  const adultEmail = adult.profile?.email?.toLowerCase();
+  if (!adultName) return undefined;
+
+  const nameKey = toMatchName(adultName);
+
+  // Name + email match first
+  if (adultEmail) {
+    const byNameAndEmail = profiles.find(p => {
+      const nameMatches = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+                          (p.Title && toMatchName(p.Title) === nameKey);
+      return nameMatches && parseEmails(p.Email).includes(adultEmail);
+    });
+    if (byNameAndEmail) return byNameAndEmail;
+  }
+
+  // Name-only fallback
+  return profiles.find(p =>
+    (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+    (p.Title && toMatchName(p.Title) === nameKey)
+  );
+}
+
+/**
+ * Looks up an existing profile by name+email without creating one.
+ * Used by backfill operations that must never modify profile data.
+ */
+export function findExistingProfile(
+  name: string,
+  email: string | undefined,
+  profiles: SharePointProfile[]
+): SharePointProfile | undefined {
+  const nameKey = toMatchName(name);
+  const normalizedEmail = email?.toLowerCase();
+
+  if (normalizedEmail) {
+    const byNameAndEmail = profiles.find(p => {
+      const nMatch = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+                     (p.Title && toMatchName(p.Title) === nameKey);
+      return nMatch && parseEmails(p.Email).includes(normalizedEmail);
+    });
+    if (byNameAndEmail) return byNameAndEmail;
+  }
+
+  return profiles.find(p =>
+    (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
+    (p.Title && toMatchName(p.Title) === nameKey)
+  );
+}
+
+/**
  * Returns true if this is the volunteer's first-ever session (no entries
  * outside the current session exist in the provided entries snapshot).
  */

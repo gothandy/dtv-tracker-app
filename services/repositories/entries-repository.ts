@@ -6,7 +6,7 @@
 
 import { SharePointEntry } from '../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
-import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY } from '../field-names';
+import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY } from '../field-names';
 
 class EntriesRepository {
   private listGuid: string;
@@ -16,7 +16,7 @@ class EntriesRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,Created,Modified`;
+    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,BookedBy,${ACCOMPANYING_ADULT_DISPLAY},${ACCOMPANYING_ADULT_LOOKUP},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointEntry[]> {
@@ -111,6 +111,13 @@ class EntriesRepository {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
     sharePointClient.clearCacheKey('entries');
     sharePointClient.clearCacheByPrefix('sessions_FY');
+  }
+
+  // Narrow update for backfill only — only touches BookedBy and AccompanyingAdultLookupId.
+  // Never modifies Checked, Hours, Notes, Count, or other operational fields.
+  async updateBookingFields(entryId: number, fields: { BookedBy?: string; AccompanyingAdultLookupId?: number }): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, entryId, fields);
+    sharePointClient.clearCacheKey('entries');
   }
 
   async create(fields: Record<string, any>): Promise<number> {
