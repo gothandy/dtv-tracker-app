@@ -230,6 +230,26 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
+### H24b. Entries page (admin)
+
+- [ ] Admin: "Entries" nav link visible in header; non-admin users (Check In, Read Only, Self-Service, Public) do not see the link
+- [ ] Navigate to `/entries` as admin → `GET /api/entries` called; entries list loads with totals ("N entries · H hours")
+- [ ] Navigate to `/entries` as non-admin → 403 (API blocked by `require-admin.ts`)
+- [ ] Notes search: type 3+ chars → results filter to entries whose notes contain the search term (case-insensitive)
+- [ ] AccompanyingAdult filter: "Not empty" → only entries with an accompanying adult shown; "Empty" → only entries without
+- [ ] Both filters combined: notes search + accompanying adult filter narrow results together
+- [ ] Clearing filters restores full list
+- [ ] Select All checkbox: selects all visible entries; Deselect All clears selection; count shown in action bar
+- [ ] Clicking an entry row (non-edit mode) navigates to the session detail page
+- [ ] "Edit" button on a row opens the `EntryEditModal`
+- [ ] Edit modal: "View Profile" button visible and navigates to the profile detail page
+- [ ] Edit modal: "View Session" button visible and navigates to the session detail page
+- [ ] Edit modal: AccompanyingAdult dropdown shown only when `#Child` is in notes; populated with non-child adults from that session
+- [ ] AccompanyingAdult dropdown hidden (FormRow disabled) when `#Child` absent; clearing `#Child` from notes resets `accompanyingAdultId` to null
+- [ ] Save: `PATCH /api/entries/:id` called with `{ checkedIn, count, hours, notes, accompanyingAdultId }`; list updates in-place (no full reload)
+- [ ] Save with changed notes that no longer match current filter: entry is removed from the visible list immediately
+- [ ] Delete: confirmation dialog → `DELETE /api/entries/:id` → entry removed from list
+
 ### H30. Bulk tag sessions / CSV download
 - [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" and "Download CSV" buttons become enabled
 - [ ] Click "Add Tags (N)" → tag tree picker opens (same modal as session detail)

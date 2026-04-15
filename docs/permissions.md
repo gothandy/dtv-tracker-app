@@ -142,6 +142,7 @@ Self-service users **cannot** access:
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
+| GET | `/entries` | All entries listing (admin-only) |
 | GET | `/sessions/export` | CSV export (GDPR) |
 | GET | `/records/export` | CSV export (GDPR) |
 | POST | `/groups` | Create group |

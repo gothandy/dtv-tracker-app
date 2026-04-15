@@ -321,14 +321,16 @@ dtv-tracker-app/
 │       │   ├── groupList.ts        # Groups listing store
 │       │   ├── groupDetail.ts      # Group detail store
 │       │   ├── profileList.ts      # Profiles listing store
-│       │   └── profileDetail.ts    # Profile detail store (fetch by slug)
+│       │   ├── profileDetail.ts    # Profile detail store (fetch by slug)
+│       │   └── entryList.ts        # Entries listing store — fetch(params) with q + accompanyingAdult filters
 │       ├── types/
 │       │   ├── session.ts          # Session frontend domain type (mapped from SessionResponse)
 │       │   ├── entry.ts            # EntryItem, EntryProfileSummary, EntrySessionSummary
 │       │   └── media.ts            # Media types
 │       ├── utils/
-│       │   ├── tagIcons.ts         # TagIcon type, TAG_ICONS list, iconsForEntry(), iconsFromNotes()
-│       │   └── breakpoints.ts      # belowBreakpointMd() — reads --breakpoint-md from CSS at runtime
+│       │   ├── tagIcons.ts             # TagIcon type, TAG_ICONS list, iconsForEntry(), iconsFromNotes()
+│       │   ├── breakpoints.ts          # belowBreakpointMd() — reads --breakpoint-md from CSS at runtime
+│       │   └── fetchSessionAdults.ts   # Fetches non-child adults from a session via GET /api/sessions/:groupKey/:date; used by EntryEditModal callers
 │       ├── components/
 │       │   ├── LayoutColumns.vue   # Responsive 2-col / 3-col grid layout
 │       │   ├── SessionList.vue     # Session list with grouped dates and status tabs
@@ -337,6 +339,10 @@ dtv-tracker-app/
 │       │   ├── EntryCard.vue       # Entry row: check/hours control + title link/button + tag icons
 │       │   ├── EntryList.vue       # Layout wrapper for EntryCard rows (responsive grid)
 │       │   ├── EntryTagPicker.vue  # Tag toggle buttons (type=tag only); v-model binds to Notes string
+│       │   ├── entries/EntryListItem.vue     # Presentational entry row: volunteer name, tag icons, date, group, checked-in border; `selected` drives background colour only
+│       │   ├── entries/EntryListFilter.vue   # Filter bar: notes search (debounced) + AccompanyingAdult dropdown; emits `filtered`
+│       │   ├── entries/EntryListResults.vue  # List with loading/error/empty states, checkbox overlay (admin), edit button; emits `update:selected`, `editEntry`
+│       │   ├── entries/EntryListActions.vue  # Action bar: entry count + total hours + selected count
 │       │   ├── sessions/SessionCard.vue        # Session summary card
 │       │   ├── sessions/SessionEntryList.vue   # Session entry workflow: check-in, hours, edit/add/set-hours modals; emits up to page
 │       │   ├── sessions/SessionListFilter.vue  # Sessions filter bar: search, FY, group, tag
@@ -356,6 +362,7 @@ dtv-tracker-app/
 │           ├── SessionDetailPage.vue  # Session detail — sign-up (public) and check-in (operational)
 │           ├── ProfileListPage.vue    # Profiles listing with filters, sort, bulk records, CSV export
 │           ├── ProfileDetailPage.vue  # Profile detail — page title, PageHeader, entry list, debug data
+│           ├── EntriesPage.vue        # Admin-only entries listing: filter by notes/accompanying adult, checkbox select, edit modal with profile+session nav
 │           ├── AdminPage.vue          # Admin actions (sync, cache, exports)
 │           └── sessions/             # Page-specific components for SessionDetailPage
 │               ├── SessionHeaderCard.vue   # Group name / date-time-location / description
@@ -405,7 +412,7 @@ dtv-tracker-app/
 │   ├── api.ts                     # Router mounting all route modules
 │   ├── groups.ts                  # Groups CRUD endpoints
 │   ├── sessions.ts                # Sessions CRUD + CSV exports
-│   ├── entries.ts                 # Entries CRUD
+│   ├── entries.ts                 # Entries CRUD + GET /entries (admin — all entries with filters)
 │   ├── profiles.ts                # Profiles CRUD + records + transfer (+ regulars via sub-routes)
 │   ├── regulars.ts                # Regulars management
 │   ├── stats.ts                   # Dashboard stats, cache, config
@@ -522,6 +529,8 @@ dtv-tracker-app/
 - [x] Consent collection page at `/profiles/:slug/consent.html` — check-in and admin users see "Collect Consent" button on profile Records section; page presents privacy (required) and photo (optional) checkboxes with privacy policy link; on submit upserts both records with today's date via `POST /api/profiles/:id/consent`; self-service users can also access for their own profile (e.g. via entry detail consent button)
 - [x] Entry detail consent button — shown next to Upload when volunteer has no Accepted Privacy Consent; visible to check-in, admin, and self-service; hidden once consent is signed; uses `.checkin-or-selfservice` CSS class
 - [x] Standalone media gallery pages (`/media/`): authenticated library listing all sessions with photos (cover carousel) and per-session gallery (Embla + lightbox); breadcrumbs wired in `common.js`; Embla loaded from CDN; `MediaGallery` class in `public/media/embla/gallery.js`
+- [x] Entries page (admin-only, Vue): lists all entries across all sessions; filter by notes text and AccompanyingAdult (empty/not-empty); checkbox selection; edit modal opens with "View Profile" and "View Session" nav buttons; `GET /api/entries` endpoint (admin-only)
+- [x] AccompanyingAdult dropdown in EntryEditModal: shown when `sessionAdults` prop provided; enabled only when `#Child` is in notes; populates with non-child adults from the same session via `fetchSessionAdults` utility; clearing `#Child` resets selection; `accompanyingAdultId` included in PATCH payload and store state
 
 ## Planned Features
 

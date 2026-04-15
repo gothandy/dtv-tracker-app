@@ -17,6 +17,12 @@
       <h2>GroupListFilter (Admin: New Group button visible)</h2>
       <GroupListFilter :groups="groups" :sessions="sessions" :can-add-group="true" @filtered="filteredGroups = $event" />
 
+      <h2>EntryListFilter — notes search + AccompanyingAdult dropdown</h2>
+      <EntryListFilter @filtered="filteredEntries = $event" />
+      <p v-if="filteredEntries" class="filter-note">
+        q: "{{ filteredEntries.q }}" · accompanyingAdult: "{{ filteredEntries.accompanyingAdult || '(all)' }}"
+      </p>
+
     </div>
   </DefaultLayout>
 </template>
@@ -29,15 +35,18 @@ import SandboxBackLink from './SandboxBackLink.vue'
 import SessionListFilter from '../../components/sessions/SessionListFilter.vue'
 import SessionListActions from '../../components/sessions/SessionListActions.vue'
 import GroupListFilter from '../../components/groups/GroupListFilter.vue'
+import EntryListFilter from '../../components/entries/EntryListFilter.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { Session } from '../../types/session'
 import type { GroupResponse } from '../../../../types/api-responses'
 import type { GroupWithStats } from '../../components/groups/GroupListFilter.vue'
+import type { EntryFilterParams } from '../../components/entries/EntryListFilter.vue'
 
 usePageTitle('Sandbox')
 
 const filteredSessions = ref<Session[]>([])
 const filteredGroups = ref<GroupWithStats[]>([])
+const filteredEntries = ref<EntryFilterParams | null>(null)
 const emptySelected = ref<number[]>([])
 const activeSelected = ref<number[]>([1, 3, 4])
 

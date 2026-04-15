@@ -2,7 +2,7 @@
   <ModalLayout
     title="Add Entry"
     action="Add"
-    action-icon="new"
+    action-icon="add"
     :action-disabled="!canAdd"
     :working="working"
     :error="error"
@@ -30,7 +30,7 @@
         />
       </FormRow>
 
-      <FormRow title="Add New">
+      <FormRow title="No match? Add new">
         <input type="checkbox" class="aem-checkbox" v-model="addNew" @change="onAddNewToggle" />
       </FormRow>
     </FormLayout>
@@ -58,6 +58,7 @@ const canAdd = computed(() => selectedProfile.value !== null || addNew.value)
 
 function onSelect(profile: PickerProfile | null) {
   selectedProfile.value = profile
+  emailInput.value = profile?.email ?? ''
 }
 
 function onAddNewToggle() {

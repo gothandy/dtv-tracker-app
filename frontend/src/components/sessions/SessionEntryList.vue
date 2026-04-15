@@ -33,9 +33,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
-      view-label="View Profile"
-      view-icon="profile"
-      :view-to="editingEntry.profile.slug ? profilePath(editingEntry.profile.slug) : undefined"
+      :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
+      :session-adults="sessionAdults"
       :working="workingEdit"
       :error="editError"
       @close="closeEditModal"
@@ -67,6 +66,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../ProfilePicker.vue'
 import AppButton from '../AppButton.vue'
@@ -79,7 +79,7 @@ import { profilePath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
 
 const props = defineProps<{
   entries: EntryItem[]
@@ -107,8 +107,15 @@ const editError = ref('')
 const addError = ref('')
 const setHoursError = ref('')
 
+const router = useRouter()
+
 const checkedCount = computed(() => props.entries.filter(e => e.checkedIn).length)
 const eligibleCount = computed(() => props.entries.filter(e => e.checkedIn && !e.hours).length)
+const sessionAdults = computed(() =>
+  props.entries
+    .filter(e => e.profileId && !e.profile.isGroup && !/\#child\b/i.test(e.notes ?? ''))
+    .map(e => ({ id: e.profileId!, name: e.profile.name }))
+)
 
 function closeEditModal() {
   editingEntry.value = null

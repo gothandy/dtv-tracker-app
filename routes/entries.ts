@@ -37,7 +37,7 @@ import multer from 'multer';
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
 
-import type { EntryDetailResponse, RecentSignupResponse, EntryUploadContextResponse } from '../types/api-responses';
+import type { EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
 const router: Router = express.Router();
@@ -130,6 +130,72 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching recent entries:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch recent entries', message: error.message });
+  }
+});
+
+router.get('/entries', async (req: Request, res: Response) => {
+  try {
+    const q = req.query.q ? String(req.query.q).toLowerCase() : '';
+    const accompanyingAdult = req.query.accompanyingAdult ? String(req.query.accompanyingAdult) : '';
+
+    const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
+      entriesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+
+    const sessionMap = new Map(rawSessions.map(s => [s.ID, s]));
+    const groupMap = new Map(rawGroups.map(g => [g.ID, g]));
+    const profileMap = new Map(rawProfiles.map(p => [p.ID, p]));
+
+    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+
+    const results: EntryListItemResponse[] = entries
+      .flatMap(e => {
+        const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
+        if (sessionId === undefined) return [];
+        const session = sessionMap.get(sessionId);
+        if (!session) return [];
+        const groupId = safeParseLookupId(session[GROUP_LOOKUP]);
+        if (groupId === undefined) return [];
+        const group = groupMap.get(groupId);
+        if (!group) return [];
+
+        if (q && !String(e.Notes || '').toLowerCase().includes(q)) return [];
+
+        const hasAdult = !!e.AccompanyingAdultLookupId;
+        if (accompanyingAdult === 'empty' && hasAdult) return [];
+        if (accompanyingAdult === 'notempty' && !hasAdult) return [];
+
+        const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
+        const profile = profileId !== undefined ? profileMap.get(profileId) : undefined;
+        const name = e[PROFILE_DISPLAY] || 'Unknown';
+        const slug = profileId !== undefined ? profileSlug(name, profileId) : nameToSlug(name);
+
+        return [{
+          id: e.ID,
+          profileId,
+          volunteerName: name,
+          volunteerSlug: slug,
+          date: session.Date,
+          groupKey: group.Title,
+          groupName: group.Name || group.Title,
+          notes: e.Notes,
+          checkedIn: e.Checked || false,
+          hours: parseHours(e.Hours),
+          count: e.Count || 1,
+          isGroup: profile?.IsGroup || false,
+          hasAccompanyingAdult: hasAdult,
+          accompanyingAdultId: e.AccompanyingAdultLookupId
+        }];
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    res.json({ success: true, data: results } as ApiResponse<EntryListItemResponse[]>);
+  } catch (error: any) {
+    console.error('Error fetching entries list:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch entries', message: error.message });
   }
 });
 
@@ -368,7 +434,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    const { checkedIn, count, hours, notes } = req.body;
+    const { checkedIn, count, hours, notes, accompanyingAdultId } = req.body;
     const fields: Record<string, any> = {};
 
     if (typeof checkedIn === 'boolean') {
@@ -392,6 +458,9 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     }
     if (typeof notes === 'string') {
       fields.Notes = notes;
+    }
+    if (accompanyingAdultId !== undefined) {
+      fields.AccompanyingAdultLookupId = accompanyingAdultId === null ? null : parseInt(String(accompanyingAdultId), 10);
     }
 
     if (Object.keys(fields).length === 0) {

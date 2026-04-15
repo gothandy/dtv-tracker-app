@@ -70,6 +70,15 @@
         @delete-group="onGroupAction(actionsWithoutEbRef, 'delete-group')"
       />
 
+      <h2>EntryListActions — no selection</h2>
+      <EntryListActions :entries="mockEntries" :selected="[]" />
+
+      <h2>EntryListActions — 2 selected</h2>
+      <EntryListActions :entries="mockEntries" :selected="[1, 3]" />
+
+      <h2>EntryListActions — all selected</h2>
+      <EntryListActions :entries="mockEntries" :selected="mockEntries.map(e => e.id)" />
+
       <label class="fail-toggle">
         <input type="checkbox" v-model="failNext" /> Fail next action
       </label>
@@ -94,7 +103,8 @@ import SandboxBackLink from './SandboxBackLink.vue'
 import SessionDetailActions from '../../components/sessions/SessionDetailActions.vue'
 import SessionListActions from '../../components/sessions/SessionListActions.vue'
 import GroupDetailActions from '../../components/groups/GroupDetailActions.vue'
-import type { GroupDetailResponse, SessionDetailResponse } from '../../../../types/api-responses'
+import EntryListActions from '../../components/entries/EntryListActions.vue'
+import type { GroupDetailResponse, SessionDetailResponse, EntryListItemResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
 
 const actionsWithEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
@@ -161,6 +171,13 @@ const mockSessions: Session[] = [
   { id: 2, date: '2025-01-24', groupName: 'Sheepskull', financialYear: '24/25', isBookable: false, limits: {}, registrations: 6,  hours: 24,   isRegistered: false, isAttended: false, isRegular: false },
   { id: 3, date: '2025-02-07', groupName: 'City Park',  financialYear: '24/25', isBookable: true,  limits: {}, registrations: 12, hours: 0,    isRegistered: false, isAttended: false, isRegular: false },
   { id: 4, date: '2025-02-21', groupName: 'City Park',  financialYear: '24/25', isBookable: false, limits: {}, registrations: 10, hours: 40.5, isRegistered: false, isAttended: false, isRegular: false },
+]
+
+const mockEntries: EntryListItemResponse[] = [
+  { id: 1, volunteerName: 'Alice Smith', date: '2026-04-08', groupKey: 'wed-dig', groupName: 'Wednesday Dig', checkedIn: true,  hours: 4,  count: 1, isGroup: false, hasAccompanyingAdult: false },
+  { id: 2, volunteerName: 'Bob Jones',   date: '2026-04-08', groupKey: 'wed-dig', groupName: 'Wednesday Dig', checkedIn: false, hours: 0,  count: 1, isGroup: false, hasAccompanyingAdult: false },
+  { id: 3, volunteerName: 'Carol White', date: '2026-03-20', groupKey: 'trail',   groupName: 'Trail Crew',    checkedIn: true,  hours: 5,  count: 1, isGroup: false, hasAccompanyingAdult: false },
+  { id: 4, volunteerName: 'Saturday Crew', date: '2026-03-20', groupKey: 'trail', groupName: 'Trail Crew',   checkedIn: true,  hours: 20, count: 6, isGroup: true,  hasAccompanyingAdult: false },
 ]
 
 const noneSelected = ref<number[]>([])

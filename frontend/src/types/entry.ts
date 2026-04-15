@@ -14,10 +14,12 @@ export interface EntrySessionSummary {
 
 export interface EntryItem {
   id: number
+  profileId?: number
   checkedIn: boolean
   hours: number
   count: number
   notes?: string
+  accompanyingAdultId?: number
   profile: EntryProfileSummary
   session: EntrySessionSummary
 }

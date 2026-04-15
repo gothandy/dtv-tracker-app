@@ -57,6 +57,8 @@
           <RouterLink to="/sandbox/group-card">GroupCard</RouterLink>
           <RouterLink to="/sandbox/profile-list-item">ProfileListItem</RouterLink>
           <RouterLink to="/sandbox/profile-list-results">ProfileListResults</RouterLink>
+          <RouterLink to="/sandbox/entry-list-item">EntryListItem</RouterLink>
+          <RouterLink to="/sandbox/entry-list-results">EntryListResults</RouterLink>
         </nav>
       </section>
 

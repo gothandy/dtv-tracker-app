@@ -15,30 +15,12 @@
     <p v-else-if="!entries.length" class="rel-empty">No sign-ups in this period</p>
 
     <div v-else class="rel-list">
-      <RouterLink
+      <EntryListItem
         v-for="e in entries"
         :key="e.id"
+        :entry="mapEntry(e)"
         :to="sessionPath(e.groupKey, e.date)"
-        class="rel-row"
-        :class="{ 'rel-row--checked': e.checkedIn }"
-      >
-        <div class="rel-left">
-          <span class="rel-name">{{ e.volunteerName }}</span>
-          <span
-            v-for="icon in icons(e)"
-            :key="icon.alt"
-            class="rel-icon"
-            :class="icon.color ? 'icon-' + icon.color : ''"
-            :title="icon.alt"
-          >
-            <img :src="'/icons/' + icon.icon" :alt="icon.alt" />
-          </span>
-        </div>
-        <div class="rel-right">
-          <span class="rel-date">{{ formatDate(e.date) }}</span>
-          <span class="rel-group">{{ e.groupName }}</span>
-        </div>
-      </RouterLink>
+      />
     </div>
 
   </div>
@@ -46,23 +28,30 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
-import type { RecentSignupResponse } from '../../../types/api-responses'
+import type { RecentSignupResponse, EntryListItemResponse } from '../../../types/api-responses'
 import { sessionPath } from '../router/index'
-import { iconsFromNotes } from '../utils/tagIcons'
-import type { TagIcon } from '../utils/tagIcons'
+import EntryListItem from './entries/EntryListItem.vue'
 
 const since = ref<string>('24h')
 const entries = ref<RecentSignupResponse[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-function icons(e: RecentSignupResponse): TagIcon[] {
-  return iconsFromNotes(e.notes)
-}
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+function mapEntry(e: RecentSignupResponse): EntryListItemResponse {
+  return {
+    id: e.id,
+    volunteerName: e.volunteerName,
+    volunteerSlug: e.volunteerSlug,
+    date: e.date,
+    groupKey: e.groupKey,
+    groupName: e.groupName,
+    notes: e.notes,
+    checkedIn: e.checkedIn,
+    hours: 0,
+    count: 1,
+    isGroup: false,
+    hasAccompanyingAdult: false,
+  }
 }
 
 async function load() {
@@ -127,72 +116,5 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-.rel-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-dtv-sand);
-  text-decoration: none;
-  color: var(--color-text);
-  border-left: 4px solid transparent;
-}
-.rel-row--checked {
-  border-left-color: var(--color-dtv-green);
-}
-.rel-row:hover {
-  background: var(--color-dtv-sand-dark);
-}
-
-.rel-left {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 0;
-  flex: 1;
-}
-
-.rel-name {
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  flex-shrink: 1;
-}
-
-.rel-icon {
-  display: inline-flex;
-  align-items: flex-start;
-  width: 0.875rem;
-  height: 0.875rem;
-  flex-shrink: 0;
-  align-self: flex-start;
-}
-.rel-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.rel-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.rel-date {
-  white-space: nowrap;
-}
-
-.rel-group {
-  white-space: nowrap;
-  font-weight: 500;
 }
 </style>
