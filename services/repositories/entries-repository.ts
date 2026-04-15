@@ -107,17 +107,10 @@ class EntriesRepository {
     ) as SharePointEntry[];
   }
 
-  async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes'>>): Promise<void> {
+  async updateFields(entryId: number, fields: Partial<Pick<SharePointEntry, 'Checked' | 'Count' | 'Hours' | 'Notes' | 'AccompanyingAdultLookupId'>>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, entryId, fields);
     sharePointClient.clearCacheKey('entries');
     sharePointClient.clearCacheByPrefix('sessions_FY');
-  }
-
-  // Narrow update for backfill only — only touches BookedBy and AccompanyingAdultLookupId.
-  // Never modifies Checked, Hours, Notes, Count, or other operational fields.
-  async updateBookingFields(entryId: number, fields: { BookedBy?: string; AccompanyingAdultLookupId?: number }): Promise<void> {
-    await sharePointClient.updateListItem(this.listGuid, entryId, fields);
-    sharePointClient.clearCacheKey('entries');
   }
 
   async create(fields: Record<string, any>): Promise<number> {

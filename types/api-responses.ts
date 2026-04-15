@@ -168,6 +168,7 @@ export interface EntryResponse {
   hours: number;
   checkedIn: boolean;
   notes?: string;
+  accompanyingAdultId?: number;
 }
 
 export interface SessionDetailResponse {
@@ -223,6 +224,7 @@ export interface EntryDetailResponse {
   hours: number;
   checkedIn: boolean;
   notes?: string;
+  accompanyingAdultId?: number;
   date: string;
   groupKey?: string;
   groupName?: string;
@@ -264,6 +266,23 @@ export interface RecentSignupResponse {
   groupName: string;
   notes?: string;
   checkedIn: boolean;
+}
+
+export interface EntryListItemResponse {
+  id: number;
+  profileId?: number;
+  volunteerName?: string;
+  volunteerSlug?: string;
+  date: string;
+  groupKey: string;
+  groupName: string;
+  notes?: string;
+  checkedIn: boolean;
+  hours: number;
+  count: number;
+  isGroup: boolean;
+  hasAccompanyingAdult: boolean;
+  accompanyingAdultId?: number;
 }
 
 export interface TagHoursItem {

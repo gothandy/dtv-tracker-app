@@ -31,7 +31,7 @@
         :allow-edit="allowEdit ?? false"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"
-        @edit-entry="editingEntry = e"
+        @edit-entry="openEditModal(e)"
       />
     </EntryList>
 
@@ -39,9 +39,8 @@
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
-      view-label="View Session"
-      view-icon="calendar"
-      :view-to="sessionPath(editingEntry.session.groupKey, editingEntry.session.date)"
+      :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
+      :session-adults="sessionAdults"
       :working="workingEdit"
       :error="editError"
       @close="closeEditModal"
@@ -54,14 +53,16 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { EntryItem } from '../../types/entry'
 import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
 import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
 import { sessionPath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
+import { fetchSessionAdults } from '../../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
 
 const props = defineProps<{
   entries: EntryItem[]
@@ -73,6 +74,8 @@ const emit = defineEmits<{
   update: [entry: EntryItem, checkedIn: boolean, hours: number]
   editEntry: [id: number, data: EditData | null]
 }>()
+
+const router = useRouter()
 
 const fy = ref('all')
 const groupKey = ref('')
@@ -135,6 +138,7 @@ const filteredEntries = computed(() => {
 })
 
 const editingEntry = ref<EntryItem | null>(null)
+const sessionAdults = ref<{ id: number; name: string }[]>([])
 const workingEdit = ref(false)
 const editError = ref('')
 
@@ -143,8 +147,14 @@ function cardTitle(e: EntryItem): string {
   return groupKey.value ? date : `${date} · ${e.session.groupName}`
 }
 
+async function openEditModal(e: EntryItem) {
+  editingEntry.value = e
+  sessionAdults.value = await fetchSessionAdults(e.session.groupKey, e.session.date)
+}
+
 function closeEditModal() {
   editingEntry.value = null
+  sessionAdults.value = []
   workingEdit.value = false
   editError.value = ''
 }

@@ -96,6 +96,9 @@
       <EntryEditModal
         v-if="open === 'entry-edit'"
         :entry="mockEntry"
+        :profile-click="() => log('entry-edit: View Profile clicked')"
+        :session-click="() => log('entry-edit: View Session clicked')"
+        :session-adults="mockSessionAdults"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -293,8 +296,8 @@ function onSetHours(hours: number) {
   simulate(`set-hours: ${hours}h`)
 }
 
-function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string }) {
-  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}"`)
+function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }) {
+  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}`)
 }
 
 function onEditDelete() {
@@ -384,13 +387,21 @@ const mockSession = {
 
 const mockEntry: EntryItem = {
   id: 1,
-  checkedIn: false,
-  hours: 0,
+  profileId: 42,
+  checkedIn: true,
+  hours: 3,
   count: 1,
-  notes: '#New',
+  notes: '#Child #New',
+  accompanyingAdultId: 2,
   profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: true, cardStatus: 'Accepted', isGroup: false },
   session: { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' },
 }
+
+const mockSessionAdults = [
+  { id: 2, name: 'Bob Carter' },
+  { id: 3, name: 'Carol Davies' },
+  { id: 4, name: 'David Evans' },
+]
 
 const mockProfiles: PickerProfile[] = [
   { id: 1, name: 'Alice Bowen', email: 'alice@example.com' },

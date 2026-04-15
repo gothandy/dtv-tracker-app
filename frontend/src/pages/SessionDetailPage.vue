@@ -254,10 +254,12 @@ const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 function mapEntry(e: EntryResponse): EntryItem {
   return {
     id: e.id,
+    profileId: e.profileId,
     checkedIn: e.checkedIn,
     hours: e.hours,
     count: e.count,
     notes: e.notes,
+    accompanyingAdultId: e.accompanyingAdultId,
     profile: {
       name: e.profileName ?? e.volunteerName ?? 'Unknown',
       slug: e.profileSlug ?? e.volunteerSlug,
@@ -397,7 +399,7 @@ async function onAddEntry(payload: { profileId: number } | { newName: string; ne
   }
 }
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
 
 async function onEditEntry(id: number, data: EditData | null) {
   try {
@@ -420,6 +422,7 @@ async function onEditEntry(id: number, data: EditData | null) {
         stored.hours = data.hours
         stored.count = data.count
         stored.notes = data.notes
+        stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
       }
     }
     entryListRef.value?.onEditSuccess()

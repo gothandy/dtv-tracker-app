@@ -16,6 +16,7 @@ import GroupDetailPage from '../pages/GroupDetailPage.vue'
 import SessionDetailPage from '../pages/SessionDetailPage.vue'
 import SessionListPage from '../pages/SessionListPage.vue'
 import AdminPage from '../pages/AdminPage.vue'
+import EntriesPage from '../pages/EntriesPage.vue'
 import ProfileListPage from '../pages/ProfileListPage.vue'
 import ProfileDetailPage from '../pages/ProfileDetailPage.vue'
 
@@ -29,6 +30,7 @@ export const profilesPath = () => '/profiles'
 export const profilePath = (slug: string) => `/profiles/${slug}`
 export const addEntryPath = (groupKey: string, date: string) => `/sessions/${groupKey}/${date}/add-entry`
 export const entryPath = (id: number) => `/entries/${id}`
+export const entriesPath = () => '/entries'
 export const adminPath = () => '/admin'
 export const consentPath = (slug: string) => `/profiles/${slug}/consent`
 export const uploadPath  = (entryId: number) => `/upload?entryId=${entryId}`
@@ -45,6 +47,7 @@ export const router = createRouter({
     { path: '/privacy', component: PrivacyPage },
     { path: '/terms', component: TermsPage },
     { path: '/login', component: LoginPage },
+    { path: '/entries', component: EntriesPage, meta: { requiresTrusted: true } },
     { path: '/admin', component: AdminPage },
     { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
     { path: '/forbidden', component: () => import('../pages/ForbiddenPage.vue') },
@@ -79,6 +82,8 @@ export const router = createRouter({
     { path: '/sandbox/profile-linked-accounts', component: () => import('../pages/sandbox/SandboxProfileLinkedAccounts.vue') },
     { path: '/sandbox/profile-list-item', component: () => import('../pages/sandbox/SandboxProfileListItem.vue') },
     { path: '/sandbox/profile-list-results', component: () => import('../pages/sandbox/SandboxProfileListResults.vue') },
+    { path: '/sandbox/entry-list-item', component: () => import('../pages/sandbox/SandboxEntryListItem.vue') },
+    { path: '/sandbox/entry-list-results', component: () => import('../pages/sandbox/SandboxEntryListResults.vue') },
     { path: '/sandbox/regular-list', component: () => import('../pages/sandbox/SandboxRegularList.vue') },
     { path: '/sandbox/regular-item', component: () => import('../pages/sandbox/SandboxRegularItem.vue') },
     { path: '/sandbox/flash-message', component: () => import('../pages/sandbox/SandboxFlashMessage.vue') },

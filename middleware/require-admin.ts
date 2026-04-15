@@ -39,8 +39,9 @@ const SELFSERVICE_ALLOWED_GET_PATTERNS = [
 ];
 
 const ADMIN_ONLY_GET_PATTERNS = [
-  /^\/sessions\/export$/,
-  /^\/records\/export$/,
+  /^\/sessions\/export\/?$/,
+  /^\/records\/export\/?$/,
+  /^\/entries\/?$/,
 ];
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {

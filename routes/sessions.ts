@@ -509,7 +509,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         count: e.Count || 1,
         hours: parseHours(e.Hours),
         checkedIn: e.Checked || false,
-        notes: e.Notes
+        notes: e.Notes,
+        accompanyingAdultId: e.AccompanyingAdultLookupId
       };
     });
 
