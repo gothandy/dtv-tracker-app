@@ -5,7 +5,7 @@
     <div class="sel-header">
       <h2 class="sel-title">
         Check-ins
-        <span v-if="entries.length" class="sel-count">({{ checkedCount }} / {{ entries.length }})</span>
+        <span v-if="activeCount" class="sel-count">({{ checkedCount }} / {{ activeCount }})</span>
       </h2>
       <div v-if="allowEdit" class="sel-actions">
         <AppButton label="Refresh" icon="refresh" mode="icon-responsive" :working="refreshWorking" @click="emit('refreshRequest')" />
@@ -25,6 +25,7 @@
         :icons="iconsForEntry({ ...e.profile, notes: e.notes })"
         :allow-edit="allowEdit"
         :working="workingId === e.id"
+        :cancelled="!!e.cancelled"
         @update="(c, h) => emit('update', e, c, h)"
         @edit-entry="editingEntry = e"
       />
@@ -33,6 +34,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
+      :is-cancelled="!!editingEntry.cancelled"
+      :is-admin="isAdmin"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-adults="sessionAdults"
       :working="workingEdit"
@@ -84,6 +87,7 @@ type EditData = { checkedIn: boolean; count: number; hours: number; notes: strin
 const props = defineProps<{
   entries: EntryItem[]
   allowEdit: boolean
+  isAdmin?: boolean
   profiles: PickerProfile[]
   workingId?: number | null
   refreshWorking?: boolean
@@ -95,6 +99,7 @@ const emit = defineEmits<{
   setHours: [hours: number]
   addEntry: [payload: AddPayload]
   editEntry: [id: number, data: EditData | null]
+  cancelEntry: [id: number]
 }>()
 
 const editingEntry = ref<EntryItem | null>(null)
@@ -109,7 +114,8 @@ const setHoursError = ref('')
 
 const router = useRouter()
 
-const checkedCount = computed(() => props.entries.filter(e => e.checkedIn).length)
+const activeCount = computed(() => props.entries.filter(e => !e.cancelled).length)
+const checkedCount = computed(() => props.entries.filter(e => e.checkedIn && !e.cancelled).length)
 const eligibleCount = computed(() => props.entries.filter(e => e.checkedIn && !e.hours).length)
 const sessionAdults = computed(() =>
   props.entries
@@ -146,7 +152,13 @@ function onDelete() {
   if (!editingEntry.value) return
   workingEdit.value = true
   editError.value = ''
-  emit('editEntry', editingEntry.value.id, null)
+  if (editingEntry.value.cancelled) {
+    // Already cancelled — hard delete (admin only, enforced by backend)
+    emit('editEntry', editingEntry.value.id, null)
+  } else {
+    // Not yet cancelled — soft cancel
+    emit('cancelEntry', editingEntry.value.id)
+  }
 }
 
 function onAdd(payload: AddPayload) {
@@ -164,6 +176,8 @@ function onSetHours(hours: number) {
 defineExpose({
   onEditSuccess: closeEditModal,
   onEditError(msg: string) { workingEdit.value = false; editError.value = msg },
+  onCancelSuccess: closeEditModal,
+  onCancelError(msg: string) { workingEdit.value = false; editError.value = msg },
   onAddSuccess: closeAddModal,
   onAddError(msg: string) { workingAdd.value = false; addError.value = msg },
   onSetHoursSuccess: closeSetHoursModal,

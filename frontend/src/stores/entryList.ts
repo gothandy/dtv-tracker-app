@@ -7,13 +7,14 @@ export const useEntryListStore = defineStore('entryList', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetch(params: { q?: string; accompanyingAdult?: string } = {}) {
+  async function fetch(params: { q?: string; accompanyingAdult?: string; cancelled?: string } = {}) {
     loading.value = true
     error.value = null
     try {
       const query = new URLSearchParams()
       if (params.q) query.set('q', params.q)
       if (params.accompanyingAdult) query.set('accompanyingAdult', params.accompanyingAdult)
+      if (params.cancelled) query.set('cancelled', params.cancelled)
       const qs = query.toString()
       const res = await window.fetch(`/api/entries${qs ? `?${qs}` : ''}`)
       if (!res.ok) {

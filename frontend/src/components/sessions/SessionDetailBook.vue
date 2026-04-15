@@ -5,9 +5,14 @@
       {{ daysToGo }} days to go
     </p>
 
-    <button class="bg-dtv-green text-white font-head text-lg uppercase tracking-wide py-4 px-8 self-center cursor-pointer hover:bg-dtv-green/80 transition-colors">
-      Book your spot
+    <button
+      class="bg-dtv-green text-white font-head text-lg uppercase tracking-wide py-4 px-8 self-center cursor-pointer hover:bg-dtv-green/80 transition-colors disabled:opacity-50 disabled:cursor-default"
+      :disabled="working"
+      @click="emit('book')"
+    >
+      {{ working ? 'Booking…' : 'Book your spot' }}
     </button>
+    <p v-if="error" class="text-red-600 text-sm text-center mt-2">{{ error }}</p>
 
     <div v-if="spacesLeft !== null" class="bg-dtv-dark text-white py-3 px-4 flex items-center justify-center self-end w-fit mr-12">
       <span class="font-head text-2xl leading-none">{{ spacesLeft }}</span>
@@ -25,7 +30,9 @@
 import { computed } from 'vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 
-const props = defineProps<{ session: SessionDetailResponse }>()
+const props = defineProps<{ session: SessionDetailResponse; working?: boolean; error?: string }>()
+
+const emit = defineEmits<{ book: [] }>()
 
 const spacesLeft = computed(() => props.session.limits.total !== undefined ? props.session.limits.total - props.session.registrations : null)
 

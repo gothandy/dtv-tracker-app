@@ -18,6 +18,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
+      :is-cancelled="!!editingEntry.cancelled"
+      :is-admin="viewer.isAdmin"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
@@ -34,6 +36,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEntryListStore } from '../stores/entryList'
+import { useViewer } from '../composables/useViewer'
 import type { EntryListItemResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
 import type { EntryFilterParams } from '../components/entries/EntryListFilter.vue'
@@ -50,17 +53,18 @@ type EditData = { checkedIn: boolean; count: number; hours: number; notes: strin
 
 const store = useEntryListStore()
 const router = useRouter()
+const viewer = useViewer()
 
 const selected = ref<number[]>([])
 const editingEntry = ref<EntryItem | null>(null)
 const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
-const currentFilter = ref<EntryFilterParams>({ q: '', accompanyingAdult: '' })
+const currentFilter = ref<EntryFilterParams>({ q: '', accompanyingAdult: '', cancelled: 'false' })
 
 function onFiltered(params: EntryFilterParams) {
   currentFilter.value = params
-  store.fetch(params)
+  store.fetch({ q: params.q, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled })
 }
 
 function matchesFilter(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {
@@ -79,6 +83,7 @@ function mapToEntryItem(e: EntryListItemResponse): EntryItem {
     count: e.count,
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
+    cancelled: e.cancelled,
     profile: {
       name: e.volunteerName ?? 'Unknown',
       slug: e.volunteerSlug,
@@ -142,15 +147,35 @@ async function onDelete() {
   if (!editingEntry.value) return
   editWorking.value = true
   editError.value = undefined
+  const id = editingEntry.value.id
+  const isCancelled = !!editingEntry.value.cancelled
   try {
-    const res = await fetch(`/api/entries/${editingEntry.value.id}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-    store.entries.splice(store.entries.findIndex(e => e.id === editingEntry.value!.id), 1)
-    selected.value = selected.value.filter(id => id !== editingEntry.value!.id)
+    if (isCancelled) {
+      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+      const delIdx = store.entries.findIndex(e => e.id === id)
+      if (delIdx >= 0) store.entries.splice(delIdx, 1)
+      selected.value = selected.value.filter(sid => sid !== id)
+    } else {
+      const res = await fetch(`/api/entries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelled: true }),
+      })
+      if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+      const stored = store.entries.find(e => e.id === id)
+      if (stored) stored.cancelled = new Date().toISOString()
+      // Remove from list if filter excludes cancelled entries
+      if (currentFilter.value.cancelled === 'false' || !currentFilter.value.cancelled) {
+        const cancelIdx = store.entries.findIndex(e => e.id === id)
+        if (cancelIdx >= 0) store.entries.splice(cancelIdx, 1)
+        selected.value = selected.value.filter(sid => sid !== id)
+      }
+    }
     closeEditModal()
   } catch (e) {
-    console.error('[EntriesPage] delete failed', e)
-    editError.value = 'Failed to delete — please try again'
+    console.error('[EntriesPage] delete/cancel failed', e)
+    editError.value = isCancelled ? 'Failed to delete — please try again' : 'Failed to cancel — please try again'
     editWorking.value = false
   }
 }

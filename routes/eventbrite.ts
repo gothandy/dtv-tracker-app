@@ -6,9 +6,10 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 import { recordsRepository } from '../services/repositories/records-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
-import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
-import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult } from '../services/eventbrite-sync';
+import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_CANCELLED } from '../services/field-names';
+import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
+import { isNewVolunteer, findOrCreateProfile, findProfileByAttendee, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult } from '../services/eventbrite-sync';
+import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runBackupExport } from '../services/backup-export';
@@ -32,6 +33,7 @@ interface SyncAttendeesResult {
   newRecords: number;
   updatedRecords: number;
   duplicateWarnings: number;
+  cancelledEntries: number;
 }
 
 async function runSyncSessions(): Promise<SyncSessionsResult> {
@@ -120,6 +122,7 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   let newRecords = 0;
   let updatedRecords = 0;
   let duplicateWarnings = 0;
+  let cancelledEntries = 0;
 
   // Load existing records for upsert
   const allRecords = await recordsRepository.getAll();
@@ -174,10 +177,40 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       newRecords += created;
       updatedRecords += updated;
     }
+
+    // Cancellation step — skip if no entries exist for this session (nothing to cancel)
+    if (!sessionEntries.length) continue;
+    const cancelledAttendees = await getCancelledAttendees(session.EventbriteEventID!);
+    if (cancelledAttendees.length > 0) {
+      console.log(`[Eventbrite Sync] Session ${session.ID}: ${cancelledAttendees.length} cancelled attendees to check`);
+
+      // Build map of profileId → entry for quick lookup
+      const entryByProfile = new Map<number, { id: number; alreadyCancelled: boolean }>();
+      for (const entry of sessionEntries) {
+        const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+        if (pid !== undefined) {
+          entryByProfile.set(pid, { id: entry.ID, alreadyCancelled: !!entry[ENTRY_CANCELLED] });
+        }
+      }
+
+      for (const attendee of cancelledAttendees) {
+        const profile = findProfileByAttendee(attendee, profiles);
+        if (!profile) continue;
+
+        const entryInfo = entryByProfile.get(profile.ID);
+        if (!entryInfo || entryInfo.alreadyCancelled) continue;
+
+        await entriesRepository.updateFields(entryInfo.id, { [ENTRY_CANCELLED]: new Date().toISOString() });
+        computeAndSaveProfileStats(profile.ID).catch(err =>
+          console.error('[Eventbrite Sync] computeAndSaveProfileStats failed for profile', profile.ID, err)
+        );
+        cancelledEntries++;
+      }
+    }
   }
 
-  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${newRecords} new records, ${updatedRecords} updated records, ${duplicateWarnings} duplicate warnings`);
-  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, duplicateWarnings };
+  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${cancelledEntries} cancelled, ${newRecords} new records, ${updatedRecords} updated records, ${duplicateWarnings} duplicate warnings`);
+  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, duplicateWarnings, cancelledEntries };
 }
 
 const WARMUP_KEYS = ['groups', 'sessions', 'profiles', 'regulars'] as const;
@@ -225,7 +258,7 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     const profileIdsStr = profileStatsResult.updatedIds.length ? ` (${profileStatsResult.updatedIds.join(', ')})` : '';
     const parts = [
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions / ${attendeeResult.sessionsProcessed} sessions`,
-      `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
+      `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.cancelledEntries} cancelled, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
       `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
       backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes',

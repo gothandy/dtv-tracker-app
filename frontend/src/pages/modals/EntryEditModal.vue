@@ -3,13 +3,18 @@
     :title="title ?? entry.profile.name"
     action="Save"
     action-icon="save"
-    show-delete
+    :show-delete="!isCancelled || isAdmin"
+    :delete-text="isCancelled ? 'Delete' : 'Cancel'"
     :working="working"
     :error="error"
     @close="emit('close')"
     @action="save"
-    @delete="confirmDelete = true"
+    @delete="isCancelled ? (confirmDelete = true) : emit('delete')"
   >
+    <div v-if="entry.cancelled" class="eem-cancelled">
+      Cancelled {{ formatCancelled(entry.cancelled) }}
+    </div>
+
     <div v-if="profileClick || sessionClick" class="eem-actions">
       <AppButton v-if="profileClick" label="View Profile" icon="profile" @click="profileClick!()" />
       <AppButton v-if="sessionClick" label="View Session" icon="register" @click="sessionClick!()" />
@@ -43,6 +48,7 @@
           <option :value="null">Select adult…</option>
           <option v-for="a in sessionAdults" :key="a.id" :value="a.id">{{ a.name }}</option>
         </select>
+        <p v-if="accompanyingAdultMissing" class="eem-adult-warning">Not registered at this session</p>
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -70,6 +76,8 @@ const props = defineProps<{
   working: boolean
   error?: string
   title?: string
+  isCancelled?: boolean
+  isAdmin?: boolean
   profileClick?: () => void
   sessionClick?: () => void
   sessionAdults?: { id: number; name: string }[]
@@ -93,6 +101,13 @@ const form = reactive({
 
 const hasChild = computed(() => /\#child\b/i.test(form.notes))
 
+const accompanyingAdultMissing = computed(() =>
+  hasChild.value &&
+  form.accompanyingAdultId !== null &&
+  !!props.sessionAdults &&
+  !props.sessionAdults.some(a => a.id === form.accompanyingAdultId)
+)
+
 watch(() => props.entry, (e) => {
   form.checkedIn = e.checkedIn
   form.count = e.count
@@ -104,6 +119,10 @@ watch(() => props.entry, (e) => {
 watch(hasChild, (val) => {
   if (!val) form.accompanyingAdultId = null
 })
+
+function formatCancelled(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
 
 function save() {
   emit('save', {
@@ -122,6 +141,15 @@ function deleteEntry() {
 </script>
 
 <style scoped>
+.eem-cancelled {
+  background: var(--color-dtv-dirt-light);
+  color: var(--color-dtv-dirt-dark, var(--color-dtv-dirt));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
 .eem-actions {
   display: flex;
   gap: 0.5rem;
@@ -168,4 +196,10 @@ function deleteEntry() {
 }
 .eem-select:disabled { color: var(--color-text-muted); }
 .eem-select--placeholder { color: var(--color-text-muted); }
+
+.eem-adult-warning {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-dtv-dirt);
+}
 </style>

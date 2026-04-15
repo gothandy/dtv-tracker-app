@@ -39,6 +39,8 @@
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
+      :is-cancelled="!!editingEntry.cancelled"
+      :is-admin="isAdmin"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
       :working="workingEdit"
@@ -67,12 +69,14 @@ type EditData = { checkedIn: boolean; count: number; hours: number; notes: strin
 const props = defineProps<{
   entries: EntryItem[]
   allowEdit?: boolean
+  isAdmin?: boolean
   workingId?: number | null
 }>()
 
 const emit = defineEmits<{
   update: [entry: EntryItem, checkedIn: boolean, hours: number]
   editEntry: [id: number, data: EditData | null]
+  cancelEntry: [id: number]
 }>()
 
 const router = useRouter()
@@ -170,12 +174,18 @@ function onDelete() {
   if (!editingEntry.value) return
   workingEdit.value = true
   editError.value = ''
-  emit('editEntry', editingEntry.value.id, null)
+  if (editingEntry.value.cancelled) {
+    emit('editEntry', editingEntry.value.id, null)
+  } else {
+    emit('cancelEntry', editingEntry.value.id)
+  }
 }
 
 defineExpose({
   onEditSuccess: closeEditModal,
   onEditError(msg: string) { workingEdit.value = false; editError.value = msg },
+  onCancelSuccess: closeEditModal,
+  onCancelError(msg: string) { workingEdit.value = false; editError.value = msg },
 })
 </script>
 

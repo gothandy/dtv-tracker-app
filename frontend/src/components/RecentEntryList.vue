@@ -15,27 +15,146 @@
     <p v-else-if="!entries.length" class="rel-empty">No sign-ups in this period</p>
 
     <div v-else class="rel-list">
-      <EntryListItem
-        v-for="e in entries"
-        :key="e.id"
-        :entry="mapEntry(e)"
-        :to="sessionPath(e.groupKey, e.date)"
-      />
+      <template v-for="e in entries" :key="e.id">
+        <button v-if="isAdmin" class="rel-item-btn" @click="openModal(e)">
+          <EntryListItem :entry="mapEntry(e)" />
+        </button>
+        <EntryListItem v-else :entry="mapEntry(e)" :to="sessionPath(e.groupKey, e.date)" />
+      </template>
     </div>
+
+    <EntryEditModal
+      v-if="editingEntry"
+      :entry="editingEntry"
+      :is-cancelled="!!editingEntry.cancelled"
+      :is-admin="true"
+      :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
+      :session-adults="sessionAdults"
+      :working="editWorking"
+      :error="editError"
+      @close="closeModal"
+      @save="onSave"
+      @delete="onDelete"
+    />
 
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import type { RecentSignupResponse, EntryListItemResponse } from '../../../types/api-responses'
+import type { EntryItem } from '../types/entry'
 import { sessionPath } from '../router/index'
 import EntryListItem from './entries/EntryListItem.vue'
+import EntryEditModal from '../pages/modals/EntryEditModal.vue'
+import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 
+const props = defineProps<{ isAdmin?: boolean }>()
+
+const router = useRouter()
 const since = ref<string>('24h')
 const entries = ref<RecentSignupResponse[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+
+const editingEntry = ref<EntryItem | null>(null)
+const sessionAdults = ref<{ id: number; name: string }[]>([])
+const editWorking = ref(false)
+const editError = ref<string | undefined>()
+
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+
+function mapToEntryItem(e: RecentSignupResponse): EntryItem {
+  return {
+    id: e.id,
+    checkedIn: e.checkedIn,
+    hours: e.hours,
+    count: e.count,
+    notes: e.notes,
+    accompanyingAdultId: e.accompanyingAdultId,
+    cancelled: e.cancelled,
+    profile: {
+      name: e.volunteerName,
+      slug: e.volunteerSlug,
+      isMember: false,
+      isGroup: false,
+    },
+    session: {
+      groupKey: e.groupKey,
+      groupName: e.groupName,
+      date: e.date,
+    },
+  }
+}
+
+async function openModal(e: RecentSignupResponse) {
+  editingEntry.value = mapToEntryItem(e)
+  sessionAdults.value = await fetchSessionAdults(e.groupKey, e.date)
+}
+
+function closeModal() {
+  editingEntry.value = null
+  sessionAdults.value = []
+  editWorking.value = false
+  editError.value = undefined
+}
+
+async function onSave(data: EditData) {
+  if (!editingEntry.value) return
+  editWorking.value = true
+  editError.value = undefined
+  try {
+    const res = await fetch(`/api/entries/${editingEntry.value.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    const stored = entries.value.find(e => e.id === editingEntry.value!.id)
+    if (stored) {
+      stored.checkedIn = data.checkedIn
+      stored.hours = data.hours
+      stored.count = data.count
+      stored.notes = data.notes
+      stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
+    }
+    closeModal()
+  } catch (e) {
+    console.error('[RecentEntryList] save failed', e)
+    editError.value = 'Failed to save — please try again'
+    editWorking.value = false
+  }
+}
+
+async function onDelete() {
+  if (!editingEntry.value) return
+  editWorking.value = true
+  editError.value = undefined
+  const id = editingEntry.value.id
+  const isCancelled = !!editingEntry.value.cancelled
+  try {
+    if (isCancelled) {
+      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+      entries.value = entries.value.filter(e => e.id !== id)
+    } else {
+      const res = await fetch(`/api/entries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelled: true }),
+      })
+      if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+      const stored = entries.value.find(e => e.id === id)
+      if (stored) stored.cancelled = new Date().toISOString()
+    }
+    closeModal()
+  } catch (e) {
+    console.error('[RecentEntryList] delete/cancel failed', e)
+    editError.value = isCancelled ? 'Failed to delete — please try again' : 'Failed to cancel — please try again'
+    editWorking.value = false
+  }
+}
 
 function mapEntry(e: RecentSignupResponse): EntryListItemResponse {
   return {
@@ -51,6 +170,7 @@ function mapEntry(e: RecentSignupResponse): EntryListItemResponse {
     count: 1,
     isGroup: false,
     hasAccompanyingAdult: false,
+    cancelled: e.cancelled,
   }
 }
 
@@ -116,5 +236,15 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.rel-item-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 </style>

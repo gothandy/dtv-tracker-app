@@ -162,8 +162,8 @@ async function syncAttendees() {
     const res = await fetch('/api/eventbrite/sync-attendees', { method: 'POST' })
     const data = await res.json()
     if (!res.ok || !data.success) throw new Error(data.error || 'Sync failed')
-    const d = data.data
-    let msg = `${d.sessionsProcessed} sessions, ${d.newProfiles} new profiles, ${d.newEntries} new entries`
+    const d = data.data.attendees
+    let msg = `${d.sessionsProcessed} sessions, ${d.newProfiles} new profiles, ${d.newEntries} new entries, ${d.cancelledEntries ?? 0} cancelled`
     if (d.newRecords) msg += `, ${d.newRecords} consent records`
     attendeesResult.value = msg
   } catch (e: any) {

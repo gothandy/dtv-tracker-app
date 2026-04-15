@@ -82,7 +82,9 @@ export interface ProfileEntryResponse {
   hours: number;
   checkedIn: boolean;
   notes?: string;
+  accompanyingAdultId?: number;
   financialYear: string;
+  cancelled?: string;
 }
 
 export interface ProfileGroupHours {
@@ -169,6 +171,7 @@ export interface EntryResponse {
   checkedIn: boolean;
   notes?: string;
   accompanyingAdultId?: number;
+  cancelled?: string; // ISO datetime if booking was cancelled
 }
 
 export interface SessionDetailResponse {
@@ -201,7 +204,8 @@ export interface SessionDetailResponse {
   isAttended?: boolean;
   isRegular?: boolean;
   userIsNew?: boolean;        // #New tag present on the user's entry for this session
-  userEntryId?: number;       // entry ID for this user on this session (when isRegistered)
+  userEntryId?: number;       // entry ID for this user on this session (when isRegistered or cancelled)
+  userProfileId?: number;     // profile ID of the authenticated viewer (needed for self-service Book POST)
 }
 
 export interface EntryDetailResponse {
@@ -266,6 +270,10 @@ export interface RecentSignupResponse {
   groupName: string;
   notes?: string;
   checkedIn: boolean;
+  hours: number;
+  count: number;
+  accompanyingAdultId?: number;
+  cancelled?: string; // ISO datetime if booking was cancelled (appears in recent list ordered by Cancelled date)
 }
 
 export interface EntryListItemResponse {
@@ -283,6 +291,7 @@ export interface EntryListItemResponse {
   isGroup: boolean;
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;
+  cancelled?: string;
 }
 
 export interface TagHoursItem {

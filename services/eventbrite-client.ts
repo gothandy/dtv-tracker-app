@@ -142,6 +142,25 @@ export async function getAttendees(eventId: string, changedSince?: Date): Promis
   return all;
 }
 
+export async function getCancelledAttendees(eventId: string): Promise<EventbriteAttendee[]> {
+  const all: EventbriteAttendee[] = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await fetchEventbrite<{
+      attendees: EventbriteAttendee[];
+      pagination: { has_more_items: boolean };
+    }>(`/events/${eventId}/attendees/?status=not_attending&expand=answers,order&page=${page}`);
+
+    all.push(...(data.attendees || []));
+    hasMore = data.pagination?.has_more_items || false;
+    page++;
+  }
+
+  return all;
+}
+
 export interface EventbriteConfigCheck {
   eventId: string;
   eventName: string;

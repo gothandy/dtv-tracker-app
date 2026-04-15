@@ -28,7 +28,8 @@ import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
   SESSION_STATS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY
+  PROFILE_LOOKUP, PROFILE_DISPLAY,
+  ENTRY_CANCELLED
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
 
@@ -85,8 +86,10 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     const hours = hoursMap[since] ?? 24;
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-    const [rawEntries, rawSessions, rawGroups] = await Promise.all([
+    // Fetch both recently created entries and recently cancelled entries in parallel
+    const [rawRecent, rawCancelled, rawSessions, rawGroups] = await Promise.all([
       entriesRepository.getRecent(cutoff),
+      entriesRepository.getRecentlyCancelled(cutoff),
       sessionsRepository.getAll(),
       groupsRepository.getAll()
     ]);
@@ -94,11 +97,25 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     const sessionMap = new Map(rawSessions.map(s => [s.ID, s]));
     const groupMap = new Map(rawGroups.map(g => [g.ID, g]));
 
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
+    // Merge, deduplicate by ID (an entry could appear in both if cancelled after being recently created)
+    const seenIds = new Set<number>();
+    const allRaw = [...rawRecent, ...rawCancelled].filter(e => {
+      if (seenIds.has(e.ID)) return false;
+      seenIds.add(e.ID);
+      return true;
+    });
+
+    const entries = validateArray(allRaw, validateEntry, 'Entry');
+
+    function sortKey(e: typeof entries[0]): number {
+      // Cancelled entries sort by Cancelled date; new sign-ups sort by Created date
+      const ts = e.Cancelled ? new Date(e.Cancelled).getTime() : new Date(e.Created).getTime();
+      return ts;
+    }
 
     const recent: RecentSignupResponse[] = entries
-      .filter(e => !/#Regular\b/i.test(e.Notes || ''))
-      .sort((a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime())
+      .filter(e => e[ENTRY_CANCELLED] || !/#Regular\b/i.test(e.Notes || ''))
+      .sort((a, b) => sortKey(b) - sortKey(a))
       .slice(0, 50)
       .flatMap(e => {
         const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
@@ -122,7 +139,11 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           groupKey: group.Title,
           groupName: group.Name || group.Title,
           notes: e.Notes,
-          checkedIn: e.Checked || false
+          checkedIn: e.Checked || false,
+          hours: parseHours(e.Hours),
+          count: e.Count || 1,
+          accompanyingAdultId: e.AccompanyingAdultLookupId,
+          cancelled: e.Cancelled || undefined
         }];
       });
 
@@ -137,6 +158,9 @@ router.get('/entries', async (req: Request, res: Response) => {
   try {
     const q = req.query.q ? String(req.query.q).toLowerCase() : '';
     const accompanyingAdult = req.query.accompanyingAdult ? String(req.query.accompanyingAdult) : '';
+    const filterAdultId = req.query.accompanyingAdultId ? parseInt(String(req.query.accompanyingAdultId), 10) : null;
+    // cancelled filter: 'true' = only cancelled, 'false'/'omitted' = only active, 'all' = both
+    const cancelledFilter = req.query.cancelled ? String(req.query.cancelled) : 'false';
 
     const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
       entriesRepository.getAll(),
@@ -162,11 +186,17 @@ router.get('/entries', async (req: Request, res: Response) => {
         const group = groupMap.get(groupId);
         if (!group) return [];
 
+        // Apply cancelled filter
+        const isCancelled = !!e.Cancelled;
+        if (cancelledFilter === 'false' && isCancelled) return [];
+        if (cancelledFilter === 'true' && !isCancelled) return [];
+
         if (q && !String(e.Notes || '').toLowerCase().includes(q)) return [];
 
         const hasAdult = !!e.AccompanyingAdultLookupId;
         if (accompanyingAdult === 'empty' && hasAdult) return [];
         if (accompanyingAdult === 'notempty' && !hasAdult) return [];
+        if (filterAdultId !== null && Number(e.AccompanyingAdultLookupId) !== filterAdultId) return [];
 
         const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
         const profile = profileId !== undefined ? profileMap.get(profileId) : undefined;
@@ -187,7 +217,8 @@ router.get('/entries', async (req: Request, res: Response) => {
           count: e.Count || 1,
           isGroup: profile?.IsGroup || false,
           hasAccompanyingAdult: hasAdult,
-          accompanyingAdultId: e.AccompanyingAdultLookupId
+          accompanyingAdultId: e.AccompanyingAdultLookupId,
+          cancelled: e.Cancelled || undefined
         }];
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -434,8 +465,37 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    const { checkedIn, count, hours, notes, accompanyingAdultId } = req.body;
+    const { checkedIn, count, hours, notes, accompanyingAdultId, cancelled } = req.body;
     const fields: Record<string, any> = {};
+
+    if (typeof cancelled === 'boolean') {
+      if (cancelled) {
+        // Set Cancelled only if not already set — preserve original cancellation date
+        const existing = await entriesRepository.getById(entryId);
+        if (!existing) {
+          res.status(404).json({ success: false, error: 'Entry not found' });
+          return;
+        }
+        // Self-service and check-in can only cancel (not un-cancel)
+        const role = req.session.user?.role;
+        if (!cancelled && role !== 'admin') {
+          res.status(403).json({ success: false, error: 'Only admins can un-cancel an entry' });
+          return;
+        }
+        if (!existing[ENTRY_CANCELLED]) {
+          fields[ENTRY_CANCELLED] = new Date().toISOString();
+        }
+        // If already cancelled, no-op (preserve original date) — still returns 200
+      } else {
+        // cancelled: false — clear the Cancelled field (admin only)
+        const role = req.session.user?.role;
+        if (role !== 'admin') {
+          res.status(403).json({ success: false, error: 'Only admins can un-cancel an entry' });
+          return;
+        }
+        fields[ENTRY_CANCELLED] = null;
+      }
+    }
 
     if (typeof checkedIn === 'boolean') {
       fields.Checked = checkedIn;
@@ -495,8 +555,8 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
         console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
       );
     }
-    // Only hours changes affect profile stats (isMember/cardStatus are unaffected by entry updates)
-    if (profileId !== undefined && fields.Hours !== undefined) {
+    // Hours changes and cancellations affect profile stats
+    if (profileId !== undefined && (fields.Hours !== undefined || fields[ENTRY_CANCELLED] !== undefined)) {
       computeAndSaveProfileStats(profileId).catch(err =>
         console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
       );
@@ -528,14 +588,15 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Self-service users may only delete their own entry (supports multiple linked profiles)
-    if (req.session.user?.role === 'selfservice') {
-      const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
-      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
-      if (profileId === undefined || !ownIds.includes(profileId)) {
-        res.status(403).json({ success: false, error: 'Not your entry' });
-        return;
-      }
+    // Hard delete is admin-only and only permitted on already-cancelled entries
+    const role = req.session.user?.role;
+    if (role !== 'admin') {
+      res.status(403).json({ success: false, error: 'Only admins can delete entries — use cancel instead' });
+      return;
+    }
+    if (!entry[ENTRY_CANCELLED]) {
+      res.status(400).json({ success: false, error: 'Entry must be cancelled before it can be deleted' });
+      return;
     }
 
     // Read existing media count before delete clears the cache
