@@ -104,8 +104,7 @@ const hasChild = computed(() => /\#child\b/i.test(form.notes))
 const accompanyingAdultMissing = computed(() =>
   hasChild.value &&
   form.accompanyingAdultId !== null &&
-  !!props.sessionAdults &&
-  !props.sessionAdults.some(a => a.id === form.accompanyingAdultId)
+  !props.sessionAdults?.some(a => a.id == form.accompanyingAdultId)
 )
 
 watch(() => props.entry, (e) => {
