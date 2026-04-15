@@ -8,7 +8,7 @@ import { regularsRepository } from '../services/repositories/regulars-repository
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
 import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, EventbriteConfigCheck } from '../services/eventbrite-client';
-import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
+import { isNewVolunteer, findOrCreateProfile, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult } from '../services/eventbrite-sync';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runBackupExport } from '../services/backup-export';
@@ -148,16 +148,23 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       if (!existingProfileIds.has(profileId)) {
         const noteTags: string[] = [];
         if (isNewVolunteer(entries, profileId, session.ID)) noteTags.push('#New');
-        if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
+        const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
+        if (isChild) noteTags.push('#Child');
         noteTags.push('#Eventbrite');
         if (clash) noteTags.push('#Duplicate');
         const sessionGroupId = safeParseLookupId(session[GROUP_LOOKUP]);
         if (sessionGroupId !== undefined && regularSet.has(`${sessionGroupId}-${profileId}`)) noteTags.push('#Regular');
-        await entriesRepository.create({
+        const entryFields: Record<string, any> = {
           [SESSION_LOOKUP]: String(session.ID),
           [PROFILE_LOOKUP]: String(profileId),
-          Notes: noteTags.join(' ')
-        });
+          Notes: noteTags.join(' '),
+          BookedBy: bookingEmailFor(attendee)
+        };
+        if (isChild && attendee.order_id) {
+          const adultProfile = resolveAccompanyingAdult(attendees, attendee.order_id, profiles);
+          if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
+        }
+        await entriesRepository.create(entryFields);
         existingProfileIds.add(profileId);
         newEntries++;
       }
@@ -449,15 +456,23 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
 
         if (!existingProfileIds.has(profile.ID)) {
           const noteTags: string[] = [];
-          if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
+          const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
+          if (isChild) noteTags.push('#Child');
           noteTags.push('#Eventbrite');
           if (clash) noteTags.push('#Duplicate');
           if (sessionGroupId !== undefined && regularSet.has(`${sessionGroupId}-${profile.ID}`)) noteTags.push('#Regular');
-          await entriesRepository.create({
+          const entryFields: Record<string, any> = {
             [SESSION_LOOKUP]: String(session.ID),
             [PROFILE_LOOKUP]: String(profile.ID),
-            Notes: noteTags.join(' ')
-          });
+            Notes: noteTags.join(' '),
+            BookedBy: bookingEmailFor(attendee)
+          };
+          if (isChild && attendee.order_id) {
+            const sessionAttendees = attendeesByEventId.get(session.EventbriteEventID!) ?? [];
+            const adultProfile = resolveAccompanyingAdult(sessionAttendees, attendee.order_id, profiles);
+            if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
+          }
+          await entriesRepository.create(entryFields);
           existingProfileIds.add(profile.ID);
           added++;
         }

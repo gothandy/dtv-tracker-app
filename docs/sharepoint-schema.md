@@ -87,6 +87,8 @@ Fall back to zeros if the field is empty (e.g. before first refresh run).
 | **Checked** | Checked | Yes/No | No | No | Check-in status for the volunteer |
 | **Hours** | Hours | Number | No | - | Hours worked at this session |
 | **Notes** | Notes | Single line of text | No | - | Tags: #New #Child #DofE #DigLead #FirstAider #Regular #NoPhoto |
+| **BookedBy** | BookedBy | Single line of text | No | - | Order contact email from Eventbrite (whoever made the booking); historic audit trail |
+| **AccompanyingAdult** | AccompanyingAdult | Lookup (Profiles) | No | - | For child entries: the adult responsible on the day; derived from same Eventbrite order |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
 

@@ -14,6 +14,10 @@ export const GROUP_DISPLAY    = 'Group';
 export const SESSION_DISPLAY  = 'Session';
 export const PROFILE_DISPLAY  = 'Profile';
 
+// Accompanying adult lookup (Entries list)
+export const ACCOMPANYING_ADULT_LOOKUP  = 'AccompanyingAdultLookupId';
+export const ACCOMPANYING_ADULT_DISPLAY = 'AccompanyingAdult';
+
 // Other fields
 export const SESSION_NOTES       = 'Notes';
 export const SESSION_METADATA    = 'Metadata';
