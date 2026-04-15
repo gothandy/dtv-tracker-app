@@ -66,40 +66,6 @@ export function resolveAccompanyingAdult(
 }
 
 /**
- * Looks up an existing profile by name+email without creating one.
- * Used by backfill operations that must never modify profile data.
- */
-export function findExistingProfile(
-  name: string,
-  email: string | undefined,
-  profiles: SharePointProfile[]
-): SharePointProfile | undefined {
-  const nameKey = toMatchName(name);
-  const normalizedEmail = email?.toLowerCase();
-
-  if (normalizedEmail) {
-    const byNameAndEmail = profiles.find(p => {
-      const nMatch = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
-                     (p.Title && toMatchName(p.Title) === nameKey);
-      return nMatch && parseEmails(p.Email).includes(normalizedEmail);
-    });
-    if (byNameAndEmail) return byNameAndEmail;
-  }
-
-  // Name-only — only when emails are compatible (absent on one/both sides)
-  const byName = profiles.find(p =>
-    (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
-    (p.Title && toMatchName(p.Title) === nameKey)
-  );
-  if (!byName) return undefined;
-
-  const profileEmail = byName.Email?.toLowerCase();
-  if (normalizedEmail && profileEmail && normalizedEmail !== profileEmail) return undefined;
-
-  return byName;
-}
-
-/**
  * Returns true if this is the volunteer's first-ever session (no entries
  * outside the current session exist in the provided entries snapshot).
  */
