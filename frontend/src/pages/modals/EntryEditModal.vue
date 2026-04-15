@@ -48,6 +48,7 @@
           <option :value="null">Select adult…</option>
           <option v-for="a in sessionAdults" :key="a.id" :value="a.id">{{ a.name }}</option>
         </select>
+        <p v-if="accompanyingAdultMissing" class="eem-adult-warning">Not registered at this session</p>
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -99,6 +100,13 @@ const form = reactive({
 })
 
 const hasChild = computed(() => /\#child\b/i.test(form.notes))
+
+const accompanyingAdultMissing = computed(() =>
+  hasChild.value &&
+  form.accompanyingAdultId !== null &&
+  !!props.sessionAdults &&
+  !props.sessionAdults.some(a => a.id === form.accompanyingAdultId)
+)
 
 watch(() => props.entry, (e) => {
   form.checkedIn = e.checkedIn
@@ -188,4 +196,10 @@ function deleteEntry() {
 }
 .eem-select:disabled { color: var(--color-text-muted); }
 .eem-select--placeholder { color: var(--color-text-muted); }
+
+.eem-adult-warning {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-dtv-dirt);
+}
 </style>
