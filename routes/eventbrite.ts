@@ -178,7 +178,8 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       updatedRecords += updated;
     }
 
-    // Cancellation step — separate from entry creation; existing sync is untouched
+    // Cancellation step — skip if no entries exist for this session (nothing to cancel)
+    if (!sessionEntries.length) continue;
     const cancelledAttendees = await getCancelledAttendees(session.EventbriteEventID!);
     if (cancelledAttendees.length > 0) {
       console.log(`[Eventbrite Sync] Session ${session.ID}: ${cancelledAttendees.length} cancelled attendees to check`);

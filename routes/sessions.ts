@@ -541,7 +541,14 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       if (isSelfService) {
         // Self-service: fetch own entry to get userEntryId and live isRegistered status
         const selfEntries = await entriesRepository.getByProfileId(selfProfileId);
-        const ownEntry = selfEntries.find(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+        // Prefer active entry over cancelled; among ties pick the most recently created
+        const sessionEntries = selfEntries
+          .filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID)
+          .sort((a, b) => {
+            if (!!a[ENTRY_CANCELLED] !== !!b[ENTRY_CANCELLED]) return a[ENTRY_CANCELLED] ? 1 : -1;
+            return (b.ID ?? 0) - (a.ID ?? 0);
+          });
+        const ownEntry = sessionEntries[0];
         if (ownEntry) {
           userEntryId = ownEntry.ID;
           // Cancelled entry: not registered (can re-book), but userEntryId still returned for cancel admin flows

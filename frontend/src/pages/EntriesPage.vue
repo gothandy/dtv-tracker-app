@@ -153,7 +153,8 @@ async function onDelete() {
     if (isCancelled) {
       const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-      store.entries.splice(store.entries.findIndex(e => e.id === id), 1)
+      const delIdx = store.entries.findIndex(e => e.id === id)
+      if (delIdx >= 0) store.entries.splice(delIdx, 1)
       selected.value = selected.value.filter(sid => sid !== id)
     } else {
       const res = await fetch(`/api/entries/${id}`, {
@@ -166,7 +167,8 @@ async function onDelete() {
       if (stored) stored.cancelled = new Date().toISOString()
       // Remove from list if filter excludes cancelled entries
       if (currentFilter.value.cancelled === 'false' || !currentFilter.value.cancelled) {
-        store.entries.splice(store.entries.findIndex(e => e.id === id), 1)
+        const cancelIdx = store.entries.findIndex(e => e.id === id)
+        if (cancelIdx >= 0) store.entries.splice(cancelIdx, 1)
         selected.value = selected.value.filter(sid => sid !== id)
       }
     }
