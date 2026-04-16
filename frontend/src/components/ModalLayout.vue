@@ -22,7 +22,7 @@
           :label="deleteText ?? 'Delete'"
           icon="delete"
           mode="icon-responsive"
-          variant="danger"
+          dtv-color="dirt"
           class="am-delete"
           :disabled="deleteDisabled || working"
           :working="working && activeButton === 'delete'"

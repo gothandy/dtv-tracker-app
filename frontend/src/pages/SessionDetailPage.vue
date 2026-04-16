@@ -31,14 +31,12 @@
         <!-- Right: booking panel -->
         <template #right>
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" />
-          <SessionDetailBook v-if="store.session.isBookable && !store.session.isRegistered" :session="store.session" :working="bookWorking" :error="bookError" @book="onBook" />
-          <SessionDetailCancel v-if="store.session.isBookable && store.session.isRegistered" :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
-
-
-          
-          <!--
-          <SessionDetailForThis v-if="store.session.isBookable && store.session.isRegistered" :session="store.session" />
-          -->
+          <SessionActionsIsBooked v-if="showIsBooked" :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
+          <SessionActionsSessionFull v-if="showSessionFull" />
+          <SessionActionsLogIn v-if="showLogIn" />
+          <SessionActionsBookNew v-if="showBookNew" :eventbrite-url="eventbriteUrl!" />
+          <SessionActionsBookRegular v-if="showBookRegular" :working="bookWorking" :error="bookError" @book="onBook" />
+          <SessionActionsAllocationFull v-if="showAllocationFull" />
 
 
           
@@ -206,9 +204,13 @@ import { usePageTitle } from '../composables/usePageTitle'
 import { groupPath, sessionPath } from '../router/index'
 import PageHeader from '../components/PageHeader.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
-import SessionDetailBook from '../components/sessions/SessionDetailBook.vue'
-import SessionDetailCancel from '../components/sessions/SessionDetailCancel.vue'
 import MediaCard from '../components/MediaCard.vue'
+import SessionActionsIsBooked from '../components/sessions/actions/SessionActionsIsBooked.vue'
+import SessionActionsSessionFull from '../components/sessions/actions/SessionActionsSessionFull.vue'
+import SessionActionsLogIn from '../components/sessions/actions/SessionActionsLogIn.vue'
+import SessionActionsBookNew from '../components/sessions/actions/SessionActionsBookNew.vue'
+import SessionActionsBookRegular from '../components/sessions/actions/SessionActionsBookRegular.vue'
+import SessionActionsAllocationFull from '../components/sessions/actions/SessionActionsAllocationFull.vue'
 import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
 import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
@@ -239,6 +241,78 @@ const editGroups = computed<GroupItem[]>(() =>
 const coverItem    = computed<MediaItem | null>(() =>
   mediaItems.value.find(i => i.listItemId === store.session?.coverMediaId) ?? null
 )
+
+// ── CTA state booleans ───────────────────────────────────────────────────────
+// All derivation lives here; action components receive only display-ready props.
+
+const isGroupNew = computed(() => {
+  const s = store.session
+  if (!s) return true
+  return !s.isRegular && !s.isRepeat
+})
+
+const newSpacesAvail = computed(() => {
+  const s = store.session
+  if (!s) return false
+  const { new: newLimit } = s.limits
+  return newLimit === undefined || (s.newCount ?? 0) < newLimit
+})
+
+const repeatBookings = computed(() => {
+  const s = store.session
+  if (!s) return 0
+  return s.registrations - (s.newCount ?? 0)
+})
+
+const repeatSpacesAvail = computed(() => {
+  const s = store.session
+  if (!s) return false
+  const { repeat } = s.limits
+  return repeat === undefined || repeatBookings.value < repeat
+})
+
+const showIsBooked = computed(() => !!store.session?.isBookable && !!store.session.isRegistered)
+
+const showSessionFull = computed(() => {
+  const s = store.session
+  return !!s?.isBookable && s.limits.total !== undefined && s.registrations >= s.limits.total
+})
+
+const showLogIn = computed(() =>
+  !!store.session?.isBookable && !profile.isAuthenticated && !showSessionFull.value
+)
+
+const showBookNew = computed(() =>
+  !!store.session?.isBookable &&
+  !showIsBooked.value &&
+  !showSessionFull.value &&
+  isGroupNew.value &&
+  newSpacesAvail.value &&
+  !!store.session.eventbriteEventId
+)
+
+const showBookRegular = computed(() =>
+  !!store.session?.isBookable &&
+  !showIsBooked.value &&
+  !showSessionFull.value &&
+  profile.isAuthenticated &&
+  !isGroupNew.value &&
+  repeatSpacesAvail.value
+)
+
+const showAllocationFull = computed(() => {
+  const s = store.session
+  if (!s?.isBookable || showIsBooked.value || showSessionFull.value) return false
+  if (isGroupNew.value && !newSpacesAvail.value) return true
+  if (!isGroupNew.value && profile.isAuthenticated && !repeatSpacesAvail.value) return true
+  return false
+})
+
+const eventbriteUrl = computed<string | null>(() => {
+  const id = store.session?.eventbriteEventId
+  return id ? `https://www.eventbrite.co.uk/e/${id}` : null
+})
+// ─────────────────────────────────────────────────────────────────────────────
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const refreshWorking = ref(false)

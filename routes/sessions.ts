@@ -530,6 +530,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     let isRegistered: boolean | undefined;
     let isAttended: boolean | undefined;
     let isRegular: boolean | undefined;
+    let isRepeat: boolean | undefined;
     let userEntryId: number | undefined;
     let userProfileId: number | undefined;
 
@@ -537,6 +538,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       userProfileId = selfProfileId;
       if (selfProfileStats) {
         isRegular = selfProfileStats.regularGroupIds?.includes(groupId) ?? false;
+        isRepeat = selfProfileStats.repeatGroupIds?.includes(groupId) ?? false;
       }
       if (isSelfService) {
         // Self-service: fetch own entry to get userEntryId and live isRegistered status
@@ -603,6 +605,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         isRegistered,
         isAttended,
         isRegular,
+        isRepeat,
         userEntryId,
         userProfileId
       })
@@ -637,6 +640,8 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (coverMediaId === null) fields[SESSION_COVER_MEDIA] = null;
     if (limits === null) {
       fields[SESSION_LIMITS] = null;
+    } else if (typeof limits === 'object') {
+      fields[SESSION_LIMITS] = JSON.stringify(limits);
     } else if (typeof limits === 'string') {
       try { JSON.parse(limits); fields[SESSION_LIMITS] = limits; } catch { /* ignore invalid JSON */ }
     }

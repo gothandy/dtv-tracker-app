@@ -9,7 +9,7 @@
       <div class="row">
         <AppButton label="Edit" icon="edit" mode="icon-only" />
         <AppButton label="Edit" icon="edit" mode="icon-only" :selected="false" />
-        <AppButton label="Delete" icon="delete" mode="icon-only" variant="danger" />
+        <AppButton label="Delete" icon="delete" mode="icon-only" dtv-color="dirt" />
         <AppButton label="Edit" icon="edit" mode="icon-only" disabled />
         <AppButton label="Edit" icon="edit" mode="icon-only" working />
       </div>
@@ -18,7 +18,7 @@
       <div class="row">
         <AppButton label="Edit" icon="edit" mode="icon-responsive" />
         <AppButton label="Edit" icon="edit" mode="icon-responsive" :selected="false" />
-        <AppButton label="Delete" icon="delete" mode="icon-responsive" variant="danger" />
+        <AppButton label="Delete" icon="delete" mode="icon-responsive" dtv-color="dirt" />
         <AppButton label="Edit" icon="edit" mode="icon-responsive" disabled />
         <AppButton label="Edit" icon="edit" mode="icon-responsive" working />
       </div>
@@ -27,7 +27,7 @@
       <div class="row">
         <AppButton label="Edit" icon="edit" />
         <AppButton label="Edit" icon="edit" :selected="false" />
-        <AppButton label="Delete" icon="delete" variant="danger" />
+        <AppButton label="Delete" icon="delete" dtv-color="dirt" />
         <AppButton label="Edit" icon="edit" disabled />
         <AppButton label="Edit" icon="edit" working />
       </div>
@@ -49,7 +49,7 @@
 
       <h2>Custom Color</h2>
       <div class="row">
-        <AppButton label="Info" icon="edit" color="var(--color-dtv-gold)" />
+        <AppButton label="Gold" icon="edit" dtv-color="gold" />
       </div>
 
       <h2>Full Width</h2>

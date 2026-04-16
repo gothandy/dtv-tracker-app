@@ -12,7 +12,6 @@
       'app-btn--icon-text': hasIconBox,
       'app-btn--unselected': selected === false,
       'app-btn--working': working,
-      'app-btn--danger': variant === 'danger',
     }"
     :style="buttonStyle"
   >
@@ -42,12 +41,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+const DTV_COLORS: Record<string, { base: string; hover: string }> = {
+  gold: { base: 'var(--color-dtv-gold)', hover: 'var(--color-dtv-gold-dark)' },
+  dirt: { base: 'var(--color-dtv-red)', hover: 'var(--color-dtv-dirt-dark)' },
+}
+
 const props = withDefaults(defineProps<{
   label: string
   icon?: string
   mode?: 'icon-only' | 'icon-responsive' | 'icon-text'
-  variant?: 'default' | 'danger'
-  color?: string
+  dtvColor?: string
   disabled?: boolean
   working?: boolean
   selected?: boolean | null
@@ -63,10 +66,13 @@ const props = withDefaults(defineProps<{
 const isIconOnly = computed(() => !!props.icon && props.mode === 'icon-only')
 const hasIconBox = computed(() => !!props.icon && !isIconOnly.value)
 
-const buttonStyle = computed(() => ({
-  ...(props.color ? { backgroundColor: props.color } : {}),
-  justifyContent: props.icon && props.mode !== 'icon-only' ? 'flex-start' : 'center',
-}))
+const buttonStyle = computed(() => {
+  const dtv = props.dtvColor ? DTV_COLORS[props.dtvColor] : undefined
+  return {
+    ...(dtv ? { '--app-btn-bg': dtv.base, '--app-btn-hover-bg': dtv.hover } : {}),
+    justifyContent: props.icon && props.mode !== 'icon-only' ? 'flex-start' : 'center',
+  }
+})
 </script>
 
 <style scoped>
@@ -76,7 +82,7 @@ const buttonStyle = computed(() => ({
   justify-content: center;
   height: 2.5rem;
   padding: 0 1rem;
-  background: var(--color-dtv-green);
+  background: var(--app-btn-bg, var(--color-dtv-green));
   color: var(--color-white);
   border: none;
   font-family: var(--font-head);
@@ -119,17 +125,9 @@ const buttonStyle = computed(() => ({
   padding: 0 1rem;
 }
 
-.app-btn--danger {
-  background: var(--color-dtv-red);
-}
-
 @media (hover: hover) {
   .app-btn:hover:not(:disabled) {
-    background: var(--color-dtv-green-dark);
-  }
-
-  .app-btn--danger:hover:not(:disabled) {
-    background: var(--color-dtv-dirt-dark);
+    background: var(--app-btn-hover-bg, var(--color-dtv-green-dark));
   }
 }
 
