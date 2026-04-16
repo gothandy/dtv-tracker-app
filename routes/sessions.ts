@@ -432,7 +432,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const group = convertGroup(spGroup);
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
     const regularsCount = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === groupId).length || undefined;
-    const statsJson = JSON.parse(spSession[SESSION_STATS] || '{}');
+    let statsJson: Record<string, any> = {};
+    try { statsJson = JSON.parse(spSession[SESSION_STATS] || '{}'); } catch { /* malformed — fall back to empty */ }
     const rawLimits = convertSession(spSession).limits;
     const sessionLimits = deriveLimits(rawLimits, regularsCount, statsJson.cancelledRegular ?? 0);
 
