@@ -1,7 +1,7 @@
 <template>
   <div class="sna-wrap">
     <p class="sna-label">New to DTV? Book via Eventbrite.</p>
-    <AppButton label="Book" icon="brands/eventbrite" dtv-color="gold" :href="eventbriteUrl" target="_blank" />
+    <AppButton usage="task" label="Book" icon="brands/eventbrite" variant="secondary" :href="eventbriteUrl" target="_blank" />
   </div>
 </template>
 

@@ -152,6 +152,7 @@ const mockSession: SessionDetailResponse = {
   groupId: 1,
   groupName: 'Sheepskull',
   limits: {},
+  storedLimits: {},
   registrations: 5,
   hours: 20,
   financialYear: '24/25',

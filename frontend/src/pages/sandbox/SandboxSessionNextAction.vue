@@ -18,13 +18,13 @@
 
       <h2>SessionFull — sold out</h2>
       <div class="sna-frame">
-        <SessionActionsSessionFull />
+        <SessionActionsSessionFull group-key="sheepskull" />
       </div>
 
       <h2>IsBooked + SessionFull — booked on a sold-out session</h2>
       <div class="sna-frame">
         <SessionActionsIsBooked />
-        <SessionActionsSessionFull />
+        <SessionActionsSessionFull group-key="sheepskull" />
       </div>
 
       <h2>LogIn — not authenticated</h2>
@@ -56,7 +56,7 @@
 
       <h2>AllocationFull — session has space but not for this person's path</h2>
       <div class="sna-frame">
-        <SessionActionsAllocationFull />
+        <SessionActionsAllocationFull group-key="sheepskull" />
       </div>
 
     </div>

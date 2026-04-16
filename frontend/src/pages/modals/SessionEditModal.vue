@@ -96,7 +96,7 @@ const form = reactive({
   description: props.session.description ?? '',
   date: props.session.date,
   groupId: props.session.groupId ?? null as number | null,
-  limitsRaw: props.session.limits && Object.keys(props.session.limits).length ? JSON.stringify(props.session.limits) : '',
+  limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
   eventbriteEventId: props.session.eventbriteEventId ?? '',
 })
 

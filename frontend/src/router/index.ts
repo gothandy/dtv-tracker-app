@@ -57,7 +57,6 @@ export const router = createRouter({
     { path: '/upload', component: () => import('../pages/UploadPage.vue') },
     { path: '/sandbox', component: () => import('../pages/sandbox/SandboxIndex.vue') },
     { path: '/sandbox/app-button', component: () => import('../pages/sandbox/SandboxAppButton.vue') },
-    { path: '/sandbox/form-button', component: () => import('../pages/sandbox/SandboxFormButton.vue') },
     { path: '/sandbox/action-bars', component: () => import('../pages/sandbox/SandboxActionBars.vue') },
     { path: '/sandbox/modals', component: () => import('../pages/sandbox/SandboxModals.vue') },
     { path: '/sandbox/modal-layout', component: () => import('../pages/sandbox/SandboxModalLayout.vue') },

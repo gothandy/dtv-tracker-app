@@ -6,6 +6,7 @@
       :label="t.alt"
       :icon="t.icon.replace('.svg', '')"
       mode="icon-only"
+      :variant="hasTag(t.tag!) ? 'primary' : 'subtle'"
       :selected="hasTag(t.tag!)"
       :disabled="disabled"
       @click="!disabled && toggleTag(t.tag!)"

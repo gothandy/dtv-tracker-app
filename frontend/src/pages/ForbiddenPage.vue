@@ -7,20 +7,22 @@
         if you think this is a mistake.
       </p>
       <FormSubmitRow>
-        <FormButton href="/">Go to home page</FormButton>
+        <AppButton usage="task" label="Go to home page" @click="router.push('/')" />
       </FormSubmitRow>
     </FormCard>
   </TaskLayout>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 
 usePageTitle('Access denied')
+const router = useRouter()
 </script>
 
 <style scoped>

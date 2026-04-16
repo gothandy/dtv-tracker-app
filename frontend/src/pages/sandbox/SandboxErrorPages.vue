@@ -10,8 +10,8 @@
         <FormCard title="Page not found">
           <p class="ep-message">This page doesn't exist.</p>
           <FormSubmitRow>
-            <FormButton href="/">Go to home page</FormButton>
-            <FormButton href="/login" variant="outline">Sign in</FormButton>
+            <AppButton usage="task" label="Go to home page" />
+            <AppButton usage="task" variant="subtle" label="Sign in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -22,7 +22,7 @@
         <FormCard title="Page not found">
           <p class="ep-message">This page doesn't exist.</p>
           <FormSubmitRow>
-            <FormButton href="/">Go to home page</FormButton>
+            <AppButton usage="task" label="Go to home page" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -37,7 +37,7 @@
             if you think this is a mistake.
           </p>
           <FormSubmitRow>
-            <FormButton href="/">Go to home page</FormButton>
+            <AppButton usage="task" label="Go to home page" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -51,7 +51,7 @@ import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormCard from '../../components/forms/FormCard.vue'
-import FormButton from '../../components/forms/FormButton.vue'
+import AppButton from '../../components/AppButton.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
 
 usePageTitle('Error Pages — Sandbox')

@@ -24,7 +24,7 @@
       </div>
       <div v-if="session.regularCount || session.regularsCount" class="flex gap-3">
         <dt class="text-white/60 w-28 shrink-0">Regulars</dt>
-        <dd>{{ session.regularCount ?? 0 }}<template v-if="session.regularsCount">/{{ session.regularsCount }}</template></dd>
+        <dd>{{ session.regularCount ?? 0 }}<template v-if="effectiveRegularsCount">/{{ effectiveRegularsCount }}</template></dd>
       </div>
     </dl>
   </div>
@@ -41,4 +41,9 @@ const props = defineProps<{
 const repeatCount = computed(() =>
   Math.max(0, props.session.registrations - (props.session.newCount ?? 0) - (props.session.regularCount ?? 0))
 )
+
+const effectiveRegularsCount = computed(() => {
+  if (props.session.regularsCount === undefined) return undefined
+  return props.session.regularsCount - (props.session.cancelledRegularCount ?? 0)
+})
 </script>

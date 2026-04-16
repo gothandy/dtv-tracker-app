@@ -35,7 +35,7 @@
           />
           <a href="/privacy" target="_blank" class="privacy-link">Read our privacy policy</a>
           <FormSubmitRow>
-            <FormButton :disabled="!privacyConsent">Save consent</FormButton>
+            <AppButton usage="task" label="Save consent" :disabled="!privacyConsent" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -57,7 +57,7 @@
           />
           <a href="/privacy" target="_blank" class="privacy-link">Read our privacy policy</a>
           <FormSubmitRow>
-            <FormButton :working="true">Saving…</FormButton>
+            <AppButton usage="task" label="Saving…" :working="true" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -79,7 +79,7 @@
           />
           <a href="/privacy" target="_blank" class="privacy-link">Read our privacy policy</a>
           <FormSubmitRow>
-            <FormButton>Save consent</FormButton>
+            <AppButton usage="task" label="Save consent" />
             <p class="form-error">Could not save consent. Please try again.</p>
           </FormSubmitRow>
         </FormCard>
@@ -91,7 +91,7 @@
         <FormCard title="Consent recorded">
           <p class="status-text">Consent has been saved for <strong>Jane Smith</strong>.</p>
           <FormSubmitRow>
-            <FormButton href="/profiles/jane-smith-1">Back to profile</FormButton>
+            <AppButton usage="task" label="Back to profile" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -108,7 +108,7 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormCard from '../../components/forms/FormCard.vue'
 import FormCheckboxItem from '../../components/forms/FormCheckboxItem.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
-import FormButton from '../../components/forms/FormButton.vue'
+import AppButton from '../../components/AppButton.vue'
 import AlertBanner from '../../components/forms/AlertBanner.vue'
 
 usePageTitle('Sandbox — ConsentPage')

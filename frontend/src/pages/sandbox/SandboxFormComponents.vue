@@ -185,22 +185,19 @@
         </FormCard>
       </div>
 
-      <h2>FormButton</h2>
+      <h2>AppButton (task)</h2>
       <div class="sfc-narrow">
         <FormSubmitRow>
-          <FormButton>Primary button</FormButton>
+          <AppButton usage="task" label="Primary button" />
         </FormSubmitRow>
         <FormSubmitRow>
-          <FormButton color="var(--color-dtv-gold)">
-            <img src="/icons/brands/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-            Gold with icon
-          </FormButton>
+          <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Gold with icon" />
         </FormSubmitRow>
         <FormSubmitRow>
-          <FormButton :disabled="true">Disabled</FormButton>
+          <AppButton usage="task" label="Disabled" :disabled="true" />
         </FormSubmitRow>
         <FormSubmitRow>
-          <FormButton :working="true">Working…</FormButton>
+          <AppButton usage="task" label="Working…" :working="true" />
         </FormSubmitRow>
       </div>
 
@@ -253,7 +250,7 @@ import FormCard from '../../components/forms/FormCard.vue'
 import AlertBanner from '../../components/forms/AlertBanner.vue'
 import FormInput from '../../components/forms/FormInput.vue'
 import FormCheckboxItem from '../../components/forms/FormCheckboxItem.vue'
-import FormButton from '../../components/forms/FormButton.vue'
+import AppButton from '../../components/AppButton.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
 import { useSessionListStore } from '../../stores/sessionList'
 import type { TaxNode } from '../../composables/useTaxonomy'

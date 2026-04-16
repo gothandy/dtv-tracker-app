@@ -56,15 +56,17 @@ export function parseSessionLimits(spSession: SharePointSession): SessionLimits 
 /**
  * Derive a missing limit from the other two: total - new - regulars = repeat, total - repeat - regulars = new.
  * Only fills in if exactly the target field is missing and the other two are present.
+ * cancelledRegular reduces the effective regulars count (regulars who freed their slot by cancelling).
  */
-export function deriveLimits(limits: SessionLimits, regularsCount?: number): SessionLimits {
+export function deriveLimits(limits: SessionLimits, regularsCount?: number, cancelledRegular = 0): SessionLimits {
+  const effectiveRegulars = regularsCount !== undefined ? Math.max(0, regularsCount - cancelledRegular) : undefined;
   const { total, new: n, repeat } = limits;
-  if (total === undefined && n !== undefined && repeat !== undefined && regularsCount !== undefined)
-    return { ...limits, total: n + repeat + regularsCount };
-  if (repeat === undefined && total !== undefined && n !== undefined && regularsCount !== undefined)
-    return { ...limits, repeat: Math.max(0, total - n - regularsCount) };
-  if (n === undefined && total !== undefined && repeat !== undefined && regularsCount !== undefined)
-    return { ...limits, new: Math.max(0, total - repeat - regularsCount) };
+  if (total === undefined && n !== undefined && repeat !== undefined && effectiveRegulars !== undefined)
+    return { ...limits, total: n + repeat + effectiveRegulars };
+  if (repeat === undefined && total !== undefined && n !== undefined && effectiveRegulars !== undefined)
+    return { ...limits, repeat: Math.max(0, total - n - effectiveRegulars) };
+  if (n === undefined && total !== undefined && repeat !== undefined && effectiveRegulars !== undefined)
+    return { ...limits, new: Math.max(0, total - repeat - effectiveRegulars) };
   return limits;
 }
 

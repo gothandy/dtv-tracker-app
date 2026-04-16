@@ -40,6 +40,7 @@ export interface SessionResponse {
   newCount?: number;
   childCount?: number;
   regularCount?: number;
+  cancelledRegularCount?: number;
   regularsCount?: number;
   eventbriteCount?: number;
   mediaCount?: number;
@@ -183,11 +184,13 @@ export interface SessionDetailResponse {
   groupName?: string;
   groupDescription?: string;
   limits: SessionLimits;
+  storedLimits: SessionLimits;
   registrations: number;
   hours: number;
   newCount?: number;
   childCount?: number;
   regularCount?: number;
+  cancelledRegularCount?: number;
   eventbriteCount?: number;
   financialYear: string;
   isBookable: boolean;

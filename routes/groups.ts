@@ -192,7 +192,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
           groupId,
           groupKey: key,
           groupName: group.displayName,
-          limits: deriveLimits(convertSession(s).limits, regulars.length),
+          limits: deriveLimits(convertSession(s).limits, regulars.length, stats.cancelledRegular ?? 0),
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           mediaCount: stats.media || undefined,

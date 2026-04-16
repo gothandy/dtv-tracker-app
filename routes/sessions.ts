@@ -106,12 +106,13 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
           groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
-          limits: deriveLimits(convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined),
+          limits: deriveLimits(convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined, stats.cancelledRegular ?? 0),
           registrations: stats.count || 0,
           hours: stats.hours || 0,
           newCount: stats.new || undefined,
           childCount: stats.child || undefined,
           regularCount: stats.regular || undefined,
+          cancelledRegularCount: stats.cancelledRegular || undefined,
           eventbriteCount: stats.eventbrite || undefined,
           mediaCount: stats.media || undefined,
           regularsCount: groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined,
@@ -431,7 +432,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const group = convertGroup(spGroup);
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
     const regularsCount = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === groupId).length || undefined;
-    const sessionLimits = deriveLimits(convertSession(spSession).limits, regularsCount);
+    const statsJson = JSON.parse(spSession[SESSION_STATS] || '{}');
+    const rawLimits = convertSession(spSession).limits;
+    const sessionLimits = deriveLimits(rawLimits, regularsCount, statsJson.cancelledRegular ?? 0);
 
     const today = new Date().toISOString().slice(0, 10);
     const isPast = spSession.Date < today;
@@ -443,7 +446,6 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     // Public (unauthenticated) path: serve entirely from the session record and pre-computed Stats.
     // No entries or profiles fetch — everything shown publicly is already on the session.
     if (!req.session.user) {
-      const statsJson = JSON.parse(spSession[SESSION_STATS] || '{}');
       const data: SessionDetailResponse = {
         id: spSession.ID,
         displayName: spSession.Name || spSession.Title,
@@ -453,12 +455,14 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         groupName: group.displayName,
         groupDescription: group.description,
         limits: sessionLimits,
+        storedLimits: rawLimits,
         regularsCount,
         registrations: statsJson.count ?? 0,
         hours: statsJson.hours ?? 0,
         newCount: statsJson.new || undefined,
         childCount: statsJson.child || undefined,
         regularCount: statsJson.regular || undefined,
+        cancelledRegularCount: statsJson.cancelledRegular || undefined,
         eventbriteCount: statsJson.eventbrite || undefined,
         financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
         isBookable: spSession.Date >= today,
@@ -523,6 +527,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const newCount = activeEntries.filter(e => /#New\b/i.test(String(e.Notes || ''))).length;
     const childCount = activeEntries.filter(e => /#Child\b/i.test(String(e.Notes || ''))).length;
     const regularCount = activeEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
+    const cancelledRegularCount = sessionEntries.filter(e => e[ENTRY_CANCELLED] && /#Regular\b/i.test(String(e.Notes || ''))).length || undefined;
     const eventbriteCount = activeEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
 
     // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
@@ -585,12 +590,14 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupName: group.displayName,
       groupDescription: group.description,
       limits: sessionLimits,
+      storedLimits: rawLimits,
       regularsCount,
       registrations: isSelfService ? (JSON.parse(spSession[SESSION_STATS] || '{}').count ?? 0) : activeEntries.length,
       hours: Math.round(totalHours * 10) / 10,
       newCount: newCount || undefined,
       childCount: childCount || undefined,
       regularCount: regularCount || undefined,
+      cancelledRegularCount,
       eventbriteCount: eventbriteCount || undefined,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       isBookable: spSession.Date >= today,
