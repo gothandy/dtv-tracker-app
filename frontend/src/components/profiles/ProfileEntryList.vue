@@ -3,7 +3,7 @@
 
     <div class="pel-header">
       <h2 class="pel-title">
-        {{ filteredEntries.length }} Sessions
+        {{ filteredEntries.length }} sessions
         <span v-if="totalHours" class="pel-hours">{{ totalHours }} hours</span>
       </h2>
       <div class="pel-filters">
@@ -198,15 +198,29 @@ defineExpose({
 
 .pel-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+@media (width >= 48em) {
+  .pel-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 .pel-title {
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  align-self: flex-start;
 }
 
 .pel-hours {
@@ -224,7 +238,6 @@ defineExpose({
 .pel-filters {
   display: flex;
   gap: 0.5rem;
-  margin-left: auto;
 }
 
 .pel-select {
