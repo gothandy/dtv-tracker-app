@@ -23,18 +23,19 @@
         <!-- Volunteer sign-in (magic link / verification code) -->
         <FormCard
           v-if="magicEnabled || verifyEnabled"
-          title="Self-service log-in"
+          title="Your email log-in"
           subtitle="View your volunteer profile, manage your sessions, and upload photos."
         >
           <!-- Method selector — only shown when both options are available -->
+          <p v-if="magicEnabled && verifyEnabled" class="method-prompt">Choose how we verify your email.</p>
           <div v-if="magicEnabled && verifyEnabled" class="method-selector">
             <label class="method-option">
               <input type="radio" v-model="method" value="link" class="method-radio" />
-              <span>Send login link</span>
+              <span>Click a link</span>
             </label>
             <label class="method-option">
               <input type="radio" v-model="method" value="code" class="method-radio" />
-              <span>Use verification code</span>
+              <span>Enter a code</span>
             </label>
           </div>
 
@@ -48,6 +49,7 @@
           />
           <FormSubmitRow>
             <FormButton :disabled="!emailValid || sending" :working="sending" @click="sendLoginEmail">
+              <img v-if="!sending" src="/icons/tick.svg" width="16" height="16" alt="" class="svg-white" />
               {{ sending ? 'Sending…' : 'Send log-in email' }}
             </FormButton>
             <p v-if="magicError" class="form-error">{{ magicError }}</p>
@@ -56,13 +58,13 @@
 
         <!-- DTV Teams account (Microsoft) -->
         <FormCard
-          title="DTV Teams Account"
-          subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account."
+          title="DTV Teams Only"
+          subtitle="For dig leads, coordinators and admins — you must use your @dtv.org.uk account."
         >
           <FormSubmitRow>
             <FormButton color="var(--color-dtv-gold)" :href="microsoftHref">
               <img src="/icons/brands/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
+              Log-in with Microsoft
             </FormButton>
           </FormSubmitRow>
         </FormCard>
@@ -313,9 +315,16 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
+.method-prompt {
+  font-size: 0.9rem;
+  color: var(--color-dtv-dark);
+  margin: 0 0 0.5rem;
+}
+
 .method-selector {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
 

@@ -44,7 +44,6 @@ withDefaults(defineProps<{
   font-family: var(--font-head);
   font-size: 0.95rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
   text-decoration: none;
