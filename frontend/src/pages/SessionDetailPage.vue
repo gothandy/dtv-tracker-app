@@ -99,7 +99,7 @@
         </template>
 
         <template #left>
-          <SessionDetailStats :session="store.session" :profile="profile.context" />
+          <SessionDetailStats :session="store.session" />
           <SessionDetailGroupTeaser
             v-if="!store.session.isBookable && store.session.nextSession"
             :group-name="store.session.groupName!"
@@ -261,7 +261,7 @@ const newSpacesAvail = computed(() => {
 const repeatBookings = computed(() => {
   const s = store.session
   if (!s) return 0
-  return s.registrations - (s.newCount ?? 0)
+  return s.registrations - (s.newCount ?? 0) - (s.regularCount ?? 0)
 })
 
 const repeatSpacesAvail = computed(() => {
