@@ -82,7 +82,7 @@
     <!-- Bar chart + Word cloud (+ personal contribution for logged-in users) -->
     <LayoutColumns :ratio="profile.isAuthenticated ? '1-1-1' : '2-1'" class="mb-16">
       <template #header>
-        <SectionHeader>What we can do together?</SectionHeader>
+        <SectionHeader>What did we do together?</SectionHeader>
       </template>
       <template #left>
         <template v-if="profile.isAuthenticated">
@@ -91,6 +91,7 @@
             :hours="hoursRollingYear"
             :earned-card="earnedCard"
             :became-member="becameMember"
+            :is-first-aider="isFirstAider"
           />
         </template>
         <template v-else>
@@ -252,6 +253,7 @@ const hoursRollingYear = computed(() => {
 })
 const earnedCard   = computed(() => viewer.user?.profileStats?.cardStatus === 'Accepted')
 const becameMember = computed(() => viewer.user?.profileStats?.isMember === true)
+const isFirstAider = computed(() => viewer.user?.profileStats?.isFirstAider === true)
 
 // ── Section headings ──────────────────────────────────────────────────────────
 

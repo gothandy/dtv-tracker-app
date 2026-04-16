@@ -12,6 +12,7 @@ export interface AuthUser {
     regularGroupIds?: number[]
     sessionIds?: number[]
     linkedProfileIds?: number[]
+    isFirstAider?: boolean
   }
 }
 

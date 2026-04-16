@@ -1,6 +1,6 @@
 <template>
   <div>
-    <CardTitle>In the last year:</CardTitle>
+    <CardTitle>What you did last year?</CardTitle>
     <ul v-if="facts.length" class="contribution-list">
       <li v-for="fact in facts" :key="fact" class="contribution-item">{{ fact }}</li>
     </ul>
@@ -17,14 +17,16 @@ const props = defineProps<{
   hours: number
   earnedCard: boolean
   becameMember: boolean
+  isFirstAider?: boolean
 }>()
 
 const facts = computed<string[]>(() => {
   const lines: string[] = []
   if (props.sessions > 0) lines.push(`Attended ${props.sessions} session${props.sessions === 1 ? '' : 's'}`)
-  if (props.hours > 0) lines.push(`Volunteered ${props.hours} hour${props.hours === 1 ? '' : 's'}`)
-  if (props.earnedCard) lines.push('Earned a discount card')
-  if (props.becameMember) lines.push('Became a charity member')
+  if (props.hours > 0) lines.push(`Volunteered ${Math.round(props.hours)} hour${Math.round(props.hours) === 1 ? '' : 's'}`)
+  if (props.becameMember) lines.push('Renewed your charity membership')
+  if (props.earnedCard) lines.push('Received a discount card')
+  if (props.isFirstAider) lines.push('Were a registered first aider')
   return lines
 })
 </script>

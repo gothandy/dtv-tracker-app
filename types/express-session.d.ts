@@ -20,6 +20,7 @@ declare module 'express-session' {
         regularGroupIds?: number[];
         sessionIds?: number[];
         linkedProfileIds?: number[];
+        isFirstAider?: boolean;
       };
     } | undefined;
     returnTo: string | undefined;

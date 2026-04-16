@@ -87,14 +87,17 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
 
   let isMember = false;
   let cardStatus: string | null = null;
+  let isFirstAider = false;
+  const today = new Date().toISOString().substring(0, 10);
   for (const r of profileRecordsRaw) {
     if (r.Type === 'Charity Membership' && r.Status === 'Accepted') isMember = true;
     if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
+    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
   }
 
   sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
 
-  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, sessionIds, linkedProfileIds });
+  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, sessionIds, linkedProfileIds, isFirstAider });
   sharePointClient.clearCacheKey('profiles');
 
   console.log(`[Stats] Profile ${profileId} targeted stats update in ${Date.now() - start}ms`);
@@ -170,14 +173,17 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     if (linked.length) profileLinkedIds.set(p.ID, linked);
   }
 
-  // membership and card status from records
+  // membership, card status, and first aider status from records
   const memberIds = new Set<number>();
   const cardStatusMap = new Map<number, string>();
+  const firstAiderIds = new Set<number>();
+  const today = new Date().toISOString().substring(0, 10);
   for (const r of recordsRaw) {
     const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
     if (pid === undefined) continue;
     if (r.Type === 'Charity Membership' && r.Status === 'Accepted') memberIds.add(pid);
     if (r.Type === 'Discount Card' && r.Status) cardStatusMap.set(pid, r.Status);
+    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) firstAiderIds.add(pid);
   }
 
   // Round hours to 1 decimal place
@@ -203,7 +209,8 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
           cardStatus: cardStatusMap.get(spProfile.ID) || null,
           regularGroupIds: profileRegularGroupIds.get(spProfile.ID) || [],
           sessionIds: (profileSessionIds.get(spProfile.ID) || []).sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || '')),
-          linkedProfileIds: profileLinkedIds.get(spProfile.ID) || []
+          linkedProfileIds: profileLinkedIds.get(spProfile.ID) || [],
+          isFirstAider: firstAiderIds.has(spProfile.ID)
         };
 
         // Skip if stored stats already match
