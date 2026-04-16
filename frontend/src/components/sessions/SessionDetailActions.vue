@@ -123,7 +123,12 @@ async function onEmailSend({ recipient, preview }: { recipient: number | 'send-a
   emailError.value = undefined
   try {
     if (recipient === 'send-all') {
-      for (const adult of adults.value.filter(a => a.email)) {
+      const emailable = adults.value.filter(a => a.email)
+      if (!emailable.length) {
+        emailError.value = 'No recipients have an email address'
+        return
+      }
+      for (const adult of emailable) {
         const ok = await sendOne(adult.entryId, false)
         if (!ok) return
       }

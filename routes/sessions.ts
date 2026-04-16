@@ -487,6 +487,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const selfProfileId = req.session.user?.profileId;
     const selfProfileStats = req.session.user?.profileStats;
     const isSelfService = role === 'selfservice';
+    const isOperational = role === 'admin' || role === 'checkin';
 
     const [rawEntries, rawProfiles] = await Promise.all([
       isSelfService ? Promise.resolve([]) : entriesRepository.getBySessionIds([spSession.ID]),
@@ -521,7 +522,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         notes: e.Notes,
         accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
         cancelled: e[ENTRY_CANCELLED] || undefined,
-        email: !isSelfService ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined
+        email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined
       };
     });
 

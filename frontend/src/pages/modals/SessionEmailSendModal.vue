@@ -67,7 +67,11 @@ watch(recipient, val => {
   if (val === 'send-all') preview.value = false
 })
 
-const canSend = computed(() => props.adults.length > 0)
+const canSend = computed(() =>
+  recipient.value === 'send-all'
+    ? props.adults.some(a => a.email)
+    : props.adults.length > 0
+)
 
 function onSend() {
   emit('send', { recipient: recipient.value, preview: preview.value })
