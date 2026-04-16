@@ -6,7 +6,7 @@
       :disabled="working"
       @click="emit('cancel')"
     >
-      {{ working ? 'Cancelling…' : 'Remove booking' }}
+      {{ working ? 'Cancelling…' : 'Cancel booking' }}
     </button>
     <p v-if="error" class="sdc-error">{{ error }}</p>
   </div>
@@ -22,7 +22,9 @@ const emit = defineEmits<{ cancel: [] }>()
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.75rem;
+  text-align: center;
 }
 
 .sdc-status {
@@ -32,16 +34,15 @@ const emit = defineEmits<{ cancel: [] }>()
 }
 
 .sdc-btn {
-  background: var(--color-dtv-dirt);
+  background: var(--color-dtv-gold);
   color: var(--color-white);
   border: none;
   padding: 0.6rem 1.25rem;
   font-family: inherit;
   font-size: 0.95rem;
   cursor: pointer;
-  align-self: flex-start;
 }
-.sdc-btn:hover:not(:disabled) { background: var(--color-dtv-dirt-dark, var(--color-dtv-dirt)); }
+.sdc-btn:hover:not(:disabled) { background: var(--color-dtv-gold-dark); }
 .sdc-btn:disabled { opacity: 0.5; cursor: default; }
 
 .sdc-error {

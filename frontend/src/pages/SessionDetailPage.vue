@@ -31,15 +31,8 @@
         <!-- Right: booking panel -->
         <template #right>
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" />
-          <ConcertinaLayout>
-            <ConcertinaItem label="Book" v-if="store.session.isBookable && !store.session.isRegistered">
-              <SessionDetailBook :session="store.session" :working="bookWorking" :error="bookError" @book="onBook" />
-            </ConcertinaItem>
-            <ConcertinaItem label="Cancel" v-if="store.session.isBookable && store.session.isRegistered">
-              <SessionDetailCancel :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
-            </ConcertinaItem>
-
-          </ConcertinaLayout>
+          <SessionDetailBook v-if="store.session.isBookable && !store.session.isRegistered" :session="store.session" :working="bookWorking" :error="bookError" @book="onBook" />
+          <SessionDetailCancel v-if="store.session.isBookable && store.session.isRegistered" :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
 
 
           
@@ -226,8 +219,7 @@ import SessionDetailActions from '../components/sessions/SessionDetailActions.vu
 import SessionEntryList from '../components/sessions/SessionEntryList.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import CardTitle from '../components/CardTitle.vue'
-import ConcertinaLayout from '../components/ConcertinaLayout.vue'
-import ConcertinaItem from '../components/ConcertinaItem.vue'
+
 
 const route = useRoute()
 const router = useRouter()
