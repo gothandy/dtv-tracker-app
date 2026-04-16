@@ -25,7 +25,8 @@ import {
   nameToSlug,
   profileSlug,
   extractMetadataTags,
-  calculateSessionStats
+  calculateSessionStats,
+  parseEmails
 } from '../services/data-layer';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
@@ -486,6 +487,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const selfProfileId = req.session.user?.profileId;
     const selfProfileStats = req.session.user?.profileStats;
     const isSelfService = role === 'selfservice';
+    const isOperational = role === 'admin' || role === 'checkin';
 
     const [rawEntries, rawProfiles] = await Promise.all([
       isSelfService ? Promise.resolve([]) : entriesRepository.getBySessionIds([spSession.ID]),
@@ -518,8 +520,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         hours: parseHours(e.Hours),
         checkedIn: e.Checked || false,
         notes: e.Notes,
-        accompanyingAdultId: e.AccompanyingAdultLookupId,
-        cancelled: e[ENTRY_CANCELLED] || undefined
+        accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
+        cancelled: e[ENTRY_CANCELLED] || undefined,
+        email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined
       };
     });
 

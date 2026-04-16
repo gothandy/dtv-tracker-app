@@ -555,9 +555,9 @@ export function toMatchName(name: string | undefined): string {
  * Safely converts a lookup ID to a number
  * Returns undefined if the ID is invalid
  */
-export function safeParseLookupId(lookupId: string | undefined): number | undefined {
-  if (!lookupId) return undefined;
-  const parsed = parseInt(lookupId, 10);
+export function safeParseLookupId(lookupId: string | number | undefined): number | undefined {
+  if (lookupId === undefined || lookupId === null) return undefined;
+  const parsed = parseInt(String(lookupId), 10);
   return isNaN(parsed) ? undefined : parsed;
 }
 

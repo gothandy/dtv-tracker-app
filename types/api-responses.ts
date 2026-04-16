@@ -173,6 +173,7 @@ export interface EntryResponse {
   notes?: string;
   accompanyingAdultId?: number;
   cancelled?: string; // ISO datetime if booking was cancelled
+  email?: string;     // only present for operational users (admin/check-in)
 }
 
 export interface SessionDetailResponse {

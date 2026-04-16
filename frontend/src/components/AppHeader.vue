@@ -36,7 +36,7 @@
             <a v-if="profile.user" href="/auth/logout" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
               Logout
             </a>
-            <RouterLink v-else to="/login" @click="open = false" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
+            <RouterLink v-else :to="loginPath" @click="open = false" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
               Login
             </RouterLink>
           </template>
@@ -48,13 +48,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useViewer } from '../composables/useViewer'
 import AboutModal from './AboutModal.vue'
 
 const isDev = import.meta.env.DEV
+const route = useRoute()
 
 const open = ref(false)
+
+const loginPath = computed(() => {
+  const current = route.fullPath
+  return current && current !== '/' ? `/login?returnTo=${encodeURIComponent(current)}` : '/login'
+})
 const showAbout = ref(false)
 const profile = useViewer()
 

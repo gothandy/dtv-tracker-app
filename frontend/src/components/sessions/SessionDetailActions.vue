@@ -3,6 +3,7 @@
     <AppButton icon="share" label="Share" mode="icon-only" @click="onShare" />
     <AppButton icon="group" label="Group" mode="icon-only" @click="router.push(groupPath(groupKey))" />
     <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-only" @click="onUpload" />
+    <AppButton v-if="allowEmail" icon="email" label="Email" mode="icon-only" @click="showEmail = true" />
     <AppButton v-if="allowEdit" icon="edit" label="Edit" mode="icon-only" @click="showEdit = true" />
 
     <EntryUploadPickerModal
@@ -10,6 +11,15 @@
       :entries="session.entries"
       @close="showPicker = false"
       @select="goUpload"
+    />
+
+    <SessionEmailSendModal
+      v-if="showEmail"
+      :adults="adults"
+      :working="emailWorking"
+      :error="emailError"
+      @close="showEmail = false"
+      @send="onEmailSend"
     />
 
     <SessionEditModal
@@ -30,8 +40,10 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
 import type { GroupItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
+import type { EmailAdult } from '../../pages/modals/SessionEmailSendModal.vue'
 import AppButton from '../AppButton.vue'
 import SessionEditModal from '../../pages/modals/SessionEditModal.vue'
+import SessionEmailSendModal from '../../pages/modals/SessionEmailSendModal.vue'
 import EntryUploadPickerModal from '../../pages/modals/EntryUploadPickerModal.vue'
 import { groupPath } from '../../router/index'
 
@@ -43,6 +55,7 @@ const props = defineProps<{
   editWorking: boolean
   editError?: string
   allowEdit: boolean
+  allowEmail: boolean
   isSelfService: boolean
 }>()
 
@@ -54,9 +67,19 @@ const emit = defineEmits<{
 const router = useRouter()
 const showPicker = ref(false)
 const showEdit = ref(false)
+const showEmail = ref(false)
+const emailWorking = ref(false)
+const emailError = ref<string | undefined>()
 
 const canUpload = computed(() =>
   (props.isSelfService && !!props.session.userEntryId) || props.allowEdit
+)
+
+// Adults = non-cancelled, non-group, non-child entries (email may be absent)
+const adults = computed<EmailAdult[]>(() =>
+  props.session.entries
+    .filter(e => !e.cancelled && !e.isGroup && !/#Child\b/i.test(e.notes ?? ''))
+    .map(e => ({ entryId: e.id, name: e.volunteerName ?? '', email: e.email }))
 )
 
 function onShare() {
@@ -78,6 +101,47 @@ function onUpload() {
 
 function goUpload(entryId: number) {
   window.location.href = `/upload?entryId=${entryId}`
+}
+
+async function sendOne(entryId: number, preview: boolean): Promise<boolean> {
+  const body = JSON.stringify({ preview })
+  const res = await fetch(`/api/entries/${entryId}/notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    emailError.value = data.error || 'Failed to send email'
+    return false
+  }
+  return true
+}
+
+async function onEmailSend({ recipient, preview }: { recipient: number | 'send-all', preview: boolean }) {
+  emailWorking.value = true
+  emailError.value = undefined
+  try {
+    if (recipient === 'send-all') {
+      const emailable = adults.value.filter(a => a.email)
+      if (!emailable.length) {
+        emailError.value = 'No recipients have an email address'
+        return
+      }
+      for (const adult of emailable) {
+        const ok = await sendOne(adult.entryId, false)
+        if (!ok) return
+      }
+    } else {
+      const ok = await sendOne(recipient, preview)
+      if (!ok) return
+    }
+    showEmail.value = false
+  } catch {
+    emailError.value = 'Failed to send email'
+  } finally {
+    emailWorking.value = false
+  }
 }
 
 function closeEdit() {

@@ -732,7 +732,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           hours: parseHours(e.Hours),
           checkedIn: e.Checked || false,
           notes: e.Notes,
-          accompanyingAdultId: e.AccompanyingAdultLookupId,
+          accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           financialYear: `FY${sessionFY}`,
           cancelled: e[ENTRY_CANCELLED] || undefined
         };
