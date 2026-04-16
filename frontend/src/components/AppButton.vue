@@ -123,12 +123,14 @@ const buttonStyle = computed(() => ({
   background: var(--color-dtv-red);
 }
 
-.app-btn:hover:not(:disabled) {
-  background: var(--color-dtv-green-dark);
-}
+@media (hover: hover) {
+  .app-btn:hover:not(:disabled) {
+    background: var(--color-dtv-green-dark);
+  }
 
-.app-btn--danger:hover:not(:disabled) {
-  background: var(--color-dtv-dirt-dark);
+  .app-btn--danger:hover:not(:disabled) {
+    background: var(--color-dtv-dirt-dark);
+  }
 }
 
 .app-btn:disabled {
@@ -151,6 +153,12 @@ const buttonStyle = computed(() => ({
 .app-btn--unselected {
   background: var(--color-dtv-light);
   color: var(--color-text);
+}
+
+@media (hover: hover) {
+  .app-btn--unselected:hover:not(:disabled) {
+    background: var(--color-dtv-sand-light);
+  }
 }
 
 
