@@ -7,7 +7,7 @@ import { entriesRepository } from './repositories/entries-repository';
 import { groupsRepository } from './repositories/groups-repository';
 import { sharePointClient } from './sharepoint-client';
 import { calculateSessionStats, safeParseLookupId, parseSessionLimits } from './data-layer';
-import { GROUP_LOOKUP, SESSION_STATS } from './field-names';
+import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED } from './field-names';
 
 export interface SessionStatsRefreshResult {
   total: number;
@@ -30,6 +30,14 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
 
   const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
   const statsMap = calculateSessionStats(entriesRaw);
+
+  // Build per-session cancelled regular counts from the full (unfiltered) entries set
+  const cancelledRegularMap = new Map<string, number>();
+  for (const e of entriesRaw) {
+    if (!e[ENTRY_CANCELLED] || !/#Regular\b/i.test(String(e.Notes || ''))) continue;
+    const sid = String(e[SESSION_LOOKUP] ?? '');
+    if (sid) cancelledRegularMap.set(sid, (cancelledRegularMap.get(sid) ?? 0) + 1);
+  }
 
   const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
   const mediaCountsByGroup = new Map<string, Map<string, number>>();
@@ -69,6 +77,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           mediaCount = mediaCountsByGroup.get(groupKey)!.get(date) || 0;
         }
 
+        const cancelledRegular = cancelledRegularMap.get(String(spSession.ID)) ?? 0;
         const newStats = {
           count: entryStats?.registrations || 0,
           hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
@@ -76,6 +85,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           new: entryStats?.newCount || 0,
           child: entryStats?.childCount || 0,
           regular: entryStats?.regularCount || 0,
+          cancelledRegular,
           eventbrite: entryStats?.eventbriteCount || 0,
         };
 
@@ -85,13 +95,14 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           try {
             const existing = JSON.parse(stored);
             if (
-              existing.count      === newStats.count &&
-              existing.hours      === newStats.hours &&
-              existing.media      === newStats.media &&
-              existing.new        === newStats.new &&
-              existing.child      === newStats.child &&
-              existing.regular    === newStats.regular &&
-              existing.eventbrite === newStats.eventbrite
+              existing.count            === newStats.count &&
+              existing.hours            === newStats.hours &&
+              existing.media            === newStats.media &&
+              existing.new              === newStats.new &&
+              existing.child            === newStats.child &&
+              existing.regular          === newStats.regular &&
+              existing.cancelledRegular === newStats.cancelledRegular &&
+              existing.eventbrite       === newStats.eventbrite
             ) {
               return; // unchanged — skip write
             }

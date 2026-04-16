@@ -3,7 +3,7 @@
     <FormCard title="Group not found">
       <p class="gd-task-message">This group doesn't exist.</p>
       <FormSubmitRow>
-        <FormButton href="/groups">Back to groups</FormButton>
+        <AppButton usage="task" label="Back to groups" @click="router.push('/groups')" />
       </FormSubmitRow>
     </FormCard>
   </TaskLayout>
@@ -90,7 +90,7 @@ import { useViewer } from '../composables/useViewer'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import MediaCarousel from '../components/MediaCarousel.vue'

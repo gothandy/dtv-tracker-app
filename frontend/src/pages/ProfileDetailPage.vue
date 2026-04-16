@@ -7,7 +7,7 @@
         if you think this is a mistake.
       </p>
       <FormSubmitRow>
-        <FormButton href="/">Go to home page</FormButton>
+        <AppButton usage="task" label="Go to home page" @click="router.push('/')" />
       </FormSubmitRow>
     </FormCard>
   </TaskLayout>
@@ -16,8 +16,8 @@
     <FormCard title="Profile not found">
       <p class="pd-task-message">This profile doesn't exist.</p>
       <FormSubmitRow>
-        <FormButton v-if="viewer.isTrusted" href="/profiles">Back to profiles</FormButton>
-        <FormButton v-else href="/">Go to home page</FormButton>
+        <AppButton v-if="viewer.isTrusted" usage="task" label="Back to profiles" @click="router.push('/profiles')" />
+        <AppButton v-else usage="task" label="Go to home page" @click="router.push('/')" />
       </FormSubmitRow>
     </FormCard>
   </TaskLayout>
@@ -149,7 +149,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import DebugData from '../components/DebugData.vue'
 import PageHeader from '../components/PageHeader.vue'

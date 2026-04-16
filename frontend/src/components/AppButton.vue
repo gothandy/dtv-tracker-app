@@ -8,22 +8,22 @@
     :aria-busy="working || undefined"
     class="app-btn"
     :class="{
+      'app-btn--task': usage === 'task',
       'app-btn--icon-only': isIconOnly,
       'app-btn--icon-text': hasIconBox,
-      'app-btn--unselected': selected === false,
       'app-btn--working': working,
     }"
     :style="buttonStyle"
   >
     <!-- Icon-only -->
     <template v-if="isIconOnly">
-      <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" alt="" aria-hidden="true" />
+      <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="isDark ? 'svg-black' : 'svg-white'" alt="" aria-hidden="true" />
     </template>
 
     <!-- Icon + text: icon centered in a fixed square, label with right padding only -->
     <template v-else-if="hasIconBox">
       <span class="app-btn__icon-box" aria-hidden="true">
-        <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="selected === false ? 'svg-black' : 'svg-white'" alt="" aria-hidden="true" />
+        <img :src="`/icons/${icon}.svg`" class="app-btn__icon" :class="isDark ? 'svg-black' : 'svg-white'" alt="" aria-hidden="true" />
       </span>
       <span
         class="app-btn__label"
@@ -41,16 +41,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const DTV_COLORS: Record<string, { base: string; hover: string }> = {
-  gold: { base: 'var(--color-dtv-gold)', hover: 'var(--color-dtv-gold-dark)' },
-  dirt: { base: 'var(--color-dtv-red)', hover: 'var(--color-dtv-dirt-dark)' },
+const VARIANTS: Record<string, { base: string; hover: string; dark: boolean }> = {
+  primary:   { base: 'var(--color-dtv-green)',  hover: 'var(--color-dtv-green-dark)', dark: false },
+  secondary: { base: 'var(--color-dtv-gold)',   hover: 'var(--color-dtv-gold-dark)',  dark: false },
+  danger:    { base: 'var(--color-dtv-dirt)',   hover: 'var(--color-dtv-dirt-dark)',  dark: false },
+  subtle:    { base: 'var(--color-dtv-sand)',   hover: 'var(--color-dtv-sand-dark)',  dark: true  },
 }
 
 const props = withDefaults(defineProps<{
   label: string
+  usage?: 'action' | 'task'
+  variant?: 'primary' | 'secondary' | 'danger' | 'subtle'
   icon?: string
   mode?: 'icon-only' | 'icon-responsive' | 'icon-text'
-  dtvColor?: string
   disabled?: boolean
   working?: boolean
   selected?: boolean | null
@@ -58,6 +61,8 @@ const props = withDefaults(defineProps<{
   href?: string
   target?: string
 }>(), {
+  usage: 'action',
+  variant: 'primary',
   mode: 'icon-text',
   type: 'button',
   selected: null,
@@ -66,13 +71,15 @@ const props = withDefaults(defineProps<{
 const isIconOnly = computed(() => !!props.icon && props.mode === 'icon-only')
 const hasIconBox = computed(() => !!props.icon && !isIconOnly.value)
 
-const buttonStyle = computed(() => {
-  const dtv = props.dtvColor ? DTV_COLORS[props.dtvColor] : undefined
-  return {
-    ...(dtv ? { '--app-btn-bg': dtv.base, '--app-btn-hover-bg': dtv.hover } : {}),
-    justifyContent: props.icon && props.mode !== 'icon-only' ? 'flex-start' : 'center',
-  }
-})
+const v = computed(() => VARIANTS[props.variant])
+const isDark = computed(() => v.value.dark)
+
+const buttonStyle = computed(() => ({
+  '--app-btn-bg': v.value.base,
+  '--app-btn-hover-bg': v.value.hover,
+  '--app-btn-color': v.value.dark ? 'var(--color-text)' : 'var(--color-dtv-light)',
+  justifyContent: props.icon && props.mode !== 'icon-only' && props.usage !== 'task' ? 'flex-start' : 'center',
+}))
 </script>
 
 <style scoped>
@@ -83,7 +90,7 @@ const buttonStyle = computed(() => {
   height: 2.5rem;
   padding: 0 1rem;
   background: var(--app-btn-bg, var(--color-dtv-green));
-  color: var(--color-white);
+  color: var(--app-btn-color, var(--color-dtv-light));
   border: none;
   font-family: var(--font-head);
   font-size: 0.9rem;
@@ -92,6 +99,18 @@ const buttonStyle = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   flex-shrink: 0;
+  text-decoration: none;
+}
+
+/* Task usage: full-width, larger, heavier */
+.app-btn--task {
+  width: 100%;
+  height: auto;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 /* Icon-only: square, no padding */
@@ -125,6 +144,11 @@ const buttonStyle = computed(() => {
   padding: 0 1rem;
 }
 
+/* Task + icon: balance right padding to match icon box width so content centres */
+.app-btn--task.app-btn--icon-text .app-btn__label {
+  padding: 0 2.5rem 0 0;
+}
+
 @media (hover: hover) {
   .app-btn:hover:not(:disabled) {
     background: var(--app-btn-hover-bg, var(--color-dtv-green-dark));
@@ -145,18 +169,6 @@ const buttonStyle = computed(() => {
 @keyframes app-btn-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.6; }
-}
-
-
-.app-btn--unselected {
-  background: var(--color-dtv-light);
-  color: var(--color-text);
-}
-
-@media (hover: hover) {
-  .app-btn--unselected:hover:not(:disabled) {
-    background: var(--color-dtv-sand-light);
-  }
 }
 
 

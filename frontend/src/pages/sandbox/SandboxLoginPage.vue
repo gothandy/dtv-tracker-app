@@ -10,15 +10,12 @@
         <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
           <FormInput v-model="email" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <FormButton :disabled="!emailValid">Send sign-in link</FormButton>
+            <AppButton usage="task" label="Send sign-in link" :disabled="!emailValid" />
           </FormSubmitRow>
         </FormCard>
         <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" href="/auth/login">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -28,10 +25,7 @@
       <div class="task-body">
         <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" href="/auth/login">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -43,15 +37,12 @@
         <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
           <FormInput v-model="emailReason" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <FormButton :disabled="!emailReasonValid">Send sign-in link</FormButton>
+            <AppButton usage="task" label="Send sign-in link" :disabled="!emailReasonValid" />
           </FormSubmitRow>
         </FormCard>
         <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" href="/auth/login">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -63,15 +54,12 @@
         <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
           <FormInput v-model="emailExpired" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <FormButton :disabled="!emailExpiredValid">Send sign-in link</FormButton>
+            <AppButton usage="task" label="Send sign-in link" :disabled="!emailExpiredValid" />
           </FormSubmitRow>
         </FormCard>
         <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" href="/auth/login">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -82,15 +70,12 @@
         <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
           <FormInput :model-value="'jane@example.com'" type="email" placeholder="your@email.com" :disabled="true" />
           <FormSubmitRow>
-            <FormButton :working="true">Sending…</FormButton>
+            <AppButton usage="task" label="Sending…" :working="true" />
           </FormSubmitRow>
         </FormCard>
         <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" href="/auth/login">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -101,16 +86,13 @@
         <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
           <FormInput v-model="emailError" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <FormButton :disabled="!emailErrorValid">Send sign-in link</FormButton>
+            <AppButton usage="task" label="Send sign-in link" :disabled="!emailErrorValid" />
             <p class="form-error">Something went wrong. Please try again.</p>
           </FormSubmitRow>
         </FormCard>
         <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" href="/auth/login">
-              <img src="/icons/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Continue with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -141,7 +123,7 @@ import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormCard from '../../components/forms/FormCard.vue'
 import FormInput from '../../components/forms/FormInput.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
-import FormButton from '../../components/forms/FormButton.vue'
+import AppButton from '../../components/AppButton.vue'
 import AlertBanner from '../../components/forms/AlertBanner.vue'
 
 usePageTitle('Sandbox — LoginPage')

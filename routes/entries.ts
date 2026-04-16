@@ -51,6 +51,9 @@ async function computeAndSaveSessionStats(sessionId: number, existingMedia: numb
   const sessionEntries = await entriesRepository.getBySessionIds([sessionId]);
   const statsMap = calculateSessionStats(sessionEntries);
   const entryStats = statsMap.get(String(sessionId));
+  const cancelledRegular = sessionEntries.filter(
+    e => e[ENTRY_CANCELLED] && /#Regular\b/i.test(String(e.Notes || ''))
+  ).length;
   await sessionsRepository.updateStats(sessionId, {
     count: entryStats?.registrations || 0,
     hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
@@ -58,6 +61,7 @@ async function computeAndSaveSessionStats(sessionId: number, existingMedia: numb
     new: entryStats?.newCount || 0,
     child: entryStats?.childCount || 0,
     regular: entryStats?.regularCount || 0,
+    cancelledRegular,
     eventbrite: entryStats?.eventbriteCount || 0
   });
   console.log(`[Stats] Session ${sessionId} targeted stats update in ${Date.now() - start}ms`);
@@ -759,6 +763,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     );
 
     let addedRegulars = 0;
+    let regularTagged = 0;
     let addedFromEventbrite = 0;
     let newProfiles = 0;
     let updatedRecords = 0;
@@ -779,11 +784,12 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       fixedNewTags++;
     }
 
-    // Step 1: Add missing regulars
+    // Step 1: Add missing regulars; tag existing entries that are missing #Regular
     const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
     for (const regular of groupRegulars) {
       const vid = safeParseLookupId(regular[PROFILE_LOOKUP]);
-      if (vid !== undefined && !existingVolunteerIds.has(vid)) {
+      if (vid === undefined) continue;
+      if (!existingVolunteerIds.has(vid)) {
         const regularProfile = profiles.find(p => p.ID === vid);
         let notes = '#Regular';
         if (regularProfile && isFirstSession(regularProfile, spSession.ID)) notes = appendNewTag(notes);
@@ -794,6 +800,13 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         });
         existingVolunteerIds.add(vid);
         addedRegulars++;
+      } else {
+        const existingEntry = sessionEntries.find(e => safeParseLookupId(e[PROFILE_LOOKUP]) === vid);
+        if (existingEntry && !/#Regular\b/i.test(existingEntry.Notes || '')) {
+          const notes = String(existingEntry.Notes || '');
+          await entriesRepository.updateFields(existingEntry.ID, { Notes: notes ? `${notes.trimEnd()} #Regular` : '#Regular' });
+          regularTagged++;
+        }
       }
     }
 
@@ -900,10 +913,10 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       );
     }
 
-    console.log(`[Refresh] Done: ${addedRegulars} regulars, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider, ${fixedNewTags} #New fixed`);
+    console.log(`[Refresh] Done: ${addedRegulars} regulars added, ${regularTagged} #Regular tagged, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider, ${fixedNewTags} #New fixed`);
     res.json({
       success: true,
-      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged, fixedNewTags }
+      data: { addedRegulars, regularTagged, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged, fixedNewTags }
     });
   } catch (error: any) {
     console.error('Error refreshing session:', error);

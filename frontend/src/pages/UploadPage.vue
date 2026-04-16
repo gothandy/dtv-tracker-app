@@ -13,7 +13,7 @@
       <FormCard v-else-if="loadError" :title="loadError.title">
         <p class="status-text">{{ loadError.detail }}</p>
         <FormSubmitRow v-if="loadError.action">
-          <FormButton :href="loadError.action.href">{{ loadError.action.label }}</FormButton>
+          <AppButton usage="task" :label="loadError.action.label" @click="router.push(loadError.action.href)" />
         </FormSubmitRow>
       </FormCard>
 
@@ -24,7 +24,7 @@
         </p>
         <p class="status-note">Photos are reviewed before appearing publicly.</p>
         <FormSubmitRow>
-          <FormButton :href="galleryHref">View session gallery</FormButton>
+          <AppButton usage="task" label="View session gallery" @click="router.push(galleryHref)" />
         </FormSubmitRow>
       </FormCard>
 
@@ -73,13 +73,13 @@
           <p v-if="overLimit" class="form-error">Maximum 10 files. Please remove some and try again.</p>
 
           <FormSubmitRow>
-            <FormButton
+            <AppButton
+              usage="task"
+              :label="uploading ? `Uploading ${uploadedCount + 1} of ${files.length}…` : 'Upload'"
               :disabled="files.length === 0 || overLimit || uploading"
               :working="uploading"
               @click="startUpload"
-            >
-              {{ uploading ? `Uploading ${uploadedCount + 1} of ${files.length}…` : 'Upload' }}
-            </FormButton>
+            />
             <p v-if="uploadError" class="form-error">{{ uploadError }}</p>
           </FormSubmitRow>
 
@@ -97,7 +97,7 @@ import { usePageTitle } from '../composables/usePageTitle'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 import { sessionPath } from '../router/index'
 
 usePageTitle('Upload Photos')

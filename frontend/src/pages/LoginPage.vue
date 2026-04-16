@@ -48,10 +48,14 @@
             @enter="sendLoginEmail"
           />
           <FormSubmitRow>
-            <FormButton :disabled="!emailValid || sending" :working="sending" @click="sendLoginEmail">
-              <img v-if="!sending" src="/icons/tick.svg" width="16" height="16" alt="" class="svg-white" />
-              {{ sending ? 'Sending…' : 'Send log-in email' }}
-            </FormButton>
+            <AppButton
+              usage="task"
+              :icon="sending ? undefined : 'tick'"
+              :label="sending ? 'Sending…' : 'Send log-in email'"
+              :disabled="!emailValid || sending"
+              :working="sending"
+              @click="sendLoginEmail"
+            />
             <p v-if="magicError" class="form-error">{{ magicError }}</p>
           </FormSubmitRow>
         </FormCard>
@@ -62,10 +66,7 @@
           subtitle="For dig leads, coordinators and admins — you must use your @dtv.org.uk account."
         >
           <FormSubmitRow>
-            <FormButton color="var(--color-dtv-gold)" :href="microsoftHref">
-              <img src="/icons/brands/microsoft.svg" width="18" height="18" alt="" class="svg-white" />
-              Log-in with Microsoft
-            </FormButton>
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
           </FormSubmitRow>
         </FormCard>
 
@@ -75,7 +76,7 @@
       <FormCard v-else-if="expired" title="This log-in link has expired">
         <p class="sent-body">Click below to send a new log-in email.</p>
         <FormSubmitRow>
-          <FormButton :working="sending" @click="sendLoginEmail">Send a new log-in email</FormButton>
+          <AppButton usage="task" label="Send a new log-in email" :working="sending" @click="sendLoginEmail" />
         </FormSubmitRow>
       </FormCard>
 
@@ -92,9 +93,7 @@
           @enter="checkCode"
         />
         <FormSubmitRow>
-          <FormButton :disabled="!verifyInput.trim() || verifying" :working="verifying" @click="checkCode">
-            Verify code
-          </FormButton>
+          <AppButton usage="task" label="Verify code" :disabled="!verifyInput.trim() || verifying" :working="verifying" @click="checkCode" />
           <p v-if="verifyError" class="form-error">{{ verifyError }}</p>
         </FormSubmitRow>
         <FormSubmitRow>
@@ -118,7 +117,7 @@ import AlertBanner from '../components/forms/AlertBanner.vue'
 import FormCard from '../components/forms/FormCard.vue'
 import FormInput from '../components/forms/FormInput.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 
 usePageTitle('Login')
 

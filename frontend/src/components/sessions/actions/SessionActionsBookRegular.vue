@@ -1,7 +1,7 @@
 <template>
   <div class="sna-wrap">
     <p class="sna-label">You've been before — book your spot.</p>
-    <AppButton label="Book" icon="add" :working="working" @click="emit('book')" />
+    <AppButton usage="task" label="Book" icon="add" :working="working" @click="emit('book')" />
     <p v-if="error" class="sna-error">{{ error }}</p>
   </div>
 </template>

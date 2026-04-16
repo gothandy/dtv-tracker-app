@@ -26,7 +26,7 @@
         <FormCard title="Wrong account">
           <p class="status-text">This upload link belongs to a different account. Please sign in with the correct account.</p>
           <FormSubmitRow>
-            <FormButton href="/login">Sign in</FormButton>
+            <AppButton usage="task" label="Sign in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -48,7 +48,7 @@
             <span class="drop-zone-hint">JPG, PNG, WebP, HEIC, MP4, MOV · max 15 MB each · up to 10 files</span>
           </div>
           <FormSubmitRow>
-            <FormButton :disabled="true">Upload</FormButton>
+            <AppButton usage="task" label="Upload" :disabled="true" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -68,7 +68,7 @@
             </li>
           </ul>
           <FormSubmitRow>
-            <FormButton>Upload</FormButton>
+            <AppButton usage="task" label="Upload" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -96,7 +96,7 @@
             </li>
           </ul>
           <FormSubmitRow>
-            <FormButton :working="true">Uploading 2 of 3…</FormButton>
+            <AppButton usage="task" label="Uploading 2 of 3…" :working="true" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -124,7 +124,7 @@
             </li>
           </ul>
           <FormSubmitRow>
-            <FormButton>Upload</FormButton>
+            <AppButton usage="task" label="Upload" />
             <p class="form-error">You can only upload to your own entries.</p>
           </FormSubmitRow>
         </FormCard>
@@ -146,7 +146,7 @@
           </ul>
           <p class="form-error">Maximum 10 files. Please remove some and try again.</p>
           <FormSubmitRow>
-            <FormButton :disabled="true">Upload</FormButton>
+            <AppButton usage="task" label="Upload" :disabled="true" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -158,7 +158,7 @@
           <p class="status-text"><strong>3</strong> files uploaded successfully.</p>
           <p class="status-note">Photos are reviewed before appearing publicly.</p>
           <FormSubmitRow>
-            <FormButton href="/sessions/sheepskull/2026-04-05">View session gallery</FormButton>
+            <AppButton usage="task" label="View session gallery" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -173,7 +173,7 @@ import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormCard from '../../components/forms/FormCard.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
-import FormButton from '../../components/forms/FormButton.vue'
+import AppButton from '../../components/AppButton.vue'
 
 usePageTitle('Sandbox — UploadPage')
 

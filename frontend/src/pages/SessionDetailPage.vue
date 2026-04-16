@@ -3,7 +3,7 @@
     <FormCard title="Session not found">
       <p class="sd-task-message">This session doesn't exist.</p>
       <FormSubmitRow>
-        <FormButton href="/sessions">Back to sessions</FormButton>
+        <AppButton usage="task" label="Back to sessions" @click="router.push('/sessions')" />
       </FormSubmitRow>
     </FormCard>
   </TaskLayout>
@@ -32,11 +32,11 @@
         <template #right>
           <MediaCard v-if="coverItem" :item="coverItem" constrain="width" />
           <SessionActionsIsBooked v-if="showIsBooked" :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
-          <SessionActionsSessionFull v-if="showSessionFull" />
+          <SessionActionsSessionFull v-if="showSessionFull" :group-key="(route.params.groupKey as string)" />
           <SessionActionsLogIn v-if="showLogIn" />
           <SessionActionsBookNew v-if="showBookNew" :eventbrite-url="eventbriteUrl!" />
           <SessionActionsBookRegular v-if="showBookRegular" :working="bookWorking" :error="bookError" @book="onBook" />
-          <SessionActionsAllocationFull v-if="showAllocationFull" />
+          <SessionActionsAllocationFull v-if="showAllocationFull" :group-key="(route.params.groupKey as string)" />
 
 
           
@@ -193,7 +193,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'

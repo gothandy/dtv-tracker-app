@@ -1,7 +1,7 @@
 <template>
   <div class="sna-wrap">
     <p class="sna-status">You're booked on this session.</p>
-    <AppButton label="Cancel booking" icon="close" dtv-color="gold" :working="working" @click="emit('cancel')" />
+    <AppButton usage="task" label="Cancel booking" icon="close" variant="secondary" :working="working" @click="emit('cancel')" />
     <p v-if="error" class="sna-error">{{ error }}</p>
   </div>
 </template>

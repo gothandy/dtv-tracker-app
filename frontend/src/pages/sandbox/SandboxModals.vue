@@ -376,6 +376,7 @@ const mockSession = {
   groupId: 1,
   eventbriteEventId: '',
   limits: { new: 4, total: 20 },
+  storedLimits: { new: 4, total: 20 },
   registrations: 3,
   hours: 9,
   financialYear: '2025/26',

@@ -16,7 +16,7 @@
       <FormCard v-else-if="submitted" title="Consent recorded">
         <p class="status-text">Consent has been saved for <strong>{{ profileName }}</strong>.</p>
         <FormSubmitRow>
-          <FormButton :href="backPath">Back to profile</FormButton>
+          <AppButton usage="task" label="Back to profile" @click="router.push(backPath)" />
         </FormSubmitRow>
       </FormCard>
 
@@ -36,9 +36,7 @@
           />
           <a href="/privacy" target="_blank" class="privacy-link">Read our privacy policy</a>
           <FormSubmitRow>
-            <FormButton :disabled="!privacyConsent" :working="submitting" @click="submit">
-              {{ submitting ? 'Saving…' : 'Save consent' }}
-            </FormButton>
+            <AppButton usage="task" :label="submitting ? 'Saving…' : 'Save consent'" :disabled="!privacyConsent" :working="submitting" @click="submit" />
             <p v-if="submitError" class="form-error">{{ submitError }}</p>
           </FormSubmitRow>
         </FormCard>
@@ -57,7 +55,7 @@ import FormCard from '../components/forms/FormCard.vue'
 import FormCheckboxItem from '../components/forms/FormCheckboxItem.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AlertBanner from '../components/forms/AlertBanner.vue'
-import FormButton from '../components/forms/FormButton.vue'
+import AppButton from '../components/AppButton.vue'
 import { profilePath } from '../router/index'
 
 usePageTitle('Collect Consent')

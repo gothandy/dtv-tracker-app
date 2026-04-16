@@ -3,7 +3,8 @@
     <AppButton
       :label="label"
       :icon="icon"
-      :selected="isSelected ? null : false"
+      :variant="isSelected ? 'primary' : 'secondary'"
+      :selected="isSelected"
       class="concertina-item__btn"
       @click="handleClick"
     />
@@ -55,11 +56,6 @@ function handleClick() {
 
 .concertina-item__btn {
   width: 100%;
-}
-
-:deep(.app-btn--unselected) {
-  background: var(--color-dtv-gold);
-  color: var(--color-white);
 }
 
 .concertina-item__card {

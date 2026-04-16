@@ -41,7 +41,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Notes** | Notes | Multiple lines of text | No | Planning notes, work done, and actions |
 | **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
 | **EventbriteEventID** | EventbriteEventID | Single line of text | No | Eventbrite Event identifier |
-| **Stats** | Stats | Multiple lines of text | No | Pre-computed JSON: `{ "count": N, "hours": N, "media": N, "new": N, "child": N, "regular": N, "eventbrite": N }` |
+| **Stats** | Stats | Multiple lines of text | No | Pre-computed JSON: `{ "count": N, "hours": N, "media": N, "new": N, "child": N, "regular": N, "cancelledRegular": N, "eventbrite": N }` |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
@@ -58,7 +58,8 @@ The `Stats` JSON field caches values derived from the Entries list and SharePoin
 - **media**: count of uploaded photos/videos in the SharePoint Media Library folder for this session
 - **new**: count of entries tagged `#New`
 - **child**: count of entries tagged `#Child`
-- **regular**: count of entries tagged `#Regular`
+- **regular**: count of active (non-cancelled) entries tagged `#Regular`
+- **cancelledRegular**: count of cancelled entries tagged `#Regular` — used to derive effective regular capacity (regularsCount - cancelledRegular)
 - **eventbrite**: count of entries created via Eventbrite sync
 
 Stats are written by:
