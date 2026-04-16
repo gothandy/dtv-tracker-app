@@ -57,7 +57,7 @@ const groups = [
     icons: [
       'add', 'burger', 'checkboxes', 'clock', 'close',
       'delete', 'download', 'edit',
-      'filter', 'gear', 'locked', 'logout',
+      'filter', 'gear', 'locked', 'login', 'logout',
       'profile', 'refresh', 'register', 'return',
       'save', 'settings', 'share', 'sort', 'tick', 'transfer', 'trash', 'upload', 'uploadphoto',
     ],

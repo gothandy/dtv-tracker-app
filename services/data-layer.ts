@@ -59,6 +59,8 @@ export function parseSessionLimits(spSession: SharePointSession): SessionLimits 
  */
 export function deriveLimits(limits: SessionLimits, regularsCount?: number): SessionLimits {
   const { total, new: n, repeat } = limits;
+  if (total === undefined && n !== undefined && repeat !== undefined && regularsCount !== undefined)
+    return { ...limits, total: n + repeat + regularsCount };
   if (repeat === undefined && total !== undefined && n !== undefined && regularsCount !== undefined)
     return { ...limits, repeat: Math.max(0, total - n - regularsCount) };
   if (n === undefined && total !== undefined && repeat !== undefined && regularsCount !== undefined)

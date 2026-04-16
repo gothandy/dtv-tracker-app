@@ -10,6 +10,7 @@
           <RouterLink to="/sandbox/icons">Icons</RouterLink>
           <RouterLink to="/sandbox/font-stack">Font Stack</RouterLink>
           <RouterLink to="/sandbox/app-button">AppButton</RouterLink>
+          <RouterLink to="/sandbox/form-button">FormButton</RouterLink>
           <RouterLink to="/sandbox/layout-columns">LayoutColumns</RouterLink>
           
           
@@ -54,6 +55,7 @@
           <RouterLink to="/sandbox/action-bars">Action Bars</RouterLink>
           <RouterLink to="/sandbox/filter-components">Filter Components</RouterLink>
           <RouterLink to="/sandbox/session-card">SessionCard</RouterLink>
+          <RouterLink to="/sandbox/session-next-action">Session Next Action</RouterLink>
           <RouterLink to="/sandbox/group-card">GroupCard</RouterLink>
           <RouterLink to="/sandbox/profile-list-item">ProfileListItem</RouterLink>
           <RouterLink to="/sandbox/profile-list-results">ProfileListResults</RouterLink>
@@ -89,9 +91,7 @@
         <h2>Not included — test on main site</h2>
         <ul class="prose">
           <li>SessionDetailGallery — requires live SharePoint media; test via session detail page</li>
-          <li>SessionDetailBook — booking CTA; test via session detail (future bookable session)</li>
           <li>SessionDetailHeader — session info display; test via session detail page</li>
-          <li>SessionDetailLogin — auth prompt; test via session detail page (logged out)</li>
           <li>SessionDetailStats — stats table; test via session detail page (past session)</li>
           <li>SessionDetailGroupTeaser — next session teaser; test via session detail page (past session)</li>
           <li>SessionEntryList — check-in entry workflow; test via session detail page (operational user)</li>

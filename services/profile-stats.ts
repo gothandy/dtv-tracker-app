@@ -52,21 +52,33 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     regularsRepository.getAll()
   ]);
 
+  // session ID → group ID for repeatGroupIds derivation
+  const sessionGroupMap = new Map<number, number>();
+  for (const s of sessionsRaw) {
+    const groupId = safeParseLookupId(s[GROUP_LOOKUP] as unknown as string);
+    if (groupId !== undefined) sessionGroupMap.set(s.ID, groupId);
+  }
+
   const hoursByFY: Record<string, number> = {};
   const sessionsByFY: Record<string, number> = {};
   const sessionIds: number[] = [];
+  const repeatGroupIdSet = new Set<number>();
 
   for (const e of profileEntries) {
     if (e[ENTRY_CANCELLED]) continue; // cancelled bookings excluded from all stats
     const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
     if (sessionId === undefined) continue;
     sessionIds.push(sessionId);
+    const groupId = sessionGroupMap.get(sessionId);
+    if (groupId !== undefined) repeatGroupIdSet.add(groupId);
     const fyKey = sessionFYMap.get(sessionId);
     if (!fyKey) continue;
     const hours = parseFloat(String(e.Hours)) || 0;
     hoursByFY[fyKey] = (hoursByFY[fyKey] || 0) + hours;
     sessionsByFY[fyKey] = (sessionsByFY[fyKey] || 0) + 1;
   }
+
+  const repeatGroupIds = Array.from(repeatGroupIdSet);
 
   for (const k of Object.keys(hoursByFY)) {
     hoursByFY[k] = Math.round(hoursByFY[k] * 10) / 10;
@@ -97,7 +109,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
 
   sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
 
-  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, sessionIds, linkedProfileIds, isFirstAider });
+  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider });
   sharePointClient.clearCacheKey('profiles');
 
   console.log(`[Stats] Profile ${profileId} targeted stats update in ${Date.now() - start}ms`);
@@ -117,20 +129,24 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
   console.log(`[Stats] Fetched ${profilesRaw.length} profiles, ${entriesRaw.length} entries, ${recordsRaw.length} records in ${Date.now() - start}ms`);
 
-  // session ID → FY key and date (YYYY-MM-DD) for sessionIds ordering
+  // session ID → FY key, date (YYYY-MM-DD), and group ID
   const sessionFYMap = new Map<number, string>();
   const sessionDateMap = new Map<number, string>();
+  const sessionGroupMap = new Map<number, number>();
   for (const s of sessionsRaw) {
     if (!s.Date) continue;
     const fy = calculateFinancialYear(new Date(s.Date));
     sessionFYMap.set(s.ID, `FY${fy}`);
     sessionDateMap.set(s.ID, s.Date.substring(0, 10));
+    const groupId = safeParseLookupId(s[GROUP_LOOKUP] as unknown as string);
+    if (groupId !== undefined) sessionGroupMap.set(s.ID, groupId);
   }
 
-  // Aggregate hours, session counts, and session ID lists per profile
+  // Aggregate hours, session counts, session ID lists, and repeat group IDs per profile
   const profileHours = new Map<number, Record<string, number>>();   // profileId → { FY2025: 120.0 }
   const profileSessions = new Map<number, Record<string, number>>(); // profileId → { FY2025: 28 }
   const profileSessionIds = new Map<number, number[]>();             // profileId → [sessionId, ...]
+  const profileRepeatGroupIds = new Map<number, Set<number>>();      // profileId → Set of groupIds attended
 
   for (const e of entriesRaw) {
     if (e[ENTRY_CANCELLED]) continue; // cancelled bookings excluded from all stats
@@ -140,6 +156,12 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
     if (!profileSessionIds.has(profileId)) profileSessionIds.set(profileId, []);
     profileSessionIds.get(profileId)!.push(sessionId);
+
+    const groupId = sessionGroupMap.get(sessionId);
+    if (groupId !== undefined) {
+      if (!profileRepeatGroupIds.has(profileId)) profileRepeatGroupIds.set(profileId, new Set());
+      profileRepeatGroupIds.get(profileId)!.add(groupId);
+    }
 
     const fyKey = sessionFYMap.get(sessionId);
     if (!fyKey) continue;
@@ -208,6 +230,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
           isMember: memberIds.has(spProfile.ID),
           cardStatus: cardStatusMap.get(spProfile.ID) || null,
           regularGroupIds: profileRegularGroupIds.get(spProfile.ID) || [],
+          repeatGroupIds: Array.from(profileRepeatGroupIds.get(spProfile.ID) || []),
           sessionIds: (profileSessionIds.get(spProfile.ID) || []).sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || '')),
           linkedProfileIds: profileLinkedIds.get(spProfile.ID) || [],
           isFirstAider: firstAiderIds.has(spProfile.ID)

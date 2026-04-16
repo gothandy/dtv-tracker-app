@@ -10,6 +10,7 @@ export interface AuthUser {
     isMember: boolean
     cardStatus?: string | null
     regularGroupIds?: number[]
+    repeatGroupIds?: number[]
     sessionIds?: number[]
     linkedProfileIds?: number[]
     isFirstAider?: boolean
