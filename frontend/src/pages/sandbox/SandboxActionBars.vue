@@ -16,6 +16,7 @@
         :groups="mockGroups"
         :edit-working="false"
         :allow-edit="true"
+        :allow-email="true"
         :is-self-service="false"
       />
 
@@ -27,6 +28,7 @@
         :groups="mockGroups"
         :edit-working="false"
         :allow-edit="false"
+        :allow-email="false"
         :is-self-service="true"
       />
 
@@ -38,6 +40,8 @@
         :groups="mockGroups"
         :edit-working="false"
         :allow-edit="false"
+        :allow-email="false"
+        volunteer-name=""
         :is-self-service="false"
       />
 

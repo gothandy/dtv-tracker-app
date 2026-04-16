@@ -15,6 +15,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/profiles\/[^/]+$/ },        // edit profile
   { method: 'POST',  pattern: /^\/profiles\/\d+\/consent$/ }, // collect consent
   { method: 'POST',  pattern: /^\/entries\/\d+\/photos$/ },   // upload photos to an entry
+  { method: 'POST',  pattern: /^\/entries\/\d+\/notify$/ },  // send pre-session email preview
   { method: 'PATCH', pattern: /^\/media\/[^/]+$/ },            // update media item metadata (title, isPublic)
 ];
 

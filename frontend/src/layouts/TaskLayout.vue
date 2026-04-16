@@ -3,7 +3,8 @@
     <AppHeader />
     <main class="flex-1 bg-white">
       <FlashContainer v-slot="{ flashKey, dismiss }">
-        <FlashMessage :show="flashKey === 'signed-in'" type="info" @dismiss="dismiss">Welcome back.</FlashMessage>
+        <!-- TODO: decide whether to keep, restyle, or remove the signed-in flash -->
+        <!-- <FlashMessage :show="flashKey === 'signed-in'" type="info" @dismiss="dismiss">Welcome back.</FlashMessage> -->
       </FlashContainer>
       <div class="task-layout-body">
         <slot />

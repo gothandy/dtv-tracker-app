@@ -25,13 +25,14 @@ import {
 } from '../services/data-layer';
 import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import {
-  GROUP_LOOKUP,
-  SESSION_LOOKUP,
+  GROUP_LOOKUP, GROUP_DISPLAY,
+  SESSION_LOOKUP, SESSION_NOTES,
   SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
+import { sendEmail } from '../services/graph-mail';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import multer from 'multer';
@@ -146,7 +147,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           checkedIn: e.Checked || false,
           hours: parseHours(e.Hours),
           count: e.Count || 1,
-          accompanyingAdultId: e.AccompanyingAdultLookupId,
+          accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined
         }];
       });
@@ -221,7 +222,7 @@ router.get('/entries', async (req: Request, res: Response) => {
           count: e.Count || 1,
           isGroup: profile?.IsGroup || false,
           hasAccompanyingAdult: hasAdult,
-          accompanyingAdultId: e.AccompanyingAdultLookupId,
+          accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined
         }];
       })
@@ -1180,6 +1181,141 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
   } catch (error: any) {
     console.error('Error uploading photos:', error);
     res.status(500).json({ success: false, error: 'Upload failed', message: error.message });
+  }
+});
+
+router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
+  try {
+    const entryId = parseInt(String(req.params.entryId), 10);
+    if (isNaN(entryId)) {
+      res.status(400).json({ success: false, error: 'Invalid entry ID' });
+      return;
+    }
+
+    const spEntry = await entriesRepository.getById(entryId);
+    if (!spEntry) {
+      res.status(404).json({ success: false, error: 'Entry not found' });
+      return;
+    }
+    if (spEntry[ENTRY_CANCELLED]) {
+      res.status(400).json({ success: false, error: 'Entry is cancelled' });
+      return;
+    }
+
+    const profileId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
+    const sessionId = safeParseLookupId(spEntry[SESSION_LOOKUP]);
+
+    const [allProfiles, allSessions, allGroups] = await Promise.all([
+      profilesRepository.getAll(),
+      sessionsRepository.getAll(),
+      groupsRepository.getAll(),
+    ]);
+
+    const profile = profileId !== undefined ? allProfiles.find(p => p.ID === profileId) : undefined;
+    const primaryEmail = profile ? parseEmails(profile.Email)[0] : undefined;
+    if (!primaryEmail) {
+      res.status(400).json({ success: false, error: 'No email address on this profile' });
+      return;
+    }
+
+    const spSession = sessionId !== undefined ? allSessions.find(s => s.ID === sessionId) : undefined;
+    if (!spSession) {
+      res.status(404).json({ success: false, error: 'Session not found for this entry' });
+      return;
+    }
+
+    const groupId = safeParseLookupId(spSession[GROUP_LOOKUP] as unknown as string);
+    const spGroup = groupId !== undefined ? allGroups.find(g => g.ID === groupId) : undefined;
+    const groupName = spGroup ? (spGroup.Name || spGroup.Title) : String(spSession[GROUP_DISPLAY] || '');
+    const groupKey = (spGroup?.Title || '').toLowerCase();
+    const dateParam = spSession.Date;
+    const description = spSession[SESSION_NOTES];
+
+    // Find children on this session whose accompanying adult is this volunteer
+    const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
+    const activeEntries = sessionEntries.filter(e => !e[ENTRY_CANCELLED]);
+    const myChildEntries = profileId !== undefined
+      ? activeEntries.filter(e => safeParseLookupId(e.AccompanyingAdultLookupId) === profileId)
+      : [];
+    const myChildNames = myChildEntries
+      .map(e => String(e[PROFILE_DISPLAY] || '').trim())
+      .filter(Boolean)
+      .join(' and ');
+
+    const isRegular = /#Regular\b/i.test(String(spEntry.Notes || ''));
+
+    // Date formatting
+    const d = new Date(dateParam + 'T12:00:00');
+    const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' });
+    const dayNum = d.getDate();
+    const monthName = d.toLocaleDateString('en-GB', { month: 'long' });
+    const year = d.getFullYear();
+    const formattedDateShort = `${dayNum} ${monthName}`;
+    const formattedDateLong = `${dayName}, ${dayNum} ${monthName} ${year}`;
+
+    const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const sessionUrl = `${base}/sessions/${groupKey}/${dateParam}`;
+    const loginUrl = `${base}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`;
+
+    const subject = `${groupName} details for ${formattedDateShort}`;
+
+    const volunteerName = String(spEntry[PROFILE_DISPLAY] || '').trim();
+
+    const html = `
+<p>${volunteerName}, you're booked onto the next <strong>${groupName}</strong>.</p>
+
+<p>
+  <strong>Date:</strong> ${formattedDateLong}<br>
+  <strong>Time:</strong> 9:30 to 12:30 (about 3 hours)<br>
+  <strong>Location:</strong> Forest of Dean Cycle Centre
+</p>
+
+${description ? `<p>${description.replace(/\n/g, '<br>')}</p>` : ''}
+
+<p>Please bring sturdy boots, clothes you don't mind getting muddy, and water. Gloves are useful if you have them. We'll provide tools and hi-viz.</p>
+
+<p>Read more: <a href="${sessionUrl}">View session page</a></p>
+
+${isRegular ? `<p>You're a ${groupName} regular, so we sign you up automatically.</p>` : ''}
+
+<p>Can't make it? Please let us know and <a href="${loginUrl}">log in to cancel your place</a>.</p>
+
+${myChildNames ? `<p>You're signed up as the accompanying adult for ${myChildNames}.</p>` : ''}
+
+<p>Dean Trail Volunteers</p>
+    `.trim();
+
+    const text = [
+      `${volunteerName}, you're booked onto the next ${groupName}.`,
+      '',
+      `Date: ${formattedDateLong}`,
+      'Time: 9:30 to 12:30 (about 3 hours)',
+      'Location: Forest of Dean Cycle Centre',
+      '',
+      description || '',
+      '',
+      "Please bring sturdy boots, clothes you don't mind getting muddy, and water. Gloves are useful if you have them. We'll provide tools and hi-viz.",
+      '',
+      `Read more: ${sessionUrl}`,
+      '',
+      isRegular ? `You're a ${groupName} regular, so we sign you up automatically.` : '',
+      '',
+      `Can't make it? Log in to cancel your place: ${loginUrl}`,
+      '',
+      myChildNames ? `You're signed up as the accompanying adult for ${myChildNames}.` : '',
+      '',
+      'Dean Trail Volunteers',
+    ].filter(line => line !== undefined).join('\n');
+
+    const preview = req.body?.preview === true;
+    const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
+
+    await sendEmail(toEmail, subject, html, text);
+
+    res.json({ success: true, data: { sent: 1 } } as ApiResponse<{ sent: number }>);
+  } catch (error: any) {
+    console.error('Error sending entry notify email:', error);
+    res.status(500).json({ success: false, error: 'Failed to send email', message: error.message });
   }
 });
 

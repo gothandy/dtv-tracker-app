@@ -47,7 +47,7 @@
 
       <!-- SECOND ROW -->
        <!-- TODO display a different set of text depending on the session category (dig, fund raising, behind the scenes etc.) -->
-      <LayoutColumns ratio="1-1-1" v-if="store.session.isBookable">
+      <LayoutColumns ratio="1-1-1" v-if="store.session.isBookable && !profile.isOperational">
         <template #header>
           <SectionHeader >What to expect?</SectionHeader>
         </template>
@@ -116,6 +116,7 @@
             :edit-working="editWorking"
             :edit-error="editError"
             :allow-edit="profile.isCheckIn || profile.isAdmin"
+            :allow-email="profile.isOperational"
             :is-self-service="profile.isSelfService"
             @session-save="onSessionSave"
             @session-delete="onSessionDelete"
