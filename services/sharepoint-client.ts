@@ -647,7 +647,7 @@ export class SharePointClient {
    * Fetch the IsPublic flag and a streaming redirect URL for a single drive item.
    * Uses the /content endpoint which returns a 302 to a pre-authenticated download URL.
    */
-  async getMediaItemDownloadUrl(driveId: string, itemId: string): Promise<{ downloadUrl: string; isPublic: boolean }> {
+  async getMediaItemDownloadUrl(driveId: string, itemId: string): Promise<{ downloadUrl: string; isPublic: boolean; name: string }> {
     const token = await this.getAccessToken();
 
     // Fetch metadata to check IsPublic
@@ -656,6 +656,7 @@ export class SharePointClient {
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
     const isPublic = metaResponse.data.listItem?.fields?.IsPublic !== false;
+    const name: string = metaResponse.data.name ?? itemId;
 
     // Fetch the 302 redirect from the /content endpoint — location header is the pre-auth stream URL
     const contentResponse = await axios.get(
@@ -668,7 +669,7 @@ export class SharePointClient {
     );
     const downloadUrl = (contentResponse.headers['location'] as string) ?? '';
 
-    return { downloadUrl, isPublic };
+    return { downloadUrl, isPublic, name };
   }
 
   /**

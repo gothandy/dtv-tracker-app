@@ -75,6 +75,35 @@ router.get('/media', async (req: Request, res: Response) => {
   }
 });
 
+// Download the original file. Trusted DTV users only (admin/check-in/read-only).
+// Fetches the file server-side and serves it with Content-Disposition: attachment.
+router.get('/media/:itemId/download', async (req: Request, res: Response) => {
+  const role = req.session?.user?.role;
+  const isTrusted = !!role && role !== 'selfservice';
+  if (!isTrusted) {
+    res.status(403).json({ success: false, error: 'Trusted users only' });
+    return;
+  }
+  try {
+    const driveId = mediaDriveId();
+    const { downloadUrl, name } = await sharePointClient.getMediaItemDownloadUrl(driveId, String(req.params.itemId));
+    if (!downloadUrl) {
+      res.status(404).json({ success: false, error: 'Download URL not available' });
+      return;
+    }
+    const upstream = await fetch(downloadUrl);
+    if (!upstream.ok) throw new Error(`Upstream ${upstream.status}`);
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader('Content-Type', upstream.headers.get('content-type') ?? 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(buffer);
+  } catch (error: any) {
+    console.error('Error downloading media item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Stream a media item by redirecting to its pre-authenticated Graph download URL.
 // Public users can only stream items where isPublic is true.
 router.get('/media/:itemId/stream', async (req: Request, res: Response) => {

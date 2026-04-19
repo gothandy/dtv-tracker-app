@@ -13,6 +13,7 @@
     "@fontsource/momo-trust-display": "^5.2.1",
     "@fontsource/rubik-dirt": "^5.2.7",
     "embla-carousel": "^8.5.2",
+    "photoswipe": "^5.4.4",
     "pinia": "^2.3.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
