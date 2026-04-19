@@ -76,13 +76,30 @@ function openLightbox(startIndex: number) {
     index: startIndex,
   })
 
+  if (props.showEditBtn) {
+    pswp.on('uiRegister', () => {
+      pswp.ui?.registerElement({
+        name: 'edit',
+        title: 'Edit photo',
+        order: 9,
+        isButton: true,
+        appendTo: 'root' as any,
+        html: '<img src="/icons/edit.svg" width="20" height="20" alt="" aria-hidden="true">',
+        onClick: () => {
+          editingItem.value = enrichedItems.value[pswp.currIndex]
+          pswp.close()
+        },
+      })
+    })
+  }
+
   pswp.on('change', () => {
     selectedIndex.value = pswp.currIndex
-    carouselRef.value?.scrollTo(pswp.currIndex)
   })
 
   pswp.on('close', () => {
     selectedIndex.value = pswp.currIndex
+    carouselRef.value?.scrollTo(pswp.currIndex)
   })
 
   pswp.init()
@@ -129,5 +146,14 @@ function onModalDelete() {
 
 .tall-gallery :deep(.mg-viewport) {
   height: 250px !important;
+}
+
+</style>
+
+<style>
+.pswp__button--edit {
+  position: absolute !important;
+  bottom: 16px;
+  right: 16px;
 }
 </style>
