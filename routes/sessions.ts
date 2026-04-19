@@ -38,7 +38,6 @@ import type { ApiResponse } from '../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh } from '../services/session-stats';
-import { clearCoverCacheKey } from '../services/cover-cache';
 
 const router: Router = express.Router();
 
@@ -116,7 +115,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
           cancelledRegularCount: stats.cancelledRegular || undefined,
           eventbriteCount: stats.eventbrite || undefined,
           mediaCount: stats.media || undefined,
-          hasCoverPhoto: !!s[SESSION_COVER_MEDIA] || undefined,
+          coverUrl: s[SESSION_COVER_MEDIA] && groupId !== undefined ? `/media/${groupKeyMap.get(groupId) ?? ''}/${date}/${s[SESSION_COVER_MEDIA]}` : undefined,
           regularsCount: groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined,
           financialYear: `FY${calculateFinancialYear(new Date(s.Date!))}`,
           isBookable: date >= today,
@@ -714,9 +713,9 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
         process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
       );
     }
-    // Cover image changed — bust the server-side cover cache for this session
+    // Cover image changed — bust sessions listing cache so coverUrl updates immediately
     if (SESSION_COVER_MEDIA in fields) {
-      clearCoverCacheKey(`${groupKey}/${dateParam}`);
+      sharePointClient.clearCacheByPrefix('sessions_FY');
     }
 
     const newDate = fields.Date || dateParam;

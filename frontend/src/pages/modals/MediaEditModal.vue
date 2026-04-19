@@ -11,6 +11,10 @@
     @action="save"
     @delete="confirmDelete = true"
   >
+    <div class="emm-actions">
+      <AppButton label="Download" icon="download" :href="`/api/media/${item.id}/download`" target="_blank" />
+    </div>
+
     <FormRow title="Public" :disabled="form.isCover">
       <input id="emm-public" v-model="form.isPublic" type="checkbox" class="emm-checkbox" :disabled="form.isCover" @change="onPublicChange" />
     </FormRow>
@@ -36,6 +40,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
+import AppButton from '../../components/AppButton.vue'
 import FormRow from '../../components/FormRow.vue'
 import DeleteModal from './DeleteModal.vue'
 import type { MediaItem } from '../../types/media'
@@ -81,6 +86,12 @@ function doDelete() {
 </script>
 
 <style scoped>
+.emm-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
 .emm-input {
   width: 100%;
   background: var(--color-dtv-light);

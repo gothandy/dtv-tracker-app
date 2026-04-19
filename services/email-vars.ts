@@ -154,8 +154,8 @@ export function buildPostSessionVars(
     if (raw.count !== undefined) stats = raw as SessionStats;
   } catch { /* stats unavailable */ }
 
-  const hasCover = !!(session[SESSION_COVER_MEDIA] as number | undefined);
-  const coverPhotoUrl = hasCover ? `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg` : null;
+  const coverMediaId = session[SESSION_COVER_MEDIA] as number | undefined;
+  const coverPhotoUrl = coverMediaId ? `${baseUrl}/media/${groupKey}/${dateParam}/${coverMediaId}` : null;
 
   return {
     baseUrl,

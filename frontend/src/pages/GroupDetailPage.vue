@@ -174,28 +174,26 @@ const futureSessions = computed<Session[]>(() =>
     .slice(0, 6)
 )
 
-const coverSessions = computed(() =>
+const coverItems = computed<MediaItem[]>(() =>
   !store.group ? [] :
   [...store.group.sessions]
-    .filter(s => (s.mediaCount ?? 0) > 0)
+    .filter(s => !!s.coverUrl)
     .sort((a, b) => b.date.localeCompare(a.date))
-)
-
-const coverItems = computed<MediaItem[]>(() =>
-  coverSessions.value.map(s => ({
-    id: String(s.id),
-    listItemId: 0,
-    thumbnailUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
-    largeUrl: `/media/${store.group!.key}/${s.date}/cover.jpg`,
-    mimeType: 'image/jpeg',
-    title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-    isPublic: true,
-  }))
+    .map(s => ({
+      id: String(s.id),
+      listItemId: 0,
+      url: s.coverUrl!,
+      mimeType: 'image/jpeg',
+      title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      isPublic: true,
+    }))
 )
 
 function onCoverSelect(index: number) {
-  const s = coverSessions.value[index]
-  if (s && store.group) router.push(sessionPath(store.group.key, s.date))
+  const item = coverItems.value[index]
+  if (!item || !store.group) return
+  const session = store.group.sessions.find(s => String(s.id) === item.id)
+  if (session) router.push(sessionPath(store.group.key, session.date))
 }
 
 

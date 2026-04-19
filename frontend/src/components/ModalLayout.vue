@@ -21,7 +21,7 @@
           v-if="showDelete"
           :label="deleteText ?? 'Delete'"
           icon="delete"
-          mode="icon-responsive"
+          mode="icon-text"
           variant="danger"
           class="am-delete"
           :disabled="deleteDisabled || working"

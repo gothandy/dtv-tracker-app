@@ -40,6 +40,8 @@ let embla: EmblaCarouselType | null = null
 function scrollPrev() { embla?.scrollPrev() }
 function scrollNext() { embla?.scrollNext() }
 
+defineExpose({ scrollTo: (index: number) => embla?.scrollTo(index) })
+
 function initEmbla() {
   embla?.destroy(); embla = null
   if (!viewportEl.value) return

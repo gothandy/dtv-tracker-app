@@ -75,8 +75,7 @@ const pickedIndex = ref<number | null>(null)
 const landscape: MediaItem = {
   id: '01TBI4CWZ3IDBYWNHHVRGZEHU2ZBIXLBTT',
   listItemId: 0,
-  thumbnailUrl: '/api/media/01TBI4CWZ3IDBYWNHHVRGZEHU2ZBIXLBTT/stream',
-  largeUrl:     '/api/media/01TBI4CWZ3IDBYWNHHVRGZEHU2ZBIXLBTT/stream',
+  url: '/api/media/01TBI4CWZ3IDBYWNHHVRGZEHU2ZBIXLBTT/stream',
   mimeType: 'image/jpeg',
   title: 'Landscape',
   isPublic: true,
@@ -86,8 +85,7 @@ const landscape: MediaItem = {
 const portrait: MediaItem = {
   id: '01TBI4CWY4DLTEPKMEDZD2IPSV75ATKZKA',
   listItemId: 0,
-  thumbnailUrl: '/api/media/01TBI4CWY4DLTEPKMEDZD2IPSV75ATKZKA/stream',
-  largeUrl:     '/api/media/01TBI4CWY4DLTEPKMEDZD2IPSV75ATKZKA/stream',
+  url: '/api/media/01TBI4CWY4DLTEPKMEDZD2IPSV75ATKZKA/stream',
   mimeType: 'image/jpeg',
   title: 'Portrait',
   isPublic: true,

@@ -4,7 +4,7 @@
 @import "./admin.css";
 
 @theme {
-  /* DTV brand colours — canonical source: frontend/src/styles/brand.ts (shared with email renderer) */
+  /* DTV brand colours — keep in sync with shared/brand.ts (used by email renderer) */
   --color-dtv-dark: #000204;
   --color-dtv-green: #4FAF4A;
   --color-dtv-green-light: #5DCF57;

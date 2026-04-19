@@ -19,7 +19,8 @@
     "types/**/*",
     "services/**/*",
     "routes/**/*",
-    "middleware/**/*"
+    "middleware/**/*",
+    "shared/**/*"
   ],
   "exclude": [
     "node_modules",

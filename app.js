@@ -16,7 +16,7 @@ const { findGroupByKey, findSessionByGroupAndDate, convertGroup } = require('./d
 const { SESSION_NOTES, SESSION_COVER_MEDIA } = require('./dist/services/field-names');
 const { mediaDriveId } = require('./dist/services/media-upload');
 const { sharePointClient } = require('./dist/services/sharepoint-client');
-const { getCoverCache, setCoverCache } = require('./dist/services/cover-cache');
+const { getMediaCache, setMediaCache } = require('./dist/services/media-cache');
 const axios = require('axios');
 
 // v1 or v2 — controls which frontend is served at /
@@ -135,12 +135,13 @@ if (siteMode === 'v1') {
             const baseUrl = `${req.protocol}://${req.get('host')}`;
             const canonicalUrl = `${baseUrl}${req.path}`;
 
-            // Use stable proxy URL if any media exists; proxy handles cover selection internally
             let imageUrl = `${baseUrl}/img/logo-930.jpg`;
             try {
                 const driveId = mediaDriveId();
                 const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
-                if (photos.length > 0) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg`;
+                const coverMediaId = spSession?.[SESSION_COVER_MEDIA] ? parseInt(String(spSession[SESSION_COVER_MEDIA]), 10) || null : null;
+                const coverPhoto = coverMediaId ? photos.find(p => p.listItemId === coverMediaId && p.isPublic === true) : null;
+                if (coverPhoto) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/${coverPhoto.listItemId}`;
             } catch { /* media library not configured or folder missing */ }
 
             let title = 'Session Details - DTV Tracker';
@@ -197,62 +198,68 @@ if (siteMode === 'v2') {
     }
 }
 
-// Public cover image proxy — stable URL for og:image and public gallery slides.
-// Authenticated users (admin/check-in): cover photo served regardless of isPublic; not cached.
-// Unauthenticated users: cover photo only served if isPublic is true; response cached 1h.
-app.get('/media/:group/:date/cover.jpg', async (req, res) => {
+// Stable media proxy — serves SharePoint images via stable app-domain URLs.
+// Trusted users (admin/check-in/read-only) always served; self-service and public only see isPublic === true items.
+// Public items cached 12h in memory and 24h in browser. Retries once on 401/403 with fresh folder metadata.
+app.get('/media/:group/:date/:id', async (req, res) => {
     const groupKey = req.params.group.toLowerCase();
     const dateParam = req.params.date;
-    const isAuthenticated = !!req.session?.user;
-    const cacheKey = `${groupKey}/${dateParam}`;
-    try {
-        if (!isAuthenticated) {
-            const cached = getCoverCache(cacheKey);
-            if (cached) {
-                res.set('Content-Type', cached.contentType);
-                res.set('Cache-Control', 'public, max-age=3600');
-                return res.send(cached.data);
-            }
+    const listItemId = parseInt(req.params.id, 10);
+    if (isNaN(listItemId)) return res.status(400).end();
+
+    const role = req.session?.user?.role;
+    const isTrusted = !!role && role !== 'selfservice';
+
+    // Serve from memory cache for public items (only cache public bytes)
+    if (!isTrusted) {
+        const cached = getMediaCache(listItemId);
+        if (cached) {
+            res.set('Content-Type', cached.contentType);
+            res.set('Cache-Control', 'public, max-age=86400');
+            return res.send(cached.data);
         }
+    }
 
-        const driveId = mediaDriveId();
-        const [photos, rawGroups, rawSessions] = await Promise.all([
-            sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`),
-            groupsRepository.getAll(),
-            sessionsRepository.getAll()
-        ]);
-        if (photos.length === 0) return res.redirect('/img/logo-930.jpg');
+    const driveId = mediaDriveId();
+    const folderPath = `${groupKey}/${dateParam}`;
 
-        const spGroup = findGroupByKey(rawGroups, groupKey);
-        const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
-        const coverMediaId = spSession?.[SESSION_COVER_MEDIA] ? parseInt(String(spSession[SESSION_COVER_MEDIA]), 10) || null : null;
-        const coverPhoto = coverMediaId ? photos.find(p => p.listItemId === coverMediaId) : null;
-
-        // Authenticated: serve cover as-is; unauthenticated: only if isPublic
-        const photo = isAuthenticated
-            ? coverPhoto
-            : (coverPhoto?.isPublic !== false ? coverPhoto : null);
-        if (!photo) return res.redirect('/img/logo-930.jpg');
+    async function fetchAndServe(allowRetry) {
+        const photos = await sharePointClient.listFolderPhotos(driveId, folderPath);
+        const photo = photos.find(p => p.listItemId === listItemId);
+        if (!photo) return res.status(404).end();
+        if (!isTrusted && photo.isPublic !== true) return res.status(403).end();
 
         const imageUrl = photo.largeUrl || photo.thumbnailUrl;
-        if (!imageUrl) return res.redirect('/img/logo-930.jpg');
+        if (!imageUrl) return res.status(404).end();
 
-        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
-        const imageData = Buffer.from(imageResponse.data);
+        try {
+            const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
+            const imageData = Buffer.from(imageResponse.data);
 
-        if (!isAuthenticated) {
-            setCoverCache(cacheKey, imageData, contentType);
-            res.set('Cache-Control', 'public, max-age=3600');
-        } else {
-            res.set('Cache-Control', 'private, no-store');
+            if (!isTrusted) {
+                setMediaCache(listItemId, imageData, contentType);
+                res.set('Cache-Control', 'public, max-age=86400');
+            } else {
+                res.set('Cache-Control', 'private, no-store');
+            }
+            res.set('Content-Type', contentType);
+            res.send(imageData);
+        } catch (err) {
+            if (allowRetry && (err.response?.status === 401 || err.response?.status === 403)) {
+                // Pre-auth URL expired — refresh folder metadata and retry once
+                sharePointClient.clearMediaFolderCache(folderPath);
+                return fetchAndServe(false);
+            }
+            throw err;
         }
+    }
 
-        res.set('Content-Type', contentType);
-        res.send(imageData);
+    try {
+        await fetchAndServe(true);
     } catch (err) {
-        console.error(`Error serving cover image for ${groupKey}/${dateParam}:`, err);
-        res.redirect('/img/logo-930.jpg');
+        console.error(`Error serving media ${groupKey}/${dateParam}/${listItemId}:`, err);
+        res.status(502).end();
     }
 });
 
@@ -344,7 +351,9 @@ if (siteMode === 'v2') {
                 try {
                     const driveId = mediaDriveId();
                     const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
-                    if (photos.length > 0) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg`;
+                    const coverMediaId = spSession?.[SESSION_COVER_MEDIA] ? parseInt(String(spSession[SESSION_COVER_MEDIA]), 10) || null : null;
+                    const coverPhoto = coverMediaId ? photos.find(p => p.listItemId === coverMediaId && p.isPublic === true) : null;
+                    if (coverPhoto) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/${coverPhoto.listItemId}`;
                 } catch { /* media library not configured or folder missing */ }
 
                 let title = 'Session Details - DTV Tracker';

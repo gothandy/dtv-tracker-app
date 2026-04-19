@@ -1,9 +1,9 @@
 import express, { Request, Response, Router } from 'express';
+import { Readable } from 'stream';
 /// <reference path="../types/express-session.d.ts" />
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId } from '../services/media-upload';
 import { requireAdmin } from '../middleware/require-admin';
-import { clearCoverCache } from '../services/cover-cache';
 
 const router: Router = express.Router();
 
@@ -43,8 +43,9 @@ router.get('/media/counts', async (req: Request, res: Response) => {
   }
 });
 
-// List media in a session folder. Returns names, webUrls, thumbnail URLs, and metadata.
-// Unauthenticated (public) users only see items where isPublic is true.
+// List media in a session folder. Returns stable proxy URLs (not raw SharePoint pre-auth URLs).
+// Trusted users (admin/check-in/read-only) see all items with raw SharePoint URLs for direct CDN access.
+// Self-service and unauthenticated users only see isPublic === true items via stable proxy URLs.
 router.get('/media', async (req: Request, res: Response) => {
   const groupKey = (req.query.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
   const date = (req.query.date as string || '').replace(/[^0-9-]/g, '');
@@ -55,15 +56,51 @@ router.get('/media', async (req: Request, res: Response) => {
   try {
     const driveId = mediaDriveId();
     const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${date}`);
-    const isAuthenticated = !!req.session?.user;
-    const data = isAuthenticated
-      ? photos
+    const role = req.session?.user?.role;
+    const isTrusted = !!role && role !== 'selfservice';
+    const data = isTrusted
+      ? photos.map(({ name, webUrl, thumbnailUrl, largeUrl, ...rest }) => ({
+          ...rest,
+          url: largeUrl || thumbnailUrl,
+        }))
       : photos
-          .filter(p => p.isPublic !== false)
-          .map(({ name, webUrl, ...rest }) => rest); // strip uploader-name-containing fields from public response
+          .filter(p => p.isPublic === true)
+          .map(({ name, webUrl, thumbnailUrl, largeUrl, ...rest }) => ({
+            ...rest,
+            url: `/media/${groupKey}/${date}/${rest.listItemId}`,
+          }));
     res.json({ success: true, data });
   } catch (error: any) {
     console.error('Error listing photos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Download the original file. Trusted DTV users only (admin/check-in/read-only).
+// Fetches the file server-side and serves it with Content-Disposition: attachment.
+router.get('/media/:itemId/download', async (req: Request, res: Response) => {
+  const role = req.session?.user?.role;
+  const isTrusted = !!role && role !== 'selfservice';
+  if (!isTrusted) {
+    res.status(403).json({ success: false, error: 'Trusted users only' });
+    return;
+  }
+  try {
+    const driveId = mediaDriveId();
+    const { downloadUrl, name } = await sharePointClient.getMediaItemDownloadUrl(driveId, String(req.params.itemId));
+    if (!downloadUrl) {
+      res.status(404).json({ success: false, error: 'Download URL not available' });
+      return;
+    }
+    const upstream = await fetch(downloadUrl);
+    if (!upstream.ok) throw new Error(`Upstream ${upstream.status}`);
+    const safeName = name.replace(/[^\w.\-]/g, '_');
+    res.setHeader('Content-Type', upstream.headers.get('content-type') ?? 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    Readable.fromWeb(upstream.body as any).pipe(res);
+  } catch (error: any) {
+    console.error('Error downloading media item:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -74,7 +111,9 @@ router.get('/media/:itemId/stream', async (req: Request, res: Response) => {
   try {
     const driveId = mediaDriveId();
     const { downloadUrl, isPublic } = await sharePointClient.getMediaItemDownloadUrl(driveId, String(req.params.itemId));
-    if (!req.session?.user && !isPublic) {
+    const role = req.session?.user?.role;
+    const isTrusted = !!role && role !== 'selfservice';
+    if (!isTrusted && !isPublic) {
       res.status(403).json({ success: false, error: 'Not public' });
       return;
     }
@@ -102,7 +141,6 @@ router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response)
   try {
     const driveId = mediaDriveId();
     await sharePointClient.updateMediaItemFields(driveId, String(req.params.itemId), fields);
-    if ('IsPublic' in fields) clearCoverCache();
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error updating media item:', error);
@@ -117,7 +155,6 @@ router.delete('/media/:itemId', requireAdmin, async (req: Request, res: Response
   try {
     const driveId = mediaDriveId();
     await sharePointClient.deleteMediaItem(driveId, String(req.params.itemId));
-    clearCoverCache();
     if (groupKey && date) sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
     res.json({ success: true });
   } catch (error: any) {

@@ -278,13 +278,12 @@ watch(selectedDate, (date) => {
 
 const coverItems = computed<MediaItem[]>(() =>
   [...store.sessions]
-    .filter(s => s.hasCoverPhoto === true)
+    .filter(s => !!s.coverUrl)
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(s => ({
       id: String(s.id),
       listItemId: 0,
-      thumbnailUrl: `/media/${s.groupKey}/${s.date}/cover.jpg`,
-      largeUrl: `/media/${s.groupKey}/${s.date}/cover.jpg`,
+      url: s.coverUrl!,
       mimeType: 'image/jpeg',
       title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       isPublic: true,
