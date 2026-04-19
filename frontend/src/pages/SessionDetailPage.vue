@@ -239,9 +239,14 @@ const editGroups = computed<GroupItem[]>(() =>
   groupsStore.groups.map(g => ({ id: g.id, name: g.displayName ?? g.key, key: g.key }))
     .sort((a, b) => a.name.localeCompare(b.name))
 )
-const coverItem    = computed<MediaItem | null>(() =>
-  mediaItems.value.find(i => i.listItemId === store.session?.coverMediaId) ?? null
-)
+const coverItem = computed<MediaItem | null>(() => {
+  const s = store.session
+  if (!s?.coverMediaId) return null
+  const groupKey = route.params.groupKey as string
+  const date = route.params.date as string
+  const url = `/media/${groupKey}/${date}/cover.jpg`
+  return { id: `cover-${s.coverMediaId}`, listItemId: s.coverMediaId, thumbnailUrl: url, largeUrl: url, mimeType: 'image/jpeg', title: null, isPublic: true }
+})
 
 // ── CTA state booleans ───────────────────────────────────────────────────────
 // All derivation lives here; action components receive only display-ready props.

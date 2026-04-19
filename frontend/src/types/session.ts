@@ -24,6 +24,7 @@ export interface Session {
   registrations: number
   hours: number
   mediaCount?: number
+  hasCoverPhoto?: boolean
   newCount?: number
   childCount?: number
   regularCount?: number

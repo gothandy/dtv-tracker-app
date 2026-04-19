@@ -1,0 +1,45 @@
+{{#section}}
+  <p style="margin:0;">Hi {{volunteerName}}, thanks for volunteering with <a href="{{groupUrl}}" style="color:#41903D;"><strong>{{groupName}}</strong></a> on {{formattedDateLong}}.</p>
+{{/section}}
+
+{{#if coverPhotoUrl}}
+{{#section}}
+  <img src="{{coverPhotoUrl}}" alt="{{groupName}}{{#if sessionTitle}} — {{{sessionTitle}}}{{/if}}" width="536" style="display:block;width:100%;max-width:536px;height:auto;border-radius:4px;">
+  {{#if sessionTitle}}<p style="margin:8px 0 0;font-size:0.9em;color:#666;">{{sessionTitle}}</p>{{/if}}
+{{/section}}
+{{/if}}
+
+{{#section style="sand"}}
+  <strong>Your session</strong><br>
+  Hours: <strong>{{userHours}}</strong>
+  {{#if myChildNames}}<br>Accompanied: <strong>{{myChildNames}}</strong> ({{myChildHours}} hours){{/if}}
+  {{#if isRegular}}<br>You're a <strong>{{groupName}} regular</strong> — thanks for your continued commitment.{{/if}}
+{{/section}}
+
+{{#if stats}}
+{{#section}}
+  <strong>Session highlights</strong><br>
+  Volunteers attended: <strong>{{stats.count}}</strong><br>
+  Total hours: <strong>{{stats.hours}}</strong>
+  {{#if stats.new}}<br>New volunteers: <strong>{{stats.new}}</strong>{{/if}}
+  {{#if stats.child}}<br>Children: <strong>{{stats.child}}</strong>{{/if}}
+{{/section}}
+{{/if}}
+
+{{#if description}}
+{{#section}}
+  <p style="margin:0;">{{{nl2br description}}}</p>
+{{/section}}
+{{/if}}
+
+{{#section style="green"}}
+<h2 style="margin:0;">We look forward to seeing you again.</h2>
+{{/section}}
+
+{{#section}}
+  {{#if nextSessionUrl}}
+  <p style="margin:0 0 16px;">Next <strong>{{groupName}}</strong> session: <a href="{{nextSessionUrl}}" style="color:#41903D;">{{nextSessionDate}}</a></p>
+  {{/if}}
+  <p style="margin:0 0 16px;"><a href="{{uploadUrl}}" style="color:#41903D;">Upload photos from this session</a></p>
+  <p style="margin:0;"><a href="{{groupUrl}}" style="color:#41903D;">View {{groupName}} group page</a></p>
+{{/section}}

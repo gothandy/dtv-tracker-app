@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{subject}}</title>
+  <!--[if gte mso 15]>
+  <xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+  <![endif]-->
+  <style>
+    /* dtv-dark:#000204  dtv-green:#4FAF4A  dtv-green-dark:#41903D  dtv-light:#fffffc  dtv-sand:#f4f4f4 */
+    body, table, td { mso-line-height-rule: exactly; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; background-color: #f4f4f4; }
+  </style>
+</head>
+<body bgcolor="#f4f4f4">
+
+  <!-- Outer wrapper -->
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f4f4f4" role="presentation">
+
+    <!-- Top padding -->
+    <tr><td height="32" style="font-size:0;line-height:0;">&nbsp;</td></tr>
+
+    <!-- Header section: green, text left, logo right -->
+    <tr>
+      <td align="center" valign="top" style="padding:0 16px;">
+        <!--[if (gte mso 9)|(IE)]><table align="center" border="0" cellspacing="0" cellpadding="0" width="600" style="width:600px;"><tr><td><![endif]-->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;" bgcolor="#4FAF4A" role="presentation">
+          <tr>
+            <td bgcolor="#4FAF4A" valign="middle" style="background-color:#4FAF4A;padding:12px 24px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" role="presentation">
+                <tr>
+                  <td valign="middle">
+                    <a href="https://tracker.dtv.org.uk" style="text-decoration:none;display:block;line-height:0;">
+                      <img src="{{baseUrl}}/img/email-header.png" alt="DTV Tracker" width="265" height="77" style="display:block;width:265px;height:77px;border:0;">
+                    </a>
+                  </td>
+                  <td valign="middle" align="right" width="52" style="width:52px;">
+                    <img src="{{baseUrl}}/img/logo.png" alt="DTV" width="52" height="52" style="display:block;border-radius:50%;width:52px;height:52px;">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <!--[if (gte mso 9)|(IE)]></td></tr></table><![endif]-->
+      </td>
+    </tr>
+
+    <!-- Body sections injected here — each section provides its own <tr> with inner table -->
+    {{{body}}}
+
+    <!-- Footer section: black -->
+    <tr>
+      <td align="center" valign="top" style="padding:0 16px;">
+        <!--[if (gte mso 9)|(IE)]><table align="center" border="0" cellspacing="0" cellpadding="0" width="600" style="width:600px;"><tr><td><![endif]-->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;" bgcolor="#000204" role="presentation">
+          <tr>
+            <td bgcolor="#000204" valign="top" align="center" style="background-color:#000204;padding:20px 32px;font-size:13px;color:#fffffc;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-align:center;">
+              <p style="margin:0 0 8px;">
+                <a href="https://tracker.dtv.org.uk/privacy.html" style="color:#fffffc;margin-right:16px;text-decoration:none;">Privacy Policy</a>
+                <a href="https://tracker.dtv.org.uk/terms.html" style="color:#fffffc;margin-right:16px;text-decoration:none;">Terms of Use</a>
+                Charity 1208988
+              </p>
+              <p style="margin:0 0 8px;">© 2026 Dean Trail Volunteers</p>
+              <p style="margin:0;"><i>If you did not expect this email, you can safely ignore it.</i></p>
+            </td>
+          </tr>
+        </table>
+        <!--[if (gte mso 9)|(IE)]></td></tr></table><![endif]-->
+      </td>
+    </tr>
+
+    <!-- Bottom padding -->
+    <tr><td height="32" style="font-size:0;line-height:0;">&nbsp;</td></tr>
+
+  </table>
+</body>
+</html>

@@ -13,6 +13,7 @@
       <FormRow title="Template">
         <select v-model="template" class="sem-select">
           <option value="pre-session">Pre-Session</option>
+          <option value="post-session">Post-Session</option>
         </select>
       </FormRow>
 
@@ -55,10 +56,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  send: [{ recipient: number | 'send-all', preview: boolean }]
+  send: [{ recipient: number | 'send-all', preview: boolean, template: string }]
 }>()
 
-const template = ref<'pre-session'>('pre-session')
+const template = ref<'pre-session' | 'post-session'>('pre-session')
 const recipient = ref<number | 'send-all'>(props.adults.find(a => a.email)?.entryId ?? 'send-all')
 const preview = ref(true)
 
@@ -74,7 +75,7 @@ const canSend = computed(() =>
 )
 
 function onSend() {
-  emit('send', { recipient: recipient.value, preview: preview.value })
+  emit('send', { recipient: recipient.value, preview: preview.value, template: template.value })
 }
 </script>
 

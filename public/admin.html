@@ -191,7 +191,8 @@
                     document.getElementById('siteShortcuts').innerHTML =
                         `<a class="admin-btn" href="https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/viewlsts.aspx?view=14" target="_blank">Site Contents</a>` +
                         `<a class="admin-btn" href="${termStoreUrl}" target="_blank">Term Store</a>` +
-                        `<button class="admin-btn" id="exportBackupBtn" onclick="exportBackup()">Backup</button>`;
+                        `<button class="admin-btn" id="exportBackupBtn" onclick="exportBackup()">Backup</button>` +
+                        `<a class="admin-btn" href="/api/email/sandbox/pre-session" target="_blank">Email: Pre-session</a>`;
                 }
             } catch (e) { /* ignore */ }
         }

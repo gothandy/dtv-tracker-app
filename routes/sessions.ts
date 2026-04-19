@@ -116,6 +116,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
           cancelledRegularCount: stats.cancelledRegular || undefined,
           eventbriteCount: stats.eventbrite || undefined,
           mediaCount: stats.media || undefined,
+          hasCoverPhoto: !!s[SESSION_COVER_MEDIA] || undefined,
           regularsCount: groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined,
           financialYear: `FY${calculateFinancialYear(new Date(s.Date!))}`,
           isBookable: date >= today,

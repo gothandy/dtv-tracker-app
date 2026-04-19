@@ -112,7 +112,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
                   <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Log in with ${code}</a></p>
                   <p style="color:#888;font-size:0.85em">If you did not request this, you can safely ignore this email.</p>`;
     const text = `Your verification code is ${code}\n\nThis code expires in 15 minutes. Return to DTV Tracker and enter your code, or use this link:\n\n${callbackUrl}\n\nIf you did not request this, you can safely ignore this email.`;
-    await sendEmail(email, `DTV Tracker verification code ${code}`, html, text);
+    await sendEmail({ to: email, subject: `DTV Tracker verification code ${code}`, html, text });
     recordEmailSent();
     res.json({ ok: true });
   } catch (err: any) {

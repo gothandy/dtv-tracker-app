@@ -62,7 +62,7 @@ router.post('/magic/send', async (req: Request, res: Response) => {
                   <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Log in to DTV Tracker</a></p>
                   <p style="color:#888;font-size:0.85em">If you did not request this, you can safely ignore this email.</p>`;
     const text = `Your link expires at ${expiresAt}.\n\nClick this link to log in to DTV Tracker:\n\n${callbackUrl}\n\nIf you did not request this, you can safely ignore this email.`;
-    await sendEmail(email, `DTV Tracker sign-in link — expires ${expiresAt}`, html, text);
+    await sendEmail({ to: email, subject: `DTV Tracker sign-in link — expires ${expiresAt}`, html, text });
     recordEmailSent();
     res.json({ ok: true, expiresAt });
   } catch (err: any) {
