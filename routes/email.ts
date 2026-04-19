@@ -4,23 +4,23 @@ import { renderEmail } from '../services/email-renderer';
 
 const router: Router = express.Router();
 
-// Fixture data for each template — all optional branches exercised.
-// Used by the sandbox endpoint so changes to templates can be validated in the browser.
-const FIXTURES: Record<string, Record<string, unknown>> = {
-  'pre-session': {
-    baseUrl: 'http://localhost:3000',
+// Static fixture data per template — baseUrl injected at request time via buildFixture().
+const FIXTURES: Record<string, (baseUrl: string) => Record<string, unknown>> = {
+  'pre-session': (baseUrl) => ({
+    baseUrl,
     volunteerName: 'Alice Example',
     groupName: 'Sheepskull',
     sessionTitle: 'Spring Conservation Day',
     formattedDateShort: '23 April',
     formattedDateLong: 'Wednesday, 23 April 2026',
     description: 'Meet at the usual car park.<br>Bring waterproofs.',
-    sessionUrl: 'http://localhost:3000/sessions/sheepskull/2026-04-23',
-    loginUrl: 'http://localhost:3000/login?returnTo=/sessions/sheepskull/2026-04-23',
+    sessionUrl: `${baseUrl}/sessions/sheepskull/2026-04-23`,
+    loginUrl: `${baseUrl}/login?returnTo=/sessions/sheepskull/2026-04-23`,
     myChildNames: 'Ben Example',
     isRegular: true,
-  },
+  }),
 };
+
 
 function isLocalhost(req: Request): boolean {
   const host = req.hostname;
@@ -44,13 +44,16 @@ router.get('/sandbox/:template', async (req: Request, res: Response) => {
     return;
   }
 
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const vars = fixture(baseUrl);
+
   if (req.query.format === 'json') {
-    res.json(fixture);
+    res.json(vars);
     return;
   }
 
   try {
-    const html = await renderEmail(template, fixture);
+    const html = await renderEmail(template, vars);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (err: any) {
