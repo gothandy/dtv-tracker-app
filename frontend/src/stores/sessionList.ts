@@ -18,6 +18,7 @@ interface SessionResponse {
   registrations: number
   hours: number
   mediaCount?: number
+  hasCoverPhoto?: boolean
   newCount?: number
   childCount?: number
   regularCount?: number
@@ -42,6 +43,7 @@ function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; r
     registrations: r.registrations,
     hours: r.hours,
     mediaCount: r.mediaCount,
+    hasCoverPhoto: r.hasCoverPhoto,
     newCount: r.newCount,
     childCount: r.childCount,
     regularCount: r.regularCount,

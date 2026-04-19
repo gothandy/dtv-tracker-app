@@ -40,6 +40,7 @@
         <h2>Emails</h2>
         <nav>
           <RouterLink to="/sandbox/email-pre-session">Pre-session</RouterLink>
+          <RouterLink to="/sandbox/email-post-session">Post-session</RouterLink>
         </nav>
       </section>
 

@@ -1,19 +1,23 @@
 {{#section}}
-  <p style="margin:0;">Hi {{volunteerName}}, you're booked onto the next <strong>{{groupName}}</strong>.</p>
+  <p style="margin:0;">Hi {{volunteerName}}, you're booked onto the next <a href="{{sessionUrl}}" style="color:#41903D;"><strong>{{groupName}}</strong></a>.</p>
 {{/section}}
 
 {{#section style="sand"}}
   <strong>Date:</strong> {{formattedDateLong}}<br>
   <strong>Time:</strong> 9:30 to 12:30 (about 3 hours)<br>
-  <strong>Location:</strong> Forest of Dean Cycle Centre
+  <strong>Location:</strong> By the DTV containers, Forest of Dean Cycle Centre
 {{/section}}
 
 {{#section}}
   {{#if description}}
-  <p style="margin:0 0 16px;">{{{description}}}</p>
+  <p style="margin:0 0 16px;">{{{nl2br description}}}</p>
   {{/if}}
 
   <p style="margin:0 0 16px;">Please bring sturdy boots, clothes you don't mind getting muddy, and water. Gloves are useful if you have them. We'll provide tools and hi-viz.</p>
+
+  {{#if tags}}
+  <p style="margin:0 0 16px;">{{tags}}</p>
+  {{/if}}
 
   <p style="margin:0 0 16px;"><a href="{{sessionUrl}}" style="color:#41903D;">View session page</a></p>
 
@@ -21,9 +25,15 @@
   <p style="margin:0 0 16px;">You're a {{groupName}} regular, so we sign you up automatically.</p>
   {{/if}}
 
-  <p style="margin:0 0 16px;">Can't make it? Please let us know and <a href="{{loginUrl}}" style="color:#41903D;">log in to cancel your place</a>.</p>
-
   {{#if myChildNames}}
   <p style="margin:0;">You're signed up as the accompanying adult for {{myChildNames}}.</p>
   {{/if}}
+{{/section}}
+
+{{#section style="green"}}
+<h2 style="margin:0;">We look forward to seeing you there.</h2>
+{{/section}}
+
+{{#section}}
+  <p style="margin:0 0 16px;">Can't make it? Please let us know and <a href="{{loginUrl}}" style="color:#41903D;">log in to cancel your place</a>.</p>
 {{/section}}

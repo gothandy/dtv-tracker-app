@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
-      <h1>Email: Pre-session</h1>
+      <h1>Email: Post-session</h1>
 
       <template v-if="rendered">
         <section class="panel">
@@ -33,20 +33,27 @@ import { ref, onMounted } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 
-usePageTitle('Sandbox — Email: Pre-session')
+usePageTitle('Sandbox — Email: Post-session')
 
 const FIXTURE: Record<string, unknown> = {
   volunteerName: 'Alice Example',
   groupName: 'Sheepskull',
-  sessionTitle: 'Spring Conservation Day',
-  formattedDateShort: '23 April',
-  formattedDateLong: 'Wednesday, 23 April 2026',
-  description: 'Meet at the usual car park.<br>Bring waterproofs.',
-  sessionUrl: 'http://localhost:3000/sessions/sheepskull/2026-04-23',
-  loginUrl: 'http://localhost:3000/login?returnTo=/sessions/sheepskull/2026-04-23',
+  groupUrl: 'http://localhost:3000/groups/sheepskull',
+  sessionUrl: 'http://localhost:3000/sessions/sheepskull/2026-04-10',
+  sessionTitle: null,
+  formattedDateShort: '10 April',
+  formattedDateLong: 'Friday, 10 April 2026',
+  description: 'Great session today. Lots of bramble clearance and some new path work near the top.',
+  coverPhotoUrl: null,
+  userHours: 3,
   myChildNames: 'Ben Example',
+  myChildHours: 3,
   isRegular: true,
-  tags: '#DH #Sheepskull #Endo',
+  stats: { count: 12, hours: 36, new: 2, child: 3, regular: 7 },
+  nextSessionUrl: 'http://localhost:3000/sessions/sheepskull/2026-04-24',
+  nextSessionDate: 'Friday, 24 April 2026',
+  uploadUrl: 'http://localhost:3000/upload?entryId=123',
+  loginUrl: 'http://localhost:3000/login?returnTo=/sessions/sheepskull/2026-04-10',
 }
 
 interface RenderedEmail {
@@ -62,7 +69,7 @@ onMounted(async () => {
   const res = await fetch('/api/email/render', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ template: 'pre-session', vars: FIXTURE }),
+    body: JSON.stringify({ template: 'post-session', vars: FIXTURE }),
   })
   if (res.ok) {
     rendered.value = await res.json()

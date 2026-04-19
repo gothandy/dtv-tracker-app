@@ -1,0 +1,29 @@
+Hi {{volunteerName}}, thanks for volunteering with {{groupName}} on {{formattedDateLong}}.
+
+YOUR SESSION
+Hours: {{userHours}}
+{{#if myChildNames}}Accompanied: {{myChildNames}} ({{myChildHours}} hours)
+{{/if}}{{#if isRegular}}You're a {{groupName}} regular — thanks for your continued commitment.
+{{/if}}
+{{#if stats}}SESSION HIGHLIGHTS
+Volunteers: {{stats.count}}
+Total hours: {{stats.hours}}
+{{#if stats.new}}New volunteers: {{stats.new}}
+{{/if}}{{#if stats.child}}Children: {{stats.child}}
+{{/if}}{{/if}}
+{{#if description}}
+{{description}}
+
+{{/if}}View the session page: {{sessionUrl}}
+{{#if nextSessionUrl}}
+Next {{groupName}} session: {{nextSessionDate}}
+{{nextSessionUrl}}
+{{/if}}
+
+Have photos to share? Upload them here:
+{{uploadUrl}}
+
+View {{groupName}} group page:
+{{groupUrl}}
+
+Dean Trail Volunteers

@@ -103,12 +103,11 @@ function goUpload(entryId: number) {
   window.location.href = `/upload?entryId=${entryId}`
 }
 
-async function sendOne(entryId: number, preview: boolean): Promise<boolean> {
-  const body = JSON.stringify({ preview })
+async function sendOne(entryId: number, preview: boolean, template: string): Promise<boolean> {
   const res = await fetch(`/api/entries/${entryId}/notify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body,
+    body: JSON.stringify({ preview, template }),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
@@ -118,7 +117,7 @@ async function sendOne(entryId: number, preview: boolean): Promise<boolean> {
   return true
 }
 
-async function onEmailSend({ recipient, preview }: { recipient: number | 'send-all', preview: boolean }) {
+async function onEmailSend({ recipient, preview, template }: { recipient: number | 'send-all', preview: boolean, template: string }) {
   emailWorking.value = true
   emailError.value = undefined
   try {
@@ -129,11 +128,11 @@ async function onEmailSend({ recipient, preview }: { recipient: number | 'send-a
         return
       }
       for (const adult of emailable) {
-        const ok = await sendOne(adult.entryId, false)
+        const ok = await sendOne(adult.entryId, false, template)
         if (!ok) return
       }
     } else {
-      const ok = await sendOne(recipient, preview)
+      const ok = await sendOne(recipient, preview, template)
       if (!ok) return
     }
     showEmail.value = false

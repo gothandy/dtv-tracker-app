@@ -33,6 +33,14 @@ async function getSessionDetailTemplate() {
     return _sessionDetailHtml;
 }
 
+let _v2IndexHtml = null;
+async function getV2IndexTemplate() {
+    if (!_v2IndexHtml) {
+        _v2IndexHtml = await fs.readFile(path.join(__dirname, 'frontend', 'dist', 'index.html'), 'utf8');
+    }
+    return _v2IndexHtml;
+}
+
 function escapeHtmlAttr(s) {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -316,7 +324,59 @@ if (siteMode === 'v2') {
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
     if (!isDev) {
-        // Production: SPA fallback for client-side routes
+        // Server-side OG meta tag injection for session detail pages (social crawler support).
+        // Must be before the SPA fallback so crawlers get real og:image/title/description.
+        app.get('/sessions/:group/:date', async (req, res) => {
+            const groupKey = req.params.group.toLowerCase();
+            const dateParam = req.params.date;
+            try {
+                const [rawGroups, rawSessions] = await Promise.all([
+                    groupsRepository.getAll(),
+                    sessionsRepository.getAll()
+                ]);
+                const spGroup = findGroupByKey(rawGroups, groupKey);
+                const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
+
+                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                const canonicalUrl = `${baseUrl}${req.path}`;
+
+                let imageUrl = `${baseUrl}/img/logo-930.jpg`;
+                try {
+                    const driveId = mediaDriveId();
+                    const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
+                    if (photos.length > 0) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/cover.jpg`;
+                } catch { /* media library not configured or folder missing */ }
+
+                let title = 'Session Details - DTV Tracker';
+                let description = 'DTV volunteer session';
+                if (spGroup && spSession) {
+                    const group = convertGroup(spGroup);
+                    const sessionName = spSession.Name || spSession.Title || group.displayName;
+                    const date = new Date(dateParam);
+                    const formattedDate = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                    title = `${sessionName} — ${formattedDate}`;
+                    description = spSession[SESSION_NOTES] || `${group.displayName} volunteer session on ${formattedDate}`;
+                }
+
+                let html = await getV2IndexTemplate();
+                html = html.replace(
+                    '</head>',
+                    `<title>${escapeHtmlAttr(title)}</title>` +
+                    `<meta property="og:title" content="${escapeHtmlAttr(title)}">` +
+                    `<meta property="og:description" content="${escapeHtmlAttr(description)}">` +
+                    `<meta property="og:url" content="${canonicalUrl}">` +
+                    `<meta property="og:image" content="${escapeHtmlAttr(imageUrl)}">` +
+                    `<meta property="og:type" content="website">` +
+                    `</head>`
+                );
+                res.set('Content-Type', 'text/html').send(html);
+            } catch (err) {
+                console.error(`Error rendering session meta tags for ${groupKey}/${dateParam}:`, err);
+                res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+            }
+        });
+
+        // SPA fallback for all other client-side routes
         app.get('/*path', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
     }
     // Dev: Vite middleware handles SPA routing (added during server startup below)

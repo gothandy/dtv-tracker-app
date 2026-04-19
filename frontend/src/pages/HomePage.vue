@@ -278,7 +278,7 @@ watch(selectedDate, (date) => {
 
 const coverItems = computed<MediaItem[]>(() =>
   [...store.sessions]
-    .filter(s => (s.mediaCount ?? 0) > 0)
+    .filter(s => s.hasCoverPhoto === true)
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(s => ({
       id: String(s.id),

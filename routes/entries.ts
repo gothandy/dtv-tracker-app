@@ -26,7 +26,7 @@ import {
 import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
-  SESSION_LOOKUP, SESSION_NOTES,
+  SESSION_LOOKUP,
   SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED
@@ -34,6 +34,7 @@ import {
 import { getAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { renderEmail } from '../services/email-renderer';
+import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import multer from 'multer';
@@ -1227,84 +1228,29 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
 
     const groupId = safeParseLookupId(spSession[GROUP_LOOKUP] as unknown as string);
     const spGroup = groupId !== undefined ? allGroups.find(g => g.ID === groupId) : undefined;
-    const groupName = spGroup ? (spGroup.Name || spGroup.Title) : String(spSession[GROUP_DISPLAY] || '');
-    const groupKey = (spGroup?.Title || '').toLowerCase();
-    const dateParam = spSession.Date;
-    const description = spSession[SESSION_NOTES];
+    if (!spGroup) {
+      res.status(404).json({ success: false, error: 'Group not found for this session' });
+      return;
+    }
 
-    // Find children on this session whose accompanying adult is this volunteer
+    if (!profile) {
+      res.status(404).json({ success: false, error: 'Profile not found for this entry' });
+      return;
+    }
+
     const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
-    const activeEntries = sessionEntries.filter(e => !e[ENTRY_CANCELLED]);
-    const myChildEntries = profileId !== undefined
-      ? activeEntries.filter(e => safeParseLookupId(e.AccompanyingAdultLookupId) === profileId)
-      : [];
-    const myChildNames = myChildEntries
-      .map(e => String(e[PROFILE_DISPLAY] || '').trim())
-      .filter(Boolean)
-      .join(' and ');
-
-    const isRegular = /#Regular\b/i.test(String(spEntry.Notes || ''));
-
-    // Date formatting
-    const d = new Date(dateParam + 'T12:00:00');
-    const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' });
-    const dayNum = d.getDate();
-    const monthName = d.toLocaleDateString('en-GB', { month: 'long' });
-    const year = d.getFullYear();
-    const formattedDateShort = `${dayNum} ${monthName}`;
-    const formattedDateLong = `${dayName}, ${dayNum} ${monthName} ${year}`;
 
     const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-    const sessionUrl = `${base}/sessions/${groupKey}/${dateParam}`;
-    const loginUrl = `${base}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`;
-
-    const subject = `${groupName} details for ${formattedDateShort}`;
-
-    const volunteerName = String(spEntry[PROFILE_DISPLAY] || '').trim();
-
-    const sessionTitle = spSession.Name || null;
-
-    const html = await renderEmail('pre-session', {
-      baseUrl: base,
-      subject,
-      volunteerName,
-      groupName,
-      sessionTitle,
-      formattedDateShort,
-      formattedDateLong,
-      description: description ? description.replace(/\n/g, '<br>') : '',
-      sessionUrl,
-      loginUrl,
-      myChildNames: myChildNames || null,
-      isRegular,
-    });
-
-    const text = [
-      `${volunteerName}, you're booked onto the next ${groupName}.`,
-      '',
-      `Date: ${formattedDateLong}`,
-      'Time: 9:30 to 12:30 (about 3 hours)',
-      'Location: Forest of Dean Cycle Centre',
-      '',
-      description || '',
-      '',
-      "Please bring sturdy boots, clothes you don't mind getting muddy, and water. Gloves are useful if you have them. We'll provide tools and hi-viz.",
-      '',
-      `Read more: ${sessionUrl}`,
-      '',
-      isRegular ? `You're a ${groupName} regular, so we sign you up automatically.` : '',
-      '',
-      `Can't make it? Log in to cancel your place: ${loginUrl}`,
-      '',
-      myChildNames ? `You're signed up as the accompanying adult for ${myChildNames}.` : '',
-      '',
-      'Dean Trail Volunteers',
-    ].filter(line => line !== undefined).join('\n');
+    const templateName = (req.body?.template as string) || 'pre-session';
+    const vars = templateName === 'post-session'
+      ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base)
+      : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base);
+    const { subject, html, text } = await renderEmail(templateName, vars);
 
     const preview = req.body?.preview === true;
     const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
 
-    await sendEmail(toEmail, subject, html, text);
+    await sendEmail({ to: toEmail, subject, html, text });
 
     res.json({ success: true, data: { sent: 1 } } as ApiResponse<{ sent: number }>);
   } catch (error: any) {

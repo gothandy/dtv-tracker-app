@@ -44,6 +44,7 @@ export interface SessionResponse {
   regularsCount?: number;
   eventbriteCount?: number;
   mediaCount?: number;
+  hasCoverPhoto?: boolean;
   financialYear: string;
   isBookable: boolean;
   eventbriteEventId?: string;

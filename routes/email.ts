@@ -4,60 +4,32 @@ import { renderEmail } from '../services/email-renderer';
 
 const router: Router = express.Router();
 
-// Static fixture data per template — baseUrl injected at request time via buildFixture().
-const FIXTURES: Record<string, (baseUrl: string) => Record<string, unknown>> = {
-  'pre-session': (baseUrl) => ({
-    baseUrl,
-    volunteerName: 'Alice Example',
-    groupName: 'Sheepskull',
-    sessionTitle: 'Spring Conservation Day',
-    formattedDateShort: '23 April',
-    formattedDateLong: 'Wednesday, 23 April 2026',
-    description: 'Meet at the usual car park.<br>Bring waterproofs.',
-    sessionUrl: `${baseUrl}/sessions/sheepskull/2026-04-23`,
-    loginUrl: `${baseUrl}/login?returnTo=/sessions/sheepskull/2026-04-23`,
-    myChildNames: 'Ben Example',
-    isRegular: true,
-  }),
-};
-
-
 function isLocalhost(req: Request): boolean {
   const host = req.hostname;
   return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
-// GET /api/email/sandbox/:template
-// Renders an email template with fixture data and returns it as raw HTML.
+// POST /api/email/render
+// Renders an email template with supplied vars and returns { subject, html, text }.
 // Accessible from localhost (dev convenience) or when logged in as admin.
-router.get('/sandbox/:template', async (req: Request, res: Response) => {
+router.post('/render', async (req: Request, res: Response) => {
   const role = req.session?.user?.role;
   if (!isLocalhost(req) && role !== 'admin') {
-    res.status(403).send('Forbidden');
+    res.status(403).json({ error: 'Forbidden' });
     return;
   }
 
-  const template = req.params.template as string;
-  const fixture = FIXTURES[template];
-  if (!fixture) {
-    res.status(404).send(`No fixture defined for template "${template}"`);
-    return;
-  }
-
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const vars = fixture(baseUrl);
-
-  if (req.query.format === 'json') {
-    res.json(vars);
+  const { template, vars } = req.body as { template?: string; vars?: Record<string, unknown> };
+  if (!template || typeof template !== 'string') {
+    res.status(400).json({ error: 'template is required' });
     return;
   }
 
   try {
-    const html = await renderEmail(template, vars);
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
+    const result = await renderEmail(template, vars ?? {});
+    res.json(result);
   } catch (err: any) {
-    res.status(500).send(`<pre>Template error: ${err.message}</pre>`);
+    res.status(500).json({ error: err.message });
   }
 });
 

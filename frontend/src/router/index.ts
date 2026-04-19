@@ -95,6 +95,7 @@ export const router = createRouter({
     { path: '/sandbox/upload-page', component: () => import('../pages/sandbox/SandboxUploadPage.vue') },
     { path: '/sandbox/error-pages', component: () => import('../pages/sandbox/SandboxErrorPages.vue') },
     { path: '/sandbox/email-pre-session', component: () => import('../pages/sandbox/SandboxEmailPreSession.vue') },
+    { path: '/sandbox/email-post-session', component: () => import('../pages/sandbox/SandboxEmailPostSession.vue') },
     { path: '/:pathMatch(.*)*', component: () => import('../pages/NotFoundPage.vue') },
   ]
 })

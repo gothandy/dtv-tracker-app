@@ -1,17 +1,25 @@
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
+import { BRAND } from '../frontend/src/styles/brand';
 
 // Named style presets for the section helper — maps style="name" to bg/color/padding
+// Colours sourced from frontend/src/styles/brand.ts (canonical) + main.css @theme.
 const DEFAULT_PADDING = '24px 32px';
 const SECTION_STYLES: Record<string, { bg: string; color: string }> = {
-  light: { bg: '#fffffc', color: '#000204' },
-  dark:  { bg: '#000204', color: '#fffffc' },
-  green: { bg: '#4FAF4A', color: '#fffffc' },
-  gold:  { bg: '#B0AB4A', color: '#000204' },
-  dirt:  { bg: '#B04A4F', color: '#fffffc' },
-  sand:  { bg: '#E1E0D1', color: '#000204' },
+  light: { bg: BRAND.light, color: BRAND.dark  },
+  dark:  { bg: BRAND.dark,  color: BRAND.light },
+  green: { bg: BRAND.green, color: BRAND.light },
+  gold:  { bg: BRAND.gold,  color: BRAND.dark  },
+  dirt:  { bg: BRAND.dirt,  color: BRAND.light },
+  sand:  { bg: BRAND.sand,  color: BRAND.dark  },
 };
+
+// Inline helper: {{{nl2br someVar}}} — escapes text then converts \n to <br>
+Handlebars.registerHelper('nl2br', (text: unknown) => {
+  if (!text) return '';
+  return new Handlebars.SafeString(Handlebars.escapeExpression(String(text)).replace(/\n/g, '<br>'));
+});
 
 // Block helper: {{#section style="dark"}}...{{/section}}
 // style defaults to "light". padding can be overridden: {{#section style="dark" padding="24px 32px"}}
@@ -37,16 +45,22 @@ Handlebars.registerHelper('section', function(this: unknown, options: Handlebars
   );
 });
 
+export interface RenderedEmail {
+  subject: string;
+  html: string;
+  text: string;
+}
+
 // Compiled template cache — avoids re-reading disk on every send
 const templateCache = new Map<string, HandlebarsTemplateDelegate>();
 
 const TEMPLATES_DIR = path.join(__dirname, '..', '..', 'templates', 'email');
 
-async function loadTemplate(name: string): Promise<HandlebarsTemplateDelegate> {
-  if (process.env.NODE_ENV !== 'development' && templateCache.has(name)) return templateCache.get(name)!;
-  const src = await fs.readFile(path.join(TEMPLATES_DIR, `${name}.hbs`), 'utf-8');
+async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
+  if (process.env.NODE_ENV !== 'development' && templateCache.has(filePath)) return templateCache.get(filePath)!;
+  const src = await fs.readFile(filePath, 'utf-8');
   const compiled = Handlebars.compile(src);
-  templateCache.set(name, compiled);
+  templateCache.set(filePath, compiled);
   return compiled;
 }
 
@@ -54,13 +68,19 @@ export function clearEmailTemplateCache(): void {
   templateCache.clear();
 }
 
-export async function renderEmail(template: string, vars: Record<string, unknown>): Promise<string> {
-  const [renderBody, renderBase] = await Promise.all([
-    loadTemplate(template),
-    loadTemplate('base'),
+export async function renderEmail(template: string, vars: Record<string, unknown>): Promise<RenderedEmail> {
+  const templateDir = path.join(TEMPLATES_DIR, template);
+  const [renderSubject, renderText, renderHtml, renderBase] = await Promise.all([
+    loadTemplate(path.join(templateDir, 'subject.hbs')),
+    loadTemplate(path.join(templateDir, 'text.hbs')),
+    loadTemplate(path.join(templateDir, 'html.hbs')),
+    loadTemplate(path.join(TEMPLATES_DIR, 'base.hbs')),
   ]);
-  const body = renderBody(vars);
-  const html = renderBase({ ...vars, body });
-  // Strip whitespace between tags — prevents Outlook from rendering inter-row gaps
-  return html.replace(/>\s+</g, '><');
+
+  const subject = renderSubject(vars).trim();
+  const text = renderText(vars).trim();
+  const body = renderHtml(vars);
+  const html = renderBase({ ...vars, body }).replace(/>\s+</g, '><');
+
+  return { subject, html, text };
 }
