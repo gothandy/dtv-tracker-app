@@ -50,7 +50,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<void> {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'text/plain',
     },
-    body: mime,
+    body: Buffer.from(mime).toString('base64'),
   });
 
   if (!res.ok) {
