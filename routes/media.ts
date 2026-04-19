@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+import { Readable } from 'stream';
 /// <reference path="../types/express-session.d.ts" />
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId } from '../services/media-upload';
@@ -93,11 +94,11 @@ router.get('/media/:itemId/download', async (req: Request, res: Response) => {
     }
     const upstream = await fetch(downloadUrl);
     if (!upstream.ok) throw new Error(`Upstream ${upstream.status}`);
-    const buffer = Buffer.from(await upstream.arrayBuffer());
+    const safeName = name.replace(/[^\w.\-]/g, '_');
     res.setHeader('Content-Type', upstream.headers.get('content-type') ?? 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
     res.setHeader('Cache-Control', 'private, no-store');
-    res.send(buffer);
+    Readable.fromWeb(upstream.body as any).pipe(res);
   } catch (error: any) {
     console.error('Error downloading media item:', error);
     res.status(500).json({ success: false, error: error.message });
