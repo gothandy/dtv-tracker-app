@@ -413,8 +413,7 @@ const mockProfiles: PickerProfile[] = [
 const mockMediaItem: MediaItem = {
   id: 'mock-media-1',
   listItemId: 0,
-  thumbnailUrl: '/media/adhoc/2026-03-26/cover.jpg',
-  largeUrl: '/media/adhoc/2026-03-26/cover.jpg',
+  url: '/media/adhoc/2026-03-26/cover.jpg',
   mimeType: 'image/jpeg',
   title: 'Sample photo',
   isPublic: true,

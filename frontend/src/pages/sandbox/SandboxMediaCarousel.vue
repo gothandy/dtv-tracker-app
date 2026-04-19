@@ -95,8 +95,7 @@ async function loadSessionItems() {
   sessionItems.value = sessions.map(s => ({
     id: String(s.id),
     listItemId: 0,
-    thumbnailUrl: `/media/${s.groupKey}/${s.date}/cover.jpg`,
-    largeUrl:     `/media/${s.groupKey}/${s.date}/cover.jpg`,
+    url: `/media/${s.groupKey}/${s.date}/cover.jpg`,
     mimeType: 'image/jpeg',
     title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     isPublic: true,
@@ -120,7 +119,7 @@ function measureDimensions(items: MediaItem[]): Promise<void> {
       const img = new Image()
       img.onload  = () => { item._w = img.naturalWidth || 4; item._h = img.naturalHeight || 3; done() }
       img.onerror = () => { item._w = 4; item._h = 3; done() }
-      img.src = item.largeUrl || item.thumbnailUrl
+      img.src = item.url
     }
   })
 }

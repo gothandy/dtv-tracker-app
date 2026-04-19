@@ -626,7 +626,7 @@ export class SharePointClient {
           thumbnailUrl: (item.thumbnails?.[0]?.medium?.url ?? '') as string,
           largeUrl: (item.thumbnails?.[0]?.large?.url ?? item.thumbnails?.[0]?.medium?.url ?? '') as string,
           mimeType: item.file.mimeType as string,
-          isPublic: item.listItem?.fields?.IsPublic !== false,  // default true if absent/null
+          isPublic: item.listItem?.fields?.IsPublic === true,
           title: (item.listItem?.fields?.Title as string | undefined) || null,
         }));
 

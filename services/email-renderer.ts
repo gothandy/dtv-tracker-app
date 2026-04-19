@@ -1,10 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
-import { BRAND } from '../frontend/src/styles/brand';
+import { BRAND } from '../shared/brand';
 
 // Named style presets for the section helper — maps style="name" to bg/color/padding
-// Colours sourced from frontend/src/styles/brand.ts (canonical) + main.css @theme.
 const DEFAULT_PADDING = '24px 32px';
 const SECTION_STYLES: Record<string, { bg: string; color: string }> = {
   light: { bg: BRAND.light, color: BRAND.dark  },

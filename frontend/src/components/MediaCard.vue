@@ -12,7 +12,7 @@
     @click="handleClick"
   >
     <img
-      :src="item.largeUrl || item.thumbnailUrl"
+      :src="item.url"
       :alt="item.title ?? ''"
       style="opacity: 0"
       @load="e => fadeIn(e.target as HTMLImageElement)"

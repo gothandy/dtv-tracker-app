@@ -63,7 +63,7 @@ function measureDimensions(mediaItems: MediaItem[]): Promise<void> {
       const img = new Image()
       img.onload  = () => { item._w = img.naturalWidth  || 4; item._h = img.naturalHeight || 3; done() }
       img.onerror = () => { item._w = 4; item._h = 3; done() }
-      img.src = item.largeUrl || item.thumbnailUrl
+      img.src = item.url
     }
   })
 }

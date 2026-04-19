@@ -1,8 +1,7 @@
 export interface MediaItem {
   id: string
   listItemId: number
-  thumbnailUrl: string
-  largeUrl: string
+  url: string
   mimeType: string       // e.g. 'image/jpeg', 'video/mp4'
   title: string | null
   isPublic: boolean
