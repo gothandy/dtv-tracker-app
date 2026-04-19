@@ -33,6 +33,7 @@ import {
 } from '../services/field-names';
 import { getAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
+import { renderEmail } from '../services/email-renderer';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import multer from 'multer';
@@ -1261,29 +1262,22 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
 
     const volunteerName = String(spEntry[PROFILE_DISPLAY] || '').trim();
 
-    const html = `
-<p>${volunteerName}, you're booked onto the next <strong>${groupName}</strong>.</p>
+    const sessionTitle = spSession.Name || null;
 
-<p>
-  <strong>Date:</strong> ${formattedDateLong}<br>
-  <strong>Time:</strong> 9:30 to 12:30 (about 3 hours)<br>
-  <strong>Location:</strong> Forest of Dean Cycle Centre
-</p>
-
-${description ? `<p>${description.replace(/\n/g, '<br>')}</p>` : ''}
-
-<p>Please bring sturdy boots, clothes you don't mind getting muddy, and water. Gloves are useful if you have them. We'll provide tools and hi-viz.</p>
-
-<p>Read more: <a href="${sessionUrl}">View session page</a></p>
-
-${isRegular ? `<p>You're a ${groupName} regular, so we sign you up automatically.</p>` : ''}
-
-<p>Can't make it? Please let us know and <a href="${loginUrl}">log in to cancel your place</a>.</p>
-
-${myChildNames ? `<p>You're signed up as the accompanying adult for ${myChildNames}.</p>` : ''}
-
-<p>Dean Trail Volunteers</p>
-    `.trim();
+    const html = await renderEmail('pre-session', {
+      baseUrl: base,
+      subject,
+      volunteerName,
+      groupName,
+      sessionTitle,
+      formattedDateShort,
+      formattedDateLong,
+      description: description ? description.replace(/\n/g, '<br>') : '',
+      sessionUrl,
+      loginUrl,
+      myChildNames: myChildNames || null,
+      isRegular,
+    });
 
     const text = [
       `${volunteerName}, you're booked onto the next ${groupName}.`,

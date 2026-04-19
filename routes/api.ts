@@ -14,6 +14,7 @@ import eventbriteRoutes = require('./eventbrite');
 import mediaRoutes = require('./media');
 import tagsRoutes = require('./tags');
 import backupRoutes = require('./backup');
+import emailRoutes = require('./email');
 
 const router: Router = express.Router();
 
@@ -28,5 +29,6 @@ router.use(eventbriteRoutes);
 router.use(mediaRoutes);
 router.use(tagsRoutes);
 router.use(backupRoutes);
+router.use('/email', emailRoutes);
 
 export = router;

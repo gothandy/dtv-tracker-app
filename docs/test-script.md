@@ -347,6 +347,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Arrow-key navigation (left/right) scrolls the carousel
 - [ ] Breadcrumb: Home > Media (Home links to `/`, Media links to `/media/`)
 
+### H32. Pre-session email
+- [ ] Session detail → "Notify" button → `POST /api/entries/:id/notify` — email sent to volunteer
+- [ ] Email renders with correct volunteer name, group name, date, session URL, login URL
+- [ ] Description block present when session has notes; absent when no notes
+- [ ] Regular block shown for regular volunteers; absent otherwise
+- [ ] Child block shown when entry has accompanying child name; absent otherwise
+- [ ] Sandbox preview: visit `/sandbox/email-pre-session` (admin or localhost) — iframe shows rendered email with all conditional blocks exercised
+- [ ] `GET /api/email/sandbox/pre-session?format=json` returns fixture data
+
 ### H31. Backup export
 - [ ] Admin page → "Export Backup" button → `POST /api/backup/export-all`
 - [ ] Returns summary with file counts and timestamp; displayed in admin page

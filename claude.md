@@ -364,6 +364,9 @@ dtv-tracker-app/
 │           ├── ProfileDetailPage.vue  # Profile detail — page title, PageHeader, entry list, debug data
 │           ├── EntriesPage.vue        # Admin-only entries listing: filter by notes/accompanying adult, checkbox select, edit modal with profile+session nav
 │           ├── AdminPage.vue          # Admin actions (sync, cache, exports)
+│           └── sandbox/
+│               ├── SandboxIndex.vue           # Sandbox index with links to all sandbox pages
+│               ├── SandboxEmailPreSession.vue # Email sandbox: iframe preview + fixture data for pre-session template
 │           └── sessions/             # Page-specific components for SessionDetailPage
 │               ├── SessionHeaderCard.vue   # Group name / date-time-location / description
 │               ├── CoverPhotoCard.vue      # Cover photo at 2:3 aspect ratio
@@ -392,6 +395,7 @@ dtv-tracker-app/
 │   ├── auth-store.ts              # createAuthToken / validateAuthToken — 128-bit token, SHA-256 hash stored in Logins list
 │   ├── personal-auth.ts           # Shared personal account session resolution (email → profile match)
 │   ├── graph-mail.ts              # sendEmail() via Microsoft Graph API (reuses app credentials)
+│   ├── email-renderer.ts          # renderEmail(template, vars): Handlebars renderer + `section` block helper (style="light|dark|green|gold|dirt|sand"); template cache bypassed in development
 │   ├── sharepoint-client.ts       # Graph API client (auth, caching, pagination); luxon-based date helpers convert between raw UTC ISO (SharePoint) and YYYY-MM-DD (app) using SHAREPOINT_TIMEZONE
 │   ├── eventbrite-client.ts       # Eventbrite API client (org events, attendees)
 │   ├── eventbrite-sync.ts         # Shared attendee sync logic and consent question mapping
@@ -420,6 +424,7 @@ dtv-tracker-app/
 │   ├── tags.ts                    # Session taxonomy tag read/write endpoints
 │   ├── media.ts                   # Authenticated media endpoints (list photos/videos, batch counts, stream)
 │   ├── backup.ts                  # Backup endpoint: thin wrapper calling runBackupExport()
+│   ├── email.ts                   # GET /api/email/sandbox/:template — renders email template with fixture data; accessible on localhost or admin
 │   └── auth/
 │       ├── index.ts               # Auth router: mounts dtv + magic routers; /providers, /me, /logout (clears dtv-auth cookie)
 │       ├── dtv.ts                 # DTV Account (Entra ID / Microsoft) login + callback
@@ -472,6 +477,10 @@ dtv-tracker-app/
 │       └── embla/
 │           ├── gallery.js         # MediaGallery class — Embla-powered horizontal carousel
 │           └── gallery.css        # Carousel styles (viewport, slides, nav buttons, captions)
+├── templates/
+│   └── email/
+│       ├── base.hbs               # Shared email wrapper: green header (image + logo), {{{body}}} slot, dark footer
+│       └── pre-session.hbs        # Pre-session notification email; uses {{#section}} helper throughout
 └── test/
     ├── test-auth.js               # Authentication verification
     └── test-*.js                  # Various data/integration tests
@@ -531,6 +540,7 @@ dtv-tracker-app/
 - [x] Standalone media gallery pages (`/media/`): authenticated library listing all sessions with photos (cover carousel) and per-session gallery (Embla + lightbox); breadcrumbs wired in `common.js`; Embla loaded from CDN; `MediaGallery` class in `public/media/embla/gallery.js`
 - [x] Entries page (admin-only, Vue): lists all entries across all sessions; filter by notes text and AccompanyingAdult (empty/not-empty); checkbox selection; edit modal opens with "View Profile" and "View Session" nav buttons; `GET /api/entries` endpoint (admin-only)
 - [x] AccompanyingAdult dropdown in EntryEditModal: shown when `sessionAdults` prop provided; enabled only when `#Child` is in notes; populates with non-child adults from the same session via `fetchSessionAdults` utility; clearing `#Child` resets selection; `accompanyingAdultId` included in PATCH payload and store state
+- [x] Handlebars email template system: `templates/email/base.hbs` shared wrapper + `templates/email/pre-session.hbs`; `{{#section style="dark"}}` block helper handles MSO-safe table structure; pre-session notify email in `routes/entries.ts` uses `renderEmail()`; sandbox preview at `GET /api/email/sandbox/:template` (localhost or admin); Vue sandbox page at `/sandbox/email-pre-session`
 
 ## Planned Features
 

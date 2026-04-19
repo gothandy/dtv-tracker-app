@@ -27,9 +27,10 @@
     ],
     "watch": [
       "app.js",
-      "dist/"
+      "dist/",
+      "templates/"
     ],
-    "ext": "js,json,ts"
+    "ext": "js,json,ts,hbs"
   },
   "keywords": [],
   "author": "",
@@ -45,6 +46,7 @@
     "exifreader": "^4.36.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "handlebars": "^4.7.9",
     "luxon": "^3.7.2",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2"

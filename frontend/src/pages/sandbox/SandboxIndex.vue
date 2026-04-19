@@ -37,6 +37,13 @@
       </section>
 
       <section>
+        <h2>Emails</h2>
+        <nav>
+          <RouterLink to="/sandbox/email-pre-session">Pre-session</RouterLink>
+        </nav>
+      </section>
+
+      <section>
         <h2>Widgets</h2>
         <nav>
           <RouterLink to="/sandbox/calendar-widget">CalendarWidget</RouterLink>
