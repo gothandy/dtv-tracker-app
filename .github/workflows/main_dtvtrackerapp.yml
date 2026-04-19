@@ -72,7 +72,7 @@ jobs:
         run: npm prune --production
 
       - name: Create deployment zip
-        run: zip -r release.zip app.js package.json dist/ node_modules/ public/ frontend/dist/
+        run: zip -r release.zip app.js package.json dist/ node_modules/ public/ frontend/dist/ templates/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
