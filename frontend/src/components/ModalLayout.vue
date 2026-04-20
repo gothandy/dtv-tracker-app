@@ -91,6 +91,7 @@ function onAction() {
 .am-overlay {
   position: fixed;
   inset: 0;
+  height: 100dvh;
   background: var(--color-overlay);
   display: flex;
   align-items: stretch;
