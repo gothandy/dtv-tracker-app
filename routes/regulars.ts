@@ -92,23 +92,23 @@ router.patch('/regulars/:id', async (req: Request, res: Response) => {
     }
 
     const { accompanyingAdultId } = req.body;
-    if (accompanyingAdultId === undefined) {
-      res.status(400).json({ success: false, error: 'accompanyingAdultId is required' });
-      return;
-    }
-
     const fields: Record<string, any> = {};
-    if (accompanyingAdultId === null) {
-      fields.AccompanyingAdultLookupId = null;
-    } else {
-      if (typeof accompanyingAdultId !== 'number' || !Number.isInteger(accompanyingAdultId) || accompanyingAdultId < 1) {
-        res.status(400).json({ success: false, error: 'accompanyingAdultId must be a positive integer or null' });
-        return;
+
+    if (accompanyingAdultId !== undefined) {
+      if (accompanyingAdultId === null) {
+        fields.AccompanyingAdultLookupId = null;
+      } else {
+        if (typeof accompanyingAdultId !== 'number' || !Number.isInteger(accompanyingAdultId) || accompanyingAdultId < 1) {
+          res.status(400).json({ success: false, error: 'accompanyingAdultId must be a positive integer or null' });
+          return;
+        }
+        fields.AccompanyingAdultLookupId = accompanyingAdultId;
       }
-      fields.AccompanyingAdultLookupId = accompanyingAdultId;
     }
 
-    await regularsRepository.update(regularId, fields);
+    if (Object.keys(fields).length > 0) {
+      await regularsRepository.update(regularId, fields);
+    }
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error updating regular:', error);

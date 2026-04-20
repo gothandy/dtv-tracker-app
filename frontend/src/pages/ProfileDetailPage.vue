@@ -417,7 +417,7 @@ async function onRegularSave(data: { accompanyingAdultId: number | null }) {
       const res = await fetch(`/api/regulars/${regularId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accompanyingAdultId: data.accompanyingAdultId }),
+        body: JSON.stringify({}),
       })
       if (!res.ok) throw new Error(`Update failed (${res.status})`)
     } else {
