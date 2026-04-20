@@ -106,6 +106,8 @@ export interface Entry {
  */
 export interface SharePointRegular extends SharePointBaseItem {
   Title?: string;
+  AccompanyingAdultLookupId?: number;
+  AccompanyingAdult?: string;
   /** Allow bracket access for dynamic field names (ProfileLookupId, GroupLookupId, etc.) */
   [key: string]: any;
 }

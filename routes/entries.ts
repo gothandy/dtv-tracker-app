@@ -30,7 +30,8 @@ import {
   SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED,
-  ENTRY_STATS
+  ENTRY_STATS,
+  ACCOMPANYING_ADULT_LOOKUP
 } from '../services/field-names';
 import { computeAndSaveEntryStats, runEntryStatsRefresh } from '../services/entry-stats';
 import { parseEntryStatsField } from '../services/data-layer';
@@ -804,19 +805,32 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         const regularProfile = profiles.find(p => p.ID === vid);
         let notes = '#Regular';
         if (regularProfile && isFirstSession(regularProfile, spSession.ID)) notes = appendNewTag(notes);
-        await entriesRepository.create({
+        const entryFields: Record<string, any> = {
           [SESSION_LOOKUP]: String(spSession.ID),
           [PROFILE_LOOKUP]: String(vid),
           Notes: notes
-        });
+        };
+        const regularAdultId = safeParseLookupId(regular.AccompanyingAdultLookupId);
+        if (regularAdultId !== undefined) entryFields[ACCOMPANYING_ADULT_LOOKUP] = String(regularAdultId);
+        await entriesRepository.create(entryFields);
         existingVolunteerIds.add(vid);
         addedRegulars++;
       } else {
         const existingEntry = sessionEntries.find(e => safeParseLookupId(e[PROFILE_LOOKUP]) === vid);
-        if (existingEntry && !/#Regular\b/i.test(existingEntry.Notes || '')) {
-          const notes = String(existingEntry.Notes || '');
-          await entriesRepository.updateFields(existingEntry.ID, { Notes: notes ? `${notes.trimEnd()} #Regular` : '#Regular' });
-          regularTagged++;
+        if (existingEntry) {
+          const patchFields: Record<string, any> = {};
+          if (!/#Regular\b/i.test(existingEntry.Notes || '')) {
+            const notes = String(existingEntry.Notes || '');
+            patchFields.Notes = notes ? `${notes.trimEnd()} #Regular` : '#Regular';
+            regularTagged++;
+          }
+          const regularAdultId = safeParseLookupId(regular.AccompanyingAdultLookupId);
+          if (regularAdultId !== undefined && safeParseLookupId(existingEntry.AccompanyingAdultLookupId) === undefined) {
+            patchFields[ACCOMPANYING_ADULT_LOOKUP] = String(regularAdultId);
+          }
+          if (Object.keys(patchFields).length > 0) {
+            await entriesRepository.updateFields(existingEntry.ID, patchFields);
+          }
         }
       }
     }

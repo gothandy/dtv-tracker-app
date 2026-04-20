@@ -20,11 +20,13 @@ export interface SessionStats {
 }
 
 export interface GroupRegularResponse {
+  profileId: number;
   name: string;
   slug: string;
   hours: number;       // rolling-year hours for this group
   isRegular: boolean;
-  regularId?: number;  // present if isRegular is true
+  regularId?: number;           // present if isRegular is true
+  accompanyingAdultId?: number; // present if this regular is a child (profile ID of the adult)
 }
 
 export interface GroupResponse {

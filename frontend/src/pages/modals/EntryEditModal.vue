@@ -38,14 +38,13 @@
         <EntryIconPicker v-model="form.notes" />
       </FormRow>
 
-      <FormRow v-if="sessionAdults" title="Accompanying Adult" :disabled="!hasChild">
+      <FormRow v-if="sessionAdults" title="Accompanying Adult">
         <select
           class="eem-select"
           :class="{ 'eem-select--placeholder': form.accompanyingAdultId === null }"
           v-model="form.accompanyingAdultId"
-          :disabled="!hasChild"
         >
-          <option :value="null">Select adult…</option>
+          <option :value="null">Select if child…</option>
           <option v-for="a in sessionAdults" :key="a.id" :value="a.id">{{ a.name }}</option>
         </select>
         <p v-if="accompanyingAdultMissing" class="eem-adult-warning">Not registered at this session</p>
@@ -99,10 +98,7 @@ const form = reactive({
   accompanyingAdultId: props.entry.accompanyingAdultId ?? null as number | null,
 })
 
-const hasChild = computed(() => /\#child\b/i.test(form.notes))
-
 const accompanyingAdultMissing = computed(() =>
-  hasChild.value &&
   form.accompanyingAdultId !== null &&
   !props.sessionAdults?.some(a => a.id == form.accompanyingAdultId)
 )
@@ -113,10 +109,6 @@ watch(() => props.entry, (e) => {
   form.hours = e.hours
   form.notes = e.notes ?? ''
   form.accompanyingAdultId = e.accompanyingAdultId ?? null
-})
-
-watch(hasChild, (val) => {
-  if (!val) form.accompanyingAdultId = null
 })
 
 function formatCancelled(iso: string): string {

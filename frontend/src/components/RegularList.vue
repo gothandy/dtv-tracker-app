@@ -14,14 +14,12 @@
         v-for="item in items"
         :key="item.slug"
         :name="item.name"
-        :link-to="item.linkTo"
         :hours="item.hours"
         :is-regular="item.isRegular"
         :regular-id="item.regularId"
-        :allow-toggle-regular="allowToggleRegular"
+        :accompanying-adult-id="item.accompanyingAdultId"
         :working="workingSlug === item.slug"
-        @add-regular="emit('addRegular', item.slug, item.isRegular, item.regularId)"
-        @remove-regular="emit('removeRegular', item.slug, item.regularId)"
+        @edit="emit('editRegular', item.slug)"
       />
     </div>
 
@@ -31,28 +29,26 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
 import RegularItem from './RegularItem.vue'
 
 export interface RegularListItem {
+  profileId?: number
   slug: string
   name: string
-  linkTo: RouteLocationRaw
   hours: number
   isRegular: boolean
   regularId?: number
+  accompanyingAdultId?: number
 }
 
 const props = defineProps<{
   items: RegularListItem[]
-  allowToggleRegular?: boolean
   workingSlug?: string
   error?: string
 }>()
 
 const emit = defineEmits<{
-  addRegular: [slug: string, isRegular: boolean, regularId: number | undefined]
-  removeRegular: [slug: string, regularId: number | undefined]
+  editRegular: [slug: string]
 }>()
 
 const regularCount = computed(() => props.items.filter(i => i.isRegular).length)

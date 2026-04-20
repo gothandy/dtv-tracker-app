@@ -68,11 +68,22 @@
 
       <RegularList
         :items="regularItems"
-        :allow-toggle-regular="viewer.isOperational"
         :working-slug="workingRegularSlug ?? undefined"
         :error="regularError"
-        @add-regular="onAddRegular"
-        @remove-regular="onRemoveRegular"
+        @edit-regular="onRegularEdit"
+      />
+
+      <RegularEditModal
+        v-if="editingRegular && viewer.isOperational"
+        :regular="editingRegular"
+        :adults="[]"
+        view-link-label="View Group"
+        :working="regularWorking"
+        :error="regularModalError"
+        @close="editingRegular = null"
+        @view-link="router.push(groupPath(editingRegular.groupKey))"
+        @save="onRegularSave"
+        @delete="onRegularDelete"
       />
 
       <ProfileRecordList
@@ -162,7 +173,9 @@ import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import RegularList from '../components/RegularList.vue'
 import EntryListItem from '../components/entries/EntryListItem.vue'
 import EntryEditModal from './modals/EntryEditModal.vue'
+import RegularEditModal from './modals/RegularEditModal.vue'
 import type { RegularListItem } from '../components/RegularList.vue'
+import type { RegularEditItem } from './modals/RegularEditModal.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useProfileDetailStore } from '../stores/profileDetail'
@@ -187,12 +200,14 @@ const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)
 const recordListRef = ref<InstanceType<typeof ProfileRecordList> | null>(null)
 const workingRegularSlug = ref<string | null>(null)
 const regularError = ref('')
+const editingRegular = ref<(RegularEditItem & { groupKey: string }) | null>(null)
+const regularWorking = ref(false)
+const regularModalError = ref('')
 
 const regularItems = computed<RegularListItem[]>(() =>
   (store.profile?.groupHours ?? []).map(g => ({
     slug: g.groupKey,
     name: g.groupName,
-    linkTo: groupPath(g.groupKey),
     hours: g.hoursRolling,
     isRegular: g.isRegular,
     regularId: g.regularId,
@@ -379,43 +394,72 @@ async function onDeleteRecord(id: number) {
   }
 }
 
-async function onAddRegular(groupKey: string) {
-  if (!store.profile) return
+function onRegularEdit(groupKey: string) {
+  const group = store.profile?.groupHours.find(g => g.groupKey === groupKey)
+  if (!group) return
+  regularModalError.value = ''
+  editingRegular.value = {
+    name: group.groupName,
+    slug: groupKey,
+    groupKey,
+    regularId: group.regularId,
+  }
+}
+
+async function onRegularSave(data: { accompanyingAdultId: number | null }) {
+  if (!editingRegular.value || !store.profile) return
+  const { slug: groupKey, regularId } = editingRegular.value
   workingRegularSlug.value = groupKey
-  regularError.value = ''
+  regularWorking.value = true
+  regularModalError.value = ''
   try {
-    const group = store.profile.groupHours.find(g => g.groupKey === groupKey)
-    if (!group) throw new Error('Group not found')
-    const res = await fetch(`/api/profiles/${route.params.slug}/regulars`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groupId: group.groupId }),
-    })
-    if (!res.ok) throw new Error(`Add failed (${res.status})`)
-    const json = await res.json()
-    group.isRegular = true
-    group.regularId = json.data.id
+    if (regularId !== undefined) {
+      const res = await fetch(`/api/regulars/${regularId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accompanyingAdultId: data.accompanyingAdultId }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+    } else {
+      const group = store.profile.groupHours.find(g => g.groupKey === groupKey)
+      if (!group) throw new Error('Group not found')
+      const res = await fetch(`/api/profiles/${route.params.slug}/regulars`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId: group.groupId }),
+      })
+      if (!res.ok) throw new Error(`Add failed (${res.status})`)
+      const json = await res.json()
+      group.isRegular = true
+      group.regularId = json.data.id
+    }
+    editingRegular.value = null
   } catch (e) {
-    console.error('[ProfileDetailPage] onAddRegular failed', e)
-    regularError.value = 'Failed to update — please try again'
+    console.error('[ProfileDetailPage] onRegularSave failed', e)
+    regularModalError.value = 'Failed to update — please try again'
   } finally {
+    regularWorking.value = false
     workingRegularSlug.value = null
   }
 }
 
-async function onRemoveRegular(groupKey: string, regularId: number | undefined) {
-  if (!store.profile || regularId === undefined) return
+async function onRegularDelete() {
+  if (!editingRegular.value?.regularId || !store.profile) return
+  const { slug: groupKey, regularId } = editingRegular.value
   workingRegularSlug.value = groupKey
-  regularError.value = ''
+  regularWorking.value = true
+  regularModalError.value = ''
   try {
     const res = await fetch(`/api/regulars/${regularId}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Delete failed (${res.status})`)
     const group = store.profile.groupHours.find(g => g.groupKey === groupKey)
     if (group) { group.isRegular = false; group.regularId = undefined }
+    editingRegular.value = null
   } catch (e) {
-    console.error('[ProfileDetailPage] onRemoveRegular failed', e)
-    regularError.value = 'Failed to update — please try again'
+    console.error('[ProfileDetailPage] onRegularDelete failed', e)
+    regularModalError.value = 'Failed to delete — please try again'
   } finally {
+    regularWorking.value = false
     workingRegularSlug.value = null
   }
 }
@@ -447,7 +491,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
 
 const entries = computed<EntryItem[]>(() => (store.profile?.entries ?? []).map(mapProfileEntry))
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
 
 async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
   workingId.value = entry.id
@@ -482,12 +526,18 @@ async function onEditEntry(id: number, data: EditData | null) {
         body: JSON.stringify(data),
       })
       if (!res.ok) throw new Error(`Save failed (${res.status})`)
-      const stored = store.profile?.entries.find(e => e.id === id)
-      if (stored) {
-        stored.checkedIn = data.checkedIn
-        stored.hours = data.hours
-        stored.count = data.count
-        stored.notes = data.notes
+      if (store.profile) {
+        const idx = store.profile.entries.findIndex(e => e.id === id)
+        if (idx !== -1) {
+          store.profile.entries.splice(idx, 1, {
+            ...store.profile.entries[idx],
+            checkedIn: data.checkedIn,
+            hours: data.hours,
+            count: data.count,
+            notes: data.notes,
+            accompanyingAdultId: data.accompanyingAdultId ?? undefined,
+          })
+        }
       }
     }
     entryListRef.value?.onEditSuccess()

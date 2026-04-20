@@ -16,13 +16,18 @@ class RegularsRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,${PROFILE_DISPLAY},${PROFILE_LOOKUP},${GROUP_DISPLAY},${GROUP_LOOKUP},Created,Modified`;
+    return `ID,Title,${PROFILE_DISPLAY},${PROFILE_LOOKUP},${GROUP_DISPLAY},${GROUP_LOOKUP},AccompanyingAdultLookupId,AccompanyingAdult,Created,Modified`;
   }
 
   async create(fields: Record<string, any>): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.clearCacheKey('regulars');
     return id;
+  }
+
+  async update(regularId: number, fields: Record<string, any>): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, regularId, fields);
+    sharePointClient.clearCacheKey('regulars');
   }
 
   async delete(regularId: number): Promise<void> {

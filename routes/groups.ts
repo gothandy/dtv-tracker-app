@@ -231,15 +231,18 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     // Build profile lookup and regulars lookup for this group
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
-    const regularsForGroupMap = new Map<number, number>(); // profileId → regularId
+    const regularsForGroupMap = new Map<number, { regularId: number; accompanyingAdultId?: number }>(); // profileId → { regularId, accompanyingAdultId }
     for (const r of rawRegulars) {
       if (safeParseLookupId(r[GROUP_LOOKUP]) === groupId) {
         const pid = safeParseLookupId(r[PROFILE_LOOKUP]);
-        if (pid !== undefined) regularsForGroupMap.set(pid, r.ID);
+        if (pid !== undefined) {
+          const accompanyingAdultId = safeParseLookupId(r.AccompanyingAdultLookupId);
+          regularsForGroupMap.set(pid, { regularId: r.ID, ...(accompanyingAdultId !== undefined && { accompanyingAdultId }) });
+        }
       }
     }
 
-    // Filter to ≥6h, attach name/slug/isRegular/regularId
+    // Filter to ≥6h, attach name/slug/isRegular/regularId/accompanyingAdultId
     const MIN_REGULAR_HOURS = 6;
     const rollingRegulars: import('../types/api-responses').GroupRegularResponse[] = [];
     for (const [profileId, hours] of profileHoursMap) {
@@ -247,13 +250,15 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       const spProfile = profileMap.get(profileId);
       if (!spProfile) continue;
       const p = convertProfile(spProfile);
-      const regularId = regularsForGroupMap.get(profileId);
+      const regularInfo = regularsForGroupMap.get(profileId);
       rollingRegulars.push({
+        profileId: p.id,
         name: p.name || spProfile.Title || '',
         slug: profileSlug(p.name, p.id),
         hours: Math.round(hours * 10) / 10,
-        isRegular: regularId !== undefined,
-        ...(regularId !== undefined && { regularId }),
+        isRegular: regularInfo !== undefined,
+        ...(regularInfo !== undefined && { regularId: regularInfo.regularId }),
+        ...(regularInfo?.accompanyingAdultId !== undefined && { accompanyingAdultId: regularInfo.accompanyingAdultId }),
       });
     }
     rollingRegulars.sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));

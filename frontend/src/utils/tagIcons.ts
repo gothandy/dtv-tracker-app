@@ -34,7 +34,7 @@ export const TAG_ICONS: TagIcon[] = [
 
 /** Tags shown via notes in picker (operational/manual only — not auto-computed) */
 export const EDITABLE_TAG_ICONS = TAG_ICONS.filter(t =>
-  t.type === 'tag' && ['#Child', '#DigLead', '#FirstAider', '#CSR', '#Late', '#Eventbrite'].includes(t.tag ?? '')
+  t.type === 'tag' && ['#DigLead', '#FirstAider', '#CSR', '#Late', '#Eventbrite'].includes(t.tag ?? '')
 )
 
 /** Returns tag icons matched from an entry's notes string */

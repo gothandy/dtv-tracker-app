@@ -119,7 +119,7 @@ const checkedCount = computed(() => props.entries.filter(e => e.checkedIn && !e.
 const eligibleCount = computed(() => props.entries.filter(e => e.checkedIn && !e.hours).length)
 const sessionAdults = computed(() =>
   props.entries
-    .filter(e => e.profileId && !e.profile.isGroup && !/\#child\b/i.test(e.notes ?? ''))
+    .filter(e => e.profileId && !e.profile.isGroup && !e.accompanyingAdultId)
     .map(e => ({ id: e.profileId!, name: e.profile.name }))
 )
 
