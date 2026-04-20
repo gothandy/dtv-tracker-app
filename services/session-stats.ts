@@ -6,8 +6,8 @@ import { sessionsRepository } from './repositories/sessions-repository';
 import { entriesRepository } from './repositories/entries-repository';
 import { groupsRepository } from './repositories/groups-repository';
 import { sharePointClient } from './sharepoint-client';
-import { calculateSessionStats, safeParseLookupId, parseSessionLimits } from './data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED } from './field-names';
+import { calculateSessionStats, safeParseLookupId, parseSessionLimits, parseEntryStatsField } from './data-layer';
+import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED, ENTRY_STATS } from './field-names';
 
 export interface SessionStatsRefreshResult {
   total: number;
@@ -34,7 +34,12 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
   // Build per-session cancelled regular counts from the full (unfiltered) entries set
   const cancelledRegularMap = new Map<string, number>();
   for (const e of entriesRaw) {
-    if (!e[ENTRY_CANCELLED] || !/#Regular\b/i.test(String(e.Notes || ''))) continue;
+    if (!e[ENTRY_CANCELLED]) continue;
+    // Use Entry.Stats.booking when available; fall back to Notes tag for pre-migration entries
+    let isRegular = false;
+    const es = parseEntryStatsField(e[ENTRY_STATS]);
+    isRegular = es ? es.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || ''));
+    if (!isRegular) continue;
     const sid = String(e[SESSION_LOOKUP] ?? '');
     if (sid) cancelledRegularMap.set(sid, (cancelledRegularMap.get(sid) ?? 0) + 1);
   }

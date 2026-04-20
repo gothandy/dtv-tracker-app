@@ -6,7 +6,9 @@
 
 import { SharePointEntry } from '../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
-import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY, ENTRY_CANCELLED } from '../field-names';
+import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY, ENTRY_CANCELLED, ENTRY_STATS } from '../field-names';
+import type { EntryStats } from '../../types/entry-stats';
+import { serializeEntryStats } from '../entry-stats';
 
 class EntriesRepository {
   private listGuid: string;
@@ -16,7 +18,7 @@ class EntriesRepository {
   }
 
   private get selectFields(): string {
-    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,BookedBy,${ACCOMPANYING_ADULT_DISPLAY},${ACCOMPANYING_ADULT_LOOKUP},${ENTRY_CANCELLED},Created,Modified`;
+    return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,BookedBy,${ACCOMPANYING_ADULT_DISPLAY},${ACCOMPANYING_ADULT_LOOKUP},${ENTRY_CANCELLED},${ENTRY_STATS},Created,Modified`;
   }
 
   async getAll(): Promise<SharePointEntry[]> {
@@ -127,6 +129,15 @@ class EntriesRepository {
     sharePointClient.clearCacheKey('entries');
     sharePointClient.clearCacheByPrefix('sessions_FY');
     return id;
+  }
+
+  async updateStats(entryId: number, stats: EntryStats): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, entryId, { [ENTRY_STATS]: serializeEntryStats(stats) });
+    sharePointClient.clearCacheKey('entries');
+  }
+
+  async clearStats(entryId: number): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, entryId, { [ENTRY_STATS]: '' });
   }
 
   async delete(entryId: number): Promise<void> {

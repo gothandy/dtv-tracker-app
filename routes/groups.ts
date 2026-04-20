@@ -22,7 +22,8 @@ import {
   safeParseLookupId,
   parseHours,
   profileSlug,
-  extractMetadataTags
+  extractMetadataTags,
+  parseSessionStats
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NOTES, SESSION_METADATA } from '../services/field-names';
 import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../types/api-responses';
@@ -167,12 +168,11 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     // Aggregate FY stats from pre-computed Stats field on each session
     let totalHours = 0, newVolunteers = 0, children = 0, totalRegistrations = 0;
     for (const s of fySessions) {
-      let stats: Record<string, any> = {};
-      try { stats = JSON.parse(s[SESSION_STATS] || '{}'); } catch {}
-      totalHours      += stats.hours || 0;
-      newVolunteers   += stats.new   || 0;
-      children        += stats.child || 0;
-      totalRegistrations += stats.count || 0;
+      const stats = parseSessionStats(s[SESSION_STATS]);
+      totalHours         += stats.hours;
+      newVolunteers      += stats.new   || 0;
+      children           += stats.child || 0;
+      totalRegistrations += stats.count;
     }
 
     // Build session responses from Stats field — no entries or media calls needed
@@ -180,8 +180,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
 
     const allSessionResponses: SessionResponse[] = groupSessions
       .map(s => {
-        let stats: Record<string, any> = {};
-        try { stats = JSON.parse(s[SESSION_STATS] || '{}'); } catch {}
+        const stats = parseSessionStats(s[SESSION_STATS]);
         const date = s.Date!;
         const tags = extractMetadataTags(s[SESSION_METADATA]);
         return {
@@ -193,9 +192,14 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
           groupKey: key,
           groupName: group.displayName,
           limits: deriveLimits(convertSession(s).limits, regulars.length, stats.cancelledRegular ?? 0),
-          registrations: stats.count || 0,
-          hours: stats.hours || 0,
-          mediaCount: stats.media || undefined,
+          stats,
+          regularsCount: regulars.length,
+          registrations: stats.count,
+          hours: stats.hours,
+          newCount: stats.new,
+          childCount: stats.child,
+          regularCount: stats.regular,
+          mediaCount: stats.media,
           financialYear: `FY${calculateFinancialYear(new Date(date))}`,
           isBookable: date >= today,
           eventbriteEventId: s.EventbriteEventID,

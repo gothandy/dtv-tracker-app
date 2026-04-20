@@ -338,6 +338,7 @@ function mapEntry(e: EntryResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
+    stats: e.stats,
     profile: {
       name: e.profileName ?? e.volunteerName ?? 'Unknown',
       slug: e.profileSlug ?? e.volunteerSlug,

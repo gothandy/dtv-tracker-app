@@ -61,11 +61,13 @@
         <div class="ap-section">
           <h2 class="ap-title">Stats Cache</h2>
           <div class="ap-actions">
-            <AppButton label="Refresh Session Stats" :working="sessionStatsLoading" @click="refreshSessionStats" />
             <AppButton label="Refresh Profile Stats" :working="profileStatsLoading" @click="refreshProfileStats" />
+            <AppButton label="Refresh Entry Stats"   :working="entryStatsLoading"   @click="refreshEntryStats" />
+            <AppButton label="Refresh Session Stats" :working="sessionStatsLoading" @click="refreshSessionStats" />
           </div>
-          <div v-if="sessionStatsResult" :class="['ap-result', sessionStatsError && 'ap-error']">{{ sessionStatsResult }}</div>
           <div v-if="profileStatsResult" :class="['ap-result', profileStatsError && 'ap-error']">{{ profileStatsResult }}</div>
+          <div v-if="entryStatsResult"   :class="['ap-result', entryStatsError   && 'ap-error']">{{ entryStatsResult }}</div>
+          <div v-if="sessionStatsResult" :class="['ap-result', sessionStatsError && 'ap-error']">{{ sessionStatsResult }}</div>
         </div>
 
         <!-- Site shortcuts (shown when config returns a SharePoint site URL) -->
@@ -228,12 +230,35 @@ async function runAll() {
 
 // ── Stats Cache ────────────────────────────────────────────────────────────
 
-const sessionStatsLoading = ref(false)
-const sessionStatsResult  = ref('')
-const sessionStatsError   = ref(false)
 const profileStatsLoading = ref(false)
 const profileStatsResult  = ref('')
 const profileStatsError   = ref(false)
+const entryStatsLoading   = ref(false)
+const entryStatsResult    = ref('')
+const entryStatsError     = ref(false)
+const sessionStatsLoading = ref(false)
+const sessionStatsResult  = ref('')
+const sessionStatsError   = ref(false)
+
+async function refreshEntryStats() {
+  entryStatsLoading.value = true
+  entryStatsResult.value = ''
+  entryStatsError.value = false
+  try {
+    const res = await fetch('/api/entries/refresh-stats', { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok || !data.success) throw new Error(data.error || 'Refresh failed')
+    const d = data.data
+    let msg = `${d.updated} of ${d.total} entries updated`
+    if (d.errors?.length) msg += ` (${d.errors.length} errors)`
+    entryStatsResult.value = msg
+  } catch (e: any) {
+    entryStatsResult.value = e.message || 'Refresh failed'
+    entryStatsError.value = true
+  } finally {
+    entryStatsLoading.value = false
+  }
+}
 
 async function refreshSessionStats() {
   sessionStatsLoading.value = true

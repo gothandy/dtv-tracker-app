@@ -6,6 +6,18 @@
  */
 
 import type { SessionLimits } from '../services/data-layer';
+import type { EntryStats } from './entry-stats';
+
+export interface SessionStats {
+  count: number
+  hours: number
+  new?: number
+  child?: number
+  regular?: number
+  cancelledRegular?: number
+  eventbrite?: number
+  media?: number
+}
 
 export interface GroupRegularResponse {
   name: string;
@@ -35,6 +47,8 @@ export interface SessionResponse {
   groupKey?: string;
   groupName?: string;
   limits: SessionLimits;
+  stats: SessionStats;
+  // v1 compat flat fields — duplicated from stats; remove when public/ is deleted
   registrations: number;
   hours: number;
   newCount?: number;
@@ -87,6 +101,7 @@ export interface ProfileEntryResponse {
   accompanyingAdultId?: number;
   financialYear: string;
   cancelled?: string;
+  stats?: EntryStats;
 }
 
 export interface ProfileGroupHours {
@@ -175,6 +190,7 @@ export interface EntryResponse {
   accompanyingAdultId?: number;
   cancelled?: string; // ISO datetime if booking was cancelled
   email?: string;     // only present for operational users (admin/check-in)
+  stats?: EntryStats; // snapshot; undefined if not yet computed (pre-migration entries)
 }
 
 export interface SessionDetailResponse {
@@ -187,6 +203,8 @@ export interface SessionDetailResponse {
   groupDescription?: string;
   limits: SessionLimits;
   storedLimits: SessionLimits;
+  stats: SessionStats;
+  // v1 compat flat fields — duplicated from stats; remove when public/ is deleted
   registrations: number;
   hours: number;
   newCount?: number;
@@ -240,6 +258,7 @@ export interface EntryDetailResponse {
   groupName?: string;
   sessionDisplayName?: string;
   hasPrivacyConsent?: boolean;
+  stats?: EntryStats; // snapshot; undefined if not yet computed (pre-migration entries)
 }
 
 export interface FYStatsResponse {

@@ -9,22 +9,22 @@
 
     <div class="session-card__footer">
       <ul v-if="isOperational" class="session-card__stats">
-        <li v-if="session.registrations || session.limits.total">
-          {{ session.registrations }}<template v-if="session.limits.total">/{{ session.limits.total }}</template> Total
+        <li v-if="display.count || display.totalLimit">
+          {{ display.count }}<template v-if="display.totalLimit">/{{ display.totalLimit }}</template> Total
         </li>
-        <li v-if="session.newCount || session.limits.new">
-          {{ session.newCount ?? 0 }}<template v-if="session.limits.new">/{{ session.limits.new }}</template> New
+        <li v-if="display.new || display.newLimit">
+          {{ display.new }}<template v-if="display.newLimit">/{{ display.newLimit }}</template> New
         </li>
-        <li v-if="repeatCount || session.limits.repeat">
-          {{ repeatCount }}<template v-if="session.limits.repeat">/{{ session.limits.repeat }}</template> Repeat
+        <li v-if="display.repeatCount || display.repeatLimit">
+          {{ display.repeatCount }}<template v-if="display.repeatLimit">/{{ display.repeatLimit }}</template> Repeat
         </li>
-        <li v-if="session.regularCount || session.regularsCount">
-          {{ session.regularCount ?? 0 }}<template v-if="session.regularsCount">/{{ session.regularsCount }}</template> Regular
+        <li v-if="display.regular || display.effectiveRegularsCount">
+          {{ display.regular }}<template v-if="display.effectiveRegularsCount">/{{ display.effectiveRegularsCount }}</template> Regular
         </li>
-        <li v-if="session.childCount || session.limits.child">
-          {{ session.childCount ?? 0 }}<template v-if="session.limits.child">/{{ session.limits.child }}</template> Child
+        <li v-if="display.child || display.childLimit">
+          {{ display.child }}<template v-if="display.childLimit">/{{ display.childLimit }}</template> Child
         </li>
-        <li v-if="session.eventbriteCount">{{ session.eventbriteCount }} Eventbrite</li>
+        <li v-if="display.eventbrite">{{ display.eventbrite }} Eventbrite</li>
       </ul>
       <span v-else class="session-card__availability" :class="availabilityClass">{{ availabilityLabel }}</span>
       <RouterLink :to="viewPath"><AppButton label="View" /></RouterLink>
@@ -37,6 +37,7 @@
 import { computed } from 'vue'
 import { sessionPath } from '../../router/index'
 import type { Session } from '../../types/session'
+import { sessionDisplayStats } from '../../utils/sessionStats'
 import AppButton from '../AppButton.vue'
 import type { RoleContext } from '../../composables/useViewer'
 
@@ -55,17 +56,16 @@ function formatDate(dateStr: string): string {
   })
 }
 
-const repeatCount = computed(() => Math.max(0, props.session.registrations - (props.session.newCount ?? 0) - (props.session.regularCount ?? 0)))
-const spacesLeft = computed(() => props.session.limits.total !== undefined ? props.session.limits.total - props.session.registrations : null)
+const display = computed(() => sessionDisplayStats(props.session.stats, props.session.regularsCount, props.session.limits))
 
 const availabilityLabel = computed(() => {
-  const n = spacesLeft.value
+  const n = display.value.spacesLeft
   if (n === null) return 'Spaces Available'
   return n > 0 ? `${n} spaces available` : 'Fully Booked'
 })
 
 const availabilityClass = computed(() => ({
-  'session-card__availability--full': spacesLeft.value !== null && spacesLeft.value <= 0,
+  'session-card__availability--full': display.value.spacesLeft !== null && display.value.spacesLeft <= 0,
 }))
 </script>
 

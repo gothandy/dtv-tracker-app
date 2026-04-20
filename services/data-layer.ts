@@ -24,8 +24,44 @@ import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_DISPLAY,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  SESSION_NOTES, SESSION_LIMITS
+  SESSION_NOTES, SESSION_LIMITS,
+  ENTRY_STATS
 } from './field-names';
+import type { EntryStats } from '../types/entry-stats';
+import type { SessionStats } from '../types/api-responses';
+
+/** Parses the session Stats JSON field into a typed SessionStats object. */
+export function parseSessionStats(raw: string | undefined | null): SessionStats {
+  try {
+    const p = JSON.parse(raw || '{}');
+    return {
+      count: p.count || 0,
+      hours: p.hours || 0,
+      new: p.new || undefined,
+      child: p.child || undefined,
+      regular: p.regular || undefined,
+      cancelledRegular: p.cancelledRegular || undefined,
+      eventbrite: p.eventbrite || undefined,
+      media: p.media || undefined,
+    };
+  } catch {
+    return { count: 0, hours: 0 };
+  }
+}
+
+/** Parse Entry Stats field — strips SharePoint rich-text HTML wrapper if present (legacy entries written before field was set to plain text) */
+export function parseEntryStatsField(raw: string | undefined | null): EntryStats | undefined {
+  if (!raw) return undefined;
+  try {
+    const cleaned = raw
+      .replace(/<[^>]+>/g, '')
+      .replace(/&quot;/g, '"').replace(/&#58;/g, ':').replace(/&#123;/g, '{').replace(/&#125;/g, '}').replace(/&amp;/g, '&')
+      .trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return undefined;
+  }
+}
 
 // ============================================================================
 // Session Limits
@@ -209,10 +245,8 @@ export function buildLookupMap<T, V>(
 // Data Enrichment Functions
 // ============================================================================
 
-/**
- * Statistics for a session calculated from entries
- */
-interface SessionStats {
+/** Aggregate counts computed from entries — internal to calculateSessionStats */
+interface EntryAggregateStats {
   registrations: number;
   hours: number;
   newCount: number;
@@ -225,8 +259,8 @@ interface SessionStats {
  * Calculates statistics for sessions based on entries
  * Returns a map of sessionId (as string) -> stats
  */
-export function calculateSessionStats(entries: SharePointEntry[]): Map<string, SessionStats> {
-  const statsMap = new Map<string, SessionStats>();
+export function calculateSessionStats(entries: SharePointEntry[]): Map<string, EntryAggregateStats> {
+  const statsMap = new Map<string, EntryAggregateStats>();
 
   entries.forEach(entry => {
     if (entry.Cancelled) return; // cancelled bookings excluded from all stats
@@ -248,10 +282,19 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, S
     stats.registrations++;
     stats.hours += parseFloat(String(entry.Hours)) || 0;
     const notes = String(entry.Notes || '');
-    if (/#New\b/i.test(notes)) stats.newCount++;
-    if (/#Child\b/i.test(notes)) stats.childCount++;
-    if (/#Regular\b/i.test(notes)) stats.regularCount++;
-    if (/#Eventbrite\b/i.test(notes)) stats.eventbriteCount++;
+    const entryStats = parseEntryStatsField(entry[ENTRY_STATS]);
+
+    if (entryStats) {
+      if (entryStats.snapshot?.booking === 'New')      stats.newCount++;
+      if (entryStats.snapshot?.isChild)                stats.childCount++;
+      if (entryStats.snapshot?.booking === 'Regular')  stats.regularCount++;
+      if (entryStats.manual?.eventbrite)               stats.eventbriteCount++;
+    } else {
+      if (/#New\b/i.test(notes))       stats.newCount++;
+      if (/#Child\b/i.test(notes))     stats.childCount++;
+      if (/#Regular\b/i.test(notes))   stats.regularCount++;
+      if (/#Eventbrite\b/i.test(notes)) stats.eventbriteCount++;
+    }
   });
 
   return statsMap;

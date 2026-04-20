@@ -28,16 +28,18 @@ import {
   calculateSessionStats,
   parseEmails
 } from '../services/data-layer';
+import { parseSessionStats } from '../services/data-layer';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_STATS
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh } from '../services/session-stats';
+import { parseEntryStatsField } from '../services/data-layer';
 
 const router: Router = express.Router();
 
@@ -94,8 +96,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
         const date = s.Date!;
         const tags = extractMetadataTags(s[SESSION_METADATA]);
 
-        let stats: Record<string, any> = {};
-        try { stats = JSON.parse(s[SESSION_STATS] || '{}'); } catch {}
+        const stats = parseSessionStats(s[SESSION_STATS]);
 
         return {
           id: s.ID,
@@ -107,14 +108,15 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
           groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
           limits: deriveLimits(convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined, stats.cancelledRegular ?? 0),
-          registrations: stats.count || 0,
-          hours: stats.hours || 0,
-          newCount: stats.new || undefined,
-          childCount: stats.child || undefined,
-          regularCount: stats.regular || undefined,
-          cancelledRegularCount: stats.cancelledRegular || undefined,
-          eventbriteCount: stats.eventbrite || undefined,
-          mediaCount: stats.media || undefined,
+          stats,
+          registrations: stats.count,
+          hours: stats.hours,
+          newCount: stats.new,
+          childCount: stats.child,
+          regularCount: stats.regular,
+          cancelledRegularCount: stats.cancelledRegular,
+          eventbriteCount: stats.eventbrite,
+          mediaCount: stats.media,
           coverUrl: s[SESSION_COVER_MEDIA] && groupId !== undefined ? `/media/${groupKeyMap.get(groupId) ?? ''}/${date}/${s[SESSION_COVER_MEDIA]}` : undefined,
           regularsCount: groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined,
           financialYear: `FY${calculateFinancialYear(new Date(s.Date!))}`,
@@ -433,10 +435,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const group = convertGroup(spGroup);
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
     const regularsCount = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === groupId).length || undefined;
-    let statsJson: Record<string, any> = {};
-    try { statsJson = JSON.parse(spSession[SESSION_STATS] || '{}'); } catch { /* malformed — fall back to empty */ }
+    const storedStats = parseSessionStats(spSession[SESSION_STATS]);
     const rawLimits = convertSession(spSession).limits;
-    const sessionLimits = deriveLimits(rawLimits, regularsCount, statsJson.cancelledRegular ?? 0);
+    const sessionLimits = deriveLimits(rawLimits, regularsCount, storedStats.cancelledRegular ?? 0);
 
     const today = new Date().toISOString().slice(0, 10);
     const isPast = spSession.Date < today;
@@ -459,13 +460,14 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         limits: sessionLimits,
         storedLimits: rawLimits,
         regularsCount,
-        registrations: statsJson.count ?? 0,
-        hours: statsJson.hours ?? 0,
-        newCount: statsJson.new || undefined,
-        childCount: statsJson.child || undefined,
-        regularCount: statsJson.regular || undefined,
-        cancelledRegularCount: statsJson.cancelledRegular || undefined,
-        eventbriteCount: statsJson.eventbrite || undefined,
+        stats: storedStats,
+        registrations: storedStats.count,
+        hours: storedStats.hours,
+        newCount: storedStats.new,
+        childCount: storedStats.child,
+        regularCount: storedStats.regular,
+        cancelledRegularCount: storedStats.cancelledRegular,
+        eventbriteCount: storedStats.eventbrite,
         financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
         isBookable: spSession.Date >= today,
         eventbriteEventId: spSession.EventbriteEventID,
@@ -522,17 +524,20 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         notes: e.Notes,
         accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
         cancelled: e[ENTRY_CANCELLED] || undefined,
-        email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined
+        email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined,
+        stats: parseEntryStatsField(e[ENTRY_STATS])
       };
     });
 
     // Stats use only active (non-cancelled) entries
+    // Prefer Entry.Stats snapshot when available; fall back to Notes tags for pre-migration entries
     const totalHours = activeEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
-    const newCount = activeEntries.filter(e => /#New\b/i.test(String(e.Notes || ''))).length;
-    const childCount = activeEntries.filter(e => /#Child\b/i.test(String(e.Notes || ''))).length;
-    const regularCount = activeEntries.filter(e => /#Regular\b/i.test(String(e.Notes || ''))).length;
-    const cancelledRegularCount = sessionEntries.filter(e => e[ENTRY_CANCELLED] && /#Regular\b/i.test(String(e.Notes || ''))).length || undefined;
-    const eventbriteCount = activeEntries.filter(e => /#Eventbrite\b/i.test(String(e.Notes || ''))).length;
+    function pes(e: any) { return parseEntryStatsField(e[ENTRY_STATS]); }
+    const newCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.booking === 'New' : /#New\b/i.test(String(e.Notes || '')); }).length;
+    const childCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.isChild : /#Child\b/i.test(String(e.Notes || '')); }).length;
+    const regularCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || '')); }).length;
+    const cancelledRegularCount = sessionEntries.filter(e => { if (!e[ENTRY_CANCELLED]) return false; const s = pes(e); return s ? s.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || '')); }).length || undefined;
+    const eventbriteCount = activeEntries.filter(e => { const s = pes(e); return s ? s.manual?.eventbrite : /#Eventbrite\b/i.test(String(e.Notes || '')); }).length;
 
     // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
     // For self-service: also look up their own entry to return userEntryId (needed for cancel flow)
@@ -596,7 +601,16 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       limits: sessionLimits,
       storedLimits: rawLimits,
       regularsCount,
-      registrations: isSelfService ? (JSON.parse(spSession[SESSION_STATS] || '{}').count ?? 0) : activeEntries.length,
+      stats: {
+        count: isSelfService ? storedStats.count : activeEntries.length,
+        hours: Math.round(totalHours * 10) / 10,
+        new: newCount || undefined,
+        child: childCount || undefined,
+        regular: regularCount || undefined,
+        cancelledRegular: cancelledRegularCount,
+        eventbrite: eventbriteCount || undefined,
+      },
+      registrations: isSelfService ? storedStats.count : activeEntries.length,
       hours: Math.round(totalHours * 10) / 10,
       newCount: newCount || undefined,
       childCount: childCount || undefined,

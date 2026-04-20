@@ -29,8 +29,11 @@ import {
   SESSION_LOOKUP,
   SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  ENTRY_CANCELLED
+  ENTRY_CANCELLED,
+  ENTRY_STATS
 } from '../services/field-names';
+import { computeAndSaveEntryStats, runEntryStatsRefresh } from '../services/entry-stats';
+import { parseEntryStatsField } from '../services/data-layer';
 import { getAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { renderEmail } from '../services/email-renderer';
@@ -54,9 +57,11 @@ async function computeAndSaveSessionStats(sessionId: number, existingMedia: numb
   const sessionEntries = await entriesRepository.getBySessionIds([sessionId]);
   const statsMap = calculateSessionStats(sessionEntries);
   const entryStats = statsMap.get(String(sessionId));
-  const cancelledRegular = sessionEntries.filter(
-    e => e[ENTRY_CANCELLED] && /#Regular\b/i.test(String(e.Notes || ''))
-  ).length;
+  const cancelledRegular = sessionEntries.filter(e => {
+    if (!e[ENTRY_CANCELLED]) return false;
+    const es = parseEntryStatsField(e[ENTRY_STATS]);
+    return es ? es.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || ''));
+  }).length;
   await sessionsRepository.updateStats(sessionId, {
     count: entryStats?.registrations || 0,
     hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
@@ -335,7 +340,8 @@ router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) =>
       date: spSession.Date,
       groupKey,
       groupName: group.displayName,
-      sessionDisplayName: spSession.Name || spSession.Title
+      sessionDisplayName: spSession.Name || spSession.Title,
+      stats: parseEntryStatsField(spEntry[ENTRY_STATS])
     };
 
     res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);
@@ -454,7 +460,8 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       groupKey: group.lookupKeyName,
       groupName: group.displayName,
       sessionDisplayName: spSession.Name || spSession.Title,
-      hasPrivacyConsent
+      hasPrivacyConsent,
+      stats: parseEntryStatsField(spEntry[ENTRY_STATS])
     };
 
     res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);
@@ -557,6 +564,9 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
 
     await entriesRepository.updateFields(entryId, fields);
 
+    computeAndSaveEntryStats(entryId).catch(err =>
+      console.error(`[Stats] Failed entry stats update for entry ${entryId}:`, err)
+    );
     if (sessionId !== undefined) {
       computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
         console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
@@ -714,6 +724,9 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
 
     const id = await entriesRepository.create(fields);
 
+    computeAndSaveEntryStats(id).catch(err =>
+      console.error(`[Stats] Failed entry stats update for entry ${id}:`, err)
+    );
     computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
       console.error(`[Stats] Failed targeted update for session ${spSession.ID}:`, err)
     );
@@ -902,19 +915,25 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       }
     }
 
-    // Update session Stats now that entries have been added/tagged
+    // Update stats in dependency order: Profile → Entry → Session
     let existingMedia = 0;
     try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
-    await computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
-      console.error(`[Stats] Failed stats update after session refresh:`, err)
-    );
 
-    // Fire profile stats update for all affected volunteers (fire-and-forget)
-    for (const vid of existingVolunteerIds) {
+    await Promise.all([...existingVolunteerIds].map(vid =>
       computeAndSaveProfileStats(vid).catch(err =>
-        console.error(`[Stats] Failed targeted profile update for profile ${vid}:`, err)
-      );
-    }
+        console.error(`[Stats] Failed profile stats for profile ${vid}:`, err)
+      )
+    ));
+
+    await Promise.all(sessionEntries.map(e =>
+      computeAndSaveEntryStats(e.ID).catch(err =>
+        console.error(`[Stats] Failed entry stats for entry ${e.ID}:`, err)
+      )
+    ));
+
+    await computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+      console.error(`[Stats] Failed session stats after refresh:`, err)
+    );
 
     console.log(`[Refresh] Done: ${addedRegulars} regulars added, ${regularTagged} #Regular tagged, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider, ${fixedNewTags} #New fixed`);
     res.json({
@@ -933,6 +952,16 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
 
 // Recomputes and saves Stats for a single session — used after bulk operations
 // (e.g. set default hours) where multiple entry writes race against each other.
+router.post('/entries/refresh-stats', async (req: Request, res: Response) => {
+  try {
+    const result = await runEntryStatsRefresh();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error refreshing entry stats:', error);
+    res.status(500).json({ success: false, error: 'Failed to refresh entry stats' });
+  }
+});
+
 router.post('/sessions/:group/:date/stats', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();

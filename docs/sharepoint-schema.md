@@ -87,11 +87,46 @@ Fall back to zeros if the field is empty (e.g. before first refresh run).
 | **Count** | Count | Number | No | 1 | For group registrations |
 | **Checked** | Checked | Yes/No | No | No | Check-in status for the volunteer |
 | **Hours** | Hours | Number | No | - | Hours worked at this session |
-| **Notes** | Notes | Single line of text | No | - | Tags: #New #Child #DofE #DigLead #FirstAider #Regular #NoPhoto |
+| **Notes** | Notes | Single line of text | No | - | Manual operational tags: #Child (also sets AccompanyingAdult), #CSR, #Late, #DigLead (role taken), #FirstAider (role taken), #Eventbrite; legacy snapshot tags (#New, #Regular, #NoPhoto etc.) remain for pre-migration entries |
+| **Stats** | Stats | Multiple lines of text | No | - | Snapshot JSON (`EntryStats`); frozen once session date passes and field is non-empty — see schema below |
 | **BookedBy** | BookedBy | Single line of text | No | - | Order contact email from Eventbrite (whoever made the booking); historic audit trail |
 | **AccompanyingAdult** | AccompanyingAdult | Lookup (Profiles) | No | - | For child entries: the adult responsible on the day; derived from same Eventbrite order |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
+
+### Pre-computed Stats (stored in Stats field)
+
+The `Stats` JSON field is a snapshot of the entry's computed state at the time of the last stats refresh. It is frozen (never recomputed) once the session date has passed and the field is already populated — preserving a record of the volunteer's status at the time of that session.
+
+```json
+{
+  "booking": "New | Regular | Repeat",
+  "isGroup": false,
+  "isChild": false,
+  "isMember": false,
+  "hasDiscountCard": false,
+  "isDuplicate": false,
+  "noPhoto": false,
+  "noConsent": false,
+  "isDigLead": false,
+  "isFirstAider": false
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `booking` | `"New"` = first session ever; `"Regular"` = on the regulars list for this group; `"Repeat"` = attended before but not a regular |
+| `isGroup` | Profile is a group account (not an individual) |
+| `isChild` | Child entry (AccompanyingAdult is set, or #Child in Notes) |
+| `isMember` | Has an Accepted Charity Membership record at the time of the session |
+| `hasDiscountCard` | Has an Accepted or Invited Discount Card record |
+| `isDuplicate` | Profile shares an email with another profile (`linkedProfileIds` non-empty) |
+| `noPhoto` | No Accepted Photo Consent record |
+| `noConsent` | No Accepted Privacy Consent record |
+| `isDigLead` | Qualified/available for dig lead role |
+| `isFirstAider` | Holds a valid (non-expired) first aid certificate |
+
+**Freeze rule**: stats are recomputed freely while `session.Date >= today`. Once `session.Date < today` AND the field is non-empty, the field is frozen and no further updates are written. Pre-migration entries (Stats field empty) fall back to Notes hashtag parsing everywhere.
 
 ### Lookup Fields
 - **Session** / **SessionLookupId**: Lookup to Sessions list (indexed for performance)

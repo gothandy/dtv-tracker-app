@@ -16,13 +16,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { TAG_ICONS } from '../utils/tagIcons'
+import { EDITABLE_TAG_ICONS } from '../utils/tagIcons'
 import AppButton from './AppButton.vue'
 
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
-const tagButtons = TAG_ICONS.filter(t => t.type === 'tag')
+const tagButtons = EDITABLE_TAG_ICONS
 
 function hasTag(tag: string): boolean {
   return new RegExp(tag, 'i').test(props.modelValue)

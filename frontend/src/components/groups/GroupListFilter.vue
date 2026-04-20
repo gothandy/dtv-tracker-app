@@ -87,7 +87,7 @@ const filtered = computed<GroupWithStats[]>(() => {
     return {
       ...g,
       sessionCount: groupSessions.length,
-      hours: Math.round(groupSessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10,
+      hours: Math.round(groupSessions.reduce((sum, s) => sum + (s.stats.hours || 0), 0) * 10) / 10,
     }
   })
 })

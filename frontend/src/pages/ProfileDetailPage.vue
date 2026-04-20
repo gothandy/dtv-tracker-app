@@ -429,6 +429,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
+    stats: e.stats,
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,

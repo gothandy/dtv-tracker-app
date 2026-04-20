@@ -30,10 +30,10 @@ const emit = defineEmits<{
 const selectedSessions = computed(() => props.sessions.filter(s => props.selected.includes(s.id)))
 
 const selectedHours = computed(() =>
-  Math.round(selectedSessions.value.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10)
+  Math.round(selectedSessions.value.reduce((sum, s) => sum + (s.stats.hours || 0), 0) * 10) / 10)
 
 const totalHours = computed(() =>
-  Math.round(props.sessions.reduce((sum, s) => sum + (s.hours || 0), 0) * 10) / 10)
+  Math.round(props.sessions.reduce((sum, s) => sum + (s.stats.hours || 0), 0) * 10) / 10)
 
 function downloadCsv() {
   const headers = ['Date', 'Group', 'Name', 'Registrations', 'Hours', 'New', 'Children', 'Regulars', 'Financial Year']
@@ -41,11 +41,11 @@ function downloadCsv() {
     s.date?.substring(0, 10) ?? '',
     s.groupName ?? '',
     s.displayName ?? '',
-    s.registrations ?? 0,
-    s.hours ?? 0,
-    s.newCount ?? 0,
-    s.childCount ?? 0,
-    s.regularCount ?? 0,
+    s.stats.count,
+    s.stats.hours,
+    s.stats.new ?? 0,
+    s.stats.child ?? 0,
+    s.stats.regular ?? 0,
     s.financialYear ?? '',
   ])
   const csv = [headers, ...rows]
