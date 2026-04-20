@@ -11,9 +11,8 @@ import { profilesRepository } from './repositories/profiles-repository';
 import { sessionsRepository } from './repositories/sessions-repository';
 import { recordsRepository } from './repositories/records-repository';
 import { regularsRepository } from './repositories/regulars-repository';
-import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId } from './data-layer';
-import { SESSION_LOOKUP, PROFILE_LOOKUP, GROUP_LOOKUP, ACCOMPANYING_ADULT_LOOKUP, ENTRY_STATS, ENTRY_CANCELLED, PROFILE_STATS } from './field-names';
+import { SESSION_LOOKUP, PROFILE_LOOKUP, GROUP_LOOKUP, ACCOMPANYING_ADULT_LOOKUP, ENTRY_STATS, PROFILE_STATS } from './field-names';
 import type { SharePointEntry } from '../types/sharepoint';
 import type { SharePointProfile } from '../types/sharepoint';
 import type { SharePointRecord } from '../types/sharepoint';
@@ -54,12 +53,15 @@ export function computeEntryStatsForEntry(
   profileStatsJson: string | undefined,
   records: SharePointRecord[],
   sessionGroupId: number | undefined,
-  regularGroupIds: number[]
+  regularGroupIds: number[],
+  sessionDate?: string
 ): EntryStats {
   let profileStats: any = {};
   try { profileStats = JSON.parse(profileStatsJson || '{}'); } catch { /* malformed */ }
 
-  const today = todayDate();
+  // Use session date for certificate expiry checks — this is a snapshot of state at session time.
+  // Falls back to today only if sessionDate is unavailable.
+  const certReferenceDate = sessionDate ?? todayDate();
   const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
   const notes = String(entry.Notes || '');
 
@@ -78,15 +80,14 @@ export function computeEntryStatsForEntry(
   let noPhoto = true;
   let noConsent = true;
   let isFirstAider = false;
-  let isDigLead = false;
+  let isDigLead = false; // TODO #184: set from Dig Lead Certificate record once that record type exists in SharePoint
 
   for (const r of records) {
     if (r.Type === 'Charity Membership' && r.Status === 'Accepted') isMember = true;
     if (r.Type === 'Discount Card' && (r.Status === 'Accepted' || r.Status === 'Invited')) hasDiscountCard = true;
     if (r.Type === 'Photo Consent' && r.Status === 'Accepted') noPhoto = false;
     if (r.Type === 'Privacy Consent' && r.Status === 'Accepted') noConsent = false;
-    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
-    if (r.Type === 'Dig Lead Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isDigLead = true;
+    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > certReferenceDate) isFirstAider = true;
   }
 
   const isChild = !!entry[ACCOMPANYING_ADULT_LOOKUP] || /#Child\b/i.test(notes);
@@ -155,7 +156,8 @@ export async function computeAndSaveEntryStats(entryId: number): Promise<void> {
     profile?.[PROFILE_STATS],
     records,
     sessionGroupId,
-    regularGroupIds
+    regularGroupIds,
+    sessionDate
   );
 
   // Skip write if unchanged
@@ -251,7 +253,8 @@ export async function runEntryStatsRefresh(): Promise<EntryStatsRefreshResult> {
           profile?.[PROFILE_STATS],
           records,
           sessionGroupId,
-          regularGroupIds
+          regularGroupIds,
+          sessionDate
         );
 
         // Skip write if unchanged
