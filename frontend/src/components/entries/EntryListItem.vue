@@ -18,8 +18,7 @@
         </span>
       </div>
       <div class="eli-right">
-        <span class="eli-date">{{ formatDate(entry.date) }}</span>
-        <span class="eli-group">{{ entry.groupName }}</span>
+        <span class="eli-session">{{ formatDate(entry.date) }} {{ entry.groupName }}</span>
       </div>
     </component>
   </div>
@@ -41,7 +40,7 @@ const props = defineProps<{
 const icons = computed(() => iconsFromNotes(props.entry.notes))
 
 function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 </script>
 
@@ -85,7 +84,7 @@ function formatDate(date: string): string {
   align-items: center;
   gap: 0.25rem;
   min-width: 0;
-  flex: 1;
+  flex: 2;
 }
 
 .eli-name {
@@ -112,20 +111,18 @@ function formatDate(date: string): string {
 }
 
 .eli-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
+  text-align: right;
 }
 
-.eli-date {
+.eli-session {
+  display: block;
   white-space: nowrap;
-}
-
-.eli-group {
-  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 500;
 }
 </style>

@@ -113,7 +113,7 @@
 
     <!-- Recent sign-ups — admin/check-in only -->
     <section v-if="profile.isOperational" class="mb-8">
-      <SectionHeader>Recent Sign-ups</SectionHeader>
+      <SectionHeader>Recent Bookings</SectionHeader>
       <RecentEntryList :is-admin="profile.isAdmin" />
     </section>
 
