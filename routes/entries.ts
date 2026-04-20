@@ -564,14 +564,12 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
 
     await entriesRepository.updateFields(entryId, fields);
 
-    computeAndSaveEntryStats(entryId).catch(err =>
-      console.error(`[Stats] Failed entry stats update for entry ${entryId}:`, err)
+    const statsChain = sessionId !== undefined
+      ? computeAndSaveEntryStats(entryId).then(() => computeAndSaveSessionStats(sessionId, existingMedia))
+      : computeAndSaveEntryStats(entryId);
+    statsChain.catch(err =>
+      console.error(`[Stats] Failed stats chain for entry ${entryId}:`, err)
     );
-    if (sessionId !== undefined) {
-      computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
-        console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
-      );
-    }
     // Hours changes and cancellations affect profile stats
     if (profileId !== undefined && (fields.Hours !== undefined || fields[ENTRY_CANCELLED] !== undefined)) {
       computeAndSaveProfileStats(profileId).catch(err =>
@@ -724,12 +722,9 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
 
     const id = await entriesRepository.create(fields);
 
-    computeAndSaveEntryStats(id).catch(err =>
-      console.error(`[Stats] Failed entry stats update for entry ${id}:`, err)
-    );
-    computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
-      console.error(`[Stats] Failed targeted update for session ${spSession.ID}:`, err)
-    );
+    computeAndSaveEntryStats(id)
+      .then(() => computeAndSaveSessionStats(spSession.ID, existingMedia))
+      .catch(err => console.error(`[Stats] Failed stats chain for entry ${id}:`, err));
     computeAndSaveProfileStats(volunteerId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${volunteerId}:`, err)
     );
