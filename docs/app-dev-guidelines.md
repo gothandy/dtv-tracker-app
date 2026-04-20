@@ -256,6 +256,79 @@ These labels are useful shorthand, but the main goal is practical clarity, not p
 
 ---
 
+## Stats computation pattern
+
+The app has a three-tier stats pipeline. **All heavy data computation belongs on the server, in the right tier. Components are dumb renderers.**
+
+### The three tiers
+
+```
+ProfileStats (SharePoint field)
+  → EntryStats  (SharePoint field)
+    → SessionStats (SharePoint field)
+```
+
+Each tier is computed server-side and stored as JSON in a SharePoint field. The nightly chain runs them in dependency order: profile first, then entries, then sessions. Individual writes trigger targeted refreshes in the same order.
+
+- **ProfileStats** — volunteer state: session IDs, regular group IDs, member/card status, hours
+- **EntryStats** — snapshot of volunteer state at session time (frozen once the session date passes). Two sub-objects: `snapshot` (computed from profile/records) and `manual` (operational Notes tags: `#CSR`, `#Late`, etc.)
+- **SessionStats** — aggregate counts per session: `count`, `hours`, `new`, `child`, `regular`, `cancelledRegular`, `eventbrite`, `media`
+
+### Parsing at the API boundary — `parseSessionStats()`
+
+SharePoint stores stats as a JSON string. The backend parses it exactly once, at the API boundary, in `services/data-layer.ts`:
+
+```typescript
+const stats = parseSessionStats(s[SESSION_STATS]);
+// stats is now typed SessionStats — use stats.count, stats.new, etc.
+```
+
+Never call `JSON.parse(s[SESSION_STATS] || '{}')` inline in a route. The parsed object flows into `SessionResponse.stats` and `SessionDetailResponse.stats`.
+
+### Derived display values — `sessionDisplayStats()`
+
+The frontend helper in `frontend/src/utils/sessionStats.ts` takes the typed stats object and performs all lightweight client-side maths in one place:
+
+```typescript
+sessionDisplayStats(stats, regularsCount?, limits?) → SessionDisplayStats
+```
+
+It computes:
+- `repeatCount` = `count - new - regular`
+- `effectiveRegularsCount` = `regularsCount - cancelledRegular`
+- `spacesLeft` = `limits.total - count`
+- passes limit values through as named fields (`totalLimit`, `newLimit`, etc.)
+
+**This is the only place these calculations happen.** Components call it once and render `display.*`:
+
+```typescript
+// In a component — one call, all results
+const display = computed(() =>
+  sessionDisplayStats(props.session.stats, props.session.regularsCount, props.session.limits)
+)
+```
+
+```html
+<!-- In the template — dumb rendering only -->
+{{ display.count }} / {{ display.totalLimit }} Total
+{{ display.repeatCount }} Repeat
+{{ display.effectiveRegularsCount }} / {{ display.regularsCount }} Regular
+```
+
+### Rule
+
+> Any calculation derived from stats belongs in `sessionDisplayStats()`. If you find yourself doing arithmetic on stats fields inside a component or template, move it to the helper.
+
+### Components that use this pattern
+
+- `SessionCard.vue` — sessions listing, group detail, homepage
+- `SessionDetailStats.vue` — session detail page
+- `SessionList.vue` — compact calendar list view
+
+All three call the same helper. All three are dumb renderers.
+
+---
+
 ## Worked example: Entry editing
 
 The Entry editing refactor is a good example of how these principles apply.

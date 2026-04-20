@@ -18,6 +18,7 @@ import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear } from './data-layer';
 import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
+import { computeAndSaveEntryStats } from './entry-stats';
 
 export interface ProfileStatsRefreshResult {
   total: number;
@@ -111,6 +112,18 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
 
   await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider });
   sharePointClient.clearCacheKey('profiles');
+
+  // Propagate to entry stats for this profile's future sessions (fire-and-forget)
+  for (const e of profileEntries) {
+    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+    if (sid === undefined) continue;
+    const sessionDate = sessionDateMap.get(sid);
+    if (sessionDate && sessionDate >= today) {
+      computeAndSaveEntryStats(e.ID).catch(err =>
+        console.error(`[Stats] Failed entry stats propagation for entry ${e.ID}:`, err)
+      );
+    }
+  }
 
   console.log(`[Stats] Profile ${profileId} targeted stats update in ${Date.now() - start}ms`);
 }

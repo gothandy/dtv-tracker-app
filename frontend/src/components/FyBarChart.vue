@@ -19,10 +19,13 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import type { SessionResponse } from '../../../types/api-responses'
+interface SessionWithStats {
+  financialYear: string
+  stats: { hours: number }
+}
 
 const props = defineProps<{
-  sessions: SessionResponse[]
+  sessions: SessionWithStats[]
   modelValue: string
   minFy?: string
 }>()
@@ -38,7 +41,7 @@ const fyData = computed(() => {
   const map: Record<string, number> = {}
   for (const s of props.sessions) {
     if (!s.financialYear?.startsWith('FY')) continue
-    map[s.financialYear] = (map[s.financialYear] || 0) + (s.hours || 0)
+    map[s.financialYear] = (map[s.financialYear] || 0) + (s.stats.hours || 0)
   }
   const keys = Object.keys(map).sort().filter(k => !props.minFy || k >= props.minFy)
   const max = Math.max(...Object.values(map), 1)

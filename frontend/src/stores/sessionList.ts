@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useViewer } from '../composables/useViewer'
-import type { Session, SessionLimits } from '../types/session'
+import type { Session, SessionLimits, SessionStats } from '../types/session'
 
 interface SessionResponse {
   id: number
@@ -15,15 +15,10 @@ interface SessionResponse {
   financialYear: string
   isBookable: boolean
   limits: SessionLimits
-  registrations: number
-  hours: number
+  stats: SessionStats
+  regularsCount?: number
   mediaCount?: number
   coverUrl?: string
-  newCount?: number
-  childCount?: number
-  regularCount?: number
-  regularsCount?: number
-  eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
 }
 
@@ -40,15 +35,10 @@ function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; r
     financialYear: r.financialYear,
     isBookable: r.isBookable,
     limits: r.limits,
-    registrations: r.registrations,
-    hours: r.hours,
+    stats: r.stats,
+    regularsCount: r.regularsCount,
     mediaCount: r.mediaCount,
     coverUrl: r.coverUrl,
-    newCount: r.newCount,
-    childCount: r.childCount,
-    regularCount: r.regularCount,
-    regularsCount: r.regularsCount,
-    eventbriteCount: r.eventbriteCount,
     metadata: r.metadata,
     isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
     isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),

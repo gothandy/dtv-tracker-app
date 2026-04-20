@@ -157,6 +157,7 @@ const mockSession: SessionDetailResponse = {
   groupName: 'Sheepskull',
   limits: {},
   storedLimits: {},
+  stats: { count: 5, hours: 20 },
   registrations: 5,
   hours: 20,
   financialYear: '24/25',
@@ -172,10 +173,10 @@ const mockSessionRegistered: SessionDetailResponse = {
 }
 
 const mockSessions: Session[] = [
-  { id: 1, date: '2025-01-10', groupName: 'Sheepskull', financialYear: '24/25', isBookable: false, limits: {}, registrations: 8,  hours: 32,   isRegistered: false, isAttended: false, isRegular: false },
-  { id: 2, date: '2025-01-24', groupName: 'Sheepskull', financialYear: '24/25', isBookable: false, limits: {}, registrations: 6,  hours: 24,   isRegistered: false, isAttended: false, isRegular: false },
-  { id: 3, date: '2025-02-07', groupName: 'City Park',  financialYear: '24/25', isBookable: true,  limits: {}, registrations: 12, hours: 0,    isRegistered: false, isAttended: false, isRegular: false },
-  { id: 4, date: '2025-02-21', groupName: 'City Park',  financialYear: '24/25', isBookable: false, limits: {}, registrations: 10, hours: 40.5, isRegistered: false, isAttended: false, isRegular: false },
+  { id: 1, date: '2025-01-10', groupName: 'Sheepskull', financialYear: '24/25', isBookable: false, limits: {}, stats: { count: 8,  hours: 32   }, isRegistered: false, isAttended: false, isRegular: false },
+  { id: 2, date: '2025-01-24', groupName: 'Sheepskull', financialYear: '24/25', isBookable: false, limits: {}, stats: { count: 6,  hours: 24   }, isRegistered: false, isAttended: false, isRegular: false },
+  { id: 3, date: '2025-02-07', groupName: 'City Park',  financialYear: '24/25', isBookable: true,  limits: {}, stats: { count: 12, hours: 0    }, isRegistered: false, isAttended: false, isRegular: false },
+  { id: 4, date: '2025-02-21', groupName: 'City Park',  financialYear: '24/25', isBookable: false, limits: {}, stats: { count: 10, hours: 40.5 }, isRegistered: false, isAttended: false, isRegular: false },
 ]
 
 const mockEntries: EntryListItemResponse[] = [

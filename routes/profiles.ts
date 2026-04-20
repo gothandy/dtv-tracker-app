@@ -29,8 +29,10 @@ import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  ENTRY_CANCELLED
+  ENTRY_CANCELLED,
+  ENTRY_STATS
 } from '../services/field-names';
+import { parseEntryStatsField } from '../services/data-layer';
 import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../types/api-responses';
 import type { ApiResponse } from '../types/sharepoint';
 
@@ -734,7 +736,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           notes: e.Notes,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           financialYear: `FY${sessionFY}`,
-          cancelled: e[ENTRY_CANCELLED] || undefined
+          cancelled: e[ENTRY_CANCELLED] || undefined,
+          stats: parseEntryStatsField(e[ENTRY_STATS]),
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));

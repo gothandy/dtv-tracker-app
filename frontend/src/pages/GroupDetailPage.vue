@@ -106,7 +106,7 @@ import CardTitle from '../components/CardTitle.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import { sessionPath, groupPath, groupsPath, profilePath } from '../router/index'
 import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
-import type { Session } from '../types/session'
+import type { Session, SessionStats } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditGroupPayload } from './modals/GroupEditModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
@@ -151,14 +151,9 @@ function mapSession(r: SessionResponse): Session {
     financialYear: r.financialYear,
     isBookable: r.isBookable,
     limits: r.limits,
-    registrations: r.registrations,
-    hours: r.hours,
-    mediaCount: r.mediaCount,
-    newCount: r.newCount,
-    childCount: r.childCount,
-    regularCount: r.regularCount,
+    stats: r.stats as SessionStats,
     regularsCount: r.regularsCount,
-    eventbriteCount: r.eventbriteCount,
+    mediaCount: r.mediaCount,
     metadata: r.metadata,
     isRegistered: r.isRegistered ?? false,
     isAttended: r.isAttended ?? false,

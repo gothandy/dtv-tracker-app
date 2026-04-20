@@ -28,11 +28,11 @@
             <span v-else-if="session.isRegistered" class="session-tab bg-dtv-dark opacity-70">Registered</span>
             <span v-else-if="session.isRegular"    class="session-tab bg-dtv-dark opacity-70">Regular</span>
             <!-- Spaces left (future) or attended count (past) -->
-            <span v-if="session.date >= todayKey && session.limits.total !== undefined"
+            <span v-if="session.date >= todayKey && displayStats(session).spacesLeft !== null"
               :class="['session-tab bg-dtv-dark', (session.isRegistered || session.isAttended) ? 'opacity-70' : '']">
-              {{ session.limits.total - session.registrations }} spaces left
+              {{ displayStats(session).spacesLeft }} spaces left
             </span>
-            <span v-else class="session-tab bg-dtv-dark">{{ session.registrations }} attended</span>
+            <span v-else class="session-tab bg-dtv-dark">{{ session.stats.count }} attended</span>
           </div>
         </div>
       </div>
@@ -47,6 +47,9 @@
 import { computed } from 'vue'
 import type { Session } from '../../types/session'
 import { sessionPath } from '../../router'
+import { sessionDisplayStats } from '../../utils/sessionStats'
+
+function displayStats(s: Session) { return sessionDisplayStats(s.stats, s.regularsCount, s.limits) }
 
 const props = defineProps<{
   sessions: Session[]

@@ -164,7 +164,8 @@ The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `voluntee
 
 ### Workflow
 - **Always plan first**: Use plan mode before implementing any non-trivial change. Explore the codebase, understand existing patterns, and get approval before writing code.
-- **Frontend architecture**: Read [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) before designing a new Vue feature — layering model, component boundaries, modals as stateless forms, capabilities over roles.
+- **Frontend architecture**: Read [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) before designing a new Vue feature — layering model, component boundaries, modals as stateless forms, capabilities over roles, and the stats computation pattern.
+- **Stats pattern**: All data computation is server-side in the stats pipeline (ProfileStats → EntryStats → SessionStats). The backend parses JSON once via `parseSessionStats()`. The frontend helper `sessionDisplayStats(stats, regularsCount?, limits?)` in `frontend/src/utils/sessionStats.ts` does all lightweight derived maths (repeatCount, effectiveRegularsCount, spacesLeft). Components call it once and render `display.*` — never do stats arithmetic in a component or template.
 - **Documentation review after every change**: After completing any update, review all relevant documentation and update it to reflect the current state:
   - [CLAUDE.md](CLAUDE.md) — project context, file structure, features list
   - [docs/test-script.md](docs/test-script.md) — manual test script (add/update test cases)

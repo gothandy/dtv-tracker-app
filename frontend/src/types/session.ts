@@ -2,6 +2,10 @@
 // Mapped from SessionResponse (types/api-responses.ts) in the sessions store.
 // To add a field: add it here, then map it in src/stores/sessions.ts.
 
+import type { SessionStats } from '../../../types/api-responses'
+
+export type { SessionStats }
+
 export interface SessionLimits {
   new?: number
   repeat?: number
@@ -21,15 +25,10 @@ export interface Session {
   financialYear: string
   isBookable: boolean
   limits: SessionLimits
-  registrations: number
-  hours: number
+  stats: SessionStats
+  regularsCount?: number  // group-level total regulars (not in stats sub-object)
   mediaCount?: number
   coverUrl?: string
-  newCount?: number
-  childCount?: number
-  regularCount?: number
-  regularsCount?: number
-  eventbriteCount?: number
   metadata?: Array<{ label: string; termGuid: string }>
 
   // Current user's relationship to this session.

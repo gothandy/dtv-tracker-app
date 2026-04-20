@@ -26,3 +26,4 @@ export const SESSION_STATS       = 'Stats';  // Pre-computed JSON stats stored o
 export const SESSION_LIMITS      = 'Limits'; // Per-session capacity limits JSON: {"new": 4, "total": 16}
 export const PROFILE_STATS       = 'Stats';  // Same field name on Profiles list
 export const ENTRY_CANCELLED     = 'Cancelled'; // Date/time when entry was cancelled; null = active booking
+export const ENTRY_STATS         = 'Stats';     // Snapshot JSON stored on Entry items (frozen once session date passes)

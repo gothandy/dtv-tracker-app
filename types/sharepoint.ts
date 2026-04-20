@@ -74,6 +74,7 @@ export interface SharePointEntry extends SharePointBaseItem {
   AccompanyingAdultLookupId?: number;
   AccompanyingAdult?: string;
   Cancelled?: string; // ISO datetime when booking was cancelled; absent/null = active
+  Stats?: string;     // Snapshot JSON (EntryStats); frozen once session date passes
   /** Allow bracket access for dynamic field names (SessionLookupId, ProfileLookupId, etc.) */
   [key: string]: any;
 }
