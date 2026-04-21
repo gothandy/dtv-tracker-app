@@ -23,7 +23,7 @@
             :title-to="e.profile.slug ? profilePath(e.profile.slug) : undefined"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ ...e.profile, notes: e.notes })"
+            :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
             :allow-edit="true"
             :working="workingId === e.id"
             @update="(c, h) => onUpdate(e, c, h)"
@@ -41,7 +41,7 @@
             :title-to="e.profile.slug ? profilePath(e.profile.slug) : undefined"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ ...e.profile, notes: e.notes })"
+            :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
           />
         </EntryList>
       </div>
@@ -55,7 +55,7 @@
             :title-to="e.profile.slug ? profilePath(e.profile.slug) : undefined"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ ...e.profile, notes: e.notes })"
+            :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
             :allow-cancel="true"
             @cancel="log(`cancel: id=${e.id} &quot;${e.profile.name}&quot;`)"
           />
@@ -71,7 +71,7 @@
             :title-to="sessionPath(e.session.groupKey, e.session.date)"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ notes: e.notes })"
+            :icons="iconsForEntry({ stats: e.stats })"
           />
         </EntryList>
       </div>
@@ -113,30 +113,30 @@ const adhoc = { groupKey: 'adhoc', groupName: 'Ad Hoc',                         
 const long  = { groupKey: 'x',     groupName: 'Very Long Group Name That Might Overflow The Card', date: '2026-02-08' }
 
 const sessionEntries = ref<EntryItem[]>([
-  { id: 1, checkedIn: false, hours: 0, count: 1, notes: undefined,
+  { id: 1, checkedIn: false, hours: 0, count: 1,
     profile: { name: 'Jo', slug: 'jo-1', isMember: false, cardStatus: undefined, isGroup: false }, session: dhsc },
-  { id: 2, checkedIn: true,  hours: 0, count: 1, notes: undefined,
+  { id: 2, checkedIn: true,  hours: 0, count: 1,
     profile: { name: 'Bartholomew Featherstonehaugh-Wright', slug: 'bartholomew-2', isMember: true, cardStatus: 'Accepted', isGroup: false }, session: dhsc },
-  { id: 3, checkedIn: true,  hours: 3.5, count: 1, notes: '#New',
+  { id: 3, checkedIn: true,  hours: 3.5, count: 1, stats: { snapshot: { booking: 'New' } },
     profile: { name: 'Carol Davies', slug: 'carol-davies-18', isMember: false, cardStatus: 'Invited', isGroup: false }, session: dhsc },
-  { id: 4, checkedIn: true,  hours: 6, count: 1, notes: '#Regular #DigLead #FirstAider #DofE #Child',
+  { id: 4, checkedIn: true,  hours: 6, count: 1, stats: { snapshot: { booking: 'Regular', isChild: true }, manual: { digLead: true, firstAider: true } },
     profile: { name: 'Emma Fox', slug: 'emma-fox-99', isMember: true, cardStatus: 'Accepted', isGroup: false }, session: dhsc },
-  { id: 5, checkedIn: false, hours: 0, count: 1, notes: '#Duplicate',
+  { id: 5, checkedIn: false, hours: 0, count: 1, stats: { manual: { duplicate: true } },
     profile: { name: 'Dean Heritage Volunteers Ltd', slug: undefined, isMember: false, cardStatus: undefined, isGroup: true }, session: dhsc },
-  { id: 6, checkedIn: true,  hours: 1.5, count: 1, notes: undefined,
+  { id: 6, checkedIn: true,  hours: 1.5, count: 1,
     profile: { name: 'Sam Green', slug: undefined, isMember: false, cardStatus: undefined, isGroup: false }, session: dhsc },
-  { id: 7, checkedIn: false, hours: 0, count: 1, notes: '#New #Child',
+  { id: 7, checkedIn: false, hours: 0, count: 1, stats: { snapshot: { booking: 'New', isChild: true } },
     profile: { name: 'Priya Nair', slug: 'priya-nair-55', isMember: true, cardStatus: undefined, isGroup: false }, session: dhsc },
 ])
 
 const profileEntries = ref<EntryItem[]>([
-  { id: 10, checkedIn: true,  hours: 4,   count: 1, notes: '#Regular',
+  { id: 10, checkedIn: true,  hours: 4,   count: 1, stats: { snapshot: { booking: 'Regular' } },
     profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false }, session: dhsc },
-  { id: 11, checkedIn: true,  hours: 3,   count: 1, notes: '#New',
+  { id: 11, checkedIn: true,  hours: 3,   count: 1, stats: { snapshot: { booking: 'New' } },
     profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false }, session: fod },
-  { id: 12, checkedIn: false, hours: 0,   count: 1, notes: undefined,
+  { id: 12, checkedIn: false, hours: 0,   count: 1,
     profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false }, session: adhoc },
-  { id: 13, checkedIn: true,  hours: 2.5, count: 1, notes: '#DigLead #FirstAider',
+  { id: 13, checkedIn: true,  hours: 2.5, count: 1, stats: { manual: { digLead: true, firstAider: true } },
     profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: false, cardStatus: undefined, isGroup: false }, session: long },
 ])
 

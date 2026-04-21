@@ -29,7 +29,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import type { EntryListItemResponse } from '../../../../types/api-responses'
-import { iconsFromNotes } from '../../utils/tagIcons'
+import { iconsForEntry } from '../../utils/tagIcons'
 
 const props = defineProps<{
   entry: EntryListItemResponse
@@ -37,7 +37,7 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-const icons = computed(() => iconsFromNotes(props.entry.notes))
+const icons = computed(() => iconsForEntry({ isGroup: props.entry.isGroup, stats: props.entry.stats }))
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })

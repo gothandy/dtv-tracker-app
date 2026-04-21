@@ -281,7 +281,6 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, E
     const stats = statsMap.get(sessionId)!;
     stats.registrations++;
     stats.hours += parseFloat(String(entry.Hours)) || 0;
-    const notes = String(entry.Notes || '');
     const entryStats = parseEntryStatsField(entry[ENTRY_STATS]);
 
     if (entryStats) {
@@ -289,11 +288,6 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, E
       if (entryStats.snapshot?.isChild)                stats.childCount++;
       if (entryStats.snapshot?.booking === 'Regular')  stats.regularCount++;
       if (entryStats.manual?.eventbrite)               stats.eventbriteCount++;
-    } else {
-      if (/#New\b/i.test(notes))       stats.newCount++;
-      if (/#Child\b/i.test(notes))     stats.childCount++;
-      if (/#Regular\b/i.test(notes))   stats.regularCount++;
-      if (/#Eventbrite\b/i.test(notes)) stats.eventbriteCount++;
     }
   });
 

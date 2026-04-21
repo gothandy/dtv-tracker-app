@@ -49,7 +49,7 @@ import EntryEditModal from './modals/EntryEditModal.vue'
 import { profilePath, sessionPath } from '../router/index'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual }
 
 const store = useEntryListStore()
 const router = useRouter()
@@ -130,6 +130,7 @@ async function onSave(data: EditData) {
       stored.notes = data.notes
       stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
       stored.hasAccompanyingAdult = data.accompanyingAdultId !== null
+      stored.stats = { ...stored.stats, manual: data.statsManual }
       if (!matchesFilter(stored, currentFilter.value)) {
         store.entries.splice(idx, 1)
         selected.value = selected.value.filter(id => id !== editingEntry.value!.id)

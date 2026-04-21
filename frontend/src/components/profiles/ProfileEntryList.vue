@@ -27,7 +27,7 @@
         :title-to="allowEdit ? undefined : sessionPath(e.session.groupKey, e.session.date)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, notes: e.notes, stats: e.stats }).filter(i => i.type !== 'badge')"
+        :icons="iconsForEntry({ ...e.profile, stats: e.stats }).filter(i => i.type !== 'badge')"
         :allow-edit="allowEdit ?? false"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"
@@ -64,7 +64,7 @@ import { sessionPath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 import { fetchSessionAdults } from '../../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual }
 
 const props = defineProps<{
   entries: EntryItem[]

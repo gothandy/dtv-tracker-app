@@ -276,8 +276,8 @@ const dateValue = ref('2026-03-15')
 const tagValue = ref('')
 const tagValueSelected = ref('Sheepskull')
 
-const tagNotes = ref('')
-const tagNotesSelected = ref('#New #Regular')
+const tagNotes = ref<import('../../../../types/entry-stats').EntryStatsManual>({})
+const tagNotesSelected = ref<import('../../../../types/entry-stats').EntryStatsManual>({ digLead: true, csr: true })
 
 const groups = ref([
   { key: 'sheepskull', name: 'Sheepskull' },

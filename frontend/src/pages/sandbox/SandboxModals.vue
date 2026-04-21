@@ -329,8 +329,8 @@ function onSetHours(hours: number) {
   simulate(`set-hours: ${hours}h`)
 }
 
-function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }) {
-  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}`)
+function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual }) {
+  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}, statsManual=${JSON.stringify(data.statsManual)}`)
 }
 
 function onEditDelete() {
@@ -430,8 +430,9 @@ const mockEntry: EntryItem = {
   checkedIn: true,
   hours: 3,
   count: 1,
-  notes: '#Child #New',
+  notes: 'First time volunteer',
   accompanyingAdultId: 2,
+  stats: { snapshot: { booking: 'New', isChild: true }, manual: { digLead: true } },
   profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: true, cardStatus: 'Accepted', isGroup: false },
   session: { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' },
 }

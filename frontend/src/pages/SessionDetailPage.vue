@@ -487,7 +487,7 @@ async function onAddEntry(payload: { profileId: number } | { newName: string; ne
   }
 }
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual }
 
 async function onEditEntry(id: number, data: EditData | null) {
   try {
@@ -511,6 +511,7 @@ async function onEditEntry(id: number, data: EditData | null) {
         stored.count = data.count
         stored.notes = data.notes
         stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
+        stored.stats = { ...stored.stats, manual: data.statsManual }
       }
     }
     entryListRef.value?.onEditSuccess()

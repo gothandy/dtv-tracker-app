@@ -61,7 +61,7 @@ async function computeAndSaveSessionStats(sessionId: number, existingMedia: numb
   const cancelledRegular = sessionEntries.filter(e => {
     if (!e[ENTRY_CANCELLED]) return false;
     const es = parseEntryStatsField(e[ENTRY_STATS]);
-    return es ? es.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || ''));
+    return es?.snapshot?.booking === 'Regular';
   }).length;
   await sessionsRepository.updateStats(sessionId, {
     count: entryStats?.registrations || 0,
@@ -86,11 +86,6 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/mp4', 'video/quicktime', 'video/x-m4v'
 ]);
 
-function appendNewTag(notes: string | undefined): string {
-  const base = notes || '';
-  if (/#New\b/i.test(base)) return base;
-  return base ? `${base} #New` : '#New';
-}
 
 router.get('/entries/recent', async (req: Request, res: Response) => {
   try {
@@ -127,7 +122,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     }
 
     const recent: RecentSignupResponse[] = entries
-      .filter(e => e[ENTRY_CANCELLED] || !/#Regular\b/i.test(e.Notes || ''))
+      .filter(e => e[ENTRY_CANCELLED] || parseEntryStatsField(e[ENTRY_STATS])?.snapshot?.booking !== 'Regular')
       .sort((a, b) => sortKey(b) - sortKey(a))
       .slice(0, 50)
       .flatMap(e => {
@@ -231,7 +226,8 @@ router.get('/entries', async (req: Request, res: Response) => {
           isGroup: profile?.IsGroup || false,
           hasAccompanyingAdult: hasAdult,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
-          cancelled: e.Cancelled || undefined
+          cancelled: e.Cancelled || undefined,
+          stats: parseEntryStatsField(e[ENTRY_STATS])
         }];
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -480,7 +476,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    const { checkedIn, count, hours, notes, accompanyingAdultId, cancelled } = req.body;
+    const { checkedIn, count, hours, notes, accompanyingAdultId, cancelled, statsManual } = req.body;
     const fields: Record<string, any> = {};
 
     if (typeof cancelled === 'boolean') {
@@ -547,7 +543,9 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       }
     }
 
-    if (Object.keys(fields).length === 0) {
+    const hasStatsManual = statsManual && typeof statsManual === 'object';
+    const hasAccompanyingAdult = accompanyingAdultId !== undefined;
+    if (Object.keys(fields).length === 0 && !hasStatsManual) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
@@ -563,7 +561,19 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
 
     const profileId = spEntry ? safeParseLookupId(spEntry[PROFILE_LOOKUP]) : undefined;
 
-    await entriesRepository.updateFields(entryId, fields);
+    if (Object.keys(fields).length > 0) {
+      await entriesRepository.updateFields(entryId, fields);
+    }
+
+    // Synchronously write Stats when manual tags or isChild (from accompanyingAdultId) change
+    if (hasStatsManual || hasAccompanyingAdult) {
+      const existingStats = spEntry ? parseEntryStatsField(spEntry[ENTRY_STATS]) : undefined;
+      const mergedManual = hasStatsManual ? { ...existingStats?.manual, ...statsManual } : existingStats?.manual;
+      const mergedSnapshot = hasAccompanyingAdult
+        ? { ...existingStats?.snapshot, isChild: accompanyingAdultId !== null }
+        : existingStats?.snapshot;
+      await entriesRepository.updateStats(entryId, { snapshot: mergedSnapshot, manual: mergedManual });
+    }
 
     const statsChain = sessionId !== undefined
       ? computeAndSaveEntryStats(entryId).then(() => computeAndSaveSessionStats(sessionId, existingMedia))
@@ -711,11 +721,7 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
       [SESSION_LOOKUP]: String(spSession.ID),
       [PROFILE_LOOKUP]: String(profile.ID)
     };
-    let entryNotes = typeof notes === 'string' && notes.trim() ? notes : undefined;
-
-    if (isFirstSession(profile, spSession.ID)) {
-      entryNotes = appendNewTag(entryNotes);
-    }
+    const entryNotes = typeof notes === 'string' && notes.trim() ? notes : undefined;
     if (entryNotes) fields.Notes = entryNotes;
 
     let existingMedia = 0;
@@ -775,40 +781,21 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     );
 
     let addedRegulars = 0;
-    let regularTagged = 0;
     let addedFromEventbrite = 0;
     let newProfiles = 0;
     let updatedRecords = 0;
     let noPhotoTagged = 0;
     let firstAiderTagged = 0;
-    let fixedNewTags = 0;
 
-    // Step 0: Remove incorrect #New tags from existing entries
-    for (const entry of sessionEntries) {
-      const notes = String(entry.Notes || '');
-      if (!/#New\b/i.test(notes)) continue;
-      const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
-      if (pid === undefined) continue;
-      const entryProfile = profiles.find(p => p.ID === pid);
-      if (!entryProfile || isFirstSession(entryProfile, spSession.ID)) continue;
-      const fixedNotes = notes.replace(/#New\s*/gi, '').trim();
-      await entriesRepository.updateFields(entry.ID, { Notes: fixedNotes });
-      fixedNewTags++;
-    }
-
-    // Step 1: Add missing regulars; tag existing entries that are missing #Regular
+    // Step 1: Add missing regulars; update accompanying adult on existing entries if needed
     const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
     for (const regular of groupRegulars) {
       const vid = safeParseLookupId(regular[PROFILE_LOOKUP]);
       if (vid === undefined) continue;
       if (!existingVolunteerIds.has(vid)) {
-        const regularProfile = profiles.find(p => p.ID === vid);
-        let notes = '#Regular';
-        if (regularProfile && isFirstSession(regularProfile, spSession.ID)) notes = appendNewTag(notes);
         const entryFields: Record<string, any> = {
           [SESSION_LOOKUP]: String(spSession.ID),
           [PROFILE_LOOKUP]: String(vid),
-          Notes: notes
         };
         const regularAdultId = safeParseLookupId(regular.AccompanyingAdultLookupId);
         if (regularAdultId !== undefined) entryFields[ACCOMPANYING_ADULT_LOOKUP] = String(regularAdultId);
@@ -819,11 +806,6 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         const existingEntry = sessionEntries.find(e => safeParseLookupId(e[PROFILE_LOOKUP]) === vid);
         if (existingEntry) {
           const patchFields: Record<string, any> = {};
-          if (!/#Regular\b/i.test(existingEntry.Notes || '')) {
-            const notes = String(existingEntry.Notes || '');
-            patchFields.Notes = notes ? `${notes.trimEnd()} #Regular` : '#Regular';
-            regularTagged++;
-          }
           const regularAdultId = safeParseLookupId(regular.AccompanyingAdultLookupId);
           if (regularAdultId !== undefined && safeParseLookupId(existingEntry.AccompanyingAdultLookupId) === undefined) {
             patchFields[ACCOMPANYING_ADULT_LOOKUP] = String(regularAdultId);
@@ -944,10 +926,10 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       console.error(`[Stats] Failed session stats after refresh:`, err)
     );
 
-    console.log(`[Refresh] Done: ${addedRegulars} regulars added, ${regularTagged} #Regular tagged, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider, ${fixedNewTags} #New fixed`);
+    console.log(`[Refresh] Done: ${addedRegulars} regulars added, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider`);
     res.json({
       success: true,
-      data: { addedRegulars, regularTagged, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged, fixedNewTags }
+      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged }
     });
   } catch (error: any) {
     console.error('Error refreshing session:', error);

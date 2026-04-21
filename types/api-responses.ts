@@ -319,6 +319,7 @@ export interface EntryListItemResponse {
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;
   cancelled?: string;
+  stats?: import('./entry-stats').EntryStats;
 }
 
 export interface TagHoursItem {

@@ -22,7 +22,7 @@
         :title-to="allowEdit ? undefined : (e.profile.slug ? profilePath(e.profile.slug) : undefined)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, notes: e.notes, stats: e.stats })"
+        :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
         :allow-edit="allowEdit"
         :working="workingId === e.id"
         :cancelled="!!e.cancelled"
@@ -82,7 +82,7 @@ import { profilePath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual }
 
 const props = defineProps<{
   entries: EntryItem[]

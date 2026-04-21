@@ -11,7 +11,7 @@ import { profilesRepository } from './repositories/profiles-repository';
 import { sessionsRepository } from './repositories/sessions-repository';
 import { recordsRepository } from './repositories/records-repository';
 import { regularsRepository } from './repositories/regulars-repository';
-import { safeParseLookupId } from './data-layer';
+import { safeParseLookupId, parseEntryStatsField } from './data-layer';
 import { SESSION_LOOKUP, PROFILE_LOOKUP, GROUP_LOOKUP, ACCOMPANYING_ADULT_LOOKUP, ENTRY_STATS, PROFILE_STATS } from './field-names';
 import type { SharePointEntry } from '../types/sharepoint';
 import type { SharePointProfile } from '../types/sharepoint';
@@ -44,8 +44,7 @@ export function serializeEntryStats(stats: EntryStats): string {
 /**
  * Pure function — derives EntryStats from live data.
  * snapshot: computed from profile/records data.
- * manual: read from Notes (#CSR, #Late, #DigLead, #FirstAider, #Eventbrite).
- * Notes is the write path for manual tags; stats is the read path everywhere else.
+ * manual: preserved from existingManual — never recomputed from Notes.
  */
 export function computeEntryStatsForEntry(
   entry: SharePointEntry,
@@ -54,7 +53,8 @@ export function computeEntryStatsForEntry(
   records: SharePointRecord[],
   sessionGroupId: number | undefined,
   regularGroupIds: number[],
-  sessionDate?: string
+  sessionDate?: string,
+  existingManual?: EntryStatsManual
 ): EntryStats {
   let profileStats: any = {};
   try { profileStats = JSON.parse(profileStatsJson || '{}'); } catch { /* malformed */ }
@@ -63,7 +63,6 @@ export function computeEntryStatsForEntry(
   // Falls back to today only if sessionDate is unavailable.
   const certReferenceDate = sessionDate ?? todayDate();
   const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
-  const notes = String(entry.Notes || '');
 
   // --- snapshot ---
 
@@ -90,7 +89,7 @@ export function computeEntryStatsForEntry(
     if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > certReferenceDate) isFirstAider = true;
   }
 
-  const isChild = !!entry[ACCOMPANYING_ADULT_LOOKUP] || /#Child\b/i.test(notes);
+  const isChild = !!entry[ACCOMPANYING_ADULT_LOOKUP];
 
   const snapshot: EntryStatsSnapshot = {};
   if (booking)                      snapshot.booking        = booking;
@@ -103,18 +102,11 @@ export function computeEntryStatsForEntry(
   if (isDigLead)                    snapshot.isDigLead      = true;
   if (isFirstAider)                 snapshot.isFirstAider   = true;
 
-  // --- manual: operational tags entered on the day, sourced from Notes ---
-  const manual: EntryStatsManual = {};
-  if (/#CSR\b/i.test(notes))        manual.csr        = true;
-  if (/#Late\b/i.test(notes))       manual.late       = true;
-  if (/#DigLead\b/i.test(notes))    manual.digLead    = true;
-  if (/#FirstAider\b/i.test(notes)) manual.firstAider = true;
-  if (/#Eventbrite\b/i.test(notes)) manual.eventbrite = true;
-  if (/#Duplicate\b/i.test(notes))  manual.duplicate  = true;
+  const manual = existingManual && Object.keys(existingManual).length > 0 ? existingManual : undefined;
 
   return {
     snapshot: Object.keys(snapshot).length > 0 ? snapshot : undefined,
-    manual: Object.keys(manual).length > 0 ? manual : undefined,
+    manual,
   };
 }
 
@@ -150,6 +142,9 @@ export async function computeAndSaveEntryStats(entryId: number): Promise<void> {
     .map(r => safeParseLookupId(r[GROUP_LOOKUP] as unknown as string))
     .filter((id): id is number => id !== undefined);
 
+  const existing = entry[ENTRY_STATS];
+  const existingManual = existing ? parseEntryStatsField(existing)?.manual : undefined;
+
   const newStats = computeEntryStatsForEntry(
     entry,
     profile ?? undefined,
@@ -157,11 +152,11 @@ export async function computeAndSaveEntryStats(entryId: number): Promise<void> {
     records,
     sessionGroupId,
     regularGroupIds,
-    sessionDate
+    sessionDate,
+    existingManual
   );
 
   // Skip write if unchanged
-  const existing = entry[ENTRY_STATS];
   if (existing) {
     try {
       if (JSON.stringify(JSON.parse(existing)) === JSON.stringify(newStats)) return;
@@ -247,6 +242,9 @@ export async function runEntryStatsRefresh(): Promise<EntryStatsRefreshResult> {
         const regularGroupIds = (profileId !== undefined ? regularGroupsByProfile.get(profileId) : undefined) ?? [];
         const sessionGroupId = sessionId !== undefined ? sessionGroupMap.get(sessionId) : undefined;
 
+        const existing = entry[ENTRY_STATS];
+        const existingManual = existing ? parseEntryStatsField(existing)?.manual : undefined;
+
         const newStats = computeEntryStatsForEntry(
           entry,
           profile,
@@ -254,11 +252,11 @@ export async function runEntryStatsRefresh(): Promise<EntryStatsRefreshResult> {
           records,
           sessionGroupId,
           regularGroupIds,
-          sessionDate
+          sessionDate,
+          existingManual
         );
 
         // Skip write if unchanged
-        const existing = entry[ENTRY_STATS];
         if (existing) {
           try {
             if (JSON.stringify(JSON.parse(existing)) === JSON.stringify(newStats)) return;

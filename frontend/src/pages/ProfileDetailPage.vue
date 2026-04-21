@@ -491,7 +491,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
 
 const entries = computed<EntryItem[]>(() => (store.profile?.entries ?? []).map(mapProfileEntry))
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual }
 
 async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
   workingId.value = entry.id
@@ -536,6 +536,7 @@ async function onEditEntry(id: number, data: EditData | null) {
             count: data.count,
             notes: data.notes,
             accompanyingAdultId: data.accompanyingAdultId ?? undefined,
+            stats: { ...store.profile.entries[idx].stats, manual: data.statsManual },
           })
         }
       }

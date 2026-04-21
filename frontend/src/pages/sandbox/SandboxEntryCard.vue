@@ -28,7 +28,7 @@
           :title-to="profilePath('bob-carter-7')"
           :checked-in="true"
           :hours="0"
-          :icons="iconsForEntry({ isMember: true, cardStatus: 'Accepted', notes: '#New' })"
+          :icons="iconsForEntry({ isMember: true, cardStatus: 'Accepted', stats: { snapshot: { booking: 'New' } } })"
           :allow-edit="true"
           :working="working2"
           @update="(c, h) => onUpdate(2, c, h)"
@@ -43,7 +43,7 @@
           :title-to="profilePath('carol-davies-18')"
           :checked-in="true"
           :hours="3.5"
-          :icons="iconsForEntry({ isMember: true, cardStatus: 'Invited', notes: '#Regular #DigLead' })"
+          :icons="iconsForEntry({ isMember: true, cardStatus: 'Invited', stats: { snapshot: { booking: 'Regular' }, manual: { digLead: true } } })"
           :allow-edit="true"
           :working="working3"
           @update="(c, h) => onUpdate(3, c, h)"
@@ -58,7 +58,7 @@
           :title-to="profilePath('alice-bowen-42')"
           :checked-in="true"
           :hours="2"
-          :icons="iconsForEntry({ isMember: false, notes: '#New' })"
+          :icons="iconsForEntry({ isMember: false, stats: { snapshot: { booking: 'New' } } })"
         />
       </div>
 
@@ -92,7 +92,7 @@
           :title-to="sessionPath('dhsc', '2026-04-19')"
           :checked-in="true"
           :hours="4"
-          :icons="iconsForEntry({ notes: '#Regular' })"
+          :icons="iconsForEntry({ stats: { snapshot: { booking: 'Regular' } } })"
         />
       </div>
 
