@@ -75,7 +75,7 @@ export function iconsForEntry(e: EntryIconSource): TagIcon[] {
         icons.push({ ...tag, alt })
       } else if (isAvailable) {
         const alt = tag.availableLabel ? `${tag.alt} (${tag.availableLabel})` : tag.alt
-        icons.push({ ...tag, alt, subdued: true })
+        icons.push({ ...tag, alt, subdued: true, color: undefined })
       }
     }
 
