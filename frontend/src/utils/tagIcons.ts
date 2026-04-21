@@ -21,7 +21,7 @@ export const TAG_ICONS: TagIcon[] = [
 
   // Entry tags — displayed from stats; editable ones also appear in the picker
   { icon: 'badges/child.svg',      alt: 'Child',            type: 'tag' },
-  { icon: 'badges/diglead.svg',    alt: 'Dig Lead',         type: 'tag', manualKey: 'digLead',    snapshotKey: 'isDigLead' },
+  { icon: 'badges/diglead.svg',    alt: 'Dig Lead',         type: 'tag', manualKey: 'digLead' },
   { icon: 'badges/firstaider.svg', alt: 'First Aider',      type: 'tag', color: 'green', manualKey: 'firstAider', snapshotKey: 'isFirstAider', activeLabel: 'On Duty', availableLabel: 'Available' },
   { icon: 'badges/csr.svg',        alt: 'CSR',              type: 'tag', manualKey: 'csr' },
   { icon: 'badges/late.svg',       alt: 'Late',             type: 'tag', manualKey: 'late' },
@@ -80,6 +80,7 @@ export function iconsForEntry(e: EntryIconSource): TagIcon[] {
     }
 
     // Manual-only tags
+    if (manual?.digLead)    icons.push({ icon: 'badges/diglead.svg',    alt: 'Dig Lead',   type: 'tag' })
     if (manual?.csr)        icons.push({ icon: 'badges/csr.svg',        alt: 'CSR',        type: 'tag' })
     if (manual?.late)       icons.push({ icon: 'badges/late.svg',        alt: 'Late',       type: 'tag' })
     if (manual?.eventbrite) icons.push({ icon: 'brands/eventbrite.svg', alt: 'Eventbrite', type: 'tag' })
