@@ -568,7 +568,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     // Synchronously write Stats when manual tags or isChild (from accompanyingAdultId) change
     if (hasStatsManual || hasAccompanyingAdult) {
       const existingStats = spEntry ? parseEntryStatsField(spEntry[ENTRY_STATS]) : undefined;
-      const mergedManual = hasStatsManual ? { ...existingStats?.manual, ...statsManual } : existingStats?.manual;
+      const mergedManual = hasStatsManual ? statsManual : existingStats?.manual;
       const mergedSnapshot = hasAccompanyingAdult
         ? { ...existingStats?.snapshot, isChild: accompanyingAdultId !== null }
         : existingStats?.snapshot;
