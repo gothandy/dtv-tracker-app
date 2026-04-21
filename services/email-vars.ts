@@ -19,6 +19,27 @@ function formatDate(dateParam: string) {
   };
 }
 
+// Mirrors SessionTermList's expandedPills logic: splits colon-separated tag paths into
+// individual ancestor labels, deduplicates by path key, sorts parents before children.
+// e.g. ["XC:Freeminers:Boneyard", "XC:Verderers"] → "#XC #Freeminers #Verderers #Boneyard"
+// Duplicate of frontend logic — see issue #192.
+function expandTagLabels(labels: string[]): string {
+  const byPath = new Map<string, { shortLabel: string; depth: number }>();
+  for (const label of labels) {
+    const parts = label.split(':');
+    for (let d = 0; d < parts.length; d++) {
+      const pathKey = parts.slice(0, d + 1).join(':');
+      if (!byPath.has(pathKey)) {
+        byPath.set(pathKey, { shortLabel: parts[d], depth: d });
+      }
+    }
+  }
+  return [...byPath.values()]
+    .sort((a, b) => a.depth - b.depth)
+    .map(p => `#${p.shortLabel}`)
+    .join(' ');
+}
+
 function findChildEntries(sessionEntries: SharePointEntry[], profileId: number | undefined) {
   const active = sessionEntries.filter(e => !e[ENTRY_CANCELLED]);
   return profileId !== undefined
@@ -66,7 +87,7 @@ export function buildPreSessionVars(
     .join(' and ');
 
   const rawTags = extractMetadataTags(session[SESSION_METADATA]);
-  const tags = rawTags.length > 0 ? rawTags.map(t => `#${t.label}`).join(' ') : null;
+  const tags = rawTags.length > 0 ? expandTagLabels(rawTags.map(t => t.label)) : null;
 
   return {
     baseUrl,
