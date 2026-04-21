@@ -71,7 +71,7 @@
         <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" :disabled="!form.checkedIn" />
       </FormRow>
 
-      <FormRow title="Cancel Booking">
+      <FormRow :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
         <input type="checkbox" class="eem-checkbox" v-model="form.cancelled" />
       </FormRow>
 
