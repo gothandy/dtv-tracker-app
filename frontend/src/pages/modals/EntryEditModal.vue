@@ -33,7 +33,7 @@
       <FormRow title="Tags" :full-width="true">
         <div class="eem-tags">
           <AppButton
-            label="Child"
+            :label="(childMode ? 'Unset' : 'Set') + ' Child'"
             icon="badges/child"
             mode="icon-only"
             :variant="childMode ? 'primary' : 'subtle'"

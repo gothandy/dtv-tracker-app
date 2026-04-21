@@ -3,7 +3,7 @@
     <AppButton
       v-for="t in tagButtons"
       :key="t.manualKey"
-      :label="t.activeLabel ? `${t.alt} (${t.activeLabel})` : t.alt"
+      :label="(isActive(t.manualKey!) ? 'Unset ' : 'Set ') + (t.activeLabel ? `${t.alt} (${t.activeLabel})` : t.alt)"
       :icon="t.icon.replace('.svg', '')"
       mode="icon-only"
       :variant="isActive(t.manualKey!) ? 'primary' : 'subtle'"
