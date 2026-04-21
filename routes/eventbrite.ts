@@ -158,25 +158,20 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
       // Create entry if not already registered
       const profileId = profile.ID;
       if (!existingProfileIds.has(profileId)) {
-        const noteTags: string[] = [];
-        if (isFirstSession(profile, session.ID)) noteTags.push('#New');
         const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
-        if (isChild) noteTags.push('#Child');
-        noteTags.push('#Eventbrite');
-        if (clash) noteTags.push('#Duplicate');
-        const sessionGroupId = safeParseLookupId(session[GROUP_LOOKUP]);
-        if (sessionGroupId !== undefined && regularSet.has(`${sessionGroupId}-${profileId}`)) noteTags.push('#Regular');
         const entryFields: Record<string, any> = {
           [SESSION_LOOKUP]: String(session.ID),
           [PROFILE_LOOKUP]: String(profileId),
-          Notes: noteTags.join(' '),
           BookedBy: bookingEmailFor(attendee)
         };
         if (isChild && attendee.order_id) {
           const adultProfile = resolveAccompanyingAdult(attendees, attendee.order_id, profiles);
           if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
         }
-        await entriesRepository.create(entryFields);
+        const newEntryId = await entriesRepository.create(entryFields);
+        const manual: Record<string, boolean> = { eventbrite: true };
+        if (clash) manual.duplicate = true;
+        await entriesRepository.updateStats(newEntryId, { manual });
         existingProfileIds.add(profileId);
         // Update in-memory profile stats so subsequent sessions in this batch see this entry
         addSessionToProfileStats(profile, session.ID, sessionDateMap);
@@ -503,16 +498,10 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
         const { profile, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'QuickSync');
 
         if (!existingProfileIds.has(profile.ID)) {
-          const noteTags: string[] = [];
           const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
-          if (isChild) noteTags.push('#Child');
-          noteTags.push('#Eventbrite');
-          if (clash) noteTags.push('#Duplicate');
-          if (sessionGroupId !== undefined && regularSet.has(`${sessionGroupId}-${profile.ID}`)) noteTags.push('#Regular');
           const entryFields: Record<string, any> = {
             [SESSION_LOOKUP]: String(session.ID),
             [PROFILE_LOOKUP]: String(profile.ID),
-            Notes: noteTags.join(' '),
             BookedBy: bookingEmailFor(attendee)
           };
           if (isChild && attendee.order_id) {
@@ -520,7 +509,10 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
             const adultProfile = resolveAccompanyingAdult(sessionAttendees, attendee.order_id, profiles);
             if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
           }
-          await entriesRepository.create(entryFields);
+          const newEntryId = await entriesRepository.create(entryFields);
+          const manual: Record<string, boolean> = { eventbrite: true };
+          if (clash) manual.duplicate = true;
+          await entriesRepository.updateStats(newEntryId, { manual });
           existingProfileIds.add(profile.ID);
           added++;
         }

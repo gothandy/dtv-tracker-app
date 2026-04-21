@@ -18,7 +18,6 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
-      :is-cancelled="!!editingEntry.cancelled"
       :is-admin="viewer.isAdmin"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
@@ -49,7 +48,7 @@ import EntryEditModal from './modals/EntryEditModal.vue'
 import { profilePath, sessionPath } from '../router/index'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
 
 const store = useEntryListStore()
 const router = useRouter()
@@ -130,6 +129,8 @@ async function onSave(data: EditData) {
       stored.notes = data.notes
       stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
       stored.hasAccompanyingAdult = data.accompanyingAdultId !== null
+      stored.stats = { ...stored.stats, manual: data.statsManual }
+      stored.cancelled = data.cancelled ? (stored.cancelled || new Date().toISOString()) : undefined
       if (!matchesFilter(stored, currentFilter.value)) {
         store.entries.splice(idx, 1)
         selected.value = selected.value.filter(id => id !== editingEntry.value!.id)
@@ -148,34 +149,16 @@ async function onDelete() {
   editWorking.value = true
   editError.value = undefined
   const id = editingEntry.value.id
-  const isCancelled = !!editingEntry.value.cancelled
   try {
-    if (isCancelled) {
-      const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-      const delIdx = store.entries.findIndex(e => e.id === id)
-      if (delIdx >= 0) store.entries.splice(delIdx, 1)
-      selected.value = selected.value.filter(sid => sid !== id)
-    } else {
-      const res = await fetch(`/api/entries/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cancelled: true }),
-      })
-      if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
-      const stored = store.entries.find(e => e.id === id)
-      if (stored) stored.cancelled = new Date().toISOString()
-      // Remove from list if filter excludes cancelled entries
-      if (currentFilter.value.cancelled === 'false' || !currentFilter.value.cancelled) {
-        const cancelIdx = store.entries.findIndex(e => e.id === id)
-        if (cancelIdx >= 0) store.entries.splice(cancelIdx, 1)
-        selected.value = selected.value.filter(sid => sid !== id)
-      }
-    }
+    const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    const idx = store.entries.findIndex(e => e.id === id)
+    if (idx >= 0) store.entries.splice(idx, 1)
+    selected.value = selected.value.filter(sid => sid !== id)
     closeEditModal()
   } catch (e) {
-    console.error('[EntriesPage] delete/cancel failed', e)
-    editError.value = isCancelled ? 'Failed to delete — please try again' : 'Failed to cancel — please try again'
+    console.error('[EntriesPage] delete failed', e)
+    editError.value = 'Failed to delete — please try again'
     editWorking.value = false
   }
 }

@@ -66,6 +66,14 @@
           <h2>About</h2>
           <AppButton label="Open" @click="open = 'about'" />
         </div>
+        <div>
+          <h2>Regular Edit (existing)</h2>
+          <AppButton label="Open" @click="open = 'regular-edit-existing'" />
+        </div>
+        <div>
+          <h2>Regular Edit (new)</h2>
+          <AppButton label="Open" @click="open = 'regular-edit-new'" />
+        </div>
       </div>
 
       <label class="fail-toggle">
@@ -219,6 +227,30 @@
         @close="closeModal('close')"
       />
 
+      <RegularEditModal
+        v-if="open === 'regular-edit-existing'"
+        :regular="mockRegularExisting"
+        :adults="mockRegularAdults"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @view-link="log('regular-edit: View Profile clicked')"
+        @save="onRegularEditSave"
+        @delete="simulate('regular-edit: delete')"
+      />
+
+      <RegularEditModal
+        v-if="open === 'regular-edit-new'"
+        :regular="mockRegularNew"
+        :adults="mockRegularAdults"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @view-link="log('regular-edit: View Profile clicked')"
+        @save="onRegularEditSave"
+        @delete="simulate('regular-edit: delete')"
+      />
+
       <h2>Event log</h2>
       <div class="event-log">
         <div v-if="!events.length" class="event-log-empty">No events yet.</div>
@@ -251,6 +283,7 @@ import RecordEditModal from '../modals/RecordEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import AboutModal from '../../components/AboutModal.vue'
+import RegularEditModal from '../modals/RegularEditModal.vue'
 import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
@@ -296,8 +329,8 @@ function onSetHours(hours: number) {
   simulate(`set-hours: ${hours}h`)
 }
 
-function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }) {
-  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}`)
+function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual }) {
+  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}, statsManual=${JSON.stringify(data.statsManual)}`)
 }
 
 function onEditDelete() {
@@ -360,6 +393,10 @@ function onSessionEditDelete() {
   simulate('session-edit: delete')
 }
 
+function onRegularEditSave(data: { accompanyingAdultId: number | null }) {
+  simulate(`regular-edit: save → accompanyingAdultId=${data.accompanyingAdultId}`)
+}
+
 // --- mock data ---
 
 const mockGroups = [
@@ -393,8 +430,9 @@ const mockEntry: EntryItem = {
   checkedIn: true,
   hours: 3,
   count: 1,
-  notes: '#Child #New',
+  notes: 'First time volunteer',
   accompanyingAdultId: 2,
+  stats: { snapshot: { booking: 'New', isChild: true }, manual: { digLead: true } },
   profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: true, cardStatus: 'Accepted', isGroup: false },
   session: { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' },
 }
@@ -449,6 +487,13 @@ const mockGroup = {
   stats: { sessions: 12, hours: 240, newVolunteers: 5, children: 2, totalVolunteers: 30 },
   sessions: [],
 }
+
+const mockRegularExisting = { name: 'Mini Digger', slug: 'mini-digger-88', regularId: 203, accompanyingAdultId: 42 }
+const mockRegularNew = { name: 'New Volunteer', slug: 'new-volunteer-99' }
+const mockRegularAdults = [
+  { id: 42, name: 'Jane Smith' },
+  { id: 7, name: 'Alice Brown' },
+]
 
 const mockTransferProfiles: PickerProfile[] = [
   { id: 2, name: 'Bob Carter', email: 'bob@example.com' },

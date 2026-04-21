@@ -5,89 +5,58 @@
       <SandboxBackLink />
       <h1>RegularItem</h1>
 
-      <h2>Toggle allowed — idle, not regular</h2>
+      <h2>Is regular — no accompanying adult</h2>
       <div class="demo">
         <RegularItem
           name="Sheepskull"
-          link-to="/groups/sheepskull"
-          :hours="40"
-          :is-regular="false"
-          :allow-toggle-regular="true"
-          @add-regular="log('addRegular')"
-          @remove-regular="log('removeRegular')"
-        />
-      </div>
-
-      <h2>Toggle allowed — idle, is regular</h2>
-      <div class="demo">
-        <RegularItem
-          name="Sheepskull"
-          link-to="/groups/sheepskull"
           :hours="40"
           :is-regular="true"
           :regular-id="101"
-          :allow-toggle-regular="true"
-          @add-regular="log('addRegular')"
-          @remove-regular="log('removeRegular')"
+          @edit="log('edit: Sheepskull')"
         />
       </div>
 
-      <h2>Toggle allowed — working (in-flight)</h2>
+      <h2>Is regular — has accompanying adult (child, dashed border)</h2>
       <div class="demo">
         <RegularItem
-          name="Sheepskull"
-          link-to="/groups/sheepskull"
-          :hours="40"
+          name="Mini Digger"
+          :hours="12"
           :is-regular="true"
-          :regular-id="101"
-          :allow-toggle-regular="true"
-          :working="true"
+          :regular-id="202"
+          :accompanying-adult-id="101"
+          @edit="log('edit: Mini Digger')"
         />
       </div>
 
-      <h2>Read-only — is regular</h2>
-      <div class="demo">
-        <RegularItem
-          name="Sheepskull"
-          link-to="/groups/sheepskull"
-          :hours="40"
-          :is-regular="true"
-          :regular-id="101"
-        />
-      </div>
-
-      <h2>Read-only — not regular</h2>
+      <h2>Not yet regular (no green border)</h2>
       <div class="demo">
         <RegularItem
           name="Dig Deep"
-          link-to="/groups/dig-deep"
           :hours="6"
           :is-regular="false"
+          @edit="log('edit: Dig Deep')"
+        />
+      </div>
+
+      <h2>Working (in-flight)</h2>
+      <div class="demo">
+        <RegularItem
+          name="Riverside Crew"
+          :hours="7.5"
+          :is-regular="true"
+          :regular-id="303"
+          :working="true"
         />
       </div>
 
       <h2>Fractional hours</h2>
       <div class="demo">
         <RegularItem
-          name="Riverside Crew"
-          link-to="/groups/riverside"
-          :hours="7.5"
-          :is-regular="false"
-          :allow-toggle-regular="true"
-        />
-      </div>
-
-      <h2>Profile context (name is a volunteer)</h2>
-      <div class="demo">
-        <RegularItem
           name="Jane Smith"
-          link-to="/profiles/jane-smith-42"
-          :hours="18"
+          :hours="18.5"
           :is-regular="true"
-          :regular-id="202"
-          :allow-toggle-regular="true"
-          @add-regular="log('addRegular')"
-          @remove-regular="log('removeRegular')"
+          :regular-id="404"
+          @edit="log('edit: Jane Smith')"
         />
       </div>
 

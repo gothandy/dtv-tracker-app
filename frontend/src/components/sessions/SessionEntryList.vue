@@ -22,7 +22,7 @@
         :title-to="allowEdit ? undefined : (e.profile.slug ? profilePath(e.profile.slug) : undefined)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, notes: e.notes, stats: e.stats })"
+        :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
         :allow-edit="allowEdit"
         :working="workingId === e.id"
         :cancelled="!!e.cancelled"
@@ -34,7 +34,6 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
-      :is-cancelled="!!editingEntry.cancelled"
       :is-admin="isAdmin"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-adults="sessionAdults"
@@ -82,7 +81,7 @@ import { profilePath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
 
 const props = defineProps<{
   entries: EntryItem[]
@@ -99,7 +98,6 @@ const emit = defineEmits<{
   setHours: [hours: number]
   addEntry: [payload: AddPayload]
   editEntry: [id: number, data: EditData | null]
-  cancelEntry: [id: number]
 }>()
 
 const editingEntry = ref<EntryItem | null>(null)
@@ -119,7 +117,7 @@ const checkedCount = computed(() => props.entries.filter(e => e.checkedIn && !e.
 const eligibleCount = computed(() => props.entries.filter(e => e.checkedIn && !e.hours).length)
 const sessionAdults = computed(() =>
   props.entries
-    .filter(e => e.profileId && !e.profile.isGroup && !/\#child\b/i.test(e.notes ?? ''))
+    .filter(e => e.profileId && !e.profile.isGroup && !e.accompanyingAdultId)
     .map(e => ({ id: e.profileId!, name: e.profile.name }))
 )
 
@@ -152,13 +150,7 @@ function onDelete() {
   if (!editingEntry.value) return
   workingEdit.value = true
   editError.value = ''
-  if (editingEntry.value.cancelled) {
-    // Already cancelled — hard delete (admin only, enforced by backend)
-    emit('editEntry', editingEntry.value.id, null)
-  } else {
-    // Not yet cancelled — soft cancel
-    emit('cancelEntry', editingEntry.value.id)
-  }
+  emit('editEntry', editingEntry.value.id, null)
 }
 
 function onAdd(payload: AddPayload) {
@@ -176,8 +168,6 @@ function onSetHours(hours: number) {
 defineExpose({
   onEditSuccess: closeEditModal,
   onEditError(msg: string) { workingEdit.value = false; editError.value = msg },
-  onCancelSuccess: closeEditModal,
-  onCancelError(msg: string) { workingEdit.value = false; editError.value = msg },
   onAddSuccess: closeAddModal,
   onAddError(msg: string) { workingAdd.value = false; addError.value = msg },
   onSetHoursSuccess: closeSetHoursModal,

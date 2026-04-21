@@ -47,11 +47,22 @@
       <RegularList
         v-if="profile.isAdmin || profile.isCheckIn"
         :items="regularItems"
-        :allow-toggle-regular="profile.isAdmin || profile.isCheckIn"
         :working-slug="workingRegularSlug ?? undefined"
         :error="regularError"
-        @add-regular="onGroupAddRegular"
-        @remove-regular="onGroupRemoveRegular"
+        @edit-regular="onRegularEdit"
+      />
+
+      <RegularEditModal
+        v-if="editingRegular"
+        :regular="editingRegular"
+        :adults="regularAdults"
+        :accompanying-for="regularAccompanyingFor"
+        :working="regularWorking"
+        :error="regularModalError"
+        @close="editingRegular = null"
+        @view-link="router.push(profilePath(editingRegular.slug))"
+        @save="onRegularSave"
+        @delete="onRegularDelete"
       />
 
       <!-- Group Contribution: bar chart left, word cloud right -->
@@ -99,6 +110,8 @@ import GroupDetailHeader from '../components/groups/GroupDetailHeader.vue'
 import GroupDetailActions from '../components/groups/GroupDetailActions.vue'
 import RegularList from '../components/RegularList.vue'
 import type { RegularListItem } from '../components/RegularList.vue'
+import RegularEditModal from './modals/RegularEditModal.vue'
+import type { RegularEditItem } from './modals/RegularEditModal.vue'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
 import FyBarChart from '../components/FyBarChart.vue'
 import TermCloud from '../components/TermCloud.vue'
@@ -119,16 +132,27 @@ const profile = useViewer()
 const actionsRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
 const workingRegularSlug = ref<string | null>(null)
 const regularError = ref('')
+const editingRegular = ref<RegularEditItem | null>(null)
+const regularAccompanyingFor = ref<string[]>([])
+const regularWorking = ref(false)
+const regularModalError = ref('')
 
 const regularItems = computed<RegularListItem[]>(() =>
   (store.group?.regulars ?? []).map(r => ({
+    profileId: r.profileId,
     slug: r.slug,
     name: r.name,
-    linkTo: profilePath(r.slug),
     hours: r.hours,
     isRegular: r.isRegular,
     regularId: r.regularId,
+    accompanyingAdultId: r.accompanyingAdultId,
   }))
+)
+
+const regularAdults = computed(() =>
+  regularItems.value
+    .filter(r => r.isRegular && r.accompanyingAdultId === undefined && r.profileId !== undefined)
+    .map(r => ({ id: r.profileId as number, name: r.name }))
 )
 
 const titleText = computed(() => store.group?.displayName || store.group?.key || '')
@@ -276,41 +300,82 @@ async function onDeleteGroup() {
   }
 }
 
-async function onGroupAddRegular(profileSlug: string) {
-  if (!store.group) return
-  workingRegularSlug.value = profileSlug
-  regularError.value = ''
+function onRegularEdit(slug: string) {
+  const item = regularItems.value.find(r => r.slug === slug)
+  if (!item) return
+  regularModalError.value = ''
+  regularAccompanyingFor.value = item.profileId !== undefined
+    ? regularItems.value.filter(r => r.accompanyingAdultId === item.profileId).map(r => r.name)
+    : []
+  editingRegular.value = {
+    name: item.name,
+    slug: item.slug,
+    regularId: item.regularId,
+    accompanyingAdultId: item.accompanyingAdultId,
+  }
+}
+
+async function onRegularSave(data: { accompanyingAdultId: number | null }) {
+  if (!editingRegular.value || !store.group) return
+  const { slug, regularId } = editingRegular.value
+  workingRegularSlug.value = slug
+  regularWorking.value = true
+  regularModalError.value = ''
   try {
-    const res = await fetch(`/api/profiles/${profileSlug}/regulars`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groupId: store.group.id }),
-    })
-    if (!res.ok) throw new Error(`Add failed (${res.status})`)
-    const json = await res.json()
-    const item = store.group.regulars.find(r => r.slug === profileSlug)
-    if (item) { item.isRegular = true; item.regularId = json.data.id }
+    if (regularId !== undefined) {
+      const res = await fetch(`/api/regulars/${regularId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accompanyingAdultId: data.accompanyingAdultId }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+      const item = store.group.regulars.find(r => r.slug === slug)
+      if (item) item.accompanyingAdultId = data.accompanyingAdultId ?? undefined
+    } else {
+      const res = await fetch(`/api/profiles/${slug}/regulars`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId: store.group.id,
+          ...(data.accompanyingAdultId !== null && { accompanyingAdultId: data.accompanyingAdultId }),
+        }),
+      })
+      if (!res.ok) throw new Error(`Add failed (${res.status})`)
+      const json = await res.json()
+      const item = store.group.regulars.find(r => r.slug === slug)
+      if (item) {
+        item.isRegular = true
+        item.regularId = json.data.id
+        item.accompanyingAdultId = data.accompanyingAdultId ?? undefined
+      }
+    }
+    editingRegular.value = null
   } catch (e) {
-    console.error('[GroupDetailPage] onGroupAddRegular failed', e)
-    regularError.value = 'Failed to update — please try again'
+    console.error('[GroupDetailPage] onRegularSave failed', e)
+    regularModalError.value = 'Failed to save — please try again'
   } finally {
+    regularWorking.value = false
     workingRegularSlug.value = null
   }
 }
 
-async function onGroupRemoveRegular(profileSlug: string, regularId: number | undefined) {
-  if (!store.group || regularId === undefined) return
-  workingRegularSlug.value = profileSlug
-  regularError.value = ''
+async function onRegularDelete() {
+  if (!editingRegular.value?.regularId || !store.group) return
+  const { slug, regularId } = editingRegular.value
+  workingRegularSlug.value = slug
+  regularWorking.value = true
+  regularModalError.value = ''
   try {
     const res = await fetch(`/api/regulars/${regularId}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-    const item = store.group.regulars.find(r => r.slug === profileSlug)
-    if (item) { item.isRegular = false; item.regularId = undefined }
+    const item = store.group.regulars.find(r => r.slug === slug)
+    if (item) { item.isRegular = false; item.regularId = undefined; item.accompanyingAdultId = undefined }
+    editingRegular.value = null
   } catch (e) {
-    console.error('[GroupDetailPage] onGroupRemoveRegular failed', e)
-    regularError.value = 'Failed to update — please try again'
+    console.error('[GroupDetailPage] onRegularDelete failed', e)
+    regularModalError.value = 'Failed to delete — please try again'
   } finally {
+    regularWorking.value = false
     workingRegularSlug.value = null
   }
 }

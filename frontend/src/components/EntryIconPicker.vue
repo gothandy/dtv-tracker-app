@@ -2,14 +2,14 @@
   <div class="etp-tags">
     <AppButton
       v-for="t in tagButtons"
-      :key="t.tag"
-      :label="t.alt"
+      :key="t.manualKey"
+      :label="(isActive(t.manualKey!) ? 'Unset ' : 'Set ') + (t.activeLabel ? `${t.alt} (${t.activeLabel})` : t.alt)"
       :icon="t.icon.replace('.svg', '')"
       mode="icon-only"
-      :variant="hasTag(t.tag!) ? 'primary' : 'subtle'"
-      :selected="hasTag(t.tag!)"
+      :variant="isActive(t.manualKey!) ? 'primary' : 'subtle'"
+      :selected="isActive(t.manualKey!)"
       :disabled="disabled"
-      @click="!disabled && toggleTag(t.tag!)"
+      @click="!disabled && toggleTag(t.manualKey!)"
     />
   </div>
 </template>
@@ -18,24 +18,23 @@
 import { computed } from 'vue'
 import { EDITABLE_TAG_ICONS } from '../utils/tagIcons'
 import AppButton from './AppButton.vue'
+import type { EntryStatsManual, EntryStatsSnapshot } from '../../../types/entry-stats'
 
-const props = defineProps<{ modelValue: string; disabled?: boolean }>()
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const props = defineProps<{ modelValue: EntryStatsManual; snapshot?: EntryStatsSnapshot; disabled?: boolean }>()
+const emit = defineEmits<{ 'update:modelValue': [value: EntryStatsManual] }>()
 
-const tagButtons = EDITABLE_TAG_ICONS
+const tagButtons = computed(() =>
+  EDITABLE_TAG_ICONS.filter(t =>
+    !t.snapshotKey || props.snapshot?.[t.snapshotKey]
+  )
+)
 
-function hasTag(tag: string): boolean {
-  return new RegExp(tag, 'i').test(props.modelValue)
+function isActive(key: keyof EntryStatsManual): boolean {
+  return props.modelValue[key] === true
 }
 
-function toggleTag(tag: string) {
-  let notes = props.modelValue
-  if (hasTag(tag)) {
-    notes = notes.replace(new RegExp('\\s*' + tag, 'gi'), '').trim()
-  } else {
-    notes = notes ? notes.trimEnd() + ' ' + tag : tag
-  }
-  emit('update:modelValue', notes)
+function toggleTag(key: keyof EntryStatsManual) {
+  emit('update:modelValue', { ...props.modelValue, [key]: !props.modelValue[key] || undefined })
 }
 </script>
 

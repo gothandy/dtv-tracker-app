@@ -57,11 +57,20 @@ router.post('/profiles/:slug/regulars', async (req: Request, res: Response) => {
       return;
     }
 
-    const id = await regularsRepository.create({
+    const { accompanyingAdultId } = req.body;
+    const createFields: Record<string, any> = {
       [PROFILE_LOOKUP]: String(spProfile.ID),
       [GROUP_LOOKUP]: String(group.ID),
       Title: spProfile.Title || ''
-    });
+    };
+    if (accompanyingAdultId !== undefined && accompanyingAdultId !== null) {
+      if (typeof accompanyingAdultId !== 'number' || !Number.isInteger(accompanyingAdultId) || accompanyingAdultId < 1) {
+        res.status(400).json({ success: false, error: 'accompanyingAdultId must be a positive integer' });
+        return;
+      }
+      createFields.AccompanyingAdultLookupId = accompanyingAdultId;
+    }
+    const id = await regularsRepository.create(createFields);
 
     res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
   } catch (error: any) {
@@ -69,6 +78,43 @@ router.post('/profiles/:slug/regulars', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to create regular',
+      message: error.message
+    });
+  }
+});
+
+router.patch('/regulars/:id', async (req: Request, res: Response) => {
+  try {
+    const regularId = parseInt(String(req.params.id), 10);
+    if (isNaN(regularId)) {
+      res.status(400).json({ success: false, error: 'Invalid regular ID' });
+      return;
+    }
+
+    const { accompanyingAdultId } = req.body;
+    const fields: Record<string, any> = {};
+
+    if (accompanyingAdultId !== undefined) {
+      if (accompanyingAdultId === null) {
+        fields.AccompanyingAdultLookupId = null;
+      } else {
+        if (typeof accompanyingAdultId !== 'number' || !Number.isInteger(accompanyingAdultId) || accompanyingAdultId < 1) {
+          res.status(400).json({ success: false, error: 'accompanyingAdultId must be a positive integer or null' });
+          return;
+        }
+        fields.AccompanyingAdultLookupId = accompanyingAdultId;
+      }
+    }
+
+    if (Object.keys(fields).length > 0) {
+      await regularsRepository.update(regularId, fields);
+    }
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error updating regular:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update regular',
       message: error.message
     });
   }

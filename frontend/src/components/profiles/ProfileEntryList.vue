@@ -27,7 +27,7 @@
         :title-to="allowEdit ? undefined : sessionPath(e.session.groupKey, e.session.date)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, notes: e.notes, stats: e.stats }).filter(i => i.type !== 'badge')"
+        :icons="iconsForEntry({ ...e.profile, stats: e.stats }).filter(i => i.type !== 'badge')"
         :allow-edit="allowEdit ?? false"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"
@@ -39,7 +39,6 @@
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
-      :is-cancelled="!!editingEntry.cancelled"
       :is-admin="isAdmin"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
@@ -64,7 +63,7 @@ import { sessionPath } from '../../router/index'
 import { iconsForEntry } from '../../utils/tagIcons'
 import { fetchSessionAdults } from '../../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
 
 const props = defineProps<{
   entries: EntryItem[]
@@ -76,7 +75,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   update: [entry: EntryItem, checkedIn: boolean, hours: number]
   editEntry: [id: number, data: EditData | null]
-  cancelEntry: [id: number]
 }>()
 
 const router = useRouter()
@@ -174,18 +172,12 @@ function onDelete() {
   if (!editingEntry.value) return
   workingEdit.value = true
   editError.value = ''
-  if (editingEntry.value.cancelled) {
-    emit('editEntry', editingEntry.value.id, null)
-  } else {
-    emit('cancelEntry', editingEntry.value.id)
-  }
+  emit('editEntry', editingEntry.value.id, null)
 }
 
 defineExpose({
   onEditSuccess: closeEditModal,
   onEditError(msg: string) { workingEdit.value = false; editError.value = msg },
-  onCancelSuccess: closeEditModal,
-  onCancelError(msg: string) { workingEdit.value = false; editError.value = msg },
 })
 </script>
 

@@ -199,12 +199,14 @@ Fall back to zeros/false if the field is empty (e.g. before first refresh run).
 | **Title** | Title | Single line of text | No | Regular membership title |
 | **Profile** | Profile | Lookup | No | Links to Profiles list (shows Title) |
 | **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
+| **AccompanyingAdult** | AccompanyingAdult | Lookup | No | For child regulars: the adult responsible on the day; copied to entry when regulars are added to a session |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
 ### Lookup Fields
 - **Profile** / **ProfileLookupId**: Lookup to Profiles list
 - **Group** / **GroupLookupId**: Lookup to Groups list
+- **AccompanyingAdult** / **AccompanyingAdultLookupId**: Lookup to Profiles list
 
 ### Data Model Notes
 This is a **many-to-many junction table** that creates the relationship between:

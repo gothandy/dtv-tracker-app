@@ -1,56 +1,32 @@
 <template>
-  <div class="ri-card">
-    <template v-if="allowToggleRegular">
-      <span v-if="working" class="ri-spinner" />
-      <input
-        v-else
-        type="checkbox"
-        class="ri-checkbox"
-        :checked="isRegular"
-        @change="onToggle"
-      />
-    </template>
-    <input
-      v-else-if="isRegular"
-      type="checkbox"
-      class="ri-checkbox ri-checkbox--static"
-      checked
-      tabindex="-1"
-      readonly
-    />
-
-    <RouterLink :to="linkTo" class="ri-name">{{ name }}</RouterLink>
+  <button
+    class="ri-card"
+    :class="{ 'ri-card--regular': isRegular, 'ri-card--child': accompanyingAdultId !== undefined }"
+    :disabled="working"
+    @click="emit('edit')"
+  >
+    <span v-if="working" class="ri-spinner" />
+    <span class="ri-name">{{ name }}</span>
     <strong class="ri-hours">{{ formatHours(hours) }}h</strong>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import type { RouteLocationRaw } from 'vue-router'
-
 const props = defineProps<{
   name: string
-  linkTo: RouteLocationRaw
   hours: number
   isRegular: boolean
   regularId?: number
-  allowToggleRegular?: boolean
+  accompanyingAdultId?: number
   working?: boolean
 }>()
 
 const emit = defineEmits<{
-  addRegular: []
-  removeRegular: []
+  edit: []
 }>()
 
 function formatHours(h: number): string {
   return h % 1 === 0 ? String(h) : h.toFixed(1)
-}
-
-function onToggle(event: Event) {
-  const isAdding = (event.target as HTMLInputElement).checked
-  if (isAdding) emit('addRegular')
-  else emit('removeRegular')
 }
 </script>
 
@@ -61,19 +37,22 @@ function onToggle(event: Event) {
   gap: 0.5rem;
   background: var(--color-dtv-sand);
   padding: 0.5rem 0.75rem;
-}
-
-.ri-checkbox {
-  accent-color: var(--color-dtv-green);
-  width: 1.1rem;
-  height: 1.1rem;
-  flex-shrink: 0;
+  border: 2px solid transparent;
   cursor: pointer;
+  font-family: inherit;
+  text-align: left;
 }
-.ri-checkbox--static {
-  pointer-events: none;
-  cursor: default;
+.ri-card:hover { background: var(--color-dtv-sand-dark); }
+.ri-card:disabled { opacity: 0.6; cursor: default; }
+
+.ri-card--regular {
+  background: var(--color-dtv-green);
+  border-color: var(--color-dtv-green);
 }
+.ri-card--regular:hover { background: var(--color-dtv-green-dark); border-color: var(--color-dtv-green-dark); }
+.ri-card--regular .ri-name { color: var(--color-dtv-light); }
+.ri-card--regular .ri-hours { color: var(--color-dtv-light); }
+.ri-card--child { border-style: dashed; }
 
 .ri-spinner {
   display: block;
@@ -91,9 +70,7 @@ function onToggle(event: Event) {
   flex: 1;
   font-size: 0.9rem;
   color: var(--color-text);
-  text-decoration: none;
 }
-.ri-name:hover { text-decoration: underline; }
 
 .ri-hours {
   font-size: 0.9rem;

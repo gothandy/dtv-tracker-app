@@ -5,34 +5,22 @@
       <SandboxBackLink />
       <h1>RegularList</h1>
 
-      <h2>Profile context — Admin toggle (groups the volunteer attends)</h2>
-      <div class="demo">
-        <RegularList
-          :items="profileItems"
-          :allow-toggle-regular="true"
-          :working-slug="workingSlug"
-          :error="error"
-          ref="listRef"
-          @add-regular="onAdd"
-          @remove-regular="onRemove"
-        />
-      </div>
-
-      <h2>Group context — Admin toggle (volunteers who attend the group)</h2>
+      <h2>Group context — volunteers (click to edit)</h2>
       <div class="demo">
         <RegularList
           :items="groupItems"
-          :allow-toggle-regular="true"
-          :working-slug="workingSlugGroup"
-          :error="errorGroup"
-          @add-regular="onAddGroup"
-          @remove-regular="onRemoveGroup"
+          :working-slug="workingSlug"
+          :error="error"
+          @edit-regular="onEdit"
         />
       </div>
 
-      <h2>Read-only — regular badges, no toggle</h2>
+      <h2>With a child regular (dashed border)</h2>
       <div class="demo">
-        <RegularList :items="profileItems" />
+        <RegularList
+          :items="groupWithChildItems"
+          @edit-regular="onEdit"
+        />
       </div>
 
       <h2>Empty state</h2>
@@ -64,84 +52,28 @@ usePageTitle('Sandbox')
 const events = ref<string[]>([])
 const workingSlug = ref<string | undefined>(undefined)
 const error = ref('')
-const workingSlugGroup = ref<string | undefined>(undefined)
-const errorGroup = ref('')
 
 function log(msg: string) {
   events.value.unshift(msg)
 }
 
-const FAIL_SLUG = 'dig-deep'
-
-// Profile context: items are groups
-const profileItems = reactive<RegularListItem[]>([
-  { slug: 'sheepskull', name: 'Sheepskull', linkTo: '/groups/sheepskull', hours: 40, isRegular: true, regularId: 101 },
-  { slug: 'dig-deep', name: 'Dig Deep', linkTo: '/groups/dig-deep', hours: 6, isRegular: false },
-  { slug: 'riverside', name: 'Riverside Crew', linkTo: '/groups/riverside', hours: 14, isRegular: false },
-])
-
-function onAdd(slug: string) {
-  log(`addRegular slug=${slug}`)
-  workingSlug.value = slug
-  error.value = ''
-  setTimeout(() => {
-    if (slug === FAIL_SLUG) {
-      error.value = 'Failed to add regular — please try again'
-      log(`addRegular slug=${slug} — FAILED`)
-    } else {
-      const item = profileItems.find(i => i.slug === slug)
-      if (item) { item.isRegular = true; item.regularId = 999 }
-      log(`addRegular slug=${slug} — OK`)
-    }
-    workingSlug.value = undefined
-  }, 1000)
-}
-
-function onRemove(slug: string) {
-  log(`removeRegular slug=${slug}`)
-  workingSlug.value = slug
-  error.value = ''
-  setTimeout(() => {
-    if (slug === FAIL_SLUG) {
-      error.value = 'Failed to remove regular — please try again'
-      log(`removeRegular slug=${slug} — FAILED`)
-    } else {
-      const item = profileItems.find(i => i.slug === slug)
-      if (item) { item.isRegular = false; item.regularId = undefined }
-      log(`removeRegular slug=${slug} — OK`)
-    }
-    workingSlug.value = undefined
-  }, 1000)
-}
-
-// Group context: items are profiles
 const groupItems = reactive<RegularListItem[]>([
-  { slug: 'jane-smith-42', name: 'Jane Smith', linkTo: '/profiles/jane-smith-42', hours: 24, isRegular: true, regularId: 201 },
-  { slug: 'bob-jones-15', name: 'Bob Jones', linkTo: '/profiles/bob-jones-15', hours: 12, isRegular: false },
-  { slug: 'alice-brown-7', name: 'Alice Brown', linkTo: '/profiles/alice-brown-7', hours: 8, isRegular: true, regularId: 202 },
+  { profileId: 42, slug: 'jane-smith-42', name: 'Jane Smith', hours: 24, isRegular: true, regularId: 201 },
+  { profileId: 15, slug: 'bob-jones-15', name: 'Bob Jones', hours: 12, isRegular: false },
+  { profileId: 7, slug: 'alice-brown-7', name: 'Alice Brown', hours: 8, isRegular: true, regularId: 202 },
 ])
 
-function onAddGroup(slug: string) {
-  log(`[group] addRegular slug=${slug}`)
-  workingSlugGroup.value = slug
-  errorGroup.value = ''
-  setTimeout(() => {
-    const item = groupItems.find(i => i.slug === slug)
-    if (item) { item.isRegular = true; item.regularId = 999 }
-    log(`[group] addRegular slug=${slug} — OK`)
-    workingSlugGroup.value = undefined
-  }, 1000)
-}
+const groupWithChildItems = reactive<RegularListItem[]>([
+  { profileId: 42, slug: 'jane-smith-42', name: 'Jane Smith', hours: 24, isRegular: true, regularId: 201 },
+  { profileId: 88, slug: 'mini-digger-88', name: 'Mini Digger', hours: 10, isRegular: true, regularId: 203, accompanyingAdultId: 42 },
+])
 
-function onRemoveGroup(slug: string) {
-  log(`[group] removeRegular slug=${slug}`)
-  workingSlugGroup.value = slug
-  errorGroup.value = ''
+function onEdit(slug: string) {
+  log(`editRegular slug=${slug}`)
+  workingSlug.value = slug
   setTimeout(() => {
-    const item = groupItems.find(i => i.slug === slug)
-    if (item) { item.isRegular = false; item.regularId = undefined }
-    log(`[group] removeRegular slug=${slug} — OK`)
-    workingSlugGroup.value = undefined
-  }, 1000)
+    log(`editRegular slug=${slug} — modal would open`)
+    workingSlug.value = undefined
+  }, 600)
 }
 </script>

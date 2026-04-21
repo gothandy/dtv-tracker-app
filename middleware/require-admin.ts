@@ -5,6 +5,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/entries\/\d+$/ },           // check-in + set hours
   { method: 'PATCH', pattern: /^\/sessions\/[^/]+\/[^/]+$/ }, // edit session title/description
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular
+  { method: 'PATCH', pattern: /^\/regulars\/\d+$/ },          // update regular (e.g. accompanying adult)
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular
   { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/entries$/ }, // add entry
   { method: 'POST',  pattern: /^\/sessions\/[^/]+\/[^/]+\/refresh$/ }, // refresh session
