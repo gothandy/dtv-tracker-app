@@ -6,8 +6,8 @@ export interface TagIcon {
   type: 'badge' | 'tag'
   color?: string
   subdued?: boolean
-  activeLabel?: string              // suffix when manually active, e.g. "On Duty"
-  availableLabel?: string           // suffix when snapshot-qualified but not manual, e.g. "Available"
+  activeLabel?: string              // alt text suffix when manually active, e.g. "On Duty"
+  availableLabel?: string           // alt text suffix when snapshot-qualified but not manual, e.g. "Available"
   snapshotKey?: keyof EntryStatsSnapshot  // snapshot field for the available/qualified state
   manualKey?: keyof EntryStatsManual      // manual field this picker button toggles
 }

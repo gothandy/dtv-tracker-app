@@ -3,13 +3,13 @@
     :title="title ?? entry.profile.name"
     action="Save"
     action-icon="save"
-    :show-delete="!isCancelled || isAdmin"
-    :delete-text="'Delete'"
+    :show-delete="isAdmin"
+    delete-text="Delete"
     :working="working"
     :error="error"
     @close="emit('close')"
     @action="save"
-    @delete="isCancelled ? (confirmDelete = true) : emit('delete')"
+    @delete="confirmDelete = true"
   >
     <div v-if="entry.cancelled" class="eem-cancelled">
       Cancelled {{ formatCancelled(entry.cancelled) }}
@@ -41,7 +41,7 @@
             :disabled="working"
             @click="toggleChild"
           />
-          <EntryIconPicker v-model="form.statsManual" :disabled="working" />
+          <EntryIconPicker v-model="form.statsManual" :snapshot="entry.stats?.snapshot" :disabled="working" />
         </div>
         <p v-if="childValidationError" class="eem-validation">Select an accompanying adult or deselect Child.</p>
       </FormRow>
@@ -69,6 +69,10 @@
 
       <FormRow title="Hours" :disabled="!form.checkedIn">
         <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" :disabled="!form.checkedIn" />
+      </FormRow>
+
+      <FormRow title="Cancel Booking">
+        <input type="checkbox" class="eem-checkbox" v-model="form.cancelled" />
       </FormRow>
 
       <!-- Notes hidden during #189 testing — restore once tags migration complete and notes UX tidied -->
@@ -103,7 +107,6 @@ const props = defineProps<{
   working: boolean
   error?: string
   title?: string
-  isCancelled?: boolean
   isAdmin?: boolean
   profileClick?: () => void
   sessionClick?: () => void
@@ -112,7 +115,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: EntryStatsManual }]
+  save: [data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: EntryStatsManual; cancelled: boolean }]
   delete: []
 }>()
 
@@ -128,6 +131,7 @@ const form = reactive({
   notes: props.entry.notes ?? '',
   statsManual: { ...props.entry.stats?.manual } as EntryStatsManual,
   accompanyingAdultId: props.entry.accompanyingAdultId ?? null as number | null,
+  cancelled: !!props.entry.cancelled,
 })
 
 const accompanyingAdultMissing = computed(() =>
@@ -153,6 +157,7 @@ watch(() => props.entry, (e) => {
   form.notes = e.notes ?? ''
   form.statsManual = { ...e.stats?.manual }
   form.accompanyingAdultId = e.accompanyingAdultId ?? null
+  form.cancelled = !!e.cancelled
   childMode.value = e.accompanyingAdultId !== null && e.accompanyingAdultId !== undefined
   childValidationError.value = false
 })
@@ -184,6 +189,7 @@ function save() {
     notes: form.notes,
     accompanyingAdultId: form.accompanyingAdultId,
     statsManual: form.statsManual,
+    cancelled: form.cancelled,
   })
 }
 

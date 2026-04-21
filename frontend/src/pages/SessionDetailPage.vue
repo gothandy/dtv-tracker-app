@@ -172,7 +172,6 @@
             @set-hours="onSetHours"
             @add-entry="onAddEntry"
             @edit-entry="onEditEntry"
-            @cancel-entry="onCancelEntry"
           />
         </template>
       </LayoutColumns>
@@ -487,7 +486,7 @@ async function onAddEntry(payload: { profileId: number } | { newName: string; ne
   }
 }
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
 
 async function onEditEntry(id: number, data: EditData | null) {
   try {
@@ -512,6 +511,7 @@ async function onEditEntry(id: number, data: EditData | null) {
         stored.notes = data.notes
         stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
         stored.stats = { ...stored.stats, manual: data.statsManual }
+        stored.cancelled = data.cancelled ? (stored.cancelled || new Date().toISOString()) : undefined
       }
     }
     entryListRef.value?.onEditSuccess()
@@ -521,22 +521,6 @@ async function onEditEntry(id: number, data: EditData | null) {
   }
 }
 
-async function onCancelEntry(id: number) {
-  try {
-    const res = await fetch(`/api/entries/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cancelled: true }),
-    })
-    if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
-    const stored = store.session?.entries.find(e => e.id === id)
-    if (stored) stored.cancelled = new Date().toISOString()
-    entryListRef.value?.onCancelSuccess()
-  } catch (e) {
-    console.error('[SessionDetailPage] onCancelEntry failed', e)
-    entryListRef.value?.onCancelError('Failed to cancel — please try again')
-  }
-}
 
 async function onBook() {
   if (!store.session?.userProfileId) return

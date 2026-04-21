@@ -111,7 +111,6 @@
             ref="entryListRef"
             @update="onEntryUpdate"
             @edit-entry="onEditEntry"
-            @cancel-entry="onCancelEntry"
           />
         </template>
       </LayoutColumns>
@@ -136,7 +135,6 @@
         v-if="childEditingEntry"
         :entry="childEditingEntry"
         :title="childEditingEntry.profile.name"
-        :is-cancelled="!!childEditingEntry.cancelled"
         :is-admin="viewer.isAdmin"
         :profile-click="childEditingEntry.profile.slug ? () => router.push(profilePath(childEditingEntry!.profile.slug!)) : undefined"
         :session-click="() => router.push(sessionPath(childEditingEntry!.session.groupKey, childEditingEntry!.session.date))"
@@ -491,7 +489,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
 
 const entries = computed<EntryItem[]>(() => (store.profile?.entries ?? []).map(mapProfileEntry))
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
 
 async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
   workingId.value = entry.id
@@ -537,6 +535,7 @@ async function onEditEntry(id: number, data: EditData | null) {
             notes: data.notes,
             accompanyingAdultId: data.accompanyingAdultId ?? undefined,
             stats: { ...store.profile.entries[idx].stats, manual: data.statsManual },
+            cancelled: data.cancelled ? (store.profile.entries[idx].cancelled || new Date().toISOString()) : undefined,
           })
         }
       }
@@ -548,22 +547,6 @@ async function onEditEntry(id: number, data: EditData | null) {
   }
 }
 
-async function onCancelEntry(id: number) {
-  try {
-    const res = await fetch(`/api/entries/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cancelled: true }),
-    })
-    if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
-    const stored = store.profile?.entries.find(e => e.id === id)
-    if (stored) stored.cancelled = new Date().toISOString()
-    entryListRef.value?.onCancelSuccess()
-  } catch (e) {
-    console.error('[ProfileDetailPage] onCancelEntry failed', e)
-    entryListRef.value?.onCancelError('Failed to cancel — please try again')
-  }
-}
 
 function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
   return {
