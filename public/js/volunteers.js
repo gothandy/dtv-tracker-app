@@ -433,7 +433,7 @@ function downloadCSV() {
 
 async function loadRecordOptions() {
     try {
-        const res = await apiFetch('/api/records/options');
+        const res = await apiFetch('/api/profiles/records/options');
         if (!res.ok) {
             console.error('Failed to load record options:', res.status, res.url);
             return;
@@ -490,7 +490,7 @@ async function openBulkRecords() {
 
     if (!bulkRecordOptions) {
         try {
-            const res = await apiFetch('/api/records/options');
+            const res = await apiFetch('/api/profiles/records/options');
             const result = await res.json();
             if (result.success) bulkRecordOptions = result.data;
         } catch (e) { console.error(e); }

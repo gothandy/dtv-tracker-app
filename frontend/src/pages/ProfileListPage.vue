@@ -112,7 +112,7 @@ onMounted(async () => {
   groupsStore.fetch()
   // Initial profiles fetch is driven by the immediate filters-change watcher in ProfileListFilter
   try {
-    const res = await fetch('/api/records/options')
+    const res = await fetch('/api/profiles/records/options')
     if (res.ok) {
       const json = await res.json()
       recordOptions.value = json.data ?? { types: [], statuses: [] }

@@ -585,7 +585,7 @@ let editingRecordId = null;
 async function loadRecordOptions() {
     if (recordOptions) return recordOptions;
     try {
-        const res = await apiFetch('/api/records/options');
+        const res = await apiFetch('/api/profiles/records/options');
         const data = await res.json();
         if (data.success) recordOptions = data.data;
     } catch (e) { console.error('Failed to load record options:', e); }
