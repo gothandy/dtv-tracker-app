@@ -322,7 +322,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/records/options', async (req: Request, res: Response) => {
+router.get('/profiles/records/options', async (req: Request, res: Response) => {
   try {
     if (!recordsRepository.available) {
       res.json({ success: true, data: { types: [], statuses: [] } });
