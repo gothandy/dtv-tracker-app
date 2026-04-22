@@ -46,7 +46,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
 })
 
-const emit = defineEmits<{ select: [profile: PickerProfile] }>()
+const emit = defineEmits<{ select: [profile: PickerProfile | null] }>()
 
 const query = ref('')
 const isSelected = ref(false)
@@ -65,11 +65,14 @@ function updateDropdownPos() {
 function onFocus() {
   isSelected.value = false
   updateDropdownPos()
+  // recalculate after virtual keyboard opens and shifts the input
+  requestAnimationFrame(updateDropdownPos)
 }
 
 function onInput() {
   isSelected.value = false
   updateDropdownPos()
+  emit('select', null)
 }
 
 function onDocClick(e: MouseEvent) {
@@ -77,8 +80,18 @@ function onDocClick(e: MouseEvent) {
     isSelected.value = true
   }
 }
-onMounted(() => setTimeout(() => document.addEventListener('click', onDocClick)))
-onUnmounted(() => document.removeEventListener('click', onDocClick))
+
+onMounted(() => {
+  setTimeout(() => document.addEventListener('click', onDocClick))
+  window.addEventListener('resize', updateDropdownPos)
+  window.addEventListener('scroll', updateDropdownPos, true)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
+  window.removeEventListener('resize', updateDropdownPos)
+  window.removeEventListener('scroll', updateDropdownPos, true)
+})
 
 const filtered = computed(() => {
   if (props.addNew || isSelected.value || query.value.length < 2) return []

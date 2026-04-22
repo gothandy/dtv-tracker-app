@@ -85,7 +85,7 @@ const filteredProfiles = computed(() =>
   props.profiles.filter(p => p.id !== props.profile.id)
 )
 
-function onSelect(p: PickerProfile) {
+function onSelect(p: PickerProfile | null) {
   targetProfile.value = p
 }
 

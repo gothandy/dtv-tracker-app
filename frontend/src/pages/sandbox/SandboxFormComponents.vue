@@ -293,7 +293,7 @@ const profiles = ref<PickerProfile[]>([
 ])
 const selectedProfile = ref<PickerProfile | null>(null)
 
-function onProfileSelect(p: PickerProfile) {
+function onProfileSelect(p: PickerProfile | null) {
   selectedProfile.value = p
 }
 

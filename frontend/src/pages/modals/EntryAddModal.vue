@@ -19,19 +19,25 @@
         />
       </FormRow>
 
+      <FormRow title="No match? Add new">
+        <input
+          type="checkbox"
+          class="aem-checkbox"
+          v-model="addNew"
+          :disabled="selectedProfile !== null"
+          @change="onAddNewToggle"
+        />
+      </FormRow>
+
       <FormRow title="Email" :full-width="true">
         <input
           v-model="emailInput"
           class="aem-input"
           :disabled="!addNew"
-          placeholder="email@example.com"
+          placeholder="Enter email address"
           type="email"
           autocomplete="off"
         />
-      </FormRow>
-
-      <FormRow title="No match? Add new">
-        <input type="checkbox" class="aem-checkbox" v-model="addNew" @change="onAddNewToggle" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
