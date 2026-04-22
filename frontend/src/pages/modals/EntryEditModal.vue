@@ -4,12 +4,13 @@
     action="Save"
     action-icon="save"
     :show-delete="isAdmin"
+    :delete-disabled="!form.cancelled"
     delete-text="Delete"
     :working="working"
     :error="error"
     @close="emit('close')"
     @action="save"
-    @delete="confirmDelete = true"
+    @delete="deleteEntry"
   >
     <div v-if="entry.cancelled" class="eem-cancelled">
       Cancelled {{ formatCancelled(entry.cancelled) }}
@@ -82,12 +83,6 @@
     </FormLayout>
   </ModalLayout>
 
-  <DeleteModal
-    v-if="confirmDelete"
-    title="Delete entry?"
-    @close="confirmDelete = false"
-    @confirm="deleteEntry"
-  />
 </template>
 
 <script setup lang="ts">
@@ -99,7 +94,6 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
-import DeleteModal from './DeleteModal.vue'
 import { iconsForEntry } from '../../utils/tagIcons'
 
 const props = defineProps<{
@@ -119,7 +113,6 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const confirmDelete = ref(false)
 const childValidationError = ref(false)
 
 const childMode = ref(props.entry.accompanyingAdultId !== null && props.entry.accompanyingAdultId !== undefined)
@@ -194,7 +187,6 @@ function save() {
 }
 
 function deleteEntry() {
-  confirmDelete.value = false
   emit('delete')
 }
 </script>
