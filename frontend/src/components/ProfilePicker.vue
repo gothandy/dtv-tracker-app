@@ -2,7 +2,7 @@
   <div class="pp-wrap" ref="wrapEl">
     <input
       ref="inputEl"
-      v-model="query"
+      :value="query"
       class="pp-input"
       :class="{ 'pp-input--disabled': disabled }"
       :placeholder="placeholder"
@@ -10,6 +10,7 @@
       autocomplete="off"
       @focus="onFocus"
       @input="onInput"
+      @compositionupdate="onInput"
     />
     <Teleport to="body">
       <ul v-if="filtered.length" class="pp-results" :style="dropdownStyle">
@@ -69,7 +70,8 @@ function onFocus() {
   requestAnimationFrame(updateDropdownPos)
 }
 
-function onInput() {
+function onInput(e: Event) {
+  query.value = (e.target as HTMLInputElement).value
   isSelected.value = false
   updateDropdownPos()
   emit('select', null)

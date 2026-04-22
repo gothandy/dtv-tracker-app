@@ -91,7 +91,6 @@ function onAction() {
 .am-overlay {
   position: fixed;
   inset: 0;
-  height: var(--viewport-height, 100dvh);
   background: var(--color-overlay);
   display: flex;
   align-items: stretch;
@@ -108,7 +107,7 @@ function onAction() {
 .am-panel {
   background: var(--color-dtv-sand);
   width: 100%;
-  height: 100%;
+  height: var(--viewport-height, 100dvh);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
