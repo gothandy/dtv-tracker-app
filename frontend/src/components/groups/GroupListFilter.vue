@@ -1,7 +1,6 @@
 <template>
   <div class="gf-wrap">
     <div class="gf-title-row">
-      <span class="gf-count">{{ filtered.length }} {{ filtered.length === 1 ? 'Group' : 'Groups' }}</span>
       <div class="gf-actions">
         <FyFilter v-model="fy" />
         <button v-if="canAddGroup" class="icon-btn" @click="showNew = true" title="New group">
@@ -58,7 +57,7 @@ const route = useRoute()
 const router = useRouter()
 const groupsStore = useGroupListStore()
 
-const fy = ref((route.query.fy as string) || 'rolling')
+const fy = ref((route.query.fy as string) || 'future')
 const showNew = ref(false)
 const newKey = ref('')
 const newName = ref('')
@@ -73,6 +72,7 @@ function rollingStart(): string {
 
 function matchesFy(s: Session): boolean {
   if (fy.value === 'all') return true
+  if (fy.value === 'future') return s.date >= new Date().toISOString().slice(0, 10)
   if (fy.value === 'rolling') return s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10)
   return s.financialYear === fy.value
 }
@@ -140,14 +140,7 @@ async function addGroup() {
 
 .gf-heading { font-size: 1.1rem; font-weight: 700; color: var(--color-text); margin: 0; }
 
-.gf-count {
-  background: var(--color-surface-subtle); color: var(--color-text-label);
-  font-size: 0.8rem; font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  margin-right: auto;
-}
-
-.gf-actions { display: flex; gap: 0.5rem; align-items: center; }
+.gf-actions { display: flex; gap: 0.5rem; align-items: center; margin-left: auto; }
 
 
 .gf-modal-overlay {

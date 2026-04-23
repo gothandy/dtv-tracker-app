@@ -16,8 +16,9 @@
         icon="download"
         mode="icon-responsive"
         :disabled="selected.length === 0"
-        @click="downloadCsv"
+        @click="onDownload"
       />
+      <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
     </div>
   </div>
 </template>
@@ -26,6 +27,8 @@
 import { computed } from 'vue'
 import AppButton from '../AppButton.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
+import { downloadCsv } from '../../utils/listCsv'
+import { shareCurrentUrl } from '../../utils/shareUrl'
 
 const props = defineProps<{
   filteredProfiles: ProfileResponse[]
@@ -39,7 +42,6 @@ const emit = defineEmits<{
   'update:selected': [ids: number[]]
 }>()
 
-// Only individual profiles (not groups) are eligible for bulk records
 const individualSelected = computed(() =>
   props.selected.filter(id => {
     const p = props.filteredProfiles.find(x => x.id === id)
@@ -55,30 +57,17 @@ function sessionsFor(p: ProfileResponse): number {
   return props.fy === 'all' ? p.sessionsAll : p.sessionsThisFY
 }
 
-function downloadCsv() {
+function onDownload() {
   const source = props.filteredProfiles.filter(p => props.selected.includes(p.id))
-
-  const headers = ['Name', 'Email', 'Sessions', 'Hours']
-  const rows = source.map(p => [
-    p.name ?? '',
-    p.email ?? '',
-    sessionsFor(p),
-    Math.round(hoursFor(p) * 10) / 10,
-  ])
-
-  const csv = [headers, ...rows]
-    .map(row => row.map(cell => {
-      const str = String(cell)
-      return /[,"\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
-    }).join(','))
-    .join('\n')
-
   const today = new Date().toISOString().slice(0, 10)
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }))
-  a.download = `${today} Profiles.csv`
-  a.click()
-  URL.revokeObjectURL(a.href)
+  downloadCsv(`${today} Profiles.csv`,
+    ['Name', 'Email', 'Sessions', 'Hours'],
+    source.map(p => [p.name ?? '', p.email ?? '', sessionsFor(p), Math.round(hoursFor(p) * 10) / 10])
+  )
+}
+
+function onShare() {
+  shareCurrentUrl()
 }
 </script>
 

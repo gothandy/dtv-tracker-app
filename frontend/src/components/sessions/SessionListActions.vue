@@ -6,7 +6,8 @@
 
     <div class="sa-buttons">
       <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="emit('add-tags')" />
-      <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="downloadCsv" />
+      <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="onDownload" />
+      <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
     </div>
   </div>
 </template>
@@ -15,6 +16,8 @@
 import { computed } from 'vue'
 import AppButton from '../AppButton.vue'
 import type { Session } from '../../types/session'
+import { downloadCsv } from '../../utils/listCsv'
+import { shareCurrentUrl } from '../../utils/shareUrl'
 
 const props = defineProps<{
   sessions: Session[]
@@ -35,31 +38,26 @@ const selectedHours = computed(() =>
 const totalHours = computed(() =>
   Math.round(props.sessions.reduce((sum, s) => sum + (s.stats.hours || 0), 0) * 10) / 10)
 
-function downloadCsv() {
-  const headers = ['Date', 'Group', 'Name', 'Registrations', 'Hours', 'New', 'Children', 'Regulars', 'Financial Year']
-  const rows = selectedSessions.value.map(s => [
-    s.date?.substring(0, 10) ?? '',
-    s.groupName ?? '',
-    s.displayName ?? '',
-    s.stats.count,
-    s.stats.hours,
-    s.stats.new ?? 0,
-    s.stats.child ?? 0,
-    s.stats.regular ?? 0,
-    s.financialYear ?? '',
-  ])
-  const csv = [headers, ...rows]
-    .map(row => row.map(cell => {
-      const str = String(cell)
-      return /[,"\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
-    }).join(','))
-    .join('\n')
+function onDownload() {
+  downloadCsv('sessions.csv',
+    ['Date', 'Group', 'Name', 'Registrations', 'Hours', 'New', 'Children', 'Regulars', 'Financial Year'],
+    selectedSessions.value.map(s => [
+      s.date?.substring(0, 10) ?? '',
+      s.groupName ?? '',
+      s.displayName ?? '',
+      s.stats.count,
+      s.stats.hours,
+      s.stats.new ?? 0,
+      s.stats.child ?? 0,
+      s.stats.regular ?? 0,
+      s.financialYear ?? '',
+    ]),
+    false
+  )
+}
 
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-  a.download = 'sessions.csv'
-  a.click()
-  URL.revokeObjectURL(a.href)
+function onShare() {
+  shareCurrentUrl()
 }
 </script>
 

@@ -45,6 +45,8 @@ router.get('/profiles', async (req: Request, res: Response) => {
     const fy = calculateCurrentFY();
     const fyParam = req.query.fy ? String(req.query.fy) : null;
     const isRolling = fyParam === 'rolling';
+    const isFuture = fyParam === 'future';
+    const todayStr = new Date().toISOString().slice(0, 10);
     let thisFYStart: number;
     let lastFYStart: number;
     let rollingStart: string | undefined;
@@ -99,7 +101,13 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const ps = profileStats.get(volunteerId)!;
       ps.hoursAll += hours;
       ps.sessionsAll.add(sessionId);
-      if (isRolling) {
+      if (isFuture) {
+        const sessionDate = session.Date.substring(0, 10);
+        if (sessionDate >= todayStr && !e[ENTRY_CANCELLED]) {
+          ps.hoursThisFY += hours;
+          ps.sessionsThisFY.add(sessionId);
+        }
+      } else if (isRolling) {
         const sessionDate = session.Date.substring(0, 10);
         if (sessionDate >= rollingStart! && sessionDate <= rollingEnd!) {
           ps.hoursThisFY += hours;

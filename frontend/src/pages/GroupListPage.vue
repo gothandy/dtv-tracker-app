@@ -9,10 +9,19 @@
         :can-add-group="profile.isAdmin"
         @filtered="filtered = $event"
       />
+      <GroupListActions
+        v-if="profile.isAdmin"
+        :groups="filtered"
+        :selected="selected"
+        :can-bulk-tag="profile.isAdmin"
+        @update:selected="selected = $event"
+      />
       <GroupListResults
         :groups="filtered"
         :loading="groupsStore.loading"
         :error="groupsStore.error"
+        :selected="profile.isAdmin ? selected : undefined"
+        @update:selected="selected = $event"
       />
     </div>
   </DefaultLayout>
@@ -26,6 +35,7 @@ import PageHeader from '../components/PageHeader.vue'
 
 usePageTitle('Groups')
 import GroupListFilter from '../components/groups/GroupListFilter.vue'
+import GroupListActions from '../components/groups/GroupListActions.vue'
 import GroupListResults from '../components/groups/GroupListResults.vue'
 import { useGroupListStore } from '../stores/groupList'
 import { useSessionListStore } from '../stores/sessionList'
@@ -36,6 +46,7 @@ const groupsStore = useGroupListStore()
 const sessionsStore = useSessionListStore()
 const profile = useViewer()
 const filtered = ref<GroupWithStats[]>([])
+const selected = ref<number[]>([])
 
 onMounted(() => {
   groupsStore.fetch()
