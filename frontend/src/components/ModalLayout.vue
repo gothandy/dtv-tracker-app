@@ -107,7 +107,8 @@ function onAction() {
 .am-panel {
   background: var(--color-dtv-sand);
   width: 100%;
-  height: var(--viewport-height, 100dvh);
+  height: 100%;
+  padding-bottom: var(--keyboard-height, 0px);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
