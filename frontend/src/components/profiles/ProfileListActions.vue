@@ -1,9 +1,9 @@
 <template>
-  <div v-if="canBulkEdit" class="pla-wrap">
-    <span class="pla-stats">
+  <div v-if="canBulkEdit" class="list-actions">
+    <span class="list-actions-stats">
       {{ selected.length }} / {{ filteredProfiles.length }} {{ filteredProfiles.length === 1 ? 'profile' : 'profiles' }}
     </span>
-    <div class="pla-buttons">
+    <div class="list-actions-buttons">
       <AppButton
         label="Add Records"
         icon="add"
@@ -70,18 +70,3 @@ function onShare() {
   shareCurrentUrl()
 }
 </script>
-
-<style scoped>
-.pla-wrap {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  background: var(--color-dtv-sand);
-  padding: 0.75rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.pla-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
-.pla-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
-</style>

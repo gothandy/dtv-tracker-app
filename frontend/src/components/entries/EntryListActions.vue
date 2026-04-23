@@ -1,9 +1,9 @@
 <template>
-  <div class="ela-wrap">
-    <span class="ela-stats">
-      <template v-if="selected.length">{{ selected.length }} / </template>{{ entries.length }} {{ entries.length === 1 ? 'entry' : 'entries' }}<template v-if="totalHours > 0"> &nbsp;&nbsp; {{ totalHours }} hours</template>
+  <div class="list-actions">
+    <span class="list-actions-stats">
+      {{ selected.length }} / {{ entries.length }} entries &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
-    <div class="ela-buttons">
+    <div class="list-actions-buttons">
       <AppButton label="Download CSV" icon="download" mode="icon-responsive" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
     </div>
@@ -22,9 +22,13 @@ const props = defineProps<{
   selected: number[]
 }>()
 
+const selectedEntries = computed(() => props.entries.filter(e => props.selected.includes(e.id)))
+
+const selectedHours = computed(() =>
+  Math.round(selectedEntries.value.reduce((sum, e) => sum + e.hours, 0) * 10) / 10)
+
 const totalHours = computed(() =>
-  Math.round(props.entries.reduce((sum, e) => sum + e.hours, 0) * 10) / 10
-)
+  Math.round(props.entries.reduce((sum, e) => sum + e.hours, 0) * 10) / 10)
 
 function onDownload() {
   const source = props.selected.length
@@ -49,18 +53,3 @@ function onShare() {
   shareCurrentUrl()
 }
 </script>
-
-<style scoped>
-.ela-wrap {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  background: var(--color-dtv-sand);
-  padding: 0.75rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.ela-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
-.ela-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
-</style>

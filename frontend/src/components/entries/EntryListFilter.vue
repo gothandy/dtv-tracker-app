@@ -1,18 +1,18 @@
 <template>
-  <div class="elf-bar">
+  <div class="list-filter">
     <input
       v-model="q"
-      class="elf-input"
+      class="list-filter-search"
       type="search"
       placeholder="Search notes…"
       @input="onTextInput"
     />
-    <select v-model="accompanyingAdult" class="elf-select" @change="emitFiltered">
+    <select v-model="accompanyingAdult" class="list-filter-select" @change="emitFiltered">
       <option value="">All</option>
       <option value="notempty">Has Accompanying Adult</option>
       <option value="empty">No Accompanying Adult</option>
     </select>
-    <select v-model="cancelled" class="elf-select" @change="emitFiltered">
+    <select v-model="cancelled" class="list-filter-select" @change="emitFiltered">
       <option value="false">Not Cancelled</option>
       <option value="all">Show All</option>
       <option value="true">Cancelled</option>
@@ -60,34 +60,3 @@ watch([q, accompanyingAdult, cancelled], ([newQ, newAdult, newCancelled]) => {
   router.replace({ query })
 })
 </script>
-
-<style scoped>
-.elf-bar {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background: var(--color-dtv-light);
-  flex-wrap: wrap;
-}
-
-.elf-input {
-  flex: 1;
-  min-width: 10rem;
-  background: var(--color-dtv-sand);
-  border: none;
-  color: var(--color-text);
-  padding: 0.4rem 0.6rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-}
-
-.elf-select {
-  background: var(--color-dtv-sand);
-  border: none;
-  color: var(--color-text);
-  padding: 0.4rem 0.6rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-</style>

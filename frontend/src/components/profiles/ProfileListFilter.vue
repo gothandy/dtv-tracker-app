@@ -5,16 +5,16 @@
       <input
         v-model="search"
         type="text"
-        class="plf-search"
+        class="list-filter-search"
         placeholder="Search volunteers…"
         autocomplete="off"
       />
       <FyFilter v-model="fy" />
-      <select v-model="group" class="plf-select">
+      <select v-model="group" class="list-filter-select">
         <option value="">All groups</option>
         <option v-for="g in groups" :key="g.key" :value="g.key">{{ g.displayName ?? g.key }}</option>
       </select>
-      <select v-model="sort" class="plf-select">
+      <select v-model="sort" class="list-filter-select">
         <option value="az">A–Z</option>
         <option value="hours">Hours</option>
       </select>
@@ -22,13 +22,13 @@
 
     <!-- Row 2: advanced filters (always visible) -->
     <div class="plf-row plf-row--advanced">
-      <select v-model="type" class="plf-select">
+      <select v-model="type" class="list-filter-select">
         <option value="">All profiles</option>
         <option value="individuals">Individuals</option>
         <option value="groups">Groups</option>
         <option value="users">Users</option>
       </select>
-      <select v-model="hoursFilter" class="plf-select">
+      <select v-model="hoursFilter" class="list-filter-select">
         <option value="">All hours</option>
         <option value="0">0h</option>
         <option value="lt15">&lt;15h</option>
@@ -36,11 +36,11 @@
         <option value="15to30">15–30h</option>
         <option value="30plus">30h+</option>
       </select>
-      <select v-model="recordType" class="plf-select">
+      <select v-model="recordType" class="list-filter-select">
         <option value="">All record types</option>
         <option v-for="t in recordOptions.types" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select v-model="recordStatus" class="plf-select" :disabled="!recordType">
+      <select v-model="recordStatus" class="list-filter-select" :disabled="!recordType">
         <option value="">All statuses</option>
         <option value="none">No record</option>
         <option v-for="s in recordOptions.statuses" :key="s" :value="s">{{ s }}</option>
@@ -184,28 +184,4 @@ watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus], ([
   flex-wrap: wrap;
   align-items: stretch;
 }
-
-.plf-search {
-  flex: 2 1 180px;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid var(--color-border);
-  font-size: 0.95rem;
-  font-family: inherit;
-  color: var(--color-text);
-  background: var(--color-white);
-  box-sizing: border-box;
-}
-.plf-search:focus { outline: none; border-color: var(--color-dtv-green); }
-
-.plf-select {
-  flex: 1 1 130px;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-border);
-  font-size: 0.85rem;
-  font-family: inherit;
-  color: var(--color-text);
-  background: var(--color-white);
-  cursor: pointer;
-}
-.plf-select:disabled { opacity: 0.5; cursor: default; }
 </style>

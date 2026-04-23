@@ -1,10 +1,10 @@
 <template>
-  <div v-if="canBulkTag" class="sa-wrap">
-    <span class="sa-stats">
+  <div v-if="canBulkTag" class="list-actions">
+    <span class="list-actions-stats">
       {{ selected.length }} / {{ sessions.length }} sessions &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
 
-    <div class="sa-buttons">
+    <div class="list-actions-buttons">
       <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="emit('add-tags')" />
       <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
@@ -60,19 +60,3 @@ function onShare() {
   shareCurrentUrl()
 }
 </script>
-
-<style scoped>
-.sa-wrap {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  background: var(--color-dtv-sand);
-  padding: 0.75rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.sa-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
-
-.sa-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
-</style>

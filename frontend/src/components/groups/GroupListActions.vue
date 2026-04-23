@@ -1,9 +1,9 @@
 <template>
-  <div v-if="canBulkTag" class="gla-wrap">
-    <span class="gla-stats">
+  <div v-if="canBulkTag" class="list-actions">
+    <span class="list-actions-stats">
       {{ selected.length }} / {{ groups.length }} groups &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
-    <div class="gla-buttons">
+    <div class="list-actions-buttons">
       <AppButton label="Download CSV" icon="download" mode="icon-responsive" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
     </div>
@@ -46,18 +46,3 @@ function onShare() {
   shareCurrentUrl()
 }
 </script>
-
-<style scoped>
-.gla-wrap {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  background: var(--color-dtv-sand);
-  padding: 0.75rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.gla-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
-.gla-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
-</style>

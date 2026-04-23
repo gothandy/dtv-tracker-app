@@ -1,0 +1,48 @@
+/* Shared action bar — Groups, Sessions, Entries, Profiles list pages */
+.list-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: var(--color-dtv-sand);
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.list-actions-stats { flex: 1; font-size: 0.85rem; color: var(--color-text-secondary); }
+.list-actions-buttons { display: flex; gap: 0.5rem; margin-left: auto; }
+
+/* Shared filter bar — Sessions and Entries list pages */
+.list-filter {
+  background: var(--color-dtv-sand);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+/* Shared filter inputs — Sessions, Entries, Profiles list pages */
+.list-filter-search {
+  flex: 2 1 180px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-border);
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-white);
+  box-sizing: border-box;
+}
+.list-filter-search:focus { outline: none; border-color: var(--color-dtv-green); }
+
+.list-filter-select {
+  flex: 1 1 140px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 0.45rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.list-filter-select:disabled { opacity: 0.5; cursor: default; }
