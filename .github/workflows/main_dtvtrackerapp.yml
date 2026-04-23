@@ -8,44 +8,15 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      site_mode:
-        description: 'Site mode: v1 (old frontend at /) or v2 (Vue frontend at /)'
-        required: false
-        default: 'v1'
-        type: choice
-        options:
-          - v1
-          - v2
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
-
-    # SITE_MODE resolution:
-    #   manual run  → workflow input (inputs.site_mode)
-    #   push to main → repository variable SITE_MODE (GitHub Settings > Variables)
-    #   fallback     → v1
-    outputs:
-      site_mode: ${{ steps.mode.outputs.site_mode }}
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Resolve site mode
-        id: mode
-        run: |
-          MODE="${{ inputs.site_mode }}"
-          if [ -z "$MODE" ]; then
-            MODE="${{ vars.SITE_MODE }}"
-          fi
-          if [ -z "$MODE" ]; then
-            MODE="v1"
-          fi
-          echo "site_mode=$MODE" >> $GITHUB_OUTPUT
-          echo "Resolved SITE_MODE=$MODE"
 
       - name: Set up Node.js version
         uses: actions/setup-node@v3
@@ -62,17 +33,13 @@ jobs:
         run: |
           cd frontend
           npm install
-          if [ "${{ steps.mode.outputs.site_mode }}" = "v2" ]; then
-            VITE_BASE_PATH=/ npm run build
-          else
-            VITE_BASE_PATH=/v2/ npm run build
-          fi
+          npm run build
 
       - name: Prune dev dependencies
         run: npm prune --production
 
       - name: Create deployment zip
-        run: zip -r release.zip app.js package.json dist/ node_modules/ public/ frontend/dist/ templates/
+        run: zip -r release.zip app.js package.json dist/ node_modules/ frontend/dist/ templates/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -84,8 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -121,11 +88,11 @@ jobs:
           az webapp config appsettings set \
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false SITE_MODE=${{ needs.build.outputs.site_mode }}
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
           az webapp config appsettings delete \
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \
-            --setting-names WEBSITE_RUN_FROM_PACKAGE 2>/dev/null || true
+            --setting-names WEBSITE_RUN_FROM_PACKAGE SITE_MODE 2>/dev/null || true
 
       - name: Wait for app to be healthy
         run: |

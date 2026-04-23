@@ -7,25 +7,17 @@ This is a volunteer hours tracking and registration system for managing voluntee
 ## Tech Stack
 
 - **Backend**: Node.js with Express 5, TypeScript for services/types
-- **Frontend**: Vanilla HTML/CSS/JavaScript (mobile-first, served statically)
+- **Frontend**: Vue 3 + Vite + TypeScript (mobile-first SPA)
 - **Data Storage**: SharePoint Online lists via Microsoft Graph API
 - **External Integration**: Eventbrite API
 - **Server**: Express server running on http://localhost:3000
 
 ## Current State
 
-**Last Updated**: 2026-04-06
-
-> **Frontend migration in progress**: A new Vue 3 + Vite frontend is being built in `frontend/`. A `SITE_MODE` env var controls which frontend is primary:
-> - `SITE_MODE=v1` (default): v1 (`public/`) at `/`, Vue at `/v2/`
-> - `SITE_MODE=v2`: Vue (`frontend/dist/`) at `/`, v1 session detail URLs redirect to v2 equivalents
->
-> **To cut over**: set the `SITE_MODE` repository variable to `v2` in GitHub Settings → Secrets and variables → Variables, then re-run the last workflow. **To roll back**: set it back to `v1` and re-run. No code push needed.
->
-> At cut-over, `public/` and the `SITE_MODE` switch will be removed.
+**Last Updated**: 2026-04-23
 
 Feature-complete volunteer tracking application with:
-- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes, with public static assets (img, css, js, svg, manifest) served before auth
+- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes; in dev integrates Vite as middleware (HMR at `:3000`); in production serves `frontend/dist/` as static
 - Microsoft Entra ID authentication with session management ([routes/auth/dtv.ts](routes/auth/dtv.ts))
 - TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 11 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
@@ -40,27 +32,21 @@ Feature-complete volunteer tracking application with:
 - Comprehensive SharePoint schema documentation ([docs/sharepoint-schema.md](docs/sharepoint-schema.md))
 
 ### Pages
-- Dashboard with FY stats, next session card, personalised calendar ([public/index.html](public/index.html)); for self-service/check-in/admin-with-profile: calendar dots distinguish own sessions (filled) and regular-group sessions (outline); Next/Last jump to own sessions with global fallback; Registered/Attended pills on session cards; word cloud shows top 5 by default and expands to full on Show History
-- Admin page with Eventbrite sync buttons, exports, backup export, site shortcuts (Site Contents, Term Store, Backup), icon legend ([public/admin.html](public/admin.html))
-- Groups listing with FY filter ([public/groups.html](public/groups.html))
-- Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([public/group-detail.html](public/group-detail.html))
-- Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection, bulk tagging, and CSV download of selected sessions ([public/sessions.html](public/sessions.html))
-- Session detail with entries, check-in, set hours, move group, session taxonomy tags, session photo gallery, edit/delete ([public/session-detail.html](public/session-detail.html))
-- Volunteers listing with FY filter, sort, group filter, search, advanced filters (type/hours/records), checkbox selection, bulk records, CSV download ([public/volunteers.html](public/volunteers.html))
-- Profile detail with FY stats, FY bar chart (click to filter by year, click again to deselect; starts unselected), group hours (always visible; hours update for selected FY), entries with inline hours editing, group filter, records, regulars ([public/profile-detail.html](public/profile-detail.html))
-- Entry edit page with tag buttons, auto-fields, volunteer email (mailto link, auth users only), delete, Upload button (check-in+) ([public/entry-detail.html](public/entry-detail.html))
-- Add entry page with volunteer search and create ([public/add-entry.html](public/add-entry.html))
-- Unified sign-in page: two self-service options (shown when `MAIL_SENDER` is configured) and Microsoft (trusted users); method selector (radio group) lets volunteers choose "Send login link" or "Use verification code"; magic link sent card shows confirmation code (usability only) and "close this window" copy; verification code sent card shows code entry input with countdown; reason codes (`not-approved`, `not-found`, `invalid-state`) shown as warning banners ([public/login.html](public/login.html))
-- Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([public/upload.html](public/upload.html))
-- Consent collection page: served at `/profiles/:slug/consent.html`; accessible to check-in, admin, and self-service (own profile only); fetches profile by slug, shows privacy (required) and photo (optional) consent checkboxes plus privacy policy link; submits to `POST /api/profiles/:id/consent` which upserts both records dated today ([public/consent.html](public/consent.html))
-- Media library page (authenticated): lists all sessions with photos as an Embla horizontal carousel using session cover images; clicking a session navigates to its gallery ([public/media/index.html](public/media/index.html))
-- Session gallery page (authenticated): full-width Embla carousel for a single session's photos/videos (`?groupKey=&date=`); clicking any item opens the shared lightbox ([public/media/session.html](public/media/session.html))
-- Shared utilities: header, footer, breadcrumbs, date formatting; exposes `window.currentUser` and dispatches `authReady` event after auth ([public/js/common.js](public/js/common.js))
-- Tag/badge icon config and rendering ([public/js/tag-icons.js](public/js/tag-icons.js))
-- Session card rendering shared module ([public/js/session-cards.js](public/js/session-cards.js))
-- Session taxonomy tag UI: term tree picker, tag pills; supports `onConfirm` callback for bulk tagging from sessions listing ([public/js/session-tags.js](public/js/session-tags.js))
-- Calendar widget for homepage ([public/js/calendar.js](public/js/calendar.js)); accepts optional `personalData` (`myDates`, `regularDates` sets) to render personal dot markers on cells
-- Lightbox photo viewer for session galleries ([public/js/lightbox.js](public/js/lightbox.js))
+
+All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](frontend/src/router/index.ts). See the Vue Frontend section below for the full component listing.
+
+- Dashboard with FY stats, next session card, personalised calendar ([HomePage.vue](frontend/src/pages/HomePage.vue)); calendar dots distinguish own sessions (filled) and regular-group sessions (outline); Next/Last jump to own sessions with global fallback; Registered/Attended pills on session cards; word cloud shows top 5 by default and expands to full on Show History
+- Admin page with Eventbrite sync buttons, exports, backup export, site shortcuts, icon legend ([AdminPage.vue](frontend/src/pages/AdminPage.vue))
+- Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
+- Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
+- Sessions listing with FY filter, calendar view, text search, cascading group+tag filter dropdowns, checkbox selection, bulk tagging, and CSV download of selected sessions ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
+- Session detail with entries, check-in, set hours, move group, session taxonomy tags, session photo gallery (inline lightbox), edit/delete ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
+- Volunteers listing with FY filter, sort, group filter, search, advanced filters (type/hours/records), checkbox selection, bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
+- Profile detail with FY stats, FY bar chart, group hours, entries with inline hours editing, group filter, records, regulars ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
+- Entries page (admin-only): all entries across all sessions, filter by notes/accompanying adult, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
+- Unified sign-in page: magic link and verification code (self-service) + Microsoft (trusted users); reason codes (`not-approved`, `not-found`, `invalid-state`) shown as warning banners ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
+- Volunteer media upload page (authenticated): context loaded from `?entryId=` param; ownership enforced for self-service users ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
+- Consent collection page at `/profiles/:slug/consent`: check-in, admin, and self-service (own profile only) ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
 - SVG icons for badges and tags ([public/icons/](public/icons/))
 
 ## Data Model
@@ -121,7 +107,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 - **Card highlighting** (green background on volunteers list): Hours-based — changes with the FY filter, highlights if the volunteer meets 15h in the selected FY.
 - This separation makes at-risk members easy to spot: when filtering "This FY", a volunteer with a MEMBER badge but no green highlight hasn't yet reached 15h this year.
 
-The threshold constant for card highlighting is `MEMBER_HOURS = 15` in `volunteers.html`. Profile and entry detail pages use the literal `15`.
+The threshold constant for card highlighting is `MEMBER_HOURS = 15` in [ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue). Profile and entry detail pages use the literal `15`.
 
 ## Key Workflows
 
@@ -279,7 +265,7 @@ Detail pages (session detail, profile detail) always fetch live entry data — S
 - Role computed at login, stored in session; Public has no session role (`body[data-role]` not set)
 - Backend: `requireAuth` middleware gates all API routes (whitelist of public paths); `requireAdmin` middleware enforces role-based rules; route handlers enforce ownership for self-service users (profile ID check on `GET /api/profiles/:slug` etc.)
 - Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only` (Admin + Check In + Read Only; hidden from Self-Service and Public), `.auth-only` (any logged-in user), `.unauth-only` (Public only), `.selfservice-only` (Self-Service only)
-- All login redirects (page redirects, 401 API responses) go to `/login.html` — never `/auth/login`
+- All login redirects (page redirects, 401 API responses) go to `/login` — never `/auth/login`
 - Full reference: [docs/permissions.md](docs/permissions.md)
 
 ### Error Handling
@@ -303,12 +289,17 @@ dtv-tracker-app/
 ├── package.json
 ├── tsconfig.json                   # TypeScript configuration
 ├── CLAUDE.md                       # This file - project context for Claude
+├── public/                         # Static assets at fixed URLs (served by Vite in dev, copied to frontend/dist/ on build)
+│   ├── favicon.ico
+│   ├── site.webmanifest
+│   ├── img/                        # Logos and PWA icons
+│   └── icons/                      # SVG icons for badges and tags
 ├── frontend/                       # Vue 3 + Vite frontend (new — in development)
 │   ├── index.html                  # Vite entry point
 │   ├── vite.config.ts              # Dev proxy (/api, /auth, /img, /svg → Express); VITE_BASE_PATH for staging
 │   ├── tsconfig.json               # Frontend TypeScript config
 │   ├── package.json                # Independent package (own node_modules)
-│   ├── dist/                       # Built output — served by Express at /v2/ during migration
+│   ├── dist/                       # Built output — served by Express in production
 │   └── src/
 │       ├── main.ts                 # App bootstrap (Vue + Pinia + Router)
 │       ├── App.vue                 # Root component
@@ -435,49 +426,6 @@ dtv-tracker-app/
 │   ├── auth.ts                    # Cookie auth middleware: reads dtv-auth cookie → validateAuthToken → req.session.user (selfservice)
 │   ├── require-auth.ts            # Auth guard middleware
 │   └── require-admin.ts           # Role-based authorization (Admin / Check In / Read Only / Public)
-├── public/
-│   ├── index.html                 # Dashboard homepage
-│   ├── groups.html                # Groups listing with FY filter
-│   ├── group-detail.html          # Group detail with stats and regulars
-│   ├── sessions.html              # Sessions listing with FY filter, search, cascading filters, bulk tag
-│   ├── session-detail.html        # Session detail with entries and check-in
-│   ├── volunteers.html            # Volunteers listing with filters and search
-│   ├── profile-detail.html        # Profile detail with FY stats, inline hours, group filter
-│   ├── entry-detail.html          # Entry edit page with tag buttons; Upload button (check-in+) navigates to upload page
-│   ├── add-entry.html             # Add entry (register volunteer to session)
-│   ├── upload.html                # Volunteer photo upload page — uses ?entryId= param; redirects to login.html if unauthenticated
-│   ├── consent.html               # Consent collection page — served at /profiles/:slug/consent.html; check-in, admin, and self-service (own profile)
-│   ├── login.html                 # Unified sign-in page: magic link (volunteer self-service) and Microsoft (trusted users); sent-confirmation section with 15-min countdown replaces cards after send
-│   ├── admin.html                 # Admin page (Eventbrite sync, exports)
-│   ├── css/
-│   │   └── styles.css             # Global stylesheet (brand colours, Rubik Dirt font)
-│   ├── favicon.ico                # 32x32 ICO (PNG embedded), generated from logo-930.jpg
-│   ├── site.webmanifest           # PWA manifest for Add to Home Screen
-│   ├── img/
-│   │   ├── logo.png               # DTV logo (180x179, used in header)
-│   │   ├── logo-930.jpg           # High-res source logo (930x924) — use this for generating icons
-│   │   ├── icon-192.png           # Home screen icon 192x192 (generated from logo-930.jpg)
-│   │   └── icon-512.png           # Home screen icon 512x512 (generated from logo-930.jpg)
-│   ├── js/
-│   │   ├── common.js              # Shared header, footer, utilities; injects favicon + manifest links
-│   │   ├── tag-icons.js           # Tag/badge icon config and rendering
-│   │   ├── session-cards.js       # Shared session card rendering (used by sessions.html, index.html)
-│   │   ├── session-tags.js        # Session taxonomy tag UI: term tree picker, tag pills
-│   │   ├── word-cloud.js          # Reusable word cloud component (hours by taxonomy tag); used on homepage, group detail, profile detail
-│   │   ├── sessions.js            # Sessions listing logic (filters, search, cascading dropdowns, bulk tagging, CSV download)
-│   │   ├── calendar.js            # Calendar widget for sessions listing
-│   │   ├── lightbox.js            # Lightbox photo viewer for session galleries
-│   │   ├── profile-detail.js      # Profile detail page logic (FY filter, bar chart, entries, records, transfer)
-│   │   ├── volunteers.js          # Volunteers listing logic (filters, sort, checkbox selection, bulk records, CSV download)
-│   │   ├── session-detail.js      # Session detail logic (entries, check-in, hours, photos, edit/delete)
-│   │   └── group-detail.js        # Group detail logic (bar chart, sessions, edit/delete, new session)
-│   ├── svg/                       # SVG icons for badges and tags
-│   └── media/                     # Standalone media gallery pages (authenticated)
-│       ├── index.html             # Media library — all sessions with photos, Embla carousel
-│       ├── session.html           # Session gallery — single session photos/videos, Embla + lightbox
-│       └── embla/
-│           ├── gallery.js         # MediaGallery class — Embla-powered horizontal carousel
-│           └── gallery.css        # Carousel styles (viewport, slides, nav buttons, captions)
 ├── templates/
 │   └── email/
 │       ├── base.hbs               # Shared email wrapper: green header (image + logo), {{{body}}} slot, dark footer
@@ -551,26 +499,17 @@ dtv-tracker-app/
 ## Running the Application
 
 ```bash
-# Terminal 1 — Express API server
 npm install       # Install dependencies
 npm run build     # Compile TypeScript
-npm run dev       # Start with auto-reload (development)
-
-# Terminal 2 — Vue frontend dev server
-npm run frontend:dev   # Starts Vite at http://localhost:5173
-
-# Visit http://localhost:5173 — Vite proxies all /api and /auth calls to Express
+npm run dev       # Start with auto-reload — Express + Vite HMR at http://localhost:3000
 
 npm run test:live # Integration tests — require live SharePoint credentials, run locally only
 ```
 
-**Frontend build scripts (run from repo root):**
+**Frontend build (run from repo root):**
 ```bash
-npm run frontend:build           # Production build (base = /)
-npm run frontend:build:staging   # Staging build served at /v2/ on live site (base = /v2/)
+npm run frontend:build   # Production build → frontend/dist/
 ```
-
-**Local auth:** Add `FRONTEND_URL=http://localhost:5173` to `.env` so post-login redirects (Microsoft OAuth and magic link) land on Vite instead of `localhost:3000`. Unset in production — no effect on live site.
 
 ## Important Notes
 
@@ -587,7 +526,6 @@ npm run frontend:build:staging   # Staging build served at /v2/ on live site (ba
 - `TAXONOMY_TERM_SET_ID` env var: GUID of the SharePoint Term Store term set for session tagging. **Required** — tags will not appear without it.
 - `BACKUP_DRIVE_ID` env var: Drive ID of the Shared Documents library on the Tracker site (different from `MEDIA_LIBRARY_DRIVE_ID`). Required for the backup export endpoint. Find via `GET /v1.0/sites/{siteId}/drives` — look for the drive named "Documents".
 - `SHAREPOINT_TIMEZONE` env var: IANA timezone identifier for the SharePoint site's configured timezone (default `Europe/London`). Must match the timezone set in SharePoint site settings. Used by `sharepoint-client.ts` for all Date-Only field conversions (read and write). Run `node scripts/check-session-dates.js` to verify stored UTC values are consistent.
-- `FRONTEND_URL` env var: post-login redirect target for local frontend development (e.g. `http://localhost:5173`). When set, Microsoft OAuth and magic link callbacks redirect here instead of `/`. Leave unset in production.
 - Term Store access requires `TermStore.ReadWrite.All` application permission on the Azure app registration (admin consent required). Uses the Graph API **beta** endpoint — see [docs/tagging.md](docs/tagging.md) for full implementation notes.
 
 ## Known Constraints

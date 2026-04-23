@@ -11,14 +11,8 @@ npm install
 
 # Create .env file with your credentials (see Setup section)
 
-npm run build           # Compile TypeScript
-npm run dev:tracker     # Start Express with auto-reload (development)
-
-# In a second terminal — Vue frontend dev server
-npm run frontend:dev    # Start Vite on http://localhost:5173
-
-# Visit http://localhost:5173 (frontend)
-# API available at http://localhost:3000
+npm run build       # Compile TypeScript
+npm run dev # Start Express + Vite HMR at http://localhost:3000
 ```
 
 
@@ -116,35 +110,13 @@ The tests hit live SharePoint — they verify auth, list access, field shapes, a
 ### 5. Build and Run
 
 ```bash
-# Terminal 1 — Express API server
-npm run build           # Compile TypeScript
-npm run dev:tracker     # Start with nodemon using .env.tracker
-
-# Terminal 2 — Vue frontend dev server
-npm run frontend:dev    # Starts Vite on http://localhost:5173
+npm run build       # Compile TypeScript
+npm run dev # Start Express + Vite HMR at http://localhost:3000
 ```
 
-**Express** runs at http://localhost:3000 (API only during frontend development).
-**Frontend** runs at http://localhost:5173 — Vite proxies all `/api` and `/auth` requests to Express automatically.
+Everything runs on a single server at **http://localhost:3000**. In dev mode, Express integrates Vite as middleware — you get HMR for frontend changes and the API on the same port. No separate frontend build needed.
 
-**Restarting after a backend code change**: nodemon watches the `dist/` folder, so run `npm run build` in a second terminal and nodemon will restart automatically.
-
-**Frontend convenience scripts** (run from repo root):
-```bash
-npm run frontend:dev             # Start Vite dev server
-npm run frontend:build           # Production build (base = /)
-npm run frontend:build:staging   # Staging build (base = /v2/)
-```
-
-### 6. Environment variables for local frontend development
-
-Add `FRONTEND_URL` to your `.env` so post-login auth redirects land on the Vite dev server:
-
-```bash
-FRONTEND_URL=http://localhost:5173
-```
-
-Without this, after a Microsoft or magic-link login Express redirects to `localhost:3000` instead of `localhost:5173`.
+**Restarting after a backend code change**: nodemon watches the `dist/` folder, so run `npm run build` and nodemon will restart automatically.
 
 ## Deployment
 
@@ -159,16 +131,14 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 **Build job:**
 1. Installs root dependencies (`npm install`)
 2. Compiles TypeScript (`npm run build`)
-3. Installs frontend dependencies and builds with `VITE_BASE_PATH=/v2/` — output to `frontend/dist/`
+3. Installs frontend dependencies and builds — output to `frontend/dist/`
 4. Prunes dev dependencies
-5. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, `public/`, and `frontend/dist/` into `release.zip`
+5. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, and `frontend/dist/` into `release.zip`
 
 **Deploy job:**
 1. Authenticates with Azure via OIDC (no stored secrets — uses federated identity)
 2. Disables Kudu build-on-deploy (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`)
 3. Deploys `release.zip` directly to Azure App Service
-
-**Frontend staging:** The built `frontend/dist/` is served by Express at `/v2/` — accessible at `yoursite.com/v2/` after every deploy. This is temporary during the frontend migration; the `/v2/` path will be removed at cut-over.
 
 **No manual deploy steps required** — push to `main` and the workflow handles everything.
 
@@ -236,14 +206,6 @@ Response includes a human-readable `summary` field, e.g.:
 | `/api/entries/:group/:date/:slug` | GET | Entry detail with FY hours |
 | `/api/entries/:id` | PATCH | Update entry (check-in, hours, notes) |
 | `/api/entries/:id` | DELETE | Delete entry |
-| `/api/entries/:id/upload-code` | POST | Generate volunteer upload code for entry (Admin only) |
-
-### Upload (Public — no authentication required)
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/upload/validate` | POST | Validate a 4-letter upload code, returns session + volunteer context |
-| `/api/upload/files` | POST | Upload photos using a valid code (multipart/form-data) |
 
 ### Profiles
 
@@ -287,50 +249,46 @@ Response includes a human-readable `summary` field, e.g.:
 
 ## Pages
 
+All pages are Vue 3 SPA routes served at `/`.
+
 | Page | URL | Description |
 |---|---|---|
-| Dashboard | `/` | FY stats, progress bar, next session |
-| Admin | `/admin.html` | Eventbrite sync buttons, exports, site link |
-| Groups | `/groups.html` | Groups listing with FY filter |
-| Group Detail | `/groups/:key/detail.html` | Stats, regulars, sessions, edit/delete |
-| Sessions | `/sessions.html` | Sessions listing with FY filter |
-| Session Detail | `/sessions/:group/:date/details.html` | Entries, check-in, set hours, edit/delete |
-| Volunteers | `/volunteers.html` | Profiles with FY filter, sort, group filter, search |
-| Profile Detail | `/profiles/:slug/details.html` | FY stats, group hours, entries, records |
-| Entry Detail | `/entries/:id/edit.html` | Tag buttons, hours, notes, delete; consent button (if no privacy consent); upload button (check-in+) |
-| Add Entry | `/sessions/:group/:date/add-entry.html` | Volunteer search and create |
-| Upload | `/upload` | Public volunteer photo upload (code entry) — no auth required |
-| Upload | `/upload/:code` | Same page — pre-fills and auto-submits the code from the URL |
+| Dashboard | `/` | FY stats, next session, personalised calendar |
+| Admin | `/admin` | Eventbrite sync buttons, exports, site links |
+| Groups | `/groups` | Groups listing with FY filter |
+| Group Detail | `/groups/:key` | Stats, regulars, sessions, edit/delete |
+| Sessions | `/sessions` | Sessions listing with FY filter, search, tag filters |
+| Session Detail | `/sessions/:group/:date` | Entries, check-in, set hours, gallery, edit/delete |
+| Volunteers | `/profiles` | Profiles with FY filter, sort, group filter, search |
+| Profile Detail | `/profiles/:slug` | FY stats, group hours, entries, records |
+| Entries | `/entries` | Admin-only: all entries with filters and edit modal |
+| Login | `/login` | Magic link + verification code (self-service) and Microsoft (trusted users) |
+| Upload | `/upload` | Volunteer photo upload (authenticated, `?entryId=` param) |
+| Consent | `/profiles/:slug/consent` | Privacy and photo consent collection |
 
 ## Project Structure
 
 ```
 dtv-tracker-app/
-├── app.js              # Express server entry point
+├── app.js              # Express entry point — mounts routes, serves frontend/dist/ in prod,
+│                       # integrates Vite as middleware in dev (HMR at :3000)
+├── public/             # Static assets at fixed URLs (favicon, icons, img, webmanifest)
 ├── types/              # TypeScript type definitions (SharePoint + domain + API)
 ├── services/           # Data layer: Graph API client, repositories, enrichment
-│   ├── eventbrite-client.ts  # Eventbrite API client (attendees, org events)
 │   └── repositories/   # CRUD for each SharePoint list
 ├── routes/             # API endpoints split by domain
 │   ├── api.ts          # Router mounting all route modules
-│   ├── groups.ts       # Groups CRUD
-│   ├── sessions.ts     # Sessions CRUD + exports
-│   ├── entries.ts      # Entries CRUD
-│   ├── profiles.ts     # Profiles CRUD + records + transfer
-│   ├── regulars.ts     # Regulars management
-│   ├── stats.ts        # Dashboard stats, cache, config
-│   ├── eventbrite.ts   # Eventbrite sync endpoints
-│   ├── upload.ts       # Public photo upload endpoints (validate + upload, no auth)
-│   └── auth/           # Authentication (Microsoft + magic link)
+│   └── auth/           # Authentication (Microsoft + magic link + verify)
 ├── middleware/          # Auth guard middleware (session + API key)
-├── frontend/           # Vue 3 + Vite frontend (new — in development)
+├── templates/          # Handlebars email templates
+├── frontend/           # Vue 3 + Vite SPA
 │   ├── src/
-│   │   ├── pages/      # Page components (thin wrappers)
-│   │   ├── router/     # Vue Router
+│   │   ├── pages/      # Page components
+│   │   ├── components/ # Shared components
+│   │   ├── stores/     # Pinia stores
+│   │   ├── router/     # Vue Router + path builders
 │   │   └── main.ts     # App bootstrap
-│   ├── vite.config.ts  # Dev proxy config; VITE_BASE_PATH for staging builds
-│   └── dist/           # Built output (served by Express at /v2/ during migration)
-├── public/             # Legacy frontend HTML/CSS/JS (being replaced by frontend/)
+│   └── dist/           # Built output — served by Express in production
 ├── docs/               # SharePoint schema, setup guides, progress notes
 └── test/               # Auth and data verification scripts
 ```
@@ -338,7 +296,7 @@ dtv-tracker-app/
 ## Tech Stack
 
 - **Backend**: Node.js with Express 5, TypeScript for services/types
-- **Frontend**: Vanilla HTML/CSS/JavaScript (mobile-first, served statically)
+- **Frontend**: Vue 3 + Vite + TypeScript (SPA, mobile-first)
 - **Data**: SharePoint Online lists via Microsoft Graph API
 - **Integrations**: Eventbrite API (event sync, attendee sync, consent records)
 - **Hosting**: Azure App Service (UK South)
@@ -350,8 +308,6 @@ dtv-tracker-app/
 - **[CLAUDE.md](CLAUDE.md)** - Project context, data model, and development guidelines
 - **[docs/sharepoint-schema.md](docs/sharepoint-schema.md)** - SharePoint list schemas and field definitions
 - **[docs/sharepoint-setup.md](docs/sharepoint-setup.md)** - One-time SharePoint/Entra ID configuration (admin)
-- **[docs/power-automate-flows.md](docs/power-automate-flows.md)** - Eventbrite sync documentation (legacy PA flows + Node.js migration)
-- **[docs/technical-debt.md](docs/technical-debt.md)** - Performance and optimization tracking
 - **[docs/progress.md](docs/progress.md)** - Development session notes
 
 ## Development Guidelines
@@ -366,7 +322,7 @@ dtv-tracker-app/
 - Never commit `.env` file (already in `.gitignore`)
 - Never commit secrets or credentials
 - Validate all user input
-- Prevent XSS when displaying user content (`escapeHtml()` in frontend)
+- Prevent XSS when displaying user content
 
 ### SharePoint Integration
 - Always reference [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for field names

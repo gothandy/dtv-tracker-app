@@ -75,7 +75,7 @@ router.post('/magic/send', async (req: Request, res: Response) => {
 router.get('/magic/callback', async (req: Request, res: Response) => {
   const token = req.query.token as string | undefined;
   if (!token) {
-    res.redirect('/login.html?reason=invalid-state');
+    res.redirect('/login?reason=invalid-state');
     return;
   }
 
@@ -91,13 +91,13 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
     const payload = jwt.verify(token, secret) as { email: string };
     email = payload.email;
   } catch {
-    res.redirect('/login.html?reason=invalid-state');
+    res.redirect('/login?reason=invalid-state');
     return;
   }
 
   const result = await resolvePersonalSession(email, '', '');
   if (!result.ok) {
-    res.redirect(`/login.html?reason=not-approved&email=${encodeURIComponent(email)}`);
+    res.redirect(`/login?reason=not-approved&email=${encodeURIComponent(email)}`);
     return;
   }
 
@@ -106,7 +106,7 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
     rawToken = await createAuthToken(result.sessionUser.profileId!, req.headers['user-agent']);
   } catch (err: any) {
     console.error('[Magic] createAuthToken error:', err.message);
-    res.redirect('/login.html?reason=invalid-state');
+    res.redirect('/login?reason=invalid-state');
     return;
   }
 

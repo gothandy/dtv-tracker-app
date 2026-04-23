@@ -10,18 +10,10 @@ function getCommit(): string {
 
 export default defineConfig({
   plugins: [vue({ template: { transformAssetUrls: false } }), tailwindcss(), checker({ vueTsc: true })],
+  publicDir: '../public',
   base: process.env.VITE_BASE_PATH ?? '/',
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __GIT_COMMIT__: JSON.stringify(getCommit()),
   },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api':    'http://localhost:3000',
-      '/auth':   'http://localhost:3000',
-      '/media':  'http://localhost:3000',
-      '/svg':    'http://localhost:3000',
-    }
-  }
 })
