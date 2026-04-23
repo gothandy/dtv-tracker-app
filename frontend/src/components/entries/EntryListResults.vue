@@ -1,14 +1,15 @@
 <template>
   <div class="elr-wrap">
 
-    <p v-if="loading" class="elr-empty">Loading…</p>
+    <LoadingSpinner v-if="loading" />
     <p v-else-if="error" class="elr-empty elr-empty--error">{{ error }}</p>
     <p v-else-if="!entries.length" class="elr-empty">No entries found</p>
 
     <template v-else>
-      <div v-if="allowSelect" class="elr-select-bar">
-        <button class="elr-select-btn" @click="selectAll">Select all</button>
-        <button class="elr-select-btn" @click="deselectAll">Deselect all</button>
+      <div v-if="allowSelect" class="list-select-row">
+        <button class="list-select-all" @click="toggleSelectAll">
+          {{ allSelected ? 'Deselect all' : 'Select all' }}
+        </button>
       </div>
 
       <div class="elr-list">
@@ -23,7 +24,7 @@
             type="checkbox"
             class="elr-checkbox"
             :checked="selected.includes(e.id)"
-            @change="onSelect(e.id, !selected.includes(e.id))"
+            @change="toggle(e.id)"
           />
           <button
             v-if="allowEdit"
@@ -46,8 +47,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { EntryListItemResponse } from '../../../../types/api-responses'
 import EntryListItem from './EntryListItem.vue'
+import LoadingSpinner from '../LoadingSpinner.vue'
 import { entryPath } from '../../router/index'
 
 const props = defineProps<{
@@ -64,27 +67,23 @@ const emit = defineEmits<{
   'editEntry': [entry: EntryListItemResponse]
 }>()
 
-function onSelect(id: number, val: boolean) {
-  const next = val
-    ? [...props.selected, id]
-    : props.selected.filter(x => x !== id)
+const allSelected = computed(() =>
+  props.entries.length > 0 && props.entries.every(e => props.selected.includes(e.id))
+)
+
+function toggleSelectAll() {
+  emit('update:selected', allSelected.value ? [] : props.entries.map(e => e.id))
+}
+
+function toggle(id: number) {
+  const next = props.selected.includes(id)
+    ? props.selected.filter(x => x !== id)
+    : [...props.selected, id]
   emit('update:selected', next)
-}
-
-function selectAll() {
-  emit('update:selected', props.entries.map(e => e.id))
-}
-
-function deselectAll() {
-  emit('update:selected', [])
 }
 </script>
 
 <style scoped>
-.elr-wrap {
-  background: var(--color-dtv-sand-light);
-}
-
 .elr-empty {
   padding: 1rem;
   font-size: 0.9rem;
@@ -93,25 +92,6 @@ function deselectAll() {
 .elr-empty--error {
   color: var(--color-dtv-dirt);
 }
-
-.elr-select-bar {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-dtv-light);
-}
-
-.elr-select-btn {
-  background: none;
-  border: none;
-  font-family: inherit;
-  font-size: 0.85rem;
-  color: var(--color-dtv-green);
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-}
-.elr-select-btn:hover { color: var(--color-dtv-green-dark); }
 
 .elr-list {
   display: flex;

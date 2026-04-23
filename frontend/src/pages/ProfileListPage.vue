@@ -15,6 +15,7 @@
       :can-bulk-edit="profile.isAdmin"
       :fy="fy"
       @add-records="showBulkModal = true"
+      @add-profile="showAddProfile = true"
       @update:selected="selected = $event"
     />
     <ProfileListResults
@@ -25,6 +26,14 @@
       :can-select="profile.isAdmin"
       :fy="fy"
       @update:selected="selected = $event"
+    />
+
+    <ProfileAddModal
+      v-if="showAddProfile"
+      :working="addProfileWorking"
+      :error="addProfileError"
+      @close="showAddProfile = false"
+      @add="onAddProfile"
     />
 
     <ProfileBulkRecordsModal
@@ -48,15 +57,20 @@ import ProfileListActions from '../components/profiles/ProfileListActions.vue'
 import ProfileListResults from '../components/profiles/ProfileListResults.vue'
 import ProfileBulkRecordsModal from './modals/ProfileBulkRecordsModal.vue'
 import type { BulkRecordPayload } from './modals/ProfileBulkRecordsModal.vue'
+import ProfileAddModal from './modals/ProfileAddModal.vue'
+import type { AddProfilePayload } from './modals/ProfileAddModal.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import { useViewer } from '../composables/useViewer'
 import { useProfileListStore } from '../stores/profileList'
 import { useGroupListStore } from '../stores/groupList'
+import { useRouter } from 'vue-router'
+import { profilePath } from '../router'
 import type { ProfileResponse } from '../../../types/api-responses'
 
 usePageTitle('Profiles')
 
 const profile = useViewer()
+const router = useRouter()
 const store = useProfileListStore()
 const groupsStore = useGroupListStore()
 
@@ -67,6 +81,9 @@ const selected = ref<number[]>([])
 const showBulkModal = ref(false)
 const bulkWorking = ref(false)
 const bulkError = ref('')
+const showAddProfile = ref(false)
+const addProfileWorking = ref(false)
+const addProfileError = ref('')
 const recordOptions = ref<{ types: string[]; statuses: string[] }>({ types: [], statuses: [] })
 
 // Individual (non-group) profile IDs from current selection
@@ -105,6 +122,31 @@ async function onBulkSave(payload: BulkRecordPayload) {
     console.error('[ProfileListPage] onBulkSave', e)
   } finally {
     bulkWorking.value = false
+  }
+}
+
+async function onAddProfile(data: AddProfilePayload) {
+  addProfileWorking.value = true
+  addProfileError.value = ''
+  try {
+    const res = await fetch('/api/profiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || `Failed to create profile (${res.status})`)
+    }
+    const json = await res.json()
+    showAddProfile.value = false
+    await store.fetch(fy.value, group.value)
+    if (json.data?.slug) router.push(profilePath(json.data.slug))
+  } catch (e) {
+    addProfileError.value = e instanceof Error ? e.message : 'An error occurred'
+    console.error('[ProfileListPage] onAddProfile', e)
+  } finally {
+    addProfileWorking.value = false
   }
 }
 

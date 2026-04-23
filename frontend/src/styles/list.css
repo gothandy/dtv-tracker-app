@@ -46,3 +46,36 @@
   cursor: pointer;
 }
 .list-filter-select:disabled { opacity: 0.5; cursor: default; }
+
+/* Shared card grid — Groups, Sessions list results */
+.list-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+}
+@media (width < 48em) { .list-card-grid { grid-template-columns: 1fr; } }
+
+.list-card-item { position: relative; }
+
+.list-card-checkbox {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 1;
+  width: 16px; height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-dtv-green);
+}
+
+/* Shared select-all row — Groups, Sessions, Entries, Profiles list results */
+.list-select-row {
+  padding: 0.5rem 0;
+  margin: 0 1.5rem;
+  border-bottom: 1px solid var(--color-surface-hover);
+}
+.list-select-all {
+  background: none; border: none; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; color: var(--color-dtv-green); padding: 0;
+}
+.list-select-all:hover { text-decoration: underline; }

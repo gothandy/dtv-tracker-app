@@ -165,6 +165,16 @@ router.post('/sessions', async (req: Request, res: Response) => {
       return;
     }
 
+    const allSessions = await sessionsRepository.getAll();
+    const clash = allSessions.find(s =>
+      safeParseLookupId(s[GROUP_LOOKUP]) === Number(groupId) &&
+      (s.Date || '').substring(0, 10) === dateStr
+    );
+    if (clash) {
+      res.status(409).json({ success: false, error: `A session for this group already exists on ${dateStr}` });
+      return;
+    }
+
     const groupKey = (group.Title || '').toLowerCase();
     const title = `${dateStr} ${group.Title || ''}`.trim();
 

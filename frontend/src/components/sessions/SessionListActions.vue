@@ -5,9 +5,10 @@
     </span>
 
     <div class="list-actions-buttons">
-      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selected.length" @click="emit('add-tags')" />
-      <AppButton label="Download CSV" icon="download" mode="icon-responsive" :disabled="!selected.length" @click="onDownload" />
+      <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selectedSessions.length" @click="emit('add-tags')" />
+      <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="!selectedSessions.length" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
+      <AppButton label="Add session" icon="add" mode="icon-only" @click="emit('add-session')" />
     </div>
   </div>
 </template>
@@ -28,6 +29,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:selected': [ids: number[]]
   'add-tags': []
+  'add-session': []
 }>()
 
 const selectedSessions = computed(() => props.sessions.filter(s => props.selected.includes(s.id)))

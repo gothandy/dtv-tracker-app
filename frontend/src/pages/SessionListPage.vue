@@ -9,6 +9,7 @@
         :can-bulk-tag="profile.isAdmin"
         v-model:selected="selected"
         @add-tags="showTagModal = true"
+        @add-session="showAddSession = true"
       />
       <SessionListResults :sessions="filtered" :loading="store.loading" v-model:selected="selected" />
     </div>
@@ -21,11 +22,20 @@
       @close="showTagModal = false"
       @save="onApplyTag"
     />
+
+    <GroupAddSessionModal
+      v-if="showAddSession"
+      :groups="groupOptions"
+      :working="addSessionWorking"
+      :error="addSessionError"
+      @close="showAddSession = false"
+      @add="onAddSession"
+    />
   </DefaultLayout>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
@@ -33,21 +43,37 @@ import SessionListFilter from '../components/sessions/SessionListFilter.vue'
 import SessionListActions from '../components/sessions/SessionListActions.vue'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
 import SessionAddTagsModal from './modals/SessionAddTagsModal.vue'
+import GroupAddSessionModal from './modals/GroupAddSessionModal.vue'
+import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
 import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
+import { useRouter } from 'vue-router'
+import { sessionPath } from '../router'
 import type { Session } from '../types/session'
 
 usePageTitle('Sessions')
 
 const store = useSessionListStore()
 const profile = useViewer()
+const router = useRouter()
 const filtered = ref<Session[]>([])
 const selected = ref<number[]>([])
 const showTagModal = ref(false)
 const tagWorking = ref(false)
 const tagError = ref('')
+const showAddSession = ref(false)
+const addSessionWorking = ref(false)
+const addSessionError = ref('')
 
 store.fetch()
+
+const groupOptions = computed(() => {
+  const seen = new Set<number>()
+  return store.sessions
+    .filter(s => s.groupId && !seen.has(s.groupId!) && seen.add(s.groupId!))
+    .map(s => ({ id: s.groupId!, key: s.groupKey ?? '', displayName: s.groupName }))
+    .sort((a, b) => (a.displayName ?? a.key).localeCompare(b.displayName ?? b.key))
+})
 
 async function onApplyTag(label: string, termGuid: string) {
   tagWorking.value = true
@@ -69,5 +95,29 @@ async function onApplyTag(label: string, termGuid: string) {
   tagWorking.value = false
   tagError.value = ''
   selected.value = []
+}
+
+async function onAddSession(data: AddSessionPayload) {
+  addSessionWorking.value = true
+  addSessionError.value = ''
+  const res = await fetch('/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}))
+    addSessionError.value = json.error || 'Failed to create session — please try again'
+    addSessionWorking.value = false
+    console.error('[SessionListPage] add-session failed', res.status)
+    return
+  }
+  const json = await res.json()
+  showAddSession.value = false
+  addSessionWorking.value = false
+  await store.fetch()
+  if (json.data?.groupKey && json.data?.date) {
+    router.push(sessionPath(json.data.groupKey, json.data.date))
+  }
 }
 </script>

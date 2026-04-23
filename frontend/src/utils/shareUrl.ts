@@ -1,8 +1,8 @@
-export async function shareCurrentUrl(): Promise<void> {
+export function shareCurrentUrl(): void {
   const url = window.location.href
   if (navigator.share) {
-    await navigator.share({ url })
-  } else {
-    await navigator.clipboard.writeText(url)
+    navigator.share({ url }).catch(() => {})
+  } else if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).catch(() => {})
   }
 }

@@ -576,6 +576,14 @@ router.post('/profiles', async (req: Request, res: Response) => {
       return;
     }
 
+    const nameNorm = name.trim().toLowerCase();
+    const allProfiles = await profilesRepository.getAll();
+    const nameClash = allProfiles.find(p => (p.Title || '').toLowerCase() === nameNorm);
+    if (nameClash) {
+      res.status(409).json({ success: false, error: `A profile named "${name.trim()}" already exists` });
+      return;
+    }
+
     const fields: { Title: string; Email?: string; MatchName?: string } = {
       Title: name.trim(),
       MatchName: toMatchName(name.trim())
@@ -585,7 +593,7 @@ router.post('/profiles', async (req: Request, res: Response) => {
     }
 
     const id = await profilesRepository.create(fields);
-    res.json({ success: true, data: { id, name: fields.Title, email: fields.Email || '' } });
+    res.json({ success: true, data: { id, slug: profileSlug(fields.Title, id), name: fields.Title, email: fields.Email || '' } });
   } catch (error: any) {
     console.error('Error creating profile:', error);
     res.status(500).json({

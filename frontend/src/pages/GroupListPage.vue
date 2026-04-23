@@ -6,7 +6,6 @@
       <GroupListFilter
         :groups="groupsStore.groups"
         :sessions="sessionsStore.sessions"
-        :can-add-group="profile.isAdmin"
         @filtered="filtered = $event"
       />
       <GroupListActions
@@ -18,7 +17,7 @@
       />
       <GroupListResults
         :groups="filtered"
-        :loading="groupsStore.loading"
+        :loading="groupsStore.loading || sessionsStore.loading"
         :error="groupsStore.error"
         :selected="profile.isAdmin ? selected : undefined"
         @update:selected="selected = $event"

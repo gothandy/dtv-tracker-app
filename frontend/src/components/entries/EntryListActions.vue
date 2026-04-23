@@ -4,7 +4,7 @@
       {{ selected.length }} / {{ entries.length }} entries &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
     <div class="list-actions-buttons">
-      <AppButton label="Download CSV" icon="download" mode="icon-responsive" @click="onDownload" />
+      <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="!selectedEntries.length" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
     </div>
   </div>
@@ -31,9 +31,7 @@ const totalHours = computed(() =>
   Math.round(props.entries.reduce((sum, e) => sum + e.hours, 0) * 10) / 10)
 
 function onDownload() {
-  const source = props.selected.length
-    ? props.entries.filter(e => props.selected.includes(e.id))
-    : props.entries
+  const source = selectedEntries.value.length ? selectedEntries.value : props.entries
 
   const today = new Date().toISOString().slice(0, 10)
   downloadCsv(`${today} Entries.csv`,

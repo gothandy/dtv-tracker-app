@@ -169,6 +169,10 @@ router.get('/entries', async (req: Request, res: Response) => {
     const filterAdultId = req.query.accompanyingAdultId ? parseInt(String(req.query.accompanyingAdultId), 10) : null;
     // cancelled filter: 'true' = only cancelled, 'false'/'omitted' = only active, 'all' = both
     const cancelledFilter = req.query.cancelled ? String(req.query.cancelled) : 'false';
+    // fy filter: 'future' | 'rolling' | 'FY####' | 'all' (omit = no filter)
+    const fyParam = req.query.fy ? String(req.query.fy) : '';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const rollingStart = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10); })();
 
     const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
       entriesRepository.getAll(),
@@ -193,6 +197,17 @@ router.get('/entries', async (req: Request, res: Response) => {
         if (groupId === undefined) return [];
         const group = groupMap.get(groupId);
         if (!group) return [];
+
+        // Apply FY filter on session date
+        if (fyParam && fyParam !== 'all') {
+          const sessionDate = session.Date.substring(0, 10);
+          if (fyParam === 'future' && sessionDate < todayStr) return [];
+          else if (fyParam === 'rolling' && (sessionDate < rollingStart || sessionDate > todayStr)) return [];
+          else if (fyParam.startsWith('FY')) {
+            const fyYear = parseInt(fyParam.replace('FY', ''), 10);
+            if (calculateFinancialYear(new Date(session.Date)) !== fyYear) return [];
+          }
+        }
 
         // Apply cancelled filter
         const isCancelled = !!e.Cancelled;

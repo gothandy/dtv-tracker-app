@@ -4,21 +4,10 @@
       {{ selected.length }} / {{ filteredProfiles.length }} {{ filteredProfiles.length === 1 ? 'profile' : 'profiles' }}
     </span>
     <div class="list-actions-buttons">
-      <AppButton
-        label="Add Records"
-        icon="add"
-        mode="icon-responsive"
-        :disabled="individualSelected.length === 0"
-        @click="emit('add-records')"
-      />
-      <AppButton
-        label="Download CSV"
-        icon="download"
-        mode="icon-responsive"
-        :disabled="selected.length === 0"
-        @click="onDownload"
-      />
+      <AppButton label="Add Records" icon="add" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-records')" />
+      <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="selectedInFiltered.length === 0" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
+      <AppButton label="Add profile" icon="add" mode="icon-only" @click="emit('add-profile')" />
     </div>
   </div>
 </template>
@@ -39,15 +28,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'add-records': []
+  'add-profile': []
   'update:selected': [ids: number[]]
 }>()
 
-const individualSelected = computed(() =>
-  props.selected.filter(id => {
-    const p = props.filteredProfiles.find(x => x.id === id)
-    return p && !p.isGroup
-  })
-)
+const selectedInFiltered = computed(() => props.filteredProfiles.filter(p => props.selected.includes(p.id)))
+
+const individualSelected = computed(() => selectedInFiltered.value.filter(p => !p.isGroup))
 
 function hoursFor(p: ProfileResponse): number {
   return props.fy === 'all' ? p.hoursAll : p.hoursThisFY
@@ -58,7 +45,7 @@ function sessionsFor(p: ProfileResponse): number {
 }
 
 function onDownload() {
-  const source = props.filteredProfiles.filter(p => props.selected.includes(p.id))
+  const source = selectedInFiltered.value
   const today = new Date().toISOString().slice(0, 10)
   downloadCsv(`${today} Profiles.csv`,
     ['Name', 'Email', 'Sessions', 'Hours'],
