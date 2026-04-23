@@ -6,29 +6,16 @@
     <div class="list-actions-buttons">
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="!selectedGroups.length" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
-      <AppButton label="New group" icon="add" mode="icon-only" @click="showNew = true" />
+      <AppButton label="New group" icon="add" mode="icon-only" @click="emit('add-group')" />
     </div>
   </div>
-
-  <GroupAddModal
-    v-if="showNew"
-    :working="saving"
-    :error="saveError"
-    @close="showNew = false; saveError = ''"
-    @add="onAdd"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
 import AppButton from '../AppButton.vue'
-import GroupAddModal from '../../pages/modals/GroupAddModal.vue'
-import type { AddGroupPayload } from '../../pages/modals/GroupAddModal.vue'
 import { downloadCsv } from '../../utils/listCsv'
 import { shareCurrentUrl } from '../../utils/shareUrl'
-import { useGroupListStore } from '../../stores/groupList'
-import { groupPath } from '../../router/index'
 import type { GroupWithStats } from './GroupListFilter.vue'
 
 const props = defineProps<{
@@ -37,8 +24,10 @@ const props = defineProps<{
   canBulkTag: boolean
 }>()
 
-const router = useRouter()
-const groupsStore = useGroupListStore()
+const emit = defineEmits<{
+  'add-group': []
+  'update:selected': [ids: number[]]
+}>()
 
 const selectedGroups = computed(() => props.groups.filter(g => props.selected.includes(g.id)))
 
@@ -57,35 +46,5 @@ function onDownload() {
 
 function onShare() {
   shareCurrentUrl()
-}
-
-const showNew = ref(false)
-const saving = ref(false)
-const saveError = ref('')
-
-async function onAdd(data: AddGroupPayload) {
-  saving.value = true
-  saveError.value = ''
-  try {
-    const res = await fetch('/api/groups', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) {
-      const json = await res.json().catch(() => ({}))
-      saveError.value = json.error || 'Failed to create group'
-      return
-    }
-    const json = await res.json()
-    showNew.value = false
-    await groupsStore.fetch()
-    if (json.data?.key) router.push(groupPath(json.data.key))
-  } catch (e) {
-    saveError.value = e instanceof Error ? e.message : 'An error occurred'
-    console.error('[GroupListActions] onAdd', e)
-  } finally {
-    saving.value = false
-  }
 }
 </script>

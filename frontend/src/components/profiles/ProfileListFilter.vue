@@ -70,7 +70,7 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 
-const fy          = ref((route.query.fy as string)           || 'rolling')
+const fy          = ref((route.query.fy as string)           || 'future')
 const group       = ref((route.query.group as string)        || '')
 const search      = ref((route.query.search as string)       || '')
 const sort        = ref((route.query.sort as string)         || 'az')

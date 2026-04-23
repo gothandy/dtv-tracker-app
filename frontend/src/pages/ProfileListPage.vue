@@ -74,7 +74,7 @@ const router = useRouter()
 const store = useProfileListStore()
 const groupsStore = useGroupListStore()
 
-const fy = ref('rolling')
+const fy = ref('future')
 const group = ref('')
 const filtered = ref<ProfileResponse[]>([])
 const selected = ref<number[]>([])
