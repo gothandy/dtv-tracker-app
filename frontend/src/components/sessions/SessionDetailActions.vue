@@ -46,6 +46,7 @@ import SessionEditModal from '../../pages/modals/SessionEditModal.vue'
 import SessionEmailSendModal from '../../pages/modals/SessionEmailSendModal.vue'
 import EntryUploadPickerModal from '../../pages/modals/EntryUploadPickerModal.vue'
 import { groupPath } from '../../router/index'
+import { shareCurrentUrl } from '../../utils/shareUrl'
 
 const props = defineProps<{
   session: SessionDetailResponse
@@ -83,12 +84,7 @@ const adults = computed<EmailAdult[]>(() =>
 )
 
 function onShare() {
-  const url = window.location.href
-  if (navigator.share) {
-    navigator.share({ url }).catch(() => {})
-  } else if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(url).catch(() => {})
-  }
+  shareCurrentUrl()
 }
 
 function onUpload() {

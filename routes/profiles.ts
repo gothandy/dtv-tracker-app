@@ -45,6 +45,8 @@ router.get('/profiles', async (req: Request, res: Response) => {
     const fy = calculateCurrentFY();
     const fyParam = req.query.fy ? String(req.query.fy) : null;
     const isRolling = fyParam === 'rolling';
+    const isFuture = fyParam === 'future';
+    const todayStr = new Date().toISOString().slice(0, 10);
     let thisFYStart: number;
     let lastFYStart: number;
     let rollingStart: string | undefined;
@@ -99,7 +101,13 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const ps = profileStats.get(volunteerId)!;
       ps.hoursAll += hours;
       ps.sessionsAll.add(sessionId);
-      if (isRolling) {
+      if (isFuture) {
+        const sessionDate = session.Date.substring(0, 10);
+        if (sessionDate >= todayStr && !e[ENTRY_CANCELLED]) {
+          ps.hoursThisFY += hours;
+          ps.sessionsThisFY.add(sessionId);
+        }
+      } else if (isRolling) {
         const sessionDate = session.Date.substring(0, 10);
         if (sessionDate >= rollingStart! && sessionDate <= rollingEnd!) {
           ps.hoursThisFY += hours;
@@ -568,6 +576,14 @@ router.post('/profiles', async (req: Request, res: Response) => {
       return;
     }
 
+    const nameNorm = name.trim().toLowerCase();
+    const allProfiles = await profilesRepository.getAll();
+    const nameClash = allProfiles.find(p => (p.Title || '').toLowerCase() === nameNorm);
+    if (nameClash) {
+      res.status(409).json({ success: false, error: `A profile named "${name.trim()}" already exists` });
+      return;
+    }
+
     const fields: { Title: string; Email?: string; MatchName?: string } = {
       Title: name.trim(),
       MatchName: toMatchName(name.trim())
@@ -577,7 +593,7 @@ router.post('/profiles', async (req: Request, res: Response) => {
     }
 
     const id = await profilesRepository.create(fields);
-    res.json({ success: true, data: { id, name: fields.Title, email: fields.Email || '' } });
+    res.json({ success: true, data: { id, slug: profileSlug(fields.Title, id), name: fields.Title, email: fields.Email || '' } });
   } catch (error: any) {
     console.error('Error creating profile:', error);
     res.status(500).json({

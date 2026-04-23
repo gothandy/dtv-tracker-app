@@ -4,6 +4,7 @@ import { ensureAuth, user } from '../composables/useAuth'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresTrusted?: boolean  // Admin / Check In / Read Only only
+    requiresAdmin?: boolean    // Admin only
     requiresAuth?: boolean     // Any authenticated user (self-service included)
   }
 }
@@ -47,7 +48,7 @@ export const router = createRouter({
     { path: '/privacy', component: PrivacyPage },
     { path: '/terms', component: TermsPage },
     { path: '/login', component: LoginPage },
-    { path: '/entries', component: EntriesPage, meta: { requiresTrusted: true } },
+    { path: '/entries', component: EntriesPage, meta: { requiresAdmin: true } },
     { path: '/admin', component: AdminPage },
     { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
     { path: '/forbidden', component: () => import('../pages/ForbiddenPage.vue') },
@@ -101,9 +102,10 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (to.meta.requiresTrusted || to.meta.requiresAuth) {
+  if (to.meta.requiresTrusted || to.meta.requiresAdmin || to.meta.requiresAuth) {
     await ensureAuth()
     if (!user.value) return '/not-found'
+    if (to.meta.requiresAdmin && user.value.role !== 'admin') return '/forbidden'
     if (to.meta.requiresTrusted && user.value.role === 'selfservice') return '/forbidden'
     return
   }

@@ -2,26 +2,33 @@
   <ModalLayout
     title="Add Session"
     action="Create"
-    :action-disabled="!form.date"
+    :action-disabled="!form.date || !resolvedGroupId"
     :working="working"
     :error="error"
     @close="emit('close')"
     @action="add"
   >
     <FormLayout :disabled="working">
+      <FormRow v-if="groups" title="Group" :full-width="true">
+        <select v-model="form.groupId" class="gasm-input">
+          <option value="">Select a group…</option>
+          <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.displayName || g.key }}</option>
+        </select>
+      </FormRow>
+
       <FormRow title="Date" :full-width="true">
         <input v-model="form.date" type="date" class="gasm-input" />
       </FormRow>
 
       <FormRow title="Display Name" :full-width="true">
-        <input v-model="form.name" class="gasm-input" :placeholder="group.displayName || group.key" />
+        <input v-model="form.name" class="gasm-input" :placeholder="group?.displayName || group?.key || ''" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
@@ -33,8 +40,11 @@ export type AddSessionPayload = {
   name?: string
 }
 
+type GroupOption = { id: number; key: string; displayName?: string | null }
+
 const props = defineProps<{
-  group: GroupDetailResponse
+  group?: GroupDetailResponse
+  groups?: GroupOption[]
   working: boolean
   error?: string
 }>()
@@ -47,11 +57,17 @@ const emit = defineEmits<{
 const form = reactive({
   date: '',
   name: '',
+  groupId: '' as number | '',
 })
 
+const resolvedGroupId = computed(() =>
+  props.group ? props.group.id : (form.groupId || null)
+)
+
 function add() {
+  if (!resolvedGroupId.value) return
   emit('add', {
-    groupId: props.group.id,
+    groupId: resolvedGroupId.value,
     date: form.date,
     name: form.name || undefined,
   })

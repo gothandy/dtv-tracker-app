@@ -59,11 +59,11 @@ const editingEntry = ref<EntryItem | null>(null)
 const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
-const currentFilter = ref<EntryFilterParams>({ q: '', accompanyingAdult: '', cancelled: 'false' })
+const currentFilter = ref<EntryFilterParams>({ q: '', fy: 'future', accompanyingAdult: '', cancelled: 'false' })
 
 function onFiltered(params: EntryFilterParams) {
   currentFilter.value = params
-  store.fetch({ q: params.q, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled })
+  store.fetch({ q: params.q, fy: params.fy, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled })
 }
 
 function matchesFilter(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {

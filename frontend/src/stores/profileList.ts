@@ -22,6 +22,7 @@ export const useProfileListStore = defineStore('profiles', () => {
     try {
       const params = new URLSearchParams()
       if (fy === 'rolling') params.set('fy', 'rolling')
+      else if (fy === 'future') params.set('fy', 'future')
       else if (fy && fy.startsWith('FY')) params.set('fy', fy)
       // 'all' → omit fy param; API always returns hoursAll regardless
       if (group) params.set('group', group)

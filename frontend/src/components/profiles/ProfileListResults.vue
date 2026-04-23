@@ -4,8 +4,8 @@
     <div v-else-if="error" class="plr-state plr-state--error">{{ error }}</div>
     <div v-else-if="!profiles.length" class="plr-empty">No profiles found.</div>
     <template v-else>
-      <div v-if="canSelect && selected" class="plr-select-row">
-        <button class="plr-select-all" @click="toggleSelectAll">
+      <div v-if="canSelect && selected" class="list-select-row">
+        <button class="list-select-all" @click="toggleSelectAll">
           {{ allSelected ? 'Deselect all' : 'Select all' }}
         </button>
       </div>
@@ -81,16 +81,6 @@ function toggle(id: number) {
 
 .plr-empty { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.9rem; }
 
-.plr-select-row {
-  padding: 0.5rem 1.5rem;
-  border-bottom: 1px solid var(--color-surface-hover);
-}
-
-.plr-select-all {
-  background: none; border: none; cursor: pointer;
-  font-size: 0.85rem; font-weight: 600; color: var(--color-dtv-green); padding: 0;
-}
-.plr-select-all:hover { text-decoration: underline; }
 
 .plr-list { display: flex; flex-direction: column; }
 

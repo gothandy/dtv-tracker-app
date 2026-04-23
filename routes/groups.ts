@@ -103,6 +103,23 @@ router.post('/groups', async (req: Request, res: Response) => {
       return;
     }
 
+    const keyNorm = key.trim().toLowerCase();
+    const nameNorm = typeof name === 'string' ? name.trim().toLowerCase() : '';
+
+    const existing = await groupsRepository.getAll();
+    const keyClash = existing.find(g => (g.Title || '').toLowerCase() === keyNorm);
+    if (keyClash) {
+      res.status(409).json({ success: false, error: `A group with key "${key.trim()}" already exists` });
+      return;
+    }
+    if (nameNorm) {
+      const nameClash = existing.find(g => (g.Name || '').toLowerCase() === nameNorm);
+      if (nameClash) {
+        res.status(409).json({ success: false, error: `A group with display name "${name.trim()}" already exists` });
+        return;
+      }
+    }
+
     const fields: { Title: string; Name?: string; Description?: string } = { Title: key.trim() };
     if (typeof name === 'string' && name.trim()) {
       fields.Name = name.trim();

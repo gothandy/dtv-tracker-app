@@ -2,6 +2,7 @@
 @import "./call-to-action.css";
 @import "./icons.css";
 @import "./admin.css";
+@import "./list.css";
 
 @theme {
   /* DTV brand colours — keep in sync with shared/brand.ts (used by email renderer) */

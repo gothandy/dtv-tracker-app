@@ -1,14 +1,14 @@
 <template>
-  <div class="sf-wrap">
+  <div class="list-filter sf-wrap">
     <input
       v-model="search"
       type="text"
-      class="sf-search"
+      class="list-filter-search"
       placeholder="Search sessions…"
       autocomplete="off"
     />
     <FyFilter v-model="fy" />
-    <select v-model="groupKey" class="sf-select">
+    <select v-model="groupKey" class="list-filter-select">
       <option value="">All groups</option>
       <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
     </select>
@@ -116,39 +116,6 @@ watch([fy, search, groupKey, tagLabel], ([newFy, newSearch, newGroup, newTag]) =
 </script>
 
 <style scoped>
-.sf-wrap {
-  background: var(--color-dtv-sand);
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-items: stretch;
-}
-
-.sf-search {
-  flex: 2 1 180px;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid var(--color-border);
-  font-size: 0.95rem;
-  font-family: inherit;
-  color: var(--color-text);
-  background: var(--color-white);
-  box-sizing: border-box;
-}
-.sf-search:focus { outline: none; border-color: var(--color-dtv-green); }
-
-.sf-select {
-  flex: 1 1 140px;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-border);
-  font-size: 0.85rem;
-  font-family: inherit;
-  color: var(--color-text);
-  background: var(--color-white);
-  cursor: pointer;
-}
-
 .sf-wrap :deep(.tp-wrap) { flex: 1 1 140px; display: flex; flex-direction: column; }
 .sf-wrap :deep(.tp-btn) { flex: 1; width: 100%; justify-content: space-between; }
 </style>
