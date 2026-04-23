@@ -82,7 +82,7 @@ router.get('/magic/callback', async (req: Request, res: Response) => {
   const returnTo = req.query.returnTo as string | undefined;
   const dest = typeof returnTo === 'string' && returnTo.startsWith('/') && returnTo.length <= 200
     ? returnTo
-    : (req.session.returnTo || process.env.FRONTEND_URL || '/');
+    : (req.session.returnTo || '/');
   delete req.session.returnTo;
 
   let email: string;

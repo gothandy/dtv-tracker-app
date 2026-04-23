@@ -96,11 +96,8 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     ? returnTo : null;
 
   // Link in the email opens the login page with code pre-filled — user reviews and hits enter.
-  // FRONTEND_URL is set in local dev (points to Vite); otherwise derive from request host.
-  // /v2 prefix is needed in SITE_MODE=v1 (migration); not needed in v2 mode or local dev.
-  const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-  const sitePrefix = process.env.FRONTEND_URL ? '' : (process.env.SITE_MODE === 'v2' ? '' : '/v2');
-  const loginUrl = `${base}${sitePrefix}/login`;
+  const base = `${req.protocol}://${req.get('host')}`;
+  const loginUrl = `${base}/login`;
   const callbackUrl = safeReturnTo
     ? `${loginUrl}?method=code&email=${encodeURIComponent(email)}&code=${code}&returnTo=${encodeURIComponent(safeReturnTo)}`
     : `${loginUrl}?method=code&email=${encodeURIComponent(email)}&code=${code}`;
