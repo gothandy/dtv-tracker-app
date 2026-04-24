@@ -46,7 +46,7 @@ async function main() {
         const e = events[0];
         assert('Event has id', 'id' in e, `keys: ${Object.keys(e).slice(0, 8).join(', ')}`);
         assert('Event has name', 'name' in e);
-        assert('Event has start', 'start' in e);
+        assert('Event has startDate', 'startDate' in e);
     } else {
         console.log('  (no live events — skipping field checks)');
     }
