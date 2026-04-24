@@ -164,6 +164,7 @@ const tagHours = ref<TagHoursItem[]>([])
 const today = new Date().toISOString().slice(0, 10)
 
 function mapSession(r: SessionResponse): Session {
+  const profileStats = profile.user?.profileStats
   return {
     id: r.id,
     date: r.date,
@@ -179,9 +180,9 @@ function mapSession(r: SessionResponse): Session {
     regularsCount: r.regularsCount,
     mediaCount: r.mediaCount,
     metadata: r.metadata,
-    isRegistered: r.isRegistered ?? false,
-    isAttended: r.isAttended ?? false,
-    isRegular: r.isRegular ?? false,
+    isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
+    isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),
+    isRegular: profileStats?.regularGroupIds?.includes(r.groupId ?? -1) ?? false,
   }
 }
 

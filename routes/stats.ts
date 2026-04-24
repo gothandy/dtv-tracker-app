@@ -83,7 +83,6 @@ router.get('/stats', async (req: Request, res: Response) => {
         sessions: sessionsThisFY.length,
         hours: hoursFromStats(sessionsThisFY),
         volunteers: thisFYProfiles,
-        profiles: thisFYProfiles,
         financialYear: `${fy.startYear}-${fy.endYear}`,
         label: 'This FY'
       },
@@ -92,7 +91,6 @@ router.get('/stats', async (req: Request, res: Response) => {
         sessions: sessionsLastFY.length,
         hours: hoursFromStats(sessionsLastFY),
         volunteers: lastFYProfiles,
-        profiles: lastFYProfiles,
         financialYear: `${lastFYStartYear}-${fy.startYear}`,
         label: 'Last FY'
       }

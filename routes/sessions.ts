@@ -22,7 +22,6 @@ import {
   findGroupByKey,
   safeParseLookupId,
   parseHours,
-  nameToSlug,
   profileSlug,
   extractMetadataTags,
   calculateSessionStats,
@@ -45,17 +44,9 @@ const router: Router = express.Router();
 
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
-    const profileId = req.session.user?.profileId;
-
-    // TODO #70: remove per-user flag embedding after public/ migration — Vue frontend derives from profileStats client-side
-    const profileStats = req.session.user?.profileStats;
-    const hasProfileStats = profileId !== undefined && profileStats !== undefined;
-
-    const [sessionsRaw, groupsRaw, entriesRaw, regularsRaw] = await Promise.all([
+    const [sessionsRaw, groupsRaw, regularsRaw] = await Promise.all([
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
-      // Skip broad entries fetch when profile stats give us session IDs
-      profileId !== undefined && !hasProfileStats ? entriesRepository.getAll() : Promise.resolve([]),
       regularsRepository.getAll(),
     ]);
 
@@ -63,28 +54,10 @@ router.get('/sessions', async (req: Request, res: Response) => {
     const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
     const groupDescriptionMap = new Map(groupsRaw.map(g => [g.ID, g.Description || undefined]));
 
-    // Count regulars per group for the X/Y Regular stat
     const groupRegularsCountMap = new Map<number, number>();
     for (const r of regularsRaw) {
       const gid = safeParseLookupId(r[GROUP_LOOKUP]);
       if (gid !== undefined) groupRegularsCountMap.set(gid, (groupRegularsCountMap.get(gid) ?? 0) + 1);
-    }
-
-    // Build per-user lookup maps — from profile stats if available, otherwise from fetched entries/regulars
-    const registeredSessionIds = new Set<number>(profileStats?.sessionIds ?? []);
-    const regularGroupIdSet = new Set<number>(profileStats?.regularGroupIds ?? []);
-
-    if (profileId !== undefined && !hasProfileStats) {
-      for (const e of entriesRaw) {
-        const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-        const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-        if (sid !== undefined && pid === profileId) registeredSessionIds.add(sid);
-      }
-      for (const r of regularsRaw) {
-        const pid = safeParseLookupId(r[PROFILE_LOOKUP]);
-        const gid = safeParseLookupId(r[GROUP_LOOKUP]);
-        if (pid === profileId && gid !== undefined) regularGroupIdSet.add(gid);
-      }
     }
 
     const today = new Date().toISOString().slice(0, 10);
@@ -95,7 +68,6 @@ router.get('/sessions', async (req: Request, res: Response) => {
         const groupId = safeParseLookupId(s[GROUP_LOOKUP]);
         const date = s.Date!;
         const tags = extractMetadataTags(s[SESSION_METADATA]);
-
         const stats = parseSessionStats(s[SESSION_STATS]);
 
         return {
@@ -109,13 +81,6 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
           limits: deriveLimits(convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined, stats.cancelledRegular ?? 0),
           stats,
-          registrations: stats.count,
-          hours: stats.hours,
-          newCount: stats.new,
-          childCount: stats.child,
-          regularCount: stats.regular,
-          cancelledRegularCount: stats.cancelledRegular,
-          eventbriteCount: stats.eventbrite,
           mediaCount: stats.media,
           coverUrl: s[SESSION_COVER_MEDIA] && groupId !== undefined ? `/media/${groupKeyMap.get(groupId) ?? ''}/${date}/${s[SESSION_COVER_MEDIA]}` : undefined,
           regularsCount: groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined,
@@ -123,11 +88,6 @@ router.get('/sessions', async (req: Request, res: Response) => {
           isBookable: date >= today,
           eventbriteEventId: s.EventbriteEventID,
           metadata: tags.length ? tags : undefined,
-          ...(profileId !== undefined && {
-            isRegistered: registeredSessionIds.has(s.ID),
-            isAttended: false, // attended status not available from profile stats; live on entry
-            isRegular: groupId !== undefined && regularGroupIdSet.has(groupId),
-          }),
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -471,13 +431,6 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         storedLimits: rawLimits,
         regularsCount,
         stats: storedStats,
-        registrations: storedStats.count,
-        hours: storedStats.hours,
-        newCount: storedStats.new,
-        childCount: storedStats.child,
-        regularCount: storedStats.regular,
-        cancelledRegularCount: storedStats.cancelledRegular,
-        eventbriteCount: storedStats.eventbrite,
         financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
         isBookable: spSession.Date >= today,
         eventbriteEventId: spSession.EventbriteEventID,
@@ -522,9 +475,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         id: e.ID,
         profileId: volunteerId,
         volunteerName: e[PROFILE_DISPLAY],
-        volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
-        profileName: e[PROFILE_DISPLAY],
-        profileSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : nameToSlug(e[PROFILE_DISPLAY]),
+        volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : undefined,
         isGroup: profile?.IsGroup || false,
         isMember: stats.isMember === true,
         cardStatus: stats.cardStatus ?? undefined,
@@ -620,13 +571,6 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         cancelledRegular: cancelledRegularCount,
         eventbrite: eventbriteCount || undefined,
       },
-      registrations: isSelfService ? storedStats.count : activeEntries.length,
-      hours: Math.round(totalHours * 10) / 10,
-      newCount: newCount || undefined,
-      childCount: childCount || undefined,
-      regularCount: regularCount || undefined,
-      cancelledRegularCount,
-      eventbriteCount: eventbriteCount || undefined,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       isBookable: spSession.Date >= today,
       eventbriteEventId: spSession.EventbriteEventID,

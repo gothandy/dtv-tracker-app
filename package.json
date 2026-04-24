@@ -34,7 +34,6 @@
     "@types/cookie-parser": "^1.4.10",
     "axios": "^1.13.4",
     "cookie-parser": "^1.4.7",
-    "csv-parse": "^6.1.0",
     "dotenv": "^17.2.4",
     "exifreader": "^4.36.2",
     "express": "^5.2.1",
@@ -53,9 +52,7 @@
     "@types/node": "^25.2.2",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
-    "jimp": "^1.6.0",
     "nodemon": "^3.1.11",
-    "sharp": "^0.34.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

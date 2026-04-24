@@ -477,32 +477,6 @@ export function calculateFYStats(
   };
 }
 
-/**
- * Returns total hours per calendar month for the given sessions and their entries.
- * Key format: "YYYY-M" (e.g. "2025-3" for April 2025, using 0-indexed month)
- */
-export function getHoursByCalendarMonth(
-  sessions: SharePointSession[],
-  allEntries: SharePointEntry[]
-): Map<string, number> {
-  const sessionMonthMap = new Map<number, string>(); // sessionId → "YYYY-M"
-  for (const s of sessions) {
-    if (!s.Date) continue;
-    const d = new Date(s.Date);
-    sessionMonthMap.set(s.ID, `${d.getFullYear()}-${d.getMonth()}`);
-  }
-  const sessionIds = new Set(sessions.map(s => s.ID));
-  const hoursByMonth = new Map<string, number>();
-  for (const entry of allEntries) {
-    const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
-    if (sessionId === undefined || !sessionIds.has(sessionId)) continue;
-    const monthKey = sessionMonthMap.get(sessionId);
-    if (!monthKey) continue;
-    const hours = parseFloat(String(entry.Hours)) || 0;
-    hoursByMonth.set(monthKey, (hoursByMonth.get(monthKey) || 0) + hours);
-  }
-  return hoursByMonth;
-}
 
 // ============================================================================
 // Regulars Grouping

@@ -4,7 +4,7 @@
       <select id="upm-select" class="upm-select" v-model="selected">
         <option disabled value="">Select a name…</option>
         <option v-for="entry in entries" :key="entry.id" :value="entry.id">
-          {{ entry.profileName ?? 'Unknown' }}
+          {{ entry.volunteerName ?? 'Unknown' }}
         </option>
       </select>
     </FormRow>
@@ -18,7 +18,7 @@ import FormRow from '../../components/FormRow.vue'
 import { useViewer } from '../../composables/useViewer'
 
 const props = defineProps<{
-  entries: { id: number; profileId?: number; profileName?: string }[]
+  entries: { id: number; profileId?: number; volunteerName?: string }[]
 }>()
 
 const emit = defineEmits<{
