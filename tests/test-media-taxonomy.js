@@ -8,9 +8,9 @@
  */
 
 require('dotenv').config();
+const axios = require('axios');
 const { sharePointClient } = require('../dist/backend/services/sharepoint-client');
 const { taxonomyClient } = require('../dist/backend/services/taxonomy-client');
-const { groupsRepository } = require('../dist/backend/services/repositories/groups-repository');
 
 let passed = 0;
 let failed = 0;
@@ -35,19 +35,16 @@ async function main() {
     if (!mediaDriveId) {
         console.log('  (skipped — MEDIA_LIBRARY_DRIVE_ID not set)');
     } else {
-        const groups = await groupsRepository.getAll();
-        assert('Groups available for group key lookup', groups.length > 0, `got ${groups.length}`);
-
-        if (groups.length > 0) {
-            const groupKey = (groups[0].Title || groups[0].Name || '').toLowerCase();
-            assert('First group has a key', !!groupKey, `got "${groupKey}"`);
-
-            if (groupKey) {
-                const counts = await sharePointClient.listGroupDateCounts(mediaDriveId, groupKey);
-                assert('listGroupDateCounts() returns a Map', counts instanceof Map, `got ${typeof counts}`);
-                // Map may be empty if group has no media yet — that's fine, it proves auth worked
-            }
-        }
+        // Probe the drive root directly via Graph API.
+        // listGroupDateCounts() swallows all 404s (including an invalid drive ID) and returns an
+        // empty Map, so it cannot distinguish a misconfigured drive from a group with no media yet.
+        const token = await sharePointClient.getAccessToken();
+        const driveRes = await axios.get(
+            `https://graph.microsoft.com/v1.0/drives/${mediaDriveId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        assert('Media library drive is accessible', driveRes.status === 200, `HTTP ${driveRes.status}`);
+        assert('Drive has id', typeof driveRes.data?.id === 'string', `got ${typeof driveRes.data?.id}`);
     }
 
     // --- Taxonomy term store ---
@@ -76,11 +73,15 @@ async function main() {
     if (!backupDriveId) {
         console.log('  (skipped — BACKUP_DRIVE_ID not set)');
     } else {
-        // downloadFile returns null on 404 (file not found) and throws on auth errors.
-        // A null result proves the drive is accessible and auth succeeded.
-        const result = await sharePointClient.downloadFile(backupDriveId, '__probe__.json');
-        assert('Backup drive is accessible (auth ok)', result === null || Buffer.isBuffer(result),
-            'null = not found (expected); Buffer = found; any throw = auth failure');
+        // Same direct-drive-root probe as for the media library — downloadFile() also swallows
+        // all 404s, so an invalid drive ID would silently return null and still pass.
+        const token = await sharePointClient.getAccessToken();
+        const driveRes = await axios.get(
+            `https://graph.microsoft.com/v1.0/drives/${backupDriveId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        assert('Backup drive is accessible', driveRes.status === 200, `HTTP ${driveRes.status}`);
+        assert('Drive has id', typeof driveRes.data?.id === 'string', `got ${typeof driveRes.data?.id}`);
     }
 
     // --- Summary ---
