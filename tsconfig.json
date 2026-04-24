@@ -17,10 +17,10 @@
   },
   "include": [
     "types/**/*",
-    "services/**/*",
-    "routes/**/*",
-    "middleware/**/*",
-    "shared/**/*"
+    "backend/services/**/*",
+    "backend/routes/**/*",
+    "backend/middleware/**/*",
+    "backend/shared/**/*"
   ],
   "exclude": [
     "node_modules",

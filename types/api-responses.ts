@@ -5,7 +5,7 @@
  * independent of SharePoint column names and internal domain types.
  */
 
-import type { SessionLimits } from '../services/data-layer';
+import type { SessionLimits } from '../backend/services/data-layer';
 import type { EntryStats } from './entry-stats';
 
 export interface SessionStats {
