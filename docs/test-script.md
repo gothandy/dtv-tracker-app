@@ -122,7 +122,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H8. Create entry (register volunteer)
 - [ ] Add entry page → search volunteer → select → add notes/tags → "Create Entry"
-- [ ] `POST /api/sessions/:group/:date/entries` — `{ volunteerId, notes? }`
+- [ ] `POST /api/sessions/:group/:date/entries` — `{ profileId, notes? }`
 - [ ] Redirects to session detail
 
 ### H9. Check-in toggle

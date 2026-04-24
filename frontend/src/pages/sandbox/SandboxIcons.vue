@@ -49,7 +49,7 @@ const groups = [
   {
     label: 'Brands',
     prefix: 'brands/',
-    icons: ['eventbrite', 'facebook', 'google', 'microsoft'],
+    icons: ['dofe', 'eventbrite', 'microsoft'],
   },
   {
     label: 'Icons',

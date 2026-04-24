@@ -158,8 +158,6 @@ const mockSession: SessionDetailResponse = {
   limits: {},
   storedLimits: {},
   stats: { count: 5, hours: 20 },
-  registrations: 5,
-  hours: 20,
   financialYear: '24/25',
   isBookable: false,
   coverMediaId: null,

@@ -17,9 +17,7 @@ import {
   findSessionByGroupAndDate,
   safeParseLookupId,
   parseHours,
-  nameToSlug,
   profileSlug,
-  profileIdFromSlug,
   parseEmails,
   calculateSessionStats
 } from '../services/data-layer';
@@ -136,13 +134,11 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
         if (!group) return [];
         const name = e[PROFILE_DISPLAY] || 'Unknown';
         const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
-        const slug = vid !== undefined ? profileSlug(name, vid) : nameToSlug(name);
+        const slug = vid !== undefined ? profileSlug(name, vid) : undefined;
         return [{
           id: e.ID,
           volunteerName: name,
           volunteerSlug: slug,
-          profileName: name,
-          profileSlug: slug,
           date: session.Date,
           groupKey: group.Title,
           groupName: group.Name || group.Title,
@@ -224,7 +220,7 @@ router.get('/entries', async (req: Request, res: Response) => {
         const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
         const profile = profileId !== undefined ? profileMap.get(profileId) : undefined;
         const name = e[PROFILE_DISPLAY] || 'Unknown';
-        const slug = profileId !== undefined ? profileSlug(name, profileId) : nameToSlug(name);
+        const slug = profileId !== undefined ? profileSlug(name, profileId) : undefined;
 
         return [{
           id: e.ID,
@@ -254,120 +250,7 @@ router.get('/entries', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/entries/:group/:date/:slug', async (req: Request, res: Response) => {
-  try {
-    const groupKey = String(req.params.group).toLowerCase();
-    const dateParam = String(req.params.date);
-    const slug = String(req.params.slug).toLowerCase();
-
-    const [rawGroups, rawSessions, rawEntries, rawProfiles] = await Promise.all([
-      groupsRepository.getAll(),
-      sessionsRepository.getAll(),
-      entriesRepository.getAll(),
-      profilesRepository.getAll()
-    ]);
-
-    const spGroup = findGroupByKey(rawGroups, groupKey);
-    if (!spGroup) {
-      res.status(404).json({ success: false, error: 'Group not found' });
-      return;
-    }
-
-    const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
-    if (!spSession) {
-      res.status(404).json({ success: false, error: 'Session not found' });
-      return;
-    }
-
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-    const slugProfileId = profileIdFromSlug(slug);
-    const spEntry = entries.find(e => {
-      if (safeParseLookupId(e[SESSION_LOOKUP]) !== spSession.ID) return false;
-      if (slugProfileId !== undefined) return safeParseLookupId(e[PROFILE_LOOKUP]) === slugProfileId;
-      return nameToSlug(e[PROFILE_DISPLAY]) === slug; // legacy: slug without ID
-    });
-    if (!spEntry) {
-      res.status(404).json({ success: false, error: 'Entry not found' });
-      return;
-    }
-
-    // Self-service users may only view their own entry (supports multiple linked profiles)
-    if (req.session.user?.role === 'selfservice') {
-      const entryProfileId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
-      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
-      if (entryProfileId === undefined || !ownIds.includes(entryProfileId)) {
-        res.status(403).json({ success: false, error: 'Not your entry' });
-        return;
-      }
-    }
-
-    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const volunteerId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
-    const profile = volunteerId !== undefined ? profiles.find(p => p.ID === volunteerId) : undefined;
-
-    // Calculate FY hours from entries
-    const sessions = validateArray(rawSessions, validateSession, 'Session');
-    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
-    const fy = calculateCurrentFY();
-    const lastFYStart = fy.startYear - 1;
-    let calcThisFY = 0;
-    let calcLastFY = 0;
-    const volunteerEntries = volunteerId !== undefined
-      ? entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId)
-      : [];
-    volunteerEntries.forEach(e => {
-      const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-      if (sid === undefined) return;
-      const sess = sessionMap.get(sid);
-      if (!sess) return;
-      const h = parseHours(e.Hours);
-      const sessionFY = calculateFinancialYear(new Date(sess.Date));
-      if (sessionFY === fy.startYear) calcThisFY += h;
-      else if (sessionFY === lastFYStart) calcLastFY += h;
-    });
-
-    const group = convertGroup(spGroup);
-    const emails = parseEmails(profile?.Email);
-
-    const vSlug = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]);
-    const data: EntryDetailResponse = {
-      id: spEntry.ID,
-      volunteerName: spEntry[PROFILE_DISPLAY],
-      volunteerSlug: vSlug,
-      volunteerEmail: emails[0],
-      volunteerEmails: emails.length > 0 ? emails : undefined,
-      volunteerEntryCount: volunteerEntries.length,
-      profileName: spEntry[PROFILE_DISPLAY],
-      profileSlug: vSlug,
-      profileEmail: emails[0],
-      profileEmails: emails.length > 0 ? emails : undefined,
-      profileEntryCount: volunteerEntries.length,
-      isGroup: profile?.IsGroup || false,
-      hoursLastFY: Math.round(calcLastFY * 10) / 10,
-      hoursThisFY: Math.round(calcThisFY * 10) / 10,
-      count: spEntry.Count || 1,
-      hours: parseHours(spEntry.Hours),
-      checkedIn: spEntry.Checked || false,
-      notes: spEntry.Notes,
-      date: spSession.Date,
-      groupKey,
-      groupName: group.displayName,
-      sessionDisplayName: spSession.Name || spSession.Title,
-      stats: parseEntryStatsField(spEntry[ENTRY_STATS])
-    };
-
-    res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);
-  } catch (error: any) {
-    console.error('Error fetching entry detail:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch entry detail',
-      message: error.message
-    });
-  }
-});
-
-// GET /entries/:id — entry detail by SharePoint ID (preferred; avoids slug collisions)
+// GET /entries/:id — entry detail by SharePoint ID
 router.get('/entries/:id', async (req: Request, res: Response) => {
   try {
     const entryId = parseInt(String(req.params.id), 10);
@@ -448,7 +331,7 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       : [];
     const hasPrivacyConsent = profileRecords.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
 
-    const vSlug2 = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : nameToSlug(spEntry[PROFILE_DISPLAY]);
+    const vSlug2 = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : undefined;
     const data: EntryDetailResponse = {
       id: spEntry.ID,
       volunteerName: spEntry[PROFILE_DISPLAY],
@@ -456,11 +339,6 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       volunteerEmail: emails[0],
       volunteerEmails: emails.length > 0 ? emails : undefined,
       volunteerEntryCount: volunteerEntries.length,
-      profileName: spEntry[PROFILE_DISPLAY],
-      profileSlug: vSlug2,
-      profileEmail: emails[0],
-      profileEmails: emails.length > 0 ? emails : undefined,
-      profileEntryCount: volunteerEntries.length,
       isGroup: profile?.IsGroup || false,
       hoursLastFY: Math.round(calcLastFY * 10) / 10,
       hoursThisFY: Math.round(calcThisFY * 10) / 10,
@@ -678,9 +556,8 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    // TODO: remove volunteerId fallback once v1 (public/) is retired
-    const { profileId, volunteerId: legacyVolunteerId, notes } = req.body;
-    const volunteerId: number = profileId ?? legacyVolunteerId;
+    const { profileId, notes } = req.body;
+    const volunteerId: number = profileId;
 
     if (!volunteerId || typeof volunteerId !== 'number') {
       res.status(400).json({ success: false, error: 'profileId is required and must be a number' });

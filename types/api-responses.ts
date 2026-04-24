@@ -50,26 +50,13 @@ export interface SessionResponse {
   groupName?: string;
   limits: SessionLimits;
   stats: SessionStats;
-  // v1 compat flat fields — duplicated from stats; remove when public/ is deleted
-  registrations: number;
-  hours: number;
-  newCount?: number;
-  childCount?: number;
-  regularCount?: number;
-  cancelledRegularCount?: number;
   regularsCount?: number;
-  eventbriteCount?: number;
   mediaCount?: number;
   coverUrl?: string;
   financialYear: string;
   isBookable: boolean;
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
-  // Per-user status — only present when request is authenticated and user has a profile
-  // TODO #70: remove after public/ migration — Vue frontend derives these from profileStats in sessions store
-  isRegistered?: boolean;
-  isAttended?: boolean;
-  isRegular?: boolean;
 }
 
 export interface ProfileResponse {
@@ -167,9 +154,6 @@ export interface GroupDetailResponse {
     newVolunteers: number;
     children: number;
     totalVolunteers: number;
-    // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
-    newProfiles?: number;
-    totalProfiles?: number;
   };
   sessions: SessionResponse[];
 }
@@ -179,9 +163,6 @@ export interface EntryResponse {
   profileId?: number;
   volunteerName?: string;
   volunteerSlug?: string;
-  // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
-  profileName?: string;
-  profileSlug?: string;
   isGroup: boolean;
   isMember: boolean;
   cardStatus?: string;
@@ -206,14 +187,6 @@ export interface SessionDetailResponse {
   limits: SessionLimits;
   storedLimits: SessionLimits;
   stats: SessionStats;
-  // v1 compat flat fields — duplicated from stats; remove when public/ is deleted
-  registrations: number;
-  hours: number;
-  newCount?: number;
-  childCount?: number;
-  regularCount?: number;
-  cancelledRegularCount?: number;
-  eventbriteCount?: number;
   financialYear: string;
   isBookable: boolean;
   eventbriteEventId?: string;
@@ -241,12 +214,6 @@ export interface EntryDetailResponse {
   volunteerEmail?: string;
   volunteerEmails?: string[];
   volunteerEntryCount: number;
-  // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
-  profileName?: string;
-  profileSlug?: string;
-  profileEmail?: string;
-  profileEmails?: string[];
-  profileEntryCount?: number;
   isGroup: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
@@ -268,8 +235,6 @@ export interface FYStatsResponse {
   sessions: number;
   hours: number;
   volunteers: number;
-  // v2 field name (v1 compat: old name kept alongside until public/ is deleted)
-  profiles?: number;
   financialYear: string;
   label: string;
   /** Hours from fully-completed months only (excludes current partial month) */
@@ -288,10 +253,7 @@ export type StatsHistoryResponse = FYStatsResponse[];
 export interface RecentSignupResponse {
   id: number;
   volunteerName: string;
-  volunteerSlug: string;
-  // v2 field names (v1 compat: old names kept alongside until public/ is deleted)
-  profileName?: string;
-  profileSlug?: string;
+  volunteerSlug?: string;
   date: string;
   groupKey: string;
   groupName: string;

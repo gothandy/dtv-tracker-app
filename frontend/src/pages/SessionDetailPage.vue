@@ -257,13 +257,13 @@ const newSpacesAvail = computed(() => {
   const s = store.session
   if (!s) return false
   const { new: newLimit } = s.limits
-  return newLimit === undefined || (s.newCount ?? 0) < newLimit
+  return newLimit === undefined || (s.stats.new ?? 0) < newLimit
 })
 
 const repeatBookings = computed(() => {
   const s = store.session
   if (!s) return 0
-  return s.registrations - (s.newCount ?? 0) - (s.regularCount ?? 0)
+  return s.stats.count - (s.stats.new ?? 0) - (s.stats.regular ?? 0)
 })
 
 const repeatSpacesAvail = computed(() => {
@@ -277,7 +277,7 @@ const showIsBooked = computed(() => !!store.session?.isBookable && !!store.sessi
 
 const showSessionFull = computed(() => {
   const s = store.session
-  return !!s?.isBookable && s.limits.total !== undefined && s.registrations >= s.limits.total
+  return !!s?.isBookable && s.limits.total !== undefined && s.stats.count >= s.limits.total
 })
 
 const showLogIn = computed(() =>
@@ -339,8 +339,8 @@ function mapEntry(e: EntryResponse): EntryItem {
     cancelled: e.cancelled,
     stats: e.stats,
     profile: {
-      name: e.profileName ?? e.volunteerName ?? 'Unknown',
-      slug: e.profileSlug ?? e.volunteerSlug,
+      name: e.volunteerName ?? 'Unknown',
+      slug: e.volunteerSlug,
       isMember: e.isMember,
       cardStatus: e.cardStatus,
       isGroup: e.isGroup,
