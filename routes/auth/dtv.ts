@@ -84,7 +84,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       profileStats,
     };
 
-    const returnTo = req.session.returnTo || process.env.FRONTEND_URL || '/';
+    const returnTo = req.session.returnTo || '/';
     delete req.session.returnTo;
     const returnToWithNotice = returnTo.includes('?') ? `${returnTo}&flashKey=signed-in` : `${returnTo}?flashKey=signed-in`;
     res.redirect(returnToWithNotice);

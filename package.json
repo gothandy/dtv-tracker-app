@@ -4,24 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prebuild": "node -e \"const {execSync}=require('child_process'),fs=require('fs');fs.rmSync('dist',{recursive:true,force:true});try{const c=execSync('git rev-parse HEAD').toString().trim();fs.writeFileSync('public/build.json',JSON.stringify({built:new Date().toISOString(),commit:c}))}catch(e){}\"",
+    "prebuild": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "tsc",
     "start": "node app.js",
-    "dev": "nodemon app.js",
-    "dev:v1": "cross-env SITE_MODE=v1 nodemon app.js",
-    "dev:v2": "cross-env NODE_ENV=development SITE_MODE=v2 nodemon app.js",
-    "dev:members": "dotenv -e .env.members -- nodemon app.js",
-    "dev:tracker": "dotenv -e .env.tracker -- nodemon app.js",
+    "dev": "cross-env NODE_ENV=development nodemon app.js",
     "test": "echo \"No automated tests (run npm run test:live for integration tests)\"",
     "test:live": "node test/run-tests.js",
-    "frontend:dev": "cd frontend && npm run dev",
-    "frontend:build": "cd frontend && npm run build",
-    "frontend:build:staging": "cd frontend && cross-env VITE_BASE_PATH=/v2/ npm run build"
+    "frontend:build": "cd frontend && npm run build"
   },
   "nodemonConfig": {
     "ignore": [
       "node_modules/",
-      "public/",
       "docs/",
       ".env"
     ],
