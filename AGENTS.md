@@ -309,37 +309,17 @@ npm run frontend:build   # → frontend/dist/
 
 ---
 
-## Implemented Features
+## Features
 
-- Full CRUD for groups, sessions, profiles, entries, records
-- Volunteer registration and check-in; bulk add regulars
-- Hours tracking (per-entry and bulk set)
-- FY filtering on all list pages; FY bar charts
-- Role-based permissions: Admin, Check In, Read Only, Self-Service, Public
-- Partial public access (homepage, sessions, groups, session detail)
-- Microsoft authentication (Entra ID OAuth)
-- Self-service volunteer login via magic link and verification code
-- Eventbrite session sync (org events → sessions via SeriesID)
-- Eventbrite attendee sync (attendees → profiles/entries/consent); `#Duplicate` on name clash
-- Server-side caching with targeted invalidation
-- Session taxonomy tags via SharePoint Term Store
-- Session photo/video gallery with lightbox; public restricted to `IsPublic` items
-- Volunteer media upload (authenticated entry ID-based); photos and short videos
-- Personalised homepage calendar with session dots and registration/attendance pills
-- Consent collection page; entry detail consent button
-- Nightly backup export to SharePoint with SHA-256 diff check
-- Taxonomy tag word cloud (homepage, group, profile)
-- CSV exports (sessions, profiles, records)
-- Profile transfer (merge duplicate profiles)
-- Bulk records and bulk session tagging
-- Pre-session email notifications via Handlebars templates and Microsoft Graph Mail
-- PWA web manifest and icons for Add to Home Screen
-- Admin page with sync buttons, cache clear, exports, icon legend, site shortcuts
+Feature inventory is split by area — read the relevant doc before working in that area:
 
-## Planned Features
-
-- Sync logging (SharePoint Logs list)
-- Report generation (custom date ranges, exportable)
+| Doc | Area |
+|-----|------|
+| [docs/features/auth.md](docs/features/auth.md) | Auth flows, roles, consent |
+| [docs/features/frontend.md](docs/features/frontend.md) | Vue pages, calendar, taxonomy word cloud, PWA |
+| [docs/features/backend.md](docs/features/backend.md) | API, CRUD, Eventbrite sync, caching, email, backup |
+| [docs/features/media.md](docs/features/media.md) | Photo/video upload, gallery, cover photo |
+| [docs/features/tagging.md](docs/features/tagging.md) | Three-tier taxonomy design (people tags, session terms, photo metadata) |
 
 ---
 

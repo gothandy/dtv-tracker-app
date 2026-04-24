@@ -63,8 +63,8 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 | [docs/sharepoint-schema.md](docs/sharepoint-schema.md) | Data model — list structure and field names |
 | [docs/sharepoint-setup.md](docs/sharepoint-setup.md) | First-time SharePoint/Entra ID setup (admin only) |
 | [docs/azure-app-service.md](docs/azure-app-service.md) | CI/CD, deployment, and scheduled sync (hosting) |
+| [docs/features/](docs/features/) | Feature inventory by area (auth, frontend, backend, media, taxonomy) |
 | [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) | Building Vue features — layering, components, stats pattern |
-| [docs/tagging.md](docs/tagging.md) | Session taxonomy tags — current and planned tiers |
 | [docs/test-script.md](docs/test-script.md) | Manual test checklist before release |
 | [docs/design/](docs/design/) | Product vision, UX flows, visual guidelines |
 | [AGENTS.md](AGENTS.md) | Full project context and coding guidelines |

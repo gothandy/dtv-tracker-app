@@ -4,7 +4,7 @@ See [AGENTS.md](AGENTS.md) for full project context, data model, dev guidelines,
 
 ## Claude Code Workflow
 
-- **Always plan first**: Use plan mode before implementing any non-trivial change. Explore the codebase, understand existing patterns, and get approval before writing code.
+- **Always plan first**: Use plan mode before implementing any change. Explore the codebase, understand existing patterns, and get approval before writing code. For trival changes still explain what you are about to do and why before acting.
 
 - **Documentation review after every change**:
   - [AGENTS.md](AGENTS.md) — project context, file structure, features list
@@ -14,5 +14,3 @@ See [AGENTS.md](AGENTS.md) for full project context, data model, dev guidelines,
   - [docs/progress.md](docs/progress.md) — development session notes
   - [docs/sharepoint-schema.md](docs/sharepoint-schema.md) — if SharePoint fields change
   - [readme.md](readme.md) — if dependencies or configuration change
-
-- **Archive outdated docs**: Move superseded documentation to `docs/legacy/` rather than deleting it.
