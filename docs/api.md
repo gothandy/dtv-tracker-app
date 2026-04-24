@@ -1,149 +1,176 @@
 # API Reference
 
-All endpoints are prefixed with `/api`. Authentication is required unless stated otherwise.
+All endpoints are prefixed with `/api`. Auth routes (`/auth/...`) are listed at the bottom.
+
+## Access Levels
+
+| Level | Who |
+|---|---|
+| **Public** | No login required |
+| **Trusted** | Any Microsoft login — Read Only, Check In, or Admin |
+| **Check In+** | Check In or Admin |
+| **Admin** | Admin only |
+| **Admin / API key** | Admin session or `X-Api-Key` header (scheduled sync) |
+| **SS (own)** | Self-service login restricted to own data; handler enforces ownership |
+
+Self-service users get the **Public** GET allowlist plus their own profile (`/profiles/:slug` with numeric suffix), own entry detail, and own upload context. All other routes return 403.
+
+---
 
 ## Stats & Config
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/health` | GET | Health check (unauthenticated) |
-| `/api/stats` | GET | Dashboard statistics (current + last FY) |
-| `/api/stats/history` | GET | Historical stats by FY |
-| `/api/config` | GET | App configuration (SharePoint site URL) |
-| `/api/cache/clear` | POST | Clear server-side data cache |
-| `/api/cache/stats` | GET | Cache hit/miss statistics |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/health` | GET | Trusted | Health check |
+| `/api/stats` | GET | Public | Dashboard statistics (current + last FY) |
+| `/api/stats/history` | GET | Public | Historical stats by FY |
+| `/api/config` | GET | Trusted | App configuration (SharePoint site URL) |
+| `/api/cache/clear` | POST | Admin | Clear all server-side caches |
+| `/api/cache/stats` | GET | Trusted | Cache hit/miss statistics |
 
 ## Groups
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/groups` | GET | All groups with regulars count |
-| `/api/groups` | POST | Create new group |
-| `/api/groups/:key` | GET | Group detail with sessions and stats |
-| `/api/groups/:key` | PATCH | Update group |
-| `/api/groups/:key` | DELETE | Delete group |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/groups` | GET | Public | All groups with regulars count |
+| `/api/groups` | POST | Admin | Create new group |
+| `/api/groups/:key` | GET | Public | Group detail with sessions and stats |
+| `/api/groups/:key` | PATCH | Admin | Update group |
+| `/api/groups/:key` | DELETE | Admin | Delete group |
 
 ## Sessions
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/sessions` | GET | All sessions with calculated hours and registrations |
-| `/api/sessions` | POST | Create new session |
-| `/api/sessions/export` | GET | Export this FY sessions as CSV |
-| `/api/sessions/refresh-stats` | POST | Bulk refresh pre-computed stats for all sessions |
-| `/api/sessions/bulk-tag` | POST | Apply taxonomy terms to multiple sessions |
-| `/api/sessions/:group/:date` | GET | Session detail with entries |
-| `/api/sessions/:group/:date` | PATCH | Update session (name, description, date, cover) |
-| `/api/sessions/:group/:date` | DELETE | Delete session |
-| `/api/sessions/:group/:date/entries` | POST | Create entry (register volunteer) |
-| `/api/sessions/:group/:date/add-regulars` | POST | Bulk add regulars as entries |
-| `/api/sessions/:group/:date/refresh` | POST | Refresh session entry data |
-| `/api/sessions/:group/:date/stats` | POST | Recompute and save stats for a single session |
-| `/api/sessions/:group/:date/unchecked-entries` | DELETE | Remove all unchecked entries from a session |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/sessions` | GET | Public | All sessions with calculated hours and registrations |
+| `/api/sessions` | POST | Admin | Create new session |
+| `/api/sessions/export` | GET | Admin | Export this FY sessions as CSV |
+| `/api/sessions/refresh-stats` | POST | Admin / API key | Bulk refresh pre-computed stats for all sessions |
+| `/api/sessions/bulk-tag` | POST | Admin | Apply taxonomy terms to multiple sessions |
+| `/api/sessions/:group/:date` | GET | Public | Session detail with entries |
+| `/api/sessions/:group/:date` | PATCH | Check In+ | Update session (name, description, date, cover) |
+| `/api/sessions/:group/:date` | DELETE | Admin | Delete session |
+| `/api/sessions/:group/:date/entries` | POST | SS (own) / Check In+ | Register a volunteer for a session |
+| `/api/sessions/:group/:date/add-regulars` | POST | Admin | Bulk add regulars as entries |
+| `/api/sessions/:group/:date/refresh` | POST | Check In+ | Refresh session entry data |
+| `/api/sessions/:group/:date/stats` | POST | Check In+ | Recompute and save stats for a single session |
+| `/api/sessions/:group/:date/unchecked-entries` | DELETE | Check In+ | Remove all unchecked entries from a session |
 
 ## Entries
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/entries` | GET | All entries across all sessions (admin only) |
-| `/api/entries/recent` | GET | Recent entries |
-| `/api/entries/refresh-stats` | POST | Bulk refresh entry stats |
-| `/api/entries/:id` | GET | Entry detail with FY hours |
-| `/api/entries/:id` | PATCH | Update entry (check-in, hours, notes) |
-| `/api/entries/:id` | DELETE | Delete entry |
-| `/api/entries/:id/upload-context` | GET | Upload context for entry (volunteer name + session) |
-| `/api/entries/:id/photos` | POST | Upload photos to entry |
-| `/api/entries/:id/notify` | POST | Send pre-session notification email to volunteer |
+Volunteer attendance records are personal data. The list endpoint is Admin-only. Self-service users can only access their own entry by ID.
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/entries` | GET | Admin | All entries across all sessions |
+| `/api/entries/recent` | GET | Trusted | Recent entries |
+| `/api/entries/refresh-stats` | POST | Admin | Bulk refresh entry stats |
+| `/api/entries/:id` | GET | SS (own) / Trusted | Entry detail with FY hours |
+| `/api/entries/:id` | PATCH | Check In+ | Update entry (check-in, hours, notes) |
+| `/api/entries/:id` | DELETE | SS (own) / Admin | Delete entry |
+| `/api/entries/:id/upload-context` | GET | SS (own) / Trusted | Volunteer name and session context for upload page |
+| `/api/entries/:id/photos` | POST | SS (own) / Check In+ | Upload photos to entry |
+| `/api/entries/:id/notify` | POST | Check In+ | Send pre-session notification email to volunteer |
 
 ## Profiles
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/profiles` | GET | All profiles with FY stats (optional `?group=` filter) |
-| `/api/profiles` | POST | Create new profile |
-| `/api/profiles/export` | GET | Export profiles as CSV |
-| `/api/profiles/refresh-stats` | POST | Bulk refresh pre-computed stats for all profiles |
-| `/api/profiles/records/options` | GET | Available record types and statuses |
-| `/api/profiles/:slug` | GET | Profile detail with entries and group hours |
-| `/api/profiles/:slug` | PATCH | Update profile |
-| `/api/profiles/:slug` | DELETE | Delete profile (only if no entries) |
-| `/api/profiles/:slug/regulars` | POST | Add as regular to group |
-| `/api/profiles/:slug/transfer` | POST | Transfer entries between profiles |
-| `/api/profiles/:id/records` | POST | Create consent/governance record |
-| `/api/profiles/:id/consent` | POST | Upsert privacy and photo consent records |
+Volunteer profiles contain PII (name, email). Listing and export are restricted to Trusted users. Self-service users can access their own profile only.
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/profiles` | GET | Trusted | All profiles with FY stats |
+| `/api/profiles` | POST | Check In+ | Create new profile |
+| `/api/profiles/export` | GET | Admin | Export profiles as CSV |
+| `/api/profiles/refresh-stats` | POST | Admin / API key | Bulk refresh pre-computed stats for all profiles |
+| `/api/profiles/records/options` | GET | Trusted | Available record types and statuses |
+| `/api/profiles/:slug` | GET | SS (own) / Trusted | Profile detail with entries and group hours |
+| `/api/profiles/:slug` | PATCH | Check In+ | Update profile |
+| `/api/profiles/:slug` | DELETE | Admin | Delete profile (only if no entries) |
+| `/api/profiles/:slug/regulars` | POST | Check In+ | Add as regular to group |
+| `/api/profiles/:slug/transfer` | POST | Admin | Transfer entries between profiles |
+| `/api/profiles/:id/records` | POST | Admin | Create consent/governance record |
+| `/api/profiles/:id/consent` | POST | SS (own) / Check In+ | Upsert privacy and photo consent records |
 
 ## Records
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/records/export` | GET | Export records as CSV |
-| `/api/records/bulk` | POST | Bulk create or update records |
-| `/api/records/:id` | PATCH | Update record |
-| `/api/records/:id` | DELETE | Delete record |
+Consent and governance records are personal data. All write access is Admin-only.
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/records/export` | GET | Admin | Export records as CSV |
+| `/api/records/bulk` | POST | Admin | Bulk create or update records |
+| `/api/records/:id` | PATCH | Admin | Update record |
+| `/api/records/:id` | DELETE | Admin | Delete record |
 
 ## Regulars
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/regulars/:id` | PATCH | Update regular assignment |
-| `/api/regulars/:id` | DELETE | Remove regular assignment |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/regulars/:id` | PATCH | Check In+ | Update regular assignment |
+| `/api/regulars/:id` | DELETE | Check In+ | Remove regular assignment |
 
 ## Taxonomy
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/tags/taxonomy` | GET | Full term store tree (term labels, GUIDs, hierarchy) |
-| `/api/tags/hours-by-taxonomy` | GET | Hours aggregated by term with ancestor rollup |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/tags/taxonomy` | GET | Public | Full term store tree (term labels, GUIDs, hierarchy) |
+| `/api/tags/hours-by-taxonomy` | GET | Public | Hours aggregated by term with ancestor rollup |
 
 Session terms are read from the `metadata` field in `GET /api/sessions/:group/:date` and written via `PATCH /api/sessions/:group/:date` (`metadataTags` body field). Bulk application across multiple sessions uses `POST /api/sessions/bulk-tag`.
 
 ## Media
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/media` | GET | List media files in a session folder (`?groupKey=&date=`) |
-| `/api/media/counts` | GET | Batch photo counts by session folder (`?paths=gk/date,...`) |
-| `/api/media/:itemId/download` | GET | Download a media file |
-| `/api/media/:itemId/stream` | GET | Stream a media file (video playback) |
-| `/api/media/:itemId` | PATCH | Update media item metadata (admin only) |
-| `/api/media/:itemId` | DELETE | Delete media item (admin only) |
+GET endpoints are public, but `name` and `webUrl` fields (which contain the uploader's filename and therefore PII) are stripped from public responses. Write operations require Check In+.
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/media` | GET | Public | List media files in a session folder (`?groupKey=&date=`) |
+| `/api/media/counts` | GET | Public | Batch photo counts by session folder |
+| `/api/media/:itemId/download` | GET | Public | Download a media file |
+| `/api/media/:itemId/stream` | GET | Public | Stream a media file (video playback) |
+| `/api/media/:itemId` | PATCH | Check In+ | Update media item metadata |
+| `/api/media/:itemId` | DELETE | Admin | Delete media item |
 
 ## Eventbrite Sync
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/eventbrite/nightly-update` | POST | Full nightly run: sync, stats refresh, backup, cache warmup |
-| `/api/eventbrite/quick-sync` | POST | Quick sync without full stats refresh |
-| `/api/eventbrite/sync-sessions` | POST | Sync Eventbrite events → sessions |
-| `/api/eventbrite/sync-attendees` | POST | Sync Eventbrite attendees → profiles/entries |
-| `/api/eventbrite/unmatched-events` | GET | List Eventbrite events with no matching group |
-| `/api/eventbrite/event-config-check` | GET | Check event config (child ticket, consent questions) |
+All write endpoints also accept `X-Api-Key` authentication for the scheduled Azure Logic App sync.
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/eventbrite/nightly-update` | POST | Admin / API key | Full nightly run: sync, stats refresh, backup, cache warmup |
+| `/api/eventbrite/quick-sync` | POST | Check In+ | Quick sync without full stats refresh |
+| `/api/eventbrite/sync-sessions` | POST | Admin / API key | Sync Eventbrite events → sessions |
+| `/api/eventbrite/sync-attendees` | POST | Admin / API key | Sync Eventbrite attendees → profiles/entries |
+| `/api/eventbrite/unmatched-events` | GET | Trusted | List Eventbrite events with no matching group |
+| `/api/eventbrite/event-config-check` | GET | Trusted | Check event config (child ticket, consent questions) |
 
 ## Backup
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/backup/export-all` | POST | Export all 6 lists + taxonomy + schema to SharePoint Backups folder |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/backup/export-all` | POST | Admin / API key | Export all 6 lists + taxonomy + schema to SharePoint Backups folder |
 
 ## Email
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/email/render` | POST | Render email template with provided variables |
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/email/render` | POST | Admin | Render email template with provided variables |
 
 ## Auth
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/auth/providers` | GET | Available auth providers |
-| `/auth/me` | GET | Current session user |
-| `/auth/logout` | GET | Clear session and cookie |
-| `/auth/login` | GET | Initiate Microsoft Entra ID login |
-| `/auth/callback` | GET | Microsoft OAuth callback |
-| `/auth/magic/send` | POST | Send magic link email |
-| `/auth/magic/callback` | GET | Redeem magic link token |
-| `/auth/verify/send` | POST | Send verification code email |
-| `/auth/verify/check` | POST | Verify code and set session |
+Auth routes are not under `/api/` and are not subject to `requireAuth` or `requireAdmin`.
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/auth/providers` | GET | Public | Available auth providers |
+| `/auth/me` | GET | Public | Current session user |
+| `/auth/logout` | GET | Public | Clear session and cookie |
+| `/auth/login` | GET | Public | Initiate Microsoft Entra ID login |
+| `/auth/callback` | GET | Public | Microsoft OAuth callback |
+| `/auth/magic/send` | POST | Public | Send magic link email |
+| `/auth/magic/callback` | GET | Public | Redeem magic link token |
+| `/auth/verify/send` | POST | Public | Send verification code email |
+| `/auth/verify/check` | POST | Public | Verify code and set session |
 
 ---
 
