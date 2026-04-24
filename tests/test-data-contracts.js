@@ -17,6 +17,7 @@ const { groupsRepository } = require('../dist/backend/services/repositories/grou
 const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
 const { profilesRepository } = require('../dist/backend/services/repositories/profiles-repository');
 const { entriesRepository } = require('../dist/backend/services/repositories/entries-repository');
+const { regularsRepository } = require('../dist/backend/services/repositories/regulars-repository');
 
 let passed = 0;
 let failed = 0;
@@ -84,6 +85,19 @@ async function main() {
         assert('Entry has Checked field', 'Checked' in e, `keys: ${Object.keys(e).join(', ')}`);
         assert('Entry has Hours field', 'Hours' in e, `keys: ${Object.keys(e).join(', ')}`);
         assert('Entry has Count field', 'Count' in e, `keys: ${Object.keys(e).join(', ')}`);
+    }
+
+    // --- Regulars ---
+    console.log('\nRegulars list:');
+    const regulars = await regularsRepository.getAll();
+    assert('Regulars list is reachable', Array.isArray(regulars));
+    if (regulars.length > 0) {
+        const r = regulars[0];
+        assert('Regular has ID', typeof r.ID === 'number', `got ${typeof r.ID}`);
+        assert('Regular has ProfileLookupId', 'ProfileLookupId' in r, `keys: ${Object.keys(r).join(', ')}`);
+        assert('Regular has GroupLookupId', 'GroupLookupId' in r, `keys: ${Object.keys(r).join(', ')}`);
+    } else {
+        console.log('  (no regulars in list — skipping field checks)');
     }
 
     // --- Summary ---
