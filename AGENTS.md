@@ -321,6 +321,13 @@ Feature inventory is split by area — read the relevant doc before working in t
 | [docs/features/media.md](docs/features/media.md) | Photo/video upload, gallery, cover photo |
 | [docs/features/tagging.md](docs/features/tagging.md) | Three-tier taxonomy design (people tags, session terms, photo metadata) |
 
+## Testing
+
+| Doc | Purpose |
+|-----|---------|
+| [docs/testing/test-strategy.md](docs/testing/test-strategy.md) | Testing approach and layers |
+| [docs/testing/full-regression.md](docs/testing/full-regression.md) | Manual test checklist before release |
+
 ---
 
 ## Important Notes

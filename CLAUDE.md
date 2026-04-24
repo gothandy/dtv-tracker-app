@@ -8,7 +8,7 @@ See [AGENTS.md](AGENTS.md) for full project context, data model, dev guidelines,
 
 - **Documentation review after every change**:
   - [AGENTS.md](AGENTS.md) — project context, file structure, features list
-  - [docs/test-script.md](docs/test-script.md) — add/update test cases
+  - [docs/testing/full-regression.md](docs/testing/full-regression.md) — add/update test cases
   - [docs/permissions.md](docs/permissions.md) — if roles or endpoint access change
   - [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues) — bugs, features, tech debt
   - [docs/progress.md](docs/progress.md) — development session notes

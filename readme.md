@@ -65,7 +65,8 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 | [docs/azure-app-service.md](docs/azure-app-service.md) | CI/CD, deployment, and scheduled sync (hosting) |
 | [docs/features/](docs/features/) | Feature inventory by area (auth, frontend, backend, media, taxonomy) |
 | [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) | Building Vue features — layering, components, stats pattern |
-| [docs/test-script.md](docs/test-script.md) | Manual test checklist before release |
+| [docs/testing/test-strategy.md](docs/testing/test-strategy.md) | Testing approach and layers |
+| [docs/testing/full-regression.md](docs/testing/full-regression.md) | Manual test checklist before release |
 | [docs/design/](docs/design/) | Product vision, UX flows, visual guidelines |
 | [AGENTS.md](AGENTS.md) | Full project context and coding guidelines |
 
