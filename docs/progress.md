@@ -1,5 +1,34 @@
 # Development Progress
 
+## Session: 2026-04-24 (Vitest setup — closes #208)
+
+### Completed Tasks
+
+#### Vitest store unit tests ✓ (closes #208)
+
+Set up Vitest as the frontend unit test layer, targeting the Pinia stores as the middle tier between the visual sandbox mocks and the backend live tests.
+
+**Infrastructure:**
+- `frontend/package.json` — added `vitest`, `happy-dom` dev deps; added `"test": "vitest"` script
+- `frontend/vite.config.ts` — added `test: { environment: 'happy-dom', globals: true }` block; guarded `vite-plugin-checker` from test environment with `!process.env.VITEST`
+
+**Test files (colocated in `frontend/src/stores/`):**
+- `groupList.test.ts` / `groupDetail.test.ts` — fetch success, error, loading state, httpStatus on 404
+- `sessionList.test.ts` — `mapSession` derived flags (`isRegistered`, `isAttended`, `isRegular`); `applyTag` add and deduplication; fetch error; `useViewer` mocked at module level with a mutable `mockViewer` object
+- `sessionDetail.test.ts` — fetch success, all three user-status flags default to false when API omits them, 404 httpStatus
+- `profileList.test.ts` — all `fy` param variants (`rolling`, `future`, `FY*`, `all`), `group` param, 401 redirect, AbortController cancellation (signal-aware mock), no-param clean URL
+- `profileDetail.test.ts` — fetch success, 401 redirect, 404 httpStatus; `useRouter` mocked via `vue-router` mock
+- `entryList.test.ts` — no-param clean URL (no `?`), each param individually, all params combined, non-ok response, network failure
+
+**45 tests, all passing.** `npm run build` unaffected (checker guard).
+
+**Key decisions:**
+- `happy-dom` used globally (not per-file) because all stores call `window.fetch`, which requires `window` to be defined
+- AbortController cancel test uses a signal-aware mock (`signal.addEventListener('abort', reject)`) — a plain resolved mock would not honour the abort
+- `useViewer` mock uses a mutable plain object (`mockViewer`) mutated per-test; Vue's computed still reads the current value at evaluation time even without reactivity
+
+---
+
 ## Session: 2026-04-13 (Login revised — remove BroadcastChannel, add verification code)
 
 ### Completed Tasks

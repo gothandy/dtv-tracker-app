@@ -10,10 +10,12 @@ Fast, practical confidence that changes don’t break core behavior — **not** 
    - Scope: auth/connectivity, key SharePoint list shapes, key options/contracts.  
    - Notes: keep mostly read-only for safety in single-environment setup.
 
-2. **Vitest read-only tests** #TODO
+2. **Vitest read-only tests**
    - Purpose: “Is incoming data handled correctly in code?”  
    - Scope: Vue store mapping, derived logic, empty/error handling, role/capability logic.  
    - Notes: fast PR feedback; no live writes.
+   - Run: `cd frontend && npm test`
+   - Coverage: all 7 Pinia stores (groupList, groupDetail, sessionList, sessionDetail, profileList, profileDetail, entryList) — 45 tests across fetch/error/loading state, `mapSession` derived flags, `applyTag` deduplication, query string construction, 401 redirects, and AbortController cancellation.
 
 3. **Sandbox mocked tests**  
    - Purpose: “Does the UI look and behave right?”  

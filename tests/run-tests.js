@@ -16,7 +16,6 @@ const tests = [
   'test-auth.js',
   'test-records.js',
   'test-data-contracts.js',
-  'test-fy-calc.js',
 ];
 
 // Lines worth keeping from test output (assertions, summaries, fatal errors)

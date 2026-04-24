@@ -47,6 +47,7 @@ Build, verify your credentials hit live SharePoint, then run:
 ```bash
 npm run build       # compile TypeScript (required before test:live and dev)
 npm run test:live   # all green = credentials and list access confirmed
+cd frontend && npm test && cd ..   # Vitest store unit tests (no live calls)
 npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
 
