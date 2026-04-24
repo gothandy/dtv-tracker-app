@@ -2,63 +2,27 @@
 
 A volunteer hours tracking and registration system for managing volunteer crews, events/sessions, and volunteer profiles. Integrates with SharePoint for data storage and Eventbrite for event management.
 
-## Quick Start
+## Get Started
+
+You'll need Node.js 18+, credentials from your team lead (SharePoint Client ID/Secret/Tenant, Eventbrite API key), and SharePoint already configured — see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) if it isn't.
 
 ```bash
 git clone https://github.com/gothandy/dtv-tracker-app
 cd dtv-tracker-app
 npm install
-
-# Create .env file with your credentials (see Setup section)
-
-npm run build       # Compile TypeScript
-npm run dev # Start Express + Vite HMR at http://localhost:3000
+cd frontend && npm install && cd ..
 ```
 
-
-## Prerequisites
-
-- **Node.js** 18+ (with npm)
-- **Git**
-- **SharePoint Online** access with admin permissions
-- **Microsoft Entra ID** (formerly Azure AD) access to create app registrations
-
-## Setup for New Developers
-
-> **Note**: If you're setting up SharePoint/Entra ID for the first time (organization admin), see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) for detailed configuration steps. The steps below assume SharePoint is already configured.
-
-### 1. Clone and Install
+Create a `.env` file in the project root (never commit it — already in `.gitignore`):
 
 ```bash
-git clone <repository-url>
-cd dtv-tracker-app
-npm install
-```
-
-### 2. Get Credentials
-
-**Ask your team lead or admin for**:
-- SharePoint Client ID
-- SharePoint Client Secret
-- SharePoint Tenant ID
-- SharePoint Site URL
-- Eventbrite API Key
-- Eventbrite Organisation ID
-
-These are stored securely and shared via password manager or secure channel (never via email/Slack).
-
-### 3. Create Environment File
-
-Create a `.env` file in the project root:
-
-```bash
-# SharePoint Configuration
+# SharePoint
 SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
 SHAREPOINT_CLIENT_ID=your_client_id_here
 SHAREPOINT_CLIENT_SECRET=your_client_secret_here
 SHAREPOINT_TENANT_ID=your_tenant_id_here
 
-# SharePoint List GUIDs (these are the same for all developers)
+# SharePoint List GUIDs (same for all developers)
 GROUPS_LIST_GUID=6e86cef7-a855-41a4-93e8-6e01a80434a2
 SESSIONS_LIST_GUID=583867bd-e032-4940-89b5-aa2d5158c5d0
 ENTRIES_LIST_GUID=7146b950-94e3-4c94-a0d7-310cf2fbd325
@@ -66,286 +30,68 @@ PROFILES_LIST_GUID=84649143-9e10-42eb-b6ee-2e1f57033073
 REGULARS_LIST_GUID=925c96fd-9b3a-4f55-b179-ed51fc279d39
 RECORDS_LIST_GUID=2666a819-1275-4fce-83a3-5bb67b4da83a
 
-# Eventbrite Configuration
+# Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here
 EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 
-# Scheduled Sync (optional — for API key auth bypass on /api/eventbrite/ endpoints)
+# Optional
 API_SYNC_KEY=your_random_key_here
-
-# Media Library (SharePoint document library for session photos)
-MEDIA_LIBRARY_DRIVE_ID=   # Graph API Drive ID — find via admin page "Discover Drives"
-
-# Admin users (comma-separated emails — all other users get Check In Only access)
+MEDIA_LIBRARY_DRIVE_ID=   # find via admin page "Discover Drives"
 ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
-
-# Session secret (change in production)
 SESSION_SECRET=your_session_secret_here
-
-# Magic link email login — sent via Microsoft Graph API (Mail.Send permission required)
-MAIL_SENDER=noreply@dtv.org.uk   # UPN of the shared mailbox to send from
+MAIL_SENDER=noreply@dtv.org.uk
 ```
 
-Never commit the `.env` file to version control (already in `.gitignore`). The list GUIDs are the same for everyone — they identify the SharePoint lists.
-
-### 4. Verify Setup
+Build, verify your credentials hit live SharePoint, then run:
 
 ```bash
-npm run test:live
+npm run build       # compile TypeScript (required before test:live and dev)
+npm run test:live   # all green = credentials and list access confirmed
+npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
 
-Expected output (all green, no SharePoint errors):
+Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, `npm run build` triggers an automatic nodemon restart.
 
-```
-  ✓ test-auth.js
-  ✓ test-records.js  —  16 passed, 0 failed
-  ✓ test-data-contracts.js  —  22 passed, 0 failed
-  ✓ test-fy-calc.js  —  14 passed, 0 failed
-
-All tests passed.
-```
-
-The tests hit live SharePoint — they verify auth, list access, field shapes, and FY calculation logic. Any failure prints the failing assertion lines only, with log noise stripped.
-
-### 5. Build and Run
-
-```bash
-npm run build       # Compile TypeScript
-npm run dev # Start Express + Vite HMR at http://localhost:3000
-```
-
-Everything runs on a single server at **http://localhost:3000**. In dev mode, Express integrates Vite as middleware — you get HMR for frontend changes and the API on the same port. No separate frontend build needed.
-
-**Restarting after a backend code change**: nodemon watches the `dist/` folder, so run `npm run build` and nodemon will restart automatically.
-
-## Deployment
-
-The app is hosted on **Azure App Service** (Node.js, UK South region).
-
-All environment variables from `.env` must be configured in Azure App Service > Configuration > Application settings.
-
-### CI/CD — GitHub Actions
-
-Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on every push to `main`.
-
-**Build job:**
-1. Installs root dependencies (`npm install`)
-2. Compiles TypeScript (`npm run build`)
-3. Installs frontend dependencies and builds — output to `frontend/dist/`
-4. Prunes dev dependencies
-5. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, and `frontend/dist/` into `release.zip`
-
-**Deploy job:**
-1. Authenticates with Azure via OIDC (no stored secrets — uses federated identity)
-2. Disables Kudu build-on-deploy (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`)
-3. Deploys `release.zip` directly to Azure App Service
-
-**No manual deploy steps required** — push to `main` and the workflow handles everything.
-
-### Scheduled Eventbrite Sync
-
-An **Azure Logic App** (Consumption plan) runs a daily scheduled sync:
-
-1. **Trigger**: Recurrence — daily at 05:30 UTC
-2. **Action**: HTTP POST to `/api/eventbrite/nightly-update`
-   - Header: `X-Api-Key: <API_SYNC_KEY value>`
-3. **Optional**: Send email action with the `summary` field from the response
-
-The API key bypasses the normal Entra ID session auth for `/api/eventbrite/` paths (handled in `middleware/require-auth.ts`).
-
-The sync:
-- Fetches live events from Eventbrite, creates sessions for any new events matching a group's `EventbriteSeriesID`
-- Fetches attendees for upcoming sessions, creates profiles and entries for new registrations
-- Syncs consent records (privacy, photo) from Eventbrite custom questions
-
-Response includes a human-readable `summary` field, e.g.:
-```
-59 events, 59 matched, 0 new sessions / 59 sessions, 0 new profiles, 0 new entries, 18 consent records
-```
-
-## API Endpoints
-
-### Stats & Config
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/health` | GET | Health check (unauthenticated) |
-| `/api/stats` | GET | Dashboard statistics (current + last FY) |
-| `/api/config` | GET | App configuration (SharePoint site URL) |
-| `/api/cache/clear` | POST | Clear server-side data cache |
-| `/api/cache/stats` | GET | Cache hit/miss statistics |
-
-### Groups
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/groups` | GET | All groups with regulars count |
-| `/api/groups` | POST | Create new group |
-| `/api/groups/:key` | GET | Group detail with sessions and stats |
-| `/api/groups/:key` | PATCH | Update group |
-| `/api/groups/:key` | DELETE | Delete group |
-
-### Sessions
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/sessions` | GET | All sessions with calculated hours and registrations |
-| `/api/sessions` | POST | Create new session |
-| `/api/sessions/export` | GET | Export this FY sessions as CSV |
-| `/api/sessions/:group/:date` | GET | Session detail with entries |
-| `/api/sessions/:group/:date` | PATCH | Update session (name, description, date) |
-| `/api/sessions/:group/:date` | DELETE | Delete session |
-| `/api/sessions/:group/:date/entries` | POST | Create entry (register volunteer) |
-| `/api/sessions/:group/:date/add-regulars` | POST | Bulk add regulars as entries |
-| `/api/sessions/:group/:date/refresh` | POST | Refresh session entry data |
-
-### Entries
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/entries/:group/:date/:slug` | GET | Entry detail with FY hours |
-| `/api/entries/:id` | PATCH | Update entry (check-in, hours, notes) |
-| `/api/entries/:id` | DELETE | Delete entry |
-
-### Profiles
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/profiles` | GET | All profiles with FY stats (optional `?group=` filter) |
-| `/api/profiles` | POST | Create new profile |
-| `/api/profiles/export` | GET | Export profiles as CSV |
-| `/api/profiles/:slug` | GET | Profile detail with entries and group hours |
-| `/api/profiles/:slug` | PATCH | Update profile |
-| `/api/profiles/:slug` | DELETE | Delete profile (only if no entries) |
-| `/api/profiles/:slug/regulars` | POST | Add as regular to group |
-| `/api/profiles/:slug/transfer` | POST | Transfer entries between profiles |
-| `/api/profiles/:id/records` | POST | Create consent/governance record |
-| `/api/profiles/:id/consent` | POST | Upsert privacy and photo consent records (check-in+, or self-service for own profile) |
-
-### Records
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/records/options` | GET | Available record types and statuses |
-| `/api/records/export` | GET | Export records as CSV |
-| `/api/records/:id` | PATCH | Update record |
-| `/api/records/:id` | DELETE | Delete record |
-
-### Regulars
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/regulars/:id` | DELETE | Remove regular assignment |
-
-### Eventbrite Sync
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/eventbrite/nightly-update` | POST | Run nightly update (Eventbrite sync, stats refresh, backup, cache warmup), returns summary |
-| `/api/eventbrite/sync-sessions` | POST | Sync Eventbrite events → sessions |
-| `/api/eventbrite/sync-attendees` | POST | Sync Eventbrite attendees → profiles/entries |
-| `/api/eventbrite/unmatched-events` | GET | List Eventbrite events with no matching group |
-| `/api/eventbrite/event-config-check` | GET | Check event config (child ticket, consent questions, per-attendee) |
-
-## Pages
-
-All pages are Vue 3 SPA routes served at `/`.
-
-| Page | URL | Description |
-|---|---|---|
-| Dashboard | `/` | FY stats, next session, personalised calendar |
-| Admin | `/admin` | Eventbrite sync buttons, exports, site links |
-| Groups | `/groups` | Groups listing with FY filter |
-| Group Detail | `/groups/:key` | Stats, regulars, sessions, edit/delete |
-| Sessions | `/sessions` | Sessions listing with FY filter, search, tag filters |
-| Session Detail | `/sessions/:group/:date` | Entries, check-in, set hours, gallery, edit/delete |
-| Volunteers | `/profiles` | Profiles with FY filter, sort, group filter, search |
-| Profile Detail | `/profiles/:slug` | FY stats, group hours, entries, records |
-| Entries | `/entries` | Admin-only: all entries with filters and edit modal |
-| Login | `/login` | Magic link + verification code (self-service) and Microsoft (trusted users) |
-| Upload | `/upload` | Volunteer photo upload (authenticated, `?entryId=` param) |
-| Consent | `/profiles/:slug/consent` | Privacy and photo consent collection |
-
-## Project Structure
-
-```
-dtv-tracker-app/
-├── app.js              # Express entry point — mounts routes, serves frontend/dist/ in prod,
-│                       # integrates Vite as middleware in dev (HMR at :3000)
-├── public/             # Static assets at fixed URLs (favicon, icons, img, webmanifest)
-├── types/              # TypeScript type definitions (SharePoint + domain + API)
-├── services/           # Data layer: Graph API client, repositories, enrichment
-│   └── repositories/   # CRUD for each SharePoint list
-├── routes/             # API endpoints split by domain
-│   ├── api.ts          # Router mounting all route modules
-│   └── auth/           # Authentication (Microsoft + magic link + verify)
-├── middleware/          # Auth guard middleware (session + API key)
-├── templates/          # Handlebars email templates
-├── frontend/           # Vue 3 + Vite SPA
-│   ├── src/
-│   │   ├── pages/      # Page components
-│   │   ├── components/ # Shared components
-│   │   ├── stores/     # Pinia stores
-│   │   ├── router/     # Vue Router + path builders
-│   │   └── main.ts     # App bootstrap
-│   └── dist/           # Built output — served by Express in production
-├── docs/               # SharePoint schema, setup guides, progress notes
-└── test/               # Auth and data verification scripts
-```
-
-## Tech Stack
-
-- **Backend**: Node.js with Express 5, TypeScript for services/types
-- **Frontend**: Vue 3 + Vite + TypeScript (SPA, mobile-first)
-- **Data**: SharePoint Online lists via Microsoft Graph API
-- **Integrations**: Eventbrite API (event sync, attendee sync, consent records)
-- **Hosting**: Azure App Service (UK South)
-- **Scheduled Tasks**: Azure Logic App (Consumption) for daily Eventbrite sync
-- **Authentication**: Microsoft Entra ID (OAuth) for browser sessions; API key for scheduled sync
+---
 
 ## Documentation
 
-- **[CLAUDE.md](CLAUDE.md)** - Project context, data model, and development guidelines
-- **[docs/sharepoint-schema.md](docs/sharepoint-schema.md)** - SharePoint list schemas and field definitions
-- **[docs/sharepoint-setup.md](docs/sharepoint-setup.md)** - One-time SharePoint/Entra ID configuration (admin)
-- **[docs/progress.md](docs/progress.md)** - Development session notes
+| Doc | When to read |
+|-----|-------------|
+| [docs/api.md](docs/api.md) | All API endpoints and pages |
+| [docs/permissions.md](docs/permissions.md) | Roles and what each can do |
+| [docs/sharepoint-schema.md](docs/sharepoint-schema.md) | Data model — list structure and field names |
+| [docs/sharepoint-setup.md](docs/sharepoint-setup.md) | First-time SharePoint/Entra ID setup (admin only) |
+| [docs/azure-app-service.md](docs/azure-app-service.md) | CI/CD, deployment, and scheduled sync (hosting) |
+| [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) | Building Vue features — layering, components, stats pattern |
+| [docs/tagging.md](docs/tagging.md) | Session taxonomy tags — current and planned tiers |
+| [docs/test-script.md](docs/test-script.md) | Manual test checklist before release |
+| [docs/design/](docs/design/) | Product vision, UX flows, visual guidelines |
+| [AGENTS.md](AGENTS.md) | Full project context and coding guidelines |
 
-## Development Guidelines
+---
 
-### Code Style
-- TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
-- Lowercase-hyphen naming for files (e.g., `data-layer.ts`, `test-auth.js`)
-- Prefer readable code over comments; use comments to explain non-obvious decisions
-- Keep code simple and follow existing patterns
-
-### Security
-- Never commit `.env` file (already in `.gitignore`)
-- Never commit secrets or credentials
-- Validate all user input
-- Prevent XSS when displaying user content
-
-### SharePoint Integration
-- Always reference [docs/sharepoint-schema.md](docs/sharepoint-schema.md) for field names
-- Use field name constants from `services/field-names.ts`
-- Use `safeParseLookupId()` for lookup field comparisons
 
 ## Troubleshooting
 
 ### Cannot connect to SharePoint
 
-**Checklist**:
-- [ ] `.env` file exists with all required variables
-- [ ] Client ID, Secret, and Tenant ID are correct
-- [ ] No extra spaces in `.env` values
-- [ ] Using the correct SharePoint site URL
+- `.env` file exists with all required variables
+- Client ID, Secret, and Tenant ID are correct
+- No extra spaces in `.env` values
+- Correct SharePoint site URL
 
 ### "401 Unauthorized" or "Invalid client secret"
 
-Credentials in `.env` are incorrect or expired. Contact your team lead for updated credentials.
+Credentials in `.env` are incorrect or expired. Contact your team lead.
 
 ### "Unsupported app only token" error
 
-SharePoint site permissions issue (admin-level). See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3.
+SharePoint site permissions issue. See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3.
+
+### `ERR_MODULE_NOT_FOUND: vite`
+
+Frontend dependencies not installed. Run `cd frontend && npm install`.
 
 ### Tests fail
 
@@ -353,4 +99,4 @@ SharePoint site permissions issue (admin-level). See [docs/sharepoint-setup.md](
 npm run test:live
 ```
 
-Failing assertions are shown with `✗` alongside the detail. Authentication errors surface from `test-auth.js` and indicate whether the problem is credentials, permissions, or network.
+Failing assertions are shown with `✗`. Authentication errors surface from `test-auth.js`.
