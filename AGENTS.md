@@ -256,7 +256,7 @@ dtv-tracker-app/
 │       ├── composables/
 │       │   ├── useAuth.ts          # Internal — use useViewer in UI
 │       │   └── useViewer.ts        # Single UI auth composable
-│       ├── stores/                 # Pinia stores (sessionList, sessionDetail, etc.)
+│       ├── stores/                 # Pinia stores (sessionList, sessionDetail, etc.) + colocated *.test.ts
 │       ├── types/                  # Frontend domain types
 │       ├── utils/                  # tagIcons, breakpoints, fetchSessionAdults, sessionStats
 │       ├── components/             # Shared components
@@ -327,6 +327,10 @@ Feature inventory is split by area — read the relevant doc before working in t
 |-----|---------|
 | [docs/testing/test-strategy.md](docs/testing/test-strategy.md) | Testing approach and layers |
 | [docs/testing/full-regression.md](docs/testing/full-regression.md) | Manual test checklist before release |
+
+**Running tests:**
+- `npm run test:live` — backend live tests (SharePoint connectivity, data contracts)
+- `cd frontend && npm test` — Vitest store unit tests (45 tests, no live calls)
 
 ---
 

@@ -101,7 +101,7 @@ export const router = createRouter({
   ]
 })
 
-router.beforeEach(async (to) => {
+export async function authGuard(to: { path: string; meta: { requiresTrusted?: boolean; requiresAdmin?: boolean; requiresAuth?: boolean } }) {
   if (to.meta.requiresTrusted || to.meta.requiresAdmin || to.meta.requiresAuth) {
     await ensureAuth()
     if (!user.value) return '/not-found'
@@ -114,5 +114,7 @@ router.beforeEach(async (to) => {
   if (import.meta.env.DEV) return
   await ensureAuth()
   if (user.value?.role !== 'admin') return '/'
-})
+}
+
+router.beforeEach(authGuard)
 

@@ -53,7 +53,7 @@ export interface RenderedEmail {
 // Compiled template cache — avoids re-reading disk on every send
 const templateCache = new Map<string, HandlebarsTemplateDelegate>();
 
-const TEMPLATES_DIR = path.join(__dirname, '..', '..', 'templates', 'email');
+const TEMPLATES_DIR = path.join(process.cwd(), 'templates', 'email');
 
 async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
   if (process.env.NODE_ENV !== 'development' && templateCache.has(filePath)) return templateCache.get(filePath)!;
