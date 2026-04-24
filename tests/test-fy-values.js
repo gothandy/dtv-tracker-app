@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
 
 async function testFYValues() {
     console.log('Testing FinancialYearFlow values in Sessions...\n');

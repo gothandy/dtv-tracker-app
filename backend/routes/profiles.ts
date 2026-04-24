@@ -33,8 +33,8 @@ import {
   ENTRY_STATS
 } from '../services/field-names';
 import { parseEntryStatsField } from '../services/data-layer';
-import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../types/api-responses';
-import type { ApiResponse } from '../types/sharepoint';
+import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
+import type { ApiResponse } from '../../types/sharepoint';
 
 const router: Router = express.Router();
 

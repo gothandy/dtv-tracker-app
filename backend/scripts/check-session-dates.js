@@ -5,12 +5,12 @@
  * Uses luxon to convert Title date (YYYY-MM-DD) → midnight site time → UTC.
  * Fetches raw UTC strings from SharePoint (no date conversion) and compares.
  *
- * Run: npm run build && node scripts/check-session-dates.js
+ * Run: npm run build && node backend/scripts/check-session-dates.js
  */
 
 require('dotenv').config();
 const { DateTime } = require('luxon');
-const { sharePointClient } = require('../dist/services/sharepoint-client');
+const { sharePointClient } = require('../../dist/backend/services/sharepoint-client');
 
 const SHAREPOINT_TIMEZONE = process.env.SHAREPOINT_TIMEZONE || 'Europe/London';
 const LIST_GUID = process.env.SESSIONS_LIST_GUID;

@@ -10,7 +10,7 @@ import {
   profileIdFromSlug
 } from '../services/data-layer';
 import { GROUP_LOOKUP, PROFILE_LOOKUP } from '../services/field-names';
-import type { ApiResponse } from '../types/sharepoint';
+import type { ApiResponse } from '../../types/sharepoint';
 
 const router: Router = express.Router();
 

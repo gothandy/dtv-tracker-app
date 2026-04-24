@@ -1,6 +1,6 @@
-import { SharePointEntry, SharePointProfile } from '../types/sharepoint';
-import { SharePointSession } from '../types/session';
-import { SharePointGroup } from '../types/group';
+import { SharePointEntry, SharePointProfile } from '../../types/sharepoint';
+import { SharePointSession } from '../../types/session';
+import { SharePointGroup } from '../../types/group';
 import { extractMetadataTags, safeParseLookupId, parseHours } from './data-layer';
 import {
   SESSION_NOTES, SESSION_METADATA, SESSION_STATS, SESSION_COVER_MEDIA,

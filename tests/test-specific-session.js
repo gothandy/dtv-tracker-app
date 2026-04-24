@@ -1,6 +1,6 @@
 require('dotenv').config();
-const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
-const { entriesRepository } = require('../dist/services/repositories/entries-repository');
+const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
+const { entriesRepository } = require('../dist/backend/services/repositories/entries-repository');
 
 async function testSpecificSession() {
     console.log('Testing 2025-04-09 Wed session...\n');

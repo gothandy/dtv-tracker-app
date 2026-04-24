@@ -4,7 +4,7 @@
  * Fetches Groups (Crews) data from SharePoint and returns typed SharePointGroup[]
  */
 
-import { SharePointGroup } from '../../types/group';
+import { SharePointGroup } from '../../../types/group';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 
 class GroupsRepository {

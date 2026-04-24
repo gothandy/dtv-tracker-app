@@ -7,7 +7,7 @@ import { profilesRepository } from './repositories/profiles-repository';
 import { recordsRepository } from './repositories/records-repository';
 import { toMatchName, safeParseLookupId, parseEmails } from './data-layer';
 import type { EventbriteAttendee } from './eventbrite-client';
-import type { SharePointProfile, SharePointEntry } from '../types/sharepoint';
+import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
 import { SESSION_LOOKUP, PROFILE_LOOKUP } from './field-names';
 
 /**

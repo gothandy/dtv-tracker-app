@@ -4,7 +4,7 @@
  * Fetches Sessions (Events) data from SharePoint and returns typed SharePointSession[]
  */
 
-import { SharePointSession } from '../../types/session';
+import { SharePointSession } from '../../../types/session';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { GROUP_LOOKUP, GROUP_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS } from '../field-names';
 

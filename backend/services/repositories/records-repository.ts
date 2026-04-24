@@ -5,7 +5,7 @@
  * Only available on the Tracker site (RECORDS_LIST_GUID must be set).
  */
 
-import { SharePointRecord } from '../../types/sharepoint';
+import { SharePointRecord } from '../../../types/sharepoint';
 import { safeParseLookupId } from '../data-layer';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 

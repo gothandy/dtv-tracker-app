@@ -33,8 +33,8 @@ import {
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
   PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_STATS
 } from '../services/field-names';
-import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../types/api-responses';
-import type { ApiResponse } from '../types/sharepoint';
+import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../../types/api-responses';
+import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh } from '../services/session-stats';

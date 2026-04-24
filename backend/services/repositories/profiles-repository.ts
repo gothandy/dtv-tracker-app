@@ -4,7 +4,7 @@
  * Fetches Profiles (Volunteers) data from SharePoint and returns typed SharePointProfile[]
  */
 
-import { SharePointProfile } from '../../types/sharepoint';
+import { SharePointProfile } from '../../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROFILE_STATS } from '../field-names';
 

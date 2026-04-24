@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { groupsRepository } = require('../dist/services/repositories/groups-repository');
-const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
-const { entriesRepository } = require('../dist/services/repositories/entries-repository');
+const { groupsRepository } = require('../dist/backend/services/repositories/groups-repository');
+const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
+const { entriesRepository } = require('../dist/backend/services/repositories/entries-repository');
 
 async function testStats() {
     console.log('Testing stats calculation with UTC dates...\n');

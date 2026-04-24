@@ -13,10 +13,10 @@
  */
 
 require('dotenv').config();
-const { groupsRepository } = require('../dist/services/repositories/groups-repository');
-const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
-const { profilesRepository } = require('../dist/services/repositories/profiles-repository');
-const { entriesRepository } = require('../dist/services/repositories/entries-repository');
+const { groupsRepository } = require('../dist/backend/services/repositories/groups-repository');
+const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
+const { profilesRepository } = require('../dist/backend/services/repositories/profiles-repository');
+const { entriesRepository } = require('../dist/backend/services/repositories/entries-repository');
 
 let passed = 0;
 let failed = 0;

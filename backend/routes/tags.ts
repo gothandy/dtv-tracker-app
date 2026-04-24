@@ -19,7 +19,7 @@ import {
   profileSlug
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_METADATA, SESSION_STATS } from '../services/field-names';
-import type { TagHoursResponse } from '../types/api-responses';
+import type { TagHoursResponse } from '../../types/api-responses';
 
 const router: Router = express.Router();
 

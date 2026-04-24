@@ -6,8 +6,8 @@ import { sessionsRepository } from '../services/repositories/sessions-repository
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { calculateCurrentFY, calculateFinancialYear, safeParseLookupId } from '../services/data-layer';
 import { SESSION_STATS, PROFILE_STATS, GROUP_LOOKUP } from '../services/field-names';
-import type { StatsResponse, FYStatsResponse } from '../types/api-responses';
-import type { ApiResponse } from '../types/sharepoint';
+import type { StatsResponse, FYStatsResponse } from '../../types/api-responses';
+import type { ApiResponse } from '../../types/sharepoint';
 
 // Reads pre-computed Stats JSON from session items — falls back to 0 on missing/malformed data
 function parseStatsHours(statsRaw: string | undefined | null): number {

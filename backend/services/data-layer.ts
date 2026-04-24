@@ -8,8 +8,8 @@
  * - Provides validation
  */
 
-import { SharePointGroup, Group } from '../types/group';
-import { SharePointSession, Session } from '../types/session';
+import { SharePointGroup, Group } from '../../types/group';
+import { SharePointSession, Session } from '../../types/session';
 import {
   SharePointProfile,
   SharePointEntry,
@@ -19,7 +19,7 @@ import {
   Entry,
   GroupLookupMap,
   LookupMap
-} from '../types/sharepoint';
+} from '../../types/sharepoint';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_DISPLAY,
@@ -27,8 +27,8 @@ import {
   SESSION_NOTES, SESSION_LIMITS,
   ENTRY_STATS
 } from './field-names';
-import type { EntryStats } from '../types/entry-stats';
-import type { SessionStats } from '../types/api-responses';
+import type { EntryStats } from '../../types/entry-stats';
+import type { SessionStats } from '../../types/api-responses';
 
 /** Parses the session Stats JSON field into a typed SessionStats object. */
 export function parseSessionStats(raw: string | undefined | null): SessionStats {

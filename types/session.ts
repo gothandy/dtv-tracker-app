@@ -5,7 +5,7 @@
  */
 
 import { SharePointBaseItem } from './group';
-import type { SessionLimits } from '../services/data-layer';
+import type { SessionLimits } from '../backend/services/data-layer';
 
 /**
  * Raw Session entity as returned by SharePoint REST API

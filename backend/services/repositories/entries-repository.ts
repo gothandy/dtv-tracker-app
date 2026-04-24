@@ -4,10 +4,10 @@
  * Fetches Entries (Registrations) data from SharePoint and returns typed SharePointEntry[]
  */
 
-import { SharePointEntry } from '../../types/sharepoint';
+import { SharePointEntry } from '../../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY, ENTRY_CANCELLED, ENTRY_STATS } from '../field-names';
-import type { EntryStats } from '../../types/entry-stats';
+import type { EntryStats } from '../../../types/entry-stats';
 import { serializeEntryStats } from '../entry-stats';
 
 class EntriesRepository {

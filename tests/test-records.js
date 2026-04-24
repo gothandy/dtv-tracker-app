@@ -10,8 +10,8 @@
  */
 
 require('dotenv').config();
-const { sharePointClient } = require('../dist/services/sharepoint-client');
-const { recordsRepository } = require('../dist/services/repositories/records-repository');
+const { sharePointClient } = require('../dist/backend/services/sharepoint-client');
+const { recordsRepository } = require('../dist/backend/services/repositories/records-repository');
 
 const RECORDS_LIST_GUID = process.env.RECORDS_LIST_GUID;
 

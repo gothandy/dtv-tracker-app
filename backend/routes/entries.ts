@@ -43,8 +43,8 @@ import multer from 'multer';
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
 
-import type { EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../types/api-responses';
-import type { ApiResponse } from '../types/sharepoint';
+import type { EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../../types/api-responses';
+import type { ApiResponse } from '../../types/sharepoint';
 
 const router: Router = express.Router();
 

@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { recordsRepository } = require('../dist/services/repositories/records-repository');
-const { profilesRepository } = require('../dist/services/repositories/profiles-repository');
-const { safeParseLookupId } = require('../dist/services/data-layer');
+const { recordsRepository } = require('../dist/backend/services/repositories/records-repository');
+const { profilesRepository } = require('../dist/backend/services/repositories/profiles-repository');
+const { safeParseLookupId } = require('../dist/backend/services/data-layer');
 const fs = require('fs');
 const path = require('path');
 

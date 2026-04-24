@@ -26,8 +26,8 @@ import {
   parseSessionStats
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NOTES, SESSION_METADATA } from '../services/field-names';
-import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../types/api-responses';
-import type { ApiResponse } from '../types/sharepoint';
+import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../../types/api-responses';
+import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 
 const router: Router = express.Router();
@@ -261,7 +261,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
 
     // Filter to ≥6h, attach name/slug/isRegular/regularId/accompanyingAdultId
     const MIN_REGULAR_HOURS = 6;
-    const rollingRegulars: import('../types/api-responses').GroupRegularResponse[] = [];
+    const rollingRegulars: import('../../types/api-responses').GroupRegularResponse[] = [];
     for (const [profileId, hours] of profileHoursMap) {
       if (hours < MIN_REGULAR_HOURS) continue;
       const spProfile = profileMap.get(profileId);

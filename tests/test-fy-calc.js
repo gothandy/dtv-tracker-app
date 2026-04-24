@@ -12,7 +12,7 @@
  */
 
 require('dotenv').config();
-const { calculateFinancialYear, calculateCurrentFY } = require('../dist/services/data-layer');
+const { calculateFinancialYear, calculateCurrentFY } = require('../dist/backend/services/data-layer');
 
 let passed = 0;
 let failed = 0;

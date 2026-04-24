@@ -4,7 +4,7 @@
  * Fetches Regulars data from SharePoint and returns typed SharePointRegular[]
  */
 
-import { SharePointRegular } from '../../types/sharepoint';
+import { SharePointRegular } from '../../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROFILE_LOOKUP, PROFILE_DISPLAY, GROUP_LOOKUP, GROUP_DISPLAY } from '../field-names';
 

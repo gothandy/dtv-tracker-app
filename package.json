@@ -9,7 +9,7 @@
     "start": "node app.js",
     "dev": "cross-env NODE_ENV=development nodemon app.js",
     "test": "echo \"No automated tests (run npm run test:live for integration tests)\"",
-    "test:live": "node test/run-tests.js",
+    "test:live": "node tests/run-tests.js",
     "frontend:build": "cd frontend && npm run build"
   },
   "nodemonConfig": {

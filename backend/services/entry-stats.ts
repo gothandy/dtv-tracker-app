@@ -13,10 +13,10 @@ import { recordsRepository } from './repositories/records-repository';
 import { regularsRepository } from './repositories/regulars-repository';
 import { safeParseLookupId, parseEntryStatsField } from './data-layer';
 import { SESSION_LOOKUP, PROFILE_LOOKUP, GROUP_LOOKUP, ACCOMPANYING_ADULT_LOOKUP, ENTRY_STATS, PROFILE_STATS } from './field-names';
-import type { SharePointEntry } from '../types/sharepoint';
-import type { SharePointProfile } from '../types/sharepoint';
-import type { SharePointRecord } from '../types/sharepoint';
-import type { EntryStats, EntryStatsSnapshot, EntryStatsManual } from '../types/entry-stats';
+import type { SharePointEntry } from '../../types/sharepoint';
+import type { SharePointProfile } from '../../types/sharepoint';
+import type { SharePointRecord } from '../../types/sharepoint';
+import type { EntryStats, EntryStatsSnapshot, EntryStatsManual } from '../../types/entry-stats';
 
 export interface EntryStatsRefreshResult {
   total: number;      // eligible (non-frozen) entries processed

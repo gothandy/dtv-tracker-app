@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { entriesRepository } = require('../dist/services/repositories/entries-repository');
+const { entriesRepository } = require('../dist/backend/services/repositories/entries-repository');
 
 async function testEntries() {
     console.log('Testing Entries list data...\n');

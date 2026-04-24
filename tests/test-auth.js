@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { sharePointClient } = require('../dist/services/sharepoint-client');
-const { groupsRepository } = require('../dist/services/repositories/groups-repository');
-const { sessionsRepository } = require('../dist/services/repositories/sessions-repository');
+const { sharePointClient } = require('../dist/backend/services/sharepoint-client');
+const { groupsRepository } = require('../dist/backend/services/repositories/groups-repository');
+const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
 
 async function test() {
     console.log('Testing Microsoft Graph API authentication...\n');
