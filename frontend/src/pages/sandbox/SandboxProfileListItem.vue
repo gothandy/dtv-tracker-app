@@ -30,7 +30,7 @@
         <ProfileListItem :profile="cardInvited" :display-hours="15" :display-sessions="6" />
       </div>
 
-      <h2>All badges combined (member + card accepted)</h2>
+      <h2>All badges combined (member + card accepted + warning)</h2>
       <div class="demo">
         <ProfileListItem :profile="allBadges" :display-hours="56" :display-sessions="22" />
       </div>
@@ -152,6 +152,7 @@ const allBadges: ProfileResponse = {
   name: 'Helen Ford',
   isMember: true,
   cardStatus: 'Accepted',
+  warnings: [{ text: 'Possible Duplicate', url: '/profiles?fy=all&search=Helen+Ford' }],
   hoursThisFY: 56,
   sessionsThisFY: 22,
 }

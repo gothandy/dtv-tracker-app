@@ -63,7 +63,7 @@ const currentFilter = ref<EntryFilterParams>({ q: '', fy: 'future', accompanying
 
 function onFiltered(params: EntryFilterParams) {
   currentFilter.value = params
-  store.fetch({ q: params.q, fy: params.fy, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled })
+  store.fetch({ q: params.q, fy: params.fy, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled, profileId: params.profileId })
 }
 
 function matchesFilter(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {

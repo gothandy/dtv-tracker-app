@@ -33,6 +33,11 @@
   filter: brightness(0) saturate(100%) invert(54%) sepia(40%) saturate(600%) hue-rotate(73deg) brightness(95%);
 }
 
+/* Make any SVG DTV dirt */
+.svg-dirt {
+  filter: brightness(0) saturate(100%) invert(27%) sepia(50%) saturate(700%) hue-rotate(315deg) brightness(105%);
+}
+
 /* Make any SVG DTV dirt-dark */
 .svg-dirt-dark {
   filter: brightness(0) saturate(100%) invert(22%) sepia(50%) saturate(700%) hue-rotate(320deg) brightness(90%);

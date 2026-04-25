@@ -249,6 +249,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Save: `PATCH /api/entries/:id` called with `{ checkedIn, count, hours, notes, accompanyingAdultId }`; list updates in-place (no full reload)
 - [ ] Save with changed notes that no longer match current filter: entry is removed from the visible list immediately
 - [ ] Delete: confirmation dialog → `DELETE /api/entries/:id` → entry removed from list
+- [ ] Profile filter chip: navigating from a profile warning link (`/entries?profileId=N&profileName=X`) shows a dirt-coloured "X ×" chip in the filter row; only that volunteer's entries are shown
+- [ ] Clicking the chip's × button clears the profile filter and re-fetches all entries (per other active filters)
+- [ ] `GET /api/entries?profileId=N` returns only entries for that profile
 
 ### H30. Bulk tag sessions / CSV download
 - [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" and "Download CSV" buttons become enabled
@@ -287,6 +290,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Returns `{ summary: "..." }` suitable for email notification; includes cache warmup line
 - [ ] Azure Logic App calls `/api/eventbrite/nightly-update` daily at 05:30 UTC
 - [ ] Concurrent call (second request while first still running) returns 409 — prevents duplicate entries from Logic App retries
+
+### H27b. Profile stats warnings
+- [ ] After `POST /api/profiles/refresh-stats`, a profile whose Title matches another profile has `"Possible Duplicate"` in its stored `Stats.warnings` array (verify in SharePoint or via `GET /api/profiles`)
+- [ ] After refresh, a profile with an active entry containing `#child` in Notes but no `AccompanyingAdultLookupId` has `"Child No Adult"` in `Stats.warnings`; the warning URL includes `profileId` and `profileName` query params
+- [ ] After refresh, a profile with a future booking but no accepted Privacy Consent or Photo Consent has `"No Consent"` in `Stats.warnings`
+- [ ] After refresh, a profile with a future booking and both Privacy and Photo Consent accepted does **not** have `"No Consent"`
+- [ ] After refresh, a profile with no future bookings does **not** have `"No Consent"` (past sessions only)
+- [ ] After refresh, a clean profile (no duplicates, no unassigned child entries, consent present) has `warnings: []`
+- [ ] Fixing the condition and re-running refresh removes the warning
 
 ### H27. Clear cache
 - [ ] Dashboard → Refresh button
@@ -409,6 +421,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `GET /api/profiles?group=X` — filtered by group attendance
 - [ ] `GET /api/groups` — populate group dropdown
 - [ ] `GET /api/records/options` — populate record type/status dropdowns
+- [ ] Warnings filter dropdown appears in the advanced filters row
+- [ ] "All profiles" (default) — no filter applied; all volunteers shown
+- [ ] "All warnings" — only volunteers with at least one warning shown
+- [ ] "No warnings" — only volunteers with no warnings shown
+- [ ] Selecting a specific warning (e.g. "Possible Duplicate") — only those volunteers shown
+- [ ] Warnings dropdown only lists warning values that exist in the current filtered list
+- [ ] URL query param `?warnings=Possible+Duplicate` persists on page reload and correctly pre-selects the filter
 
 ### M9. Profile detail
 - [ ] `GET /api/profiles/:slug` — slug format is `name-id` (e.g. `gary-downs-42`); resolves correctly even when two profiles share a name
@@ -416,6 +435,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `GET /auth/me` — determines inline hours editing permissions
 - [ ] All emails shown as individual mailto links (one per line)
 - [ ] Profile with comma-separated emails in SharePoint → multiple mailto links shown
+- [ ] Admin, Check In, or Read Only viewing a profile with warnings — warnings section appears in the right column (dirt background, white text) listing each warning
+- [ ] Self-Service user viewing the same profile — warnings section absent
+- [ ] Profile with no warnings — warnings section not rendered
 
 ### M10. Unmatched Eventbrite events
 - [ ] `GET /api/eventbrite/unmatched-events` — events with no matching group
