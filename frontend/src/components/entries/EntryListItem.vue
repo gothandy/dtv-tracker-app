@@ -37,7 +37,7 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-const icons = computed(() => iconsForEntry({ isGroup: props.entry.isGroup, stats: props.entry.stats }))
+const icons = computed(() => iconsForEntry({ isGroup: props.entry.isGroup, isChild: !!props.entry.accompanyingAdultId, stats: props.entry.stats }))
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })

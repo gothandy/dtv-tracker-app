@@ -469,7 +469,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
-      // isMember and cardStatus come from the pre-computed Profile.Stats field — no records fetch needed
+      // isMember, cardStatus and profileWarning come from the pre-computed Profile.Stats field — no records fetch needed
       const stats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
       return {
         id: e.ID,
@@ -479,6 +479,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         isGroup: profile?.IsGroup || false,
         isMember: stats.isMember === true,
         cardStatus: stats.cardStatus ?? undefined,
+        profileWarning: stats.warnings?.length ? true : undefined,
         count: e.Count || 1,
         hours: parseHours(e.Hours),
         checkedIn: e.Checked || false,

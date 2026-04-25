@@ -344,6 +344,7 @@ function mapEntry(e: EntryResponse): EntryItem {
       isMember: e.isMember,
       cardStatus: e.cardStatus,
       isGroup: e.isGroup,
+      hasProfileWarning: e.profileWarning,
     },
     session: {
       groupKey: route.params.groupKey as string,

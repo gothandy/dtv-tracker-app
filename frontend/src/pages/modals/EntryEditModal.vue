@@ -136,11 +136,9 @@ const entryIcons = computed(() => iconsForEntry({
   isMember: props.entry.profile.isMember,
   isGroup: props.entry.profile.isGroup,
   cardStatus: props.entry.profile.cardStatus,
-  stats: {
-    ...props.entry.stats,
-    snapshot: { ...props.entry.stats?.snapshot, isChild: form.accompanyingAdultId !== null },
-    manual: form.statsManual,
-  },
+  hasProfileWarning: props.entry.profile.hasProfileWarning,
+  isChild: form.accompanyingAdultId !== null,
+  stats: { ...props.entry.stats, manual: form.statsManual },
 }))
 
 watch(() => props.entry, (e) => {

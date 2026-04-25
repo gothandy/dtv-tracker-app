@@ -14,7 +14,7 @@ export interface EntryStatsSnapshot {
   booking?: 'New' | 'Regular';
   /** Profile is a group/company account */
   isGroup?: boolean;
-  /** Child entry (AccompanyingAdult set or #Child in Notes) */
+  /** Child entry (AccompanyingAdult set) */
   isChild?: boolean;
   /** Accepted Charity Membership record at session time */
   isMember?: boolean;

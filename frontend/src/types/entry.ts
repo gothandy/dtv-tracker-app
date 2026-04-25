@@ -4,6 +4,7 @@ export interface EntryProfileSummary {
   isMember: boolean
   cardStatus?: string
   isGroup: boolean
+  hasProfileWarning?: boolean
 }
 
 export interface EntrySessionSummary {
