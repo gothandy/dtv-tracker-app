@@ -29,7 +29,7 @@ export const TAG_ICONS: TagIcon[] = [
   { icon: 'badges/regular.svg',    alt: 'Regular',          type: 'tag' },
   { icon: 'badges/new.svg',        alt: 'New',              type: 'tag' },
   { icon: 'badges/nophoto.svg',    alt: 'No Photo',         type: 'tag', color: 'red' },
-  { icon: 'status/warning.svg',    alt: 'Duplicate Warning',type: 'tag', color: 'red' },
+  { icon: 'status/warning.svg',    alt: 'Profile Warning',  type: 'badge', color: 'red' },
 ]
 
 /** Tags shown in the entry icon picker (manual/operational only) */
@@ -43,6 +43,8 @@ interface EntryIconSource {
   isGroup?: boolean
   cardStatus?: string
   stats?: EntryStats
+  isChild?: boolean
+  hasProfileWarning?: boolean
 }
 
 /** Builds the full icon list for an entry: profile badges + stats snapshot + stats manual */
@@ -54,17 +56,19 @@ export function iconsForEntry(e: EntryIconSource): TagIcon[] {
   if (e.cardStatus === 'Accepted')  icons.push({ icon: 'badges/card.svg', alt: 'Benefits Card', type: 'badge' })
   if (e.cardStatus === 'Invited')   icons.push({ icon: 'badges/card.svg', alt: 'Card Invited', type: 'badge', color: 'orange' })
   if (e.isGroup) icons.push({ icon: 'badges/group.svg', alt: 'Group / Company', type: 'badge' })
+  if (e.hasProfileWarning) icons.push({ icon: 'status/warning.svg', alt: 'Profile Warning', type: 'badge', color: 'red' })
+
+  // Entry-level tag: child (live from accompanyingAdultId, not frozen snapshot)
+  if (e.isChild) icons.push({ icon: 'badges/child.svg', alt: 'Child', type: 'tag' })
 
   if (e.stats) {
     const { snapshot, manual } = e.stats
 
     // Snapshot: computed at session time
-    if (snapshot?.booking === 'New')     icons.push({ icon: 'badges/new.svg',      alt: 'New',              type: 'tag' })
-    if (snapshot?.booking === 'Regular') icons.push({ icon: 'badges/regular.svg',  alt: 'Regular',          type: 'tag' })
-    if (snapshot?.isChild)               icons.push({ icon: 'badges/child.svg',     alt: 'Child',            type: 'tag' })
-    if (manual?.duplicate)               icons.push({ icon: 'status/warning.svg',   alt: 'Duplicate Warning',type: 'tag', color: 'red' })
-    if (snapshot?.noPhoto)               icons.push({ icon: 'badges/nophoto.svg',   alt: 'No Photo',         type: 'tag', color: 'red' })
-    if (snapshot?.noConsent)             icons.push({ icon: 'badges/noconsent.svg', alt: 'No Consent',       type: 'tag', color: 'red' })
+    if (snapshot?.booking === 'New')     icons.push({ icon: 'badges/new.svg',      alt: 'New',      type: 'tag' })
+    if (snapshot?.booking === 'Regular') icons.push({ icon: 'badges/regular.svg',  alt: 'Regular',  type: 'tag' })
+    if (snapshot?.noPhoto)               icons.push({ icon: 'badges/nophoto.svg',   alt: 'No Photo', type: 'tag', color: 'red' })
+    if (snapshot?.noConsent)             icons.push({ icon: 'badges/noconsent.svg', alt: 'No Consent', type: 'tag', color: 'red' })
 
     // Dual-state tags: snapshot = available/qualified, manual = active on the day
     for (const tag of DUAL_STATE_TAGS) {

@@ -130,6 +130,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `PATCH /api/entries/:id` — `{ checkedIn: true/false }`
 - [ ] Visual checkmark updates immediately
 
+### H9a. Entry card icons
+- [ ] Volunteer with an accompanying adult set on their entry → Child icon shown in session entry list
+- [ ] Volunteer with no accompanying adult → no Child icon
+- [ ] Volunteer whose profile has any computed warnings (e.g. Possible Duplicate, No Consent) → Profile Warning badge shown in session entry list
+- [ ] Volunteer with no profile warnings → no Profile Warning badge
+- [ ] Profile Warning badge does **not** appear on entries when viewing a profile's session history (filtered out as a badge type)
+
 ### H10. Edit entry (live save)
 - [ ] Entry detail → change Checked In, Count, Hours, Notes
 - [ ] `PATCH /api/entries/:id` — `{ checkedIn?, count?, hours?, notes? }`

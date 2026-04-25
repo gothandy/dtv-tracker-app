@@ -23,7 +23,7 @@
             :title-to="e.profile.slug ? profilePath(e.profile.slug) : undefined"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
+            :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats })"
             :allow-edit="true"
             :working="workingId === e.id"
             @update="(c, h) => onUpdate(e, c, h)"
@@ -41,7 +41,7 @@
             :title-to="e.profile.slug ? profilePath(e.profile.slug) : undefined"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
+            :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats })"
           />
         </EntryList>
       </div>
@@ -55,7 +55,7 @@
             :title-to="e.profile.slug ? profilePath(e.profile.slug) : undefined"
             :checked-in="e.checkedIn"
             :hours="e.hours"
-            :icons="iconsForEntry({ ...e.profile, stats: e.stats })"
+            :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats })"
             :allow-cancel="true"
             @cancel="log(`cancel: id=${e.id} &quot;${e.profile.name}&quot;`)"
           />

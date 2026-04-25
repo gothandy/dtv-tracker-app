@@ -159,6 +159,7 @@ export interface EntryResponse {
   isGroup: boolean;
   isMember: boolean;
   cardStatus?: string;
+  profileWarning?: boolean;
   count: number;
   hours: number;
   checkedIn: boolean;
