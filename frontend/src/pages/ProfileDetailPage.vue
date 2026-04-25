@@ -472,6 +472,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
     stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,

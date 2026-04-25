@@ -92,6 +92,7 @@ export interface ProfileEntryResponse {
   financialYear: string;
   cancelled?: string;
   stats?: EntryStats;
+  eventbriteAttendeeId?: string;
 }
 
 export interface ProfileGroupHours {
@@ -165,9 +166,10 @@ export interface EntryResponse {
   checkedIn: boolean;
   notes?: string;
   accompanyingAdultId?: number;
-  cancelled?: string; // ISO datetime if booking was cancelled
-  email?: string;     // only present for operational users (admin/check-in)
-  stats?: EntryStats; // snapshot; undefined if not yet computed (pre-migration entries)
+  cancelled?: string;          // ISO datetime if booking was cancelled
+  email?: string;              // only present for operational users (admin/check-in)
+  stats?: EntryStats;          // snapshot; undefined if not yet computed (pre-migration entries)
+  eventbriteAttendeeId?: string; // present when entry originated from Eventbrite
 }
 
 export interface SessionDetailResponse {
@@ -276,6 +278,7 @@ export interface EntryListItemResponse {
   accompanyingAdultId?: number;
   cancelled?: string;
   stats?: import('./entry-stats').EntryStats;
+  eventbriteAttendeeId?: string;
 }
 
 export interface TagHoursItem {

@@ -31,7 +31,7 @@ import { parseSessionStats } from '../services/data-layer';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_STATS
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_STATS, ENTRY_EVENTBRITE_ATTENDEE_ID
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
@@ -487,7 +487,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
         cancelled: e[ENTRY_CANCELLED] || undefined,
         email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined,
-        stats: parseEntryStatsField(e[ENTRY_STATS])
+        stats: parseEntryStatsField(e[ENTRY_STATS]),
+        eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined
       };
     });
 
@@ -499,7 +500,10 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const childCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.isChild : /#Child\b/i.test(String(e.Notes || '')); }).length;
     const regularCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || '')); }).length;
     const cancelledRegularCount = sessionEntries.filter(e => { if (!e[ENTRY_CANCELLED]) return false; const s = pes(e); return s ? s.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || '')); }).length || undefined;
-    const eventbriteCount = activeEntries.filter(e => { const s = pes(e); return s ? s.manual?.eventbrite : /#Eventbrite\b/i.test(String(e.Notes || '')); }).length;
+    const eventbriteCount = activeEntries.filter(e => {
+      if (e[ENTRY_EVENTBRITE_ATTENDEE_ID]) return true;
+      const s = pes(e); return s ? s.manual?.eventbrite : /#Eventbrite\b/i.test(String(e.Notes || ''));
+    }).length;
 
     // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
     // For self-service: also look up their own entry to return userEntryId (needed for cancel flow)

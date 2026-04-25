@@ -27,7 +27,7 @@
         :title-to="allowEdit ? undefined : sessionPath(e.session.groupKey, e.session.date)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats }).filter(i => i.type !== 'badge')"
+        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats, eventbriteAttendeeId: e.eventbriteAttendeeId }).filter(i => i.type !== 'badge')"
         :allow-edit="allowEdit ?? false"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"

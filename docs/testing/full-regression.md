@@ -158,7 +158,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### H13. Refresh session (bulk)
 - [ ] Session detail → "Refresh" button
 - [ ] `POST /api/sessions/:group/:date/refresh`
-- [ ] Adds missing regulars, syncs Eventbrite attendees, tags #NoPhoto
+- [ ] Adds missing regulars, syncs Eventbrite attendees (with `EventbriteAttendeeID`), tags #NoPhoto
 - [ ] Shows summary: "Added: X regulars, Y from Eventbrite, Z new profiles, W #NoPhoto"
 
 ### H14. Create volunteer
@@ -283,14 +283,20 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Admin → "Fetch New Attendees"
 - [ ] `POST /api/eventbrite/sync-attendees`
 - [ ] Shows "X sessions, Y new profiles, Z new entries, W consent records"
-- [ ] Creates profiles, entries, upserts consent records
-- [ ] Two attendees with same name but different emails → two separate profiles created; entry for the new profile has `#Duplicate` (red warning badge) on session detail
+- [ ] Creates profiles, entries, upserts consent records; new entries have `EventbriteAttendeeID` set in SharePoint
+- [ ] Newly synced entry shows Eventbrite icon on session detail (driven by `EventbriteAttendeeID`, not Notes tag)
+- [ ] Two attendees with same name but different emails → two separate profiles created; profile-level "Possible Duplicate" warning badge appears on entry cards (no `#Duplicate` Notes tag)
 - [ ] Attendee name AND email both match an existing profile → same profile reused (email checked against all profile emails, not just the first)
 - [ ] Attendee name matches existing profile, email is one of the profile's secondary emails → profile reused, no duplicate
 - [ ] Attendee name matches existing profile with no stored email → email is backfilled on the existing profile, no duplicate created
 - [ ] Attendee email matches an existing profile's email but name differs → name match used, not email; behaves by name logic
-- [ ] If any duplicates flagged, sync summary includes "X duplicate warning(s) — check session entries"
 - [ ] Triggering sync while one is already running returns 409 "Sync already in progress" (second request rejected immediately)
+
+### H25b. Eventbrite backfill
+- [ ] `POST /api/eventbrite/backfill-attendee-ids` (admin/api-key auth)
+- [ ] Returns `{ updated: N, skipped: M }` — entries updated with `EventbriteAttendeeID`
+- [ ] After backfill, existing Eventbrite entries show the Eventbrite icon (no manual stats or Notes tag needed)
+- [ ] Running a second time: all entries already have ID set → returns `{ updated: 0, skipped: ... }`
 
 ### H26. Nightly update (scheduled)
 - [ ] `POST /api/eventbrite/nightly-update` with `X-Api-Key` header

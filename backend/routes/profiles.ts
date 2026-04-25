@@ -31,6 +31,7 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED,
   ENTRY_STATS,
+  ENTRY_EVENTBRITE_ATTENDEE_ID,
   PROFILE_STATS
 } from '../services/field-names';
 import { parseEntryStatsField } from '../services/data-layer';
@@ -765,6 +766,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           financialYear: `FY${sessionFY}`,
           cancelled: e[ENTRY_CANCELLED] || undefined,
           stats: parseEntryStatsField(e[ENTRY_STATS]),
+          eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));

@@ -3,12 +3,13 @@
  * (routes/eventbrite.ts) and the per-session refresh (routes/entries.ts).
  */
 
+import { entriesRepository } from './repositories/entries-repository';
 import { profilesRepository } from './repositories/profiles-repository';
 import { recordsRepository } from './repositories/records-repository';
 import { toMatchName, safeParseLookupId, parseEmails } from './data-layer';
 import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
-import { SESSION_LOOKUP, PROFILE_LOOKUP } from './field-names';
+import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID } from './field-names';
 
 /**
  * Returns the booking email for an attendee — the order contact email (whoever
@@ -248,4 +249,90 @@ export async function upsertConsentRecords(
   }
 
   return { created, updated };
+}
+
+export interface SyncAttendeesForSessionResult {
+  newProfiles: number;
+  newEntries: number;
+  newRecords: number;
+  updatedRecords: number;
+}
+
+/**
+ * Syncs Eventbrite attendees for a single session. Used by both the nightly bulk
+ * sync and the per-session refresh so the logic lives in one place.
+ *
+ * Matching priority for existing entries:
+ *   1. EventbriteAttendeeID match (deterministic, post-backfill)
+ *   2. Profile ID match (fallback for pre-backfill entries)
+ *
+ * No Notes tags are written — the presence of EventbriteAttendeeID is the source
+ * of truth for the Eventbrite icon; child/new/etc. are handled by live fields and
+ * entry-stats snapshot computation.
+ */
+export async function syncAttendeesForSession(
+  sessionId: number,
+  attendees: EventbriteAttendee[],
+  sessionEntries: SharePointEntry[],
+  profiles: SharePointProfile[],
+  records: any[],
+  sessionDateMap: Map<number, string>
+): Promise<SyncAttendeesForSessionResult> {
+  let newProfiles = 0;
+  let newEntries = 0;
+  let newRecords = 0;
+  let updatedRecords = 0;
+
+  // Index existing entries by EventbriteAttendeeID and by profile ID for fast lookup
+  const entryByAttendeeId = new Map<string, SharePointEntry>();
+  const existingProfileIds = new Set<number>();
+  for (const entry of sessionEntries) {
+    if (entry.EventbriteAttendeeID) entryByAttendeeId.set(entry.EventbriteAttendeeID, entry);
+    const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+    if (pid !== undefined) existingProfileIds.add(pid);
+  }
+
+  for (const attendee of attendees) {
+    const attendeeName = attendee.profile?.name;
+    const attendeeEmail = attendee.profile?.email;
+    if (!attendeeName) continue;
+
+    // If we already have an entry for this exact attendee ID, only update consent
+    if (entryByAttendeeId.has(attendee.id)) {
+      const profileId = safeParseLookupId(entryByAttendeeId.get(attendee.id)![PROFILE_LOOKUP]);
+      if (profileId !== undefined) {
+        const { created, updated } = await upsertConsentRecords(profileId, attendee, records);
+        newRecords += created;
+        updatedRecords += updated;
+      }
+      continue;
+    }
+
+    const { profile, isNew } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, `Sync:${sessionId}`);
+    if (isNew) newProfiles++;
+
+    if (!existingProfileIds.has(profile.ID)) {
+      const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
+      const entryFields: Record<string, any> = {
+        [SESSION_LOOKUP]: String(sessionId),
+        [PROFILE_LOOKUP]: String(profile.ID),
+        [ENTRY_EVENTBRITE_ATTENDEE_ID]: attendee.id,
+        BookedBy: bookingEmailFor(attendee)
+      };
+      if (isChild && attendee.order_id) {
+        const adultProfile = resolveAccompanyingAdult(attendees, attendee.order_id, profiles);
+        if (adultProfile) entryFields.AccompanyingAdultLookupId = String(adultProfile.ID);
+      }
+      await entriesRepository.create(entryFields);
+      existingProfileIds.add(profile.ID);
+      addSessionToProfileStats(profile, sessionId, sessionDateMap);
+      newEntries++;
+    }
+
+    const { created, updated } = await upsertConsentRecords(profile.ID, attendee, records);
+    newRecords += created;
+    updatedRecords += updated;
+  }
+
+  return { newProfiles, newEntries, newRecords, updatedRecords };
 }

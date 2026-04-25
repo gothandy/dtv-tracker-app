@@ -338,6 +338,7 @@ function mapEntry(e: EntryResponse): EntryItem {
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
     stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',
       slug: e.volunteerSlug,

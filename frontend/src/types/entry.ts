@@ -25,6 +25,7 @@ export interface EntryItem {
   accompanyingAdultId?: number
   cancelled?: string // ISO datetime if booking was cancelled
   stats?: EntryStats
+  eventbriteAttendeeId?: string
   profile: EntryProfileSummary
   session: EntrySessionSummary
 }

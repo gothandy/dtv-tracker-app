@@ -139,6 +139,7 @@ const entryIcons = computed(() => iconsForEntry({
   hasProfileWarning: props.entry.profile.hasProfileWarning,
   isChild: form.accompanyingAdultId !== null,
   stats: { ...props.entry.stats, manual: form.statsManual },
+  eventbriteAttendeeId: props.entry.eventbriteAttendeeId,
 }))
 
 watch(() => props.entry, (e) => {

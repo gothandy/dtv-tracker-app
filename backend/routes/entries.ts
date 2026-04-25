@@ -21,7 +21,7 @@ import {
   parseEmails,
   calculateSessionStats
 } from '../services/data-layer';
-import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
+import { syncAttendeesForSession } from '../services/eventbrite-sync';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP,
@@ -29,6 +29,7 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED,
   ENTRY_STATS,
+  ENTRY_EVENTBRITE_ATTENDEE_ID,
   ACCOMPANYING_ADULT_LOOKUP
 } from '../services/field-names';
 import { computeAndSaveEntryStats, runEntryStatsRefresh } from '../services/entry-stats';
@@ -240,7 +241,8 @@ router.get('/entries', async (req: Request, res: Response) => {
           hasAccompanyingAdult: hasAdult,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined,
-          stats: parseEntryStatsField(e[ENTRY_STATS])
+          stats: parseEntryStatsField(e[ENTRY_STATS]),
+          eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -716,35 +718,12 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       const attendees = await getAttendees(spSession.EventbriteEventID);
       console.log(`[Refresh] Session ${spSession.ID} (${spSession.EventbriteEventID}): ${attendees.length} attendees`);
 
-      for (const attendee of attendees) {
-        const attendeeName = attendee.profile?.name;
-        const attendeeEmail = attendee.profile?.email;
-        if (!attendeeName) continue;
-
-        const { profile, isNew, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Refresh');
-        if (isNew) newProfiles++;
-
-        // Create entry if not already registered
-        const profileId = profile.ID;
-        if (!existingVolunteerIds.has(profileId)) {
-          const noteTags: string[] = [];
-          if (isFirstSession(profile, spSession.ID)) noteTags.push('#New');
-          if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
-          noteTags.push('#Eventbrite');
-          if (clash) noteTags.push('#Duplicate');
-          await entriesRepository.create({
-            [SESSION_LOOKUP]: String(spSession.ID),
-            [PROFILE_LOOKUP]: String(profileId),
-            Notes: noteTags.join(' ')
-          });
-          existingVolunteerIds.add(profileId);
-          addedFromEventbrite++;
-        }
-
-        // Upsert consent records from Eventbrite answers
-        const { created, updated } = await upsertConsentRecords(profileId, attendee, rawRecords);
-        updatedRecords += created + updated;
-      }
+      const ebResult = await syncAttendeesForSession(
+        spSession.ID, attendees, sessionEntries, profiles, rawRecords, new Map()
+      );
+      addedFromEventbrite += ebResult.newEntries;
+      newProfiles += ebResult.newProfiles;
+      updatedRecords += ebResult.newRecords + ebResult.updatedRecords;
     }
 
     // Step 3: Tag #NoPhoto on entries where volunteer lacks photo consent
@@ -757,10 +736,14 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       }
     }
 
-    // Re-fetch entries since steps 1+2 may have added new ones
+    // Re-fetch entries since steps 1+2 may have added new ones; rebuild volunteer ID set for stats
     const freshEntries = await entriesRepository.getAll();
     const freshValidEntries = validateArray(freshEntries, validateEntry, 'Entry');
     sessionEntries = freshValidEntries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+    for (const e of sessionEntries) {
+      const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (vid !== undefined) existingVolunteerIds.add(vid);
+    }
 
     for (const entry of sessionEntries) {
       const vid = safeParseLookupId(entry[PROFILE_LOOKUP]);

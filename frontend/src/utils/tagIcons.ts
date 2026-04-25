@@ -45,6 +45,7 @@ interface EntryIconSource {
   stats?: EntryStats
   isChild?: boolean
   hasProfileWarning?: boolean
+  eventbriteAttendeeId?: string
 }
 
 /** Builds the full icon list for an entry: profile badges + stats snapshot + stats manual */
@@ -60,6 +61,9 @@ export function iconsForEntry(e: EntryIconSource): TagIcon[] {
 
   // Entry-level tag: child (live from accompanyingAdultId, not frozen snapshot)
   if (e.isChild) icons.push({ icon: 'badges/child.svg', alt: 'Child', type: 'tag' })
+
+  if (e.eventbriteAttendeeId)
+    icons.push({ icon: 'brands/eventbrite.svg', alt: 'Eventbrite', type: 'tag' })
 
   if (e.stats) {
     const { snapshot, manual } = e.stats
@@ -87,7 +91,6 @@ export function iconsForEntry(e: EntryIconSource): TagIcon[] {
     if (manual?.digLead)    icons.push({ icon: 'badges/diglead.svg',    alt: 'Dig Lead',   type: 'tag' })
     if (manual?.csr)        icons.push({ icon: 'badges/csr.svg',        alt: 'CSR',        type: 'tag' })
     if (manual?.late)       icons.push({ icon: 'badges/late.svg',        alt: 'Late',       type: 'tag' })
-    if (manual?.eventbrite) icons.push({ icon: 'brands/eventbrite.svg', alt: 'Eventbrite', type: 'tag' })
   }
 
   return icons
