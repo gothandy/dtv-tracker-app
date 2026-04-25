@@ -30,10 +30,11 @@ import {
   SESSION_LOOKUP,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED,
-  ENTRY_STATS
+  ENTRY_STATS,
+  PROFILE_STATS
 } from '../services/field-names';
 import { parseEntryStatsField } from '../services/data-layer';
-import type { ProfileResponse, ProfileDetailResponse, ProfileDuplicateResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
+import type { ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 
 const router: Router = express.Router();
@@ -135,6 +136,15 @@ router.get('/profiles', async (req: Request, res: Response) => {
 
     const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
 
+    const profileWarningsMap = new Map<number, Array<{ text: string; url?: string }>>();
+    for (const sp of validProfiles) {
+      if (!sp[PROFILE_STATS]) continue;
+      try {
+        const parsed = JSON.parse(sp[PROFILE_STATS]);
+        if (parsed.warnings?.length) profileWarningsMap.set(sp.ID, parsed.warnings);
+      } catch { /* skip malformed */ }
+    }
+
     const data: ProfileResponse[] = validProfiles.map(spProfile => {
       const profile = convertProfile(spProfile);
       const ps = profileStats.get(spProfile.ID);
@@ -153,7 +163,8 @@ router.get('/profiles', async (req: Request, res: Response) => {
         sessionsLastFY: ps ? ps.sessionsLastFY.size : 0,
         sessionsThisFY: ps ? ps.sessionsThisFY.size : 0,
         sessionsAll: ps ? ps.sessionsAll.size : 0,
-        records: profileRecordsMap.get(spProfile.ID) || []
+        records: profileRecordsMap.get(spProfile.ID) || [],
+        warnings: profileWarningsMap.get(spProfile.ID) || []
       };
     });
 
@@ -758,33 +769,17 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
-    // Find other profiles sharing the same match name (potential duplicates)
-    const currentMatchName = toMatchName(spProfile.MatchName);
-    const currentTitleKey = toMatchName(spProfile.Title);
+    // Warnings from stored stats
+    let profileWarnings: Array<{ text: string; url?: string }> = [];
+    const storedStats = spProfile[PROFILE_STATS];
+    if (storedStats) {
+      try {
+        const parsed = JSON.parse(storedStats);
+        if (parsed.warnings?.length) profileWarnings = parsed.warnings;
+      } catch { /* skip malformed */ }
+    }
+
     const currentEmails = parseEmails(spProfile.Email);
-    const duplicates = currentTitleKey
-      ? profiles
-          .filter(p => {
-            if (p.ID === spProfile.ID) return false;
-            const pMatchKey = toMatchName(p.MatchName);
-            const pTitleKey = toMatchName(p.Title);
-            return (currentMatchName && pMatchKey === currentMatchName) || pTitleKey === currentTitleKey;
-          })
-          .map(p => {
-            const pEmails = parseEmails(p.Email);
-            const emailOverlap = pEmails.some(e => currentEmails.includes(e));
-            const severity =
-              emailOverlap && pEmails.length > 0 && currentEmails.length > 0 ? 'red' :
-              toMatchName(p.Title) === currentTitleKey ? 'orange' : 'green';
-            return {
-              id: p.ID,
-              name: p.Title || '',
-              slug: profileSlug(p.Title, p.ID),
-              email: p.Email,
-              severity: severity as 'green' | 'orange' | 'red'
-            };
-          })
-      : [];
 
     // Filter consent records for this profile from the already-fetched batch
     const profileRecords = rawRecords.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === spProfile.ID);
@@ -812,13 +807,13 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       regularCount: regularsByCrewId.size,
       entries: entryResponses,
       records: records.length > 0 ? records : undefined,
-      // duplicates and linkedProfiles expose other volunteers' names/emails — hidden from self-service
-      duplicates: isSelfService ? undefined : (duplicates.length > 0 ? duplicates : undefined),
+      // linkedProfiles and warnings expose other volunteers' data — hidden from self-service
       linkedProfiles: isSelfService ? undefined : (currentEmails.length > 0
         ? (rawProfiles as any[])
             .filter((p: any) => p.ID !== spProfile.ID && parseEmails(p.Email).some((e: string) => currentEmails.includes(e)))
             .map((p: any) => ({ id: p.ID, slug: profileSlug(p.Title, p.ID), name: p.Title || '' }))
-        : undefined)
+        : undefined),
+      warnings: (!isSelfService && profileWarnings.length) ? profileWarnings : undefined
     };
 
     res.json({ success: true, data } as ApiResponse<ProfileDetailResponse>);

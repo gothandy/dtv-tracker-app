@@ -42,7 +42,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
 - Session detail with entries, check-in, set hours, move group, tags, photo gallery ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
-- Volunteers listing with FY filter, sort, group filter, search, advanced filters, bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
+- Volunteers listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
 - Profile detail with FY stats, FY bar chart, group hours, entries, records ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
 - Entries page (admin-only): all entries with notes/adult filters, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
 - Unified sign-in page: magic link + verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
@@ -208,6 +208,8 @@ Targeted invalidation: each repository write evicts only its own key(s). Entry w
 Always calculate derived values (hours totals, counts) from source entries at query time. The app is the source of truth — no Power Automate flows update fields. NodeCache keeps this performant.
 
 **Exception — Pre-computed Stats fields**: The Sessions list has a `Stats` JSON field for performance (avoids fetching ~5,000 entries on listing page load). Kept fresh by `computeAndSaveSessionStats()` after every entry/record/media write and a nightly bulk refresh. Only computed aggregates belong in Stats — editable config fields (e.g. `Limits`) must never be stored there.
+
+The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsByFY`, `isMember`, `cardStatus`, `regularGroupIds`, `repeatGroupIds`, `sessionIds`, `linkedProfileIds`, `isFirstAider`, and `warnings`. The `warnings` array holds human-readable flag strings (e.g. `"Possible Duplicate"`, `"Child No Adult"`) computed during stats refresh. The warnings filter on the volunteers listing reads from this stored value. Adding a new warning type means adding a detection pass in `runProfileStatsRefresh()` and `computeAndSaveProfileStats()` in `backend/services/profile-stats.ts`; removing one requires only deleting the detection — it disappears from all profiles on the next refresh.
 
 ### Data Validation
 

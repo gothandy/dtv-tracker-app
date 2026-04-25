@@ -41,10 +41,6 @@
               <a :href="`mailto:${email}`">{{ email }}</a>
             </div>
           </div>
-          <ProfileDuplicateWarning
-            v-if="viewer.isAdmin && store.profile.duplicates?.length"
-            :duplicates="store.profile.duplicates"
-          />
           <ProfileLinkedAccounts
             v-if="viewer.isOperational && store.profile.linkedProfiles?.length"
             :linked-profiles="store.profile.linkedProfiles"
@@ -62,6 +58,10 @@
             @delete-profile="onDeleteProfile"
             @transfer-open="onTransferOpen"
             @transfer-profile="onTransferProfile"
+          />
+          <ProfileWarnings
+            v-if="viewer.isOperational && store.profile.warnings?.length"
+            :warnings="store.profile.warnings!"
           />
         </template>
       </LayoutColumns>
@@ -165,7 +165,7 @@ import PageHeader from '../components/PageHeader.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
-import ProfileDuplicateWarning from '../components/profiles/ProfileDuplicateWarning.vue'
+import ProfileWarnings from '../components/profiles/ProfileWarnings.vue'
 import ProfileLinkedAccounts from '../components/profiles/ProfileLinkedAccounts.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import RegularList from '../components/RegularList.vue'

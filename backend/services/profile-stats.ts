@@ -16,7 +16,7 @@ import { sessionsRepository } from './repositories/sessions-repository';
 import { recordsRepository } from './repositories/records-repository';
 import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
-import { safeParseLookupId, calculateFinancialYear } from './data-layer';
+import { safeParseLookupId, calculateFinancialYear, toMatchName } from './data-layer';
 import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
 import { computeAndSaveEntryStats } from './entry-stats';
 
@@ -98,6 +98,29 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     .filter(p => p.ID !== profileId && (p.Email || '').split(',').some((e: string) => thisEmails.has(e.trim().toLowerCase())))
     .map(p => p.ID);
 
+  const thisTitleKey = toMatchName(thisProfile?.Title);
+  const thisMatchKey = toMatchName(thisProfile?.MatchName);
+  const hasDuplicate = thisTitleKey
+    ? profilesRaw.some(p => {
+        if (p.ID === profileId) return false;
+        return toMatchName(p.Title) === thisTitleKey || (thisMatchKey && toMatchName(p.MatchName) === thisMatchKey);
+      })
+    : false;
+  const hasChildNoAdult = profileEntries.some(e =>
+    !e[ENTRY_CANCELLED] && e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId
+  );
+  const hasFutureBooking = profileEntries.some(e => {
+    if (e[ENTRY_CANCELLED]) return false;
+    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+    return sid !== undefined && (sessionDateMap.get(sid) ?? '') > today;
+  });
+  const hasPrivacyConsent = profileRecordsRaw.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
+  const hasPhotoConsent = profileRecordsRaw.some(r => r.Type === 'Photo Consent' && r.Status === 'Accepted');
+  const warnings: Array<{ text: string; url?: string }> = [];
+  if (hasDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(thisProfile?.Title || '')}` });
+  if (hasChildNoAdult) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${profileId}&profileName=${encodeURIComponent(thisProfile?.Title || '')}` });
+  if (hasFutureBooking && (!hasPrivacyConsent || !hasPhotoConsent)) warnings.push({ text: 'No Consent' });
+
   let isMember = false;
   let cardStatus: string | null = null;
   let isFirstAider = false;
@@ -110,7 +133,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
 
   sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
 
-  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider });
+  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider, warnings });
   sharePointClient.clearCacheKey('profiles');
 
   // Propagate to entry stats for this profile's future sessions (fire-and-forget)
@@ -208,10 +231,12 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     if (linked.length) profileLinkedIds.set(p.ID, linked);
   }
 
-  // membership, card status, and first aider status from records
+  // membership, card status, first aider, and consent status from records
   const memberIds = new Set<number>();
   const cardStatusMap = new Map<number, string>();
   const firstAiderIds = new Set<number>();
+  const consentedPrivacyIds = new Set<number>();
+  const consentedPhotoIds = new Set<number>();
   const today = new Date().toISOString().substring(0, 10);
   for (const r of recordsRaw) {
     const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
@@ -219,6 +244,40 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     if (r.Type === 'Charity Membership' && r.Status === 'Accepted') memberIds.add(pid);
     if (r.Type === 'Discount Card' && r.Status) cardStatusMap.set(pid, r.Status);
     if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) firstAiderIds.add(pid);
+    if (r.Type === 'Privacy Consent' && r.Status === 'Accepted') consentedPrivacyIds.add(pid);
+    if (r.Type === 'Photo Consent' && r.Status === 'Accepted') consentedPhotoIds.add(pid);
+  }
+
+  // No Consent: future booking but missing Privacy or Photo consent
+  const futureBookingIds = new Set<number>();
+  for (const e of entriesRaw) {
+    if (e[ENTRY_CANCELLED]) continue;
+    const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
+    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+    if (pid !== undefined && sid !== undefined && (sessionDateMap.get(sid) ?? '') > today)
+      futureBookingIds.add(pid);
+  }
+
+  // Possible Duplicate: profiles sharing the same title key or match name
+  const titleKeyToIds = new Map<string, number[]>();
+  const matchNameToIds = new Map<string, number[]>();
+  for (const p of profilesRaw) {
+    const tk = toMatchName(p.Title);
+    if (tk) { if (!titleKeyToIds.has(tk)) titleKeyToIds.set(tk, []); titleKeyToIds.get(tk)!.push(p.ID); }
+    const mk = toMatchName(p.MatchName);
+    if (mk) { if (!matchNameToIds.has(mk)) matchNameToIds.set(mk, []); matchNameToIds.get(mk)!.push(p.ID); }
+  }
+  const possibleDuplicateIds = new Set<number>();
+  for (const [, ids] of titleKeyToIds) if (ids.length > 1) ids.forEach(id => possibleDuplicateIds.add(id));
+  for (const [, ids] of matchNameToIds) if (ids.length > 1) ids.forEach(id => possibleDuplicateIds.add(id));
+
+  // Child No Adult: entry has #child in notes but no AccompanyingAdultLookupId
+  const childNoAdultIds = new Set<number>();
+  for (const e of entriesRaw) {
+    if (e[ENTRY_CANCELLED]) continue;
+    const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
+    if (pid !== undefined && e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId)
+      childNoAdultIds.add(pid);
   }
 
   // Round hours to 1 decimal place
@@ -237,6 +296,11 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     const batch = profilesRaw.slice(i, i + 10);
     await Promise.all(batch.map(async (spProfile) => {
       try {
+        const warnings: Array<{ text: string; url?: string }> = [];
+        if (possibleDuplicateIds.has(spProfile.ID)) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(spProfile.Title || '')}` });
+        if (childNoAdultIds.has(spProfile.ID)) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${spProfile.ID}&profileName=${encodeURIComponent(spProfile.Title || '')}` });
+        if (futureBookingIds.has(spProfile.ID) && (!consentedPrivacyIds.has(spProfile.ID) || !consentedPhotoIds.has(spProfile.ID))) warnings.push({ text: 'No Consent' });
+
         const newStats = {
           hoursByFY: roundHours(profileHours.get(spProfile.ID) || {}),
           sessionsByFY: profileSessions.get(spProfile.ID) || {},
@@ -246,7 +310,8 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
           repeatGroupIds: Array.from(profileRepeatGroupIds.get(spProfile.ID) || []),
           sessionIds: (profileSessionIds.get(spProfile.ID) || []).sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || '')),
           linkedProfileIds: profileLinkedIds.get(spProfile.ID) || [],
-          isFirstAider: firstAiderIds.has(spProfile.ID)
+          isFirstAider: firstAiderIds.has(spProfile.ID),
+          warnings
         };
 
         // Skip if stored stats already match

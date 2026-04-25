@@ -45,6 +45,12 @@
         <option value="none">No record</option>
         <option v-for="s in recordOptions.statuses" :key="s" :value="s">{{ s }}</option>
       </select>
+      <select v-model="warningsFilter" class="list-filter-select">
+        <option value="">All profiles</option>
+        <option value="__any__">All warnings</option>
+        <option value="__none__">No warnings</option>
+        <option v-for="w in warningOptions" :key="w" :value="w">{{ w }}</option>
+      </select>
     </div>
   </div>
 </template>
@@ -76,8 +82,9 @@ const search      = ref((route.query.search as string)       || '')
 const sort        = ref((route.query.sort as string)         || 'az')
 const type        = ref((route.query.type as string)         || '')
 const hoursFilter = ref((route.query.hours as string)        || '')
-const recordType  = ref((route.query.recordType as string)   || '')
-const recordStatus = ref((route.query.recordStatus as string) || '')
+const recordType     = ref((route.query.recordType as string)    || '')
+const recordStatus   = ref((route.query.recordStatus as string)  || '')
+const warningsFilter = ref((route.query.warnings as string)      || '')
 
 // FY and group changes require a store re-fetch — emit upward as a single event
 // immediate: true ensures deep-linked query params are emitted on first load
@@ -85,6 +92,12 @@ watch([fy, group], ([newFy, newGroup]) => emit('filters-change', { fy: newFy, gr
 
 // Clear record status when record type is cleared
 watch(recordType, val => { if (!val) recordStatus.value = '' })
+
+const warningOptions = computed(() => {
+  const set = new Set<string>()
+  for (const p of props.profiles) p.warnings?.forEach(w => set.add(w.text))
+  return Array.from(set).sort()
+})
 
 function hoursForProfile(p: ProfileResponse): number {
   return fy.value === 'all' ? p.hoursAll : p.hoursThisFY
@@ -139,6 +152,15 @@ const filtered = computed<ProfileResponse[]>(() => {
     list = list.filter(p => !(p.records ?? []).length)
   }
 
+  // Warnings filter
+  if (warningsFilter.value === '__any__') {
+    list = list.filter(p => !!p.warnings?.length)
+  } else if (warningsFilter.value === '__none__') {
+    list = list.filter(p => !p.warnings?.length)
+  } else if (warningsFilter.value) {
+    list = list.filter(p => p.warnings?.some(w => w.text === warningsFilter.value))
+  }
+
   // Sort
   list = [...list].sort((a, b) => {
     if (sort.value === 'hours') {
@@ -154,7 +176,7 @@ const filtered = computed<ProfileResponse[]>(() => {
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
-watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus], ([newFy, newGroup, newSearch, newSort, newType, newHours, newRecordType, newRecordStatus]) => {
+watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus, warningsFilter], ([newFy, newGroup, newSearch, newSort, newType, newHours, newRecordType, newRecordStatus, newWarnings]) => {
   const query: Record<string, string> = {}
   if (newFy)           query.fy           = newFy
   if (newGroup)        query.group        = newGroup
@@ -164,6 +186,7 @@ watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus], ([
   if (newHours)        query.hours        = newHours
   if (newRecordType)   query.recordType   = newRecordType
   if (newRecordStatus) query.recordStatus = newRecordStatus
+  if (newWarnings)     query.warnings     = newWarnings
   router.replace({ query })
 })
 </script>

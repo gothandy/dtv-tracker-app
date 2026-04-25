@@ -163,6 +163,7 @@ router.get('/entries', async (req: Request, res: Response) => {
     const q = req.query.q ? String(req.query.q).toLowerCase() : '';
     const accompanyingAdult = req.query.accompanyingAdult ? String(req.query.accompanyingAdult) : '';
     const filterAdultId = req.query.accompanyingAdultId ? parseInt(String(req.query.accompanyingAdultId), 10) : null;
+    const filterProfileId = req.query.profileId ? parseInt(String(req.query.profileId), 10) : null;
     // cancelled filter: 'true' = only cancelled, 'false'/'omitted' = only active, 'all' = both
     const cancelledFilter = req.query.cancelled ? String(req.query.cancelled) : 'false';
     // fy filter: 'future' | 'rolling' | 'FY####' | 'all' (omit = no filter)
@@ -218,6 +219,7 @@ router.get('/entries', async (req: Request, res: Response) => {
         if (filterAdultId !== null && Number(e.AccompanyingAdultLookupId) !== filterAdultId) return [];
 
         const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
+        if (filterProfileId !== null && profileId !== filterProfileId) return [];
         const profile = profileId !== undefined ? profileMap.get(profileId) : undefined;
         const name = e[PROFILE_DISPLAY] || 'Unknown';
         const slug = profileId !== undefined ? profileSlug(name, profileId) : undefined;

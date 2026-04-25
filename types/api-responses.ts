@@ -75,6 +75,7 @@ export interface ProfileResponse {
   sessionsThisFY: number;
   sessionsAll: number;
   records?: Array<{ type: string; status: string }>;
+  warnings?: Array<{ text: string; url?: string }>;
 }
 
 export interface ProfileEntryResponse {
@@ -127,16 +128,8 @@ export interface ProfileDetailResponse {
   regularCount: number;
   entries: ProfileEntryResponse[];
   records?: ConsentRecordResponse[];
-  duplicates?: ProfileDuplicateResponse[];
   linkedProfiles?: Array<{ id: number; slug: string; name: string }>;
-}
-
-export interface ProfileDuplicateResponse {
-  id: number;
-  name: string;
-  slug: string;
-  email?: string;
-  severity: 'green' | 'orange' | 'red';
+  warnings?: Array<{ text: string; url?: string }>;
 }
 
 export interface GroupDetailResponse {

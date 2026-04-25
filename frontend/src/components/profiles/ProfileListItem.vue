@@ -6,6 +6,13 @@
         <img v-if="profile.isGroup" src="/icons/badges/group.svg" class="pli-badge svg-black" alt="Group" title="Group" />
         <img v-if="profile.isMember && !profile.isGroup" src="/icons/badges/member.svg" class="pli-badge svg-black" alt="Member" title="Member" />
         <img
+          v-if="profile.warnings?.length"
+          src="/icons/status/warning.svg"
+          class="pli-badge svg-dirt"
+          alt="Profile Warning"
+          title="Profile Warning"
+        />
+        <img
           v-if="profile.cardStatus"
           src="/icons/badges/card.svg"
           class="pli-badge"
