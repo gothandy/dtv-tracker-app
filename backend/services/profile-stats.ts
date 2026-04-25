@@ -98,6 +98,8 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     .filter(p => p.ID !== profileId && (p.Email || '').split(',').some((e: string) => thisEmails.has(e.trim().toLowerCase())))
     .map(p => p.ID);
 
+  const today = new Date().toISOString().substring(0, 10);
+
   const thisTitleKey = toMatchName(thisProfile?.Title);
   const thisMatchKey = toMatchName(thisProfile?.MatchName);
   const hasDuplicate = thisTitleKey
@@ -124,7 +126,6 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   let isMember = false;
   let cardStatus: string | null = null;
   let isFirstAider = false;
-  const today = new Date().toISOString().substring(0, 10);
   for (const r of profileRecordsRaw) {
     if (r.Type === 'Charity Membership' && r.Status === 'Accepted') isMember = true;
     if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
