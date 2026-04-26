@@ -475,9 +475,10 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,
-      isMember: false,
-      cardStatus: undefined,
+      isMember: store.profile?.isMember ?? false,
+      cardStatus: store.profile?.cardStatus,
       isGroup: store.profile?.isGroup ?? false,
+      hasProfileWarning: !!(store.profile?.warnings?.length),
     },
     session: {
       groupKey: e.groupKey ?? '',
@@ -558,11 +559,15 @@ function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
+    stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',
       slug: e.volunteerSlug,
-      isMember: false,
+      isMember: e.isMember ?? false,
+      cardStatus: e.cardStatus,
       isGroup: e.isGroup,
+      hasProfileWarning: e.hasProfileWarning,
     },
     session: {
       groupKey: e.groupKey,

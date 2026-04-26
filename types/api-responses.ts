@@ -122,6 +122,8 @@ export interface ProfileDetailResponse {
   matchName?: string;
   user?: string;
   isGroup: boolean;
+  isMember?: boolean;
+  cardStatus?: string;
   hoursLastFY: number;
   hoursThisFY: number;
   hoursAll: number;
@@ -257,8 +259,14 @@ export interface RecentSignupResponse {
   checkedIn: boolean;
   hours: number;
   count: number;
+  isGroup?: boolean;
+  isMember?: boolean;
+  cardStatus?: string;
+  hasProfileWarning?: boolean;
   accompanyingAdultId?: number;
-  cancelled?: string; // ISO datetime if booking was cancelled (appears in recent list ordered by Cancelled date)
+  cancelled?: string;
+  stats?: import('./entry-stats').EntryStats;
+  eventbriteAttendeeId?: string;
 }
 
 export interface EntryListItemResponse {
@@ -274,6 +282,9 @@ export interface EntryListItemResponse {
   hours: number;
   count: number;
   isGroup: boolean;
+  isMember?: boolean;
+  cardStatus?: string;
+  hasProfileWarning?: boolean;
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;
   cancelled?: string;

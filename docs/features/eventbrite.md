@@ -41,15 +41,9 @@ Triggered by Azure Logic App via:
 This runs two steps in sequence:
 
 1. **sync-sessions** — finds Eventbrite events by `EventbriteSeriesID` and creates missing Sessions.
-2. **sync-entries** — fetches attendees for Eventbrite-linked Sessions (today or future), matches them to Profiles, and creates missing Entries. Uses the shared `syncAttendeesForSession()` function. Also processes cancellations: sets `Cancelled` on any Entry whose `EventbriteAttendeeID` matches a cancelled attendee, but only if `Cancelled` is not already set (preserving any earlier manual cancellation date).
+2. **sync-entries** — fetches attendees for Eventbrite-linked Sessions (today or future), matches them to Profiles, and creates missing Entries. Uses the shared `syncAttendeesForSession()` function. Also processes cancellations: sets `Cancelled` to the sync run timestamp on any Entry whose `EventbriteAttendeeID` matches a cancelled attendee, but only if `Cancelled` is not already set (preserving any earlier manual cancellation date). The Eventbrite API does not expose a cancellation date on the attendee object, so the sync timestamp is used.
 
 Both steps are also available individually for manual runs from the Admin page.
-
-## Quick Sync
-
-`POST /api/eventbrite/quick-sync?since=24h|48h|7d`
-
-Fetches org-wide attendees changed in the given window using `getOrgAttendees(changedSince)` — much faster than a full scan. Uses the same `syncAttendeesForSession()` function per session.
 
 ## Per-Session Refresh
 

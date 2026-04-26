@@ -9,7 +9,8 @@ import { recordsRepository } from './repositories/records-repository';
 import { toMatchName, safeParseLookupId, parseEmails } from './data-layer';
 import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
-import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID } from './field-names';
+import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID, ENTRY_CANCELLED } from './field-names';
+import { computeAndSaveProfileStats } from './profile-stats';
 
 /**
  * Returns the booking email for an attendee — the order contact email (whoever
@@ -227,6 +228,7 @@ export interface SyncAttendeesForSessionResult {
   newEntries: number;
   newRecords: number;
   updatedRecords: number;
+  cancelledEntries: number;
 }
 
 /**
@@ -247,12 +249,14 @@ export async function syncAttendeesForSession(
   sessionEntries: SharePointEntry[],
   profiles: SharePointProfile[],
   records: any[],
-  sessionDateMap: Map<number, string>
+  sessionDateMap: Map<number, string>,
+  cancelledAttendees: EventbriteAttendee[] = []
 ): Promise<SyncAttendeesForSessionResult> {
   let newProfiles = 0;
   let newEntries = 0;
   let newRecords = 0;
   let updatedRecords = 0;
+  let cancelledEntries = 0;
 
   // Index existing entries by EventbriteAttendeeID and by profile ID for fast lookup
   const entryByAttendeeId = new Map<string, SharePointEntry>();
@@ -307,6 +311,7 @@ export async function syncAttendeesForSession(
       const existingEntry = entryByProfileId.get(profile.ID);
       if (existingEntry && !existingEntry.EventbriteAttendeeID) {
         await entriesRepository.updateFields(existingEntry.ID, { [ENTRY_EVENTBRITE_ATTENDEE_ID]: attendee.id });
+        existingEntry.EventbriteAttendeeID = attendee.id;
       }
     }
 
@@ -315,5 +320,23 @@ export async function syncAttendeesForSession(
     updatedRecords += updated;
   }
 
-  return { newProfiles, newEntries, newRecords, updatedRecords };
+  // Cancellations — index entries by AttendeeID, set Cancelled timestamp if not already set
+  const entryByAttendeeIdForCancel = new Map<string, { id: number; profileId: number; alreadyCancelled: boolean }>();
+  for (const entry of sessionEntries) {
+    const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+    if (pid === undefined) continue;
+    if (entry.EventbriteAttendeeID)
+      entryByAttendeeIdForCancel.set(entry.EventbriteAttendeeID, { id: entry.ID, profileId: pid, alreadyCancelled: !!entry[ENTRY_CANCELLED] });
+  }
+  for (const attendee of cancelledAttendees) {
+    const entryInfo = entryByAttendeeIdForCancel.get(attendee.id);
+    if (!entryInfo || entryInfo.alreadyCancelled) continue;
+    await entriesRepository.updateFields(entryInfo.id, { [ENTRY_CANCELLED]: new Date().toISOString() });
+    computeAndSaveProfileStats(entryInfo.profileId).catch(err =>
+      console.error('[Sync] computeAndSaveProfileStats failed for profile', entryInfo!.profileId, err)
+    );
+    cancelledEntries++;
+  }
+
+  return { newProfiles, newEntries, newRecords, updatedRecords, cancelledEntries };
 }

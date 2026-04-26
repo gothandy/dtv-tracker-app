@@ -138,7 +138,6 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/api/eventbrite/nightly-update` | POST | Admin / API key | Full nightly run: sync, stats refresh, backup, cache warmup |
-| `/api/eventbrite/quick-sync` | POST | Check In+ | Quick sync without full stats refresh |
 | `/api/eventbrite/sync-sessions` | POST | Admin / API key | Sync Eventbrite events → sessions |
 | `/api/eventbrite/sync-attendees` | POST | Admin / API key | Sync Eventbrite attendees → profiles/entries |
 | `/api/eventbrite/unmatched-events` | GET | Trusted | List Eventbrite events with no matching group |

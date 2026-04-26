@@ -26,8 +26,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
-      :is-cancelled="!!editingEntry.cancelled"
       :is-admin="true"
+      :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
       :working="editWorking"
@@ -45,7 +45,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { RecentSignupResponse, EntryListItemResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
-import { sessionPath } from '../router/index'
+import { sessionPath, profilePath } from '../router/index'
 import EntryListItem from './entries/EntryListItem.vue'
 import EntryEditModal from '../pages/modals/EntryEditModal.vue'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
@@ -74,11 +74,15 @@ function mapToEntryItem(e: RecentSignupResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
+    stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName,
       slug: e.volunteerSlug,
-      isMember: false,
-      isGroup: false,
+      isMember: e.isMember ?? false,
+      cardStatus: e.cardStatus,
+      isGroup: e.isGroup ?? false,
+      hasProfileWarning: e.hasProfileWarning,
     },
     session: {
       groupKey: e.groupKey,

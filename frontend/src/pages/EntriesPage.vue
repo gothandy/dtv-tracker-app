@@ -83,11 +83,15 @@ function mapToEntryItem(e: EntryListItemResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
+    stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',
       slug: e.volunteerSlug,
-      isMember: false,
+      isMember: e.isMember ?? false,
+      cardStatus: e.cardStatus,
       isGroup: e.isGroup,
+      hasProfileWarning: e.hasProfileWarning,
     },
     session: {
       groupKey: e.groupKey,

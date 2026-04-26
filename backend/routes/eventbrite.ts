@@ -6,10 +6,9 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 import { recordsRepository } from '../services/repositories/records-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_CANCELLED, ENTRY_EVENTBRITE_ATTENDEE_ID } from '../services/field-names';
-import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
+import { GROUP_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { getAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
 import { syncAttendeesForSession } from '../services/eventbrite-sync';
-import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runEntryStatsRefresh } from '../services/entry-stats';
@@ -127,38 +126,16 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
     console.log(`[Eventbrite Sync] Session ${session.ID} (${session.EventbriteEventID}): ${attendees.length} attendees`);
 
     const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === session.ID);
+    const cancelledAttendees = await getCancelledAttendees(session.EventbriteEventID!);
+    if (cancelledAttendees.length > 0)
+      console.log(`[Eventbrite Sync] Session ${session.ID}: ${cancelledAttendees.length} cancelled attendees to check`);
 
-    const result = await syncAttendeesForSession(session.ID, attendees, sessionEntries, profiles, allRecords, sessionDateMap);
+    const result = await syncAttendeesForSession(session.ID, attendees, sessionEntries, profiles, allRecords, sessionDateMap, cancelledAttendees);
     newProfiles += result.newProfiles;
     newEntries += result.newEntries;
     newRecords += result.newRecords;
     updatedRecords += result.updatedRecords;
-
-    // Cancellation — skip if no entries exist for this session
-    if (!sessionEntries.length) continue;
-    const cancelledAttendees = await getCancelledAttendees(session.EventbriteEventID!);
-    if (cancelledAttendees.length > 0) {
-      console.log(`[Eventbrite Sync] Session ${session.ID}: ${cancelledAttendees.length} cancelled attendees to check`);
-
-      const entryByAttendeeId = new Map<string, { id: number; profileId: number; alreadyCancelled: boolean }>();
-      for (const entry of sessionEntries) {
-        const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
-        if (pid === undefined) continue;
-        if (entry[ENTRY_EVENTBRITE_ATTENDEE_ID])
-          entryByAttendeeId.set(entry[ENTRY_EVENTBRITE_ATTENDEE_ID], { id: entry.ID, profileId: pid, alreadyCancelled: !!entry[ENTRY_CANCELLED] });
-      }
-
-      for (const attendee of cancelledAttendees) {
-        const entryInfo = entryByAttendeeId.get(attendee.id);
-        if (!entryInfo || entryInfo.alreadyCancelled) continue;
-
-        await entriesRepository.updateFields(entryInfo.id, { [ENTRY_CANCELLED]: new Date().toISOString() });
-        computeAndSaveProfileStats(entryInfo.profileId).catch(err =>
-          console.error('[Eventbrite Sync] computeAndSaveProfileStats failed for profile', entryInfo!.profileId, err)
-        );
-        cancelledEntries++;
-      }
-    }
+    cancelledEntries += result.cancelledEntries;
   }
 
   console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${cancelledEntries} cancelled, ${newRecords} new records, ${updatedRecords} updated records`);
@@ -350,98 +327,6 @@ router.get('/eventbrite/event-config-check', async (req: Request, res: Response)
   } catch (error: any) {
     console.error('Error checking event config:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to check event config' });
-  }
-});
-
-// Lightweight sync for recent Eventbrite registrations. Uses changed_since to fetch only
-// attendees modified in the given time window — most sessions return empty, keeping this fast.
-// #New tag is omitted: determining first-ever attendance requires a global entries snapshot.
-// The full daily sync (event-and-attendee-update) applies #New correctly.
-router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
-  if (syncInProgress) {
-    res.status(409).json({ success: false, error: 'Sync already in progress' });
-    return;
-  }
-  syncInProgress = true;
-  try {
-    const sinceHours: Record<string, number> = { '24h': 24, '48h': 48, '7d': 168 };
-    const hours = sinceHours[String(req.query.since)] ?? 24;
-    const changedSince = new Date(Date.now() - hours * 60 * 60 * 1000);
-
-    const [rawSessions, rawProfiles] = await Promise.all([
-      sessionsRepository.getAll(),
-      profilesRepository.getAll(),
-    ]);
-
-    const sessions = validateArray(rawSessions, validateSession, 'Session');
-    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const liveSessions = sessions.filter(s => {
-      if (!s.EventbriteEventID || !s.Date) return false;
-      const d = new Date(s.Date);
-      d.setHours(0, 0, 0, 0);
-      return d >= today;
-    });
-
-    // Single org-wide call — skips all per-session Eventbrite calls
-    const recentAttendees = await getOrgAttendees(changedSince);
-    if (!recentAttendees.length) {
-      console.log(`[QuickSync] No changed attendees in window — skipping`);
-      res.json({ success: true, data: { added: 0, sessionsChecked: 0 } });
-      return;
-    }
-
-    // Group by Eventbrite event ID so we can look up per session below
-    const attendeesByEventId = new Map<string, typeof recentAttendees>();
-    for (const a of recentAttendees) {
-      if (!a.event_id) continue;
-      if (!attendeesByEventId.has(a.event_id)) attendeesByEventId.set(a.event_id, []);
-      attendeesByEventId.get(a.event_id)!.push(a);
-    }
-
-    const allRecords = recordsRepository.available ? await recordsRepository.getAll() : [];
-
-    // Fetch entries once; index per session for syncAttendeesForSession
-    const allEntriesRaw = await entriesRepository.getAll();
-    const allEntries = validateArray(allEntriesRaw, validateEntry, 'Entry');
-    const entriesBySession = new Map<number, typeof allEntries>();
-    for (const e of allEntries) {
-      const sId = safeParseLookupId(e[SESSION_LOOKUP]);
-      if (sId === undefined) continue;
-      if (!entriesBySession.has(sId)) entriesBySession.set(sId, []);
-      entriesBySession.get(sId)!.push(e);
-    }
-
-    let added = 0;
-
-    for (const session of liveSessions) {
-      const attendees = attendeesByEventId.get(session.EventbriteEventID!) ?? [];
-      if (!attendees.length) continue;
-
-      console.log(`[QuickSync] Session ${session.ID} (${session.EventbriteEventID}): ${attendees.length} new/changed attendees`);
-
-      const sessionEntries = entriesBySession.get(session.ID) ?? [];
-      // Pass empty sessionDateMap — quick sync doesn't track #New (entry-stats handles snapshot.booking)
-      const result = await syncAttendeesForSession(session.ID, attendees, sessionEntries, profiles, allRecords, new Map());
-      added += result.newEntries;
-    }
-
-    console.log(`[QuickSync] ${liveSessions.length} sessions checked, ${added} entries added`);
-
-    if (added > 0) {
-      await runProfileStatsRefresh();
-      await runEntryStatsRefresh();
-      await runSessionStatsRefresh();
-    }
-
-    res.json({ success: true, data: { added, sessionsChecked: liveSessions.length } });
-  } catch (error: any) {
-    console.error('Error in quick sync:', error);
-    res.status(500).json({ success: false, error: error.message || 'Quick sync failed' });
-  } finally {
-    syncInProgress = false;
   }
 });
 
