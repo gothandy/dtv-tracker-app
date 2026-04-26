@@ -549,16 +549,19 @@ export function profileIdFromSlug(slug: string): number | undefined {
 }
 
 /**
- * Normalises a name for Eventbrite matching: lowercase and replace any
- * non-letter/non-digit character (hyphens, apostrophes, etc.) with a space,
- * then collapse runs of whitespace. Used both when storing MatchName and when
- * comparing against Eventbrite attendee names.
+ * Normalises a name for Eventbrite matching. Decomposes accented characters
+ * via NFD and strips diacritics so "René" matches "Rene". Hyphens are preserved
+ * so stored MatchNames like "smith-jones" continue to match. All other
+ * non-letter/non-digit/non-hyphen characters (apostrophes, spaces, dots, etc.)
+ * are collapsed to a single space.
  */
 export function toMatchName(name: string | undefined): string {
   if (!name) return '';
   return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^a-z0-9-]+/g, ' ')
     .trim();
 }
 

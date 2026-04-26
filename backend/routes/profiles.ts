@@ -864,6 +864,7 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
     }
 
     await profilesRepository.updateFields(spProfile.ID, fields);
+    await computeAndSaveProfileStats(spProfile.ID);
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error updating profile:', error);

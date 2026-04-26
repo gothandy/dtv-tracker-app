@@ -9,6 +9,7 @@
     "start": "node app.js",
     "dev": "cross-env NODE_ENV=development nodemon app.js",
     "test": "vitest",
+    "test:all": "vitest run && cd frontend && npx vitest run",
     "test:live": "node tests/run-tests.js",
     "frontend:build": "cd frontend && npm run build"
   },

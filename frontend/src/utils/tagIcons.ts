@@ -25,7 +25,7 @@ export const TAG_ICONS: TagIcon[] = [
   { icon: 'badges/firstaider.svg', alt: 'First Aider',      type: 'tag', color: 'green', manualKey: 'firstAider', snapshotKey: 'isFirstAider', activeLabel: 'On Duty', availableLabel: 'Available' },
   { icon: 'badges/csr.svg',        alt: 'CSR',              type: 'tag', manualKey: 'csr' },
   { icon: 'badges/late.svg',       alt: 'Late',             type: 'tag', manualKey: 'late' },
-  { icon: 'brands/eventbrite.svg', alt: 'Eventbrite',       type: 'tag', manualKey: 'eventbrite' },
+  { icon: 'brands/eventbrite.svg', alt: 'Eventbrite',       type: 'tag' },
   { icon: 'badges/regular.svg',    alt: 'Regular',          type: 'tag' },
   { icon: 'badges/new.svg',        alt: 'New',              type: 'tag' },
   { icon: 'badges/nophoto.svg',    alt: 'No Photo',         type: 'tag', color: 'red' },

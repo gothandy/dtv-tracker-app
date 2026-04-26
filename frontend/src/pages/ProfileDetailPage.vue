@@ -300,11 +300,10 @@ async function onEditProfile(data: EditProfilePayload) {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
-    store.profile.name = data.name
-    store.profile.emails = data.emails
-    store.profile.matchName = data.matchName
-    store.profile.user = data.user
-    store.profile.isGroup = data.isGroup
+    const oldSlug = store.profile.slug
+    await store.fetch(oldSlug)
+    if (store.profile && store.profile.slug !== oldSlug)
+      router.replace(profilePath(store.profile.slug))
     actionsRef.value?.onEditSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onEditProfile failed', e)

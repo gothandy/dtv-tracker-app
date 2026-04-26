@@ -1,6 +1,21 @@
 import { describe, it, expect } from 'vitest'
-import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats } from './data-layer'
+import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName } from './data-layer'
 import type { SharePointEntry } from '../../types/sharepoint'
+
+describe('toMatchName', () => {
+  it('returns empty string for undefined',        () => expect(toMatchName(undefined)).toBe(''))
+  it('returns empty string for empty string',     () => expect(toMatchName('')).toBe(''))
+  it('lowercases',                                () => expect(toMatchName('JOHN SMITH')).toBe('john smith'))
+  it('preserves hyphens',                         () => expect(toMatchName('Smith-Jones')).toBe('smith-jones'))
+  it('replaces apostrophes with space',           () => expect(toMatchName("O'Brien")).toBe('o brien'))
+  it('collapses multiple spaces',                 () => expect(toMatchName('John  Smith')).toBe('john smith'))
+  it('trims leading and trailing whitespace',     () => expect(toMatchName('  John Smith  ')).toBe('john smith'))
+  it('collapses mixed punctuation to one space',  () => expect(toMatchName('Dr. J. Smith')).toBe('dr j smith'))
+  it('preserves digits',                          () => expect(toMatchName('Team2')).toBe('team2'))
+  it('normalises accented characters via NFD',    () => expect(toMatchName('René')).toBe('rené'.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()))
+  it('René and Rene normalise to the same key',   () => expect(toMatchName('René')).toBe(toMatchName('Rene')))
+  it('Renée and Renee normalise to the same key', () => expect(toMatchName('Renée')).toBe(toMatchName('Renee')))
+})
 
 describe('calculateFinancialYear', () => {
   it('Apr 1 is in FY of that year',   () => expect(calculateFinancialYear(new Date('2025-04-01'))).toBe(2025))
