@@ -108,6 +108,8 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
         return toMatchName(p.Title) === thisTitleKey || (thisMatchKey && toMatchName(p.MatchName) === thisMatchKey);
       })
     : false;
+  const hasMatchNameError = !!(thisProfile?.Title && thisProfile?.MatchName &&
+    toMatchName(thisProfile.Title) !== thisProfile.MatchName);
   const hasChildNoAdult = profileEntries.some(e =>
     !e[ENTRY_CANCELLED] && e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId
   );
@@ -120,6 +122,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   const hasPhotoConsent = profileRecordsRaw.some(r => r.Type === 'Photo Consent' && r.Status === 'Accepted');
   const warnings: Array<{ text: string; url?: string }> = [];
   if (hasDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(thisProfile?.Title || '')}` });
+  if (hasMatchNameError) warnings.push({ text: 'Match Name Error' });
   if (hasChildNoAdult) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${profileId}&profileName=${encodeURIComponent(thisProfile?.Title || '')}` });
   if (hasFutureBooking && (!hasPrivacyConsent || !hasPhotoConsent)) warnings.push({ text: 'No Consent' });
 
@@ -299,6 +302,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
       try {
         const warnings: Array<{ text: string; url?: string }> = [];
         if (possibleDuplicateIds.has(spProfile.ID)) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(spProfile.Title || '')}` });
+        if (spProfile.Title && spProfile.MatchName && toMatchName(spProfile.Title) !== spProfile.MatchName) warnings.push({ text: 'Match Name Error' });
         if (childNoAdultIds.has(spProfile.ID)) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${spProfile.ID}&profileName=${encodeURIComponent(spProfile.Title || '')}` });
         if (futureBookingIds.has(spProfile.ID) && (!consentedPrivacyIds.has(spProfile.ID) || !consentedPhotoIds.has(spProfile.ID))) warnings.push({ text: 'No Consent' });
 

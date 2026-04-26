@@ -31,6 +31,7 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED,
   ENTRY_STATS,
+  ENTRY_EVENTBRITE_ATTENDEE_ID,
   PROFILE_STATS
 } from '../services/field-names';
 import { parseEntryStatsField } from '../services/data-layer';
@@ -765,17 +766,22 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           financialYear: `FY${sessionFY}`,
           cancelled: e[ENTRY_CANCELLED] || undefined,
           stats: parseEntryStatsField(e[ENTRY_STATS]),
+          eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
-    // Warnings from stored stats
+    // Badges and warnings from stored stats
     let profileWarnings: Array<{ text: string; url?: string }> = [];
+    let isMember = false;
+    let cardStatus: string | undefined;
     const storedStats = spProfile[PROFILE_STATS];
     if (storedStats) {
       try {
         const parsed = JSON.parse(storedStats);
         if (parsed.warnings?.length) profileWarnings = parsed.warnings;
+        isMember = parsed.isMember === true;
+        cardStatus = parsed.cardStatus ?? undefined;
       } catch { /* skip malformed */ }
     }
 
@@ -800,6 +806,8 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       matchName: spProfile.MatchName,
       user: spProfile.User,
       isGroup: profile.isGroup,
+      isMember,
+      cardStatus,
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       hoursAll: Math.round(calculatedAll * 10) / 10,
@@ -862,6 +870,7 @@ router.patch('/profiles/:slug', async (req: Request, res: Response) => {
     }
 
     await profilesRepository.updateFields(spProfile.ID, fields);
+    await computeAndSaveProfileStats(spProfile.ID);
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error updating profile:', error);

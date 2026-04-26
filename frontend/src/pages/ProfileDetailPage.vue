@@ -300,11 +300,10 @@ async function onEditProfile(data: EditProfilePayload) {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
-    store.profile.name = data.name
-    store.profile.emails = data.emails
-    store.profile.matchName = data.matchName
-    store.profile.user = data.user
-    store.profile.isGroup = data.isGroup
+    const oldSlug = store.profile.slug
+    await store.fetch(oldSlug)
+    if (store.profile && store.profile.slug !== oldSlug)
+      router.replace(profilePath(store.profile.slug))
     actionsRef.value?.onEditSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onEditProfile failed', e)
@@ -472,12 +471,14 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
     stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,
-      isMember: false,
-      cardStatus: undefined,
+      isMember: store.profile?.isMember ?? false,
+      cardStatus: store.profile?.cardStatus,
       isGroup: store.profile?.isGroup ?? false,
+      hasProfileWarning: !!(store.profile?.warnings?.length),
     },
     session: {
       groupKey: e.groupKey ?? '',
@@ -558,11 +559,15 @@ function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
+    stats: e.stats,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',
       slug: e.volunteerSlug,
-      isMember: false,
+      isMember: e.isMember ?? false,
+      cardStatus: e.cardStatus,
       isGroup: e.isGroup,
+      hasProfileWarning: e.hasProfileWarning,
     },
     session: {
       groupKey: e.groupKey,

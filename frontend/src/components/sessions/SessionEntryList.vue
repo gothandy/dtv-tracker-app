@@ -22,7 +22,7 @@
         :title-to="allowEdit ? undefined : (e.profile.slug ? profilePath(e.profile.slug) : undefined)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats })"
+        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats, eventbriteAttendeeId: e.eventbriteAttendeeId })"
         :allow-edit="allowEdit"
         :working="workingId === e.id"
         :cancelled="!!e.cancelled"

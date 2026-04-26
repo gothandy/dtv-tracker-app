@@ -92,6 +92,7 @@ export interface ProfileEntryResponse {
   financialYear: string;
   cancelled?: string;
   stats?: EntryStats;
+  eventbriteAttendeeId?: string;
 }
 
 export interface ProfileGroupHours {
@@ -121,6 +122,8 @@ export interface ProfileDetailResponse {
   matchName?: string;
   user?: string;
   isGroup: boolean;
+  isMember?: boolean;
+  cardStatus?: string;
   hoursLastFY: number;
   hoursThisFY: number;
   hoursAll: number;
@@ -165,9 +168,10 @@ export interface EntryResponse {
   checkedIn: boolean;
   notes?: string;
   accompanyingAdultId?: number;
-  cancelled?: string; // ISO datetime if booking was cancelled
-  email?: string;     // only present for operational users (admin/check-in)
-  stats?: EntryStats; // snapshot; undefined if not yet computed (pre-migration entries)
+  cancelled?: string;          // ISO datetime if booking was cancelled
+  email?: string;              // only present for operational users (admin/check-in)
+  stats?: EntryStats;          // snapshot; undefined if not yet computed (pre-migration entries)
+  eventbriteAttendeeId?: string; // present when entry originated from Eventbrite
 }
 
 export interface SessionDetailResponse {
@@ -255,8 +259,14 @@ export interface RecentSignupResponse {
   checkedIn: boolean;
   hours: number;
   count: number;
+  isGroup?: boolean;
+  isMember?: boolean;
+  cardStatus?: string;
+  hasProfileWarning?: boolean;
   accompanyingAdultId?: number;
-  cancelled?: string; // ISO datetime if booking was cancelled (appears in recent list ordered by Cancelled date)
+  cancelled?: string;
+  stats?: import('./entry-stats').EntryStats;
+  eventbriteAttendeeId?: string;
 }
 
 export interface EntryListItemResponse {
@@ -272,10 +282,14 @@ export interface EntryListItemResponse {
   hours: number;
   count: number;
   isGroup: boolean;
+  isMember?: boolean;
+  cardStatus?: string;
+  hasProfileWarning?: boolean;
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;
   cancelled?: string;
   stats?: import('./entry-stats').EntryStats;
+  eventbriteAttendeeId?: string;
 }
 
 export interface TagHoursItem {

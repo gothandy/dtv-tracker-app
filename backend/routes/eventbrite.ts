@@ -6,10 +6,9 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 import { recordsRepository } from '../services/repositories/records-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
 import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_CANCELLED } from '../services/field-names';
-import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
-import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, findProfileByAttendee, upsertConsentRecords, bookingEmailFor, resolveAccompanyingAdult } from '../services/eventbrite-sync';
-import { computeAndSaveProfileStats } from '../services/profile-stats';
+import { GROUP_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { getAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
+import { syncAttendeesForSession } from '../services/eventbrite-sync';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runEntryStatsRefresh } from '../services/entry-stats';
@@ -33,7 +32,6 @@ interface SyncAttendeesResult {
   newEntries: number;
   newRecords: number;
   updatedRecords: number;
-  duplicateWarnings: number;
   cancelledEntries: number;
 }
 
@@ -87,42 +85,31 @@ async function runSyncSessions(): Promise<SyncSessionsResult> {
 }
 
 async function runSyncAttendees(): Promise<SyncAttendeesResult> {
-  const [sessionsRaw, entriesRaw, profilesRaw, regularsRaw] = await Promise.all([
+  const [sessionsRaw, entriesRaw, profilesRaw] = await Promise.all([
     sessionsRepository.getAll(),
     entriesRepository.getAll(),
     profilesRepository.getAll(),
-    regularsRepository.getAll()
   ]);
 
   const sessions = validateArray(sessionsRaw, validateSession, 'Session');
   const entries = validateArray(entriesRaw, validateEntry, 'Entry');
   const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
 
-  // Session date map for updating in-memory profile stats after entry creation
   const sessionDateMap = new Map<number, string>(
     sessions.map(s => [s.ID, (s.Date || '').substring(0, 10)])
   );
 
-  // Build set of groupId-profileId pairs for quick regular lookups
-  const regularSet = new Set<string>();
-  for (const r of regularsRaw) {
-    const gId = safeParseLookupId(r[GROUP_LOOKUP]);
-    const pId = safeParseLookupId(r[PROFILE_LOOKUP]);
-    if (gId !== undefined && pId !== undefined) regularSet.add(`${gId}-${pId}`);
-  }
-
-  // Find sessions with EventbriteEventID that are today or future
+  // Process sessions with Eventbrite IDs that are today or future, chronologically
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const liveSessions = sessions.filter(s => {
-    if (!s.EventbriteEventID || !s.Date) return false;
-    const sessionDate = new Date(s.Date);
-    sessionDate.setHours(0, 0, 0, 0);
-    return sessionDate >= today;
-  });
-
-  // Process chronologically so earlier sessions are in the snapshot when later ones are checked
-  liveSessions.sort((a, b) => (a.Date || '').localeCompare(b.Date || ''));
+  const liveSessions = sessions
+    .filter(s => {
+      if (!s.EventbriteEventID || !s.Date) return false;
+      const d = new Date(s.Date);
+      d.setHours(0, 0, 0, 0);
+      return d >= today;
+    })
+    .sort((a, b) => (a.Date || '').localeCompare(b.Date || ''));
 
   console.log(`[Eventbrite Sync] ${liveSessions.length} live sessions with Eventbrite IDs`);
 
@@ -130,93 +117,29 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
   let newEntries = 0;
   let newRecords = 0;
   let updatedRecords = 0;
-  let duplicateWarnings = 0;
   let cancelledEntries = 0;
 
-  // Load existing records for upsert
   const allRecords = await recordsRepository.getAll();
 
   for (const session of liveSessions) {
     const attendees = await getAttendees(session.EventbriteEventID!);
     console.log(`[Eventbrite Sync] Session ${session.ID} (${session.EventbriteEventID}): ${attendees.length} attendees`);
 
-    // Get existing entry profile IDs for this session
     const sessionEntries = entries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === session.ID);
-    const existingProfileIds = new Set(
-      sessionEntries.map(e => safeParseLookupId(e[PROFILE_LOOKUP])).filter(id => id !== undefined)
-    );
-
-    for (const attendee of attendees) {
-      const attendeeName = attendee.profile?.name;
-      const attendeeEmail = attendee.profile?.email;
-      if (!attendeeName) continue;
-
-      const { profile, isNew, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Eventbrite Sync');
-      if (isNew) newProfiles++;
-      if (clash) duplicateWarnings++;
-
-      // Create entry if not already registered
-      const profileId = profile.ID;
-      if (!existingProfileIds.has(profileId)) {
-        const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
-        const entryFields: Record<string, any> = {
-          [SESSION_LOOKUP]: String(session.ID),
-          [PROFILE_LOOKUP]: String(profileId),
-          BookedBy: bookingEmailFor(attendee)
-        };
-        if (isChild && attendee.order_id) {
-          const adultProfile = resolveAccompanyingAdult(attendees, attendee.order_id, profiles);
-          if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
-        }
-        const newEntryId = await entriesRepository.create(entryFields);
-        const manual: Record<string, boolean> = { eventbrite: true };
-        if (clash) manual.duplicate = true;
-        await entriesRepository.updateStats(newEntryId, { manual });
-        existingProfileIds.add(profileId);
-        // Update in-memory profile stats so subsequent sessions in this batch see this entry
-        addSessionToProfileStats(profile, session.ID, sessionDateMap);
-        newEntries++;
-      }
-
-      // Upsert consent records from Eventbrite answers
-      const { created, updated } = await upsertConsentRecords(profileId, attendee, allRecords);
-      newRecords += created;
-      updatedRecords += updated;
-    }
-
-    // Cancellation step — skip if no entries exist for this session (nothing to cancel)
-    if (!sessionEntries.length) continue;
     const cancelledAttendees = await getCancelledAttendees(session.EventbriteEventID!);
-    if (cancelledAttendees.length > 0) {
+    if (cancelledAttendees.length > 0)
       console.log(`[Eventbrite Sync] Session ${session.ID}: ${cancelledAttendees.length} cancelled attendees to check`);
 
-      // Build map of profileId → entry for quick lookup
-      const entryByProfile = new Map<number, { id: number; alreadyCancelled: boolean }>();
-      for (const entry of sessionEntries) {
-        const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
-        if (pid !== undefined) {
-          entryByProfile.set(pid, { id: entry.ID, alreadyCancelled: !!entry[ENTRY_CANCELLED] });
-        }
-      }
-
-      for (const attendee of cancelledAttendees) {
-        const profile = findProfileByAttendee(attendee, profiles);
-        if (!profile) continue;
-
-        const entryInfo = entryByProfile.get(profile.ID);
-        if (!entryInfo || entryInfo.alreadyCancelled) continue;
-
-        await entriesRepository.updateFields(entryInfo.id, { [ENTRY_CANCELLED]: new Date().toISOString() });
-        computeAndSaveProfileStats(profile.ID).catch(err =>
-          console.error('[Eventbrite Sync] computeAndSaveProfileStats failed for profile', profile.ID, err)
-        );
-        cancelledEntries++;
-      }
-    }
+    const result = await syncAttendeesForSession(session.ID, attendees, sessionEntries, profiles, allRecords, sessionDateMap, cancelledAttendees);
+    newProfiles += result.newProfiles;
+    newEntries += result.newEntries;
+    newRecords += result.newRecords;
+    updatedRecords += result.updatedRecords;
+    cancelledEntries += result.cancelledEntries;
   }
 
-  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${cancelledEntries} cancelled, ${newRecords} new records, ${updatedRecords} updated records, ${duplicateWarnings} duplicate warnings`);
-  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, duplicateWarnings, cancelledEntries };
+  console.log(`[Eventbrite Sync] Done: ${liveSessions.length} sessions, ${newProfiles} new profiles, ${newEntries} new entries, ${cancelledEntries} cancelled, ${newRecords} new records, ${updatedRecords} updated records`);
+  return { sessionsProcessed: liveSessions.length, newProfiles, newEntries, newRecords, updatedRecords, cancelledEntries };
 }
 
 const WARMUP_KEYS = ['groups', 'sessions', 'profiles', 'regulars'] as const;
@@ -266,7 +189,7 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     const entryIdsStr = entryStatsResult.updatedIds.length ? ` (${entryStatsResult.updatedIds.join(', ')})` : '';
     const parts = [
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions / ${attendeeResult.sessionsProcessed} sessions`,
-      `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.cancelledEntries} cancelled, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records${attendeeResult.duplicateWarnings ? `, ${attendeeResult.duplicateWarnings} duplicate warning(s) — check session entries` : ''}`,
+      `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.cancelledEntries} cancelled, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records`,
       `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
       `Entry stats: ${entryStatsResult.updated}/${entryStatsResult.total} updated${entryStatsResult.errors.length ? `, ${entryStatsResult.errors.length} error(s)` : ''}${entryIdsStr}`,
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
@@ -404,137 +327,6 @@ router.get('/eventbrite/event-config-check', async (req: Request, res: Response)
   } catch (error: any) {
     console.error('Error checking event config:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to check event config' });
-  }
-});
-
-// Lightweight sync for recent Eventbrite registrations. Uses changed_since to fetch only
-// attendees modified in the given time window — most sessions return empty, keeping this fast.
-// #New tag is omitted: determining first-ever attendance requires a global entries snapshot.
-// The full daily sync (event-and-attendee-update) applies #New correctly.
-router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
-  if (syncInProgress) {
-    res.status(409).json({ success: false, error: 'Sync already in progress' });
-    return;
-  }
-  syncInProgress = true;
-  try {
-    const sinceHours: Record<string, number> = { '24h': 24, '48h': 48, '7d': 168 };
-    const hours = sinceHours[String(req.query.since)] ?? 24;
-    const changedSince = new Date(Date.now() - hours * 60 * 60 * 1000);
-
-    const [rawSessions, rawProfiles, regularsRaw] = await Promise.all([
-      sessionsRepository.getAll(),
-      profilesRepository.getAll(),
-      regularsRepository.getAll()
-    ]);
-
-    const sessions = validateArray(rawSessions, validateSession, 'Session');
-    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-
-    const regularSet = new Set<string>();
-    for (const r of regularsRaw) {
-      const gId = safeParseLookupId(r[GROUP_LOOKUP]);
-      const pId = safeParseLookupId(r[PROFILE_LOOKUP]);
-      if (gId !== undefined && pId !== undefined) regularSet.add(`${gId}-${pId}`);
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const liveSessions = sessions.filter(s => {
-      if (!s.EventbriteEventID || !s.Date) return false;
-      const d = new Date(s.Date);
-      d.setHours(0, 0, 0, 0);
-      return d >= today;
-    });
-
-    // Single org-wide call — skips all per-session Eventbrite calls
-    const recentAttendees = await getOrgAttendees(changedSince);
-    if (!recentAttendees.length) {
-      console.log(`[QuickSync] No changed attendees in window — skipping`);
-      res.json({ success: true, data: { added: 0, sessionsChecked: 0 } });
-      return;
-    }
-
-    // Group by Eventbrite event ID so we can look up per session below
-    const attendeesByEventId = new Map<string, typeof recentAttendees>();
-    for (const a of recentAttendees) {
-      if (!a.event_id) continue;
-      if (!attendeesByEventId.has(a.event_id)) attendeesByEventId.set(a.event_id, []);
-      attendeesByEventId.get(a.event_id)!.push(a);
-    }
-
-    const allRecords = recordsRepository.available ? await recordsRepository.getAll() : [];
-
-    // Fetch entries once; build per-session profile sets for duplicate checking
-    const allEntriesRaw = await entriesRepository.getAll();
-    const allEntries = validateArray(allEntriesRaw, validateEntry, 'Entry');
-    const sessionProfileIds = new Map<number, Set<number>>();
-    for (const e of allEntries) {
-      const sId = safeParseLookupId(e[SESSION_LOOKUP]);
-      const pId = safeParseLookupId(e[PROFILE_LOOKUP]);
-      if (sId === undefined || pId === undefined) continue;
-      if (!sessionProfileIds.has(sId)) sessionProfileIds.set(sId, new Set());
-      sessionProfileIds.get(sId)!.add(pId);
-    }
-
-    let added = 0;
-
-    for (const session of liveSessions) {
-      const attendees = attendeesByEventId.get(session.EventbriteEventID!) ?? [];
-      if (!attendees.length) continue;
-
-      console.log(`[QuickSync] Session ${session.ID} (${session.EventbriteEventID}): ${attendees.length} new/changed attendees`);
-
-      const existingProfileIds = sessionProfileIds.get(session.ID) ?? new Set<number>();
-      if (!sessionProfileIds.has(session.ID)) sessionProfileIds.set(session.ID, existingProfileIds);
-
-      const sessionGroupId = safeParseLookupId(session[GROUP_LOOKUP]);
-
-      for (const attendee of attendees) {
-        const attendeeName = attendee.profile?.name;
-        const attendeeEmail = attendee.profile?.email;
-        if (!attendeeName) continue;
-
-        const { profile, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'QuickSync');
-
-        if (!existingProfileIds.has(profile.ID)) {
-          const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
-          const entryFields: Record<string, any> = {
-            [SESSION_LOOKUP]: String(session.ID),
-            [PROFILE_LOOKUP]: String(profile.ID),
-            BookedBy: bookingEmailFor(attendee)
-          };
-          if (isChild && attendee.order_id) {
-            const sessionAttendees = attendeesByEventId.get(session.EventbriteEventID!) ?? [];
-            const adultProfile = resolveAccompanyingAdult(sessionAttendees, attendee.order_id, profiles);
-            if (adultProfile) entryFields.AccompanyingAdultLookupId = adultProfile.ID;
-          }
-          const newEntryId = await entriesRepository.create(entryFields);
-          const manual: Record<string, boolean> = { eventbrite: true };
-          if (clash) manual.duplicate = true;
-          await entriesRepository.updateStats(newEntryId, { manual });
-          existingProfileIds.add(profile.ID);
-          added++;
-        }
-
-        await upsertConsentRecords(profile.ID, attendee, allRecords);
-      }
-    }
-
-    console.log(`[QuickSync] ${liveSessions.length} sessions checked, ${added} entries added`);
-
-    if (added > 0) {
-      await runProfileStatsRefresh();
-      await runEntryStatsRefresh();
-      await runSessionStatsRefresh();
-    }
-
-    res.json({ success: true, data: { added, sessionsChecked: liveSessions.length } });
-  } catch (error: any) {
-    console.error('Error in quick sync:', error);
-    res.status(500).json({ success: false, error: error.message || 'Quick sync failed' });
-  } finally {
-    syncInProgress = false;
   }
 });
 

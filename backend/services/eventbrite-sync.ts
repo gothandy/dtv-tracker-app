@@ -3,12 +3,14 @@
  * (routes/eventbrite.ts) and the per-session refresh (routes/entries.ts).
  */
 
+import { entriesRepository } from './repositories/entries-repository';
 import { profilesRepository } from './repositories/profiles-repository';
 import { recordsRepository } from './repositories/records-repository';
 import { toMatchName, safeParseLookupId, parseEmails } from './data-layer';
 import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
-import { SESSION_LOOKUP, PROFILE_LOOKUP } from './field-names';
+import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID, ENTRY_CANCELLED } from './field-names';
+import { computeAndSaveProfileStats } from './profile-stats';
 
 /**
  * Returns the booking email for an attendee — the order contact email (whoever
@@ -107,41 +109,12 @@ export function addSessionToProfileStats(
 }
 
 /**
- * Finds an existing profile by name match (normalised). If the name matches
- * but both sides have different emails, a new profile is created and
- * clash=true is returned so the caller can tag the entry with #Duplicate
- * for admin review. Email is never matched alone — name is always required.
+ * Finds or creates a profile for an Eventbrite attendee.
+ * If name matches but emails differ, creates a new profile rather than risk
+ * exposing data to the wrong person. Email is never matched alone.
  * Mutates `profiles` by pushing any newly-created profile so subsequent
  * lookups within the same batch stay consistent.
  */
-/**
- * Find a profile matching an Eventbrite attendee by name + email — find-only, no create.
- * Uses the same matching priority as findOrCreateProfile (name+email first, name-only second).
- */
-export function findProfileByAttendee(
-  attendee: EventbriteAttendee,
-  profiles: SharePointProfile[]
-): SharePointProfile | undefined {
-  const attendeeName = attendee.profile?.name;
-  if (!attendeeName) return undefined;
-  const nameKey = toMatchName(attendeeName);
-  const email = bookingEmailFor(attendee)?.toLowerCase();
-
-  if (email) {
-    const byNameAndEmail = profiles.find(p => {
-      const nameMatches = (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
-                          (p.Title && toMatchName(p.Title) === nameKey);
-      return nameMatches && parseEmails(p.Email).some(e => e.toLowerCase() === email);
-    });
-    if (byNameAndEmail) return byNameAndEmail;
-  }
-
-  return profiles.find(p =>
-    (p.MatchName && toMatchName(p.MatchName) === nameKey) ||
-    (p.Title && toMatchName(p.Title) === nameKey)
-  );
-}
-
 export async function findOrCreateProfile(
   attendeeName: string,
   attendeeEmail: string | undefined,
@@ -248,4 +221,122 @@ export async function upsertConsentRecords(
   }
 
   return { created, updated };
+}
+
+export interface SyncAttendeesForSessionResult {
+  newProfiles: number;
+  newEntries: number;
+  newRecords: number;
+  updatedRecords: number;
+  cancelledEntries: number;
+}
+
+/**
+ * Syncs Eventbrite attendees for a single session. Used by both the nightly bulk
+ * sync and the per-session refresh so the logic lives in one place.
+ *
+ * Matching priority for existing entries:
+ *   1. EventbriteAttendeeID match (deterministic, post-backfill)
+ *   2. Profile ID match (fallback for pre-backfill entries)
+ *
+ * No Notes tags are written — the presence of EventbriteAttendeeID is the source
+ * of truth for the Eventbrite icon; child/new/etc. are handled by live fields and
+ * entry-stats snapshot computation.
+ */
+export async function syncAttendeesForSession(
+  sessionId: number,
+  attendees: EventbriteAttendee[],
+  sessionEntries: SharePointEntry[],
+  profiles: SharePointProfile[],
+  records: any[],
+  sessionDateMap: Map<number, string>,
+  cancelledAttendees: EventbriteAttendee[] = []
+): Promise<SyncAttendeesForSessionResult> {
+  let newProfiles = 0;
+  let newEntries = 0;
+  let newRecords = 0;
+  let updatedRecords = 0;
+  let cancelledEntries = 0;
+
+  // Index existing entries by EventbriteAttendeeID and by profile ID for fast lookup
+  const entryByAttendeeId = new Map<string, SharePointEntry>();
+  const entryByProfileId = new Map<number, SharePointEntry>();
+  const existingProfileIds = new Set<number>();
+  for (const entry of sessionEntries) {
+    if (entry.EventbriteAttendeeID) entryByAttendeeId.set(entry.EventbriteAttendeeID, entry);
+    const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+    if (pid !== undefined) {
+      entryByProfileId.set(pid, entry);
+      existingProfileIds.add(pid);
+    }
+  }
+
+  for (const attendee of attendees) {
+    const attendeeName = attendee.profile?.name;
+    const attendeeEmail = attendee.profile?.email;
+    if (!attendeeName) continue;
+
+    // If we already have an entry for this exact attendee ID, only update consent
+    if (entryByAttendeeId.has(attendee.id)) {
+      const profileId = safeParseLookupId(entryByAttendeeId.get(attendee.id)![PROFILE_LOOKUP]);
+      if (profileId !== undefined) {
+        const { created, updated } = await upsertConsentRecords(profileId, attendee, records);
+        newRecords += created;
+        updatedRecords += updated;
+      }
+      continue;
+    }
+
+    const { profile, isNew } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, `Sync:${sessionId}`);
+    if (isNew) newProfiles++;
+
+    if (!existingProfileIds.has(profile.ID)) {
+      const isChild = !!attendee.ticket_class_name?.toLowerCase().includes('child');
+      const entryFields: Record<string, any> = {
+        [SESSION_LOOKUP]: String(sessionId),
+        [PROFILE_LOOKUP]: String(profile.ID),
+        [ENTRY_EVENTBRITE_ATTENDEE_ID]: attendee.id,
+        BookedBy: bookingEmailFor(attendee)
+      };
+      if (isChild && attendee.order_id) {
+        const adultProfile = resolveAccompanyingAdult(attendees, attendee.order_id, profiles);
+        if (adultProfile) entryFields.AccompanyingAdultLookupId = String(adultProfile.ID);
+      }
+      await entriesRepository.create(entryFields);
+      existingProfileIds.add(profile.ID);
+      addSessionToProfileStats(profile, sessionId, sessionDateMap);
+      newEntries++;
+    } else {
+      // Profile already has an entry — stamp the AttendeeID onto it if not already set
+      const existingEntry = entryByProfileId.get(profile.ID);
+      if (existingEntry && !existingEntry.EventbriteAttendeeID) {
+        await entriesRepository.updateFields(existingEntry.ID, { [ENTRY_EVENTBRITE_ATTENDEE_ID]: attendee.id });
+        existingEntry.EventbriteAttendeeID = attendee.id;
+      }
+    }
+
+    const { created, updated } = await upsertConsentRecords(profile.ID, attendee, records);
+    newRecords += created;
+    updatedRecords += updated;
+  }
+
+  // Cancellations — index entries by AttendeeID, set Cancelled timestamp if not already set
+  const entryByAttendeeIdForCancel = new Map<string, { id: number; profileId: number; alreadyCancelled: boolean }>();
+  for (const entry of sessionEntries) {
+    const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
+    if (pid === undefined) continue;
+    if (entry.EventbriteAttendeeID)
+      entryByAttendeeIdForCancel.set(entry.EventbriteAttendeeID, { id: entry.ID, profileId: pid, alreadyCancelled: !!entry[ENTRY_CANCELLED] });
+  }
+  for (const attendee of cancelledAttendees) {
+    const entryInfo = entryByAttendeeIdForCancel.get(attendee.id);
+    if (!entryInfo || entryInfo.alreadyCancelled) continue;
+    await entriesRepository.updateFields(entryInfo.id, { [ENTRY_CANCELLED]: new Date().toISOString() });
+    computeAndSaveProfileStats(entryInfo.profileId).catch(err =>
+      console.error('[Sync] computeAndSaveProfileStats failed for profile', entryInfo!.profileId, err)
+    );
+    cancelledEntries++;
+  }
+
+  return { newProfiles, newEntries, newRecords, updatedRecords, cancelledEntries };
 }

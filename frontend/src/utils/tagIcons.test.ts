@@ -37,3 +37,25 @@ describe('iconsForEntry — Profile Warning', () => {
     expect(icons.some(i => i.alt === 'Profile Warning')).toBe(false)
   })
 })
+
+describe('iconsForEntry — Eventbrite', () => {
+  it('shows Eventbrite icon when eventbriteAttendeeId is set', () => {
+    const icons = iconsForEntry({ eventbriteAttendeeId: '12345' })
+    expect(icons.some(i => i.alt === 'Eventbrite')).toBe(true)
+  })
+
+  it('omits Eventbrite icon when only manual.eventbrite is set (not source of truth)', () => {
+    const icons = iconsForEntry({ stats: { manual: { eventbrite: true } } })
+    expect(icons.some(i => i.alt === 'Eventbrite')).toBe(false)
+  })
+
+  it('omits Eventbrite icon when eventbriteAttendeeId is absent', () => {
+    const icons = iconsForEntry({})
+    expect(icons.some(i => i.alt === 'Eventbrite')).toBe(false)
+  })
+
+  it('shows Eventbrite icon even when stats is absent', () => {
+    const icons = iconsForEntry({ eventbriteAttendeeId: '99' })
+    expect(icons.some(i => i.alt === 'Eventbrite')).toBe(true)
+  })
+})

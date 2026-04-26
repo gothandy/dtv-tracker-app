@@ -25,5 +25,6 @@ export const SESSION_COVER_MEDIA = 'CoverMediaLookupId'; // Lookup to Media libr
 export const SESSION_STATS       = 'Stats';  // Pre-computed JSON stats stored on Session items (avoid full entries scan on listing views)
 export const SESSION_LIMITS      = 'Limits'; // Per-session capacity limits JSON: {"new": 4, "total": 16}
 export const PROFILE_STATS       = 'Stats';  // Same field name on Profiles list
-export const ENTRY_CANCELLED     = 'Cancelled'; // Date/time when entry was cancelled; null = active booking
-export const ENTRY_STATS         = 'Stats';     // Snapshot JSON stored on Entry items (frozen once session date passes)
+export const ENTRY_CANCELLED             = 'Cancelled';         // Date/time when entry was cancelled; null = active booking
+export const ENTRY_STATS                 = 'Stats';             // Snapshot JSON stored on Entry items (frozen once session date passes)
+export const ENTRY_EVENTBRITE_ATTENDEE_ID = 'EventbriteAttendeeID'; // Eventbrite attendee ID — source of truth for the Eventbrite icon

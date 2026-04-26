@@ -21,19 +21,20 @@ import {
   parseEmails,
   calculateSessionStats
 } from '../services/data-layer';
-import { isFirstSession, addSessionToProfileStats, findOrCreateProfile, upsertConsentRecords } from '../services/eventbrite-sync';
+import { syncAttendeesForSession } from '../services/eventbrite-sync';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP,
   SESSION_STATS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY,
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS,
   ENTRY_CANCELLED,
   ENTRY_STATS,
+  ENTRY_EVENTBRITE_ATTENDEE_ID,
   ACCOMPANYING_ADULT_LOOKUP
 } from '../services/field-names';
 import { computeAndSaveEntryStats, runEntryStatsRefresh } from '../services/entry-stats';
 import { parseEntryStatsField } from '../services/data-layer';
-import { getAttendees } from '../services/eventbrite-client';
+import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { renderEmail } from '../services/email-renderer';
 import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
@@ -93,15 +94,17 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
     // Fetch both recently created entries and recently cancelled entries in parallel
-    const [rawRecent, rawCancelled, rawSessions, rawGroups] = await Promise.all([
+    const [rawRecent, rawCancelled, rawSessions, rawGroups, rawProfiles] = await Promise.all([
       entriesRepository.getRecent(cutoff),
       entriesRepository.getRecentlyCancelled(cutoff),
       sessionsRepository.getAll(),
-      groupsRepository.getAll()
+      groupsRepository.getAll(),
+      profilesRepository.getAll(),
     ]);
 
     const sessionMap = new Map(rawSessions.map(s => [s.ID, s]));
     const groupMap = new Map(rawGroups.map(g => [g.ID, g]));
+    const profileMap = new Map(rawProfiles.map((p: any) => [p.ID, p]));
 
     // Merge, deduplicate by ID (an entry could appear in both if cancelled after being recently created)
     const seenIds = new Set<number>();
@@ -135,6 +138,8 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
         const name = e[PROFILE_DISPLAY] || 'Unknown';
         const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
         const slug = vid !== undefined ? profileSlug(name, vid) : undefined;
+        const profile = vid !== undefined ? profileMap.get(vid) : undefined;
+        const profileStats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
         return [{
           id: e.ID,
           volunteerName: name,
@@ -146,8 +151,14 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           checkedIn: e.Checked || false,
           hours: parseHours(e.Hours),
           count: e.Count || 1,
+          isGroup: profile?.IsGroup || false,
+          isMember: profileStats.isMember === true,
+          cardStatus: profileStats.cardStatus ?? undefined,
+          hasProfileWarning: profileStats.warnings?.length ? true : undefined,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
-          cancelled: e.Cancelled || undefined
+          cancelled: e.Cancelled || undefined,
+          stats: parseEntryStatsField(e[ENTRY_STATS]),
+          eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       });
 
@@ -221,6 +232,7 @@ router.get('/entries', async (req: Request, res: Response) => {
         const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
         if (filterProfileId !== null && profileId !== filterProfileId) return [];
         const profile = profileId !== undefined ? profileMap.get(profileId) : undefined;
+        const profileStats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
         const name = e[PROFILE_DISPLAY] || 'Unknown';
         const slug = profileId !== undefined ? profileSlug(name, profileId) : undefined;
 
@@ -237,10 +249,14 @@ router.get('/entries', async (req: Request, res: Response) => {
           hours: parseHours(e.Hours),
           count: e.Count || 1,
           isGroup: profile?.IsGroup || false,
+          isMember: profileStats.isMember === true,
+          cardStatus: profileStats.cardStatus ?? undefined,
+          hasProfileWarning: profileStats.warnings?.length ? true : undefined,
           hasAccompanyingAdult: hasAdult,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined,
-          stats: parseEntryStatsField(e[ENTRY_STATS])
+          stats: parseEntryStatsField(e[ENTRY_STATS]),
+          eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -713,38 +729,20 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
 
     // Step 2: Sync Eventbrite attendees (if session has an Eventbrite ID)
     if (spSession.EventbriteEventID) {
-      const attendees = await getAttendees(spSession.EventbriteEventID);
-      console.log(`[Refresh] Session ${spSession.ID} (${spSession.EventbriteEventID}): ${attendees.length} attendees`);
+      const [attendees, cancelledAttendees] = await Promise.all([
+        getAttendees(spSession.EventbriteEventID),
+        getCancelledAttendees(spSession.EventbriteEventID),
+      ]);
+      console.log(`[Refresh] Session ${spSession.ID} (${spSession.EventbriteEventID}): ${attendees.length} attendees, ${cancelledAttendees.length} cancelled`);
 
-      for (const attendee of attendees) {
-        const attendeeName = attendee.profile?.name;
-        const attendeeEmail = attendee.profile?.email;
-        if (!attendeeName) continue;
-
-        const { profile, isNew, clash } = await findOrCreateProfile(attendeeName, attendeeEmail, profiles, 'Refresh');
-        if (isNew) newProfiles++;
-
-        // Create entry if not already registered
-        const profileId = profile.ID;
-        if (!existingVolunteerIds.has(profileId)) {
-          const noteTags: string[] = [];
-          if (isFirstSession(profile, spSession.ID)) noteTags.push('#New');
-          if (attendee.ticket_class_name?.toLowerCase().includes('child')) noteTags.push('#Child');
-          noteTags.push('#Eventbrite');
-          if (clash) noteTags.push('#Duplicate');
-          await entriesRepository.create({
-            [SESSION_LOOKUP]: String(spSession.ID),
-            [PROFILE_LOOKUP]: String(profileId),
-            Notes: noteTags.join(' ')
-          });
-          existingVolunteerIds.add(profileId);
-          addedFromEventbrite++;
-        }
-
-        // Upsert consent records from Eventbrite answers
-        const { created, updated } = await upsertConsentRecords(profileId, attendee, rawRecords);
-        updatedRecords += created + updated;
-      }
+      // Re-fetch so syncAttendeesForSession sees regulars added in Step 1
+      const freshForEB = await entriesRepository.getBySessionIds([spSession.ID]);
+      const ebResult = await syncAttendeesForSession(
+        spSession.ID, attendees, validateArray(freshForEB, validateEntry, 'Entry'), profiles, rawRecords, new Map(), cancelledAttendees
+      );
+      addedFromEventbrite += ebResult.newEntries;
+      newProfiles += ebResult.newProfiles;
+      updatedRecords += ebResult.newRecords + ebResult.updatedRecords;
     }
 
     // Step 3: Tag #NoPhoto on entries where volunteer lacks photo consent
@@ -757,10 +755,14 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       }
     }
 
-    // Re-fetch entries since steps 1+2 may have added new ones
+    // Re-fetch entries since steps 1+2 may have added new ones; rebuild volunteer ID set for stats
     const freshEntries = await entriesRepository.getAll();
     const freshValidEntries = validateArray(freshEntries, validateEntry, 'Entry');
     sessionEntries = freshValidEntries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
+    for (const e of sessionEntries) {
+      const vid = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (vid !== undefined) existingVolunteerIds.add(vid);
+    }
 
     for (const entry of sessionEntries) {
       const vid = safeParseLookupId(entry[PROFILE_LOOKUP]);
