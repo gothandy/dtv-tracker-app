@@ -5,10 +5,10 @@ import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { recordsRepository } from '../services/repositories/records-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
-import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId, toMatchName } from '../services/data-layer';
+import { validateArray, validateSession, validateEntry, validateProfile, validateGroup, safeParseLookupId } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_CANCELLED, ENTRY_EVENTBRITE_ATTENDEE_ID } from '../services/field-names';
 import { getAttendees, getOrgAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees, EventbriteConfigCheck } from '../services/eventbrite-client';
-import { syncAttendeesForSession, findProfileByAttendee } from '../services/eventbrite-sync';
+import { syncAttendeesForSession } from '../services/eventbrite-sync';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
@@ -140,24 +140,16 @@ async function runSyncAttendees(): Promise<SyncAttendeesResult> {
     if (cancelledAttendees.length > 0) {
       console.log(`[Eventbrite Sync] Session ${session.ID}: ${cancelledAttendees.length} cancelled attendees to check`);
 
-      // Primary: match by EventbriteAttendeeID; fallback: name match via findProfileByAttendee
       const entryByAttendeeId = new Map<string, { id: number; profileId: number; alreadyCancelled: boolean }>();
-      const entryByProfileId = new Map<number, { id: number; profileId: number; alreadyCancelled: boolean }>();
       for (const entry of sessionEntries) {
         const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
         if (pid === undefined) continue;
-        const info = { id: entry.ID, profileId: pid, alreadyCancelled: !!entry[ENTRY_CANCELLED] };
-        if (entry[ENTRY_EVENTBRITE_ATTENDEE_ID]) entryByAttendeeId.set(entry[ENTRY_EVENTBRITE_ATTENDEE_ID], info);
-        entryByProfileId.set(pid, info);
+        if (entry[ENTRY_EVENTBRITE_ATTENDEE_ID])
+          entryByAttendeeId.set(entry[ENTRY_EVENTBRITE_ATTENDEE_ID], { id: entry.ID, profileId: pid, alreadyCancelled: !!entry[ENTRY_CANCELLED] });
       }
 
       for (const attendee of cancelledAttendees) {
-        let entryInfo = entryByAttendeeId.get(attendee.id);
-        if (!entryInfo) {
-          // Fallback for pre-backfill entries without EventbriteAttendeeID
-          const profile = findProfileByAttendee(attendee, profiles);
-          if (profile) entryInfo = entryByProfileId.get(profile.ID);
-        }
+        const entryInfo = entryByAttendeeId.get(attendee.id);
         if (!entryInfo || entryInfo.alreadyCancelled) continue;
 
         await entriesRepository.updateFields(entryInfo.id, { [ENTRY_CANCELLED]: new Date().toISOString() });
@@ -450,71 +442,6 @@ router.post('/eventbrite/quick-sync', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message || 'Quick sync failed' });
   } finally {
     syncInProgress = false;
-  }
-});
-
-// One-time backfill: write EventbriteAttendeeID onto existing entries across all Eventbrite sessions.
-// Responds immediately and runs in the background — check server logs for progress and final count.
-// Safe to run multiple times — skips entries that already have the ID set.
-router.post('/eventbrite/backfill-attendee-ids', async (req: Request, res: Response) => {
-  try {
-    const [sessionsRaw, entriesRaw, profilesRaw] = await Promise.all([
-      sessionsRepository.getAll(),
-      entriesRepository.getAll(),
-      profilesRepository.getAll(),
-    ]);
-
-    const sessions = validateArray(sessionsRaw, validateSession, 'Session');
-    const entries = validateArray(entriesRaw, validateEntry, 'Entry');
-    const profiles = validateArray(profilesRaw, validateProfile, 'Profile');
-
-    const eventbriteSessions = sessions.filter(s => s.EventbriteEventID);
-    console.log(`[Backfill] Starting — ${eventbriteSessions.length} Eventbrite sessions to check`);
-
-    // Respond immediately; process in background so the request doesn't time out
-    res.json({ success: true, data: { message: `Backfill started for ${eventbriteSessions.length} sessions — check server logs for result` } });
-
-    let updated = 0;
-    let skipped = 0;
-    let sessionsProcessed = 0;
-
-    for (const session of eventbriteSessions) {
-      const sessionEntries = entries.filter(e =>
-        safeParseLookupId(e[SESSION_LOOKUP]) === session.ID &&
-        !e[ENTRY_EVENTBRITE_ATTENDEE_ID]
-      );
-
-      if (!sessionEntries.length) continue;
-
-      const attendees = await getAttendees(session.EventbriteEventID!);
-      sessionsProcessed++;
-
-      for (const entry of sessionEntries) {
-        const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
-        if (profileId === undefined) { skipped++; continue; }
-        const profile = profiles.find(p => p.ID === profileId);
-        if (!profile) { skipped++; continue; }
-
-        const profileNameKey = toMatchName(profile.Title || '');
-        const profileMatchKey = toMatchName(profile.MatchName || '');
-        const matched = attendees.find(a => {
-          if (!a.profile?.name) return false;
-          const nameKey = toMatchName(a.profile.name);
-          return nameKey === profileNameKey || (profileMatchKey && nameKey === profileMatchKey);
-        });
-
-        if (matched) {
-          await entriesRepository.updateFields(entry.ID, { [ENTRY_EVENTBRITE_ATTENDEE_ID]: matched.id });
-          updated++;
-        } else {
-          skipped++;
-        }
-      }
-    }
-
-    console.log(`[Backfill] Done — ${sessionsProcessed} sessions fetched from Eventbrite, ${updated} entries updated, ${skipped} skipped`);
-  } catch (error: any) {
-    console.error('[Backfill] Error:', error);
   }
 });
 

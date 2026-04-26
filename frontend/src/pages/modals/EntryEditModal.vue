@@ -76,6 +76,10 @@
         <input type="checkbox" class="eem-checkbox" v-model="form.cancelled" />
       </FormRow>
 
+      <FormRow v-if="isAdmin || entry.eventbriteAttendeeId" title="Eventbrite Attendee ID" :full-width="true">
+        <input class="eem-input eem-input--wide" :value="entry.eventbriteAttendeeId ?? ''" :disabled="true" />
+      </FormRow>
+
       <!-- Notes hidden during #189 testing — restore once tags migration complete and notes UX tidied -->
       <!-- <FormRow title="Notes" :full-width="true">
         <textarea class="eem-textarea" v-model="form.notes" rows="2" />
@@ -214,6 +218,12 @@ function deleteEntry() {
   padding: 0.3rem 0.5rem;
   font-family: inherit;
   font-size: 0.95rem;
+}
+
+.eem-input--wide {
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--color-text-muted);
 }
 
 .eem-checkbox {

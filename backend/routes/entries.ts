@@ -718,8 +718,10 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       const attendees = await getAttendees(spSession.EventbriteEventID);
       console.log(`[Refresh] Session ${spSession.ID} (${spSession.EventbriteEventID}): ${attendees.length} attendees`);
 
+      // Re-fetch so syncAttendeesForSession sees regulars added in Step 1
+      const freshForEB = await entriesRepository.getBySessionIds([spSession.ID]);
       const ebResult = await syncAttendeesForSession(
-        spSession.ID, attendees, sessionEntries, profiles, rawRecords, new Map()
+        spSession.ID, attendees, validateArray(freshForEB, validateEntry, 'Entry'), profiles, rawRecords, new Map()
       );
       addedFromEventbrite += ebResult.newEntries;
       newProfiles += ebResult.newProfiles;

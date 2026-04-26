@@ -285,11 +285,15 @@ export async function syncAttendeesForSession(
 
   // Index existing entries by EventbriteAttendeeID and by profile ID for fast lookup
   const entryByAttendeeId = new Map<string, SharePointEntry>();
+  const entryByProfileId = new Map<number, SharePointEntry>();
   const existingProfileIds = new Set<number>();
   for (const entry of sessionEntries) {
     if (entry.EventbriteAttendeeID) entryByAttendeeId.set(entry.EventbriteAttendeeID, entry);
     const pid = safeParseLookupId(entry[PROFILE_LOOKUP]);
-    if (pid !== undefined) existingProfileIds.add(pid);
+    if (pid !== undefined) {
+      entryByProfileId.set(pid, entry);
+      existingProfileIds.add(pid);
+    }
   }
 
   for (const attendee of attendees) {
@@ -327,6 +331,12 @@ export async function syncAttendeesForSession(
       existingProfileIds.add(profile.ID);
       addSessionToProfileStats(profile, sessionId, sessionDateMap);
       newEntries++;
+    } else {
+      // Profile already has an entry — stamp the AttendeeID onto it if not already set
+      const existingEntry = entryByProfileId.get(profile.ID);
+      if (existingEntry && !existingEntry.EventbriteAttendeeID) {
+        await entriesRepository.updateFields(existingEntry.ID, { [ENTRY_EVENTBRITE_ATTENDEE_ID]: attendee.id });
+      }
     }
 
     const { created, updated } = await upsertConsentRecords(profile.ID, attendee, records);
