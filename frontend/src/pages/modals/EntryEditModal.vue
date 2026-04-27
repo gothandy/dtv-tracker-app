@@ -40,6 +40,7 @@
           :summary="entryIcons"
           :is-child="childMode"
           :is-eventbrite="eventbriteMode"
+          :show-regular="isPastSession"
           :disabled="working"
           @toggle-child="toggleChild"
           @toggle-eventbrite="toggleEventbrite"
@@ -119,6 +120,8 @@ const form = reactive({
   cancelled: !!props.entry.cancelled,
   eventbriteAttendeeId: props.entry.eventbriteAttendeeId ?? null as string | null,
 })
+
+const isPastSession = computed(() => props.entry.session.date < new Date().toISOString().slice(0, 10))
 
 const accompanyingAdultMissing = computed(() =>
   form.accompanyingAdultId !== null &&

@@ -59,6 +59,7 @@ const props = defineProps<{
   isChild?: boolean
   isEventbrite?: boolean
   disabled?: boolean
+  showRegular?: boolean
 }>()
 const emit = defineEmits<{
   'update:modelValue': [value: string[]]
@@ -66,7 +67,9 @@ const emit = defineEmits<{
   'toggleEventbrite': []
 }>()
 
-const pickerButtons = computed(() => EDITABLE_LABEL_ICONS)
+const pickerButtons = computed(() =>
+  props.showRegular ? EDITABLE_LABEL_ICONS : EDITABLE_LABEL_ICONS.filter(t => t.labelKey !== 'Regular')
+)
 
 function buttonLabel(t: typeof EDITABLE_LABEL_ICONS[number]): string {
   const active = isActive(t.labelKey!)

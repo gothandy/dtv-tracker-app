@@ -202,7 +202,7 @@ export interface SessionDetailResponse {
   isRegistered?: boolean;
   isAttended?: boolean;
   isRegular?: boolean;
-  isRepeat?: boolean;         // has attended this group before (not necessarily a formal Regular)
+  isRepeat?: boolean;         // has attended DTV before and is not a regular for this group
   userIsNew?: boolean;        // #New tag present on the user's entry for this session
   userEntryId?: number;       // entry ID for this user on this session (when isRegistered or cancelled)
   userProfileId?: number;     // profile ID of the authenticated viewer (needed for self-service Book POST)

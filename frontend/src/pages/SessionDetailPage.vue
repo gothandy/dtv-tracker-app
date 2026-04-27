@@ -167,6 +167,7 @@
             :profiles="profiles"
             :working-id="workingId"
             :refresh-working="refreshWorking"
+            :is-past-session="isPastSession"
             @refresh-request="onRefreshRequest"
             @update="onEntryUpdate"
             @set-hours="onSetHours"
@@ -318,6 +319,7 @@ const eventbriteUrl = computed<string | null>(() => {
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const refreshWorking = ref(false)
+const isPastSession = computed(() => !!store.session && store.session.date < new Date().toISOString().slice(0, 10))
 const bookWorking = ref(false)
 const bookError = ref<string | undefined>()
 const cancelWorking = ref(false)

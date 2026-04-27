@@ -500,7 +500,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
       if (pid === undefined) return false;
       const ps = JSON.parse(profileMap.get(pid)?.[PROFILE_STATS] || '{}');
-      return Array.isArray(ps.sessionIds) && ps.sessionIds[0] === spSession.ID;
+      return Array.isArray(ps.sessionIds) && ps.sessionIds[0] === spSession.ID && !e.Labels?.includes('Regular');
     }).length;
     const childCount = activeEntries.filter(e => !!e.AccompanyingAdultLookupId).length;
     const regularCount = activeEntries.filter(e => e.Labels?.includes('Regular')).length;
@@ -519,8 +519,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (selfProfileId !== undefined) {
       userProfileId = selfProfileId;
       if (selfProfileStats) {
+        const selfIsNew = !selfProfileStats.sessionIds?.length;
         isRegular = selfProfileStats.regularGroupIds?.includes(groupId) ?? false;
-        isRepeat = selfProfileStats.repeatGroupIds?.includes(groupId) ?? false;
+        isRepeat = !selfIsNew && !isRegular;
       }
       if (isSelfService) {
         // Self-service: fetch own entry to get userEntryId and live isRegistered status

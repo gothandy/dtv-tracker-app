@@ -80,6 +80,16 @@ describe('calculateSessionStats', () => {
     expect(stats.get('1')?.newCount).toBe(1)
   })
 
+  it('does not count newCount when entry has Regular label', () => {
+    const profileFirstSessionMap = new Map([[42, 1]])
+    const stats = calculateSessionStats(
+      [entry('1', { ProfileLookupId: '42', Labels: ['Regular'] })],
+      profileFirstSessionMap
+    )
+    expect(stats.get('1')?.newCount).toBe(0)
+    expect(stats.get('1')?.regularCount).toBe(1)
+  })
+
   it('counts regularCount from Labels', () => {
     const stats = calculateSessionStats([entry('1', { Labels: ['Regular'] })])
     expect(stats.get('1')?.regularCount).toBe(1)

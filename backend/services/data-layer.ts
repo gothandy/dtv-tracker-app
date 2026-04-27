@@ -273,7 +273,7 @@ export function calculateSessionStats(
     const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
     const sessionIdNum = safeParseLookupId(sessionId);
 
-    if (profileId !== undefined && sessionIdNum !== undefined && profileFirstSessionMap.get(profileId) === sessionIdNum)
+    if (profileId !== undefined && sessionIdNum !== undefined && profileFirstSessionMap.get(profileId) === sessionIdNum && !entry.Labels?.includes('Regular'))
       stats.newCount++;
     if (entry.AccompanyingAdultLookupId)
       stats.childCount++;

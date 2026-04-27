@@ -136,6 +136,8 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     if (r.Type === 'Photo Consent' && r.Status === 'Accepted') noPhoto = false;
   }
 
+  if (thisProfile?.IsGroup && isMember) warnings.push({ text: 'Group + Member' });
+
   sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
 
   await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider, noPhoto, warnings });
@@ -295,6 +297,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
         if (spProfile.Title && spProfile.MatchName && toMatchName(spProfile.Title) !== spProfile.MatchName) warnings.push({ text: 'Match Name Error' });
         if (childNoAdultIds.has(spProfile.ID)) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${spProfile.ID}&profileName=${encodeURIComponent(spProfile.Title || '')}` });
         if (futureBookingIds.has(spProfile.ID) && (!consentedPrivacyIds.has(spProfile.ID) || !consentedPhotoIds.has(spProfile.ID))) warnings.push({ text: 'No Consent' });
+        if (spProfile.IsGroup && memberIds.has(spProfile.ID)) warnings.push({ text: 'Group + Member' });
 
         const newStats = {
           hoursByFY: roundHours(profileHours.get(spProfile.ID) || {}),

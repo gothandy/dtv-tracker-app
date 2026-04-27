@@ -113,8 +113,8 @@ describe('iconsForEntry — member badges', () => {
     expect(iconsForEntry({ isMember: true }).some(i => i.alt === 'Charity Member')).toBe(true)
   })
 
-  it('omits Charity Member badge for group even if isMember is true', () => {
-    expect(iconsForEntry({ isMember: true, isGroup: true }).some(i => i.alt === 'Charity Member')).toBe(false)
+  it('shows Charity Member badge for group if isMember is true (data anomaly surfaced as profile warning)', () => {
+    expect(iconsForEntry({ isMember: true, isGroup: true }).some(i => i.alt === 'Charity Member')).toBe(true)
   })
 
   it('shows Benefits Card for Accepted cardStatus', () => {

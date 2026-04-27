@@ -147,6 +147,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
         const slug = vid !== undefined ? profileSlug(name, vid) : undefined;
         const profile = vid !== undefined ? profileMap.get(vid) : undefined;
         const profileStats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
+        const isNew = Array.isArray(profileStats.sessionIds) && profileStats.sessionIds[0] === sessionId && !e.Labels?.includes('Regular');
         return [{
           id: e.ID,
           volunteerName: name,
@@ -165,6 +166,9 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined,
           labels: e.Labels,
+          isNew: isNew || undefined,
+          noPhoto: profileStats.noPhoto === true || undefined,
+          isFirstAiderAvailable: profileStats.isFirstAider === true || undefined,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       });
@@ -682,6 +686,12 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     const spSession = findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam);
     if (!spSession) {
       res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if ((spSession.Date || '').slice(0, 10) < todayStr) {
+      res.status(400).json({ success: false, error: 'Cannot refresh a past session' });
       return;
     }
 

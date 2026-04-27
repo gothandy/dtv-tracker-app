@@ -22,7 +22,7 @@ export const LABEL_ICONS: LabelIcon[] = [
   { icon: 'badges/csr.svg',        alt: 'CSR',            type: 'tag', labelKey: 'CSR' },
   { icon: 'badges/late.svg',       alt: 'Late',           type: 'tag', labelKey: 'Late' },
   { icon: 'brands/eventbrite.svg', alt: 'Eventbrite',     type: 'tag' },
-  { icon: 'badges/regular.svg',    alt: 'Regular',        type: 'tag' },
+  { icon: 'badges/regular.svg',    alt: 'Regular',        type: 'tag', labelKey: 'Regular' },
   { icon: 'badges/new.svg',        alt: 'New',            type: 'tag' },
   { icon: 'badges/nophoto.svg',    alt: 'No Photo',       type: 'tag', color: 'red' },
   { icon: 'status/warning.svg',    alt: 'Profile Warning', type: 'badge', color: 'red' },
