@@ -67,23 +67,23 @@ describe('iconsForEntry — First Aider', () => {
   it('shows On Duty icon when FirstAider label is set', () => {
     const icons = iconsForEntry({ labels: ['FirstAider'] })
     expect(icons.some(i => i.alt === 'First Aider (On Duty)')).toBe(true)
-    expect(icons.some(i => i.alt === 'First Aider (Available)')).toBe(false)
+    expect(icons.some(i => i.alt === 'First Aider (Certified)')).toBe(false)
   })
 
-  it('shows Available icon when isFirstAiderAvailable and no label', () => {
+  it('shows Certified icon when isFirstAiderAvailable and no label', () => {
     const icons = iconsForEntry({ isFirstAiderAvailable: true })
-    const fa = icons.find(i => i.alt === 'First Aider (Available)')
+    const fa = icons.find(i => i.alt === 'First Aider (Certified)')
     expect(fa).toBeDefined()
     expect(fa?.subdued).toBe(true)
   })
 
-  it('On Duty takes precedence over Available', () => {
+  it('On Duty takes precedence over Certified', () => {
     const icons = iconsForEntry({ labels: ['FirstAider'], isFirstAiderAvailable: true })
     expect(icons.some(i => i.alt === 'First Aider (On Duty)')).toBe(true)
-    expect(icons.some(i => i.alt === 'First Aider (Available)')).toBe(false)
+    expect(icons.some(i => i.alt === 'First Aider (Certified)')).toBe(false)
   })
 
-  it('omits both when neither label nor available', () => {
+  it('omits both when neither label nor certified', () => {
     const icons = iconsForEntry({})
     expect(icons.some(i => i.alt.startsWith('First Aider'))).toBe(false)
   })
