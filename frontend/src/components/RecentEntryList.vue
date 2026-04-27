@@ -63,7 +63,7 @@ const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 function mapToEntryItem(e: RecentSignupResponse): EntryItem {
   return {
@@ -74,7 +74,8 @@ function mapToEntryItem(e: RecentSignupResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
-    stats: e.stats,
+    labels: e.labels,
+    isNew: e.isNew,
     eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName,
@@ -83,6 +84,8 @@ function mapToEntryItem(e: RecentSignupResponse): EntryItem {
       cardStatus: e.cardStatus,
       isGroup: e.isGroup ?? false,
       hasProfileWarning: e.hasProfileWarning,
+      noPhoto: e.noPhoto,
+      isFirstAiderAvailable: e.isFirstAiderAvailable,
     },
     session: {
       groupKey: e.groupKey,
@@ -122,6 +125,7 @@ async function onSave(data: EditData) {
       stored.count = data.count
       stored.notes = data.notes
       stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
+      stored.eventbriteAttendeeId = data.eventbriteAttendeeId ?? undefined
     }
     closeModal()
   } catch (e) {

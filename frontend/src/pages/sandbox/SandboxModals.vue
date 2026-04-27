@@ -329,8 +329,8 @@ function onSetHours(hours: number) {
   simulate(`set-hours: ${hours}h`)
 }
 
-function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual }) {
-  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}, statsManual=${JSON.stringify(data.statsManual)}`)
+function onEditSave(data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }) {
+  simulate(`entry-edit save → checkedIn=${data.checkedIn}, hours=${data.hours}, notes="${data.notes}", accompanyingAdultId=${data.accompanyingAdultId}, labels=${JSON.stringify(data.labels)}`)
 }
 
 function onEditDelete() {
@@ -432,8 +432,9 @@ const mockEntry: EntryItem = {
   count: 1,
   notes: 'First time volunteer',
   accompanyingAdultId: 2,
-  stats: { snapshot: { booking: 'New', isChild: true }, manual: { digLead: true } },
-  profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: true, cardStatus: 'Accepted', isGroup: false },
+  labels: ['DigLead'],
+  isNew: true,
+  profile: { name: 'Alice Bowen', slug: 'alice-bowen-42', isMember: true, cardStatus: 'Accepted', isGroup: false, isFirstAiderAvailable: true },
   session: { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' },
 }
 

@@ -128,20 +128,6 @@
         </FormRow>
       </FormLayout>
 
-      <!--Entry Icon Picker -->
-      <h2>Entry Icon Picker</h2>
-      <FormLayout>
-        <FormRow title="None selected" :full-width="true">
-          <EntryIconPicker v-model="tagNotes" />
-        </FormRow>
-        <FormRow title="Some selected" :full-width="true">
-          <EntryIconPicker v-model="tagNotesSelected" />
-        </FormRow>
-        <FormRow title="Disabled" :full-width="true">
-          <EntryIconPicker v-model="tagNotesSelected" disabled />
-        </FormRow>
-      </FormLayout>
-
       <!--Profile Picker -->
       <h2>Profile Picker</h2>
       <FormLayout>
@@ -222,7 +208,7 @@
           <TermPicker v-model="tagValueSelected" :tree="taxonomyTree" :loading="taxonomyLoading" />
         </FormRow>
         <FormRow title="Entry Icon Picker" :full-width="true">
-          <EntryIconPicker v-model="tagNotesSelected" />
+          <EntryIconPicker v-model="tagNotesSelected" @toggle-child="() => {}" />
         </FormRow>
         <FormRow title="Profile Picker" :full-width="true">
           <ProfilePicker :profiles="profiles" @select="onProfileSelect" />
@@ -276,8 +262,8 @@ const dateValue = ref('2026-03-15')
 const tagValue = ref('')
 const tagValueSelected = ref('Sheepskull')
 
-const tagNotes = ref<import('../../../../types/entry-stats').EntryStatsManual>({})
-const tagNotesSelected = ref<import('../../../../types/entry-stats').EntryStatsManual>({ digLead: true, csr: true })
+const tagNotes = ref<string[]>([])
+const tagNotesSelected = ref<string[]>(['DigLead', 'CSR'])
 
 const groups = ref([
   { key: 'sheepskull', name: 'Sheepskull' },

@@ -29,7 +29,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import type { EntryListItemResponse } from '../../../../types/api-responses'
-import { iconsForEntry } from '../../utils/tagIcons'
+import { iconsForEntry } from '../../utils/labelIcons'
 
 const props = defineProps<{
   entry: EntryListItemResponse
@@ -37,7 +37,7 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-const icons = computed(() => iconsForEntry({ isGroup: props.entry.isGroup, isChild: !!props.entry.accompanyingAdultId, stats: props.entry.stats, eventbriteAttendeeId: props.entry.eventbriteAttendeeId }))
+const icons = computed(() => iconsForEntry({ isGroup: props.entry.isGroup, isChild: !!props.entry.accompanyingAdultId, labels: props.entry.labels, eventbriteAttendeeId: props.entry.eventbriteAttendeeId }))
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })

@@ -6,7 +6,6 @@
  */
 
 import type { SessionLimits } from '../backend/services/data-layer';
-import type { EntryStats } from './entry-stats';
 
 export interface SessionStats {
   count: number
@@ -91,7 +90,8 @@ export interface ProfileEntryResponse {
   accompanyingAdultId?: number;
   financialYear: string;
   cancelled?: string;
-  stats?: EntryStats;
+  labels?: string[];
+  isNew?: boolean;
   eventbriteAttendeeId?: string;
 }
 
@@ -170,7 +170,10 @@ export interface EntryResponse {
   accompanyingAdultId?: number;
   cancelled?: string;          // ISO datetime if booking was cancelled
   email?: string;              // only present for operational users (admin/check-in)
-  stats?: EntryStats;          // snapshot; undefined if not yet computed (pre-migration entries)
+  labels?: string[];
+  isNew?: boolean;             // profile.stats.sessionIds[0] === this session
+  noPhoto?: boolean;           // profile.stats.noPhoto (current)
+  isFirstAiderAvailable?: boolean; // profile.stats.isFirstAider
   eventbriteAttendeeId?: string; // present when entry originated from Eventbrite
 }
 
@@ -225,7 +228,7 @@ export interface EntryDetailResponse {
   groupName?: string;
   sessionDisplayName?: string;
   hasPrivacyConsent?: boolean;
-  stats?: EntryStats; // snapshot; undefined if not yet computed (pre-migration entries)
+  labels?: string[];
 }
 
 export interface FYStatsResponse {
@@ -265,7 +268,10 @@ export interface RecentSignupResponse {
   hasProfileWarning?: boolean;
   accompanyingAdultId?: number;
   cancelled?: string;
-  stats?: import('./entry-stats').EntryStats;
+  labels?: string[];
+  isNew?: boolean;
+  noPhoto?: boolean;
+  isFirstAiderAvailable?: boolean;
   eventbriteAttendeeId?: string;
 }
 
@@ -280,6 +286,7 @@ export interface EntryListItemResponse {
   notes?: string;
   checkedIn: boolean;
   hours: number;
+  isNew?: boolean;
   count: number;
   isGroup: boolean;
   isMember?: boolean;
@@ -288,7 +295,7 @@ export interface EntryListItemResponse {
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;
   cancelled?: string;
-  stats?: import('./entry-stats').EntryStats;
+  labels?: string[];
   eventbriteAttendeeId?: string;
 }
 

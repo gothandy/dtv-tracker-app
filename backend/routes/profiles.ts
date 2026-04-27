@@ -30,11 +30,10 @@ import {
   SESSION_LOOKUP,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   ENTRY_CANCELLED,
-  ENTRY_STATS,
+  ENTRY_LABELS,
   ENTRY_EVENTBRITE_ATTENDEE_ID,
   PROFILE_STATS
 } from '../services/field-names';
-import { parseEntryStatsField } from '../services/data-layer';
 import type { ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 
@@ -743,6 +742,22 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       })
       .sort((a, b) => b.hoursRolling - a.hoursRolling);
 
+    // Parse profile stats first so isNew can be derived per entry
+    let profileWarnings: Array<{ text: string; url?: string }> = [];
+    let isMember = false;
+    let cardStatus: string | undefined;
+    let firstSessionId: number | undefined;
+    const storedStats = spProfile[PROFILE_STATS];
+    if (storedStats) {
+      try {
+        const parsed = JSON.parse(storedStats);
+        if (parsed.warnings?.length) profileWarnings = parsed.warnings;
+        isMember = parsed.isMember === true;
+        cardStatus = parsed.cardStatus ?? undefined;
+        firstSessionId = Array.isArray(parsed.sessionIds) ? parsed.sessionIds[0] : undefined;
+      } catch { /* skip malformed */ }
+    }
+
     // Build entry responses sorted by date desc
     const entryResponses: ProfileEntryResponse[] = profileEntries
       .map(e => {
@@ -765,25 +780,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           financialYear: `FY${sessionFY}`,
           cancelled: e[ENTRY_CANCELLED] || undefined,
-          stats: parseEntryStatsField(e[ENTRY_STATS]),
+          labels: e[ENTRY_LABELS],
+          isNew: firstSessionId !== undefined && sessionId === firstSessionId ? true : undefined,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
-
-    // Badges and warnings from stored stats
-    let profileWarnings: Array<{ text: string; url?: string }> = [];
-    let isMember = false;
-    let cardStatus: string | undefined;
-    const storedStats = spProfile[PROFILE_STATS];
-    if (storedStats) {
-      try {
-        const parsed = JSON.parse(storedStats);
-        if (parsed.warnings?.length) profileWarnings = parsed.warnings;
-        isMember = parsed.isMember === true;
-        cardStatus = parsed.cardStatus ?? undefined;
-      } catch { /* skip malformed */ }
-    }
 
     const currentEmails = parseEmails(spProfile.Email);
 

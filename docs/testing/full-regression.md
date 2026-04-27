@@ -139,10 +139,12 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H10. Edit entry (live save)
 - [ ] Entry detail → change Checked In, Count, Hours, Notes
-- [ ] `PATCH /api/entries/:id` — `{ checkedIn?, count?, hours?, notes? }`
+- [ ] `PATCH /api/entries/:id` — `{ checkedIn?, count?, hours?, notes?, labels? }`
 - [ ] Green flash on success, red on error
 - [ ] Notes debounced 500ms
-- [ ] Tag buttons toggle hashtags in notes, trigger auto-save
+- [ ] Label picker buttons toggle label strings in `Labels` field (CSR, Late, DigLead, FirstAider)
+- [ ] FirstAider button only enabled when profile has a valid first aid cert (`profile.stats.isFirstAider`)
+- [ ] Icon updates in entry card immediately after save
 
 ### H11. Delete entry
 - [ ] Entry detail → red Delete button → confirmation
@@ -312,6 +314,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] After refresh, a profile with no future bookings does **not** have `"No Consent"` (past sessions only)
 - [ ] After refresh, a clean profile (no duplicates, no unassigned child entries, consent present) has `warnings: []`
 - [ ] Fixing the condition and re-running refresh removes the warning
+
+### H27c. Entry labels
+- [ ] Session detail → edit entry modal → label picker shows CSR, Late, DigLead buttons always; FirstAider only when profile has a valid FA cert
+- [ ] Toggle CSR → `PATCH /api/entries/:id` sends `labels: ['CSR']`; CSR icon appears on entry card
+- [ ] Toggle CSR off → `PATCH` sends `labels: []`; CSR icon removed
+- [ ] Regular label set automatically on entry when session refresh adds a regular volunteer to a **future** session; Regular icon visible on their entry card
+- [ ] Session refresh on a **past** session does **not** set Regular label
+- [ ] New badge shown for a volunteer whose first-ever session ID matches the current session (from `profile.stats.sessionIds[0]`)
+- [ ] NoPhoto badge shown for a volunteer without Accepted Photo Consent (live from `profile.stats.noPhoto`)
 
 ### H27. Clear cache
 - [ ] Dashboard → Refresh button

@@ -28,7 +28,7 @@
           :title-to="profilePath('bob-carter-7')"
           :checked-in="true"
           :hours="0"
-          :icons="iconsForEntry({ isMember: true, cardStatus: 'Accepted', stats: { snapshot: { booking: 'New' } } })"
+          :icons="iconsForEntry({ isMember: true, cardStatus: 'Accepted', isNew: true })"
           :allow-edit="true"
           :working="working2"
           @update="(c, h) => onUpdate(2, c, h)"
@@ -43,7 +43,7 @@
           :title-to="profilePath('carol-davies-18')"
           :checked-in="true"
           :hours="3.5"
-          :icons="iconsForEntry({ isMember: true, cardStatus: 'Invited', stats: { snapshot: { booking: 'Regular' }, manual: { digLead: true } } })"
+          :icons="iconsForEntry({ isMember: true, cardStatus: 'Invited', labels: ['Regular', 'DigLead'] })"
           :allow-edit="true"
           :working="working3"
           @update="(c, h) => onUpdate(3, c, h)"
@@ -58,7 +58,7 @@
           :title-to="profilePath('alice-bowen-42')"
           :checked-in="true"
           :hours="2"
-          :icons="iconsForEntry({ isMember: false, stats: { snapshot: { booking: 'New' } } })"
+          :icons="iconsForEntry({ isMember: false, isNew: true })"
         />
       </div>
 
@@ -92,7 +92,7 @@
           :title-to="sessionPath('dhsc', '2026-04-19')"
           :checked-in="true"
           :hours="4"
-          :icons="iconsForEntry({ stats: { snapshot: { booking: 'Regular' } } })"
+          :icons="iconsForEntry({ labels: ['Regular'] })"
         />
       </div>
 
@@ -114,7 +114,7 @@ import SandboxBackLink from './SandboxBackLink.vue'
 import EntryCard from '../../components/EntryCard.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import { profilePath, sessionPath } from '../../router/index'
-import { iconsForEntry } from '../../utils/tagIcons'
+import { iconsForEntry } from '../../utils/labelIcons'
 
 usePageTitle('Sandbox')
 

@@ -18,7 +18,6 @@ import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear, toMatchName } from './data-layer';
 import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
-import { computeAndSaveEntryStats } from './entry-stats';
 
 export interface ProfileStatsRefreshResult {
   total: number;
@@ -129,28 +128,18 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   let isMember = false;
   let cardStatus: string | null = null;
   let isFirstAider = false;
+  let noPhoto = true;
   for (const r of profileRecordsRaw) {
     if (r.Type === 'Charity Membership' && r.Status === 'Accepted') isMember = true;
     if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
     if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
+    if (r.Type === 'Photo Consent' && r.Status === 'Accepted') noPhoto = false;
   }
 
   sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
 
-  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider, warnings });
+  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider, noPhoto, warnings });
   sharePointClient.clearCacheKey('profiles');
-
-  // Propagate to entry stats for this profile's future sessions (fire-and-forget)
-  for (const e of profileEntries) {
-    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-    if (sid === undefined) continue;
-    const sessionDate = sessionDateMap.get(sid);
-    if (sessionDate && sessionDate >= today) {
-      computeAndSaveEntryStats(e.ID).catch(err =>
-        console.error(`[Stats] Failed entry stats propagation for entry ${e.ID}:`, err)
-      );
-    }
-  }
 
   console.log(`[Stats] Profile ${profileId} targeted stats update in ${Date.now() - start}ms`);
 }
@@ -251,6 +240,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     if (r.Type === 'Privacy Consent' && r.Status === 'Accepted') consentedPrivacyIds.add(pid);
     if (r.Type === 'Photo Consent' && r.Status === 'Accepted') consentedPhotoIds.add(pid);
   }
+  const noPhotoIds = new Set(profilesRaw.filter(p => !consentedPhotoIds.has(p.ID)).map(p => p.ID));
 
   // No Consent: future booking but missing Privacy or Photo consent
   const futureBookingIds = new Set<number>();
@@ -316,6 +306,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
           sessionIds: (profileSessionIds.get(spProfile.ID) || []).sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || '')),
           linkedProfileIds: profileLinkedIds.get(spProfile.ID) || [],
           isFirstAider: firstAiderIds.has(spProfile.ID),
+          noPhoto: noPhotoIds.has(spProfile.ID),
           warnings
         };
 

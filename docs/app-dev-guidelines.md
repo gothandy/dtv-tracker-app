@@ -260,19 +260,18 @@ These labels are useful shorthand, but the main goal is practical clarity, not p
 
 The app has a three-tier stats pipeline. **All heavy data computation belongs on the server, in the right tier. Components are dumb renderers.**
 
-### The three tiers
+### The two tiers
 
 ```
-ProfileStats (SharePoint field)
-  → EntryStats  (SharePoint field)
-    → SessionStats (SharePoint field)
+ProfileStats (SharePoint field on Profiles)
+  → SessionStats (SharePoint field on Sessions)
 ```
 
-Each tier is computed server-side and stored as JSON in a SharePoint field. The nightly chain runs them in dependency order: profile first, then entries, then sessions. Individual writes trigger targeted refreshes in the same order.
+Each tier is computed server-side and stored as JSON in a SharePoint field. The nightly chain runs them in dependency order: profile first, then sessions. Individual writes trigger targeted refreshes in the same order.
 
-- **ProfileStats** — volunteer state: session IDs, regular group IDs, member/card status, hours
-- **EntryStats** — snapshot of volunteer state at session time (frozen once the session date passes). Two sub-objects: `snapshot` (computed from profile/records) and `manual` (operational Notes tags: `#CSR`, `#Late`, etc.)
+- **ProfileStats** — volunteer live state: session IDs, member/card/firstAider status, hours, noPhoto. Used to derive per-entry badges (New, NoPhoto, FirstAider Available) at display time.
 - **SessionStats** — aggregate counts per session: `count`, `hours`, `new`, `child`, `regular`, `cancelledRegular`, `eventbrite`, `media`
+- Per-entry operational tags (`Regular`, `CSR`, `Late`, `FirstAider`, `DigLead`) are stored in the `Labels` multi-select field on each entry — not derived at display time.
 
 ### Parsing at the API boundary — `parseSessionStats()`
 

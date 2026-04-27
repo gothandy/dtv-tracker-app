@@ -28,12 +28,10 @@ import {
   SESSION_STATS,
   PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS,
   ENTRY_CANCELLED,
-  ENTRY_STATS,
+  ENTRY_LABELS,
   ENTRY_EVENTBRITE_ATTENDEE_ID,
   ACCOMPANYING_ADULT_LOOKUP
 } from '../services/field-names';
-import { computeAndSaveEntryStats, runEntryStatsRefresh } from '../services/entry-stats';
-import { parseEntryStatsField } from '../services/data-layer';
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { renderEmail } from '../services/email-renderer';
@@ -54,14 +52,23 @@ const router: Router = express.Router();
 // existingMedia is extracted from the cached session Stats before the write clears the cache.
 async function computeAndSaveSessionStats(sessionId: number, existingMedia: number = 0): Promise<void> {
   const start = Date.now();
-  const sessionEntries = await entriesRepository.getBySessionIds([sessionId]);
-  const statsMap = calculateSessionStats(sessionEntries);
+  const [sessionEntries, profilesRaw] = await Promise.all([
+    entriesRepository.getBySessionIds([sessionId]),
+    profilesRepository.getAll()
+  ]);
+
+  const profileFirstSessionMap = new Map<number, number>();
+  for (const p of profilesRaw) {
+    try {
+      const ps = JSON.parse(p.Stats || '{}');
+      if (Array.isArray(ps.sessionIds) && ps.sessionIds.length > 0)
+        profileFirstSessionMap.set(p.ID, ps.sessionIds[0]);
+    } catch { /* malformed */ }
+  }
+
+  const statsMap = calculateSessionStats(sessionEntries, profileFirstSessionMap);
   const entryStats = statsMap.get(String(sessionId));
-  const cancelledRegular = sessionEntries.filter(e => {
-    if (!e[ENTRY_CANCELLED]) return false;
-    const es = parseEntryStatsField(e[ENTRY_STATS]);
-    return es?.snapshot?.booking === 'Regular';
-  }).length;
+  const cancelledRegular = sessionEntries.filter(e => e[ENTRY_CANCELLED] && e.Labels?.includes('Regular')).length;
   await sessionsRepository.updateStats(sessionId, {
     count: entryStats?.registrations || 0,
     hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
@@ -123,7 +130,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
     }
 
     const recent: RecentSignupResponse[] = entries
-      .filter(e => e[ENTRY_CANCELLED] || parseEntryStatsField(e[ENTRY_STATS])?.snapshot?.booking !== 'Regular')
+      .filter(e => e[ENTRY_CANCELLED] || !e.Labels?.includes('Regular'))
       .sort((a, b) => sortKey(b) - sortKey(a))
       .slice(0, 50)
       .flatMap(e => {
@@ -157,7 +164,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           hasProfileWarning: profileStats.warnings?.length ? true : undefined,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined,
-          stats: parseEntryStatsField(e[ENTRY_STATS]),
+          labels: e.Labels,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       });
@@ -255,7 +262,7 @@ router.get('/entries', async (req: Request, res: Response) => {
           hasAccompanyingAdult: hasAdult,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
           cancelled: e.Cancelled || undefined,
-          stats: parseEntryStatsField(e[ENTRY_STATS]),
+          labels: e.Labels,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       })
@@ -369,7 +376,7 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       groupName: group.displayName,
       sessionDisplayName: spSession.Name || spSession.Title,
       hasPrivacyConsent,
-      stats: parseEntryStatsField(spEntry[ENTRY_STATS])
+      labels: spEntry.Labels
     };
 
     res.json({ success: true, data } as ApiResponse<EntryDetailResponse>);
@@ -387,7 +394,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    const { checkedIn, count, hours, notes, accompanyingAdultId, cancelled, statsManual } = req.body;
+    const { checkedIn, count, hours, notes, accompanyingAdultId, cancelled, labels, eventbriteAttendeeId } = req.body;
     const fields: Record<string, any> = {};
 
     if (typeof cancelled === 'boolean') {
@@ -441,6 +448,9 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     if (typeof notes === 'string') {
       fields.Notes = notes;
     }
+    if (eventbriteAttendeeId !== undefined) {
+      fields[ENTRY_EVENTBRITE_ATTENDEE_ID] = typeof eventbriteAttendeeId === 'string' && eventbriteAttendeeId.trim() ? eventbriteAttendeeId.trim() : null;
+    }
     if (accompanyingAdultId !== undefined) {
       if (accompanyingAdultId !== null) {
         const adultIdNum = parseInt(String(accompanyingAdultId), 10);
@@ -454,9 +464,8 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       }
     }
 
-    const hasStatsManual = statsManual && typeof statsManual === 'object';
-    const hasAccompanyingAdult = accompanyingAdultId !== undefined;
-    if (Object.keys(fields).length === 0 && !hasStatsManual) {
+    const hasLabels = Array.isArray(labels);
+    if (Object.keys(fields).length === 0 && !hasLabels) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
@@ -476,22 +485,15 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       await entriesRepository.updateFields(entryId, fields);
     }
 
-    // Synchronously write Stats when manual tags or isChild (from accompanyingAdultId) change
-    if (hasStatsManual || hasAccompanyingAdult) {
-      const existingStats = spEntry ? parseEntryStatsField(spEntry[ENTRY_STATS]) : undefined;
-      const mergedManual = hasStatsManual ? statsManual : existingStats?.manual;
-      const mergedSnapshot = hasAccompanyingAdult
-        ? { ...existingStats?.snapshot, isChild: accompanyingAdultId !== null }
-        : existingStats?.snapshot;
-      await entriesRepository.updateStats(entryId, { snapshot: mergedSnapshot, manual: mergedManual });
+    if (hasLabels) {
+      await entriesRepository.updateLabels(entryId, labels);
     }
 
-    const statsChain = sessionId !== undefined
-      ? computeAndSaveEntryStats(entryId).then(() => computeAndSaveSessionStats(sessionId, existingMedia))
-      : computeAndSaveEntryStats(entryId);
-    statsChain.catch(err =>
-      console.error(`[Stats] Failed stats chain for entry ${entryId}:`, err)
-    );
+    if (sessionId !== undefined) {
+      computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
+        console.error(`[Stats] Failed session stats for entry ${entryId}:`, err)
+      );
+    }
     // Hours changes and cancellations affect profile stats
     if (profileId !== undefined && (fields.Hours !== undefined || fields[ENTRY_CANCELLED] !== undefined)) {
       computeAndSaveProfileStats(profileId).catch(err =>
@@ -639,9 +641,9 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
 
     const id = await entriesRepository.create(fields);
 
-    computeAndSaveEntryStats(id)
-      .then(() => computeAndSaveSessionStats(spSession.ID, existingMedia))
-      .catch(err => console.error(`[Stats] Failed stats chain for entry ${id}:`, err));
+    computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+      console.error(`[Stats] Failed session stats for entry ${id}:`, err)
+    );
     computeAndSaveProfileStats(volunteerId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${volunteerId}:`, err)
     );
@@ -694,8 +696,8 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     let addedFromEventbrite = 0;
     let newProfiles = 0;
     let updatedRecords = 0;
-    let noPhotoTagged = 0;
-    let firstAiderTagged = 0;
+
+    const isFutureSession = new Date(spSession.Date) >= new Date(new Date().toISOString().slice(0, 10));
 
     // Step 1: Add missing regulars; update accompanying adult on existing entries if needed
     const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);
@@ -709,6 +711,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
         };
         const regularAdultId = safeParseLookupId(regular.AccompanyingAdultLookupId);
         if (regularAdultId !== undefined) entryFields[ACCOMPANYING_ADULT_LOOKUP] = String(regularAdultId);
+        if (isFutureSession) entryFields[ENTRY_LABELS] = ['Regular'];
         await entriesRepository.create(entryFields);
         existingVolunteerIds.add(vid);
         addedRegulars++;
@@ -719,6 +722,9 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
           const regularAdultId = safeParseLookupId(regular.AccompanyingAdultLookupId);
           if (regularAdultId !== undefined && safeParseLookupId(existingEntry.AccompanyingAdultLookupId) === undefined) {
             patchFields[ACCOMPANYING_ADULT_LOOKUP] = String(regularAdultId);
+          }
+          if (isFutureSession && !existingEntry.Labels?.includes('Regular')) {
+            patchFields[ENTRY_LABELS] = [...(existingEntry.Labels || []), 'Regular'];
           }
           if (Object.keys(patchFields).length > 0) {
             await entriesRepository.updateFields(existingEntry.ID, patchFields);
@@ -745,16 +751,6 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       updatedRecords += ebResult.newRecords + ebResult.updatedRecords;
     }
 
-    // Step 3: Tag #NoPhoto on entries where volunteer lacks photo consent
-    // Build set of profile IDs with accepted Photo Consent
-    const photoConsentedIds = new Set<number>();
-    for (const r of rawRecords) {
-      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
-      if (pid !== undefined && r.Type === 'Photo Consent' && r.Status === 'Accepted') {
-        photoConsentedIds.add(pid);
-      }
-    }
-
     // Re-fetch entries since steps 1+2 may have added new ones; rebuild volunteer ID set for stats
     const freshEntries = await entriesRepository.getAll();
     const freshValidEntries = validateArray(freshEntries, validateEntry, 'Entry');
@@ -764,45 +760,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       if (vid !== undefined) existingVolunteerIds.add(vid);
     }
 
-    for (const entry of sessionEntries) {
-      const vid = safeParseLookupId(entry[PROFILE_LOOKUP]);
-      if (vid === undefined) continue;
-      // Skip groups
-      const profile = profiles.find(p => p.ID === vid);
-      if (profile?.IsGroup) continue;
-
-      const notes = entry.Notes || '';
-      if (!photoConsentedIds.has(vid) && !/\#NoPhoto\b/i.test(notes)) {
-        const updatedNotes = notes ? `${notes} #NoPhoto` : '#NoPhoto';
-        await entriesRepository.updateFields(entry.ID, { Notes: updatedNotes });
-        noPhotoTagged++;
-      }
-    }
-
-    // Step 4: Tag #FirstAider on entries where volunteer has a valid First Aid Certificate
-    // (Type = "First Aid Certificate", Status = "Expires", expiry date is after the session date)
-    const sessionDate = new Date(spSession.Date);
-    const firstAiderIds = new Set<number>();
-    for (const r of rawRecords) {
-      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
-      if (pid !== undefined && r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date) {
-        if (new Date(r.Date) > sessionDate) firstAiderIds.add(pid);
-      }
-    }
-
-    for (const entry of sessionEntries) {
-      const vid = safeParseLookupId(entry[PROFILE_LOOKUP]);
-      if (vid === undefined) continue;
-      if (!firstAiderIds.has(vid)) continue;
-      const notes = entry.Notes || '';
-      if (!/\#FirstAider\b/i.test(notes)) {
-        const updatedNotes = notes ? `${notes} #FirstAider` : '#FirstAider';
-        await entriesRepository.updateFields(entry.ID, { Notes: updatedNotes });
-        firstAiderTagged++;
-      }
-    }
-
-    // Update stats in dependency order: Profile → Entry → Session
+    // Update stats in dependency order: Profile → Session
     let existingMedia = 0;
     try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
 
@@ -812,20 +770,14 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       )
     ));
 
-    await Promise.all(sessionEntries.map(e =>
-      computeAndSaveEntryStats(e.ID).catch(err =>
-        console.error(`[Stats] Failed entry stats for entry ${e.ID}:`, err)
-      )
-    ));
-
     await computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
       console.error(`[Stats] Failed session stats after refresh:`, err)
     );
 
-    console.log(`[Refresh] Done: ${addedRegulars} regulars added, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records, ${noPhotoTagged} #NoPhoto, ${firstAiderTagged} #FirstAider`);
+    console.log(`[Refresh] Done: ${addedRegulars} regulars added, ${addedFromEventbrite} eventbrite, ${newProfiles} new profiles, ${updatedRecords} records`);
     res.json({
       success: true,
-      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords, noPhotoTagged, firstAiderTagged }
+      data: { addedRegulars, addedFromEventbrite, newProfiles, updatedRecords }
     });
   } catch (error: any) {
     console.error('Error refreshing session:', error);
@@ -834,18 +786,6 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       error: 'Failed to refresh session',
       message: error.message
     });
-  }
-});
-
-// Recomputes and saves Stats for a single session — used after bulk operations
-// (e.g. set default hours) where multiple entry writes race against each other.
-router.post('/entries/refresh-stats', async (req: Request, res: Response) => {
-  try {
-    const result = await runEntryStatsRefresh();
-    res.json({ success: true, data: result });
-  } catch (error) {
-    console.error('Error refreshing entry stats:', error);
-    res.status(500).json({ success: false, error: 'Failed to refresh entry stats' });
   }
 });
 

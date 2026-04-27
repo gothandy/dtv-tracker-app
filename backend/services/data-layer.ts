@@ -25,9 +25,7 @@ import {
   SESSION_LOOKUP, SESSION_DISPLAY,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   SESSION_NOTES, SESSION_LIMITS,
-  ENTRY_STATS
 } from './field-names';
-import type { EntryStats } from '../../types/entry-stats';
 import type { SessionStats } from '../../types/api-responses';
 
 /** Parses the session Stats JSON field into a typed SessionStats object. */
@@ -46,20 +44,6 @@ export function parseSessionStats(raw: string | undefined | null): SessionStats 
     };
   } catch {
     return { count: 0, hours: 0 };
-  }
-}
-
-/** Parse Entry Stats field — strips SharePoint rich-text HTML wrapper if present (legacy entries written before field was set to plain text) */
-export function parseEntryStatsField(raw: string | undefined | null): EntryStats | undefined {
-  if (!raw) return undefined;
-  try {
-    const cleaned = raw
-      .replace(/<[^>]+>/g, '')
-      .replace(/&quot;/g, '"').replace(/&#58;/g, ':').replace(/&#123;/g, '{').replace(/&#125;/g, '}').replace(/&amp;/g, '&')
-      .trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return undefined;
   }
 }
 
@@ -256,14 +240,18 @@ interface EntryAggregateStats {
 }
 
 /**
- * Calculates statistics for sessions based on entries
+ * Calculates statistics for sessions based on entries.
+ * profileFirstSessionMap: profileId → first sessionId (from profile.stats.sessionIds[0]) — used for new count.
  * Returns a map of sessionId (as string) -> stats
  */
-export function calculateSessionStats(entries: SharePointEntry[]): Map<string, EntryAggregateStats> {
+export function calculateSessionStats(
+  entries: SharePointEntry[],
+  profileFirstSessionMap: Map<number, number> = new Map()
+): Map<string, EntryAggregateStats> {
   const statsMap = new Map<string, EntryAggregateStats>();
 
   entries.forEach(entry => {
-    if (entry.Cancelled) return; // cancelled bookings excluded from all stats
+    if (entry.Cancelled) return;
     const sessionId = entry[SESSION_LOOKUP];
     if (!sessionId) return;
 
@@ -281,14 +269,18 @@ export function calculateSessionStats(entries: SharePointEntry[]): Map<string, E
     const stats = statsMap.get(sessionId)!;
     stats.registrations++;
     stats.hours += parseFloat(String(entry.Hours)) || 0;
-    const entryStats = parseEntryStatsField(entry[ENTRY_STATS]);
 
-    if (entryStats) {
-      if (entryStats.snapshot?.booking === 'New')      stats.newCount++;
-      if (entryStats.snapshot?.isChild)                stats.childCount++;
-      if (entryStats.snapshot?.booking === 'Regular')  stats.regularCount++;
-      if (entryStats.manual?.eventbrite)               stats.eventbriteCount++;
-    }
+    const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
+    const sessionIdNum = safeParseLookupId(sessionId);
+
+    if (profileId !== undefined && sessionIdNum !== undefined && profileFirstSessionMap.get(profileId) === sessionIdNum)
+      stats.newCount++;
+    if (entry.AccompanyingAdultLookupId)
+      stats.childCount++;
+    if (entry.Labels?.includes('Regular'))
+      stats.regularCount++;
+    if (entry.EventbriteAttendeeID)
+      stats.eventbriteCount++;
   });
 
   return statsMap;

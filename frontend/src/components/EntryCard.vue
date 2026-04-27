@@ -66,14 +66,14 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
-import type { TagIcon } from '../utils/tagIcons'
+import type { LabelIcon } from '../utils/labelIcons'
 
 const props = defineProps<{
   title: string
   titleTo?: RouteLocationRaw
   checkedIn: boolean
   hours: number
-  icons?: TagIcon[]
+  icons?: LabelIcon[]
   allowEdit?: boolean
   allowCancel?: boolean
   working?: boolean
