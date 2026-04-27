@@ -87,47 +87,24 @@ Fall back to zeros if the field is empty (e.g. before first refresh run).
 | **Count** | Count | Number | No | 1 | For group registrations |
 | **Checked** | Checked | Yes/No | No | No | Check-in status for the volunteer |
 | **Hours** | Hours | Number | No | - | Hours worked at this session |
-| **Notes** | Notes | Single line of text | No | - | Manual operational tags: #Child (also sets AccompanyingAdult), #CSR, #Late, #DigLead (role taken), #FirstAider (role taken); legacy tags (#Eventbrite, #New, #Regular, #NoPhoto etc.) remain on pre-migration entries |
-| **Stats** | Stats | Multiple lines of text | No | - | Snapshot JSON (`EntryStats`); frozen once session date passes and field is non-empty — see schema below |
+| **Notes** | Notes | Single line of text | No | - | Free-form field; historic #tags (#Regular, #CSR, #Late, #DigLead, #FirstAider, #NoPhoto, #Eventbrite, #New etc.) from pre-Labels entries — app no longer writes to this field |
+| **Stats** | Stats | Multiple lines of text | No | - | **Retired** — legacy snapshot JSON; no longer written by the app; will be deleted from SharePoint after the Labels migration is complete |
+| **Labels** | Labels | Multi-select choice | No | - | Operational tags set per-entry: `Regular` \| `CSR` \| `Late` \| `FirstAider` \| `DigLead` |
 | **BookedBy** | BookedBy | Single line of text | No | - | Order contact email from Eventbrite (whoever made the booking); historic audit trail |
 | **EventbriteAttendeeID** | EventbriteAttendeeID | Single line of text | No | - | Eventbrite attendee ID; presence means this entry originated via Eventbrite and is the source of truth for the Eventbrite icon |
 | **AccompanyingAdult** | AccompanyingAdult | Lookup (Profiles) | No | - | For child entries: the adult responsible on the day; derived from same Eventbrite order |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
 
-### Pre-computed Stats (stored in Stats field)
+### Entry Labels
 
-The `Stats` JSON field is a snapshot of the entry's computed state at the time of the last stats refresh. It is frozen (never recomputed) once the session date has passed and the field is already populated — preserving a record of the volunteer's status at the time of that session.
+`Labels` is a SharePoint multi-select choice field. Valid values: `Regular` | `CSR` | `Late` | `FirstAider` | `DigLead`.
 
-```json
-{
-  "booking": "New | Regular | Repeat",
-  "isGroup": false,
-  "isChild": false,
-  "isMember": false,
-  "hasDiscountCard": false,
-  "isDuplicate": false,
-  "noPhoto": false,
-  "noConsent": false,
-  "isDigLead": false,
-  "isFirstAider": false
-}
-```
+- `Regular` — set automatically by session refresh when a regular volunteer's entry is created/confirmed for a future session
+- `CSR`, `Late`, `DigLead`, `FirstAider` — set manually via the entry edit modal on the day
+- `FirstAider` specifically means "took on the first aider role on the day"; the qualified/available state comes from `profile.stats.isFirstAider`
 
-| Field | Meaning |
-|-------|---------|
-| `booking` | `"New"` = first session ever; `"Regular"` = on the regulars list for this group; `"Repeat"` = attended before but not a regular |
-| `isGroup` | Profile is a group account (not an individual) |
-| `isChild` | Child entry (AccompanyingAdult is set, or #Child in Notes) |
-| `isMember` | Has an Accepted Charity Membership record at the time of the session |
-| `hasDiscountCard` | Has an Accepted or Invited Discount Card record |
-| `isDuplicate` | Profile shares an email with another profile (`linkedProfileIds` non-empty) |
-| `noPhoto` | No Accepted Photo Consent record |
-| `noConsent` | No Accepted Privacy Consent record |
-| `isDigLead` | Qualified/available for dig lead role |
-| `isFirstAider` | Holds a valid (non-expired) first aid certificate |
-
-**Freeze rule**: stats are recomputed freely while `session.Date >= today`. Once `session.Date < today` AND the field is non-empty, the field is frozen and no further updates are written. Pre-migration entries (Stats field empty) fall back to Notes hashtag parsing everywhere.
+The `Stats` field and Notes #tags are retained as read-only historic data. The `Stats` field will be deleted from SharePoint once the Labels migration is confirmed complete.
 
 ### Lookup Fields
 - **Session** / **SessionLookupId**: Lookup to Sessions list (indexed for performance)
@@ -162,7 +139,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 | **MatchName** | MatchName | Single line of text | No | - | Lowercase name for Eventbrite matching |
 | **User** | User | Single line of text | No | - | DTV Entra ID username (e.g. andrew.davies@dtv.org.uk) |
 | **IsGroup** | IsGroup | Yes/No | No | No | Flag indicating if this is a group profile |
-| **Stats** | Stats | Multiple lines of text | No | - | Pre-computed JSON: `{ "hoursByFY": { "FY2025": N }, "sessionsByFY": { "FY2025": N }, "isMember": bool, "cardStatus": "Accepted"\|"Invited"\|null }` |
+| **Stats** | Stats | Multiple lines of text | No | - | Pre-computed JSON: `{ "hoursByFY": { "FY2025": N }, "sessionsByFY": { "FY2025": N }, "sessionIds": [N, ...], "isMember": bool, "cardStatus": "Accepted"\|"Invited"\|null, "isFirstAider": bool, "noPhoto": bool }` |
 | **Modified** | Modified | Date and Time | Auto | - | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | - | Creation timestamp (read-only) |
 
@@ -170,8 +147,11 @@ This is a **many-to-many junction table** that creates the relationship between:
 The `Stats` JSON field caches values derived from the Entries and Records lists so that listing and aggregate views don't need to fetch all entries on every request:
 - **hoursByFY**: dictionary of hours per financial year (e.g. `{ "FY2025": 120.0, "FY2026": 45.5 }`)
 - **sessionsByFY**: dictionary of session count per financial year
+- **sessionIds**: ordered list of session IDs the volunteer has attended; `sessionIds[0]` is their first-ever session (used to derive `isNew`)
 - **isMember**: true if the profile has a Charity Membership record with Status "Accepted"
 - **cardStatus**: discount card status — "Accepted", "Invited", or null
+- **isFirstAider**: true if the profile holds a valid (non-expired) First Aid Certificate record
+- **noPhoto**: true if the profile has no Accepted Photo Consent record (always reflects current state — GDPR)
 
 `thisFY` and `lastFY` totals are derived at request time from the dictionaries using `calculateCurrentFY()`. This avoids stale data at financial year boundaries.
 

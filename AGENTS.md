@@ -135,7 +135,7 @@ Read [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) before designing a
 
 ### Stats Pattern
 
-All data computation is server-side in the stats pipeline (ProfileStats → EntryStats → SessionStats). The backend parses JSON once via `parseSessionStats()`. The frontend helper `sessionDisplayStats(stats, regularsCount?, limits?)` in `frontend/src/utils/sessionStats.ts` does all lightweight derived maths. Components call it once and render `display.*` — never do stats arithmetic in a component or template.
+All data computation is server-side in the stats pipeline (ProfileStats → SessionStats). The backend parses JSON once via `parseSessionStats()`. The frontend helper `sessionDisplayStats(stats, regularsCount?, limits?)` in `frontend/src/utils/sessionStats.ts` does all lightweight derived maths. Components call it once and render `display.*` — never do stats arithmetic in a component or template.
 
 ### Comments and Documentation Philosophy
 
@@ -260,7 +260,7 @@ dtv-tracker-app/
 │       │   └── useViewer.ts        # Single UI auth composable
 │       ├── stores/                 # Pinia stores (sessionList, sessionDetail, etc.) + colocated *.test.ts
 │       ├── types/                  # Frontend domain types
-│       ├── utils/                  # tagIcons, breakpoints, fetchSessionAdults, sessionStats
+│       ├── utils/                  # labelIcons, breakpoints, fetchSessionAdults, sessionStats
 │       ├── components/             # Shared components
 │       ├── layouts/DefaultLayout.vue
 │       └── pages/                  # Page components

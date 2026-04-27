@@ -167,6 +167,7 @@
             :profiles="profiles"
             :working-id="workingId"
             :refresh-working="refreshWorking"
+            :is-past-session="isPastSession"
             @refresh-request="onRefreshRequest"
             @update="onEntryUpdate"
             @set-hours="onSetHours"
@@ -318,6 +319,7 @@ const eventbriteUrl = computed<string | null>(() => {
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const refreshWorking = ref(false)
+const isPastSession = computed(() => !!store.session && store.session.date < new Date().toISOString().slice(0, 10))
 const bookWorking = ref(false)
 const bookError = ref<string | undefined>()
 const cancelWorking = ref(false)
@@ -337,7 +339,8 @@ function mapEntry(e: EntryResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
-    stats: e.stats,
+    labels: e.labels,
+    isNew: e.isNew,
     eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',
@@ -346,6 +349,8 @@ function mapEntry(e: EntryResponse): EntryItem {
       cardStatus: e.cardStatus,
       isGroup: e.isGroup,
       hasProfileWarning: e.profileWarning,
+      noPhoto: e.noPhoto,
+      isFirstAiderAvailable: e.isFirstAiderAvailable,
     },
     session: {
       groupKey: route.params.groupKey as string,
@@ -488,7 +493,7 @@ async function onAddEntry(payload: { profileId: number } | { newName: string; ne
   }
 }
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 async function onEditEntry(id: number, data: EditData | null) {
   try {
@@ -512,8 +517,9 @@ async function onEditEntry(id: number, data: EditData | null) {
         stored.count = data.count
         stored.notes = data.notes
         stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
-        stored.stats = { ...stored.stats, manual: data.statsManual }
+        stored.labels = data.labels
         stored.cancelled = data.cancelled ? (stored.cancelled || new Date().toISOString()) : undefined
+        stored.eventbriteAttendeeId = data.eventbriteAttendeeId ?? undefined
       }
     }
     entryListRef.value?.onEditSuccess()

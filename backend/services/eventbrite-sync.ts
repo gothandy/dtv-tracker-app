@@ -241,7 +241,7 @@ export interface SyncAttendeesForSessionResult {
  *
  * No Notes tags are written — the presence of EventbriteAttendeeID is the source
  * of truth for the Eventbrite icon; child/new/etc. are handled by live fields and
- * entry-stats snapshot computation.
+ * profile.stats.
  */
 export async function syncAttendeesForSession(
   sessionId: number,

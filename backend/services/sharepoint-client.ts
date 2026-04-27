@@ -29,13 +29,18 @@ function localDateToUtcIso(dateStr: string): string {
   return DateTime.fromISO(dateStr, { zone: SHAREPOINT_TIMEZONE }).toUTC().toISO()!;
 }
 
-/** Apply date-only field conversions to a fields object before writing */
+/** Apply date-only field conversions and multi-value type annotations before writing */
 function applyDateFields(fields: Record<string, any>, dateOnlyFields: string[]): Record<string, any> {
-  if (dateOnlyFields.length === 0) return fields;
   const result = { ...fields };
   for (const field of dateOnlyFields) {
     if (typeof result[field] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(result[field])) {
       result[field] = localDateToUtcIso(result[field]);
+    }
+  }
+  // Graph API requires @odata.type annotation for multi-value (array) fields
+  for (const field of Object.keys(result)) {
+    if (Array.isArray(result[field])) {
+      result[`${field}@odata.type`] = 'Collection(Edm.String)';
     }
   }
   return result;

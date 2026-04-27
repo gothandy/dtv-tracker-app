@@ -27,7 +27,7 @@
         :title-to="allowEdit ? undefined : sessionPath(e.session.groupKey, e.session.date)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats, eventbriteAttendeeId: e.eventbriteAttendeeId }).filter(i => i.type !== 'badge')"
+        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, labels: e.labels, isNew: e.isNew, eventbriteAttendeeId: e.eventbriteAttendeeId }).filter(i => i.type !== 'badge')"
         :allow-edit="allowEdit ?? false"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"
@@ -60,10 +60,10 @@ import EntryList from '../EntryList.vue'
 import EntryCard from '../EntryCard.vue'
 import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
 import { sessionPath } from '../../router/index'
-import { iconsForEntry } from '../../utils/tagIcons'
+import { iconsForEntry } from '../../utils/labelIcons'
 import { fetchSessionAdults } from '../../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 const props = defineProps<{
   entries: EntryItem[]

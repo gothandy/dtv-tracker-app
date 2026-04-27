@@ -21,49 +21,7 @@
       <AppButton v-if="sessionClick" label="View Session" icon="register" @click="sessionClick!()" />
     </div>
 
-    <div v-if="entryIcons.length" class="eem-icon-summary">
-      <div v-for="icon in entryIcons" :key="icon.alt" class="eem-icon-summary-item" :class="{ 'eem-icon-summary-item--subdued': icon.subdued }">
-        <span class="eem-icon-summary-icon" :class="icon.color ? 'icon-' + icon.color : ''">
-          <img :src="'/icons/' + icon.icon" :alt="icon.alt" />
-        </span>
-        <span>{{ icon.alt }}</span>
-      </div>
-    </div>
-
     <FormLayout :disabled="working">
-      <FormRow title="Tags" :full-width="true">
-        <div class="eem-tags">
-          <AppButton
-            :label="(childMode ? 'Unset' : 'Set') + ' Child'"
-            icon="badges/child"
-            mode="icon-only"
-            :variant="childMode ? 'primary' : 'subtle'"
-            :selected="childMode"
-            :disabled="working"
-            @click="toggleChild"
-          />
-          <EntryIconPicker v-model="form.statsManual" :snapshot="entry.stats?.snapshot" :disabled="working" />
-        </div>
-        <p v-if="childValidationError" class="eem-validation">Select an accompanying adult or deselect Child.</p>
-      </FormRow>
-
-      <FormRow v-if="sessionAdults" title="Accompanying Adult">
-        <select
-          class="eem-select"
-          :class="{ 'eem-select--placeholder': form.accompanyingAdultId === null }"
-          :disabled="!childMode || working"
-          v-model="form.accompanyingAdultId"
-        >
-          <option :value="null">Select adult…</option>
-          <option v-for="a in sessionAdults" :key="a.id" :value="a.id">{{ a.name }}</option>
-        </select>
-        <p v-if="accompanyingAdultMissing" class="eem-adult-warning">Not registered at this session</p>
-      </FormRow>
-
-      <FormRow v-if="entry.profile.isGroup" title="Count">
-        <input type="number" class="eem-input" v-model.number="form.count" min="1" />
-      </FormRow>
-
       <FormRow title="Checked In">
         <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
       </FormRow>
@@ -72,12 +30,43 @@
         <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" :disabled="!form.checkedIn" />
       </FormRow>
 
-      <FormRow :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
-        <input type="checkbox" class="eem-checkbox" v-model="form.cancelled" />
+      <FormRow v-if="entry.profile.isGroup" title="Count">
+        <input type="number" class="eem-input" v-model.number="form.count" min="1" />
       </FormRow>
 
-      <FormRow v-if="isAdmin || entry.eventbriteAttendeeId" title="Eventbrite Attendee ID" :full-width="true">
-        <input class="eem-input eem-input--wide" :value="entry.eventbriteAttendeeId ?? ''" :disabled="true" />
+      <FormRow title="Labels" :full-width="true">
+        <EntryIconPicker
+          v-model="form.labels"
+          :summary="entryIcons"
+          :is-child="childMode"
+          :is-eventbrite="eventbriteMode"
+          :show-regular="isPastSession"
+          :disabled="working"
+          @toggle-child="toggleChild"
+          @toggle-eventbrite="toggleEventbrite"
+        />
+        <p v-if="childValidationError" class="eem-validation">Select an accompanying adult or deselect Child.</p>
+      </FormRow>
+
+      <FormRow v-if="childMode && sessionAdults" title="Accompanying Adult">
+        <select
+          class="eem-select"
+          :class="{ 'eem-select--placeholder': form.accompanyingAdultId === null }"
+          :disabled="working"
+          v-model="form.accompanyingAdultId"
+        >
+          <option :value="null">Select adult…</option>
+          <option v-for="a in sessionAdults" :key="a.id" :value="a.id">{{ a.name }}</option>
+        </select>
+        <p v-if="accompanyingAdultMissing" class="eem-adult-warning">Not registered at this session</p>
+      </FormRow>
+
+      <FormRow v-if="eventbriteMode" title="Eventbrite Attendee ID">
+        <input class="eem-input eem-input--wide" v-model="form.eventbriteAttendeeId" :disabled="working" />
+      </FormRow>
+
+      <FormRow :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
+        <input type="checkbox" class="eem-checkbox" v-model="form.cancelled" />
       </FormRow>
 
       <!-- Notes hidden during #189 testing — restore once tags migration complete and notes UX tidied -->
@@ -92,13 +81,12 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 import type { EntryItem } from '../../types/entry'
-import type { EntryStatsManual } from '../../../../types/entry-stats'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
-import { iconsForEntry } from '../../utils/tagIcons'
+import { iconsForEntry } from '../../utils/labelIcons'
 
 const props = defineProps<{
   entry: EntryItem
@@ -113,23 +101,27 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: EntryStatsManual; cancelled: boolean }]
+  save: [data: { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }]
   delete: []
 }>()
 
 const childValidationError = ref(false)
 
 const childMode = ref(props.entry.accompanyingAdultId !== null && props.entry.accompanyingAdultId !== undefined)
+const eventbriteMode = ref(!!props.entry.eventbriteAttendeeId)
 
 const form = reactive({
   checkedIn: props.entry.checkedIn,
   count: props.entry.count,
   hours: props.entry.hours,
   notes: props.entry.notes ?? '',
-  statsManual: { ...props.entry.stats?.manual } as EntryStatsManual,
+  labels: [...(props.entry.labels ?? [])] as string[],
   accompanyingAdultId: props.entry.accompanyingAdultId ?? null as number | null,
   cancelled: !!props.entry.cancelled,
+  eventbriteAttendeeId: props.entry.eventbriteAttendeeId ?? null as string | null,
 })
+
+const isPastSession = computed(() => props.entry.session.date < new Date().toISOString().slice(0, 10))
 
 const accompanyingAdultMissing = computed(() =>
   form.accompanyingAdultId !== null &&
@@ -142,8 +134,11 @@ const entryIcons = computed(() => iconsForEntry({
   cardStatus: props.entry.profile.cardStatus,
   hasProfileWarning: props.entry.profile.hasProfileWarning,
   isChild: form.accompanyingAdultId !== null,
-  stats: { ...props.entry.stats, manual: form.statsManual },
-  eventbriteAttendeeId: props.entry.eventbriteAttendeeId,
+  labels: form.labels,
+  isNew: props.entry.isNew,
+  noPhoto: props.entry.profile.noPhoto,
+  isFirstAiderAvailable: props.entry.profile.isFirstAiderAvailable,
+  eventbriteAttendeeId: form.eventbriteAttendeeId ?? undefined,
 }))
 
 watch(() => props.entry, (e) => {
@@ -151,10 +146,12 @@ watch(() => props.entry, (e) => {
   form.count = e.count
   form.hours = e.hours
   form.notes = e.notes ?? ''
-  form.statsManual = { ...e.stats?.manual }
+  form.labels = [...(e.labels ?? [])]
   form.accompanyingAdultId = e.accompanyingAdultId ?? null
   form.cancelled = !!e.cancelled
+  form.eventbriteAttendeeId = e.eventbriteAttendeeId ?? null
   childMode.value = e.accompanyingAdultId !== null && e.accompanyingAdultId !== undefined
+  eventbriteMode.value = !!e.eventbriteAttendeeId
   childValidationError.value = false
 })
 
@@ -165,6 +162,15 @@ function toggleChild() {
     childValidationError.value = false
   } else {
     childMode.value = true
+  }
+}
+
+function toggleEventbrite() {
+  if (eventbriteMode.value) {
+    eventbriteMode.value = false
+    form.eventbriteAttendeeId = null
+  } else {
+    eventbriteMode.value = true
   }
 }
 
@@ -184,8 +190,9 @@ function save() {
     hours: form.hours,
     notes: form.notes,
     accompanyingAdultId: form.accompanyingAdultId,
-    statsManual: form.statsManual,
+    labels: form.labels,
     cancelled: form.cancelled,
+    eventbriteAttendeeId: eventbriteMode.value ? (form.eventbriteAttendeeId ?? null) : null,
   })
 }
 
@@ -244,13 +251,6 @@ function deleteEntry() {
   box-sizing: border-box;
 }
 
-.eem-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.4rem;
-}
-
 .eem-select {
   width: 100%;
   background: var(--color-dtv-light);
@@ -276,35 +276,4 @@ function deleteEntry() {
   color: var(--color-dtv-dirt);
 }
 
-.eem-icon-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1.25rem;
-}
-
-.eem-icon-summary-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.eem-icon-summary-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.eem-icon-summary-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.eem-icon-summary-item--subdued { color: var(--color-dtv-sand-dark); }
-.eem-icon-summary-item--subdued .eem-icon-summary-icon img { opacity: 0.4; }
 </style>

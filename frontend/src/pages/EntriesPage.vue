@@ -48,7 +48,7 @@ import EntryEditModal from './modals/EntryEditModal.vue'
 import { profilePath, sessionPath } from '../router/index'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 const store = useEntryListStore()
 const router = useRouter()
@@ -83,7 +83,8 @@ function mapToEntryItem(e: EntryListItemResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
-    stats: e.stats,
+    labels: e.labels,
+    isNew: e.isNew,
     eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',
@@ -133,7 +134,8 @@ async function onSave(data: EditData) {
       stored.notes = data.notes
       stored.accompanyingAdultId = data.accompanyingAdultId ?? undefined
       stored.hasAccompanyingAdult = data.accompanyingAdultId !== null
-      stored.stats = { ...stored.stats, manual: data.statsManual }
+      stored.labels = data.labels
+      stored.eventbriteAttendeeId = data.eventbriteAttendeeId ?? undefined
       stored.cancelled = data.cancelled ? (stored.cancelled || new Date().toISOString()) : undefined
       if (!matchesFilter(stored, currentFilter.value)) {
         store.entries.splice(idx, 1)

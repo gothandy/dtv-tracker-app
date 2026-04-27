@@ -71,27 +71,37 @@ describe('calculateSessionStats', () => {
     expect(stats.get('1')?.hours).toBeCloseTo(3)
   })
 
-  it('counts newCount from snapshot.booking = New', () => {
-    const newStats = JSON.stringify({ snapshot: { booking: 'New' } })
-    const stats = calculateSessionStats([entry('1', { Stats: newStats }), entry('1')])
+  it('counts newCount from profileFirstSessionMap', () => {
+    const profileFirstSessionMap = new Map([[42, 1]])
+    const stats = calculateSessionStats(
+      [entry('1', { ProfileLookupId: '42' }), entry('1', { ProfileLookupId: '99' })],
+      profileFirstSessionMap
+    )
     expect(stats.get('1')?.newCount).toBe(1)
   })
 
-  it('counts regularCount from snapshot.booking = Regular', () => {
-    const regStats = JSON.stringify({ snapshot: { booking: 'Regular' } })
-    const stats = calculateSessionStats([entry('1', { Stats: regStats })])
+  it('does not count newCount when entry has Regular label', () => {
+    const profileFirstSessionMap = new Map([[42, 1]])
+    const stats = calculateSessionStats(
+      [entry('1', { ProfileLookupId: '42', Labels: ['Regular'] })],
+      profileFirstSessionMap
+    )
+    expect(stats.get('1')?.newCount).toBe(0)
     expect(stats.get('1')?.regularCount).toBe(1)
   })
 
-  it('counts childCount from snapshot.isChild', () => {
-    const childStats = JSON.stringify({ snapshot: { isChild: true } })
-    const stats = calculateSessionStats([entry('1', { Stats: childStats })])
+  it('counts regularCount from Labels', () => {
+    const stats = calculateSessionStats([entry('1', { Labels: ['Regular'] })])
+    expect(stats.get('1')?.regularCount).toBe(1)
+  })
+
+  it('counts childCount from AccompanyingAdultLookupId', () => {
+    const stats = calculateSessionStats([entry('1', { AccompanyingAdultLookupId: 7 })])
     expect(stats.get('1')?.childCount).toBe(1)
   })
 
-  it('counts eventbriteCount from manual.eventbrite', () => {
-    const ebStats = JSON.stringify({ manual: { eventbrite: true } })
-    const stats = calculateSessionStats([entry('1', { Stats: ebStats })])
+  it('counts eventbriteCount from EventbriteAttendeeID', () => {
+    const stats = calculateSessionStats([entry('1', { EventbriteAttendeeID: '12345' })])
     expect(stats.get('1')?.eventbriteCount).toBe(1)
   })
 

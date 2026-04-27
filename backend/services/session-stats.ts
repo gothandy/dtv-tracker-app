@@ -5,9 +5,10 @@
 import { sessionsRepository } from './repositories/sessions-repository';
 import { entriesRepository } from './repositories/entries-repository';
 import { groupsRepository } from './repositories/groups-repository';
+import { profilesRepository } from './repositories/profiles-repository';
 import { sharePointClient } from './sharepoint-client';
-import { calculateSessionStats, safeParseLookupId, parseSessionLimits, parseEntryStatsField } from './data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED, ENTRY_STATS } from './field-names';
+import { calculateSessionStats, safeParseLookupId, parseSessionLimits } from './data-layer';
+import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED, PROFILE_LOOKUP } from './field-names';
 
 export interface SessionStatsRefreshResult {
   total: number;
@@ -20,26 +21,33 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
   const start = Date.now();
   console.log('[Stats] Starting session stats refresh');
 
-  const [sessionsRaw, entriesRaw, groupsRaw] = await Promise.all([
+  const [sessionsRaw, entriesRaw, groupsRaw, profilesRaw] = await Promise.all([
     sessionsRepository.getAll(),
     entriesRepository.getAll(),
-    groupsRepository.getAll()
+    groupsRepository.getAll(),
+    profilesRepository.getAll()
   ]);
 
   console.log(`[Stats] Fetched ${sessionsRaw.length} sessions, ${entriesRaw.length} entries in ${Date.now() - start}ms`);
 
-  const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
-  const statsMap = calculateSessionStats(entriesRaw);
+  // Build profileId → first sessionId from profile.stats.sessionIds[0]
+  const profileFirstSessionMap = new Map<number, number>();
+  for (const p of profilesRaw) {
+    try {
+      const ps = JSON.parse(p.Stats || '{}');
+      if (Array.isArray(ps.sessionIds) && ps.sessionIds.length > 0)
+        profileFirstSessionMap.set(p.ID, ps.sessionIds[0]);
+    } catch { /* malformed */ }
+  }
 
-  // Build per-session cancelled regular counts from the full (unfiltered) entries set
+  const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+  const statsMap = calculateSessionStats(entriesRaw, profileFirstSessionMap);
+
+  // Build per-session cancelled regular counts
   const cancelledRegularMap = new Map<string, number>();
   for (const e of entriesRaw) {
     if (!e[ENTRY_CANCELLED]) continue;
-    // Use Entry.Stats.booking when available; fall back to Notes tag for pre-migration entries
-    let isRegular = false;
-    const es = parseEntryStatsField(e[ENTRY_STATS]);
-    isRegular = es ? es.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || ''));
-    if (!isRegular) continue;
+    if (!e.Labels?.includes('Regular')) continue;
     const sid = String(e[SESSION_LOOKUP] ?? '');
     if (sid) cancelledRegularMap.set(sid, (cancelledRegularMap.get(sid) ?? 0) + 1);
   }

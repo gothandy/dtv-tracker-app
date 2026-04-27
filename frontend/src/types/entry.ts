@@ -5,6 +5,8 @@ export interface EntryProfileSummary {
   cardStatus?: string
   isGroup: boolean
   hasProfileWarning?: boolean
+  noPhoto?: boolean
+  isFirstAiderAvailable?: boolean
 }
 
 export interface EntrySessionSummary {
@@ -12,8 +14,6 @@ export interface EntrySessionSummary {
   groupName: string
   date: string
 }
-
-import type { EntryStats } from '../../../types/entry-stats'
 
 export interface EntryItem {
   id: number
@@ -24,7 +24,8 @@ export interface EntryItem {
   notes?: string
   accompanyingAdultId?: number
   cancelled?: string // ISO datetime if booking was cancelled
-  stats?: EntryStats
+  labels?: string[]
+  isNew?: boolean
   eventbriteAttendeeId?: string
   profile: EntryProfileSummary
   session: EntrySessionSummary

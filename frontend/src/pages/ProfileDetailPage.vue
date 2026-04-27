@@ -470,7 +470,8 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
-    stats: e.stats,
+    labels: e.labels,
+    isNew: e.isNew,
     eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: store.profile?.name ?? 'Unknown',
@@ -490,7 +491,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
 
 const entries = computed<EntryItem[]>(() => (store.profile?.entries ?? []).map(mapProfileEntry))
 
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number) {
   workingId.value = entry.id
@@ -535,8 +536,9 @@ async function onEditEntry(id: number, data: EditData | null) {
             count: data.count,
             notes: data.notes,
             accompanyingAdultId: data.accompanyingAdultId ?? undefined,
-            stats: { ...store.profile.entries[idx].stats, manual: data.statsManual },
+            labels: data.labels,
             cancelled: data.cancelled ? (store.profile.entries[idx].cancelled || new Date().toISOString()) : undefined,
+            eventbriteAttendeeId: data.eventbriteAttendeeId ?? undefined,
           })
         }
       }
@@ -559,7 +561,8 @@ function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
     notes: e.notes,
     accompanyingAdultId: e.accompanyingAdultId,
     cancelled: e.cancelled,
-    stats: e.stats,
+    labels: e.labels,
+    isNew: e.isNew,
     eventbriteAttendeeId: e.eventbriteAttendeeId,
     profile: {
       name: e.volunteerName ?? 'Unknown',

@@ -31,14 +31,13 @@ import { parseSessionStats } from '../services/data-layer';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
-  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_STATS, ENTRY_EVENTBRITE_ATTENDEE_ID
+  PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_EVENTBRITE_ATTENDEE_ID
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh } from '../services/session-stats';
-import { parseEntryStatsField } from '../services/data-layer';
 
 const router: Router = express.Router();
 
@@ -469,17 +468,17 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
-      // isMember, cardStatus and profileWarning come from the pre-computed Profile.Stats field — no records fetch needed
-      const stats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
+      const pStats = JSON.parse(profile?.[PROFILE_STATS] || '{}');
+      const isNew = volunteerId !== undefined && Array.isArray(pStats.sessionIds) && pStats.sessionIds[0] === spSession.ID;
       return {
         id: e.ID,
         profileId: volunteerId,
         volunteerName: e[PROFILE_DISPLAY],
         volunteerSlug: volunteerId !== undefined ? profileSlug(e[PROFILE_DISPLAY], volunteerId) : undefined,
         isGroup: profile?.IsGroup || false,
-        isMember: stats.isMember === true,
-        cardStatus: stats.cardStatus ?? undefined,
-        profileWarning: stats.warnings?.length ? true : undefined,
+        isMember: pStats.isMember === true,
+        cardStatus: pStats.cardStatus ?? undefined,
+        profileWarning: pStats.warnings?.length ? true : undefined,
         count: e.Count || 1,
         hours: parseHours(e.Hours),
         checkedIn: e.Checked || false,
@@ -487,23 +486,26 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
         cancelled: e[ENTRY_CANCELLED] || undefined,
         email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined,
-        stats: parseEntryStatsField(e[ENTRY_STATS]),
+        labels: e.Labels,
+        isNew: isNew || undefined,
+        noPhoto: pStats.noPhoto === true || undefined,
+        isFirstAiderAvailable: pStats.isFirstAider === true || undefined,
         eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined
       };
     });
 
     // Stats use only active (non-cancelled) entries
-    // Prefer Entry.Stats snapshot when available; fall back to Notes tags for pre-migration entries
     const totalHours = activeEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
-    function pes(e: any) { return parseEntryStatsField(e[ENTRY_STATS]); }
-    const newCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.booking === 'New' : /#New\b/i.test(String(e.Notes || '')); }).length;
-    const childCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.isChild : /#Child\b/i.test(String(e.Notes || '')); }).length;
-    const regularCount = activeEntries.filter(e => { const s = pes(e); return s ? s.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || '')); }).length;
-    const cancelledRegularCount = sessionEntries.filter(e => { if (!e[ENTRY_CANCELLED]) return false; const s = pes(e); return s ? s.snapshot?.booking === 'Regular' : /#Regular\b/i.test(String(e.Notes || '')); }).length || undefined;
-    const eventbriteCount = activeEntries.filter(e => {
-      if (e[ENTRY_EVENTBRITE_ATTENDEE_ID]) return true;
-      const s = pes(e); return s ? s.manual?.eventbrite : /#Eventbrite\b/i.test(String(e.Notes || ''));
+    const newCount = activeEntries.filter(e => {
+      const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
+      if (pid === undefined) return false;
+      const ps = JSON.parse(profileMap.get(pid)?.[PROFILE_STATS] || '{}');
+      return Array.isArray(ps.sessionIds) && ps.sessionIds[0] === spSession.ID && !e.Labels?.includes('Regular');
     }).length;
+    const childCount = activeEntries.filter(e => !!e.AccompanyingAdultLookupId).length;
+    const regularCount = activeEntries.filter(e => e.Labels?.includes('Regular')).length;
+    const cancelledRegularCount = sessionEntries.filter(e => e[ENTRY_CANCELLED] && e.Labels?.includes('Regular')).length || undefined;
+    const eventbriteCount = activeEntries.filter(e => !!e[ENTRY_EVENTBRITE_ATTENDEE_ID]).length;
 
     // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
     // For self-service: also look up their own entry to return userEntryId (needed for cancel flow)
@@ -517,8 +519,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (selfProfileId !== undefined) {
       userProfileId = selfProfileId;
       if (selfProfileStats) {
+        const selfIsNew = !selfProfileStats.sessionIds?.length;
         isRegular = selfProfileStats.regularGroupIds?.includes(groupId) ?? false;
-        isRepeat = selfProfileStats.repeatGroupIds?.includes(groupId) ?? false;
+        isRepeat = !selfIsNew && !isRegular;
       }
       if (isSelfService) {
         // Self-service: fetch own entry to get userEntryId and live isRegistered status

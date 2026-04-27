@@ -11,7 +11,6 @@ import { getAttendees, getOrgEvents, getEventConfigCheck, getCancelledAttendees,
 import { syncAttendeesForSession } from '../services/eventbrite-sync';
 import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
-import { runEntryStatsRefresh } from '../services/entry-stats';
 import { runBackupExport } from '../services/backup-export';
 import { sharePointClient } from '../services/sharepoint-client';
 
@@ -169,7 +168,6 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     const sessionResult = await runSyncSessions();
     const attendeeResult = await runSyncAttendees();
     const profileStatsResult = await runProfileStatsRefresh();
-    const entryStatsResult = await runEntryStatsRefresh();
     const sessionStatsResult = await runSessionStatsRefresh();
     const backupResult = await runBackupExport();
 
@@ -186,12 +184,10 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     ].join(' / ');
     const sessionIdsStr = sessionStatsResult.updatedIds.length ? ` (${sessionStatsResult.updatedIds.join(', ')})` : '';
     const profileIdsStr = profileStatsResult.updatedIds.length ? ` (${profileStatsResult.updatedIds.join(', ')})` : '';
-    const entryIdsStr = entryStatsResult.updatedIds.length ? ` (${entryStatsResult.updatedIds.join(', ')})` : '';
     const parts = [
       `${sessionResult.totalEvents} events, ${sessionResult.matchedEvents} matched, ${sessionResult.newSessions} new sessions / ${attendeeResult.sessionsProcessed} sessions`,
       `${attendeeResult.newProfiles} new profiles, ${attendeeResult.newEntries} new entries, ${attendeeResult.cancelledEntries} cancelled, ${attendeeResult.newRecords} new consent records, ${attendeeResult.updatedRecords} updated consent records`,
       `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
-      `Entry stats: ${entryStatsResult.updated}/${entryStatsResult.total} updated${entryStatsResult.errors.length ? `, ${entryStatsResult.errors.length} error(s)` : ''}${entryIdsStr}`,
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
       backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes',
       `Cache at start: ${cacheStateLine}`
@@ -199,7 +195,7 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     const summary = parts.join('<br>\n');
 
     console.log(`[Nightly Update] ${summary}`);
-    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, profileStats: profileStatsResult, entryStats: entryStatsResult, sessionStats: sessionStatsResult, backup: backupResult, cache: { beforeSync: cacheBeforeSync, beforeWarmup: cacheBeforeWarmup } } });
+    res.json({ success: true, data: { summary, sessions: sessionResult, attendees: attendeeResult, profileStats: profileStatsResult, sessionStats: sessionStatsResult, backup: backupResult, cache: { beforeSync: cacheBeforeSync, beforeWarmup: cacheBeforeWarmup } } });
   } catch (error: any) {
     console.error('Error running nightly update:', error);
     res.status(500).json({
@@ -223,9 +219,8 @@ router.post('/eventbrite/sync-attendees', async (req: Request, res: Response) =>
   try {
     const attendees = await runSyncAttendees();
     const profileStatsResult = await runProfileStatsRefresh();
-    const entryStatsResult = await runEntryStatsRefresh();
     const sessionStatsResult = await runSessionStatsRefresh();
-    res.json({ success: true, data: { attendees, profileStats: profileStatsResult, entryStats: entryStatsResult, sessionStats: sessionStatsResult } });
+    res.json({ success: true, data: { attendees, profileStats: profileStatsResult, sessionStats: sessionStatsResult } });
   } catch (error: any) {
     console.error('Error syncing Eventbrite attendees:', error);
     res.status(500).json({

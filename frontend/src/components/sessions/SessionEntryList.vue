@@ -8,7 +8,7 @@
         <span v-if="activeCount" class="sel-count">({{ checkedCount }} / {{ activeCount }})</span>
       </h2>
       <div v-if="allowEdit" class="sel-actions">
-        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" :working="refreshWorking" @click="emit('refreshRequest')" />
+        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" :working="refreshWorking" :disabled="isPastSession" @click="emit('refreshRequest')" />
         <AppButton label="Set Hours" icon="clock" mode="icon-responsive" :disabled="eligibleCount === 0" @click="showSetHours = true" />
         <AppButton label="Add" icon="add" mode="icon-responsive" @click="showAdd = true" />
       </div>
@@ -22,7 +22,7 @@
         :title-to="allowEdit ? undefined : (e.profile.slug ? profilePath(e.profile.slug) : undefined)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, stats: e.stats, eventbriteAttendeeId: e.eventbriteAttendeeId })"
+        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, labels: e.labels, isNew: e.isNew, noPhoto: e.profile.noPhoto, isFirstAiderAvailable: e.profile.isFirstAiderAvailable, eventbriteAttendeeId: e.eventbriteAttendeeId })"
         :allow-edit="allowEdit"
         :working="workingId === e.id"
         :cancelled="!!e.cancelled"
@@ -78,10 +78,10 @@ import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
 import EntryAddModal from '../../pages/modals/EntryAddModal.vue'
 import SessionSetHoursModal from '../../pages/modals/SessionSetHoursModal.vue'
 import { profilePath } from '../../router/index'
-import { iconsForEntry } from '../../utils/tagIcons'
+import { iconsForEntry } from '../../utils/labelIcons'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
-type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; statsManual: import('../../../../types/entry-stats').EntryStatsManual; cancelled: boolean }
+type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 const props = defineProps<{
   entries: EntryItem[]
@@ -90,6 +90,7 @@ const props = defineProps<{
   profiles: PickerProfile[]
   workingId?: number | null
   refreshWorking?: boolean
+  isPastSession?: boolean
 }>()
 
 const emit = defineEmits<{

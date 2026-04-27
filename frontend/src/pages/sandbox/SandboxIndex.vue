@@ -77,6 +77,7 @@
           <RouterLink to="/sandbox/concertina-layout">ConcertinaLayout</RouterLink>
           <RouterLink to="/sandbox/entry-card">EntryCard</RouterLink>
           <RouterLink to="/sandbox/entry-list">EntryList</RouterLink>
+          <RouterLink to="/sandbox/entry-icon-picker">EntryIconPicker</RouterLink>
           <RouterLink to="/sandbox/profile-record-list">ProfileRecordList</RouterLink>
           <RouterLink to="/sandbox/profile-warnings">ProfileWarnings</RouterLink>
           <RouterLink to="/sandbox/profile-linked-accounts">ProfileLinkedAccounts</RouterLink>
