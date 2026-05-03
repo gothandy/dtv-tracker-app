@@ -2,17 +2,15 @@
   <DefaultLayout>
     <h1 class="sr-only">Sessions</h1>
     <PageHeader>Sessions</PageHeader>
-    <div class="pb-6">
-      <SessionListFilter :sessions="store.sessions" @filtered="filtered = $event" />
-      <SessionListActions
-        :sessions="filtered"
-        :can-bulk-tag="profile.isAdmin"
-        v-model:selected="selected"
-        @add-tags="showTagModal = true"
-        @add-session="showAddSession = true"
-      />
-      <SessionListResults :sessions="filtered" :loading="store.loading" v-model:selected="selected" />
-    </div>
+    <SessionListFilter :sessions="store.sessions" @filtered="filtered = $event" />
+    <SessionListActions
+      :sessions="filtered"
+      :can-bulk-tag="profile.isAdmin"
+      v-model:selected="selected"
+      @add-tags="showTagModal = true"
+      @add-session="showAddSession = true"
+    />
+    <SessionListResults :sessions="filtered" :loading="store.loading" v-model:selected="selected" />
 
     <SessionAddTagsModal
       v-if="showTagModal"

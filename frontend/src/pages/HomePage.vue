@@ -276,6 +276,12 @@ watch(selectedDate, (date) => {
   router.replace({ query: { ...route.query, ...(date ? { date } : { date: undefined }) } })
 })
 
+function coverGalleryTitle(s: Session): string {
+  const dateStr = new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const group = s.groupName?.trim() || s.groupKey?.trim()
+  return group ? `${dateStr}, ${group}` : dateStr
+}
+
 const coverItems = computed<MediaItem[]>(() =>
   [...store.sessions]
     .filter(s => !!s.coverUrl)
@@ -285,7 +291,7 @@ const coverItems = computed<MediaItem[]>(() =>
       listItemId: 0,
       url: s.coverUrl!,
       mimeType: 'image/jpeg',
-      title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      title: coverGalleryTitle(s),
       isPublic: true,
     }))
 )

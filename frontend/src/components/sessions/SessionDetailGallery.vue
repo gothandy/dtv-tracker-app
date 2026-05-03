@@ -13,7 +13,7 @@
         :min-ratio="3/4"
         :max-ratio="4/3"
         @select="onCardSelect(i)"
-        @edit="editingItem = item"
+        @edit="openEdit(item)"
       />
     </MediaCarousel>
   </div>
@@ -23,14 +23,16 @@
     :item="editingItem"
     :show-cover="true"
     :is-cover="editingItem.listItemId === coverMediaId"
-    @close="editingItem = null"
+    :working="saveWorking"
+    :error="saveError"
+    @close="onModalClose"
     @save="onModalSave"
     @delete="onModalDelete"
   />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import PhotoSwipe from 'photoswipe'
 import 'photoswipe/style.css'
 import MediaCarousel from '../../components/MediaCarousel.vue'
@@ -44,7 +46,13 @@ const props = defineProps<{
   error?: string
   showEditBtn?: boolean
   coverMediaId?: number | null
+  /** Save request in flight — disables form and keeps modal open until parent clears */
+  saveWorking?: boolean
+  /** Server or network error from last save — parent clears when modal closes or on new save */
+  saveError?: string
 }>()
+
+const editingItem = defineModel<MediaItem | null>('editingItem', { default: null })
 
 const emit = defineEmits<{
   save: [item: MediaItem, data: { title: string; isPublic: boolean; isCover: boolean }]
@@ -53,7 +61,6 @@ const emit = defineEmits<{
 
 const enrichedItems = ref<MediaItem[]>([])
 const selectedIndex = ref<number | null>(null)
-const editingItem   = ref<MediaItem | null>(null)
 const galleryHeight = computed(() => Math.min(500, window.innerWidth * 0.75))
 const carouselRef   = ref<InstanceType<typeof MediaCarousel> | null>(null)
 
@@ -86,7 +93,7 @@ function openLightbox(startIndex: number) {
         appendTo: 'root' as any,
         html: '<img src="/icons/edit.svg" width="20" height="20" alt="" aria-hidden="true">',
         onClick: () => {
-          editingItem.value = enrichedItems.value[pswp.currIndex]
+          openEdit(enrichedItems.value[pswp.currIndex])
           pswp.close()
         },
       })
@@ -125,10 +132,17 @@ watch(() => props.media, async (newMedia) => {
   enrichedItems.value = copies
 }, { immediate: true })
 
+function openEdit(item: MediaItem) {
+  editingItem.value = item
+}
+
+function onModalClose() {
+  editingItem.value = null
+}
+
 function onModalSave(data: { title: string; isPublic: boolean; isCover: boolean }) {
   if (!editingItem.value) return
   emit('save', editingItem.value, data)
-  editingItem.value = null
 }
 
 function onModalDelete() {
@@ -136,6 +150,40 @@ function onModalDelete() {
   emit('delete', editingItem.value)
   editingItem.value = null
 }
+
+/** Scroll Embla to the card with this drive `id` after `media` has refreshed (async dimension pass). */
+async function scrollToMediaId(id: string) {
+  const scrollIfFound = (): boolean => {
+    const idx = enrichedItems.value.findIndex(x => x.id === id)
+    if (idx < 0) return false
+    selectedIndex.value = idx
+    nextTick(() => carouselRef.value?.scrollTo(idx))
+    return true
+  }
+
+  await nextTick()
+  if (scrollIfFound()) return
+
+  await new Promise<void>((resolve) => {
+    const stop = watch(
+      enrichedItems,
+      () => {
+        if (scrollIfFound()) {
+          stop()
+          clearTimeout(tid)
+          resolve()
+        }
+      },
+      { flush: 'post' },
+    )
+    const tid = setTimeout(() => {
+      stop()
+      resolve()
+    }, 5000)
+  })
+}
+
+defineExpose({ scrollToMediaId })
 </script>
 
 <style scoped>

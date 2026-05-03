@@ -32,17 +32,6 @@
         </template>
       </LayoutColumns>
 
-      <!-- Gallery: full width -->
-      <MediaCarousel v-if="coverItems.length" title="What we've been up to" :max-height="280">
-        <MediaCard
-          v-for="(item, i) in coverItems"
-          :key="item.id"
-          :item="item"
-          :clickable="true"
-          @select="onCoverSelect(i)"
-        />
-      </MediaCarousel>
-
       <!-- Repeats and Regulars: full width -->
       <RegularList
         v-if="profile.isAdmin || profile.isCheckIn"
@@ -65,9 +54,28 @@
         @delete="onRegularDelete"
       />
 
+      <!-- Previous session covers (this group only), same pattern as homepage -->
+      <LayoutColumns v-if="coverItems.length" ratio="1">
+        <template #header>
+          <SectionHeader>What we've been up to</SectionHeader>
+        </template>
+        <template #left>
+          <MediaCarousel title="Photos from recent events" :max-height="280">
+            <MediaCard
+              v-for="(item, i) in coverItems"
+              :key="item.id"
+              :item="item"
+              :clickable="true"
+              :selected="i === selectedCoverIndex"
+              @select="onCoverSelect(i)"
+            />
+          </MediaCarousel>
+        </template>
+      </LayoutColumns>
+
       <!-- Group Contribution: bar chart left, word cloud right -->
       <LayoutColumns ratio="2-1" align="start">
-        <template #header><SectionHeader>Group Contribution</SectionHeader></template>
+        <template #header><SectionHeader>How it all adds up</SectionHeader></template>
         <template #left>
           <CardTitle>This many hours</CardTitle>
           <FyBarChart :sessions="store.group.sessions" v-model="selectedFy" @click-selected="onSelectedBarClick" />
@@ -160,6 +168,7 @@ usePageTitle(titleText)
 
 const selectedFy = ref('')
 const tagHours = ref<TagHoursItem[]>([])
+const selectedCoverIndex = ref<number | null>(null)
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -179,6 +188,7 @@ function mapSession(r: SessionResponse): Session {
     stats: r.stats as SessionStats,
     regularsCount: r.regularsCount,
     mediaCount: r.mediaCount,
+    coverUrl: r.coverUrl,
     metadata: r.metadata,
     isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
     isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),
@@ -194,6 +204,12 @@ const futureSessions = computed<Session[]>(() =>
     .slice(0, 6)
 )
 
+function previousWorkCoverTitle(s: SessionResponse): string {
+  const dateStr = new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const sessionName = s.displayName?.trim()
+  return sessionName ? `${dateStr}, ${sessionName}` : dateStr
+}
+
 const coverItems = computed<MediaItem[]>(() =>
   !store.group ? [] :
   [...store.group.sessions]
@@ -204,12 +220,13 @@ const coverItems = computed<MediaItem[]>(() =>
       listItemId: 0,
       url: s.coverUrl!,
       mimeType: 'image/jpeg',
-      title: new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      title: previousWorkCoverTitle(s),
       isPublic: true,
     }))
 )
 
 function onCoverSelect(index: number) {
+  selectedCoverIndex.value = index
   const item = coverItems.value[index]
   if (!item || !store.group) return
   const session = store.group.sessions.find(s => String(s.id) === item.id)

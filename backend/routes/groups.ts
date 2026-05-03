@@ -25,7 +25,7 @@ import {
   extractMetadataTags,
   parseSessionStats
 } from '../services/data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NOTES, SESSION_METADATA } from '../services/field-names';
+import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA } from '../services/field-names';
 import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
@@ -217,6 +217,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
           childCount: stats.child,
           regularCount: stats.regular,
           mediaCount: stats.media,
+          coverUrl: s[SESSION_COVER_MEDIA] ? `/media/${key}/${date}/${s[SESSION_COVER_MEDIA]}` : undefined,
           financialYear: `FY${calculateFinancialYear(new Date(date))}`,
           isBookable: date >= today,
           eventbriteEventId: s.EventbriteEventID,
