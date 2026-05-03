@@ -236,6 +236,14 @@ const profile = useViewer()
 const mediaItems   = ref<MediaItem[]>([])
 const mediaLoading = ref(false)
 const mediaError   = ref<string | null>(null)
+const mediaEditItem    = ref<MediaItem | null>(null)
+const mediaSaveWorking = ref(false)
+const mediaSaveError   = ref<string | undefined>()
+
+watch(mediaEditItem, (v) => {
+  if (!v) mediaSaveError.value = undefined
+})
+
 /** Cancels in-flight `/api/media` requests; combined with `mediaFetchEpoch` so an older response cannot apply after navigation. */
 let mediaListFetchAbort: AbortController | null = null
 let mediaFetchEpoch = 0
