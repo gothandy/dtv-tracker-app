@@ -394,6 +394,10 @@ async function onDeleteRecord(id: number) {
 function onRegularEdit(groupKey: string) {
   const group = store.profile?.groupHours.find(g => g.groupKey === groupKey)
   if (!group) return
+  if (viewer.isSelfService) {
+    router.push(groupPath(groupKey))
+    return
+  }
   regularModalError.value = ''
   editingRegular.value = {
     name: group.groupName,

@@ -144,11 +144,15 @@
       </LayoutColumns>
 
       <SessionDetailGallery
+        ref="sessionGalleryRef"
+        v-model:editing-item="mediaEditItem"
         :media="mediaItems"
         :working="mediaLoading"
         :error="mediaError ?? undefined"
         :show-edit-btn="profile.isCheckIn || profile.isAdmin"
         :cover-media-id="store.session.coverMediaId"
+        :save-working="mediaSaveWorking"
+        :save-error="mediaSaveError"
         @save="onMediaSave"
         @delete="onMediaDelete"
       />
@@ -236,6 +240,7 @@ const mediaError   = ref<string | null>(null)
 let mediaListFetchAbort: AbortController | null = null
 let mediaFetchEpoch = 0
 const actionsRef = ref<InstanceType<typeof SessionDetailActions> | null>(null)
+const sessionGalleryRef = ref<InstanceType<typeof SessionDetailGallery> | null>(null)
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
 const editGroups = computed<GroupItem[]>(() =>
@@ -607,13 +612,18 @@ async function fetchMedia(groupKey: string, date: string) {
 async function onMediaSave(item: MediaItem, data: { title: string; isPublic: boolean; isCover: boolean }) {
   const groupKey = route.params.groupKey as string
   const date     = store.session!.date
+  mediaSaveWorking.value = true
+  mediaSaveError.value = undefined
   try {
     const res = await fetch(`/api/media/${item.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: data.title, isPublic: data.isPublic }),
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({})) as { error?: string }
+      throw new Error(errBody.error || `Save failed (${res.status})`)
+    }
 
     const wasCover = item.listItemId === store.session?.coverMediaId
     if (data.isCover !== wasCover) {
@@ -623,13 +633,25 @@ async function onMediaSave(item: MediaItem, data: { title: string; isPublic: boo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ coverMediaId: newCoverId }),
       })
-      if (!coverRes.ok) throw new Error(`HTTP ${coverRes.status}`)
+      if (!coverRes.ok) {
+        const errBody = await coverRes.json().catch(() => ({})) as { error?: string }
+        throw new Error(errBody.error || `Cover update failed (${coverRes.status})`)
+      }
       if (store.session) store.session.coverMediaId = newCoverId
     }
 
     await fetchMedia(groupKey, date)
+    if (mediaError.value) {
+      mediaSaveError.value = mediaError.value
+      return
+    }
+    mediaEditItem.value = null
+    await sessionGalleryRef.value?.scrollToMediaId(item.id)
   } catch (e) {
+    mediaSaveError.value = e instanceof Error ? e.message : 'Failed to save — please try again'
     console.error('[SessionDetailPage] onMediaSave failed', e)
+  } finally {
+    mediaSaveWorking.value = false
   }
 }
 

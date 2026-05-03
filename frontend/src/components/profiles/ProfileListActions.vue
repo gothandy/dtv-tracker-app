@@ -4,7 +4,7 @@
       {{ selected.length }} / {{ filteredProfiles.length }} {{ filteredProfiles.length === 1 ? 'profile' : 'profiles' }}
     </span>
     <div class="list-actions-buttons">
-      <AppButton label="Add Records" icon="add" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-records')" />
+      <AppButton label="Add Records" icon="file-add" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-records')" />
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="selectedInFiltered.length === 0" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
       <AppButton label="Add profile" icon="add" mode="icon-only" @click="emit('add-profile')" />
