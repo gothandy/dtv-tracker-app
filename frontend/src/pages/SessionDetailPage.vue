@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { MediaItem } from '../types/media'
 import type { EntryItem } from '../types/entry'
 import type { PickerProfile } from '../components/ProfilePicker.vue'
@@ -236,13 +236,9 @@ const profile = useViewer()
 const mediaItems   = ref<MediaItem[]>([])
 const mediaLoading = ref(false)
 const mediaError   = ref<string | null>(null)
-const mediaEditItem    = ref<MediaItem | null>(null)
-const mediaSaveWorking = ref(false)
-const mediaSaveError   = ref<string | undefined>()
-
-watch(mediaEditItem, (v) => {
-  if (!v) mediaSaveError.value = undefined
-})
+/** Cancels in-flight `/api/media` requests; combined with `mediaFetchEpoch` so an older response cannot apply after navigation. */
+let mediaListFetchAbort: AbortController | null = null
+let mediaFetchEpoch = 0
 const actionsRef = ref<InstanceType<typeof SessionDetailActions> | null>(null)
 const sessionGalleryRef = ref<InstanceType<typeof SessionDetailGallery> | null>(null)
 const editWorking = ref(false)
@@ -587,18 +583,29 @@ async function onCancel() {
 }
 
 async function fetchMedia(groupKey: string, date: string) {
+  mediaListFetchAbort?.abort()
+  const ac = new AbortController()
+  mediaListFetchAbort = ac
+  const epoch = ++mediaFetchEpoch
+
   mediaLoading.value = true
   mediaError.value   = null
   try {
-    const res  = await fetch(`/api/media?groupKey=${groupKey}&date=${date}`)
+    const q = new URLSearchParams({ groupKey, date })
+    const res = await fetch(`/api/media?${q}`, { signal: ac.signal })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()
+    if (epoch !== mediaFetchEpoch) return
     mediaItems.value = (json.data ?? []).filter((i: MediaItem) => i.mimeType.startsWith('image/'))
   } catch (e) {
+    if (epoch !== mediaFetchEpoch || ac.signal.aborted) return
     mediaError.value = e instanceof Error ? e.message : 'Failed to load photos'
     console.error('[SessionDetailPage] fetchMedia failed', e)
   } finally {
-    mediaLoading.value = false
+    if (epoch === mediaFetchEpoch) {
+      mediaLoading.value = false
+      mediaListFetchAbort = null
+    }
   }
 }
 
@@ -723,7 +730,15 @@ onMounted(() => {
   fetchMedia(route.params.groupKey as string, route.params.date as string)
   if (profile.isAdmin) groupsStore.fetch()
 })
+
+onBeforeUnmount(() => {
+  mediaFetchEpoch++
+  mediaListFetchAbort?.abort()
+  mediaListFetchAbort = null
+})
+
 watch(() => [route.params.groupKey, route.params.date], () => {
+  mediaItems.value = []
   load()
   fetchMedia(route.params.groupKey as string, route.params.date as string)
 })
