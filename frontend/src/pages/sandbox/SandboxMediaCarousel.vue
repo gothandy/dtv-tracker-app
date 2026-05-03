@@ -48,9 +48,11 @@
         :item="editingItem"
         :show-cover="true"
         :is-cover="false"
-        @close="editingItem = null"
-        @save="editingItem = null"
-        @delete="editingItem = null"
+        :working="sandboxEditWorking"
+        :error="sandboxEditError"
+        @close="closeSandboxEdit"
+        @save="onSandboxMediaSave"
+        @delete="onSandboxMediaDelete"
       />
 
     </div>
@@ -105,6 +107,31 @@ async function loadSessionItems() {
 // ── Single session gallery ─────────────────────────────────────────────────
 const selectedGalleryIndex = ref<number | null>(null)
 const editingItem          = ref<MediaItem | null>(null)
+const sandboxEditWorking   = ref(false)
+const sandboxEditError     = ref<string | undefined>()
+
+function closeSandboxEdit() {
+  editingItem.value = null
+  sandboxEditError.value = undefined
+}
+
+async function onSandboxMediaSave(_data: { title: string; isPublic: boolean; isCover: boolean }) {
+  sandboxEditWorking.value = true
+  sandboxEditError.value = undefined
+  try {
+    await new Promise(r => setTimeout(r, 600))
+    editingItem.value = null
+  } catch (e) {
+    sandboxEditError.value = e instanceof Error ? e.message : 'Save failed'
+  } finally {
+    sandboxEditWorking.value = false
+  }
+}
+
+function onSandboxMediaDelete() {
+  editingItem.value = null
+  sandboxEditError.value = undefined
+}
 const sessionGalleryItems   = ref<MediaItem[]>([])
 const sessionGalleryLoading = ref(false)
 const sessionGalleryError   = ref<string | null>(null)

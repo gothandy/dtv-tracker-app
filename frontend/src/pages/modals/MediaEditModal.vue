@@ -11,27 +11,36 @@
     @action="save"
     @delete="confirmDelete = true"
   >
-    <div class="emm-actions">
-      <AppButton label="Download" icon="download" :href="`/api/media/${item.id}/download`" target="_blank" />
+    <div class="emm-actions" :class="{ 'emm-actions--blocked': working }">
+      <AppButton
+        label="Download"
+        icon="download"
+        :href="working ? undefined : `/api/media/${item.id}/download`"
+        :disabled="working"
+        target="_blank"
+      />
     </div>
 
-    <FormRow title="Public" :disabled="form.isCover">
-      <input id="emm-public" v-model="form.isPublic" type="checkbox" class="emm-checkbox" :disabled="form.isCover" @change="onPublicChange" />
-    </FormRow>
+    <FormLayout :disabled="working">
+      <FormRow title="Public" :disabled="form.isCover">
+        <input id="emm-public" v-model="form.isPublic" type="checkbox" class="emm-checkbox" :disabled="form.isCover" @change="onPublicChange" />
+      </FormRow>
 
-    <FormRow v-if="showCover" title="Cover" :disabled="!form.isPublic">
-      <input id="emm-cover" v-model="form.isCover" type="checkbox" class="emm-checkbox" :disabled="!form.isPublic" @change="onCoverChange" />
-    </FormRow>
+      <FormRow v-if="showCover" title="Cover" :disabled="!form.isPublic">
+        <input id="emm-cover" v-model="form.isCover" type="checkbox" class="emm-checkbox" :disabled="!form.isPublic" @change="onCoverChange" />
+      </FormRow>
 
-    <FormRow title="Title" :full-width="true">
-      <textarea v-model="form.title" class="emm-input emm-textarea" placeholder="Optional caption" rows="2" />
-    </FormRow>
+      <FormRow title="Title" :full-width="true">
+        <textarea v-model="form.title" class="emm-input emm-textarea" placeholder="Optional caption" rows="2" />
+      </FormRow>
+    </FormLayout>
   </ModalLayout>
 
   <DeleteModal
     v-if="confirmDelete"
     title="Delete photo?"
     body="This will permanently delete the photo."
+    :working="working"
     @close="confirmDelete = false"
     @confirm="doDelete"
   />
@@ -41,17 +50,20 @@
 import { reactive, ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
+import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import DeleteModal from './DeleteModal.vue'
 import type { MediaItem } from '../../types/media'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   item: MediaItem
   showCover?: boolean
   isCover?: boolean
   working?: boolean
   error?: string
-}>()
+}>(), {
+  working: false,
+})
 
 const emit = defineEmits<{
   close: []
@@ -90,6 +102,11 @@ function doDelete() {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.25rem;
+}
+
+.emm-actions--blocked {
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 .emm-input {
