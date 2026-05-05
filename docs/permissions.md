@@ -109,7 +109,7 @@ Self-service users can GET the above public endpoints plus a limited additional 
 | GET | `/api/entries/:id/upload-context` | Own entry only |
 | POST | `/api/sessions/:group/:date/entries` | Register for a session (own profile only; future sessions; no duplicates) |
 | POST | `/api/entries/:id/photos` | Upload photos to own entry |
-| DELETE | `/api/entries/:id` | Delete own entry (handler enforces ownership) |
+| PATCH | `/api/entries/:id` | Cancel own booking only (`{ cancelled: true }`); handler requires the entry’s profile `Email` field (comma-separated) to contain the logged-in email |
 
 Self-service users **cannot** access:
 - `/api/profiles` (listing), `/api/profiles/export` — all volunteers list

@@ -92,6 +92,29 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/mp4', 'video/quicktime', 'video/x-m4v'
 ]);
 
+async function entryProfileEmailsIncludeSessionEmail(
+  entryProfileId: number | undefined,
+  sessionEmail: string | undefined
+): Promise<boolean> {
+  if (entryProfileId === undefined) return false;
+  const normalized = sessionEmail?.trim().toLowerCase();
+  if (!normalized) return false;
+  const profile = await profilesRepository.getById(entryProfileId);
+  if (!profile) return false;
+  return parseEmails(profile.Email).includes(normalized);
+}
+
+/** When we already have the SharePoint profile row (e.g. from getAll), avoid an extra lookup */
+function entryProfileEmailsIncludeSessionEmailSync(
+  rawProfile: { Email?: string } | undefined,
+  sessionEmail: string | undefined
+): boolean {
+  if (!rawProfile) return false;
+  const normalized = sessionEmail?.trim().toLowerCase();
+  if (!normalized) return false;
+  return parseEmails(rawProfile.Email).includes(normalized);
+}
+
 
 router.get('/entries/recent', async (req: Request, res: Response) => {
   try {
@@ -302,11 +325,13 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Self-service users may only view their own entry
+    // Self-service users may only view entries whose profile Email list contains their login email
     if (req.session.user?.role === 'selfservice') {
       const entryProfileId = safeParseLookupId(spEntry[PROFILE_LOOKUP]);
-      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
-      if (entryProfileId === undefined || !ownIds.includes(entryProfileId)) {
+      const rawProfile = entryProfileId !== undefined
+        ? (rawProfiles as any[]).find((p: any) => p.ID === entryProfileId)
+        : undefined;
+      if (!entryProfileEmailsIncludeSessionEmailSync(rawProfile, req.session.user.email)) {
         res.status(403).json({ success: false, error: 'Not your entry' });
         return;
       }
@@ -399,6 +424,61 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     }
 
     const { checkedIn, count, hours, notes, accompanyingAdultId, cancelled, labels, eventbriteAttendeeId } = req.body;
+
+    if (req.session.user?.role === 'selfservice') {
+      for (const k of Object.keys(req.body ?? {})) {
+        if (k !== 'cancelled') {
+          res.status(403).json({ success: false, error: 'Not permitted' });
+          return;
+        }
+      }
+      if (cancelled !== true) {
+        res.status(403).json({ success: false, error: 'Not permitted' });
+        return;
+      }
+
+      const spEntrySelf = await entriesRepository.getById(entryId);
+      if (!spEntrySelf) {
+        res.status(404).json({ success: false, error: 'Entry not found' });
+        return;
+      }
+      const entryProfileId = safeParseLookupId(spEntrySelf[PROFILE_LOOKUP]);
+      if (!(await entryProfileEmailsIncludeSessionEmail(entryProfileId, req.session.user.email))) {
+        res.status(403).json({ success: false, error: 'Not your entry' });
+        return;
+      }
+
+      const selfFields: Record<string, any> = {};
+      if (!spEntrySelf[ENTRY_CANCELLED]) {
+        selfFields[ENTRY_CANCELLED] = new Date().toISOString();
+      }
+
+      const sessionIdSelf = safeParseLookupId(spEntrySelf[SESSION_LOOKUP]);
+      let existingMediaSelf = 0;
+      if (sessionIdSelf !== undefined) {
+        const spSessionSelf = await sessionsRepository.getById(sessionIdSelf);
+        try { existingMediaSelf = JSON.parse(spSessionSelf?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+      }
+
+      if (Object.keys(selfFields).length > 0) {
+        await entriesRepository.updateFields(entryId, selfFields);
+      }
+
+      if (sessionIdSelf !== undefined) {
+        computeAndSaveSessionStats(sessionIdSelf, existingMediaSelf).catch(err =>
+          console.error(`[Stats] Failed session stats for entry ${entryId}:`, err)
+        );
+      }
+      if (entryProfileId !== undefined && selfFields[ENTRY_CANCELLED] !== undefined) {
+        computeAndSaveProfileStats(entryProfileId).catch(err =>
+          console.error(`[Stats] Failed targeted profile update for profile ${entryProfileId}:`, err)
+        );
+      }
+
+      res.json({ success: true } as ApiResponse<void>);
+      return;
+    }
+
     const fields: Record<string, any> = {};
 
     if (typeof cancelled === 'boolean') {
@@ -407,12 +487,6 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
         const existing = await entriesRepository.getById(entryId);
         if (!existing) {
           res.status(404).json({ success: false, error: 'Entry not found' });
-          return;
-        }
-        // Self-service and check-in can only cancel (not un-cancel)
-        const role = req.session.user?.role;
-        if (!cancelled && role !== 'admin') {
-          res.status(403).json({ success: false, error: 'Only admins can un-cancel an entry' });
           return;
         }
         if (!existing[ENTRY_CANCELLED]) {
@@ -614,8 +688,8 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
     }
 
     if (req.session.user?.role === 'selfservice') {
-      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
-      if (!ownIds.length || !ownIds.includes(volunteerId)) {
+      // Self-service users may only create entries for a Profile whose Email list contains their login email
+      if (!entryProfileEmailsIncludeSessionEmailSync(profile as any, req.session.user.email)) {
         res.status(403).json({ success: false, error: 'You can only register yourself' });
         return;
       }
@@ -624,8 +698,9 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
         return;
       }
       const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
+      // A previously cancelled booking should not block re-booking.
       const alreadyRegistered = (sessionEntries as any[]).some(e =>
-        safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId
+        safeParseLookupId(e[PROFILE_LOOKUP]) === volunteerId && !e[ENTRY_CANCELLED]
       );
       if (alreadyRegistered) {
         res.status(409).json({ success: false, error: 'Already registered for this session' });
@@ -907,11 +982,13 @@ router.get('/entries/:id/upload-context', async (req: Request, res: Response) =>
       return;
     }
 
-    // Ownership check for self-service users (supports multiple linked profiles)
+    const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+    const rawProfileRow = profileId !== undefined
+      ? (rawProfiles as any[]).find((p: any) => p.ID === profileId)
+      : undefined;
+
     if (req.session.user?.role === 'selfservice') {
-      const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
-      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
-      if (profileId === undefined || !ownIds.includes(profileId)) {
+      if (!entryProfileEmailsIncludeSessionEmailSync(rawProfileRow, req.session.user.email)) {
         res.status(403).json({ success: false, error: 'Not your entry' });
         return;
       }
@@ -932,7 +1009,6 @@ router.get('/entries/:id/upload-context', async (req: Request, res: Response) =>
       : undefined;
     const group = spGroup ? convertGroup(spGroup) : null;
 
-    const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profile = profileId !== undefined ? profiles.find(p => p.ID === profileId) : undefined;
 
@@ -975,11 +1051,13 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       return;
     }
 
-    // Ownership check for self-service users (supports multiple linked profiles)
+    const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
+    const rawProfileRowPhotos = profileId !== undefined
+      ? (rawProfiles as any[]).find((p: any) => p.ID === profileId)
+      : undefined;
+
     if (req.session.user?.role === 'selfservice') {
-      const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
-      const ownIds = req.session.user.profileIds?.length ? req.session.user.profileIds : (req.session.user.profileId ? [req.session.user.profileId] : []);
-      if (profileId === undefined || !ownIds.includes(profileId)) {
+      if (!entryProfileEmailsIncludeSessionEmailSync(rawProfileRowPhotos, req.session.user.email)) {
         res.status(403).json({ success: false, error: 'Not your entry' });
         return;
       }
@@ -1000,7 +1078,6 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       : undefined;
     const group = spGroup ? convertGroup(spGroup) : null;
 
-    const profileId = safeParseLookupId(rawEntry[PROFILE_LOOKUP]);
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profile = profileId !== undefined ? profiles.find(p => p.ID === profileId) : undefined;
     const profileName = profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer';
