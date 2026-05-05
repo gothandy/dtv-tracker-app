@@ -1,5 +1,13 @@
 # Development Progress
 
+## Session: 2026-05-05 (Self-service booking cancel — permissions)
+
+- Self-service may no longer `DELETE /api/entries/:id` (middleware block; hard delete remains admin-only in handler).
+- Self-service may `PATCH /api/entries/:id` with **only** `{ cancelled: true }`; ownership is the entry’s profile `Email` list containing `req.session.user.email` (case-insensitive), not `profileIds` alone.
+- Same email-based ownership for self-service `GET /api/entries/:id`, upload-context, and entry photos.
+- `SessionDetailForThis.vue` cancel action uses PATCH instead of DELETE.
+- Self-service cancel now rejects past sessions (`Session has already passed`) to prevent retroactive stats changes from historical attendance.
+
 ## Session: 2026-04-24 (Vitest setup — closes #208)
 
 ### Completed Tasks

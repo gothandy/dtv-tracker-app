@@ -22,7 +22,7 @@ const CHECKIN_ALLOWED_PATTERNS = [
 const SELFSERVICE_ALLOWED_PATTERNS = [
   { method: 'POST',   pattern: /^\/sessions\/[^/]+\/[^/]+\/entries$/ }, // self-register for a session
   { method: 'POST',   pattern: /^\/entries\/\d+\/photos$/ },            // upload photos to own entry
-  { method: 'DELETE', pattern: /^\/entries\/\d+$/ },                    // delete own entry; handler enforces ownership
+  { method: 'PATCH',  pattern: /^\/entries\/\d+$/ },                   // cancel own booking only; handler enforces
   { method: 'POST',   pattern: /^\/profiles\/\d+\/consent$/ },          // submit own consent; handler enforces ownership
 ];
 

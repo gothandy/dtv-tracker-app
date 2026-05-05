@@ -52,7 +52,12 @@ async function cancelBooking() {
   if (!props.session.userEntryId) return
   cancelling.value = true
   try {
-    await fetch(`/api/entries/${props.session.userEntryId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/entries/${props.session.userEntryId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancelled: true }),
+    })
+    if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
     window.location.reload()
   } catch (e) {
     console.error('[ForThisSessionCard] cancel failed', e)
