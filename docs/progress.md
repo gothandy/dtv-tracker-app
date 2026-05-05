@@ -6,6 +6,7 @@
 - Self-service may `PATCH /api/entries/:id` with **only** `{ cancelled: true }`; ownership is the entry’s profile `Email` list containing `req.session.user.email` (case-insensitive), not `profileIds` alone.
 - Same email-based ownership for self-service `GET /api/entries/:id`, upload-context, and entry photos.
 - `SessionDetailForThis.vue` cancel action uses PATCH instead of DELETE.
+- Self-service cancel now rejects past sessions (`Session has already passed`) to prevent retroactive stats changes from historical attendance.
 
 ## Session: 2026-04-24 (Vitest setup — closes #208)
 

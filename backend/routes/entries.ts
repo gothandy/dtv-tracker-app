@@ -457,7 +457,19 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       let existingMediaSelf = 0;
       if (sessionIdSelf !== undefined) {
         const spSessionSelf = await sessionsRepository.getById(sessionIdSelf);
+        if (!spSessionSelf) {
+          res.status(404).json({ success: false, error: 'Session not found' });
+          return;
+        }
+        const todayStr = new Date().toISOString().slice(0, 10);
+        if ((spSessionSelf.Date || '').slice(0, 10) < todayStr) {
+          res.status(400).json({ success: false, error: 'Session has already passed' });
+          return;
+        }
         try { existingMediaSelf = JSON.parse(spSessionSelf?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+      } else {
+        res.status(404).json({ success: false, error: 'Session not found' });
+        return;
       }
 
       if (Object.keys(selfFields).length > 0) {
