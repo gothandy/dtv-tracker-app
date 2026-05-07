@@ -3,7 +3,7 @@
     <FormRow title="Volunteer" :full-width="true">
       <select id="upm-select" class="upm-select" v-model="selected">
         <option disabled value="">Select a name…</option>
-        <option v-for="entry in entries" :key="entry.id" :value="entry.id">
+        <option v-for="entry in activeEntries" :key="entry.id" :value="entry.id">
           {{ entry.volunteerName ?? 'Unknown' }}
         </option>
       </select>
@@ -18,7 +18,7 @@ import FormRow from '../../components/FormRow.vue'
 import { useViewer } from '../../composables/useViewer'
 
 const props = defineProps<{
-  entries: { id: number; profileId?: number; volunteerName?: string }[]
+  entries: { id: number; profileId?: number; volunteerName?: string; cancelled?: string }[]
 }>()
 
 const emit = defineEmits<{
@@ -35,11 +35,13 @@ const currentProfileId = computed(() => {
   return isNaN(id) ? null : id
 })
 
+const activeEntries = computed(() => props.entries.filter(e => !e.cancelled))
+
 const selected = ref<number | ''>('')
 
 watch(currentProfileId, (id) => {
   if (id && selected.value === '') {
-    const match = props.entries.find(e => e.profileId === id)
+    const match = activeEntries.value.find(e => e.profileId === id)
     if (match) selected.value = match.id
   }
 }, { immediate: true })
