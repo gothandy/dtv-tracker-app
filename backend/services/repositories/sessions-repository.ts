@@ -142,11 +142,12 @@ class SessionsRepository {
     sharePointClient.clearCacheByPrefix('session_slug_');
   }
 
-  // Updates only the Stats field — clears sessions cache only (not full flush).
-  // Bulk refresh callers (session-stats.ts) call clearCacheKey('sessions') once after the loop instead.
+  // Updates only the Stats field — keep list/item caches coherent without a full flush.
+  // Bulk refresh callers (session-stats.ts) still clear the sessions list once after the loop.
   async updateStats(sessionId: number, stats: Record<string, any>): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, sessionId, { [SESSION_STATS]: JSON.stringify(stats) });
     sharePointClient.clearCacheKey('sessions');
+    sharePointClient.clearCacheKey(`session_item_${sessionId}`);
     sharePointClient.clearCacheByPrefix('sessions_FY');
     // Slug entries are not affected by stats-only updates — no slug clear needed here
   }

@@ -79,6 +79,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Self-Service: registering for a session that already has their entry returns 409 (duplicate prevention)
 - [ ] Self-Service: cannot register another volunteer — `POST /api/sessions/.../entries` with a different profileId returns 403
 - [ ] Self-Service: can cancel own future booking via `PATCH /api/entries/:id` with `{ cancelled: true }`; another volunteer’s entry returns 403; `DELETE /api/entries/:id` returns 403 (admins only)
+- [ ] Self-Service: session detail stats match stored `session.stats` values (same regular/new/child/eventbrite totals as trusted view); regulars denominator uses cancellation-adjusted value (`regularsCount - cancelledRegular`)
 - [ ] Self-Service: Upload button visible on own entry detail; can upload photos
 - [ ] **Public API security — media PII**: `GET /api/media?sessionId=X` response does **not** contain `name` or `webUrl` fields (these embed uploader's name in the filename)
 - [ ] **Public API security — media PII**: authenticated `GET /api/media?sessionId=X` response **does** include `name` and `webUrl`
