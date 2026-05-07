@@ -1,18 +1,18 @@
 <template>
   <div class="sna-wrap">
-    <p class="sna-label">Already volunteered with us?</p>
-    <AppButton usage="task" label="Log in to book" icon="tick" :href="loginHref" />
+    <p class="sna-label">Took some photos?</p>
+    <AppButton usage="task" label="Click to upload" icon="uploadphoto" :href="uploadHref" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppButton from '../../AppButton.vue'
+import { uploadPath } from '../../../router/index'
 
-const loginHref = computed(() => {
-  const returnTo = `${window.location.pathname}${window.location.search}`
-  return `/login?returnTo=${encodeURIComponent(returnTo)}`
-})
+const props = defineProps<{ entryId: number }>()
+
+const uploadHref = computed(() => uploadPath(props.entryId))
 </script>
 
 <style scoped>

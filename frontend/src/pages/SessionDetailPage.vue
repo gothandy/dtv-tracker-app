@@ -34,6 +34,8 @@
           <SessionActionsIsBooked v-if="showIsBooked" :working="cancelWorking" :error="cancelError" @cancel="onCancel" />
           <SessionActionsSessionFull v-if="showSessionFull" :group-key="(route.params.groupKey as string)" />
           <SessionActionsLogIn v-if="showLogIn" />
+          <SessionActionsLogInUpload v-if="showLogInUpload" />
+          <SessionActionsUpload v-if="showUpload" :entry-id="store.session.userEntryId!" />
           <SessionActionsBookNew v-if="showBookNew" :eventbrite-url="eventbriteUrl!" />
           <SessionActionsBookRegular v-if="showBookRegular" :working="bookWorking" :error="bookError" @book="onBook" />
           <SessionActionsAllocationFull v-if="showAllocationFull" :group-key="(route.params.groupKey as string)" />
@@ -213,6 +215,8 @@ import MediaCard from '../components/MediaCard.vue'
 import SessionActionsIsBooked from '../components/sessions/actions/SessionActionsIsBooked.vue'
 import SessionActionsSessionFull from '../components/sessions/actions/SessionActionsSessionFull.vue'
 import SessionActionsLogIn from '../components/sessions/actions/SessionActionsLogIn.vue'
+import SessionActionsLogInUpload from '../components/sessions/actions/SessionActionsLogInUpload.vue'
+import SessionActionsUpload from '../components/sessions/actions/SessionActionsUpload.vue'
 import SessionActionsBookNew from '../components/sessions/actions/SessionActionsBookNew.vue'
 import SessionActionsBookRegular from '../components/sessions/actions/SessionActionsBookRegular.vue'
 import SessionActionsAllocationFull from '../components/sessions/actions/SessionActionsAllocationFull.vue'
@@ -290,6 +294,8 @@ const repeatSpacesAvail = computed(() => {
   return repeat === undefined || repeatBookings.value < repeat
 })
 
+const isPastSession = computed(() => !!store.session && store.session.date < new Date().toISOString().slice(0, 10))
+
 const showIsBooked = computed(() => !!store.session?.isBookable && !!store.session.isRegistered)
 
 const showSessionFull = computed(() => {
@@ -299,6 +305,18 @@ const showSessionFull = computed(() => {
 
 const showLogIn = computed(() =>
   !!store.session?.isBookable && !profile.isAuthenticated && !showSessionFull.value
+)
+
+const showLogInUpload = computed(() =>
+  !!store.session && isPastSession.value && !store.session.isBookable && !profile.isAuthenticated
+)
+
+const showUpload = computed(() =>
+  !!store.session &&
+  isPastSession.value &&
+  profile.isAuthenticated &&
+  !!store.session.isAttended &&
+  !!store.session.userEntryId
 )
 
 const showBookNew = computed(() =>
@@ -335,7 +353,6 @@ const eventbriteUrl = computed<string | null>(() => {
 const profiles = ref<PickerProfile[]>([])
 const workingId = ref<number | null>(null)
 const refreshWorking = ref(false)
-const isPastSession = computed(() => !!store.session && store.session.date < new Date().toISOString().slice(0, 10))
 const bookWorking = ref(false)
 const bookError = ref<string | undefined>()
 const cancelWorking = ref(false)

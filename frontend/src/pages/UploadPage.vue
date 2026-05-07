@@ -30,7 +30,7 @@
 
       <!-- Upload form -->
       <template v-else>
-        <FormCard :title="`Upload for ${ctx.profileName}`" :subtitle="ctx.sessionName">
+        <FormCard :title="`Upload for ${ctx.profileName}`" :subtitle="sessionSubtitle">
 
           <!-- Drop zone -->
           <div
@@ -118,6 +118,7 @@ interface UploadContext {
   sessionName: string
   date: string
   groupKey: string
+  groupName: string
   profileName: string
 }
 
@@ -131,7 +132,7 @@ const entryId = computed(() => route.query.entryId as string | undefined)
 
 const loading = ref(true)
 const loadError = ref<LoadError | null>(null)
-const ctx = ref<UploadContext>({ entryId: 0, sessionId: 0, sessionName: '', date: '', groupKey: '', profileName: '' })
+const ctx = ref<UploadContext>({ entryId: 0, sessionId: 0, sessionName: '', date: '', groupKey: '', groupName: '', profileName: '' })
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
@@ -143,6 +144,11 @@ const done = ref(false)
 
 const overLimit = computed(() => files.value.length > 10)
 const galleryHref = computed(() => sessionPath(ctx.value.groupKey, ctx.value.date))
+const sessionSubtitle = computed(() => `${formatDateShort(ctx.value.date)}, ${ctx.value.groupName}`)
+
+function formatDateShort(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
 
 function statusLabel(status: FileItem['status']) {
   if (status === 'pending')   return 'Pending'
