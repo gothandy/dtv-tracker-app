@@ -519,15 +519,17 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
             return (b.ID ?? 0) - (a.ID ?? 0);
           });
         const ownEntry = sessionEntries[0];
+        const attendedAny = sessionEntries.some(e => !e[ENTRY_CANCELLED] && !!e.Checked);
         if (ownEntry) {
           userEntryId = ownEntry.ID;
           // Cancelled entry: not registered (can re-book), but userEntryId still returned for cancel admin flows
           isRegistered = !ownEntry[ENTRY_CANCELLED];
+          isAttended = attendedAny;
         } else {
           isRegistered = selfProfileStats?.sessionIds?.includes(spSession.ID) ?? false;
+          isAttended = false;
         }
         isRegular = isRegular ?? false;
-        isAttended = false; // self-service attended status not computed
       } else {
         if (selfProfileStats) {
           isRegistered = selfProfileStats.sessionIds?.includes(spSession.ID) ?? false;

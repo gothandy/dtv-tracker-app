@@ -232,6 +232,7 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 - **No silent empty returns** — `[]` or `null` from a catch is only acceptable when the feature is genuinely optional and the empty state is indistinguishable from "not configured".
 - **API endpoints must return non-2xx on failure** — never `{ success: true, data: [] }` on error.
 - **Frontend fetch handlers must log on failure** — at minimum `console.error`; for user-facing features call `showError()`.
+- **No UI fallbacks for required data** — if required fields are missing, surface the issue early (dev/test) instead of silently substituting alternate text.
 
 ### Security Considerations
 

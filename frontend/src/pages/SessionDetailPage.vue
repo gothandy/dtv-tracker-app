@@ -35,6 +35,7 @@
           <SessionActionsSessionFull v-if="showSessionFull" :group-key="(route.params.groupKey as string)" />
           <SessionActionsLogIn v-if="showLogIn" />
           <SessionActionsLogInUpload v-if="showLogInUpload" />
+          <SessionActionsUpload v-if="showUpload" :entry-id="store.session.userEntryId!" />
           <SessionActionsBookNew v-if="showBookNew" :eventbrite-url="eventbriteUrl!" />
           <SessionActionsBookRegular v-if="showBookRegular" :working="bookWorking" :error="bookError" @book="onBook" />
           <SessionActionsAllocationFull v-if="showAllocationFull" :group-key="(route.params.groupKey as string)" />
@@ -215,6 +216,7 @@ import SessionActionsIsBooked from '../components/sessions/actions/SessionAction
 import SessionActionsSessionFull from '../components/sessions/actions/SessionActionsSessionFull.vue'
 import SessionActionsLogIn from '../components/sessions/actions/SessionActionsLogIn.vue'
 import SessionActionsLogInUpload from '../components/sessions/actions/SessionActionsLogInUpload.vue'
+import SessionActionsUpload from '../components/sessions/actions/SessionActionsUpload.vue'
 import SessionActionsBookNew from '../components/sessions/actions/SessionActionsBookNew.vue'
 import SessionActionsBookRegular from '../components/sessions/actions/SessionActionsBookRegular.vue'
 import SessionActionsAllocationFull from '../components/sessions/actions/SessionActionsAllocationFull.vue'
@@ -307,6 +309,14 @@ const showLogIn = computed(() =>
 
 const showLogInUpload = computed(() =>
   !!store.session && isPastSession.value && !store.session.isBookable && !profile.isAuthenticated
+)
+
+const showUpload = computed(() =>
+  !!store.session &&
+  isPastSession.value &&
+  profile.isAuthenticated &&
+  !!store.session.isAttended &&
+  !!store.session.userEntryId
 )
 
 const showBookNew = computed(() =>
