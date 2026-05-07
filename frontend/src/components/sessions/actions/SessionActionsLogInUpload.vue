@@ -1,7 +1,7 @@
 <template>
   <div class="sna-wrap">
-    <p class="sna-label">Already volunteered with us?</p>
-    <AppButton usage="task" label="Log in to book" icon="tick" :href="loginHref" />
+    <p class="sna-label">Have photos from the session?</p>
+    <AppButton usage="task" label="Log in to upload" icon="tick" :href="loginHref" />
   </div>
 </template>
 
