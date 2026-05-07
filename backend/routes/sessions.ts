@@ -462,9 +462,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
-    // Active entries: exclude cancelled for stats. All entries returned to operational users (with cancelled flag).
-    const activeEntries = sessionEntries.filter(e => !e[ENTRY_CANCELLED]);
-
+    // All session entries returned to operational users (with cancelled flag).
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
@@ -493,19 +491,6 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined
       };
     });
-
-    // Stats use only active (non-cancelled) entries
-    const totalHours = activeEntries.reduce((sum, e) => sum + parseHours(e.Hours), 0);
-    const newCount = activeEntries.filter(e => {
-      const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-      if (pid === undefined) return false;
-      const ps = JSON.parse(profileMap.get(pid)?.[PROFILE_STATS] || '{}');
-      return Array.isArray(ps.sessionIds) && ps.sessionIds[0] === spSession.ID && !e.Labels?.includes('Regular');
-    }).length;
-    const childCount = activeEntries.filter(e => !!e.AccompanyingAdultLookupId).length;
-    const regularCount = activeEntries.filter(e => e.Labels?.includes('Regular')).length;
-    const cancelledRegularCount = sessionEntries.filter(e => e[ENTRY_CANCELLED] && e.Labels?.includes('Regular')).length || undefined;
-    const eventbriteCount = activeEntries.filter(e => !!e[ENTRY_EVENTBRITE_ATTENDEE_ID]).length;
 
     // Per-user personalised flags — from profile stats (all roles) with live entry fallback for admin/checkin
     // For self-service: also look up their own entry to return userEntryId (needed for cancel flow)
@@ -570,15 +555,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       limits: sessionLimits,
       storedLimits: rawLimits,
       regularsCount,
-      stats: {
-        count: isSelfService ? storedStats.count : activeEntries.length,
-        hours: Math.round(totalHours * 10) / 10,
-        new: newCount || undefined,
-        child: childCount || undefined,
-        regular: regularCount || undefined,
-        cancelledRegular: cancelledRegularCount,
-        eventbrite: eventbriteCount || undefined,
-      },
+      // Session stats are persisted on the session item and refreshed after writes.
+      // Keep this endpoint consistent across public, trusted, and self-service callers.
+      stats: storedStats,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       isBookable: spSession.Date >= today,
       eventbriteEventId: spSession.EventbriteEventID,

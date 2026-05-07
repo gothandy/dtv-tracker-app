@@ -33,7 +33,7 @@ export function sessionDisplayStats(
     eventbrite: stats.eventbrite ?? 0,
     repeatCount: Math.max(0, stats.count - (stats.new ?? 0) - (stats.regular ?? 0)),
     effectiveRegularsCount: regularsCount !== undefined
-      ? regularsCount - (stats.cancelledRegular ?? 0)
+      ? Math.max(0, regularsCount - (stats.cancelledRegular ?? 0))
       : undefined,
     spacesLeft: limits?.total !== undefined ? limits.total - stats.count : null,
     totalLimit: limits?.total,
