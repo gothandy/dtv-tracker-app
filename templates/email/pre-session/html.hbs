@@ -9,6 +9,9 @@
 {{/section}}
 
 {{#section}}
+  {{#if sessionTitle}}
+  <p style="margin:0 0 16px;"><strong>{{sessionTitle}}</strong></p>
+  {{/if}}
   {{#if description}}
   <p style="margin:0 0 16px;">{{{nl2br description}}}</p>
   {{/if}}
