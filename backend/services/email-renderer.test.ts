@@ -28,10 +28,23 @@ describe('pre-session email', () => {
     expect(subject).toContain('3 May')
   })
 
+  it('renders apostrophes in subject as plain text', async () => {
+    const { subject } = await renderEmail('pre-session', {
+      ...PRE_SESSION_VARS,
+      groupName: "Women's Dig",
+    })
+    expect(subject).toBe("Women's Dig details for 3 May")
+    expect(subject).not.toContain('&#x27;')
+  })
+
   it('renders html with volunteer name and session URL', async () => {
-    const { html } = await renderEmail('pre-session', PRE_SESSION_VARS)
+    const { html } = await renderEmail('pre-session', {
+      ...PRE_SESSION_VARS,
+      sessionTitle: 'Women Dig Intro Session',
+    })
     expect(html).toContain('Alice')
     expect(html).toContain('sessions/trail-crew/2025-05-03')
+    expect(html).toContain('Women Dig Intro Session')
   })
 
   it('renders non-empty text', async () => {
