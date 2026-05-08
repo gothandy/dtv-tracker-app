@@ -63,6 +63,14 @@ async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegat
   return compiled;
 }
 
+async function loadSubjectTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
+  if (process.env.NODE_ENV !== 'development' && templateCache.has(filePath)) return templateCache.get(filePath)!;
+  const src = await fs.readFile(filePath, 'utf-8');
+  const compiled = Handlebars.compile(src, { noEscape: true });
+  templateCache.set(filePath, compiled);
+  return compiled;
+}
+
 export function clearEmailTemplateCache(): void {
   templateCache.clear();
 }
@@ -70,7 +78,7 @@ export function clearEmailTemplateCache(): void {
 export async function renderEmail(template: string, vars: Record<string, unknown>): Promise<RenderedEmail> {
   const templateDir = path.join(TEMPLATES_DIR, template);
   const [renderSubject, renderText, renderHtml, renderBase] = await Promise.all([
-    loadTemplate(path.join(templateDir, 'subject.hbs')),
+    loadSubjectTemplate(path.join(templateDir, 'subject.hbs')),
     loadTemplate(path.join(templateDir, 'text.hbs')),
     loadTemplate(path.join(templateDir, 'html.hbs')),
     loadTemplate(path.join(TEMPLATES_DIR, 'base.hbs')),
