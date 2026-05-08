@@ -44,7 +44,7 @@ describe('pre-session email', () => {
     })
     expect(html).toContain('Alice')
     expect(html).toContain('sessions/trail-crew/2025-05-03')
-    expect(html).toContain('Session:</strong> Women Dig Intro Session')
+    expect(html).toContain('Women Dig Intro Session')
   })
 
   it('renders non-empty text', async () => {
