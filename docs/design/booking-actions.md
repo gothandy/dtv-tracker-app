@@ -4,76 +4,55 @@
 - Session is either Future or Past
 - User is either Public or Logged In
 - Attended (past) or Booked (future) = user has non-cancelled entry for session.
-- Regular users are automatically booked on sessions and gurenteed a space.
+- Regular users are automatically booked on sessions and guaranteed a space.
 - A New user defined by this being their first session. Spaces can be limited. Or zero for non-open sessions.
 - A Repeat user defined by not a regular, and not new.
 - Sessions are never Cancelled, booking closes as the session becomes "past".
 
 ## Possible Combinations
 
-| User     | Past            | New Space    | Repeat Only  | No Space     |
-|----------|-----------------|--------------|--------------|--------------|
-| Public   | Login to Upload | Book         | Limited      | Sold Out     |
-| New      | Next            | Book         | Next         | Next         |
-| Repeat   | Next            | Book         | Book         | Next         |
-| Regular  | Next            | Book         | Book         | Book         |
-| Booked   | Upload          | Cancel/Child | Cancel/Child | Cancel/Child |
+| User      | Past            | New Space    | Repeat Only   | No Space     |
+|-----------|-----------------|--------------|---------------|--------------|
+| Public    | Login Upload    | New Book     | Limited Space | Sold Out     |
+| Has Entry | Upload          | Booked       | Booked        | Booked       |
+| New       | Next Session    | New Book     | No New        | Sold Out     |
+| Repeat    | Next Session    | Repeat Book  | Repeat Book   | Sold Out     |
+| Regular   | Next Session    | Regular Book | Regular Book  | Regular Book |
 
-## State Machine
 
+## Call To Action Type
+| Key           | Text                                 | Buttons                  | Child   |
+|---------------|--------------------------------------|--------------------------|---------|
+| Login Upload  | "Did you attend this session?"       | [Login to upload photos] |         |
+| Upload        | "You attended this session."         | [Upload Photos]          |         |
+| Next Session  | "Like the look of this?"             | [View the Next]          |         |
+| New Book      | "Space available."                   | [Book Now]               | Message |
+| Booked        | "You're booked on."                  | [Cancel]                 | Button  |
+| Repeat Book   | "You've been before?"                | [Book Again]             | Message |
+| Regular Book  | "As a regular, we save you a space." | [Book to Confirm]        | Message |
+| Limited Space | "Limited Availability."              | [Login to Check]         | Message |
+| No New        | "Only for returning volunteers."     | [View an Alternative]    | Message |
+| Sold Out      | "Sold Out"                           | [View the Next]          |         |
+
+## Child Logic
+
+### Message
 ```
-If Past Session:
+    If child limit is 0:
+        "Adult only session."
 
-    If Public:
-        "Did you attend this session?"
-        [Login to upload photos]
+    Else if child limit is not set:
+        "Children welcome."
 
+    Else if child spaces = 0:
+        "No child spaces remaining."
 
-    If Logged In:
+    Else if child spaces > 0:
+        "X child spaces remaining."
+```
 
-        If Attended:
-            "You attended."
-            [Upload photos]
-
-        Else:
-            "Like the look of this?"
-            [Book on the next one]
-
-Else If Future Session:
-
-    If Public:
-
-        If New Spaces:
-            "Space available."
-            [Book Here]
-
-        Else If No New and Repeat Spaces:
-            "Limited availability."
-            [Login to Book]
-
-    If Logged In and Booked:
-
-        "You're all booked on."
-        [Cancel]
-        "or"
-        [Add Child] {if Child Space}
-
-    Else If Can Book:
-            "Space available."
-            [Book here]
-            {Child Message}
-
-        Else If Cannot Book and Repeat Spaces:
-            "Limited availability."
-            [Next Session]
-
-        Else If No New and No Repeat:
-            "Sold out."
-            [Next Session]
-
-    Else No New and No Repeat:
-
-        "Sold out."
-        [Next Session]
-
+### Button
+```
+    if child spaces > 0 or child limit is not set:
+        show [Add Child Booking]
 ```
