@@ -74,7 +74,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | **Groups list** | Full view, regulars count | — | — | — |
 | **Group detail** | Group info, stats, sessions, regulars list | — | — | Edit button, Create Session button |
 | **Sessions list** | Full view | CSV download, checkboxes (Advanced) | — | Add Tags button |
-| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only) | Delete; edit modal: Group, Date, Eventbrite ID |
+| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card | Check-in checkboxes, Set Hours, Add Entry, Refresh, Edit (title + description only); photo edit (caption, public, cover — not delete) | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID |
 | **Add entry** | Redirected (auth required) | View only (API blocks writes) | Full access (search, select, create entry, add new profile) | — |
 | **Entry detail** | Redirected (auth required) | View only (controls disabled) | Checked In toggle, Hours field, Count, Upload button | Notes, tag buttons, Delete Entry |
 | **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | — | Bulk Records |
@@ -138,6 +138,8 @@ Self-service users **cannot** access:
 | PATCH | `/media/:itemId` | Update media item metadata (title, isPublic) |
 | POST | `/profiles/:id/consent` | Collect privacy and photo consent (upserts both records) |
 
+Check In can make a session photo non-public via `PATCH /media/:itemId`; permanent delete requires admin (see below).
+
 ### Admin Only
 
 | Method | Endpoint | Purpose |
@@ -157,6 +159,7 @@ Self-service users **cannot** access:
 | POST | `/records/bulk` | Bulk create/update records |
 | POST | `/profiles/:slug/transfer` | Transfer profile |
 | DELETE | `/profiles/:slug` | Delete profile |
+| DELETE | `/media/:itemId` | Delete session photo from media library |
 | POST | `/eventbrite/*` | Eventbrite sync endpoints |
 | POST | `/cache/clear` | Clear server cache |
 

@@ -155,6 +155,7 @@
         :cover-media-id="store.session.coverMediaId"
         :save-working="mediaSaveWorking"
         :save-error="mediaSaveError"
+        :allow-media-delete="profile.isAdmin"
         @save="onMediaSave"
         @delete="onMediaDelete"
       />

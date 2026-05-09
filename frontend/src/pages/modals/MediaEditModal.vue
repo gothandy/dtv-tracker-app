@@ -3,7 +3,7 @@
     title="Edit Photo"
     action="Save"
     action-icon="save"
-    show-delete
+    :show-delete="showDelete"
     :delete-disabled="form.isCover"
     :working="working"
     :error="error"
@@ -37,7 +37,7 @@
   </ModalLayout>
 
   <DeleteModal
-    v-if="confirmDelete"
+    v-if="showDelete && confirmDelete"
     title="Delete photo?"
     body="This will permanently delete the photo."
     :working="working"
@@ -59,10 +59,13 @@ const props = withDefaults(defineProps<{
   item: MediaItem
   showCover?: boolean
   isCover?: boolean
+  /** When false, Delete is hidden (e.g. Check In — use private instead). */
+  showDelete?: boolean
   working?: boolean
   error?: string
 }>(), {
   working: false,
+  showDelete: true,
 })
 
 const emit = defineEmits<{

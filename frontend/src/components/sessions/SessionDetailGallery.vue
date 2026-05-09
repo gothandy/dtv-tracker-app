@@ -23,6 +23,7 @@
     :item="editingItem"
     :show-cover="true"
     :is-cover="editingItem.listItemId === coverMediaId"
+    :show-delete="allowMediaDelete"
     :working="saveWorking"
     :error="saveError"
     @close="onModalClose"
@@ -50,6 +51,8 @@ const props = defineProps<{
   saveWorking?: boolean
   /** Server or network error from last save — parent clears when modal closes or on new save */
   saveError?: string
+  /** Admin only — delete is not allowed for Check In at the API. */
+  allowMediaDelete?: boolean
 }>()
 
 const editingItem = defineModel<MediaItem | null>('editingItem', { default: null })
