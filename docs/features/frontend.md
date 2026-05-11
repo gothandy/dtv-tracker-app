@@ -34,9 +34,9 @@ Term picker on session detail (Admin/Check In). Hierarchical picker backed by Sh
 - Volunteers listing: export selected or all visible profiles
 - Records export from admin page
 
-## Admin Page
+## Tools page (`/tools`)
 
-Buttons for: Eventbrite sync (sessions + attendees + nightly), stats refresh, backup export. Unmatched Eventbrite events list. SharePoint section: full server cache clear (use after manual SharePoint list edits), shortcuts (Site Contents, Term Store, backup). Icon legend.
+`AdminPage.vue` — page title and burger menu use the **Tools** label. Full admins are still **Tracker Admin** in role copy elsewhere (welcome, badges, privacy). Old URL `/admin` redirects here. Buttons: Eventbrite sync (sessions + attendees + nightly), stats refresh, backup export; unmatched Eventbrite events list; SharePoint section (clear all server caches, Site Contents, Term Store, backup); icon legend.
 
 ## PWA
 

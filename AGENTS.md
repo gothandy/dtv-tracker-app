@@ -37,7 +37,7 @@ Feature-complete volunteer tracking application with:
 All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](frontend/src/router/index.ts).
 
 - Dashboard with FY stats, next session card, personalised calendar ([HomePage.vue](frontend/src/pages/HomePage.vue))
-- Admin page with Eventbrite sync buttons, exports, backup export, site shortcuts ([AdminPage.vue](frontend/src/pages/AdminPage.vue))
+- Tools page (`/tools`, UI label **Tools**; `/admin` redirects) with Eventbrite sync buttons, exports, backup export, site shortcuts ([AdminPage.vue](frontend/src/pages/AdminPage.vue))
 - Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))

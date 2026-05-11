@@ -32,7 +32,7 @@ export const profilePath = (slug: string) => `/profiles/${slug}`
 export const addEntryPath = (groupKey: string, date: string) => `/sessions/${groupKey}/${date}/add-entry`
 export const entryPath = (id: number) => `/entries/${id}`
 export const entriesPath = () => '/entries'
-export const adminPath = () => '/admin'
+export const toolsPath = () => '/tools'
 export const consentPath = (slug: string) => `/profiles/${slug}/consent`
 export const uploadPath  = (entryId: number) => `/upload?entryId=${entryId}`
 
@@ -49,7 +49,8 @@ export const router = createRouter({
     { path: '/terms', component: TermsPage },
     { path: '/login', component: LoginPage },
     { path: '/entries', component: EntriesPage, meta: { requiresAdmin: true } },
-    { path: '/admin', component: AdminPage },
+    { path: '/admin', redirect: '/tools' },
+    { path: '/tools', component: AdminPage },
     { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
     { path: '/forbidden', component: () => import('../pages/ForbiddenPage.vue') },
     { path: '/profiles', component: ProfileListPage, meta: { requiresTrusted: true } },

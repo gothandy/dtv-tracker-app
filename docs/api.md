@@ -180,7 +180,7 @@ All pages are Vue 3 SPA routes served at `/`.
 | Page | URL | Description |
 |---|---|---|
 | Dashboard | `/` | FY stats, next session, personalised calendar |
-| Admin | `/admin` | Eventbrite sync buttons, exports, site links |
+| Tools (admin UI) | `/tools` (`/admin` → redirect) | Eventbrite sync buttons, exports, site links |
 | Groups | `/groups` | Groups listing with FY filter |
 | Group Detail | `/groups/:key` | Stats, regulars, sessions, edit/delete |
 | Sessions | `/sessions` | Sessions listing with FY filter, search, term filters |

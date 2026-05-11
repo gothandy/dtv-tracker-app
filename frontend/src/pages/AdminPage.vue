@@ -1,6 +1,6 @@
 <template>
   <DefaultLayout>
-    <PageHeader>{{ ACCESS_LABEL_ADMIN }}</PageHeader>
+    <PageHeader>{{ ACCESS_LABEL_ADMIN_TOOLS_PAGE }}</PageHeader>
     <div class="pt-3 pb-8">
 
       <LoadingSpinner v-if="!profile.ready" />
@@ -68,30 +68,19 @@
           <div v-if="sessionStatsResult"   :class="['ap-result', sessionStatsError   && 'ap-error']">{{ sessionStatsResult }}</div>
         </div>
 
-        <!-- SharePoint: shortcuts + full cache clear after manual list edits -->
+        <!-- SharePoint: shortcuts + full cache clear -->
         <div class="ap-section">
           <h2 class="ap-title">
             <a v-if="siteUrl" :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
             <template v-else>SharePoint</template>
           </h2>
-          <p class="ap-sharepoint-hint">
-            If you change list data directly in SharePoint, clear the app cache here so the next request loads fresh data from Graph (not memory).
-          </p>
-          <div class="ap-actions ap-actions--cache-clear">
-            <AppButton
-              label="Clear all server caches"
-              variant="danger"
-              usage="task"
-              :working="cacheClearLoading"
-              @click="clearAllServerCaches"
-            />
-          </div>
-          <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
-          <div class="ap-actions ap-actions--shortcuts">
+          <div class="ap-actions">
+            <AppButton label="Clear all server caches" :working="cacheClearLoading" @click="clearAllServerCaches" />
             <AppButton label="Site Contents" :href="siteContentsUrl" target="_blank" />
             <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
+          <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
           <div v-if="backupResult" :class="['ap-result', backupError && 'ap-error']">{{ backupResult }}</div>
         </div>
 
@@ -127,9 +116,9 @@ import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { LABEL_ICONS } from '../utils/labelIcons'
 
-import { ACCESS_LABEL_ADMIN } from '../utils/accessLabels'
+import { ACCESS_LABEL_ADMIN_TOOLS_PAGE } from '../utils/accessLabels'
 
-usePageTitle(ACCESS_LABEL_ADMIN)
+usePageTitle(ACCESS_LABEL_ADMIN_TOOLS_PAGE)
 
 const router = useRouter()
 const profile = useViewer()
@@ -306,13 +295,6 @@ const cacheClearResult  = ref('')
 const cacheClearError   = ref(false)
 
 async function clearAllServerCaches() {
-  if (
-    !confirm(
-      'Clear all server-side caches (SharePoint list data, column schema, taxonomy, media, cover images)? The next pages may load more slowly.'
-    )
-  ) {
-    return
-  }
   cacheClearLoading.value = true
   cacheClearResult.value = ''
   cacheClearError.value = false
@@ -387,31 +369,6 @@ onMounted(loadSiteConfig)
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-}
-
-.ap-sharepoint-hint {
-  margin: 0 0 1rem;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  line-height: 1.45;
-  max-width: 42rem;
-}
-
-.ap-actions--cache-clear {
-  margin-bottom: 0.75rem;
-}
-
-.ap-actions--cache-clear :deep(.app-btn) {
-  width: 100%;
-  justify-content: center;
-  min-height: 3rem;
-  font-size: 1.05rem;
-}
-
-.ap-actions--shortcuts {
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
 }
 
 .ap-result {

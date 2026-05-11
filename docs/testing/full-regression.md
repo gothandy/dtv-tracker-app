@@ -316,7 +316,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] NoPhoto badge shown for a volunteer without Accepted Photo Consent (live from `profile.stats.noPhoto`)
 
 ### H27. Clear cache
-- [ ] Admin page → SharePoint section → "Clear all server caches" (confirm) → success message; `POST /api/cache/clear`
+- [ ] Tools page (`/tools`) → SharePoint section → "Clear all server caches" → success message; `POST /api/cache/clear` (legacy `/admin` redirects here)
 - [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes)
 
 ### H28. Upload button (entry detail — check-in/admin)
@@ -383,7 +383,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `GET /api/email/sandbox/pre-session?format=json` returns fixture data
 
 ### H31. Backup export
-- [ ] Admin page → "Export Backup" button → `POST /api/backup/export-all`
+- [ ] Tools page (`/tools`) → "Export Backup" button → `POST /api/backup/export-all`
 - [ ] Returns summary with file counts and timestamp; displayed in admin page
 - [ ] Files written to `Backups/` folder in Shared Documents on the Tracker site
 - [ ] Unchanged files are skipped (SHA-256 diff check) — re-running immediately results in 0 updated files
