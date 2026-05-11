@@ -23,7 +23,7 @@
           <RouterLink to="/groups" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Groups</RouterLink>
           <RouterLink v-if="profile.isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Profiles</RouterLink>
           <RouterLink v-if="profile.isAdmin" to="/entries" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Entries</RouterLink>
-          <RouterLink v-if="profile.isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
+          <RouterLink v-if="profile.isAdmin" :to="toolsPath()" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">{{ ACCESS_LABEL_ADMIN_TOOLS_PAGE }}</RouterLink>
           <button @click="openAbout" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors text-left">About</button>
           <RouterLink v-if="isDev || profile.isAdmin" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
 
@@ -44,14 +44,16 @@
       </div>
     </div>
   </header>
-  <AboutModal v-if="showAbout" @close="showAbout = false" />
+  <AboutModal v-if="showAbout" :login-tier-label="aboutLoginTierLabel" @close="showAbout = false" />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { toolsPath } from '../router'
 import { useViewer } from '../composables/useViewer'
 import AboutModal from './AboutModal.vue'
+import { ACCESS_LABEL_ADMIN_TOOLS_PAGE, loginTierLabel } from '../utils/accessLabels'
 
 const isDev = import.meta.env.DEV
 const route = useRoute()
@@ -64,6 +66,16 @@ const loginPath = computed(() => {
 })
 const showAbout = ref(false)
 const profile = useViewer()
+
+const aboutLoginTierLabel = computed(() =>
+  loginTierLabel({
+    ready: profile.ready,
+    isAdmin: profile.isAdmin,
+    isCheckIn: profile.isCheckIn,
+    isSelfService: profile.isSelfService,
+    isPublic: profile.isPublic,
+  })
+)
 
 function toggleMenu() {
   open.value = !open.value

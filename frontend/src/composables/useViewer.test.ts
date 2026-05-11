@@ -18,20 +18,18 @@ function viewer(role: string | null, ready = true) {
 
 describe('useViewer role matrix', () => {
   it.each([
-    { role: 'admin',       isAdmin: true,  isCheckIn: false, isReadOnly: false, isSelfService: false, isTrusted: true,  isAuthenticated: true,  isOperational: true  },
-    { role: 'checkin',     isAdmin: false, isCheckIn: true,  isReadOnly: false, isSelfService: false, isTrusted: true,  isAuthenticated: true,  isOperational: true  },
-    { role: 'readonly',    isAdmin: false, isCheckIn: false, isReadOnly: true,  isSelfService: false, isTrusted: true,  isAuthenticated: true,  isOperational: false },
-    { role: 'selfservice', isAdmin: false, isCheckIn: false, isReadOnly: false, isSelfService: true,  isTrusted: false, isAuthenticated: true,  isOperational: false },
-    { role: null,          isAdmin: false, isCheckIn: false, isReadOnly: false, isSelfService: false, isTrusted: false, isAuthenticated: false, isOperational: false },
-  ])('$role', ({ role, isAdmin, isCheckIn, isReadOnly, isSelfService, isTrusted, isAuthenticated, isOperational }) => {
+    { role: 'admin',       isAdmin: true,  isCheckIn: false, isSelfService: false, isTrusted: true,  isAuthenticated: true,  hasCheckInAccess: true  },
+    { role: 'checkin',     isAdmin: false, isCheckIn: true,  isSelfService: false, isTrusted: true,  isAuthenticated: true,  hasCheckInAccess: true  },
+    { role: 'selfservice', isAdmin: false, isCheckIn: false, isSelfService: true,  isTrusted: false, isAuthenticated: true,  hasCheckInAccess: false },
+    { role: null,          isAdmin: false, isCheckIn: false, isSelfService: false, isTrusted: false, isAuthenticated: false, hasCheckInAccess: false },
+  ])('$role', ({ role, isAdmin, isCheckIn, isSelfService, isTrusted, isAuthenticated, hasCheckInAccess }) => {
     const v = viewer(role)
     expect(v.isAdmin).toBe(isAdmin)
     expect(v.isCheckIn).toBe(isCheckIn)
-    expect(v.isReadOnly).toBe(isReadOnly)
     expect(v.isSelfService).toBe(isSelfService)
     expect(v.isTrusted).toBe(isTrusted)
     expect(v.isAuthenticated).toBe(isAuthenticated)
-    expect(v.isOperational).toBe(isOperational)
+    expect(v.hasCheckInAccess).toBe(hasCheckInAccess)
   })
 })
 
@@ -52,12 +50,11 @@ describe('useViewer — context snapshot', () => {
     expect(v.context).toEqual({
       isAdmin: true,
       isCheckIn: false,
-      isReadOnly: false,
       isSelfService: false,
       isTrusted: true,
       isAuthenticated: true,
       isPublic: false,
-      isOperational: true,
+      hasCheckInAccess: true,
     })
   })
 })

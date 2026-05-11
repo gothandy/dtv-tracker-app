@@ -49,7 +49,7 @@
 
       <!-- SECOND ROW -->
        <!-- TODO display a different set of text depending on the session category (dig, fund raising, behind the scenes etc.) -->
-      <LayoutColumns ratio="1-1-1" v-if="store.session.isBookable && !profile.isOperational">
+      <LayoutColumns ratio="1-1-1" v-if="store.session.isBookable && !profile.hasCheckInAccess">
         <template #header>
           <SectionHeader >What to expect?</SectionHeader>
         </template>
@@ -93,7 +93,7 @@
 
       </LayoutColumns>
 
-      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null || (store.session.metadata?.length ?? 0) > 0 || profile.isOperational">
+      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null || (store.session.metadata?.length ?? 0) > 0 || profile.hasCheckInAccess">
 
         <template #header>
           <SectionHeader v-if="!store.session.isBookable">What we got up to?</SectionHeader>
@@ -118,7 +118,7 @@
             :edit-working="editWorking"
             :edit-error="editError"
             :allow-edit="profile.isCheckIn || profile.isAdmin"
-            :allow-email="profile.isOperational"
+            :allow-email="profile.hasCheckInAccess"
             :is-self-service="profile.isSelfService"
             @session-save="onSessionSave"
             @session-delete="onSessionDelete"
@@ -163,13 +163,13 @@
 
 
       <!-- BOTTOM ROW -->
-      <LayoutColumns ratio="1" :reverse="true" v-if="profile.isOperational">
+      <LayoutColumns ratio="1" :reverse="true" v-if="profile.hasCheckInAccess">
         <template #header><SectionHeader>Who's booked on?</SectionHeader></template>
         <template #left>
           <SessionEntryList
             ref="entryListRef"
             :entries="entries"
-            :allow-edit="profile.isOperational"
+            :allow-edit="profile.hasCheckInAccess"
             :is-admin="profile.isAdmin"
             :profiles="profiles"
             :working-id="workingId"
@@ -367,6 +367,7 @@ function mapEntry(e: EntryResponse): EntryItem {
   return {
     id: e.id,
     profileId: e.profileId,
+    trackerAccess: e.trackerAccess,
     checkedIn: e.checkedIn,
     hours: e.hours,
     count: e.count,

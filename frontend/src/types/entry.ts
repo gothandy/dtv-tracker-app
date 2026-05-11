@@ -18,6 +18,7 @@ export interface EntrySessionSummary {
 export interface EntryItem {
   id: number
   profileId?: number
+  trackerAccess?: 'none' | 'checkin' | 'admin'
   checkedIn: boolean
   hours: number
   count: number

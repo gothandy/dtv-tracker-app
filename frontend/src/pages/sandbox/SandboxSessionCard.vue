@@ -19,7 +19,7 @@
         </template>
       </LayoutColumns>
 
-      <h2>Admin / Check-In</h2>
+      <h2>Tracker Assist / Tracker Admin</h2>
 
       <LayoutColumns ratio="1-1-1">
         <template #left>
@@ -44,9 +44,9 @@ import type { RoleContext } from '../../composables/useViewer'
 usePageTitle('Sandbox')
 
 const adminProfile: RoleContext = {
-  isAdmin: true, isCheckIn: false, isReadOnly: false,
+  isAdmin: true, isCheckIn: false,
   isSelfService: false, isTrusted: true, isAuthenticated: true,
-  isPublic: false, isOperational: true,
+  isPublic: false, hasCheckInAccess: true,
 }
 
 const base: Session = {

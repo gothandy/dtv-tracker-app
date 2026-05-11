@@ -10,7 +10,7 @@
 
       <section>
         <h2 class="text-xl font-bold mb-2">Who can use this application</h2>
-        <p>DTV Tracker is an internal tool for Dean Trail Volunteers trusted users and volunteers. Some parts of the application are publicly accessible without an account. Full access requires an invitation from a DTV administrator.</p>
+        <p>DTV Tracker is an internal tool for {{ ACCESS_LABEL_CHECK_IN }}, {{ ACCESS_LABEL_ADMIN }}, and {{ ACCESS_LABEL_SELF_SERVICE }} users. Some areas are open to {{ ACCESS_LABEL_PUBLIC }} visitors without signing in. Named access is granted when your volunteer profile is configured by the organisation.</p>
       </section>
 
       <section>
@@ -72,6 +72,12 @@
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
+import {
+  ACCESS_LABEL_PUBLIC,
+  ACCESS_LABEL_SELF_SERVICE,
+  ACCESS_LABEL_CHECK_IN,
+  ACCESS_LABEL_ADMIN,
+} from '../utils/accessLabels'
 
 usePageTitle('Terms of Use')
 </script>

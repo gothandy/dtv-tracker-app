@@ -6,7 +6,7 @@ declare module 'express-session' {
       id: string;
       displayName: string;
       email: string;
-      role: 'admin' | 'checkin' | 'readonly' | 'selfservice';
+      role: 'admin' | 'checkin' | 'selfservice';
       profileSlug?: string;
       profileId?: number;       // set for checkin and selfservice; used for ownership enforcement
       profileIds?: number[];    // all profiles for this email (selfservice with multiple linked profiles)

@@ -2,6 +2,10 @@
 
 All pages are Vue 3 SPA routes. See [docs/app-dev-guidelines.md](../app-dev-guidelines.md) for component architecture and patterns.
 
+## App header
+
+The burger menu includes **About** (`AboutModal`): app name, then **Logged in** (tier from `loginTierLabel()` in `accessLabels.ts`), then build time, GitHub commit, contact, and licence.
+
 ## FY Filtering and Bar Charts
 
 All list pages (sessions, volunteers, groups) support financial year filtering: This FY / Last FY / All / Rolling FY. FY runs April 1 – March 31. Group detail and profile detail pages include a FY bar chart showing hours per year.
@@ -14,7 +18,7 @@ Authenticated users with a linked profile see:
 - Registered / Attended pills on session cards
 - Next / Last buttons jump to own sessions, falling back to any session if none
 
-Public and Read Only users see the standard global session calendar.
+Public users see the standard global session calendar (same component; trusted Microsoft users see additional affordances elsewhere).
 
 ## Taxonomy Word Cloud
 
@@ -34,9 +38,9 @@ Term picker on session detail (Admin/Check In). Hierarchical picker backed by Sh
 - Volunteers listing: export selected or all visible profiles
 - Records export from admin page
 
-## Admin Page
+## Tools page (`/tools`)
 
-Buttons for: Eventbrite sync (sessions + attendees + nightly), stats refresh, cache clear, backup export. Unmatched Eventbrite events list. Site shortcuts (SharePoint Site Contents, Term Store, Backups). Icon legend.
+`AdminPage.vue` — page title and burger menu use the **Tools** label. Full admins are still **Tracker Admin** in role copy elsewhere (welcome, badges, privacy). Old URL `/admin` redirects here. Buttons: Eventbrite sync (sessions + attendees + nightly), stats refresh, backup export; unmatched Eventbrite events list; SharePoint section (clear all server caches, Site Contents, Term Store, backup); icon legend.
 
 ## PWA
 

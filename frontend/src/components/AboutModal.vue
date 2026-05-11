@@ -6,6 +6,10 @@
         <span>DTV Tracker App</span>
       </div>
       <div class="flex gap-3">
+        <span class="font-bold w-24 shrink-0">Logged in</span>
+        <span>{{ loginTierLabel }}</span>
+      </div>
+      <div class="flex gap-3">
         <span class="font-bold w-24 shrink-0">Build</span>
         <span>{{ build }}</span>
       </div>
@@ -32,6 +36,14 @@
 
 <script setup lang="ts">
 import ModalLayout from './ModalLayout.vue'
+
+withDefaults(
+  defineProps<{
+    /** Public / My Tracker / Tracker Assist / Tracker Admin (from `loginTierLabel()`). */
+    loginTierLabel?: string
+  }>(),
+  { loginTierLabel: '—' }
+)
 
 const emit = defineEmits<{ close: [] }>()
 

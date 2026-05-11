@@ -7,13 +7,13 @@
       <!-- Both cards (magic + Microsoft) -->
       <h2>Cards — magic + Microsoft</h2>
       <div class="task-body">
-        <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
+        <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="email" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
             <AppButton usage="task" label="Send sign-in link" :disabled="!emailValid" />
           </FormSubmitRow>
         </FormCard>
-        <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
+        <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
@@ -23,7 +23,7 @@
       <!-- Microsoft only (magic disabled) -->
       <h2>Cards — Microsoft only</h2>
       <div class="task-body">
-        <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
+        <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
@@ -34,13 +34,13 @@
       <h2>Reason banner — not approved</h2>
       <div class="task-body">
         <AlertBanner message="We don't have an account for jane@example.com. Contact your group organiser to get set up." />
-        <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
+        <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="emailReason" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
             <AppButton usage="task" label="Send sign-in link" :disabled="!emailReasonValid" />
           </FormSubmitRow>
         </FormCard>
-        <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
+        <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
@@ -51,13 +51,13 @@
       <h2>Reason banner — expired link</h2>
       <div class="task-body">
         <AlertBanner message="That sign-in link has expired or is invalid — enter your email below to get a new one." type="info" />
-        <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
+        <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="emailExpired" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
             <AppButton usage="task" label="Send sign-in link" :disabled="!emailExpiredValid" />
           </FormSubmitRow>
         </FormCard>
-        <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
+        <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
@@ -67,13 +67,13 @@
       <!-- Sending -->
       <h2>Sending…</h2>
       <div class="task-body">
-        <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
+        <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput :model-value="'jane@example.com'" type="email" placeholder="your@email.com" :disabled="true" />
           <FormSubmitRow>
             <AppButton usage="task" label="Sending…" :working="true" />
           </FormSubmitRow>
         </FormCard>
-        <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
+        <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
@@ -83,14 +83,14 @@
       <!-- Send error -->
       <h2>Send error</h2>
       <div class="task-body">
-        <FormCard title="Volunteer Sign In" subtitle="View your volunteer profile, register for sessions, and upload photos.">
+        <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="emailError" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
             <AppButton usage="task" label="Send sign-in link" :disabled="!emailErrorValid" />
             <p class="form-error">Something went wrong. Please try again.</p>
           </FormSubmitRow>
         </FormCard>
-        <FormCard title="DTV Teams Account" subtitle="For dig leads, coordinators and admins — use your @dtv.org.uk Microsoft account.">
+        <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
           </FormSubmitRow>
@@ -125,8 +125,16 @@ import FormInput from '../../components/forms/FormInput.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import AlertBanner from '../../components/forms/AlertBanner.vue'
+import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../../utils/accessLabels'
 
 usePageTitle('Sandbox — LoginPage')
+
+const cardTitleEmail = ACCESS_LABEL_SELF_SERVICE
+const cardSubtitleEmail =
+  'Sign in with email to view your volunteer profile, manage your sessions, and upload photos.'
+const cardTitleMs = ACCESS_LABEL_CHECK_IN
+const cardSubtitleMs =
+  'Sign in with your Microsoft account, using an address ending @dtv.org.uk'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

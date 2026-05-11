@@ -5,20 +5,13 @@
     <LoadingSpinner v-if="store.loading" />
     <template v-else>
 
-    <!-- Personal prompt — shown to all logged-in users when a message applies -->
+    <!-- Welcome banner + next session (all signed-in roles) -->
     <PersonalContainer
       v-if="profile.isAuthenticated"
       :is-admin="profile.isAdmin"
       :is-check-in="profile.isCheckIn"
-      :is-read-only="profile.isReadOnly"
       :is-self-service="profile.isSelfService"
-      :is-new="isNewVolunteer"
-      :is-repeat="isRepeatVolunteer"
-      :is-regular="isRegularVolunteer"
-      :has-booking="hasBooking"
-      :has-attended="hasAttended"
       :next-session="nextSession"
-      :previous-session="previousSession"
     />
 
     <LayoutColumns class="pt-2 mb-8">
@@ -112,7 +105,7 @@
     </LayoutColumns>
 
     <!-- Recent sign-ups — admin/check-in only -->
-    <section v-if="profile.isOperational" class="mb-8">
+    <section v-if="profile.hasCheckInAccess" class="mb-8">
       <SectionHeader>Recent Bookings</SectionHeader>
       <RecentEntryList :is-admin="profile.isAdmin" />
     </section>

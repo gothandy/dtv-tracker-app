@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
+import { isPublicApiGet } from './public-api-get-paths';
 
 const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/entries\/\d+$/ },           // check-in + set hours
@@ -54,19 +55,21 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  // Admin users pass through
-  if (role === 'admin') {
+  // Anonymous (or post-logout) public reads — same paths as require-auth; must not require a role
+  if (isPublicApiGet(req)) {
     next();
     return;
   }
 
-  // Read Only users: allow GETs (except exports), block all writes
-  if (role === 'readonly') {
-    if (req.method === 'GET' && !ADMIN_ONLY_GET_PATTERNS.some(p => p.test(req.path))) {
-      next();
-      return;
-    }
-    res.status(403).json({ success: false, error: 'Read only access' });
+  // From here on, authenticated role is required for this request path
+  if (!req.session.user) {
+    res.status(403).json({ success: false, error: 'Not permitted' });
+    return;
+  }
+
+  // Admin users pass through
+  if (role === 'admin') {
+    next();
     return;
   }
 
@@ -94,22 +97,25 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  // Block admin-only GET endpoints
-  if (req.method === 'GET') {
-    if (ADMIN_ONLY_GET_PATTERNS.some(p => p.test(req.path))) {
-      res.status(403).json({ success: false, error: 'Admin access required' });
+  // Check-in only — must match role exactly (stale sessions may still carry removed roles such as
+  // `readonly`; those must never fall through into this allowlist).
+  if (role === 'checkin') {
+    if (req.method === 'GET') {
+      if (ADMIN_ONLY_GET_PATTERNS.some(p => p.test(req.path))) {
+        res.status(403).json({ success: false, error: 'Admin access required' });
+        return;
+      }
+      next();
       return;
     }
-    next();
+    if (CHECKIN_ALLOWED_PATTERNS.some(p => p.method === req.method && p.pattern.test(req.path))) {
+      next();
+      return;
+    }
+    res.status(403).json({ success: false, error: 'Admin access required' });
     return;
   }
 
-  // Allow specific write operations for Check In Only
-  if (CHECKIN_ALLOWED_PATTERNS.some(p => p.method === req.method && p.pattern.test(req.path))) {
-    next();
-    return;
-  }
-
-  // Block all other write operations
-  res.status(403).json({ success: false, error: 'Admin access required' });
+  // Unknown or legacy role (e.g. pre-deploy `readonly`) — deny; do not treat as check-in.
+  res.status(403).json({ success: false, error: 'Not permitted' });
 }

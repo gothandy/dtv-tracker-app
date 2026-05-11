@@ -2,7 +2,7 @@ import { ref, onMounted } from 'vue'
 
 export interface AuthUser {
   displayName: string
-  role: 'admin' | 'checkin' | 'readonly' | 'selfservice'
+  role: 'admin' | 'checkin' | 'selfservice'
   profileSlug?: string
   profileStats?: {
     sessionsByFY: Record<string, number>

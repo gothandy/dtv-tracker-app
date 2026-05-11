@@ -1,6 +1,6 @@
 <template>
   <DefaultLayout>
-    <PageHeader>Admin</PageHeader>
+    <PageHeader>{{ ACCESS_LABEL_ADMIN_TOOLS_PAGE }}</PageHeader>
     <div class="pt-3 pb-8">
 
       <LoadingSpinner v-if="!profile.ready" />
@@ -68,16 +68,19 @@
           <div v-if="sessionStatsResult"   :class="['ap-result', sessionStatsError   && 'ap-error']">{{ sessionStatsResult }}</div>
         </div>
 
-        <!-- Site shortcuts (shown when config returns a SharePoint site URL) -->
-        <div v-if="siteUrl" class="ap-section">
+        <!-- SharePoint: shortcuts + full cache clear -->
+        <div class="ap-section">
           <h2 class="ap-title">
-            <a :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
+            <a v-if="siteUrl" :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
+            <template v-else>SharePoint</template>
           </h2>
           <div class="ap-actions">
+            <AppButton label="Clear all server caches" :working="cacheClearLoading" @click="clearAllServerCaches" />
             <AppButton label="Site Contents" :href="siteContentsUrl" target="_blank" />
             <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
+          <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
           <div v-if="backupResult" :class="['ap-result', backupError && 'ap-error']">{{ backupResult }}</div>
         </div>
 
@@ -113,7 +116,9 @@ import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { LABEL_ICONS } from '../utils/labelIcons'
 
-usePageTitle('Admin')
+import { ACCESS_LABEL_ADMIN_TOOLS_PAGE } from '../utils/accessLabels'
+
+usePageTitle(ACCESS_LABEL_ADMIN_TOOLS_PAGE)
 
 const router = useRouter()
 const profile = useViewer()
@@ -285,6 +290,28 @@ const backupLoading   = ref(false)
 const backupResult    = ref('')
 const backupError     = ref(false)
 
+const cacheClearLoading = ref(false)
+const cacheClearResult  = ref('')
+const cacheClearError   = ref(false)
+
+async function clearAllServerCaches() {
+  cacheClearLoading.value = true
+  cacheClearResult.value = ''
+  cacheClearError.value = false
+  try {
+    const res = await fetch('/api/cache/clear', { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Clear failed')
+    cacheClearResult.value = data.message || 'Caches cleared.'
+  } catch (e: any) {
+    cacheClearResult.value = e.message || 'Clear failed'
+    cacheClearError.value = true
+    console.error('Cache clear failed:', e)
+  } finally {
+    cacheClearLoading.value = false
+  }
+}
+
 async function loadSiteConfig() {
   try {
     const res = await fetch('/api/config')
@@ -292,7 +319,7 @@ async function loadSiteConfig() {
     if (data.success && data.data.sharepointSiteUrl) {
       siteUrl.value = data.data.sharepointSiteUrl
     }
-  } catch { /* site section stays hidden */ }
+  } catch { /* site title stays plain "SharePoint" */ }
 }
 
 async function exportBackup() {

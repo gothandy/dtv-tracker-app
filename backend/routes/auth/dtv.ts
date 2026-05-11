@@ -54,39 +54,51 @@ router.get('/callback', async (req: Request, res: Response) => {
       headers: { Authorization: `Bearer ${tokenResponse.accessToken}` },
     });
 
-    const profile = graphResponse.data;
-    const email = profile.mail || profile.userPrincipalName;
+    const graphProfile = graphResponse.data;
+    const email = graphProfile.mail || graphProfile.userPrincipalName;
 
     const adminUsers = (process.env.ADMIN_USERS || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
     const profiles = await profilesRepository.getAll();
     const matchedProfile = profiles.find(p => p.User?.toLowerCase() === email.toLowerCase());
+    const savedReturnTo = req.session.returnTo;
 
-    let role: 'admin' | 'checkin' | 'readonly' = 'readonly';
-    if (adminUsers.includes(email.toLowerCase())) {
-      role = 'admin';
-    } else if (matchedProfile) {
-      role = 'checkin';
+    if (!matchedProfile) {
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) console.error('Session destroy:', destroyErr.message);
+        const q = 'reason=dtv-not-authorised';
+        const path =
+          savedReturnTo && savedReturnTo.startsWith('/')
+            ? `/login?${q}&returnTo=${encodeURIComponent(savedReturnTo)}`
+            : `/login?${q}`;
+        res.redirect(path);
+      });
+      return;
     }
+
+    const role: 'admin' | 'checkin' = adminUsers.includes(email.toLowerCase()) ? 'admin' : 'checkin';
 
     let profileStats: NonNullable<typeof req.session.user>['profileStats'] | undefined;
-    if (matchedProfile?.[PROFILE_STATS]) {
-      try { profileStats = JSON.parse(matchedProfile[PROFILE_STATS]); } catch {}
+    if (matchedProfile[PROFILE_STATS]) {
+      try { profileStats = JSON.parse(matchedProfile[PROFILE_STATS]); } catch { /* ignore */ }
     }
 
+    delete req.session.returnTo;
+
     req.session.user = {
-      id: profile.id,
-      displayName: profile.displayName,
+      id: String(matchedProfile.ID),
+      displayName: matchedProfile.Title || email,
       email,
       role,
-      profileSlug: matchedProfile ? profileSlug(matchedProfile.Title, matchedProfile.ID) : undefined,
-      profileId: matchedProfile?.ID,
+      profileSlug: profileSlug(matchedProfile.Title, matchedProfile.ID),
+      profileId: matchedProfile.ID,
       freshAuthAt: new Date().toISOString(),
       profileStats,
     };
 
-    const returnTo = req.session.returnTo || '/';
-    delete req.session.returnTo;
-    const returnToWithNotice = returnTo.includes('?') ? `${returnTo}&flashKey=signed-in` : `${returnTo}?flashKey=signed-in`;
+    const returnToPath = savedReturnTo && savedReturnTo.startsWith('/') ? savedReturnTo : '/';
+    const returnToWithNotice = returnToPath.includes('?')
+      ? `${returnToPath}&flashKey=signed-in`
+      : `${returnToPath}?flashKey=signed-in`;
     res.redirect(returnToWithNotice);
   } catch (error: any) {
     console.error('Error in auth callback:', error.message);

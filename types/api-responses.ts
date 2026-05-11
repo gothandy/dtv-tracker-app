@@ -58,12 +58,17 @@ export interface SessionResponse {
   metadata?: Array<{ label: string; termGuid: string }>;
 }
 
+/** Microsoft Tracker role implied by Profile User + ADMIN_USERS — only on trusted responses. */
+export type TrackerAccess = 'none' | 'checkin' | 'admin';
+
 export interface ProfileResponse {
   id: number;
   slug: string;
   name?: string;
   email?: string;
   user?: string;
+  /** Present for admin/check-in callers only — who has Microsoft Tracker access for this volunteer. */
+  trackerAccess?: TrackerAccess;
   isGroup: boolean;
   isMember: boolean;
   cardStatus?: string;
@@ -121,6 +126,8 @@ export interface ProfileDetailResponse {
   emails: string[];
   matchName?: string;
   user?: string;
+  /** Trusted Microsoft callers only. */
+  trackerAccess?: TrackerAccess;
   isGroup: boolean;
   isMember?: boolean;
   cardStatus?: string;
@@ -169,7 +176,9 @@ export interface EntryResponse {
   notes?: string;
   accompanyingAdultId?: number;
   cancelled?: string;          // ISO datetime if booking was cancelled
-  email?: string;              // only present for operational users (admin/check-in)
+  email?: string;              // only present for check-in tier users (admin/check-in)
+  /** Trusted Microsoft callers only. */
+  trackerAccess?: TrackerAccess;
   labels?: string[];
   isNew?: boolean;             // profile.stats.sessionIds[0] === this session
   noPhoto?: boolean;           // profile.stats.noPhoto (current)
@@ -297,6 +306,8 @@ export interface EntryListItemResponse {
   cancelled?: string;
   labels?: string[];
   eventbriteAttendeeId?: string;
+  /** Trusted Microsoft callers only (entries list admin page). */
+  trackerAccess?: TrackerAccess;
 }
 
 export interface TagHoursItem {

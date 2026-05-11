@@ -47,7 +47,7 @@ A fast human-run sanity check after any non-trivial change. Not a substitute for
 
 ## 8. Cache clear (30 sec)
 
-- [ ] Admin page → click "Refresh" → `POST /api/cache/clear` → success message shown
+- [ ] Admin page → SharePoint section → "Clear all server caches" → confirm → `POST /api/cache/clear` → success message shown
 
 ## 9. Automated tests (2 min)
 

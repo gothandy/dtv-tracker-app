@@ -43,6 +43,7 @@ import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
 
 import type { EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../../types/api-responses';
+import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
 
 const router: Router = express.Router();
@@ -229,6 +230,9 @@ router.get('/entries', async (req: Request, res: Response) => {
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
 
+    const showTrackerAccess =
+      req.session.user?.role === 'admin' || req.session.user?.role === 'checkin';
+
     const results: EntryListItemResponse[] = entries
       .flatMap(e => {
         const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
@@ -291,6 +295,7 @@ router.get('/entries', async (req: Request, res: Response) => {
           cancelled: e.Cancelled || undefined,
           labels: e.Labels,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
+          ...(showTrackerAccess ? { trackerAccess: trackerAccessForProfileUser(profile?.User) } : {}),
         }];
       })
       .sort((a, b) => b.date.localeCompare(a.date));

@@ -1,3 +1,5 @@
+import { ACCESS_LABEL_ADMIN, ACCESS_LABEL_CHECK_IN } from './accessLabels'
+
 export interface LabelIcon {
   icon: string
   alt: string
@@ -32,6 +34,8 @@ export const LABEL_ICONS: LabelIcon[] = [
 export const EDITABLE_LABEL_ICONS = LABEL_ICONS.filter(t => t.labelKey !== undefined)
 
 interface EntryIconSource {
+  /** Trusted session/entries API only — Microsoft Tracker tier for this volunteer */
+  trackerAccess?: 'none' | 'checkin' | 'admin'
   isMember?: boolean
   isGroup?: boolean
   cardStatus?: string
@@ -48,6 +52,20 @@ interface EntryIconSource {
 export function iconsForEntry(e: EntryIconSource): LabelIcon[] {
   const icons: LabelIcon[] = []
   const labels = e.labels ?? []
+
+  if (e.trackerAccess === 'admin') {
+    icons.push({
+      icon: 'badges/tracker-admin.svg',
+      alt: ACCESS_LABEL_ADMIN,
+      type: 'badge',
+    })
+  } else if (e.trackerAccess === 'checkin') {
+    icons.push({
+      icon: 'badges/tracker-checkin.svg',
+      alt: ACCESS_LABEL_CHECK_IN,
+      type: 'badge',
+    })
+  }
 
   // Profile-level badges (always from profile fields)
   if (e.isMember) icons.push({ icon: 'badges/member.svg', alt: 'Charity Member', type: 'badge' })

@@ -44,7 +44,7 @@ router.get('/media/counts', async (req: Request, res: Response) => {
 });
 
 // List media in a session folder. Returns stable proxy URLs (not raw SharePoint pre-auth URLs).
-// Trusted users (admin/check-in/read-only) see all items with raw SharePoint URLs for direct CDN access.
+// Trusted Microsoft users (admin/check-in) see all items with raw SharePoint URLs for direct CDN access.
 // Self-service and unauthenticated users only see isPublic === true items via stable proxy URLs.
 router.get('/media', async (req: Request, res: Response) => {
   const groupKey = (req.query.groupKey as string || '').replace(/[^a-zA-Z0-9-]/g, '');
@@ -76,7 +76,7 @@ router.get('/media', async (req: Request, res: Response) => {
   }
 });
 
-// Download the original file. Trusted DTV users only (admin/check-in/read-only).
+// Download the original file. Trusted Microsoft users only (admin/check-in).
 // Fetches the file server-side and serves it with Content-Disposition: attachment.
 router.get('/media/:itemId/download', async (req: Request, res: Response) => {
   const role = req.session?.user?.role;

@@ -36,13 +36,27 @@
             <div class="pd-badges">
               <img v-if="isMember" src="/icons/badges/member.svg" class="pd-badge" alt="Member" title="Member" />
               <img v-if="store.profile.isGroup" src="/icons/badges/group.svg" class="pd-badge" alt="Group" title="Group" />
+              <img
+                v-if="store.profile.trackerAccess === 'admin'"
+                src="/icons/badges/tracker-admin.svg"
+                class="pd-badge"
+                :alt="ACCESS_LABEL_ADMIN"
+                :title="ACCESS_LABEL_ADMIN"
+              />
+              <img
+                v-if="store.profile.trackerAccess === 'checkin'"
+                src="/icons/badges/tracker-checkin.svg"
+                class="pd-badge"
+                :alt="ACCESS_LABEL_CHECK_IN"
+                :title="ACCESS_LABEL_CHECK_IN"
+              />
             </div>
             <div v-for="email in store.profile.emails" :key="email" class="pd-email">
               <a :href="`mailto:${email}`">{{ email }}</a>
             </div>
           </div>
           <ProfileLinkedAccounts
-            v-if="viewer.isOperational && store.profile.linkedProfiles?.length"
+            v-if="viewer.hasCheckInAccess && store.profile.linkedProfiles?.length"
             :linked-profiles="store.profile.linkedProfiles"
           />
         </template>
@@ -60,7 +74,7 @@
             @transfer-profile="onTransferProfile"
           />
           <ProfileWarnings
-            v-if="viewer.isOperational && store.profile.warnings?.length"
+            v-if="viewer.hasCheckInAccess && store.profile.warnings?.length"
             :warnings="store.profile.warnings!"
           />
         </template>
@@ -74,7 +88,7 @@
       />
 
       <RegularEditModal
-        v-if="editingRegular && viewer.isOperational"
+        v-if="editingRegular && viewer.hasCheckInAccess"
         :regular="editingRegular"
         :adults="[]"
         view-link-label="View Group"
@@ -90,7 +104,7 @@
         :records="store.profile.records ?? []"
         :profile-id="store.profile.id"
         :profile-slug="store.profile.slug"
-        :show-consent-link="viewer.isOperational || viewer.isSelfService"
+        :show-consent-link="viewer.hasCheckInAccess || viewer.isSelfService"
         :allow-edit="viewer.isAdmin"
         :types="recordTypes"
         :statuses="recordStatuses"
@@ -105,7 +119,7 @@
         <template #left>
           <ProfileEntryList
             :entries="entries"
-            :allow-edit="viewer.isOperational"
+            :allow-edit="viewer.hasCheckInAccess"
             :is-admin="viewer.isAdmin"
             :working-id="workingId"
             ref="entryListRef"
@@ -185,6 +199,7 @@ import type { AddRecordPayload } from './modals/RecordAddModal.vue'
 import type { SaveRecordPayload } from './modals/RecordEditModal.vue'
 import type { EntryItem } from '../types/entry'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
+import { ACCESS_LABEL_ADMIN, ACCESS_LABEL_CHECK_IN } from '../utils/accessLabels'
 import type { PickerProfile } from '../components/ProfilePicker.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'

@@ -1,16 +1,11 @@
 <template>
   <div class="personal-prompt">
-    <p class="personal-prompt__message">{{ message }}</p>
+    <p class="personal-prompt__welcome">{{ welcome }}</p>
     <div class="personal-prompt__actions">
       <AppButton
-        v-if="nextSession"
-        label="View Next Session"
-        :href="nextSessionPath"
-      />
-      <AppButton
-        v-if="previousSession"
-        label="View Last Session"
-        :href="previousSessionPath"
+        usage="task"
+        label="Your Next Session"
+        :href="nextSessionHref"
       />
     </div>
   </div>
@@ -19,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppButton from './AppButton.vue'
-import { sessionPath } from '../router'
+import { sessionPath, sessionsPath } from '../router'
 
 export interface SessionSummary {
   groupKey: string
@@ -28,13 +23,16 @@ export interface SessionSummary {
 }
 
 const props = defineProps<{
-  message: string
+  welcome: string
   nextSession: SessionSummary | null
-  previousSession: SessionSummary | null
 }>()
 
-const nextSessionPath     = computed(() => props.nextSession     ? sessionPath(props.nextSession.groupKey,     props.nextSession.date)     : '')
-const previousSessionPath = computed(() => props.previousSession ? sessionPath(props.previousSession.groupKey, props.previousSession.date) : '')
+/** Concrete next session, or sessions list when none scheduled. */
+const nextSessionHref = computed(() =>
+  props.nextSession
+    ? sessionPath(props.nextSession.groupKey, props.nextSession.date)
+    : sessionsPath(),
+)
 </script>
 
 <style scoped>
@@ -49,17 +47,16 @@ const previousSessionPath = computed(() => props.previousSession ? sessionPath(p
   gap: 1rem;
 }
 
-.personal-prompt__message {
+.personal-prompt__welcome {
   font-size: 0.95rem;
   line-height: 1.4;
   flex: 1;
   min-width: 0;
+  margin: 0;
 }
 
 .personal-prompt__actions {
   display: flex;
-  flex-direction: row;
-  gap: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -71,7 +68,11 @@ const previousSessionPath = computed(() => props.previousSession ? sessionPath(p
 
   .personal-prompt__actions {
     width: 100%;
-    flex-direction: column;
+  }
+
+  .personal-prompt__actions :deep(.app-btn) {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

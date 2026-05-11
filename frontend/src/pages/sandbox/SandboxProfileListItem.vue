@@ -45,6 +45,16 @@
         <ProfileListItem :profile="noEmail" :display-hours="8.5" :display-sessions="3" />
       </div>
 
+      <h2>Tracker Assist badge (Profile `User` set)</h2>
+      <div class="demo">
+        <ProfileListItem :profile="trackerCheckin" :display-hours="12" :display-sessions="5" />
+      </div>
+
+      <h2>Tracker Admin badge</h2>
+      <div class="demo">
+        <ProfileListItem :profile="trackerAdmin" :display-hours="20" :display-sessions="8" />
+      </div>
+
       <h2>FY: All — shows hoursAll</h2>
       <div class="demo">
         <ProfileListItem :profile="standard" :display-hours="97.5" :display-sessions="42" />
@@ -176,6 +186,28 @@ const noEmail: ProfileResponse = {
   email: undefined,
   hoursThisFY: 8.5,
   sessionsThisFY: 3,
+}
+
+const trackerCheckin: ProfileResponse = {
+  ...base,
+  id: 10,
+  slug: 'ian-diglead-10',
+  name: 'Ian Diglead',
+  user: 'ian@dtv.org.uk',
+  trackerAccess: 'checkin',
+  hoursThisFY: 12,
+  sessionsThisFY: 5,
+}
+
+const trackerAdmin: ProfileResponse = {
+  ...base,
+  id: 11,
+  slug: 'jane-admin-11',
+  name: 'Jane Admin',
+  user: 'jane@dtv.org.uk',
+  trackerAccess: 'admin',
+  hoursThisFY: 20,
+  sessionsThisFY: 8,
 }
 
 const mockProfiles: ProfileResponse[] = [standard, group, member, cardAccepted, cardInvited]
