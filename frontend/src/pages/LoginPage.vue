@@ -64,10 +64,10 @@
           </FormSubmitRow>
         </FormCard>
 
-        <!-- Microsoft work account (Tracker Assist / Tracker Admin at auth) -->
+        <!-- Microsoft sign-in (Tracker Assist / Tracker Admin at auth) -->
         <FormCard
           :title="ACCESS_LABEL_CHECK_IN"
-          subtitle="Sign in with your Microsoft (work account) ending with @dtv.org.uk"
+          subtitle="Sign in with your Microsoft account, using an address ending @dtv.org.uk"
         >
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
@@ -122,11 +122,7 @@ import FormCard from '../components/forms/FormCard.vue'
 import FormInput from '../components/forms/FormInput.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
-import {
-  ACCESS_LABEL_ADMIN,
-  ACCESS_LABEL_CHECK_IN,
-  ACCESS_LABEL_SELF_SERVICE,
-} from '../utils/accessLabels'
+import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../utils/accessLabels'
 
 usePageTitle('Login')
 
@@ -173,7 +169,7 @@ const reasons: Record<string, (email?: string) => string> = {
   'not-found':    (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'invalid-state': () => 'That sign-in link has expired or is invalid — enter your email below to get a new one.',
   'dtv-not-authorised': () =>
-    `Access denied. Your work account is not set up for ${ACCESS_LABEL_CHECK_IN} or ${ACCESS_LABEL_ADMIN}. Please contact a ${ACCESS_LABEL_ADMIN} to resolve this.`,
+    `Access denied. Your Microsoft account is not set up for ${ACCESS_LABEL_CHECK_IN}. Please contact your admin.`,
 }
 
 async function sendLoginEmail() {

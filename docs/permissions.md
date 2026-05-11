@@ -11,7 +11,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 | **Self-Service** | Yes (magic link / verification code on email) | View own profile, register for sessions, upload own photos. Cannot view other volunteers' data. Matched via Profile **`Email`**. |
 | **Public** | No | Limited access to non-privacy data (sessions, groups, stats) |
 
-> **"Trusted" (Microsoft)** = **Admin ∪ Check In** — both require a **Profile `User`** link to the Microsoft work account. There is **no** Microsoft “read-only” fallback: if Entra succeeds but no profile **`User`** matches, sign-in is **rejected** (`/login?reason=dtv-not-authorised`) and no session is opened (this is **not** the same as browsing as Public). **Self-Service** is not trusted for other volunteers’ PII.
+> **"Trusted" (Microsoft)** = **Admin ∪ Check In** — both require a **Profile `User`** link to the volunteer’s Microsoft sign-in email. There is **no** Microsoft “read-only” fallback: if Entra succeeds but no profile **`User`** matches, sign-in is **rejected** (`/login?reason=dtv-not-authorised`) and no session is opened (this is **not** the same as browsing as Public). **Self-Service** is not trusted for other volunteers’ PII.
 
 ## Configuration
 
@@ -173,6 +173,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/tags`, `/api/media`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths.
 
 3. **Role enforcement** (`middleware/require-admin.ts`): After `requireAuth` on API routes:
+   - **Public GETs** (same path set as `require-auth.ts`, resolved with `baseUrl` + `path` inside the `/api` mount): **always** allowed without a session user so anonymous and post-logout home/session list loads are not blocked.
    - **Admin**: passes through.
    - **Self-Service**: GETs restricted to `SELFSERVICE_ALLOWED_GET_PATTERNS` plus own profile slug; writes allowed only per `SELFSERVICE_ALLOWED_PATTERNS`.
    - **Check In** (`role === 'checkin'` only): GETs allowed except `ADMIN_ONLY_GET_PATTERNS` (exports, `/entries` list); writes allowed only for `CHECKIN_ALLOWED_PATTERNS`. Any other stored role (including legacy values) gets **403** — check-in patterns are never implied for unknown roles.

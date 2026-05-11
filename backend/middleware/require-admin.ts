@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
+import { isPublicApiGet } from './public-api-get-paths';
 
 const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/entries\/\d+$/ },           // check-in + set hours
@@ -51,6 +52,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   // API key auth (scheduled sync) bypasses role checks
   if (!req.session.user && req.headers['x-api-key']) {
     next();
+    return;
+  }
+
+  // Anonymous (or post-logout) public reads — same paths as require-auth; must not require a role
+  if (isPublicApiGet(req)) {
+    next();
+    return;
+  }
+
+  // From here on, authenticated role is required for this request path
+  if (!req.session.user) {
+    res.status(403).json({ success: false, error: 'Not permitted' });
     return;
   }
 

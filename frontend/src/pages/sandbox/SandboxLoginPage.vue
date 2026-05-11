@@ -134,7 +134,7 @@ const cardSubtitleEmail =
   'Sign in with email to view your volunteer profile, manage your sessions, and upload photos.'
 const cardTitleMs = ACCESS_LABEL_CHECK_IN
 const cardSubtitleMs =
-  'Sign in with your Microsoft (work account) ending with @dtv.org.uk'
+  'Sign in with your Microsoft account, using an address ending @dtv.org.uk'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

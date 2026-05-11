@@ -4,10 +4,8 @@
       :src="`/icons/status/${iconName}.svg`"
       class="alert-banner-icon"
       :class="iconTintClass"
-      aria-hidden="true"
-      width="16"
-      height="16"
       alt=""
+      aria-hidden="true"
     />
     <span class="alert-banner-message">{{ message }}</span>
   </div>
@@ -48,11 +46,13 @@ const iconTintClass = computed(() => {
   font-weight: 500;
 }
 
+/* Match `AppButton` `.app-btn__icon` (1.1rem) for visual consistency */
 .alert-banner-icon {
   flex-shrink: 0;
-  width: 1rem;
-  height: 1rem;
-  margin-top: 0.25rem; /* align with first line of text */
+  width: 1.1rem;
+  height: 1.1rem;
+  object-fit: contain;
+  margin-top: 0.2rem; /* optical align with first line of text */
 }
 
 .alert-banner-message {

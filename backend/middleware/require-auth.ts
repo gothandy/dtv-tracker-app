@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
-
-// GET paths accessible without authentication (no PII returned)
-const PUBLIC_GET_PATHS = ['/api/stats', '/api/sessions', '/api/groups', '/api/tags', '/api/media', '/api/email/sandbox'];
+import { isPublicApiGet } from './public-api-get-paths';
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  if (req.method === 'GET' && PUBLIC_GET_PATHS.some(p => req.path.startsWith(p))) {
+  if (isPublicApiGet(req)) {
     next();
     return;
   }

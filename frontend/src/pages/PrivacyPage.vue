@@ -37,7 +37,7 @@
       <section>
         <h2 class="text-xl font-bold mb-2">Who can see your data</h2>
         <ul class="list-disc pl-6 space-y-1">
-          <li><strong>{{ ACCESS_LABEL_CHECK_IN }} &amp; {{ ACCESS_LABEL_ADMIN }}</strong> (Microsoft sign-in) &mdash; can view and edit volunteer data for their role. Access is only granted when your volunteer profile is linked to your work account.</li>
+          <li><strong>{{ ACCESS_LABEL_CHECK_IN }} &amp; {{ ACCESS_LABEL_ADMIN }}</strong> (Microsoft sign-in) &mdash; can view and edit volunteer data for their role. Access is only granted when your volunteer profile is linked to your Microsoft sign-in email.</li>
           <li><strong>{{ ACCESS_LABEL_SELF_SERVICE }}</strong> (email sign-in) &mdash; can view your own profile, sessions, and uploaded media.</li>
           <li><strong>{{ ACCESS_LABEL_PUBLIC }}</strong> (without signing in) &mdash; can view sessions, groups, and aggregate statistics. Individual volunteer names and profiles are not visible without logging in.</li>
         </ul>
