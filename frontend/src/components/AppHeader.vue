@@ -44,7 +44,7 @@
       </div>
     </div>
   </header>
-  <AboutModal v-if="showAbout" @close="showAbout = false" />
+  <AboutModal v-if="showAbout" :login-tier-label="aboutLoginTierLabel" @close="showAbout = false" />
 </template>
 
 <script setup lang="ts">
@@ -53,7 +53,7 @@ import { useRoute } from 'vue-router'
 import { toolsPath } from '../router'
 import { useViewer } from '../composables/useViewer'
 import AboutModal from './AboutModal.vue'
-import { ACCESS_LABEL_ADMIN_TOOLS_PAGE } from '../utils/accessLabels'
+import { ACCESS_LABEL_ADMIN_TOOLS_PAGE, loginTierLabel } from '../utils/accessLabels'
 
 const isDev = import.meta.env.DEV
 const route = useRoute()
@@ -66,6 +66,16 @@ const loginPath = computed(() => {
 })
 const showAbout = ref(false)
 const profile = useViewer()
+
+const aboutLoginTierLabel = computed(() =>
+  loginTierLabel({
+    ready: profile.ready,
+    isAdmin: profile.isAdmin,
+    isCheckIn: profile.isCheckIn,
+    isSelfService: profile.isSelfService,
+    isPublic: profile.isPublic,
+  })
+)
 
 function toggleMenu() {
   open.value = !open.value

@@ -2,6 +2,10 @@
 
 All pages are Vue 3 SPA routes. See [docs/app-dev-guidelines.md](../app-dev-guidelines.md) for component architecture and patterns.
 
+## App header
+
+The burger menu includes **About** (`AboutModal`): app name, then **Logged in** (tier from `loginTierLabel()` in `accessLabels.ts`), then build time, GitHub commit, contact, and licence.
+
 ## FY Filtering and Bar Charts
 
 All list pages (sessions, volunteers, groups) support financial year filtering: This FY / Last FY / All / Rolling FY. FY runs April 1 – March 31. Group detail and profile detail pages include a FY bar chart showing hours per year.
