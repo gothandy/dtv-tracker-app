@@ -1,6 +1,6 @@
 <template>
   <DefaultLayout>
-    <PageHeader>Admin</PageHeader>
+    <PageHeader>{{ ACCESS_LABEL_ADMIN }}</PageHeader>
     <div class="pt-3 pb-8">
 
       <LoadingSpinner v-if="!profile.ready" />
@@ -113,7 +113,9 @@ import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { LABEL_ICONS } from '../utils/labelIcons'
 
-usePageTitle('Admin')
+import { ACCESS_LABEL_ADMIN } from '../utils/accessLabels'
+
+usePageTitle(ACCESS_LABEL_ADMIN)
 
 const router = useRouter()
 const profile = useViewer()

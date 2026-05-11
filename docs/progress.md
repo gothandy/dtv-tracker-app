@@ -1,5 +1,11 @@
 # Development Progress
 
+## Session: 2026-05-10 (Microsoft requires Profile `User`; remove read-only role)
+
+- Microsoft sign-in only when a volunteer profile’s **`User`** field matches the Entra email (`ADMIN_USERS` → admin, else check-in). No session + **`/login?reason=dtv-not-authorised`** when there is no match.
+- Frontend: **`hasCheckInAccess`** / **`isTrusted`** replace the old read-only / **`isOperational`** split; API adds optional **`trackerAccess`** on profile and entry payloads for trusted callers.
+- Docs: **`docs/permissions.md`**, **`docs/testing/full-regression.md`**, **`docs/app-dev-guidelines.md`**, **`AGENTS.md`** / **`docs/features/auth.md`** aligned with four permission levels and SPA paths.
+
 ## Session: 2026-05-05 (Self-service booking cancel — permissions)
 
 - Self-service may no longer `DELETE /api/entries/:id` (middleware block; hard delete remains admin-only in handler).
@@ -159,9 +165,9 @@ Accepts `profile?: RoleContext` prop — same pattern as `SessionCard`. Page pas
 Introduced `useProfile()` as the single UI-facing auth composable, replacing `useRole.ts`. All pages and components now import from `useProfile` only — `useAuth` and `useRole` are blocked by ESLint.
 
 **Key decisions:**
-- `useProfile()` returns `reactive({...})` so boolean helpers (`isAdmin`, `isCheckIn`, `isOperational`, etc.) auto-unwrap in both templates and script — no `.value` needed
+- `useViewer()` / profile context: boolean helpers (`isAdmin`, `hasCheckInAccess`, `isTrusted`, etc.) are exposed for templates and script
 - `RoleContext` interface: plain snapshot object for passing auth context as a component prop (explicit contract, easy to mock in sandbox)
-- `isOperational` = Admin or Check-In (the primary UI branch — stats/management vs. public availability)
+- `hasCheckInAccess` = Admin or Check-In (check-in tier; additive UI with admin)
 - ESLint v9 flat config (`eslint.config.js`) with `no-restricted-imports` rule; exempts `useProfile.ts` and `router/index.ts`; `"type": "module"` added to `frontend/package.json`
 
 **New files:**
@@ -185,7 +191,7 @@ Introduced `useProfile()` as the single UI-facing auth composable, replacing `us
 SessionCard now shows operational stats (registrations, new, child, regular, Eventbrite counts) for Admin/Check-In users, and availability message for everyone else. `groupDescription` now surfaces on all cards.
 
 **Changes:**
-- `SessionCard.vue` — `profile?: RoleContext` prop replaces old `user` prop; footer shows stats list or availability based on `isOperational`; layout: Group / Long Date / Description / [Stats or Availability] + View button
+- `SessionCard.vue` — `profile?: RoleContext` prop; footer shows stats list or availability based on `hasCheckInAccess` / trusted context; layout: Group / Long Date / Description / [Stats or Availability] + View button
 - `SessionListResults.vue` — passes `:profile="profile.context"` to each SessionCard
 - `SessionConcertina.vue` — `profile?: RoleContext` prop, passes down to SessionCard
 - `HomePage.vue` — passes `:profile="profile.context"` to SessionConcertina
@@ -1884,7 +1890,7 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 **Inline hours editing:**
 - Admin users see editable hours inputs on all profiles
 - Check In users see inputs only on their own profile (`/auth/me` profileSlug match)
-- Read Only users always see plain text hours
+- Microsoft sign-in requires Profile `User` match; no read-only Microsoft tier
 - `onchange` fires `PATCH /api/entries/:id` with `{ hours }`, reverts on failure
 - Auth check via `apiFetch('/auth/me')` at page load, awaited before rendering
 

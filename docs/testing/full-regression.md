@@ -14,23 +14,26 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### H1. Authentication & Permissions
 
 - [ ] Unauthenticated visit to `/` (homepage) loads without redirect — stats, sessions, groups nav cards visible; volunteers nav card hidden; admin button hidden; header shows "Log in" button
-- [ ] Unauthenticated visit to `/sessions.html` loads without redirect
-- [ ] Unauthenticated visit to `/groups.html` loads without redirect; regulars count shows 0
-- [ ] Unauthenticated visit to `/groups/:key/detail.html` loads without redirect; regulars section hidden
-- [ ] Unauthenticated visit to `/sessions/:group/:date/details.html` loads; entries section and free parking card hidden
-- [ ] Unauthenticated visit to `/volunteers.html` redirects to `/login.html`
-- [ ] Unauthenticated visit to `/profiles/:slug/details.html` redirects to `/login.html`
+- [ ] Unauthenticated visit to `/sessions` loads without redirect
+- [ ] Unauthenticated visit to `/groups` loads without redirect; regulars count shows 0
+- [ ] Unauthenticated visit to `/groups/:key` loads without redirect; regulars section hidden
+- [ ] Unauthenticated visit to `/sessions/:group/:date` loads; entries section and free parking card hidden
+- [ ] Unauthenticated visit to `/profiles` redirects to `/login` (trusted route)
+- [ ] Unauthenticated visit to `/profiles/:slug` redirects to `/login`
 - [ ] Unauthenticated `GET /api/entries/recent` returns 401
 - [ ] Unauthenticated visit to `/` does not trigger a `GET /api/entries/recent` request (check Network tab — recent sign-ups section should not be fetched)
-- [ ] Unauthenticated API 401 response (from `apiFetch` in common.js) redirects to `/login.html?returnTo=...` not `/auth/login`
-- [ ] `/login.html` shows Volunteer Sign In (magic link) and DTV Teams Account (Microsoft) cards; Volunteer card only shown when `MAIL_SENDER` is configured
+- [ ] Unauthenticated API 401 from the SPA fetch layer redirects to `/login?returnTo=...` (not `/auth/login`)
+- [ ] `/login` shows self-service (magic link / code) and Microsoft cards; email card only when mail sending is configured
 - [ ] Enter email, click "Send sign-in link" → both cards hide, sent-confirmation section appears with 15:00 countdown
 - [ ] Countdown ticks down to 00:00 then stops
 - [ ] Click "Didn't receive the link? Back to Login" → cards restored, countdown stopped, form re-enabled
 - [ ] Click magic link in email → signed in, redirected to destination (or `/` if no returnTo)
-- [ ] Click expired magic link (wait >15min) → redirected to `/login.html?reason=invalid-state`
-- [ ] Email not in Profiles → redirected to `/login.html?reason=not-approved` with warning banner
+- [ ] Click expired magic link → redirected to `/login?reason=invalid-state` (or equivalent)
+- [ ] Email not in Profiles → redirected to `/login?reason=not-approved` with warning banner
+- [ ] **Microsoft without Profile `User`:** Entra completes but no volunteer row has `User` = signed-in email → session cleared → `/login?reason=dtv-not-authorised` with explanation (not browsing as Public with a session)
+- [ ] After `dtv-not-authorised`, user can still use self-service login or fix `User` in SharePoint and retry Microsoft
 - [ ] Successful Microsoft login redirects back to `/` (or originally requested page via `returnTo`)
+- [ ] **trackerAccess (spot check):** as Check In or Admin, open volunteers list or profile detail for someone with Profile `User` set — response includes `trackerAccess` `checkin` or `admin`; entry list on session detail passes through per-row `trackerAccess` where applicable (badge icons for dig leads)
 - [ ] Click Logout — session cleared, redirected to Microsoft logout
 - [ ] API key auth: `POST /api/eventbrite/nightly-update` with valid `X-Api-Key` succeeds without session
 - [ ] Invalid/missing API key returns 401
@@ -46,22 +49,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In: edit profile button visible, can update name/email
-- [ ] Check In: Upload button on entry detail visible and functional (navigates to `/upload.html?entryId=:id`)
+- [ ] Check In: Upload button on entry detail visible and functional (navigates to `/upload?entryId=:id`)
 - [ ] Check In: Add Record, Transfer, Delete still hidden on profile page
 - [ ] Check In: `POST /api/profiles/:slug/records` returns 403
 - [ ] Check In: `POST /api/groups` returns 403
-- [ ] **Read Only user** (no matching profile `User` field, not in `ADMIN_USERS`): all action buttons hidden
-- [ ] Read Only: session detail — edit, refresh, set hours, add entry buttons all hidden
-- [ ] Read Only: session detail — check-in checkboxes visible but disabled (greyed out, not clickable)
-- [ ] Read Only: entry detail — checked in and hours controls visible but disabled
-- [ ] Read Only: profile detail — edit button hidden, regular checkboxes disabled
-- [ ] Read Only: any POST/PATCH/DELETE API call returns 403 "Read only access"
-- [ ] Read Only: `GET /api/sessions/export` returns 403 (GDPR — trusted only)
 - [ ] Check In Only: `DELETE /api/sessions/:group/:date` returns 403
 - [ ] Check In Only: `GET /api/sessions/export` returns 403 (GDPR)
 - [ ] Check In Only: admin page shows only Icon Legend section
 - [ ] `/auth/me` returns `role: "admin"` or `role: "checkin"` based on env var
-- [ ] **Self-Service user** (profile has matching `Email` field, Google/Facebook login): no admin/check-in/edit controls visible
+- [ ] **Self-Service user** (profile has matching `Email`, magic link / code): no admin/check-in/edit controls visible
 - [ ] Self-Service: sessions page loads; CSV download button and session checkboxes **not shown** (trusted-only)
 - [ ] Self-Service: Advanced section on sessions page still functional (tag filter, group filter work)
 - [ ] Self-Service: groups page shows zero regulars count; group detail page shows **no regulars list**
@@ -83,8 +79,6 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Self-Service: Upload button visible on own entry detail; can upload photos
 - [ ] **Public API security — media PII**: `GET /api/media?sessionId=X` response does **not** contain `name` or `webUrl` fields (these embed uploader's name in the filename)
 - [ ] **Public API security — media PII**: authenticated `GET /api/media?sessionId=X` response **does** include `name` and `webUrl`
-- [ ] **PWA standalone Facebook login** (Android, installed PWA from home screen): tapping "Continue with Facebook" opens a Chrome Custom Tab (not the native Facebook app); after completing Facebook login the PWA navigates to the dashboard without stalling
-
 ### H2. Create group
 - [ ] Groups page → "+" button → modal with Key (required), Display Name, Description
 - [ ] Missing key shows validation error
@@ -192,7 +186,6 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Admin: hours input shown on all profiles, change value → `PATCH /api/entries/:id` → persists on reload
 - [ ] Check In: hours input shown only on own profile (profileSlug match)
 - [ ] Check In: hours displayed as plain text on other profiles
-- [ ] Read Only: hours always displayed as plain text
 - [ ] Invalid value (negative) → reverts to original
 - [ ] Clicking the entry card still navigates to entry detail
 
@@ -216,19 +209,16 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H22b. Collect consent (Check In / Admin / Self-Service)
 - [ ] Profile detail → Records → "Collect Consent" button visible (Check In or Admin)
-- [ ] "Collect Consent" button **hidden** for Read Only users
-- [ ] Click → `/profiles/:slug/consent.html` — shows volunteer name; Submit disabled
+- [ ] Click → `/profiles/:slug/consent` — shows volunteer name; Submit disabled
 - [ ] Tick Privacy only → Submit enabled; submit → Privacy Consent: Accepted, Photo Consent: Declined
 - [ ] Tick both → submit → both Accepted
 - [ ] Return to profile → record pills show updated status and today's date
 - [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: true, photoConsent: false }` → 200
 - [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: false }` → 400 (privacy required)
-- [ ] Read Only: `POST /api/profiles/:id/consent` → 403
 - [ ] **Entry detail consent button** (Check In / Admin): visible when volunteer has no Privacy Consent record; hidden once they have an Accepted record
-- [ ] Entry detail consent button: hidden for Read Only users
-- [ ] Entry detail consent button: clicking navigates to `/profiles/:slug/consent.html`
+- [ ] Entry detail consent button: clicking navigates to `/profiles/:slug/consent`
 - [ ] **Self-Service**: consent button visible on own entry detail when no privacy consent signed
-- [ ] Self-Service: clicking navigates to `/profiles/:slug/consent.html`; can submit successfully
+- [ ] Self-Service: clicking navigates to `/profiles/:slug/consent`; can submit successfully
 - [ ] Self-Service: `POST /api/profiles/:id/consent` for own profile → 200
 - [ ] Self-Service: `POST /api/profiles/:id/consent` for a different profile ID → 403
 
@@ -242,7 +232,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H24b. Entries page (admin)
 
-- [ ] Admin: "Entries" nav link visible in header; non-admin users (Check In, Read Only, Self-Service, Public) do not see the link
+- [ ] Admin: "Entries" nav link visible in header; non-admin users (Check In, Self-Service, Public) do not see the link
 - [ ] Navigate to `/entries` as admin → `GET /api/entries` called; entries list loads with totals ("N entries · H hours")
 - [ ] Navigate to `/entries` as non-admin → 403 (API blocked by `require-admin.ts`)
 - [ ] Notes search: type 3+ chars → results filter to entries whose notes contain the search term (case-insensitive)
@@ -331,13 +321,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Forces fresh data on next request
 
 ### H28. Upload button (entry detail — check-in/admin)
-- [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Read Only and Self-Service (`checkin-only` class)
-- [ ] Click button → browser navigates directly to `/upload.html?entryId=:id` (no API call, no intermediate step)
-- [ ] Self-service user on **session detail** page: "Upload" link rendered next to their own entry (if they have one); navigates to `/upload.html?entryId=:id`
+- [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Self-Service (`checkin-only` class)
+- [ ] Click button → browser navigates directly to `/upload?entryId=:id` (no API call, no intermediate step)
+- [ ] Self-service user on **session detail** page: "Upload" link rendered next to their own entry (if they have one); navigates to `/upload?entryId=:id`
 - [ ] Self-service user on **entry detail**: Upload button not visible
 
-### H29. Volunteer photo upload page (`/upload.html`)
-- [ ] Visit `/upload.html?entryId=:id` in incognito (no session) → redirected to `/login.html?returnTo=/upload.html?entryId=:id`
+### H29. Volunteer photo upload page (`/upload`)
+- [ ] Visit `/upload?entryId=:id` in incognito (no session) → redirected to `/login` with `returnTo` preserving upload URL
 - [ ] Visit with no `entryId` param or non-numeric ID → error: "No upload link found. Please use the link from your session page."
 - [ ] Visit with valid `entryId` for a different volunteer (self-service wrong account) → error: "This upload link is not for your account."
 - [ ] Visit with non-existent `entryId` → error: "Upload link not found. Please check the link and try again."
@@ -361,20 +351,20 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Admin/Check In: lightbox shows "Public gallery" checkbox and title/alt-text input per item
 - [ ] Toggling "Public gallery" checkbox calls `PATCH /api/media/:itemId` — `{ isPublic: true/false }`; change persists on reload
 - [ ] Admin/Check In: can set cover image via lightbox "Set as cover" control; cover updates above carousel
-- [ ] `PATCH /api/media/:itemId` for Read Only or Self-Service → 403
+- [ ] `PATCH /api/media/:itemId` for Self-Service → 403 (Check In / Admin allowed)
 - [ ] **Media cache**: loading session detail twice → second load shows `[Cache] Hit: media_folder_*` in server logs (no repeat Graph call)
 - [ ] **Media cache bust**: upload a photo to a session → immediately reload the session gallery → new photo appears (cache was busted by upload)
 
 ### H30c. Standalone media gallery (`/media/`)
 
-- [ ] Visit `/media/` without login → redirected to `/login.html`
+- [ ] Visit `/media/` without login → redirected to `/login`
 - [ ] Visit `/media/` logged in → page loads; sessions with photos appear as a horizontal carousel
 - [ ] Each carousel slide shows the session cover image, date, and group name as a caption
 - [ ] Clicking a session slide navigates to `/media/session.html?groupKey=…&date=…`
 - [ ] Sessions with no photos (`mediaCount === 0`) do not appear in the library
 
 **Session gallery (`/media/session.html?groupKey=…&date=…`):**
-- [ ] Visit without login → redirected to `/login.html`
+- [ ] Visit without login → redirected to `/login`
 - [ ] Valid `groupKey` + `date` → session gallery loads; all photos/videos appear as carousel slides
 - [ ] Carousel scrolls freely with momentum (multiple slides per swipe); centred slide is full-brightness
 - [ ] Non-selected slides are dimmed; centred slide shows caption overlay (`N / total`)
@@ -460,7 +450,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `GET /auth/me` — determines inline hours editing permissions
 - [ ] All emails shown as individual mailto links (one per line)
 - [ ] Profile with comma-separated emails in SharePoint → multiple mailto links shown
-- [ ] Admin, Check In, or Read Only viewing a profile with warnings — warnings section appears in the right column (dirt background, white text) listing each warning
+- [ ] Admin or Check In viewing a profile with warnings — warnings section appears in the right column (dirt background, white text) listing each warning
 - [ ] Self-Service user viewing the same profile — warnings section absent
 - [ ] Profile with no warnings — warnings section not rendered
 
@@ -614,7 +604,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### L18. Upload and consent buttons (entry detail)
 - [ ] Upload button positioned top-right of entry header card alongside h1
 - [ ] Displays cloud-upload SVG icon + "Upload" label
-- [ ] Upload button visible for Admin and Check In; hidden for Read Only and Self-Service (checkin-only CSS class)
+- [ ] Upload button visible for Admin and Check In; hidden for Self-Service (checkin-only CSS class)
 - [ ] Consent button (checkboxes icon + "Consent" label) shown next to Upload when volunteer has no Accepted Privacy Consent
 - [ ] Consent button hidden when volunteer already has Accepted Privacy Consent
-- [ ] Consent button visible for Admin, Check In, and Self-Service; hidden for Read Only (checkin-or-selfservice CSS class)
+- [ ] Consent button visible for Admin, Check In, and Self-Service (`checkin-or-selfservice` / equivalent gating)

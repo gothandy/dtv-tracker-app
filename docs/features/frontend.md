@@ -14,7 +14,7 @@ Authenticated users with a linked profile see:
 - Registered / Attended pills on session cards
 - Next / Last buttons jump to own sessions, falling back to any session if none
 
-Public and Read Only users see the standard global session calendar.
+Public users see the standard global session calendar (same component; trusted Microsoft users see additional affordances elsewhere).
 
 ## Taxonomy Word Cloud
 

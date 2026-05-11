@@ -23,7 +23,7 @@
           <RouterLink to="/groups" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Groups</RouterLink>
           <RouterLink v-if="profile.isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Profiles</RouterLink>
           <RouterLink v-if="profile.isAdmin" to="/entries" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Entries</RouterLink>
-          <RouterLink v-if="profile.isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Tools</RouterLink>
+          <RouterLink v-if="profile.isAdmin" to="/admin" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">{{ ACCESS_LABEL_ADMIN }}</RouterLink>
           <button @click="openAbout" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors text-left">About</button>
           <RouterLink v-if="isDev || profile.isAdmin" to="/sandbox" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sandbox</RouterLink>
 
@@ -52,6 +52,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useViewer } from '../composables/useViewer'
 import AboutModal from './AboutModal.vue'
+import { ACCESS_LABEL_ADMIN } from '../utils/accessLabels'
 
 const isDev = import.meta.env.DEV
 const route = useRoute()

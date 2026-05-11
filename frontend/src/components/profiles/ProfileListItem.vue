@@ -20,6 +20,20 @@
           :alt="`Card: ${profile.cardStatus}`"
           :title="`Card: ${profile.cardStatus}`"
         />
+        <img
+          v-if="profile.trackerAccess === 'admin'"
+          src="/icons/badges/tracker-admin.svg"
+          class="pli-badge svg-black"
+          :alt="ACCESS_LABEL_ADMIN"
+          :title="ACCESS_LABEL_ADMIN"
+        />
+        <img
+          v-if="profile.trackerAccess === 'checkin'"
+          src="/icons/badges/tracker-checkin.svg"
+          class="pli-badge svg-black"
+          :alt="ACCESS_LABEL_CHECK_IN"
+          :title="ACCESS_LABEL_CHECK_IN"
+        />
       </span>
     </span>
     <span class="pli-meta">
@@ -33,6 +47,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { profilePath } from '../../router/index'
+import { ACCESS_LABEL_ADMIN, ACCESS_LABEL_CHECK_IN } from '../../utils/accessLabels'
 import type { ProfileResponse } from '../../../../types/api-responses'
 
 const props = defineProps<{

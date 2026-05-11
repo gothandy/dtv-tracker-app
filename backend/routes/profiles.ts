@@ -35,6 +35,7 @@ import {
   PROFILE_STATS
 } from '../services/field-names';
 import type { ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
+import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
 
 const router: Router = express.Router();
@@ -145,6 +146,9 @@ router.get('/profiles', async (req: Request, res: Response) => {
       } catch { /* skip malformed */ }
     }
 
+    const showTrackerAccess =
+      req.session.user?.role === 'admin' || req.session.user?.role === 'checkin';
+
     const data: ProfileResponse[] = validProfiles.map(spProfile => {
       const profile = convertProfile(spProfile);
       const ps = profileStats.get(spProfile.ID);
@@ -154,6 +158,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
         name: profile.name,
         email: profile.email,
         user: profile.user,
+        ...(showTrackerAccess ? { trackerAccess: trackerAccessForProfileUser(spProfile.User) } : {}),
         isGroup: profile.isGroup,
         isMember: memberIds.has(spProfile.ID),
         cardStatus: cardStatusMap.get(spProfile.ID),
@@ -799,6 +804,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     }));
 
     const isSelfService = req.session.user?.role === 'selfservice';
+    const trustedMicrosoft = req.session.user?.role === 'admin' || req.session.user?.role === 'checkin';
 
     const data: ProfileDetailResponse = {
       id: profile.id,
@@ -807,6 +813,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       emails: profile.emails,
       matchName: spProfile.MatchName,
       user: spProfile.User,
+      ...(trustedMicrosoft ? { trackerAccess: trackerAccessForProfileUser(spProfile.User) } : {}),
       isGroup: profile.isGroup,
       isMember,
       cardStatus,

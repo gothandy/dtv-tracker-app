@@ -7,8 +7,8 @@ All endpoints are prefixed with `/api`. Auth routes (`/auth/...`) are listed at 
 | Level | Who |
 |---|---|
 | **Public** | No login required |
-| **Trusted** | Any Microsoft login — Read Only, Check In, or Admin |
-| **Check In+** | Check In or Admin |
+| **Trusted** | Microsoft session with Profile **`User`** link — Check In or Admin |
+| **Check In+** | Check In or Admin (check-in tier APIs) |
 | **Admin** | Admin only |
 | **Admin / API key** | Admin session or `X-Api-Key` header (scheduled sync) |
 | **SS (own)** | Self-service login restricted to own data; handler enforces ownership |

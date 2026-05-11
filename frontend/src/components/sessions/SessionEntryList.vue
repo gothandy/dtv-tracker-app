@@ -22,7 +22,7 @@
         :title-to="allowEdit ? undefined : (e.profile.slug ? profilePath(e.profile.slug) : undefined)"
         :checked-in="e.checkedIn"
         :hours="e.hours"
-        :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, labels: e.labels, isNew: e.isNew, noPhoto: e.profile.noPhoto, isFirstAiderAvailable: e.profile.isFirstAiderAvailable, eventbriteAttendeeId: e.eventbriteAttendeeId })"
+        :icons="iconsForEntry({ trackerAccess: e.trackerAccess, ...e.profile, isChild: !!e.accompanyingAdultId, labels: e.labels, isNew: e.isNew, noPhoto: e.profile.noPhoto, isFirstAiderAvailable: e.profile.isFirstAiderAvailable, eventbriteAttendeeId: e.eventbriteAttendeeId })"
         :allow-edit="allowEdit"
         :working="workingId === e.id"
         :cancelled="!!e.cancelled"

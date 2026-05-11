@@ -8,7 +8,7 @@
     </div>
 
     <div class="session-card__footer">
-      <ul v-if="isOperational" class="session-card__stats">
+      <ul v-if="hasCheckInAccess" class="session-card__stats">
         <li v-if="display.count || display.totalLimit">
           {{ display.count }}<template v-if="display.totalLimit">/{{ display.totalLimit }}</template> Total
         </li>
@@ -46,7 +46,7 @@ const props = defineProps<{
   profile?: RoleContext
 }>()
 
-const isOperational = computed(() => props.profile?.isOperational ?? false)
+const hasCheckInAccess = computed(() => props.profile?.hasCheckInAccess ?? false)
 
 const viewPath = computed(() => sessionPath(props.session.groupKey!, props.session.date))
 

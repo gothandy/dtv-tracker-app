@@ -8,7 +8,7 @@
       <div class="sandbox-warning">Login to view some components</div>
 
       <h2>SessionDetailActions</h2>
-      <h3>Admin / Check-In view</h3>
+      <h3>Tracker Assist / Tracker Admin</h3>
       <SessionDetailActions
         :session="mockSession"
         group-key="sheepskull"
@@ -20,7 +20,7 @@
         :is-self-service="false"
       />
 
-      <h3>Self-service view (registered)</h3>
+      <h3>My Tracker (registered)</h3>
       <SessionDetailActions
         :session="mockSessionRegistered"
         group-key="sheepskull"

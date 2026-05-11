@@ -37,7 +37,18 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-const icons = computed(() => iconsForEntry({ isGroup: props.entry.isGroup, isChild: !!props.entry.accompanyingAdultId, labels: props.entry.labels, eventbriteAttendeeId: props.entry.eventbriteAttendeeId }))
+const icons = computed(() =>
+  iconsForEntry({
+    trackerAccess: props.entry.trackerAccess,
+    isMember: props.entry.isMember,
+    isGroup: props.entry.isGroup,
+    cardStatus: props.entry.cardStatus,
+    isChild: !!props.entry.accompanyingAdultId,
+    labels: props.entry.labels,
+    hasProfileWarning: props.entry.hasProfileWarning,
+    eventbriteAttendeeId: props.entry.eventbriteAttendeeId,
+  })
+)
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })

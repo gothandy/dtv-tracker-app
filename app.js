@@ -74,7 +74,7 @@ if (!isDev) {
 }
 
 // Stable media proxy — serves SharePoint images via stable app-domain URLs.
-// Trusted users (admin/check-in/read-only) always served; self-service and public only see isPublic === true items.
+// Trusted Microsoft users (admin/check-in) always served; self-service and public only see isPublic === true items.
 // Public items cached 12h in memory and 24h in browser. Retries once on 401/403 with fresh folder metadata.
 app.get('/media/:group/:date/:id', async (req, res) => {
     const groupKey = req.params.group.toLowerCase();

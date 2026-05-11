@@ -38,18 +38,8 @@ describe('authGuard — protected routes', () => {
     expect(await authGuard(to('/profiles', { requiresTrusted: true }))).toBeUndefined()
   })
 
-  it('readonly to requiresTrusted route → allowed', async () => {
-    mockUser.value = { role: 'readonly' }
-    expect(await authGuard(to('/profiles', { requiresTrusted: true }))).toBeUndefined()
-  })
-
   it('non-admin (checkin) to requiresAdmin route → /forbidden', async () => {
     mockUser.value = { role: 'checkin' }
-    expect(await authGuard(to('/entries', { requiresAdmin: true }))).toBe('/forbidden')
-  })
-
-  it('non-admin (readonly) to requiresAdmin route → /forbidden', async () => {
-    mockUser.value = { role: 'readonly' }
     expect(await authGuard(to('/entries', { requiresAdmin: true }))).toBe('/forbidden')
   })
 
@@ -79,8 +69,8 @@ describe('authGuard — sandbox gating', () => {
     expect(await authGuard(to('/sandbox/icons'))).toBe('/')
   })
 
-  it('non-admin in prod to /sandbox → /', async () => {
-    mockUser.value = { role: 'readonly' }
+  it('non-admin (check-in) in prod to /sandbox → /', async () => {
+    mockUser.value = { role: 'checkin' }
     expect(await authGuard(to('/sandbox/icons'))).toBe('/')
   })
 

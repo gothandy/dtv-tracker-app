@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { iconsForEntry } from './labelIcons'
+import { ACCESS_LABEL_ADMIN, ACCESS_LABEL_CHECK_IN } from './accessLabels'
+
+describe('iconsForEntry — tracker access badges', () => {
+  it('shows Tracker Admin badge alt when trackerAccess is admin', () => {
+    const icons = iconsForEntry({ trackerAccess: 'admin' })
+    expect(icons.some(i => i.alt === ACCESS_LABEL_ADMIN)).toBe(true)
+  })
+
+  it('shows Tracker Assist badge alt when trackerAccess is checkin', () => {
+    const icons = iconsForEntry({ trackerAccess: 'checkin' })
+    expect(icons.some(i => i.alt === ACCESS_LABEL_CHECK_IN)).toBe(true)
+  })
+
+  it('omits tracker badges when trackerAccess omitted', () => {
+    const icons = iconsForEntry({})
+    expect(icons.some(i => i.alt === ACCESS_LABEL_ADMIN)).toBe(false)
+    expect(icons.some(i => i.alt === ACCESS_LABEL_CHECK_IN)).toBe(false)
+  })
+})
 
 describe('iconsForEntry — isChild', () => {
   it('shows child icon when isChild is true', () => {

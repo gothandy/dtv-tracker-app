@@ -37,10 +37,9 @@
       <section>
         <h2 class="text-xl font-bold mb-2">Who can see your data</h2>
         <ul class="list-disc pl-6 space-y-1">
-          <li><strong>Admins and Check-In users</strong> &mdash; can view and edit all volunteer data.</li>
-          <li><strong>Read-only users</strong> &mdash; can view all data but cannot make changes.</li>
-          <li><strong>You (self-service login)</strong> &mdash; can view your own profile, sessions, and uploaded media.</li>
-          <li><strong>Public (unauthenticated)</strong> &mdash; can view sessions, groups, and aggregate statistics. Individual volunteer names and profiles are not visible without logging in.</li>
+          <li><strong>{{ ACCESS_LABEL_CHECK_IN }} &amp; {{ ACCESS_LABEL_ADMIN }}</strong> (Microsoft sign-in) &mdash; can view and edit volunteer data for their role. Access is only granted when your volunteer profile is linked to your work account.</li>
+          <li><strong>{{ ACCESS_LABEL_SELF_SERVICE }}</strong> (email sign-in) &mdash; can view your own profile, sessions, and uploaded media.</li>
+          <li><strong>{{ ACCESS_LABEL_PUBLIC }}</strong> (without signing in) &mdash; can view sessions, groups, and aggregate statistics. Individual volunteer names and profiles are not visible without logging in.</li>
         </ul>
       </section>
 
@@ -81,6 +80,12 @@
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
+import {
+  ACCESS_LABEL_PUBLIC,
+  ACCESS_LABEL_SELF_SERVICE,
+  ACCESS_LABEL_CHECK_IN,
+  ACCESS_LABEL_ADMIN,
+} from '../utils/accessLabels'
 
 usePageTitle('Privacy Policy')
 </script>

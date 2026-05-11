@@ -15,7 +15,11 @@
     <div class="login-stack">
 
       <!-- Reason banner -->
-      <AlertBanner v-if="reasonMessage" :message="reasonMessage" />
+      <AlertBanner
+        v-if="reasonMessage"
+        :message="reasonMessage"
+        :type="loginReasonBannerType"
+      />
 
       <!-- Login cards -->
       <template v-if="!sent">
@@ -23,8 +27,8 @@
         <!-- Volunteer sign-in (magic link / verification code) -->
         <FormCard
           v-if="magicEnabled || verifyEnabled"
-          title="Your email log-in"
-          subtitle="View your volunteer profile, manage your sessions, and upload photos."
+          :title="ACCESS_LABEL_SELF_SERVICE"
+          subtitle="Sign in with email to view your volunteer profile, manage your sessions, and upload photos."
         >
           <!-- Method selector — only shown when both options are available -->
           <p v-if="magicEnabled && verifyEnabled" class="method-prompt">Choose how we verify your email.</p>
@@ -60,10 +64,10 @@
           </FormSubmitRow>
         </FormCard>
 
-        <!-- DTV Teams account (Microsoft) -->
+        <!-- Microsoft work account (Tracker Assist / Tracker Admin at auth) -->
         <FormCard
-          title="DTV Teams Only"
-          subtitle="For dig leads, coordinators and admins — you must use your @dtv.org.uk account."
+          :title="ACCESS_LABEL_CHECK_IN"
+          subtitle="Sign in with your Microsoft (work account) ending with @dtv.org.uk"
         >
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
@@ -118,6 +122,11 @@ import FormCard from '../components/forms/FormCard.vue'
 import FormInput from '../components/forms/FormInput.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
+import {
+  ACCESS_LABEL_ADMIN,
+  ACCESS_LABEL_CHECK_IN,
+  ACCESS_LABEL_SELF_SERVICE,
+} from '../utils/accessLabels'
 
 usePageTitle('Login')
 
@@ -148,6 +157,10 @@ const microsoftHref = computed(() =>
   returnTo.value ? `/auth/login?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/login'
 )
 
+const loginReasonBannerType = computed<'warning' | 'error'>(() =>
+  route.query.reason === 'dtv-not-authorised' ? 'error' : 'warning'
+)
+
 const expired = computed(() => sent.value && countdownSeconds.value <= 0)
 
 const countdown = computed(() => {
@@ -159,6 +172,8 @@ const reasons: Record<string, (email?: string) => string> = {
   'not-approved': (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'not-found':    (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'invalid-state': () => 'That sign-in link has expired or is invalid — enter your email below to get a new one.',
+  'dtv-not-authorised': () =>
+    `Access denied. Your work account is not set up for ${ACCESS_LABEL_CHECK_IN} or ${ACCESS_LABEL_ADMIN}. Please contact a ${ACCESS_LABEL_ADMIN} to resolve this.`,
 }
 
 async function sendLoginEmail() {

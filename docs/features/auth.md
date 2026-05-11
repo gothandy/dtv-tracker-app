@@ -2,12 +2,18 @@
 
 ## Microsoft Authentication (Entra ID OAuth)
 
-Trusted users (Admin, Check In, Read Only) sign in via Microsoft OAuth. Role is assigned at login:
-- **Admin**: email in `ADMIN_USERS` env var
-- **Check In**: Microsoft login matched to a Profile with a `User` field set
-- **Read Only**: any other Microsoft login
+Microsoft sign-in is only granted when the signed-in email matches the **Profiles** list **`User`** field (case-insensitive). There is **no** “implicit read-only” Microsoft role.
 
-Routes: [routes/auth/dtv.ts](../../routes/auth/dtv.ts). Session stored server-side; `dtv-auth` cookie identifies the session.
+Role after a successful profile link:
+
+- **Admin**: **`User`** match **and** email listed in **`ADMIN_USERS`**
+- **Check In**: **`User`** match and **not** in **`ADMIN_USERS`**
+
+If OAuth succeeds but **no profile** has **`User`** equal to the Microsoft email, the app **destroys the session** and redirects to **`/login?reason=dtv-not-authorised`**. That is a **failed Microsoft sign-in** (access refused), not an intentional “public” session.
+
+Operators can set **`User`** in SharePoint when the in-app profile editor is insufficient. **Admin** accounts need both **`User`** and **`ADMIN_USERS`**.
+
+Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session stored server-side; `dtv-auth` cookie identifies the session.
 
 ## Self-Service Login (Magic Link + Verification Code)
 
@@ -15,24 +21,23 @@ Volunteers sign in by email — no Microsoft account required. Access is control
 
 Two methods, both sending via Microsoft Graph Mail (`MAIL_SENDER` env var required):
 
-- **Magic link** ([routes/auth/magic.ts](../../routes/auth/magic.ts)): 15-minute JWT link emailed to the volunteer; clicking sets the session directly
-- **Verification code** ([routes/auth/verify.ts](../../routes/auth/verify.ts)): 4-digit code valid for 15 minutes; volunteer enters it on the login page
+- **Magic link** ([backend/routes/auth/magic.ts](../../backend/routes/auth/magic.ts)): 15-minute JWT link emailed to the volunteer; clicking sets the session directly
+- **Verification code** ([backend/routes/auth/verify.ts](../../backend/routes/auth/verify.ts)): 4-digit code valid for 15 minutes; volunteer enters it on the login page
 
 Session token: 128-bit random, SHA-256 hash stored in SharePoint Logins list. TTL controlled by `AUTH_BASIC_TTL_HOURS` (default 72h). Global send rate limit: `EMAIL_RATE_LIMIT_PER_HOUR` (default 60).
 
 ## Role-Based Permissions
 
-Five roles in ascending trust order:
+App levels (see also capability stack in [AGENTS.md](../../AGENTS.md)):
 
 | Role | How assigned | Access |
 |------|-------------|--------|
 | **Public** | Unauthenticated | Limited non-privacy view |
 | **Self-Service** | Profile email match (magic link) | Own profile, own entries, future session sign-up, own photo upload |
-| **Read Only** | Microsoft login (no special config) | View all data, no edits |
-| **Check In** | Microsoft login + Profile.User field set | Field-day ops: check-in, hours, entries, edit sessions/profiles |
-| **Admin** | `ADMIN_USERS` env var | Full access |
+| **Check In** | Microsoft + Profile **`User`** match (not admin list) | Field-day ops: check-in, hours, entries, edit sessions/profiles |
+| **Admin** | Microsoft + **`User`** match **and** **`ADMIN_USERS`** | Full access (includes everything Check In can do) |
 
-**Trusted** = Admin + Check In + Read Only. Self-Service is explicitly not trusted — stricter than Read Only.
+**Trusted (Microsoft)** = Admin ∪ Check In. Self-Service is explicitly not trusted for other volunteers’ data.
 
 Backend enforcement: `requireAuth` middleware + `requireAdmin` middleware + handler-level ownership checks. Full reference: [docs/permissions.md](../permissions.md).
 

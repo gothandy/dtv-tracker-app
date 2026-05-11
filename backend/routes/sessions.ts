@@ -36,6 +36,7 @@ import {
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
+import { trackerAccessForProfileUser } from '../services/tracker-access';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh } from '../services/session-stats';
 
@@ -451,7 +452,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const selfProfileId = req.session.user?.profileId;
     const selfProfileStats = req.session.user?.profileStats;
     const isSelfService = role === 'selfservice';
-    const isOperational = role === 'admin' || role === 'checkin';
+    const hasCheckInTier = role === 'admin' || role === 'checkin';
 
     const [rawEntries, rawProfiles] = await Promise.all([
       isSelfService ? Promise.resolve([]) : entriesRepository.getBySessionIds([spSession.ID]),
@@ -462,7 +463,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
-    // All session entries returned to operational users (with cancelled flag).
+    // All session entries returned to check-in tier users (with cancelled flag).
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
       const profile = volunteerId !== undefined ? profileMap.get(volunteerId) : undefined;
@@ -483,7 +484,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         notes: e.Notes,
         accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
         cancelled: e[ENTRY_CANCELLED] || undefined,
-        email: isOperational ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined,
+        email: hasCheckInTier ? (profile ? parseEmails(profile.Email)[0] : undefined) : undefined,
+        ...(hasCheckInTier ? { trackerAccess: trackerAccessForProfileUser(profile?.User) } : {}),
         labels: e.Labels,
         isNew: isNew || undefined,
         noPhoto: pStats.noPhoto === true || undefined,

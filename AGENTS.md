@@ -28,7 +28,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
-- Role-based authorization: Admin, Check In, Read Only, Self-Service, and Public ([middleware/require-admin.ts](middleware/require-admin.ts))
+- Role-based authorization: Admin, Check In, Self-Service, and Public ([middleware/require-admin.ts](middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes)
 - Server-side caching with tier-informed per-entity TTLs and targeted per-repository invalidation
 - Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
 
@@ -149,7 +149,7 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 - **`RoleContext`** interface — plain snapshot for passing auth context into components as a prop.
 - **Pages**: `const profile = useViewer()` → use `profile.isAdmin` in template; pass `:profile="profile.context"` to child components.
 - **Components**: accept `profile?: RoleContext` as a prop — never call `useViewer()` inside a component.
-- **`isOperational`** = Admin or Check-In.
+- **`hasCheckInAccess`** = Admin or Check-In (check-in tier: session/volunteer operations UI). Prefer this over vague “operational” wording.
 
 ### Vue Frontend: Page and Store Pattern
 
@@ -218,9 +218,10 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ### Permissions / Authorization
 
-- Five access levels: **Admin** (full), **Check In** (field-day ops), **Read Only** (view only), **Self-Service** (own data via magic link), **Public** (unauthenticated)
-- **"Trusted"** = Admin + Check In + Read Only. Self-Service is explicitly not trusted.
-- Admin: `ADMIN_USERS` env var. Check In: Profile `User` field. Self-Service: Profile `Email` field (comma-separated). Everyone else via Microsoft = Read Only.
+- Four app permission levels (+ Microsoft auth rules): **Admin** (`ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / magic link — own data), **Public** (unauthenticated).
+- Capability stack (additive): **Public** ⊆ **Check In tier** ⊆ **Admin tier** (`admin = public + check-in + admin-only`). UI should be additive (admin sees check-in surface plus extra controls), not unrelated “modes”.
+- **"Trusted"** (Microsoft-linked) = Admin ∪ Check In. Self-Service is not trusted for other volunteers’ PII.
+- **Microsoft sign-in**: requires a Profiles list **`User`** value matching the signed-in work email. If not linked, sign-in is **rejected** (session cleared, `/login?reason=dtv-not-authorised`) — not the same as choosing public browsing. **Admin** still needs **`ADMIN_USERS`** in addition to **`User`**.
 - Backend: `requireAuth` gates all API routes; `requireAdmin` enforces role rules; handlers enforce ownership for self-service.
 - Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only`, `.auth-only`, `.unauth-only`, `.selfservice-only`.
 - All login redirects go to `/login` — never `/auth/login`.

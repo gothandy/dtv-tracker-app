@@ -3,7 +3,7 @@ import { ensureAuth, user } from '../composables/useAuth'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    requiresTrusted?: boolean  // Admin / Check In / Read Only only
+    requiresTrusted?: boolean  // Microsoft trusted: Admin or Check-In
     requiresAdmin?: boolean    // Admin only
     requiresAuth?: boolean     // Any authenticated user (self-service included)
   }

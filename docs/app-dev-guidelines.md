@@ -86,7 +86,7 @@ Good examples:
 - `canToggleCheckin`
 - `canSetHours`
 
-
+**Auth in the SPA:** pages use **`useViewer()`** and pass **`RoleContext`** (`profile`) into presentational components — do not call `useViewer()` inside leaf components. Use **`hasCheckInAccess`** for the check-in toolset (Admin ∪ Check In); **`isTrusted`** matches Microsoft trusted callers. Prefer **additive layouts**: admins see the same check-in surfaces plus extra controls unless a feature is genuinely admin-only.
 
 This keeps components focused on what they may do, not on wider app policy.
 
