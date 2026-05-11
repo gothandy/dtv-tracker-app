@@ -175,7 +175,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 3. **Role enforcement** (`middleware/require-admin.ts`): After `requireAuth` on API routes:
    - **Admin**: passes through.
    - **Self-Service**: GETs restricted to `SELFSERVICE_ALLOWED_GET_PATTERNS` plus own profile slug; writes allowed only per `SELFSERVICE_ALLOWED_PATTERNS`.
-   - **Check In**: GETs allowed except `ADMIN_ONLY_GET_PATTERNS` (exports, `/entries` list); writes allowed for `CHECKIN_ALLOWED_PATTERNS`.
+   - **Check In** (`role === 'checkin'` only): GETs allowed except `ADMIN_ONLY_GET_PATTERNS` (exports, `/entries` list); writes allowed only for `CHECKIN_ALLOWED_PATTERNS`. Any other stored role (including legacy values) gets **403** — check-in patterns are never implied for unknown roles.
    - Export GETs (`/sessions/export`, `/records/export`) and **`GET /entries`** — **Admin only**.
 
 4. **Handler-level enforcement**: Route handlers perform a second ownership check for self-service users. `GET /api/profiles/:slug` checks `req.session.user.profileIds` and returns 403 if the profile ID doesn't match. Similar checks in entries and upload-context handlers.
