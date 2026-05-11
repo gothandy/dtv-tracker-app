@@ -68,12 +68,26 @@
           <div v-if="sessionStatsResult"   :class="['ap-result', sessionStatsError   && 'ap-error']">{{ sessionStatsResult }}</div>
         </div>
 
-        <!-- Site shortcuts (shown when config returns a SharePoint site URL) -->
-        <div v-if="siteUrl" class="ap-section">
+        <!-- SharePoint: shortcuts + full cache clear after manual list edits -->
+        <div class="ap-section">
           <h2 class="ap-title">
-            <a :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
+            <a v-if="siteUrl" :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
+            <template v-else>SharePoint</template>
           </h2>
-          <div class="ap-actions">
+          <p class="ap-sharepoint-hint">
+            If you change list data directly in SharePoint, clear the app cache here so the next request loads fresh data from Graph (not memory).
+          </p>
+          <div class="ap-actions ap-actions--cache-clear">
+            <AppButton
+              label="Clear all server caches"
+              variant="danger"
+              usage="task"
+              :working="cacheClearLoading"
+              @click="clearAllServerCaches"
+            />
+          </div>
+          <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
+          <div class="ap-actions ap-actions--shortcuts">
             <AppButton label="Site Contents" :href="siteContentsUrl" target="_blank" />
             <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
@@ -287,6 +301,35 @@ const backupLoading   = ref(false)
 const backupResult    = ref('')
 const backupError     = ref(false)
 
+const cacheClearLoading = ref(false)
+const cacheClearResult  = ref('')
+const cacheClearError   = ref(false)
+
+async function clearAllServerCaches() {
+  if (
+    !confirm(
+      'Clear all server-side caches (SharePoint list data, column schema, taxonomy, media, cover images)? The next pages may load more slowly.'
+    )
+  ) {
+    return
+  }
+  cacheClearLoading.value = true
+  cacheClearResult.value = ''
+  cacheClearError.value = false
+  try {
+    const res = await fetch('/api/cache/clear', { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Clear failed')
+    cacheClearResult.value = data.message || 'Caches cleared.'
+  } catch (e: any) {
+    cacheClearResult.value = e.message || 'Clear failed'
+    cacheClearError.value = true
+    console.error('Cache clear failed:', e)
+  } finally {
+    cacheClearLoading.value = false
+  }
+}
+
 async function loadSiteConfig() {
   try {
     const res = await fetch('/api/config')
@@ -294,7 +337,7 @@ async function loadSiteConfig() {
     if (data.success && data.data.sharepointSiteUrl) {
       siteUrl.value = data.data.sharepointSiteUrl
     }
-  } catch { /* site section stays hidden */ }
+  } catch { /* site title stays plain "SharePoint" */ }
 }
 
 async function exportBackup() {
@@ -344,6 +387,31 @@ onMounted(loadSiteConfig)
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.ap-sharepoint-hint {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  max-width: 42rem;
+}
+
+.ap-actions--cache-clear {
+  margin-bottom: 0.75rem;
+}
+
+.ap-actions--cache-clear :deep(.app-btn) {
+  width: 100%;
+  justify-content: center;
+  min-height: 3rem;
+  font-size: 1.05rem;
+}
+
+.ap-actions--shortcuts {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .ap-result {

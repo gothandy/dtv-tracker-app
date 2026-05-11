@@ -316,9 +316,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] NoPhoto badge shown for a volunteer without Accepted Photo Consent (live from `profile.stats.noPhoto`)
 
 ### H27. Clear cache
-- [ ] Dashboard → Refresh button
-- [ ] `POST /api/cache/clear`
-- [ ] Forces fresh data on next request
+- [ ] Admin page → SharePoint section → "Clear all server caches" (confirm) → success message; `POST /api/cache/clear`
+- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes)
 
 ### H28. Upload button (entry detail — check-in/admin)
 - [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Self-Service (`checkin-only` class)

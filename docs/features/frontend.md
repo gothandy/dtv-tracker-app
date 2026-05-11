@@ -36,7 +36,7 @@ Term picker on session detail (Admin/Check In). Hierarchical picker backed by Sh
 
 ## Admin Page
 
-Buttons for: Eventbrite sync (sessions + attendees + nightly), stats refresh, cache clear, backup export. Unmatched Eventbrite events list. Site shortcuts (SharePoint Site Contents, Term Store, Backups). Icon legend.
+Buttons for: Eventbrite sync (sessions + attendees + nightly), stats refresh, backup export. Unmatched Eventbrite events list. SharePoint section: full server cache clear (use after manual SharePoint list edits), shortcuts (Site Contents, Term Store, backup). Icon legend.
 
 ## PWA
 
