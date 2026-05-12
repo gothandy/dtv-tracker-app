@@ -170,6 +170,8 @@ const reasons: Record<string, (email?: string) => string> = {
   'invalid-state': () => 'That sign-in link has expired or is invalid — enter your email below to get a new one.',
   'dtv-not-authorised': () =>
     `Access denied. Your Microsoft account is not set up for ${ACCESS_LABEL_CHECK_IN}. Please contact your admin.`,
+  'session-expired': () =>
+    'Your sign-in has expired. Sign in again to continue — you will return to this page afterwards.',
 }
 
 async function sendLoginEmail() {

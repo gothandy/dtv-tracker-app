@@ -120,6 +120,7 @@
             :allow-edit="profile.isCheckIn || profile.isAdmin"
             :allow-email="profile.hasCheckInAccess"
             :is-self-service="profile.isSelfService"
+            :before-session-edit="beforeSessionEdit"
             @session-save="onSessionSave"
             @session-delete="onSessionDelete"
           />
@@ -415,6 +416,14 @@ const titleText = computed(() => {
   return `${formatDate(store.session.date)} | ${store.session.groupName}`
 })
 usePageTitle(titleText)
+
+/** Re-check express session before session edit — public session GET can outlive login. */
+async function beforeSessionEdit(): Promise<boolean> {
+  const ok = await profile.refreshAuth()
+  if (ok) return true
+  await router.push({ path: '/login', query: { returnTo: route.fullPath, reason: 'session-expired' } })
+  return false
+}
 
 async function onSaveTags(tags: Array<{ label: string; termGuid: string }>) {
   const groupKey = route.params.groupKey as string

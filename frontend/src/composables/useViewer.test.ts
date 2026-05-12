@@ -6,6 +6,7 @@ const mockAuth = vi.hoisted(() => ({
 }))
 vi.mock('./useAuth', () => ({
   useAuth: () => ({ user: mockAuth.user, ready: mockAuth.ready }),
+  refreshAuth: vi.fn(async () => true),
 }))
 
 import { useViewer } from './useViewer'

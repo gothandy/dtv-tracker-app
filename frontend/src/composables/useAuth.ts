@@ -21,10 +21,13 @@ export const user = ref<AuthUser | null>(null)
 const ready = ref(false)
 let fetchPromise: Promise<void> | null = null
 
-async function fetchMe() {
+async function loadMe(): Promise<void> {
   try {
     const res = await fetch('/auth/me')
-    if (!res.ok) return
+    if (!res.ok) {
+      user.value = null
+      return
+    }
     const data = await res.json()
     user.value = data.authenticated ? data.user : null
   } catch {
@@ -32,6 +35,17 @@ async function fetchMe() {
   } finally {
     ready.value = true
   }
+}
+
+async function fetchMe() {
+  await loadMe()
+}
+
+/** Re-fetches `/auth/me` and updates `user`. Returns true if admin or check-in session is still active. */
+export async function refreshAuth(): Promise<boolean> {
+  await loadMe()
+  const u = user.value
+  return u !== null && (u.role === 'admin' || u.role === 'checkin')
 }
 
 // Ensures auth is resolved — safe to call from router guards (outside components)

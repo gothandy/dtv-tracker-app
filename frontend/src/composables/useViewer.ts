@@ -1,7 +1,7 @@
 // Single UI composable for auth/role context of the logged-in viewer.
 // Pages and components import from here only — never from useAuth or useRole directly.
 import { computed, reactive } from 'vue'
-import { useAuth } from './useAuth'
+import { useAuth, refreshAuth } from './useAuth'
 
 export interface RoleContext {
   isAdmin: boolean
@@ -38,5 +38,18 @@ export function useViewer() {
     hasCheckInAccess: hasCheckInAccess.value,
   }))
 
-  return reactive({ user, ready, role, isAdmin, isCheckIn, isSelfService, isTrusted, isAuthenticated, isPublic, hasCheckInAccess, context })
+  return reactive({
+    user,
+    ready,
+    role,
+    isAdmin,
+    isCheckIn,
+    isSelfService,
+    isTrusted,
+    isAuthenticated,
+    isPublic,
+    hasCheckInAccess,
+    context,
+    refreshAuth,
+  })
 }
