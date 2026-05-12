@@ -4,7 +4,14 @@
     <AppButton icon="group" label="Group" mode="icon-only" @click="router.push(groupPath(groupKey))" />
     <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-only" @click="onUpload" />
     <AppButton v-if="allowEmail" icon="email" label="Email" mode="icon-only" @click="showEmail = true" />
-    <AppButton v-if="allowEdit" icon="edit" label="Edit" mode="icon-only" @click="showEdit = true" />
+    <AppButton
+      v-if="allowEdit"
+      icon="edit"
+      label="Edit"
+      mode="icon-only"
+      :working="sessionEditAuthChecking"
+      @click="onSessionEditClick"
+    />
 
     <EntryUploadPickerModal
       v-if="showPicker"
@@ -58,6 +65,8 @@ const props = defineProps<{
   allowEdit: boolean
   allowEmail: boolean
   isSelfService: boolean
+  /** When set, awaited before opening session edit; return false to keep the modal closed. */
+  beforeSessionEdit?: () => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
@@ -68,6 +77,7 @@ const emit = defineEmits<{
 const router = useRouter()
 const showPicker = ref(false)
 const showEdit = ref(false)
+const sessionEditAuthChecking = ref(false)
 const showEmail = ref(false)
 const emailWorking = ref(false)
 const emailError = ref<string | undefined>()
@@ -137,6 +147,19 @@ async function onEmailSend({ recipient, preview, template }: { recipient: number
   } finally {
     emailWorking.value = false
   }
+}
+
+async function onSessionEditClick() {
+  if (props.beforeSessionEdit) {
+    sessionEditAuthChecking.value = true
+    try {
+      const ok = await props.beforeSessionEdit()
+      if (!ok) return
+    } finally {
+      sessionEditAuthChecking.value = false
+    }
+  }
+  showEdit.value = true
 }
 
 function closeEdit() {
