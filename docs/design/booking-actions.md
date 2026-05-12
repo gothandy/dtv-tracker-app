@@ -9,6 +9,7 @@
 - A Repeat user defined by not a regular, and not new.
 - Sessions are never Cancelled, booking closes as the session becomes "past".
 
+
 ## Possible Combinations
 
 | User      | Past            | New Space    | Repeat Only   | No Space     |
@@ -55,4 +56,13 @@
 ```
     if child spaces > 0 or child limit is not set:
         show [Add Child Booking]
+```
+
+## Cancelled
+
+If space is available then user can rebook. Same logic as booking. Only additional note below the main text and buttons.
+
+### Message
+```
+    "You cancelled your original booking."
 ```
