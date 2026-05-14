@@ -10,11 +10,12 @@
   >
     <p class="shm-desc">
       Sets hours for all checked-in entries where hours are not yet recorded.
+      The value is <strong>per person</strong>; each entry saves as hours × attendance count (e.g. 5 × 3h → 15h).
       <strong>{{ entryCount }} entries</strong> will be updated.
     </p>
 
     <FormLayout :disabled="working">
-      <FormRow title="Hours">
+      <FormRow title="Hours (each)">
         <input v-model.number="hours" type="number" min="0" step="0.5" class="shm-input" />
       </FormRow>
     </FormLayout>

@@ -501,16 +501,22 @@ async function onEntryUpdate(entry: EntryItem, checkedIn: boolean, hours: number
   }
 }
 
-async function onSetHours(hours: number) {
+function entryHeadcountForHours(count: number | undefined): number {
+  if (typeof count === 'number' && Number.isFinite(count) && count >= 1) return Math.floor(count)
+  return 1
+}
+
+async function onSetHours(hoursPerPerson: number) {
   const eligible = store.session?.entries.filter(e => e.checkedIn && !e.hours) ?? []
   try {
-    await Promise.all(eligible.map(e =>
-      fetch(`/api/entries/${e.id}`, {
+    await Promise.all(eligible.map(e => {
+      const storedHours = hoursPerPerson * entryHeadcountForHours(e.count)
+      return fetch(`/api/entries/${e.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkedIn: true, hours }),
+        body: JSON.stringify({ checkedIn: true, hours: storedHours }),
       })
-    ))
+    }))
     await store.fetch(route.params.groupKey as string, store.session!.date)
     entryListRef.value?.onSetHoursSuccess()
   } catch (e) {
