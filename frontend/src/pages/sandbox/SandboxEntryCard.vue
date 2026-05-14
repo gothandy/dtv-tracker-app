@@ -66,6 +66,7 @@
       <div class="demo">
         <EntryCard
           title="Dean Heritage Volunteers Ltd"
+          :count="5"
           :checked-in="false"
           :hours="0"
           :icons="iconsForEntry({ isGroup: true })"

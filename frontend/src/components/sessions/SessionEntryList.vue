@@ -19,6 +19,7 @@
         v-for="e in entries"
         :key="e.id"
         :title="e.profile.name"
+        :count="e.count"
         :title-to="allowEdit ? undefined : (e.profile.slug ? profilePath(e.profile.slug) : undefined)"
         :checked-in="e.checkedIn"
         :hours="e.hours"

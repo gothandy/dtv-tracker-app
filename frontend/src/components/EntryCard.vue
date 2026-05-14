@@ -6,12 +6,12 @@
       <div class="ec-card-left">
 
         <button v-if="allowEdit" class="ec-name ec-name--btn" @click="emit('editEntry')">
-          {{ title }}
+          {{ displayTitle }}
         </button>
         <RouterLink v-else-if="titleTo" :to="titleTo" class="ec-name">
-          {{ title }}
+          {{ displayTitle }}
         </RouterLink>
-        <span v-else class="ec-name ec-name--plain">{{ title }}</span>
+        <span v-else class="ec-name ec-name--plain">{{ displayTitle }}</span>
 
         <span
           v-for="icon in icons"
@@ -64,12 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import type { LabelIcon } from '../utils/labelIcons'
 
 const props = defineProps<{
   title: string
+  /** Entry headcount; when greater than 1, shown as "Nx " before the title. */
+  count?: number
   titleTo?: RouteLocationRaw
   checkedIn: boolean
   hours: number
@@ -79,6 +81,12 @@ const props = defineProps<{
   working?: boolean
   cancelled?: boolean
 }>()
+
+const displayTitle = computed(() => {
+  const n = props.count ?? 1
+  if (n <= 1) return props.title
+  return `${n}x ${props.title}`
+})
 
 const emit = defineEmits<{
   'update': [checkedIn: boolean, hours: number]
