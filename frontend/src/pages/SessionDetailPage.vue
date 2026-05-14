@@ -523,17 +523,56 @@ async function onAddEntry(payload: { profileId: number } | { newName: string; ne
   const groupKey = route.params.groupKey as string
   const date = store.session!.date
   try {
+    let profileId: number
+    if ('profileId' in payload) {
+      profileId = payload.profileId
+    } else {
+      const name = payload.newName.trim()
+      if (!name) {
+        entryListRef.value?.onAddError('Name is required')
+        return
+      }
+      const createRes = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email: payload.newEmail.trim() || undefined,
+        }),
+      })
+      if (!createRes.ok) {
+        let msg = `Could not create profile (${createRes.status})`
+        try {
+          const body = await createRes.json()
+          if (body && typeof body.error === 'string' && body.error) msg = body.error
+        } catch { /* ignore */ }
+        throw new Error(msg)
+      }
+      const created = await createRes.json()
+      const id = created?.data?.id
+      if (typeof id !== 'number') throw new Error('Invalid response from server')
+      profileId = id
+    }
+
     const res = await fetch(`/api/sessions/${groupKey}/${date}/entries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ profileId }),
     })
-    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    if (!res.ok) {
+      let msg = `Add failed (${res.status})`
+      try {
+        const body = await res.json()
+        if (body && typeof body.error === 'string' && body.error) msg = body.error
+      } catch { /* ignore */ }
+      throw new Error(msg)
+    }
     await store.fetch(groupKey, date)
     entryListRef.value?.onAddSuccess()
   } catch (e) {
     console.error('[SessionDetailPage] onAddEntry failed', e)
-    entryListRef.value?.onAddError('Failed to add entry — please try again')
+    const msg = e instanceof Error ? e.message : 'Failed to add entry — please try again'
+    entryListRef.value?.onAddError(msg)
   }
 }
 
