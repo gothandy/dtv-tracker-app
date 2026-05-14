@@ -27,5 +27,20 @@ export const useGroupDetailStore = defineStore('groupDetail', () => {
     }
   }
 
-  return { group, loading, error, httpStatus, fetch }
+  /** Replace group payload without clearing `group` or `loading` — avoids list flash after small mutations (e.g. delete regular). */
+  async function refresh(key: string): Promise<boolean> {
+    try {
+      const res = await window.fetch(`/api/groups/${key}`)
+      httpStatus.value = res.status
+      if (!res.ok) return false
+      const json: { data: GroupDetailResponse } = await res.json()
+      group.value = json.data
+      return true
+    } catch (e) {
+      console.error('[groupDetail store] refresh', e)
+      return false
+    }
+  }
+
+  return { group, loading, error, httpStatus, fetch, refresh }
 })
