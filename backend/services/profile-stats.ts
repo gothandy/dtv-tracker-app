@@ -123,7 +123,9 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   if (hasDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(thisProfile?.Title || '')}` });
   if (hasMatchNameError) warnings.push({ text: 'Match Name Error' });
   if (hasChildNoAdult) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${profileId}&profileName=${encodeURIComponent(thisProfile?.Title || '')}` });
-  if (hasFutureBooking && (!hasPrivacyConsent || !hasPhotoConsent)) warnings.push({ text: 'No Consent' });
+  if (!thisProfile?.IsGroup && hasFutureBooking && (!hasPrivacyConsent || !hasPhotoConsent)) {
+    warnings.push({ text: 'No Consent' });
+  }
 
   let isMember = false;
   let cardStatus: string | null = null;
@@ -296,7 +298,9 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
         if (possibleDuplicateIds.has(spProfile.ID)) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(spProfile.Title || '')}` });
         if (spProfile.Title && spProfile.MatchName && toMatchName(spProfile.Title) !== spProfile.MatchName) warnings.push({ text: 'Match Name Error' });
         if (childNoAdultIds.has(spProfile.ID)) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${spProfile.ID}&profileName=${encodeURIComponent(spProfile.Title || '')}` });
-        if (futureBookingIds.has(spProfile.ID) && (!consentedPrivacyIds.has(spProfile.ID) || !consentedPhotoIds.has(spProfile.ID))) warnings.push({ text: 'No Consent' });
+        if (!spProfile.IsGroup && futureBookingIds.has(spProfile.ID) && (!consentedPrivacyIds.has(spProfile.ID) || !consentedPhotoIds.has(spProfile.ID))) {
+          warnings.push({ text: 'No Consent' });
+        }
         if (spProfile.IsGroup && memberIds.has(spProfile.ID)) warnings.push({ text: 'Group + Member' });
 
         const newStats = {

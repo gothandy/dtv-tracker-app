@@ -24,7 +24,6 @@ import {
   parseHours,
   profileSlug,
   extractMetadataTags,
-  calculateSessionStats,
   parseEmails
 } from '../services/data-layer';
 import { parseSessionStats } from '../services/data-layer';
@@ -559,8 +558,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       limits: sessionLimits,
       storedLimits: rawLimits,
       regularsCount,
-      // Session stats are persisted on the session item and refreshed after writes.
-      // Keep this endpoint consistent across public, trusted, and self-service callers.
+      // Session stats: persisted Stats JSON on the session item (same for all callers — see AGENTS.md).
       stats: storedStats,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       isBookable: spSession.Date >= today,

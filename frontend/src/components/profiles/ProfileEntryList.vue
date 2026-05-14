@@ -24,6 +24,7 @@
         v-for="e in filteredEntries"
         :key="e.id"
         :title="cardTitle(e)"
+        :count="e.count"
         :title-to="allowEdit ? undefined : sessionPath(e.session.groupKey, e.session.date)"
         :checked-in="e.checkedIn"
         :hours="e.hours"

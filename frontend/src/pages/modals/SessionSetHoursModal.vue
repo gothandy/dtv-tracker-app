@@ -10,11 +10,11 @@
   >
     <p class="shm-desc">
       Sets hours for all checked-in entries where hours are not yet recorded.
-      <strong>{{ entryCount }} entries</strong> will be updated.
+      {{ entryCount === 1 ? '1 entry' : `${entryCount} entries` }} will be updated.
     </p>
 
     <FormLayout :disabled="working">
-      <FormRow title="Hours">
+      <FormRow title="Hours (per person)">
         <input v-model.number="hours" type="number" min="0" step="0.5" class="shm-input" />
       </FormRow>
     </FormLayout>

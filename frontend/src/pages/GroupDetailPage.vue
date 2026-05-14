@@ -386,9 +386,9 @@ async function onRegularDelete() {
   try {
     const res = await fetch(`/api/regulars/${regularId}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-    const item = store.group.regulars.find(r => r.slug === slug)
-    if (item) { item.isRegular = false; item.regularId = undefined; item.accompanyingAdultId = undefined }
     editingRegular.value = null
+    const ok = await store.refresh(store.group.key)
+    if (!ok) regularError.value = 'Regular removed but list could not be refreshed.'
   } catch (e) {
     console.error('[GroupDetailPage] onRegularDelete failed', e)
     regularModalError.value = 'Failed to delete — please try again'

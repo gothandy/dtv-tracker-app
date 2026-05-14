@@ -231,6 +231,7 @@ export function buildLookupMap<T, V>(
 
 /** Aggregate counts computed from entries — internal to calculateSessionStats */
 interface EntryAggregateStats {
+  /** Sum of entry headcounts (SharePoint `Count`, default 1) — not number of rows */
   registrations: number;
   hours: number;
   newCount: number;
@@ -239,8 +240,15 @@ interface EntryAggregateStats {
   eventbriteCount: number;
 }
 
+function entryHeadcount(entry: SharePointEntry): number {
+  const c = entry.Count;
+  if (typeof c === 'number' && Number.isFinite(c) && c >= 1) return Math.floor(c);
+  return 1;
+}
+
 /**
  * Calculates statistics for sessions based on entries.
+ * Registration and category counts use each entry's headcount (`Count`, default 1), not row count.
  * profileFirstSessionMap: profileId → first sessionId (from profile.stats.sessionIds[0]) — used for new count.
  * Returns a map of sessionId (as string) -> stats
  */
@@ -267,20 +275,21 @@ export function calculateSessionStats(
     }
 
     const stats = statsMap.get(sessionId)!;
-    stats.registrations++;
+    const headcount = entryHeadcount(entry);
+    stats.registrations += headcount;
     stats.hours += parseFloat(String(entry.Hours)) || 0;
 
     const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
     const sessionIdNum = safeParseLookupId(sessionId);
 
     if (profileId !== undefined && sessionIdNum !== undefined && profileFirstSessionMap.get(profileId) === sessionIdNum && !entry.Labels?.includes('Regular'))
-      stats.newCount++;
+      stats.newCount += headcount;
     if (entry.AccompanyingAdultLookupId)
-      stats.childCount++;
+      stats.childCount += headcount;
     if (entry.Labels?.includes('Regular'))
-      stats.regularCount++;
+      stats.regularCount += headcount;
     if (entry.EventbriteAttendeeID)
-      stats.eventbriteCount++;
+      stats.eventbriteCount += headcount;
   });
 
   return statsMap;

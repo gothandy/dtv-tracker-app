@@ -37,4 +37,24 @@ describe('groupDetail store', () => {
     await store.fetch('foo')
     expect(store.loading).toBe(false)
   })
+
+  it('refresh updates group in place on success', async () => {
+    const g1 = { id: 1, key: 'foo', displayName: 'Foo', regulars: [] as unknown[] }
+    mockFetch({ data: g1 })
+    const store = useGroupDetailStore()
+    await store.fetch('foo')
+    const g2 = { id: 1, key: 'foo', displayName: 'Foo Updated', regulars: [{ profileId: 1 }] }
+    mockFetch({ data: g2 })
+    const ok = await store.refresh('foo')
+    expect(ok).toBe(true)
+    expect(store.group?.displayName).toBe('Foo Updated')
+    expect(store.group?.regulars?.length).toBe(1)
+  })
+
+  it('refresh returns false on error response', async () => {
+    mockFetch({}, false, 500)
+    const store = useGroupDetailStore()
+    const ok = await store.refresh('foo')
+    expect(ok).toBe(false)
+  })
 })

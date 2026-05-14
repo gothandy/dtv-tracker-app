@@ -7,7 +7,7 @@
       </h2>
     </div>
 
-    <p v-if="!items.length" class="rl-empty">No regulars in the past year.</p>
+    <p v-if="!items.length" class="rl-empty">No repeats or regulars to list.</p>
 
     <div v-else class="rl-grid">
       <RegularItem
