@@ -190,6 +190,8 @@ This codebase is maintained by a small team (often volunteers). **Prefer linear,
 - **Same behaviour for every login** where possible: API consumers should see the same rules; differences should be driven by **data the caller is allowed to see** (e.g. no entry list for public), not by a second formula.
 - **Tests follow the pipeline**: Favour unit tests on shared functions (e.g. `data-layer.ts`) over branching integration tests per route.
 
+For a concise, language-agnostic checklist (naming, SRP, DRY, KISS, comments, YAGNI, etc.), see [Clean code cheat sheet](https://gist.github.com/wojteklu/73c6914cc446146b8b533c0988cf8d29) — general reference only; **project-specific rules in this file take precedence** when they differ.
+
 ### Caching Architecture
 
 Four independent caches:
