@@ -182,6 +182,14 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 - Lowercase-hyphen naming for files (e.g. `data-layer.ts`, `test-auth.js`)
 - Keep code simple and maintainable; follow existing patterns
 
+### Clean code and maintainability
+
+This codebase is maintained by a small team (often volunteers). **Prefer linear, single paths** over “clever” optimisations that duplicate logic.
+
+- **One source of truth**: If aggregates are stored (e.g. session `Stats` JSON), compute them in the existing stats pipeline (`calculateSessionStats` → `computeAndSaveSessionStats` / bulk refresh). **Do not** recompute the same numbers again in a route handler for some roles only — that doubles behaviour to test and risks drift between public and trusted views.
+- **Same behaviour for every login** where possible: API consumers should see the same rules; differences should be driven by **data the caller is allowed to see** (e.g. no entry list for public), not by a second formula.
+- **Tests follow the pipeline**: Favour unit tests on shared functions (e.g. `data-layer.ts`) over branching integration tests per route.
+
 ### Caching Architecture
 
 Four independent caches:
@@ -207,7 +215,7 @@ Targeted invalidation: each repository write evicts only its own key(s). Entry w
 
 Always calculate derived values (hours totals, counts) from source entries at query time. The app is the source of truth — no Power Automate flows update fields. NodeCache keeps this performant.
 
-**Exception — Pre-computed Stats fields**: The Sessions list has a `Stats` JSON field for performance (avoids fetching ~5,000 entries on listing page load). Kept fresh by `computeAndSaveSessionStats()` after every entry/record/media write and a nightly bulk refresh. Only computed aggregates belong in Stats — editable config fields (e.g. `Limits`) must never be stored there.
+**Exception — Pre-computed Stats fields**: The Sessions list has a `Stats` JSON field for performance (avoids fetching ~5,000 entries on listing page load). Kept fresh by `computeAndSaveSessionStats()` after every entry/record/media write and a nightly bulk refresh. Only computed aggregates belong in Stats — editable config fields (e.g. `Limits`) must never be stored there. Session detail responses use this persisted `Stats` for the `stats` payload for **all** roles (public and authenticated); do not overlay alternate totals in `routes/sessions.ts` — fix drift by refreshing stored stats instead.
 
 The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsByFY`, `isMember`, `cardStatus`, `regularGroupIds`, `repeatGroupIds`, `sessionIds`, `linkedProfileIds`, `isFirstAider`, and `warnings`. The `warnings` array holds human-readable flag strings (e.g. `"Possible Duplicate"`, `"Child No Adult"`) computed during stats refresh. The warnings filter on the volunteers listing reads from this stored value. Adding a new warning type means adding a detection pass in `runProfileStatsRefresh()` and `computeAndSaveProfileStats()` in `backend/services/profile-stats.ts`; removing one requires only deleting the detection — it disappears from all profiles on the next refresh.
 
