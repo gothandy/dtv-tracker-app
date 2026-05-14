@@ -463,6 +463,34 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
     const profileMap = new Map(profiles.map(p => [p.ID, p]));
 
+    // Check-in tier: recompute aggregate counts from live entries (weights SharePoint Count / headcount).
+    // Stored session Stats can lag until the next write or bulk refresh.
+    let statsForResponse = storedStats;
+    if (hasCheckInTier && sessionEntries.length > 0) {
+      const profileFirstSessionMap = new Map<number, number>();
+      for (const p of profiles) {
+        try {
+          const ps = JSON.parse(p[PROFILE_STATS] || '{}');
+          if (Array.isArray(ps.sessionIds) && ps.sessionIds.length > 0) {
+            profileFirstSessionMap.set(p.ID, ps.sessionIds[0]);
+          }
+        } catch { /* ignore */ }
+      }
+      const liveMap = calculateSessionStats(sessionEntries, profileFirstSessionMap);
+      const live = liveMap.get(String(spSession.ID));
+      if (live) {
+        statsForResponse = {
+          ...storedStats,
+          count: live.registrations,
+          hours: Math.round(live.hours * 10) / 10,
+          new: live.newCount || undefined,
+          child: live.childCount || undefined,
+          regular: live.regularCount || undefined,
+          eventbrite: live.eventbriteCount || undefined,
+        };
+      }
+    }
+
     // All session entries returned to check-in tier users (with cancelled flag).
     const entryResponses: EntryResponse[] = sessionEntries.map(e => {
       const volunteerId = safeParseLookupId(e[PROFILE_LOOKUP]);
@@ -559,9 +587,8 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       limits: sessionLimits,
       storedLimits: rawLimits,
       regularsCount,
-      // Session stats are persisted on the session item and refreshed after writes.
-      // Keep this endpoint consistent across public, trusted, and self-service callers.
-      stats: storedStats,
+      // Session stats: persisted snapshot in statsRaw; check-in tier gets live headcount aggregates above.
+      stats: statsForResponse,
       financialYear: `FY${calculateFinancialYear(new Date(spSession.Date))}`,
       isBookable: spSession.Date >= today,
       eventbriteEventId: spSession.EventbriteEventID,

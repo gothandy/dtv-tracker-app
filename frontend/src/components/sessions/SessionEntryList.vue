@@ -114,8 +114,20 @@ const setHoursError = ref('')
 
 const router = useRouter()
 
-const activeCount = computed(() => props.entries.filter(e => !e.cancelled).length)
-const checkedCount = computed(() => props.entries.filter(e => e.checkedIn && !e.cancelled).length)
+function entryHeadcount(e: EntryItem): number {
+  const c = e.count
+  if (typeof c === 'number' && Number.isFinite(c) && c >= 1) return Math.floor(c)
+  return 1
+}
+
+const activeCount = computed(() =>
+  props.entries.filter(e => !e.cancelled).reduce((sum, e) => sum + entryHeadcount(e), 0)
+)
+const checkedCount = computed(() =>
+  props.entries
+    .filter(e => e.checkedIn && !e.cancelled)
+    .reduce((sum, e) => sum + entryHeadcount(e), 0)
+)
 const eligibleCount = computed(() => props.entries.filter(e => e.checkedIn && !e.hours).length)
 const sessionAdults = computed(() =>
   props.entries

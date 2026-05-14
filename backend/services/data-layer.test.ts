@@ -105,6 +105,31 @@ describe('calculateSessionStats', () => {
     expect(stats.get('1')?.eventbriteCount).toBe(1)
   })
 
+  it('weights registrations and newCount by entry Count (headcount)', () => {
+    const profileFirstSessionMap = new Map([[10, 1]])
+    const stats = calculateSessionStats(
+      [
+        entry('1', { ProfileLookupId: '10', Count: 5 }),
+        entry('1', { ProfileLookupId: '11' }),
+      ],
+      profileFirstSessionMap
+    )
+    expect(stats.get('1')?.registrations).toBe(6)
+    expect(stats.get('1')?.newCount).toBe(5)
+  })
+
+  it('weights childCount, regularCount, eventbriteCount by entry Count', () => {
+    const stats = calculateSessionStats([
+      entry('1', { Labels: ['Regular'], Count: 3 }),
+      entry('1', { AccompanyingAdultLookupId: 9, Count: 2 }),
+      entry('1', { EventbriteAttendeeID: 'eb', Count: 4 }),
+    ])
+    expect(stats.get('1')?.regularCount).toBe(3)
+    expect(stats.get('1')?.childCount).toBe(2)
+    expect(stats.get('1')?.eventbriteCount).toBe(4)
+    expect(stats.get('1')?.registrations).toBe(9)
+  })
+
   it('handles multiple sessions independently', () => {
     const stats = calculateSessionStats([entry('1'), entry('1'), entry('2')])
     expect(stats.get('1')?.registrations).toBe(2)
