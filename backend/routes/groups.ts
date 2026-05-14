@@ -260,9 +260,12 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       }
     }
 
-    // Filter to ≥6h, attach name/slug/isRegular/regularId/accompanyingAdultId
+    // Repeats: ≥6h in rolling year for this group. Formal regulars below that threshold are appended
+    // so check-in can still view/edit the Regulars list relationship.
     const MIN_REGULAR_HOURS = 6;
     const rollingRegulars: import('../../types/api-responses').GroupRegularResponse[] = [];
+    const includedProfileIds = new Set<number>();
+
     for (const [profileId, hours] of profileHoursMap) {
       if (hours < MIN_REGULAR_HOURS) continue;
       const spProfile = profileMap.get(profileId);
@@ -278,7 +281,26 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
         ...(regularInfo !== undefined && { regularId: regularInfo.regularId }),
         ...(regularInfo?.accompanyingAdultId !== undefined && { accompanyingAdultId: regularInfo.accompanyingAdultId }),
       });
+      includedProfileIds.add(profileId);
     }
+
+    for (const [profileId, regularInfo] of regularsForGroupMap) {
+      if (includedProfileIds.has(profileId)) continue;
+      const spProfile = profileMap.get(profileId);
+      if (!spProfile) continue;
+      const p = convertProfile(spProfile);
+      const hours = profileHoursMap.get(profileId) ?? 0;
+      rollingRegulars.push({
+        profileId: p.id,
+        name: p.name || spProfile.Title || '',
+        slug: profileSlug(p.name, p.id),
+        hours: Math.round(hours * 10) / 10,
+        isRegular: true,
+        regularId: regularInfo.regularId,
+        ...(regularInfo.accompanyingAdultId !== undefined && { accompanyingAdultId: regularInfo.accompanyingAdultId }),
+      });
+    }
+
     rollingRegulars.sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
 
     const selfServiceProfileIds = role === 'selfservice'
