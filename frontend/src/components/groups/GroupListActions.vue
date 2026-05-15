@@ -1,7 +1,7 @@
 <template>
   <div v-if="canBulkTag" class="list-actions">
     <span class="list-actions-stats">
-      {{ selected.length }} / {{ groups.length }} groups &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
+      {{ selectedGroups.length }} / {{ groups.length }} groups &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
     <div class="list-actions-buttons">
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="!selectedGroups.length" @click="onDownload" />

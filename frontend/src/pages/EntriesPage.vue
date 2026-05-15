@@ -25,6 +25,15 @@
       @edit-entry="onEditEntry"
     />
 
+    <EntryBulkCancelModal
+      v-if="showCancelModal"
+      :count="cancelConfirmCount"
+      :working="cancelWorking"
+      :error="cancelError"
+      @close="dismissCancelModal"
+      @confirm="executeCancelSelected"
+    />
+
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
@@ -42,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEntryListStore } from '../stores/entryList'
 import { useViewer } from '../composables/useViewer'
@@ -55,9 +64,11 @@ import EntryListFilter from '../components/entries/EntryListFilter.vue'
 import EntryListActions from '../components/entries/EntryListActions.vue'
 import EntryListResults from '../components/entries/EntryListResults.vue'
 import EntryEditModal from './modals/EntryEditModal.vue'
+import EntryBulkCancelModal from './modals/EntryBulkCancelModal.vue'
 import { profilePath, sessionPath } from '../router/index'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 import { matchesEntryQualityFilter } from '../utils/entryQuality'
+import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
@@ -71,13 +82,21 @@ const editingEntry = ref<EntryItem | null>(null)
 const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
+const showCancelModal = ref(false)
+const cancelConfirmCount = ref(0)
 const cancelWorking = ref(false)
+const cancelError = ref<string | undefined>()
 const currentFilter = ref<EntryFilterParams>({
   q: '',
   fy: 'future',
   accompanyingAdult: '',
   cancelled: 'false',
   entryQuality: '',
+})
+
+watch(filtered, list => {
+  const pruned = pruneSelectionToVisible(selected.value, list)
+  if (pruned.length !== selected.value.length) selected.value = pruned
 })
 
 function onFetch(params: EntryServerFilterParams) {
@@ -177,10 +196,29 @@ async function onSave(data: EditData) {
   }
 }
 
-async function onCancelSelected() {
-  const toCancel = store.entries.filter(e => selected.value.includes(e.id) && !e.cancelled)
+function onCancelSelected() {
+  const toCancel = visibleSelected(selected.value, filtered.value).filter(e => !e.cancelled)
   if (!toCancel.length) return
+  cancelConfirmCount.value = toCancel.length
+  cancelError.value = undefined
+  showCancelModal.value = true
+}
+
+function dismissCancelModal() {
+  if (cancelWorking.value) return
+  showCancelModal.value = false
+  cancelError.value = undefined
+}
+
+async function executeCancelSelected() {
+  const toCancel = visibleSelected(selected.value, filtered.value).filter(e => !e.cancelled)
+  if (!toCancel.length) {
+    dismissCancelModal()
+    return
+  }
   cancelWorking.value = true
+  cancelError.value = undefined
+  let succeeded = false
   try {
     await Promise.all(
       toCancel.map(e =>
@@ -203,11 +241,19 @@ async function onCancelSelected() {
         if (idx >= 0) store.entries.splice(idx, 1)
       }
     }
-    selected.value = selected.value.filter(id => store.entries.some(e => e.id === id))
+    selected.value = pruneSelectionToVisible(selected.value, filtered.value).filter(id =>
+      store.entries.some(e => e.id === id),
+    )
+    succeeded = true
   } catch (e) {
-    console.error('[EntriesPage] onCancelSelected failed', e)
+    console.error('[EntriesPage] executeCancelSelected failed', e)
+    cancelError.value = 'Failed to cancel — please try again'
   } finally {
     cancelWorking.value = false
+    if (succeeded) {
+      showCancelModal.value = false
+      cancelError.value = undefined
+    }
   }
 }
 

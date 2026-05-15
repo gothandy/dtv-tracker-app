@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
@@ -51,6 +51,7 @@ import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
 import { groupPath } from '../router'
 import type { GroupWithStats } from '../components/groups/GroupListFilter.vue'
+import { pruneSelectionToVisible } from '../utils/listSelection'
 
 usePageTitle('Groups')
 
@@ -63,6 +64,11 @@ const selected = ref<number[]>([])
 const showAddGroup = ref(false)
 const addGroupWorking = ref(false)
 const addGroupError = ref('')
+
+watch(filtered, list => {
+  const pruned = pruneSelectionToVisible(selected.value, list)
+  if (pruned.length !== selected.value.length) selected.value = pruned
+})
 
 async function onAddGroup(data: AddGroupPayload) {
   addGroupWorking.value = true

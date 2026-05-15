@@ -1,7 +1,7 @@
 <template>
   <div v-if="canBulkEdit" class="list-actions">
     <span class="list-actions-stats">
-      {{ selected.length }} / {{ filteredProfiles.length }} {{ filteredProfiles.length === 1 ? 'profile' : 'profiles' }}
+      {{ selectedInFiltered.length }} / {{ filteredProfiles.length }} {{ filteredProfiles.length === 1 ? 'profile' : 'profiles' }}
     </span>
     <div class="list-actions-buttons">
       <AppButton label="Add Records" icon="file-add" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-records')" />

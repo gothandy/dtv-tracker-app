@@ -1,7 +1,7 @@
 <template>
   <div class="list-actions">
     <span class="list-actions-stats">
-      {{ selected.length }} / {{ entries.length }} entries &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
+      {{ selectedEntries.length }} / {{ entries.length }} entries &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
     <div class="list-actions-buttons">
       <AppButton
