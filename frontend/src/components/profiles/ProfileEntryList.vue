@@ -30,6 +30,7 @@
         :hours="e.hours"
         :icons="iconsForEntry({ ...e.profile, isChild: !!e.accompanyingAdultId, labels: e.labels, isNew: e.isNew, eventbriteAttendeeId: e.eventbriteAttendeeId }).filter(i => i.type !== 'badge')"
         :allow-edit="allowEdit ?? false"
+        :cancelled="!!e.cancelled"
         :working="workingId === e.id"
         @update="(c, h) => emit('update', e, c, h)"
         @edit-entry="openEditModal(e)"

@@ -1,7 +1,7 @@
 <template>
   <div v-if="canBulkTag" class="list-actions">
     <span class="list-actions-stats">
-      {{ selected.length }} / {{ sessions.length }} sessions &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
+      {{ selectedSessions.length }} / {{ sessions.length }} sessions &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
 
     <div class="list-actions-buttons">

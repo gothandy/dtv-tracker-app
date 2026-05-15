@@ -20,7 +20,7 @@
         <AppButton
           v-if="showDelete"
           :label="deleteText ?? 'Delete'"
-          icon="delete"
+          :icon="deleteIcon ?? 'delete'"
           mode="icon-text"
           variant="danger"
           class="am-delete"
@@ -61,6 +61,7 @@ const props = defineProps<{
   showDelete?: boolean
   deleteDisabled?: boolean
   deleteText?: string
+  deleteIcon?: string
   error?: string
 }>()
 

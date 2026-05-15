@@ -14,7 +14,7 @@
 
     <SessionAddTagsModal
       v-if="showTagModal"
-      :count="selected.length"
+      :count="visibleSelectedCount"
       :working="tagWorking"
       :error="tagError"
       @close="showTagModal = false"
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
@@ -49,6 +49,7 @@ import { useViewer } from '../composables/useViewer'
 import { useRouter } from 'vue-router'
 import { sessionPath } from '../router'
 import type { Session } from '../types/session'
+import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 usePageTitle('Sessions')
 
@@ -65,8 +66,17 @@ const showAddSession = ref(false)
 const addSessionWorking = ref(false)
 const addSessionError = ref('')
 
+watch(filtered, list => {
+  const pruned = pruneSelectionToVisible(selected.value, list)
+  if (pruned.length !== selected.value.length) selected.value = pruned
+})
+
 store.fetch()
 groupsStore.fetch()
+
+const visibleSelectedCount = computed(() =>
+  visibleSelected(selected.value, filtered.value).length,
+)
 
 const groupOptions = computed(() =>
   groupsStore.groups
@@ -78,10 +88,11 @@ async function onApplyTag(label: string, termGuid: string) {
   tagWorking.value = true
   tagError.value = ''
   const tag = { label, termGuid }
+  const sessionIds = visibleSelected(selected.value, filtered.value).map(s => s.id)
   const res = await fetch('/api/sessions/bulk-tag', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionIds: selected.value, tags: [tag] }),
+    body: JSON.stringify({ sessionIds, tags: [tag] }),
   })
   if (!res.ok) {
     tagError.value = 'Bulk tag failed — please try again'
@@ -89,7 +100,7 @@ async function onApplyTag(label: string, termGuid: string) {
     console.error('[SessionListPage] bulk-tag failed', res.status)
     return
   }
-  store.applyTag(selected.value, tag)
+  store.applyTag(sessionIds, tag)
   showTagModal.value = false
   tagWorking.value = false
   tagError.value = ''

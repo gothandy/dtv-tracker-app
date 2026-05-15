@@ -1,5 +1,13 @@
 <template>
-  <div class="eli-row" :class="{ 'eli-row--checked': entry.checkedIn, 'eli-row--selected': selected, 'eli-row--cancelled': !!entry.cancelled }">
+  <div
+    class="eli-row"
+    :class="{
+      'eli-row--checked': entry.checkedIn,
+      'eli-row--selected': selected,
+      'eli-row--cancelled': !!entry.cancelled,
+      'eli-row--error': hasEntryError,
+    }"
+  >
     <component
       :is="to ? RouterLink : 'div'"
       v-bind="to ? { to } : {}"
@@ -30,12 +38,15 @@ import { RouterLink } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import type { EntryListItemResponse } from '../../../../types/api-responses'
 import { iconsForEntry } from '../../utils/labelIcons'
+import { isEntryError } from '../../utils/entryQuality'
 
 const props = defineProps<{
   entry: EntryListItemResponse
   to?: RouteLocationRaw
   selected?: boolean
 }>()
+
+const hasEntryError = computed(() => isEntryError(props.entry))
 
 const icons = computed(() =>
   iconsForEntry({
@@ -73,6 +84,9 @@ function formatDate(date: string): string {
 }
 .eli-row--cancelled .eli-name {
   text-decoration: line-through;
+}
+.eli-row--error:not(.eli-row--cancelled) {
+  border-left-color: var(--color-dtv-dirt);
 }
 
 .eli-content {

@@ -2,10 +2,20 @@
   <DefaultLayout>
     <h1 class="sr-only">Entries</h1>
     <PageHeader>Entries</PageHeader>
-    <EntryListFilter @filtered="onFiltered" />
-    <EntryListActions :entries="store.entries" :selected="selected" />
-    <EntryListResults
+    <EntryListFilter
       :entries="store.entries"
+      @fetch="onFetch"
+      @filtered="filtered = $event"
+      @filter-change="currentFilter = $event"
+    />
+    <EntryListActions
+      :entries="filtered"
+      :selected="selected"
+      :cancel-working="cancelWorking"
+      @cancel-selected="onCancelSelected"
+    />
+    <EntryListResults
+      :entries="filtered"
       :loading="store.loading"
       :error="store.error"
       :selected="selected"
@@ -13,6 +23,15 @@
       allow-edit
       @update:selected="selected = $event"
       @edit-entry="onEditEntry"
+    />
+
+    <EntryBulkCancelModal
+      v-if="showCancelModal"
+      :count="cancelConfirmCount"
+      :working="cancelWorking"
+      :error="cancelError"
+      @close="dismissCancelModal"
+      @confirm="executeCancelSelected"
     />
 
     <EntryEditModal
@@ -32,21 +51,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEntryListStore } from '../stores/entryList'
 import { useViewer } from '../composables/useViewer'
 import type { EntryListItemResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
-import type { EntryFilterParams } from '../components/entries/EntryListFilter.vue'
+import type { EntryFilterParams, EntryServerFilterParams } from '../components/entries/EntryListFilter.vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import EntryListFilter from '../components/entries/EntryListFilter.vue'
 import EntryListActions from '../components/entries/EntryListActions.vue'
 import EntryListResults from '../components/entries/EntryListResults.vue'
 import EntryEditModal from './modals/EntryEditModal.vue'
+import EntryBulkCancelModal from './modals/EntryBulkCancelModal.vue'
 import { profilePath, sessionPath } from '../router/index'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
+import { matchesEntryQualityFilter } from '../utils/entryQuality'
+import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
@@ -55,21 +77,45 @@ const router = useRouter()
 const viewer = useViewer()
 
 const selected = ref<number[]>([])
+const filtered = ref<EntryListItemResponse[]>([])
 const editingEntry = ref<EntryItem | null>(null)
 const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
-const currentFilter = ref<EntryFilterParams>({ q: '', fy: 'future', accompanyingAdult: '', cancelled: 'false' })
+const showCancelModal = ref(false)
+const cancelConfirmCount = ref(0)
+const cancelWorking = ref(false)
+const cancelError = ref<string | undefined>()
+const currentFilter = ref<EntryFilterParams>({
+  q: '',
+  fy: 'future',
+  accompanyingAdult: '',
+  cancelled: 'false',
+  entryQuality: '',
+})
 
-function onFiltered(params: EntryFilterParams) {
-  currentFilter.value = params
-  store.fetch({ q: params.q, fy: params.fy, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled, profileId: params.profileId })
+watch(filtered, list => {
+  const pruned = pruneSelectionToVisible(selected.value, list)
+  if (pruned.length !== selected.value.length) selected.value = pruned
+})
+
+function onFetch(params: EntryServerFilterParams) {
+  store.fetch({
+    q: params.q,
+    fy: params.fy,
+    accompanyingAdult: params.accompanyingAdult,
+    cancelled: params.cancelled,
+    profileId: params.profileId,
+  })
 }
 
-function matchesFilter(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {
+function entryStillVisible(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {
   if (filter.q && !(entry.notes ?? '').toLowerCase().includes(filter.q.toLowerCase())) return false
   if (filter.accompanyingAdult === 'empty' && entry.hasAccompanyingAdult) return false
   if (filter.accompanyingAdult === 'notempty' && !entry.hasAccompanyingAdult) return false
+  if (filter.cancelled === 'false' && entry.cancelled) return false
+  if (filter.cancelled === 'true' && !entry.cancelled) return false
+  if (!matchesEntryQualityFilter(entry, filter.entryQuality)) return false
   return true
 }
 
@@ -137,7 +183,7 @@ async function onSave(data: EditData) {
       stored.labels = data.labels
       stored.eventbriteAttendeeId = data.eventbriteAttendeeId ?? undefined
       stored.cancelled = data.cancelled ? (stored.cancelled || new Date().toISOString()) : undefined
-      if (!matchesFilter(stored, currentFilter.value)) {
+      if (!entryStillVisible(stored, currentFilter.value)) {
         store.entries.splice(idx, 1)
         selected.value = selected.value.filter(id => id !== editingEntry.value!.id)
       }
@@ -147,6 +193,67 @@ async function onSave(data: EditData) {
     console.error('[EntriesPage] save failed', e)
     editError.value = 'Failed to save — please try again'
     editWorking.value = false
+  }
+}
+
+function onCancelSelected() {
+  const toCancel = visibleSelected(selected.value, filtered.value).filter(e => !e.cancelled)
+  if (!toCancel.length) return
+  cancelConfirmCount.value = toCancel.length
+  cancelError.value = undefined
+  showCancelModal.value = true
+}
+
+function dismissCancelModal() {
+  if (cancelWorking.value) return
+  showCancelModal.value = false
+  cancelError.value = undefined
+}
+
+async function executeCancelSelected() {
+  const toCancel = visibleSelected(selected.value, filtered.value).filter(e => !e.cancelled)
+  if (!toCancel.length) {
+    dismissCancelModal()
+    return
+  }
+  cancelWorking.value = true
+  cancelError.value = undefined
+  let succeeded = false
+  try {
+    await Promise.all(
+      toCancel.map(e =>
+        fetch(`/api/entries/${e.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cancelled: true }),
+        }).then(res => {
+          if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+        }),
+      ),
+    )
+    const cancelledAt = new Date().toISOString()
+    for (const e of toCancel) {
+      const stored = store.entries.find(s => s.id === e.id)
+      if (!stored) continue
+      stored.cancelled = stored.cancelled || cancelledAt
+      if (!entryStillVisible(stored, currentFilter.value)) {
+        const idx = store.entries.findIndex(s => s.id === e.id)
+        if (idx >= 0) store.entries.splice(idx, 1)
+      }
+    }
+    selected.value = pruneSelectionToVisible(selected.value, filtered.value).filter(id =>
+      store.entries.some(e => e.id === id),
+    )
+    succeeded = true
+  } catch (e) {
+    console.error('[EntriesPage] executeCancelSelected failed', e)
+    cancelError.value = 'Failed to cancel — please try again'
+  } finally {
+    cancelWorking.value = false
+    if (succeeded) {
+      showCancelModal.value = false
+      cancelError.value = undefined
+    }
   }
 }
 

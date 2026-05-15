@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ProfileListFilter from '../components/profiles/ProfileListFilter.vue'
@@ -66,6 +66,7 @@ import { useGroupListStore } from '../stores/groupList'
 import { useRouter } from 'vue-router'
 import { profilePath } from '../router'
 import type { ProfileResponse } from '../../../types/api-responses'
+import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 usePageTitle('Profiles')
 
@@ -86,12 +87,13 @@ const addProfileWorking = ref(false)
 const addProfileError = ref('')
 const recordOptions = ref<{ types: string[]; statuses: string[] }>({ types: [], statuses: [] })
 
-// Individual (non-group) profile IDs from current selection
+watch(filtered, list => {
+  const pruned = pruneSelectionToVisible(selected.value, list)
+  if (pruned.length !== selected.value.length) selected.value = pruned
+})
+
 const individualSelectedCount = computed(() =>
-  selected.value.filter(id => {
-    const p = store.profiles.find(x => x.id === id)
-    return p && !p.isGroup
-  }).length
+  visibleSelected(selected.value, filtered.value).filter(p => !p.isGroup).length,
 )
 
 function onFiltersChange({ fy: newFy, group: newGroup }: { fy: string; group: string }) {
@@ -104,10 +106,9 @@ async function onBulkSave(payload: BulkRecordPayload) {
   bulkWorking.value = true
   bulkError.value = ''
   try {
-    const individualIds = selected.value.filter(id => {
-      const p = store.profiles.find(x => x.id === id)
-      return p && !p.isGroup
-    })
+    const individualIds = visibleSelected(selected.value, filtered.value)
+      .filter(p => !p.isGroup)
+      .map(p => p.id)
     const res = await fetch('/api/records/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
