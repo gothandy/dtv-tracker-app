@@ -252,6 +252,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Profile filter chip: navigating from a profile warning link (`/entries?profileId=N&profileName=X`) shows a dirt-coloured "X ×" chip in the filter row; only that volunteer's entries are shown
 - [ ] Clicking the chip's × button clears the profile filter and re-fetches all entries (per other active filters)
 - [ ] `GET /api/entries?profileId=N` returns only entries for that profile
+- [ ] Entry quality filter: with default FY **future**, the quality dropdown is hidden (no past-session errors in scope)
+- [ ] Entry quality filter: with FY **All** or a past FY, dropdown appears when zero-hour past entries exist (options: Entry error / No entry error only)
+- [ ] Entry quality **Entry error**: past, not-cancelled, and 0 hours (check-in state ignored)
+- [ ] Entry quality **No entry error**: shows entries that are not past-session zero-hour rows (includes future bookings)
+- [ ] Fix via edit modal (set hours > 0) or cancel → row leaves the active quality filter without full page reload
+- [ ] Fix via **Cancel Booking** on edit modal (with `cancelled=false` list filter) → row removed from list immediately
+- [ ] `entryQuality` preserved in URL when set; cleared when FY changes so the selected type no longer exists in data
 
 ### H30. Bulk tag sessions / CSV download
 - [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" and "Download CSV" buttons become enabled

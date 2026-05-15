@@ -17,10 +17,15 @@
       <h2>GroupListFilter (Admin: New Group button visible)</h2>
       <GroupListFilter :groups="groups" :sessions="sessions" :can-add-group="true" @filtered="filteredGroups = $event" />
 
-      <h2>EntryListFilter — notes search + AccompanyingAdult dropdown</h2>
-      <EntryListFilter @filtered="filteredEntries = $event" />
-      <p v-if="filteredEntries" class="filter-note">
-        q: "{{ filteredEntries.q }}" · accompanyingAdult: "{{ filteredEntries.accompanyingAdult || '(all)' }}"
+      <h2>EntryListFilter — notes search + quality filter (sandbox uses static entries; no API fetch)</h2>
+      <EntryListFilter
+        :entries="sampleEntries"
+        @filter-change="entryFilterParams = $event"
+        @filtered="entryFilterCount = $event.length"
+      />
+      <p v-if="entryFilterParams" class="filter-note">
+        q: "{{ entryFilterParams.q }}" · accompanyingAdult: "{{ entryFilterParams.accompanyingAdult || '(all)' }}"
+        · entryQuality: "{{ entryFilterParams.entryQuality || '(all)' }}" · showing {{ entryFilterCount }} entries
       </p>
 
     </div>
@@ -41,12 +46,14 @@ import type { Session } from '../../types/session'
 import type { GroupResponse } from '../../../../types/api-responses'
 import type { GroupWithStats } from '../../components/groups/GroupListFilter.vue'
 import type { EntryFilterParams } from '../../components/entries/EntryListFilter.vue'
+import type { EntryListItemResponse } from '../../../../types/api-responses'
 
 usePageTitle('Sandbox')
 
 const filteredSessions = ref<Session[]>([])
 const filteredGroups = ref<GroupWithStats[]>([])
-const filteredEntries = ref<EntryFilterParams | null>(null)
+const entryFilterParams = ref<EntryFilterParams | null>(null)
+const entryFilterCount = ref(0)
 const emptySelected = ref<number[]>([])
 const activeSelected = ref<number[]>([1, 3, 4])
 
@@ -90,6 +97,46 @@ const groups: GroupResponse[] = [
   { id: 1, key: 'wed-dig', displayName: 'Wednesday Dig', description: 'Our popular mid-week dig.', regularsCount: 13, regulars: [] },
   { id: 2, key: 'trail-crew', displayName: 'Trail Crew', description: 'General trail maintenance across the forest.', regularsCount: 18, regulars: [] },
   { id: 3, key: 'family-ride', displayName: 'Family Ride', description: 'Easy-going rides for families with children.', regularsCount: 4, regulars: [] },
+]
+
+const sampleEntries: EntryListItemResponse[] = [
+  {
+    id: 1,
+    volunteerName: 'Alice Bowen',
+    date: '2026-04-01',
+    groupKey: 'wed-dig',
+    groupName: 'Wednesday Dig',
+    notes: '#child',
+    checkedIn: false,
+    hours: 0,
+    count: 1,
+    isGroup: false,
+    hasAccompanyingAdult: false,
+  },
+  {
+    id: 2,
+    volunteerName: 'Bob Carter',
+    date: '2026-04-08',
+    groupKey: 'wed-dig',
+    groupName: 'Wednesday Dig',
+    checkedIn: true,
+    hours: 0,
+    count: 1,
+    isGroup: false,
+    hasAccompanyingAdult: false,
+  },
+  {
+    id: 3,
+    volunteerName: 'Carol Davies',
+    date: '2026-06-01',
+    groupKey: 'trail-crew',
+    groupName: 'Trail Crew',
+    checkedIn: false,
+    hours: 0,
+    count: 1,
+    isGroup: false,
+    hasAccompanyingAdult: false,
+  },
 ]
 </script>
 

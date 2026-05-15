@@ -2,10 +2,15 @@
   <DefaultLayout>
     <h1 class="sr-only">Entries</h1>
     <PageHeader>Entries</PageHeader>
-    <EntryListFilter @filtered="onFiltered" />
-    <EntryListActions :entries="store.entries" :selected="selected" />
-    <EntryListResults
+    <EntryListFilter
       :entries="store.entries"
+      @fetch="onFetch"
+      @filtered="filtered = $event"
+      @filter-change="currentFilter = $event"
+    />
+    <EntryListActions :entries="filtered" :selected="selected" />
+    <EntryListResults
+      :entries="filtered"
       :loading="store.loading"
       :error="store.error"
       :selected="selected"
@@ -38,7 +43,7 @@ import { useEntryListStore } from '../stores/entryList'
 import { useViewer } from '../composables/useViewer'
 import type { EntryListItemResponse } from '../../../types/api-responses'
 import type { EntryItem } from '../types/entry'
-import type { EntryFilterParams } from '../components/entries/EntryListFilter.vue'
+import type { EntryFilterParams, EntryServerFilterParams } from '../components/entries/EntryListFilter.vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import EntryListFilter from '../components/entries/EntryListFilter.vue'
@@ -47,6 +52,7 @@ import EntryListResults from '../components/entries/EntryListResults.vue'
 import EntryEditModal from './modals/EntryEditModal.vue'
 import { profilePath, sessionPath } from '../router/index'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
+import { matchesEntryQualityFilter } from '../utils/entryQuality'
 
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
@@ -55,21 +61,36 @@ const router = useRouter()
 const viewer = useViewer()
 
 const selected = ref<number[]>([])
+const filtered = ref<EntryListItemResponse[]>([])
 const editingEntry = ref<EntryItem | null>(null)
 const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
-const currentFilter = ref<EntryFilterParams>({ q: '', fy: 'future', accompanyingAdult: '', cancelled: 'false' })
+const currentFilter = ref<EntryFilterParams>({
+  q: '',
+  fy: 'future',
+  accompanyingAdult: '',
+  cancelled: 'false',
+  entryQuality: '',
+})
 
-function onFiltered(params: EntryFilterParams) {
-  currentFilter.value = params
-  store.fetch({ q: params.q, fy: params.fy, accompanyingAdult: params.accompanyingAdult, cancelled: params.cancelled, profileId: params.profileId })
+function onFetch(params: EntryServerFilterParams) {
+  store.fetch({
+    q: params.q,
+    fy: params.fy,
+    accompanyingAdult: params.accompanyingAdult,
+    cancelled: params.cancelled,
+    profileId: params.profileId,
+  })
 }
 
-function matchesFilter(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {
+function entryStillVisible(entry: EntryListItemResponse, filter: EntryFilterParams): boolean {
   if (filter.q && !(entry.notes ?? '').toLowerCase().includes(filter.q.toLowerCase())) return false
   if (filter.accompanyingAdult === 'empty' && entry.hasAccompanyingAdult) return false
   if (filter.accompanyingAdult === 'notempty' && !entry.hasAccompanyingAdult) return false
+  if (filter.cancelled === 'false' && entry.cancelled) return false
+  if (filter.cancelled === 'true' && !entry.cancelled) return false
+  if (!matchesEntryQualityFilter(entry, filter.entryQuality)) return false
   return true
 }
 
@@ -137,7 +158,7 @@ async function onSave(data: EditData) {
       stored.labels = data.labels
       stored.eventbriteAttendeeId = data.eventbriteAttendeeId ?? undefined
       stored.cancelled = data.cancelled ? (stored.cancelled || new Date().toISOString()) : undefined
-      if (!matchesFilter(stored, currentFilter.value)) {
+      if (!entryStillVisible(stored, currentFilter.value)) {
         store.entries.splice(idx, 1)
         selected.value = selected.value.filter(id => id !== editingEntry.value!.id)
       }
