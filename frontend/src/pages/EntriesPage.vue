@@ -8,7 +8,12 @@
       @filtered="filtered = $event"
       @filter-change="currentFilter = $event"
     />
-    <EntryListActions :entries="filtered" :selected="selected" />
+    <EntryListActions
+      :entries="filtered"
+      :selected="selected"
+      :cancel-working="cancelWorking"
+      @cancel-selected="onCancelSelected"
+    />
     <EntryListResults
       :entries="filtered"
       :loading="store.loading"
@@ -66,6 +71,7 @@ const editingEntry = ref<EntryItem | null>(null)
 const sessionAdults = ref<{ id: number; name: string }[]>([])
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
+const cancelWorking = ref(false)
 const currentFilter = ref<EntryFilterParams>({
   q: '',
   fy: 'future',
@@ -168,6 +174,40 @@ async function onSave(data: EditData) {
     console.error('[EntriesPage] save failed', e)
     editError.value = 'Failed to save — please try again'
     editWorking.value = false
+  }
+}
+
+async function onCancelSelected() {
+  const toCancel = store.entries.filter(e => selected.value.includes(e.id) && !e.cancelled)
+  if (!toCancel.length) return
+  cancelWorking.value = true
+  try {
+    await Promise.all(
+      toCancel.map(e =>
+        fetch(`/api/entries/${e.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cancelled: true }),
+        }).then(res => {
+          if (!res.ok) throw new Error(`Cancel failed (${res.status})`)
+        }),
+      ),
+    )
+    const cancelledAt = new Date().toISOString()
+    for (const e of toCancel) {
+      const stored = store.entries.find(s => s.id === e.id)
+      if (!stored) continue
+      stored.cancelled = stored.cancelled || cancelledAt
+      if (!entryStillVisible(stored, currentFilter.value)) {
+        const idx = store.entries.findIndex(s => s.id === e.id)
+        if (idx >= 0) store.entries.splice(idx, 1)
+      }
+    }
+    selected.value = selected.value.filter(id => store.entries.some(e => e.id === id))
+  } catch (e) {
+    console.error('[EntriesPage] onCancelSelected failed', e)
+  } finally {
+    cancelWorking.value = false
   }
 }
 

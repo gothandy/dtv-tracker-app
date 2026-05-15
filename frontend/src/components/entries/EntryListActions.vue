@@ -4,6 +4,14 @@
       {{ selected.length }} / {{ entries.length }} entries &nbsp;&nbsp; {{ selectedHours }} / {{ totalHours }} hours
     </span>
     <div class="list-actions-buttons">
+      <AppButton
+        label="Cancel Selected"
+        icon="close"
+        mode="icon-responsive"
+        :disabled="!cancellableSelected.length"
+        :working="cancelWorking"
+        @click="emit('cancel-selected')"
+      />
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="!selectedEntries.length" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
     </div>
@@ -20,9 +28,14 @@ import { shareCurrentUrl } from '../../utils/shareUrl'
 const props = defineProps<{
   entries: EntryListItemResponse[]
   selected: number[]
+  cancelWorking?: boolean
 }>()
 
+const emit = defineEmits<{ 'cancel-selected': [] }>()
+
 const selectedEntries = computed(() => props.entries.filter(e => props.selected.includes(e.id)))
+
+const cancellableSelected = computed(() => selectedEntries.value.filter(e => !e.cancelled))
 
 const selectedHours = computed(() =>
   Math.round(selectedEntries.value.reduce((sum, e) => sum + e.hours, 0) * 10) / 10)
