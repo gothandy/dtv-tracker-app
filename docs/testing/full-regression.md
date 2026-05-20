@@ -357,6 +357,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Admin/Check In: lightbox shows "Public gallery" checkbox and title/alt-text input per item
 - [ ] Toggling "Public gallery" checkbox calls `PATCH /api/media/:itemId` — `{ isPublic: true/false }`; change persists on reload
 - [ ] Admin/Check In: can set cover image via lightbox "Set as cover" control; cover updates above carousel
+- [ ] **Cover + private (invalid)**: session cover points at a photo with `IsPublic` false (e.g. after stale gallery + accidental save) → edit modal shows Public off and Cover on, both checkboxes enabled, hint shown, **Save disabled**, **Delete disabled** → tick Public → Save enabled, Delete still disabled → save → file public and still cover; or untick Cover → Save and Delete enabled → save → private and not cover
 - [ ] `PATCH /api/media/:itemId` for Self-Service → 403 (Check In / Admin allowed)
 - [ ] **Media cache**: loading session detail twice → second load shows `[Cache] Hit: media_folder_*` in server logs (no repeat Graph call)
 - [ ] **Media cache bust**: upload a photo to a session → immediately reload the session gallery → new photo appears (cache was busted by upload)
