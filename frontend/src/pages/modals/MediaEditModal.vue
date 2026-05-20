@@ -4,7 +4,8 @@
     action="Save"
     action-icon="save"
     :show-delete="showDelete"
-    :delete-disabled="form.isCover"
+    :delete-disabled="deleteDisabled"
+    :action-disabled="saveDisabled"
     :working="working"
     :error="error"
     @close="emit('close')"
@@ -22,12 +23,30 @@
     </div>
 
     <FormLayout :disabled="working">
-      <FormRow title="Public" :disabled="form.isCover">
-        <input id="emm-public" v-model="form.isPublic" type="checkbox" class="emm-checkbox" :disabled="form.isCover" @change="onPublicChange" />
+      <p v-if="isCoverPrivateInvalid" class="emm-hint">
+        Cover photos must be public, or remove as cover before saving.
+      </p>
+
+      <FormRow title="Public" :disabled="publicRowDisabled">
+        <input
+          id="emm-public"
+          v-model="form.isPublic"
+          type="checkbox"
+          class="emm-checkbox"
+          :disabled="publicCheckboxDisabled"
+          @change="onPublicChange"
+        />
       </FormRow>
 
-      <FormRow v-if="showCover" title="Cover" :disabled="!form.isPublic">
-        <input id="emm-cover" v-model="form.isCover" type="checkbox" class="emm-checkbox" :disabled="!form.isPublic" @change="onCoverChange" />
+      <FormRow v-if="showCover" title="Cover" :disabled="coverRowDisabled">
+        <input
+          id="emm-cover"
+          v-model="form.isCover"
+          type="checkbox"
+          class="emm-checkbox"
+          :disabled="coverCheckboxDisabled"
+          @change="onCoverChange"
+        />
       </FormRow>
 
       <FormRow title="Title" :full-width="true">
@@ -47,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
 import FormLayout from '../../components/FormLayout.vue'
@@ -82,6 +101,21 @@ const form = reactive({
   isCover: props.isCover ?? false,
 })
 
+/** Session cover points at this file but IsPublic is false (SharePoint or stale list). */
+const isCoverPrivateInvalid = computed(() => form.isCover && !form.isPublic)
+
+const saveDisabled = computed(() => isCoverPrivateInvalid.value)
+
+const deleteDisabled = computed(() => form.isCover)
+
+/** Normal cover+public: cannot uncheck Public without clearing cover first. Invalid state: Public stays enabled. */
+const publicCheckboxDisabled = computed(() => form.isCover && form.isPublic)
+const publicRowDisabled = publicCheckboxDisabled
+
+/** Normal private: Cover off until Public on. Invalid cover+private: Cover stays enabled. */
+const coverCheckboxDisabled = computed(() => !form.isPublic && !isCoverPrivateInvalid.value)
+const coverRowDisabled = coverCheckboxDisabled
+
 function onPublicChange() {
   if (!form.isPublic) form.isCover = false
 }
@@ -91,6 +125,7 @@ function onCoverChange() {
 }
 
 function save() {
+  if (saveDisabled.value) return
   emit('save', { title: form.title, isPublic: form.isPublic, isCover: form.isCover })
 }
 
@@ -110,6 +145,15 @@ function doDelete() {
 .emm-actions--blocked {
   pointer-events: none;
   opacity: 0.5;
+}
+
+.emm-hint {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  background: var(--color-dtv-light);
 }
 
 .emm-input {
