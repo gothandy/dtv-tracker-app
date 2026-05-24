@@ -133,8 +133,8 @@
             <p class="text-dtv-dark text-large leading-relaxed pb-4" style="white-space: pre-line">{{ store.session.description }}</p>
           </div>
           <div class="px-6 pb-6">
-            <SessionTermList
-              :session="store.session"
+            <MetadataTagsPanel
+              :metadata="store.session.metadata"
               :allow-edit="profile.isCheckIn || profile.isAdmin"
               :working="tagWorking"
               :error="tagError"
@@ -226,7 +226,7 @@ import SessionDetailHeader from '../components/sessions/SessionDetailHeader.vue'
 import SessionDetailStats from '../components/sessions/SessionDetailStats.vue'
 import SessionDetailGroupTeaser from '../components/sessions/SessionDetailGroupTeaser.vue'
 import SessionDetailGallery from '../components/sessions/SessionDetailGallery.vue'
-import SessionTermList from '../components/sessions/SessionTermList.vue'
+import MetadataTagsPanel from '../components/sessions/MetadataTagsPanel.vue'
 import { useTaxonomy } from '../composables/useTaxonomy'
 import SessionDetailActions from '../components/sessions/SessionDetailActions.vue'
 import SessionEntryList from '../components/sessions/SessionEntryList.vue'

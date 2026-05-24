@@ -92,6 +92,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | GET | `/api/stats` | No PII |
 | GET | `/api/sessions`, `/api/sessions/:group/:date` | No volunteer names/emails |
 | GET | `/api/groups`, `/api/groups/:key` | No regulars list (empty array returned) |
+| GET | `/api/projects`, `/api/projects/:key`, `/api/projects/:key/attachments` | Live FY stats from linked sessions; attachments are public links |
 | GET | `/api/tags/*` | Tag metadata only; `?profile=` param requires auth |
 | GET | `/api/media/*` | `isPublic` items only; `name` and `webUrl` fields stripped (contain uploader's name in filename) |
 
@@ -127,6 +128,7 @@ Self-service users **cannot** access:
 |--------|----------|---------|
 | PATCH | `/entries/:id` | Check-in toggle, set hours |
 | PATCH | `/sessions/:group/:date` | Edit session title/description |
+| PATCH | `/projects/:key` | Edit project fields and metadata tags |
 | PATCH | `/profiles/:slug` | Edit profile name/email |
 | POST | `/sessions/:group/:date/entries` | Add entry to session |
 | POST | `/profiles` | Create new profile |
@@ -149,6 +151,8 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | POST | `/groups` | Create group |
 | PATCH | `/groups/:key` | Edit group |
 | DELETE | `/groups/:key` | Delete group |
+| POST | `/projects` | Create project |
+| DELETE | `/projects/:key` | Delete project |
 | POST | `/sessions` | Create session |
 | DELETE | `/sessions/:group/:date` | Delete session |
 | DELETE | `/entries/:id` | Delete entry |
@@ -170,7 +174,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 
 1. **Role assignment** ([`routes/auth/dtv.ts`](../routes/auth/dtv.ts)): Microsoft callback requires a Profile **`User`** match; else session is destroyed and redirect **`/login?reason=dtv-not-authorised`**. If matched: `ADMIN_USERS` → **`admin`**, else **`checkin`**. Magic link / verify flows set **`selfservice`** when Profile **`Email`** matches; no match → `reason=not-approved`. Role is `req.session.user.role`. Public = no session.
 
-2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/tags`, `/api/media`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths.
+2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/projects`, `/api/tags`, `/api/media`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths.
 
 3. **Role enforcement** (`middleware/require-admin.ts`): After `requireAuth` on API routes:
    - **Public GETs** (same path set as `require-auth.ts`, resolved with `baseUrl` + `path` inside the `/api` mount): **always** allowed without a session user so anonymous and post-logout home/session list loads are not blocked.

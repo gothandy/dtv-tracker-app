@@ -1,0 +1,92 @@
+/**
+ * Canonical field styles for ModalLayout + FormLayout + FormRow.
+ * Reference: /sandbox/form-components (formerly sfc-*).
+ * Prefer ModalFormInput / ModalFormTextarea / ModalFormSelect / ModalFormCheckbox;
+ * or apply these classes on native elements. Exceptions should be rare.
+ */
+
+.modal-form-control {
+  display: block;
+  width: 100%;
+  background: var(--color-dtv-light);
+  border: none;
+  color: var(--color-text);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+select.modal-form-control {
+  cursor: pointer;
+}
+
+.modal-form-control--multiline {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.modal-form-control--narrow {
+  width: 5rem;
+}
+
+.modal-form-control--placeholder {
+  color: var(--color-text-muted);
+}
+
+.modal-form-control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--color-text-muted);
+}
+
+select.modal-form-control:disabled {
+  color: var(--color-text-muted);
+}
+
+.modal-form-control::placeholder {
+  color: var(--color-dtv-sand-dark);
+}
+
+.modal-form-checkbox {
+  width: 1.5rem;
+  height: 1.5rem;
+  accent-color: var(--color-dtv-green);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.modal-form-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-form-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.modal-form-check-label .modal-form-checkbox {
+  margin: 0;
+}
+
+.modal-form-error {
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.modal-form-hint {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-dtv-dirt);
+}
+
+.modal-form-readonly {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}

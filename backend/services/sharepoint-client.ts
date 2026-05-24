@@ -67,6 +67,7 @@ export const CACHE_TTL = {
   sessions: 21600,  //  6 hr  — warmed nightly; invalidated on every write
   profiles: 21600,  //  6 hr  — warmed nightly; invalidated on every write
   regulars: 21600,  //  6 hr  — warmed nightly; invalidated on every write
+  projects: 21600,  //  6 hr  — warmed nightly; invalidated on every write
   entries:    300,  //  5 min — check-in tier: live updates on the day
   records:  86400,  // 24 hr  — invalidated on write; rarely changes between sessions
   stats:    86400,  // 24 hr  — recomputed after every entry/session write anyway
@@ -488,6 +489,45 @@ export class SharePointClient {
 
   clearColumnCache(): void {
     this.columnCache.clear();
+  }
+
+  /**
+   * List attachments on a SharePoint list item (e.g. project documents).
+   * Graph API does not support list-item attachments — use SharePoint REST instead.
+   */
+  async listListItemAttachments(
+    listGuid: string,
+    itemId: number
+  ): Promise<Array<{ name: string; webUrl: string }>> {
+    const token = await this.getAccessToken();
+    const baseUrl = this.siteUrl.replace(/\/$/, '');
+    const url = `${baseUrl}/_api/web/lists(guid'${listGuid}')/items(${itemId})/AttachmentFiles`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json;odata=verbose',
+        },
+      });
+
+      const results = response.data?.d?.results ?? response.data?.value ?? [];
+      const origin = new URL(this.siteUrl).origin;
+
+      return results
+        .filter((a: { FileName?: string; ServerRelativeUrl?: string }) => a.FileName && a.ServerRelativeUrl)
+        .map((a: { FileName: string; ServerRelativeUrl: string }) => ({
+          name: a.FileName,
+          webUrl: a.ServerRelativeUrl.startsWith('http')
+            ? a.ServerRelativeUrl
+            : `${origin}${a.ServerRelativeUrl}`,
+        }));
+    } catch (error: any) {
+      const status = error.response?.status;
+      if (status === 404) return [];
+      console.error(`[SharePoint] listListItemAttachments item ${itemId}:`, error.response?.data || error.message);
+      throw error;
+    }
   }
 
   /**

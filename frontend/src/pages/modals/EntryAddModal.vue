@@ -20,9 +20,7 @@
       </FormRow>
 
       <FormRow title="No match? Add new">
-        <input
-          type="checkbox"
-          class="aem-checkbox"
+        <ModalFormCheckbox
           v-model="addNew"
           :disabled="selectedProfile !== null"
           @change="onAddNewToggle"
@@ -30,13 +28,12 @@
       </FormRow>
 
       <FormRow title="Email" :full-width="true">
-        <input
+        <ModalFormInput
           v-model="emailInput"
-          class="aem-input"
-          :disabled="!addNew"
-          placeholder="Enter email address"
           type="email"
+          placeholder="Enter email address"
           autocomplete="off"
+          :disabled="!addNew"
         />
       </FormRow>
     </FormLayout>
@@ -49,10 +46,12 @@ import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
 
-const props = defineProps<{ profiles: PickerProfile[]; working: boolean; error?: string }>()
+defineProps<{ profiles: PickerProfile[]; working: boolean; error?: string }>()
 const emit = defineEmits<{ close: []; add: [payload: AddPayload] }>()
 
 const picker = ref<InstanceType<typeof ProfilePicker> | null>(null)
@@ -81,23 +80,3 @@ function addEntry() {
   }
 }
 </script>
-
-<style scoped>
-.aem-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-.aem-input:disabled { color: var(--color-text-muted); }
-
-.aem-checkbox {
-  width: 1.5rem;
-  height: 1.5rem;
-  cursor: pointer;
-}
-</style>

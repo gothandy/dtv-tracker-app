@@ -30,6 +30,9 @@ export interface Session {
   mediaCount?: number
   coverUrl?: string
   metadata?: Array<{ label: string; termGuid: string }>
+  projectId?: number
+  projectKey?: string
+  projectTitle?: string
 
   // Current user's relationship to this session.
   // All false when unauthenticated or personal data not yet loaded.

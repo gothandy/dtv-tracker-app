@@ -417,6 +417,20 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Hours shown as rounded integers (no decimals)
 - [ ] Bottom padding present (cards don't sit flush against footer)
 
+### M3a. Projects listing
+- [ ] `GET /api/projects` — all projects (public)
+- [ ] Projects page: FY filter, session/hours totals from linked sessions
+- [ ] Admin: "+" creates project; navigates to detail
+- [ ] Cards show display name, description, sessions/hrs for selected FY
+
+### M3b. Project detail
+- [ ] `GET /api/projects/:key` — live FY stats + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
+- [ ] `GET /api/projects/:key/attachments` — list item attachment links
+- [ ] Header: description, metadata tags (check-in can edit tags)
+- [ ] Stats card: sessions + hours (current FY)
+- [ ] Carousel: cover photos from linked sessions (newest first)
+- [ ] Admin: edit display name/key/description; delete project
+
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group
 - [ ] Stats: Sessions, Hours, Entries

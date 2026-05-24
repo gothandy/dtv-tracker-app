@@ -10,10 +10,10 @@
   >
     <FormLayout :disabled="working">
       <FormRow title="Name" :full-width="true">
-        <input v-model="form.name" type="text" class="pam-input" placeholder="Full name" />
+        <ModalFormInput v-model="form.name" placeholder="Full name" />
       </FormRow>
       <FormRow title="Email" :full-width="true">
-        <input v-model="form.email" type="email" class="pam-input" placeholder="email@example.com" />
+        <ModalFormInput v-model="form.email" type="email" placeholder="email@example.com" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -24,13 +24,14 @@ import { reactive } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 
 export type AddProfilePayload = {
   name: string
   email?: string
 }
 
-const props = defineProps<{
+defineProps<{
   working: boolean
   error?: string
 }>()
@@ -49,16 +50,3 @@ function add() {
   })
 }
 </script>
-
-<style scoped>
-.pam-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-</style>

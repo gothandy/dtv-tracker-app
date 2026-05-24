@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 /// <reference path="../types/express-session.d.ts" />
 import { groupsRepository } from '../services/repositories/groups-repository';
+import { projectsRepository } from '../services/repositories/projects-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
@@ -28,7 +29,7 @@ import {
 } from '../services/data-layer';
 import { parseSessionStats } from '../services/data-layer';
 import {
-  GROUP_LOOKUP, GROUP_DISPLAY,
+  GROUP_LOOKUP, GROUP_DISPLAY, PROJECT_LOOKUP,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
   PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_EVENTBRITE_ATTENDEE_ID
 } from '../services/field-names';
@@ -43,15 +44,18 @@ const router: Router = express.Router();
 
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
-    const [sessionsRaw, groupsRaw, regularsRaw] = await Promise.all([
+    const [sessionsRaw, groupsRaw, regularsRaw, projectsRaw] = await Promise.all([
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
       regularsRepository.getAll(),
+      projectsRepository.getAll(),
     ]);
 
     const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
     const groupNameMap = new Map(groupsRaw.map(g => [g.ID, g.Name || g.Title || '']));
     const groupDescriptionMap = new Map(groupsRaw.map(g => [g.ID, g.Description || undefined]));
+    const projectKeyMap = new Map(projectsRaw.map(p => [p.ID, (p.Title || '').toLowerCase()]));
+    const projectTitleMap = new Map(projectsRaw.map(p => [p.ID, p.Name || p.Title || '']));
 
     const groupRegularsCountMap = new Map<number, number>();
     for (const r of regularsRaw) {
@@ -65,6 +69,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
       .filter(s => s.Date)
       .map(s => {
         const groupId = safeParseLookupId(s[GROUP_LOOKUP]);
+        const projectId = safeParseLookupId(s[PROJECT_LOOKUP]);
         const date = s.Date!;
         const tags = extractMetadataTags(s[SESSION_METADATA]);
         const stats = parseSessionStats(s[SESSION_STATS]);
@@ -78,6 +83,9 @@ router.get('/sessions', async (req: Request, res: Response) => {
           groupKey: groupId !== undefined ? groupKeyMap.get(groupId) : undefined,
           groupName: groupId !== undefined ? groupNameMap.get(groupId) : undefined,
           groupDescription: groupId !== undefined ? groupDescriptionMap.get(groupId) : undefined,
+          projectId,
+          projectKey: projectId !== undefined ? projectKeyMap.get(projectId) : undefined,
+          projectTitle: projectId !== undefined ? projectTitleMap.get(projectId) : undefined,
           limits: deriveLimits(convertSession(s).limits, groupId !== undefined ? groupRegularsCountMap.get(groupId) : undefined, stats.cancelledRegular ?? 0),
           stats,
           mediaCount: stats.media,
@@ -213,11 +221,6 @@ router.get('/sessions/export', async (req: Request, res: Response) => {
 
 router.get('/records/export', async (req: Request, res: Response) => {
   try {
-    if (!recordsRepository.available) {
-      res.status(400).json({ success: false, error: 'Records list not configured' });
-      return;
-    }
-
     const [rawRecords, rawProfiles, rawSessions, rawEntries] = await Promise.all([
       recordsRepository.getAll(),
       profilesRepository.getAll(),

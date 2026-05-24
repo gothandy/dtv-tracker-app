@@ -39,6 +39,25 @@ export interface GroupResponse {
   isCurrentUserRegular?: boolean;
 }
 
+export interface ProjectResponse {
+  id: number;
+  key: string;
+  displayName?: string;
+  description?: string;
+  metadata?: Array<{ label: string; termGuid: string }>;
+}
+
+export interface ProjectDetailResponse extends ProjectResponse {
+  financialYear: string;
+  stats: { sessions: number; hours: number };
+  sessions: SessionResponse[];
+}
+
+export interface ProjectAttachmentResponse {
+  name: string;
+  webUrl: string;
+}
+
 export interface SessionResponse {
   id: number;
   displayName?: string;
@@ -56,6 +75,9 @@ export interface SessionResponse {
   isBookable: boolean;
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
+  projectId?: number;
+  projectKey?: string;
+  projectTitle?: string;
 }
 
 /** Microsoft Tracker role implied by Profile User + ADMIN_USERS — only on trusted responses. */

@@ -1,7 +1,7 @@
 /**
  * Backup export — shared logic used by the admin endpoint and the nightly sync.
  *
- * Exports all 6 SharePoint lists plus taxonomy and schema metadata to the Backups/
+ * Exports all SharePoint data lists plus taxonomy and schema metadata to the Backups/
  * folder in the Shared Documents library. Uses SHA-256 diff checking to skip files
  * that haven't changed, keeping SharePoint version history clean.
  */
@@ -12,6 +12,7 @@ import { taxonomyClient } from './taxonomy-client';
 
 const LISTS = [
   { name: 'groups',   guid: process.env.GROUPS_LIST_GUID! },
+  { name: 'projects', guid: process.env.PROJECTS_LIST_GUID! },
   { name: 'sessions', guid: process.env.SESSIONS_LIST_GUID! },
   { name: 'entries',  guid: process.env.ENTRIES_LIST_GUID! },
   { name: 'profiles', guid: process.env.PROFILES_LIST_GUID! },

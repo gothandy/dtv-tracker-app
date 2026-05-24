@@ -61,8 +61,8 @@ function getParkingStatus(value) {
 async function importBenefits() {
   console.log(EXECUTE ? '*** EXECUTE MODE — will create records ***\n' : '*** DRY RUN — pass --execute to create records ***\n');
 
-  if (!recordsRepository.available) {
-    console.error('Records list not configured (RECORDS_LIST_GUID not set)');
+  if (!process.env.RECORDS_LIST_GUID) {
+    console.error('RECORDS_LIST_GUID is not set');
     process.exit(1);
   }
 

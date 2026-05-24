@@ -48,7 +48,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   // Targeted fetches for this profile
   const [profileEntries, profileRecordsRaw, regularsRaw] = await Promise.all([
     entriesRepository.getByProfileId(profileId),
-    recordsRepository.available ? recordsRepository.getByProfile(profileId) : Promise.resolve([]),
+    recordsRepository.getByProfile(profileId),
     regularsRepository.getAll()
   ]);
 
@@ -156,7 +156,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     profilesRepository.getAll(),
     entriesRepository.getAll(),
     sessionsRepository.getAll(),
-    recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([]),
+    recordsRepository.getAll(),
     regularsRepository.getAll()
   ]);
 

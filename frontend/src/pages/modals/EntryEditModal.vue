@@ -23,15 +23,15 @@
 
     <FormLayout :disabled="working">
       <FormRow title="Checked In">
-        <input type="checkbox" class="eem-checkbox" v-model="form.checkedIn" />
+        <ModalFormCheckbox v-model="form.checkedIn" />
       </FormRow>
 
       <FormRow title="Hours" :disabled="!form.checkedIn">
-        <input type="number" class="eem-input" v-model.number="form.hours" min="0" step="0.5" :disabled="!form.checkedIn" />
+        <ModalFormInput v-model="form.hours" type="number" narrow min="0" step="0.5" :disabled="!form.checkedIn" />
       </FormRow>
 
       <FormRow v-if="entry.profile.isGroup" title="Count">
-        <input type="number" class="eem-input" v-model.number="form.count" min="1" />
+        <ModalFormInput v-model="form.count" type="number" narrow min="1" />
       </FormRow>
 
       <FormRow title="Labels" :full-width="true">
@@ -45,33 +45,32 @@
           @toggle-child="toggleChild"
           @toggle-eventbrite="toggleEventbrite"
         />
-        <p v-if="childValidationError" class="eem-validation">Select an accompanying adult or deselect Child.</p>
+        <p v-if="childValidationError" class="modal-form-hint">Select an accompanying adult or deselect Child.</p>
       </FormRow>
 
       <FormRow v-if="childMode && sessionAdults" title="Accompanying Adult">
-        <select
-          class="eem-select"
-          :class="{ 'eem-select--placeholder': form.accompanyingAdultId === null }"
-          :disabled="working"
+        <ModalFormSelect
           v-model="form.accompanyingAdultId"
+          :placeholder="form.accompanyingAdultId === null"
+          :disabled="working"
         >
           <option :value="null">Select adult…</option>
           <option v-for="a in sessionAdults" :key="a.id" :value="a.id">{{ a.name }}</option>
-        </select>
-        <p v-if="accompanyingAdultMissing" class="eem-adult-warning">Not registered at this session</p>
+        </ModalFormSelect>
+        <p v-if="accompanyingAdultMissing" class="modal-form-hint">Not registered at this session</p>
       </FormRow>
 
       <FormRow v-if="eventbriteMode" title="Eventbrite Attendee ID">
-        <input class="eem-input eem-input--wide" v-model="form.eventbriteAttendeeId" :disabled="working" />
+        <ModalFormInput v-model="form.eventbriteAttendeeId" :disabled="working" />
       </FormRow>
 
       <FormRow :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
-        <input type="checkbox" class="eem-checkbox" v-model="form.cancelled" />
+        <ModalFormCheckbox v-model="form.cancelled" />
       </FormRow>
 
       <!-- Notes hidden during #189 testing — restore once tags migration complete and notes UX tidied -->
       <!-- <FormRow title="Notes" :full-width="true">
-        <textarea class="eem-textarea" v-model="form.notes" rows="2" />
+        <ModalFormTextarea v-model="form.notes" :rows="2" />
       </FormRow> -->
     </FormLayout>
   </ModalLayout>
@@ -86,6 +85,9 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import { iconsForEntry } from '../../utils/labelIcons'
 
 const props = defineProps<{
@@ -216,64 +218,4 @@ function deleteEntry() {
   gap: 0.5rem;
   margin-bottom: 1.25rem;
 }
-
-.eem-input {
-  width: 5rem;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-}
-
-.eem-input--wide {
-  width: 100%;
-  box-sizing: border-box;
-  color: var(--color-text-muted);
-}
-
-.eem-checkbox {
-  width: 1.5rem;
-  height: 1.5rem;
-  cursor: pointer;
-}
-
-.eem-textarea {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.4rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.eem-select {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-.eem-select:disabled { color: var(--color-text-muted); }
-.eem-select--placeholder { color: var(--color-text-muted); }
-
-.eem-adult-warning {
-  margin-top: 0.25rem;
-  font-size: 0.8rem;
-  color: var(--color-dtv-dirt);
-}
-
-.eem-validation {
-  margin-top: 0.25rem;
-  font-size: 0.8rem;
-  color: var(--color-dtv-dirt);
-}
-
 </style>

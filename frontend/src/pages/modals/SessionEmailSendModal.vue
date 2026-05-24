@@ -11,24 +11,24 @@
   >
     <FormLayout>
       <FormRow title="Template">
-        <select v-model="template" class="sem-select">
+        <ModalFormSelect v-model="template">
           <option value="pre-session">Pre-Session</option>
           <option value="post-session">Post-Session</option>
-        </select>
+        </ModalFormSelect>
       </FormRow>
 
       <FormRow title="Send To">
-        <select v-model="recipient" class="sem-select">
+        <ModalFormSelect v-model="recipient">
           <option v-for="a in adults" :key="a.entryId" :value="a.entryId" :disabled="!a.email">
             {{ a.name }}{{ a.email ? ` ${a.email}` : ' (no email)' }}
           </option>
           <option value="send-all">Send All</option>
-        </select>
+        </ModalFormSelect>
       </FormRow>
 
       <FormRow title="Preview">
-        <label class="sem-check">
-          <input type="checkbox" v-model="preview" :disabled="recipient === 'send-all'" />
+        <label class="modal-form-check-label">
+          <ModalFormCheckbox v-model="preview" :disabled="recipient === 'send-all'" />
           Send to my email address only
         </label>
       </FormRow>
@@ -41,6 +41,8 @@ import { ref, computed, watch } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
+import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
 
 export interface EmailAdult {
   entryId: number
@@ -63,7 +65,6 @@ const template = ref<'pre-session' | 'post-session'>('pre-session')
 const recipient = ref<number | 'send-all'>(props.adults.find(a => a.email)?.entryId ?? 'send-all')
 const preview = ref(true)
 
-// Disable preview when Send All is selected
 watch(recipient, val => {
   if (val === 'send-all') preview.value = false
 })
@@ -78,26 +79,3 @@ function onSend() {
   emit('send', { recipient: recipient.value, preview: preview.value, template: template.value })
 }
 </script>
-
-<style scoped>
-.sem-select {
-  width: 100%;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  font-size: 0.9rem;
-  color: var(--color-text);
-}
-
-.sem-check {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.sem-check input {
-  cursor: pointer;
-}
-</style>

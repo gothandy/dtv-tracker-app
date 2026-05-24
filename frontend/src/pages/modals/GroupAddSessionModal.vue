@@ -10,18 +10,18 @@
   >
     <FormLayout :disabled="working">
       <FormRow v-if="groups" title="Group" :full-width="true">
-        <select v-model="form.groupId" class="gasm-input">
+        <ModalFormSelect v-model="form.groupId" :placeholder="form.groupId === ''">
           <option value="">Select a group…</option>
           <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.displayName || g.key }}</option>
-        </select>
+        </ModalFormSelect>
       </FormRow>
 
       <FormRow title="Date" :full-width="true">
-        <input v-model="form.date" type="date" class="gasm-input" />
+        <ModalFormInput v-model="form.date" type="date" />
       </FormRow>
 
       <FormRow title="Display Name" :full-width="true">
-        <input v-model="form.name" class="gasm-input" :placeholder="group?.displayName || group?.key || ''" />
+        <ModalFormInput v-model="form.name" :placeholder="group?.displayName || group?.key || ''" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -33,6 +33,8 @@ import type { GroupDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 
 export type AddSessionPayload = {
   groupId: number
@@ -73,16 +75,3 @@ function add() {
   })
 }
 </script>
-
-<style scoped>
-.gasm-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-</style>

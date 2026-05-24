@@ -29,6 +29,7 @@ import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NO
 import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
+import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
 
 const router: Router = express.Router();
 
@@ -182,11 +183,12 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       return d >= fyStart && d <= fyEnd;
     });
 
-    // Aggregate FY stats from pre-computed Stats field on each session
-    let totalHours = 0, newVolunteers = 0, children = 0, totalRegistrations = 0;
+    const fyAgg = aggregateSessionStatsForScope(groupSessions, { groupId }, { fyScope: 'current' });
+
+    // Aggregate FY detail stats from pre-computed Stats field on each session
+    let newVolunteers = 0, children = 0, totalRegistrations = 0;
     for (const s of fySessions) {
       const stats = parseSessionStats(s[SESSION_STATS]);
-      totalHours         += stats.hours;
       newVolunteers      += stats.new   || 0;
       children           += stats.child || 0;
       totalRegistrations += stats.count;
@@ -324,8 +326,8 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       ...(isCurrentUserRegular !== undefined && { isCurrentUserRegular }),
       financialYear: `${fy.startYear}-${fy.endYear}`,
       stats: {
-        sessions: fySessions.length,
-        hours: Math.round(totalHours * 10) / 10,
+        sessions: fyAgg.sessions,
+        hours: fyAgg.hours,
         newVolunteers,
         children,
         totalVolunteers: totalRegistrations,  // total registrations — unique volunteer count deferred to Phase 2

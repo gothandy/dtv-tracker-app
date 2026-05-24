@@ -385,7 +385,7 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
     const group = convertGroup(spGroup);
     const emails = parseEmails(profile?.Email);
 
-    const profileRecords = (volunteerId !== undefined && recordsRepository.available)
+    const profileRecords = volunteerId !== undefined
       ? await recordsRepository.getByProfile(volunteerId)
       : [];
     const hasPrivacyConsent = profileRecords.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
@@ -766,7 +766,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       entriesRepository.getAll(),
       profilesRepository.getAll(),
       regularsRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      recordsRepository.getAll()
     ]);
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
