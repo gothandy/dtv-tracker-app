@@ -324,7 +324,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H27. Clear cache
 - [ ] Tools page (`/tools`) → SharePoint section → "Clear all server caches" → success message; `POST /api/cache/clear` (legacy `/admin` redirects here)
-- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes)
+- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes); Term Store picker tree reloads in the current browser tab (no full page refresh required)
 
 ### H28. Upload button (entry detail — check-in/admin)
 - [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Self-Service (`checkin-only` class)

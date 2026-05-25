@@ -26,6 +26,7 @@ export class TaxonomyClient {
 
   clearTreeCache(): void {
     treeCache.clear();
+    console.log('[Cache] Cleared taxonomy term tree cache');
   }
 
   /**

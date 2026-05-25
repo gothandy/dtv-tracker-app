@@ -93,7 +93,7 @@
 
       </LayoutColumns>
 
-      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null || (store.session.metadata?.length ?? 0) > 0 || profile.hasCheckInAccess">
+      <LayoutColumns ratio="1-2" v-if="!store.session.isBookable || store.session.description !== null || store.session.projectKey || (store.session.metadata?.length ?? 0) > 0 || profile.hasCheckInAccess">
 
         <template #header>
           <SectionHeader v-if="!store.session.isBookable">What we got up to?</SectionHeader>
@@ -130,9 +130,14 @@
 
         <template #right>
           <CardTitle v-if="store.session.displayName">{{ store.session.displayName }}</CardTitle>
-          <div v-if="store.session.description" class="prose px-6 pb-6">
-            <p class="text-dtv-dark text-large leading-relaxed pb-4" style="white-space: pre-line">{{ store.session.description }}</p>
+          <div v-if="store.session.description" class="prose px-6" :class="sessionProjectLink ? 'pb-4' : 'pb-6'">
+            <p class="text-dtv-dark text-large leading-relaxed" style="white-space: pre-line">{{ store.session.description }}</p>
           </div>
+          <p v-if="sessionProjectLink" class="prose px-6 pb-6 text-dtv-dark text-large leading-relaxed font-normal">
+            Read more about the
+            <RouterLink :to="sessionProjectLink.to" class="font-normal text-dtv-green hover:underline">{{ sessionProjectLink.title }}</RouterLink>
+            project.
+          </p>
           <div class="px-6 pb-6">
             <MetadataTagsPanel
               :metadata="store.session.metadata"
@@ -212,7 +217,7 @@ import { useGroupListStore } from '../stores/groupList'
 import { useProjectListStore } from '../stores/projectList'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
-import { groupPath, sessionPath } from '../router/index'
+import { groupPath, projectPath, sessionPath } from '../router/index'
 import PageHeader from '../components/PageHeader.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import MediaCard from '../components/MediaCard.vue'
@@ -290,6 +295,16 @@ const editProjects = computed<ProjectItem[]>(() => {
   }
   return items.sort((a, b) => a.name.localeCompare(b.name))
 })
+
+const sessionProjectLink = computed(() => {
+  const s = store.session
+  if (!s?.projectKey) return null
+  return {
+    to: projectPath(s.projectKey),
+    title: s.projectTitle ?? s.projectKey,
+  }
+})
+
 const coverItem = computed<MediaItem | null>(() => {
   const s = store.session
   if (!s?.coverMediaId) return null
