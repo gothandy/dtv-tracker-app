@@ -111,38 +111,40 @@ export class SharePointClient {
     });
   }
 
-  /**
-   * Get OAuth access token from Microsoft Entra ID
-   */
+  private async fetchClientCredentialsToken(scope: string): Promise<{ accessToken: string; expiresIn: number }> {
+    const tokenEndpoint = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
+    const params = new URLSearchParams({
+      client_id: this.clientId,
+      client_secret: this.clientSecret,
+      scope,
+      grant_type: 'client_credentials',
+    });
+
+    const response = await axios.post(tokenEndpoint, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
+    return {
+      accessToken: response.data.access_token,
+      expiresIn: response.data.expires_in,
+    };
+  }
+
+  /** Microsoft Graph (list data, drives, etc.) */
   async getAccessToken(): Promise<string> {
-    // Return cached token if still valid
     if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
     try {
-      const tokenEndpoint = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
-
-      const params = new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        scope: 'https://graph.microsoft.com/.default',
-        grant_type: 'client_credentials'
-      });
-
-      const response = await axios.post(tokenEndpoint, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-
-      this.accessToken = response.data.access_token;
-      // Set expiry to 5 minutes before actual expiry for safety
-      this.tokenExpiry = Date.now() + (response.data.expires_in - 300) * 1000;
-
-      return response.data.access_token;
+      const { accessToken, expiresIn } = await this.fetchClientCredentialsToken(
+        'https://graph.microsoft.com/.default'
+      );
+      this.accessToken = accessToken;
+      this.tokenExpiry = Date.now() + (expiresIn - 300) * 1000;
+      return accessToken;
     } catch (error: any) {
-      console.error('Error getting access token:', error.response?.data || error.message);
+      console.error('Error getting Graph access token:', error.response?.data || error.message);
       throw new Error('Failed to authenticate with SharePoint');
     }
   }
@@ -491,43 +493,75 @@ export class SharePointClient {
     this.columnCache.clear();
   }
 
+  /** DispForm URL for a Projects list item (edit metadata in SharePoint). */
+  async projectItemDispFormUrl(listGuid: string, itemId: number): Promise<string> {
+    const siteId = await this.getSiteId();
+    const list = await this.get(`sites/${siteId}/lists/${listGuid}?$select=webUrl`);
+    const listWebUrl = String(list.webUrl || this.siteUrl).replace(/\/$/, '');
+    return `${listWebUrl}/DispForm.aspx?ID=${itemId}`;
+  }
+
   /**
-   * List attachments on a SharePoint list item (e.g. project documents).
-   * Graph API does not support list-item attachments — use SharePoint REST instead.
+   * List files in a drive folder (e.g. Projects/{slug}). Returns [] if the folder does not exist.
    */
-  async listListItemAttachments(
-    listGuid: string,
-    itemId: number
-  ): Promise<Array<{ name: string; webUrl: string }>> {
-    const token = await this.getAccessToken();
-    const baseUrl = this.siteUrl.replace(/\/$/, '');
-    const url = `${baseUrl}/_api/web/lists(guid'${listGuid}')/items(${itemId})/AttachmentFiles`;
+  async listDriveFolderFiles(
+    driveId: string,
+    folderPath: string
+  ): Promise<Array<{ id: string; name: string; webUrl: string }>> {
+    const cacheKey = `docs_folder_${folderPath}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached as Array<{ id: string; name: string; webUrl: string }>;
+    }
 
     try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=name,webUrl,file,folder`;
+
       const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json;odata=verbose',
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const results = response.data?.d?.results ?? response.data?.value ?? [];
-      const origin = new URL(this.siteUrl).origin;
+      const result = (response.data.value as any[])
+        .filter(item => item.file && item.name && item.webUrl)
+        .map(item => ({
+          id: item.id as string,
+          name: item.name as string,
+          webUrl: item.webUrl as string,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-      return results
-        .filter((a: { FileName?: string; ServerRelativeUrl?: string }) => a.FileName && a.ServerRelativeUrl)
-        .map((a: { FileName: string; ServerRelativeUrl: string }) => ({
-          name: a.FileName,
-          webUrl: a.ServerRelativeUrl.startsWith('http')
-            ? a.ServerRelativeUrl
-            : `${origin}${a.ServerRelativeUrl}`,
-        }));
+      this.cache.set(cacheKey, result, CACHE_TTL.projects);
+      return result;
     } catch (error: any) {
-      const status = error.response?.status;
-      if (status === 404) return [];
-      console.error(`[SharePoint] listListItemAttachments item ${itemId}:`, error.response?.data || error.message);
+      if (error.response?.status === 404) return [];
+      console.error(`Error listing drive folder at ${folderPath}:`, error.response?.data || error.message);
       throw error;
     }
+  }
+
+  /** SharePoint browser URL for a drive folder; undefined if the folder does not exist yet. */
+  async getDriveFolderWebUrl(driveId: string, folderPath: string): Promise<string | undefined> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}?$select=webUrl,folder`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.data.folder) return undefined;
+      return response.data.webUrl as string | undefined;
+    } catch (error: any) {
+      if (error.response?.status === 404) return undefined;
+      throw error;
+    }
+  }
+
+  clearDocsFolderCache(folderPath: string): void {
+    this.cache.del(`docs_folder_${folderPath}`);
   }
 
   /**

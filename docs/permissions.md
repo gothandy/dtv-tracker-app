@@ -92,7 +92,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | GET | `/api/stats` | No PII |
 | GET | `/api/sessions`, `/api/sessions/:group/:date` | No volunteer names/emails |
 | GET | `/api/groups`, `/api/groups/:key` | No regulars list (empty array returned) |
-| GET | `/api/projects`, `/api/projects/:key`, `/api/projects/:key/attachments` | Live all-FY totals from linked sessions; attachments are public links |
+| GET | `/api/projects`, `/api/projects/:key`, `/api/projects/:key/attachments` | Live all-FY totals from linked sessions; project document links from Shared Documents |
 | GET | `/api/tags/*` | Tag metadata only; `?profile=` param requires auth |
 | GET | `/api/media/*` | `isPublic` items only; `name` and `webUrl` fields stripped (contain uploader's name in filename) |
 
@@ -152,6 +152,8 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | PATCH | `/groups/:key` | Edit group |
 | DELETE | `/groups/:key` | Delete group |
 | POST | `/projects` | Create project |
+| POST | `/projects/:key/attachments` | Upload project documents to `Projects/{key}/` |
+| DELETE | `/projects/:key/attachments/:itemId` | Delete a project document |
 | DELETE | `/projects/:key` | Delete project |
 | POST | `/sessions` | Create session |
 | DELETE | `/sessions/:group/:date` | Delete session |

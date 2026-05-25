@@ -425,7 +425,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
-- [ ] `GET /api/projects/:key/attachments` — list item attachment links
+- [ ] `GET /api/projects/:key/attachments` — files from `Projects/{key}/` on Documents library drive
+- [ ] Public project detail: Documents card hidden when folder empty
+- [ ] Admin: Upload docs button; files appear as lozenges; × removes file
+- [ ] Upload a test PDF via admin or SharePoint; document link opens
 - [ ] Header: description, metadata tags (check-in can edit tags)
 - [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)

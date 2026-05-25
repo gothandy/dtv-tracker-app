@@ -360,7 +360,7 @@ Feature inventory is split by area — read the relevant doc before working in t
 - `AUTH_BASIC_TTL_HOURS` env var: magic link token lifetime (default `72`); token hashes stored in Logins list (`LOGINS_LIST_GUID`)
 - `MEDIA_LIBRARY_DRIVE_ID` env var: required for photo uploads
 - `TAXONOMY_TERM_SET_ID` env var: required for session tags
-- `BACKUP_DRIVE_ID` env var: required for backup export (Shared Documents library Drive ID)
+- `DOCUMENTS_DRIVE_ID` env var: Documents library drive ID — top-level `Backups/` JSON export and `Projects/{slug}/` project files
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

@@ -50,9 +50,14 @@ export interface ProjectResponse {
 export interface ProjectDetailResponse extends ProjectResponse {
   stats: { sessions: number; hours: number };
   sessions: SessionResponse[];
+  /** Open the Projects list item in SharePoint (metadata). */
+  sharePointItemUrl: string;
+  /** Open Projects/{key}/ in the Documents library when the folder exists. */
+  sharePointFolderUrl?: string;
 }
 
 export interface ProjectAttachmentResponse {
+  id: string;
   name: string;
   webUrl: string;
 }

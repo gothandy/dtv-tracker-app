@@ -1,4 +1,6 @@
 import express, { Request, Response, Router } from 'express';
+import path from 'path';
+import multer from 'multer';
 /// <reference path="../types/express-session.d.ts" />
 import { projectsRepository } from '../services/repositories/projects-repository';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
@@ -33,9 +35,41 @@ import type {
 } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
+import { documentsDriveId, tryDocumentsDriveId } from '../services/documents-drive';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
 import { normalizeMetadataTagsInput, updateListItemMetadata } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
+
+/** Top-level folder in the Documents library drive (same level as Backups/). */
+function projectDocsFolderPath(key: string): string {
+  return `Projects/${key}`;
+}
+
+function safeProjectFilename(original: string): string {
+  const base = path.basename(original).replace(/[^\w.\- ()]/g, '_').slice(0, 200);
+  return base || 'document';
+}
+
+const PROJECT_DOC_MIMES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+  'image/jpeg',
+  'image/png',
+]);
+
+const PROJECT_DOC_MAX_FILE_BYTES = 15 * 1024 * 1024;
+
+const projectDocUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: PROJECT_DOC_MAX_FILE_BYTES, files: 10 },
+});
 
 const router: Router = express.Router();
 
@@ -149,6 +183,12 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
 
     const stats = aggregateSessionStatsForScope(projectSessions, { projectId }, { fyScope: 'all' });
     const sessions = mapSessionsToResponses(projectSessions, key, rawGroups, rawRegulars);
+    const listGuid = process.env.PROJECTS_LIST_GUID!;
+    const sharePointItemUrl = await sharePointClient.projectItemDispFormUrl(listGuid, spProject.ID);
+    const driveId = tryDocumentsDriveId();
+    const sharePointFolderUrl = driveId
+      ? await sharePointClient.getDriveFolderWebUrl(driveId, projectDocsFolderPath(key))
+      : undefined;
 
     const data: ProjectDetailResponse = {
       id: project.sharePointId,
@@ -158,6 +198,8 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
       metadata: metadata.length ? metadata : undefined,
       stats,
       sessions,
+      sharePointItemUrl,
+      sharePointFolderUrl,
     };
 
     res.json({ success: true, data } as ApiResponse<ProjectDetailResponse>);
@@ -172,21 +214,130 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
 });
 
 router.get('/projects/:key/attachments', async (req: Request, res: Response) => {
+  const key = String(req.params.key).toLowerCase();
+
   try {
-    const key = String(req.params.key).toLowerCase();
     const rawProjects = await projectsRepository.getAll();
-    const spProject = findProjectByKey(rawProjects, key);
-    if (!spProject) {
+    if (!findProjectByKey(rawProjects, key)) {
       res.status(404).json({ success: false, error: 'Project not found' });
       return;
     }
 
-    const attachments = await sharePointClient.listListItemAttachments(process.env.PROJECTS_LIST_GUID!, spProject.ID);
+    const driveId = tryDocumentsDriveId();
+    if (!driveId) {
+      console.warn('[projects] DOCUMENTS_DRIVE_ID not set — returning empty project documents');
+      res.json({ success: true, data: [] } as ApiResponse<ProjectAttachmentResponse[]>);
+      return;
+    }
+
+    const attachments = await sharePointClient.listDriveFolderFiles(
+      driveId,
+      projectDocsFolderPath(key)
+    );
     res.json({ success: true, data: attachments } as ApiResponse<ProjectAttachmentResponse[]>);
   } catch (error: any) {
-    console.error('Error fetching project attachments:', error);
-    // Do not fail the project page — documents are optional
-    res.json({ success: true, data: [] } as ApiResponse<ProjectAttachmentResponse[]>);
+    console.error('Error fetching project documents:', error.message || error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch project documents',
+      message: error.message,
+    });
+  }
+});
+
+router.post('/projects/:key/attachments', (req: Request, res: Response, next: express.NextFunction) => {
+  projectDocUpload.array('documents', 10)(req, res, (err: unknown) => {
+    if (err) {
+      const code = (err as { code?: string }).code;
+      if (code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({
+          success: false,
+          error: 'File too large (maximum 15 MB per file)',
+        });
+        return;
+      }
+      next(err);
+      return;
+    }
+    handleProjectDocUpload(req, res);
+  });
+});
+
+async function handleProjectDocUpload(req: Request, res: Response) {
+  const key = String(req.params.key).toLowerCase();
+
+  try {
+    const rawProjects = await projectsRepository.getAll();
+    if (!findProjectByKey(rawProjects, key)) {
+      res.status(404).json({ success: false, error: 'Project not found' });
+      return;
+    }
+
+    const files = req.files as Express.Multer.File[];
+    if (!files?.length) {
+      res.status(400).json({ success: false, error: 'No files provided' });
+      return;
+    }
+
+    const driveId = documentsDriveId();
+    const folderPath = projectDocsFolderPath(key);
+    const uploaded: ProjectAttachmentResponse[] = [];
+
+    for (const file of files) {
+      if (!PROJECT_DOC_MIMES.has(file.mimetype)) {
+        console.warn(`[projects] Rejected ${file.originalname}: unsupported type ${file.mimetype}`);
+        continue;
+      }
+      const filename = safeProjectFilename(file.originalname);
+      const filePath = `${folderPath}/${filename}`;
+      const item = await sharePointClient.uploadFile(driveId, filePath, file.buffer, file.mimetype);
+      uploaded.push({ id: item.id, name: item.name, webUrl: item.webUrl });
+    }
+
+    if (!uploaded.length) {
+      res.status(400).json({ success: false, error: 'No supported files uploaded' });
+      return;
+    }
+
+    sharePointClient.clearDocsFolderCache(folderPath);
+    res.json({ success: true, data: uploaded } as ApiResponse<ProjectAttachmentResponse[]>);
+  } catch (error: any) {
+    console.error('Error uploading project documents:', error.message || error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upload project documents',
+      message: error.message,
+    });
+  }
+}
+
+router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Response) => {
+  const key = String(req.params.key).toLowerCase();
+  const itemId = String(req.params.itemId);
+
+  if (!itemId || itemId.length > 256) {
+    res.status(400).json({ success: false, error: 'Invalid document id' });
+    return;
+  }
+
+  try {
+    const rawProjects = await projectsRepository.getAll();
+    if (!findProjectByKey(rawProjects, key)) {
+      res.status(404).json({ success: false, error: 'Project not found' });
+      return;
+    }
+
+    const driveId = documentsDriveId();
+    await sharePointClient.deleteMediaItem(driveId, itemId);
+    sharePointClient.clearDocsFolderCache(projectDocsFolderPath(key));
+    res.json({ success: true } as ApiResponse<void>);
+  } catch (error: any) {
+    console.error('Error deleting project document:', error.message || error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete project document',
+      message: error.message,
+    });
   }
 });
 

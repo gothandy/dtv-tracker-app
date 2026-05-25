@@ -42,5 +42,6 @@ const emit = defineEmits<{ saveTags: [tags: Array<{ label: string; termGuid: str
   margin-top: 0;
   margin-bottom: 0.75rem;
   line-height: 1.5;
+  white-space: pre-line;
 }
 </style>

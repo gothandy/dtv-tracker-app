@@ -9,6 +9,7 @@
 import crypto from 'crypto';
 import { sharePointClient } from './sharepoint-client';
 import { taxonomyClient } from './taxonomy-client';
+import { documentsDriveId } from './documents-drive';
 
 const LISTS = [
   { name: 'groups',   guid: process.env.GROUPS_LIST_GUID! },
@@ -36,8 +37,7 @@ async function hasChanged(driveId: string, filePath: string, newContent: string)
 }
 
 export async function runBackupExport(): Promise<BackupResult> {
-  const driveId = process.env.BACKUP_DRIVE_ID;
-  if (!driveId) throw new Error('BACKUP_DRIVE_ID not configured');
+  const driveId = documentsDriveId();
 
   const updated: string[] = [];
   const skipped: string[] = [];

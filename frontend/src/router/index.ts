@@ -30,6 +30,7 @@ export const groupsPath = () => '/groups'
 export const groupPath = (key: string) => `/groups/${key}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`
+export const projectUploadPath = (key: string) => `/projects/${key}/upload`
 export const sessionsPath = () => '/sessions'
 export const profilesPath = () => '/profiles'
 export const profilePath = (slug: string) => `/profiles/${slug}`
@@ -49,6 +50,11 @@ export const router = createRouter({
     { path: '/groups/:key', component: GroupDetailPage },
     { path: '/projects', component: ProjectListPage },
     { path: '/projects/:key', component: ProjectDetailPage },
+    {
+      path: '/projects/:key/upload',
+      component: () => import('../pages/ProjectUploadPage.vue'),
+      meta: { requiresAdmin: true },
+    },
     { path: '/sessions', component: SessionListPage },
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },
     { path: '/privacy', component: PrivacyPage },

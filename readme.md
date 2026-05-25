@@ -39,6 +39,7 @@ EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 # Optional
 API_SYNC_KEY=your_random_key_here
 MEDIA_LIBRARY_DRIVE_ID=   # find via admin page "Discover Drives"
+DOCUMENTS_DRIVE_ID=     # Documents library drive — top-level Backups/ + Projects/{slug}/
 ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
 SESSION_SECRET=your_session_secret_here
 MAIL_SENDER=noreply@dtv.org.uk

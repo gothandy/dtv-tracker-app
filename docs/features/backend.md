@@ -46,7 +46,9 @@ Handlebars template system (`templates/email/`). `renderEmail(template, vars)` r
 
 ## Nightly Backup Export
 
-`POST /api/backup/export-all` exports all 6 lists + taxonomy + schema to `Backups/` in SharePoint Shared Documents as JSON. SHA-256 diff check skips unchanged files. Also runs as the final step of the nightly Eventbrite sync. `BACKUP_DRIVE_ID` env var required.
+`POST /api/backup/export-all` exports all lists + taxonomy + schema to `Backups/` in the Shared Documents library as JSON. SHA-256 diff check skips unchanged files. Also runs as the final step of the nightly Eventbrite sync.
+
+Project documents are read from `Projects/{slug}/` on the Documents library drive via Graph (`GET /api/projects/:key/attachments`). Same drive as nightly `Backups/` (`DOCUMENTS_DRIVE_ID`).
 
 ## Stats Pipeline
 

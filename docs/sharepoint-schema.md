@@ -39,7 +39,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Name** | Name | Single line of text | No | Display name |
 | **Description** | Description | Multiple lines of text | No | Project description |
 | **Metadata** | Metadata | Managed metadata | No | Taxonomy tags (same term set as Sessions) |
-| **Attachments** | — | List item attachments | No | Project documents (PDFs, etc.) — not a separate library |
+| *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`; `DOCUMENTS_DRIVE_ID`) |
 
 ---
 

@@ -56,15 +56,26 @@
         </template>
       </LayoutColumns>
 
-      <LayoutColumns ratio="1-2" align="start">
+      <LayoutColumns v-if="showDocumentsCard" ratio="1-2" align="start">
         <template #left>
           <ProjectDetailStats :stats="store.project.stats" />
         </template>
         <template #right>
           <ProjectDocsCard
             :attachments="store.attachments"
+            :project-key="store.project.key"
             :loading="store.attachmentsLoading"
+            :error="store.attachmentsError"
+            :allow-manage="profile.isAdmin"
+            :deleting-ids="store.docsDeletingIds"
+            @delete="onDeleteDoc"
           />
+        </template>
+      </LayoutColumns>
+
+      <LayoutColumns v-else ratio="1">
+        <template #left>
+          <ProjectDetailStats :stats="store.project.stats" />
         </template>
       </LayoutColumns>
 
@@ -80,7 +91,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, watchEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
 import { useProjectDetailStore } from '../stores/projectDetail'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
@@ -157,6 +168,11 @@ const linkedSessions = computed<Session[]>(() =>
   (store.project?.sessions ?? []).map(mapSession)
 )
 
+const showDocumentsCard = computed(() => {
+  if (profile.isAdmin) return true
+  return store.attachmentsLoading || store.attachments.length > 0
+})
+
 function onCoverSelect(index: number) {
   selectedCoverIndex.value = index
   const item = coverItems.value[index]
@@ -215,6 +231,11 @@ async function onEditProject(payload: EditProjectPayload) {
   }
 }
 
+async function onDeleteDoc(itemId: string) {
+  if (!store.project) return
+  await store.deleteDocument(store.project.key, itemId)
+}
+
 async function onDeleteProject() {
   if (!store.project) return
   try {
@@ -233,6 +254,13 @@ watch(() => route.params.key, key => {
     store.fetchAttachments(key)
   }
 }, { immediate: true })
+
+onBeforeRouteUpdate(to => {
+  const key = to.params.key
+  if (typeof key === 'string' && !String(to.path).endsWith('/upload')) {
+    store.fetchAttachments(String(key).toLowerCase())
+  }
+})
 
 watchEffect(() => {
   if (coverItems.value.length && selectedCoverIndex.value === null) {
