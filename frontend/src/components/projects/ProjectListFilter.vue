@@ -2,7 +2,7 @@
   <div class="pf-wrap">
     <div class="pf-title-row">
       <div class="pf-actions">
-        <FyFilter v-model="fy" />
+        <FyFilter v-model="fy" :options="fyOptions" />
       </div>
     </div>
   </div>
@@ -14,7 +14,11 @@ import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { ProjectResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
-import { withSessionTotals, entitiesWithSessionsInFy } from '../../utils/entitySessionTotals'
+import {
+  withSessionTotals,
+  entitiesWithSessionsInFy,
+  fyOptionsForEntities,
+} from '../../utils/entitySessionTotals'
 
 export interface ProjectWithStats extends ProjectResponse {
   sessionCount: number
@@ -29,15 +33,25 @@ const router = useRouter()
 
 const fy = ref((route.query.fy as string) || 'all')
 
+const linkSession = (p: ProjectResponse, s: Session) => s.projectId === p.id
+
+const fyOptions = computed(() =>
+  fyOptionsForEntities(props.projects, props.sessions, linkSession),
+)
+
 const filtered = computed<ProjectWithStats[]>(() => {
   const fyProjects = entitiesWithSessionsInFy(
     props.projects,
     props.sessions,
-    (p, s) => s.projectId === p.id,
+    linkSession,
     fy.value,
   )
-  return withSessionTotals(fyProjects, props.sessions, (p, s) => s.projectId === p.id, fy.value)
+  return withSessionTotals(fyProjects, props.sessions, linkSession, fy.value)
 })
+
+watch(fyOptions, opts => {
+  if (opts.length && !opts.some(o => o.value === fy.value)) fy.value = 'all'
+}, { immediate: true })
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
