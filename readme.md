@@ -53,7 +53,7 @@ cd frontend && npm test && cd ..   # Vitest store unit tests (no live calls)
 npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
 
-Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, `npm run build` triggers an automatic nodemon restart.
+Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, run `npm run build:dev` while `npm run dev` is running (incremental compile; nodemon restarts after a short delay). Use `npm run build` for a clean compile (wipes `dist/` first) — stop the dev server first on Windows/OneDrive if you see `EBUSY` on files under `dist/`.
 
 ---
 

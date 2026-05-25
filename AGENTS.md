@@ -41,7 +41,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
 - Projects listing with FY filter ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
-- Project detail with live FY stats, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
+- Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
 - Session detail with entries, check-in, set hours, move group, tags, photo gallery ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
 - Volunteers listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))

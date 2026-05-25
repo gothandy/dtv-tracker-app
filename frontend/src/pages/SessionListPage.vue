@@ -24,6 +24,7 @@
     <GroupAddSessionModal
       v-if="showAddSession"
       :groups="groupOptions"
+      :projects="projectOptions"
       :working="addSessionWorking"
       :error="addSessionError"
       @close="showAddSession = false"
@@ -45,6 +46,8 @@ import GroupAddSessionModal from './modals/GroupAddSessionModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
 import { useSessionListStore } from '../stores/sessionList'
 import { useGroupListStore } from '../stores/groupList'
+import { useProjectListStore } from '../stores/projectList'
+import type { ProjectItem } from './modals/SessionEditModal.vue'
 import { useViewer } from '../composables/useViewer'
 import { useRouter } from 'vue-router'
 import { sessionPath } from '../router'
@@ -55,6 +58,7 @@ usePageTitle('Sessions')
 
 const store = useSessionListStore()
 const groupsStore = useGroupListStore()
+const projectsStore = useProjectListStore()
 const profile = useViewer()
 const router = useRouter()
 const filtered = ref<Session[]>([])
@@ -73,6 +77,7 @@ watch(filtered, list => {
 
 store.fetch()
 groupsStore.fetch()
+if (profile.isAdmin) projectsStore.fetch()
 
 const visibleSelectedCount = computed(() =>
   visibleSelected(selected.value, filtered.value).length,
@@ -82,6 +87,12 @@ const groupOptions = computed(() =>
   groupsStore.groups
     .map(g => ({ id: g.id, key: g.key, displayName: g.displayName }))
     .sort((a, b) => (a.displayName ?? a.key).localeCompare(b.displayName ?? b.key))
+)
+
+const projectOptions = computed<ProjectItem[]>(() =>
+  projectsStore.projects
+    .map(p => ({ id: p.id, key: p.key, name: p.displayName ?? p.key }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 )
 
 async function onApplyTag(label: string, termGuid: string) {

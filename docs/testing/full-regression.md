@@ -424,10 +424,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Cards show display name, description, sessions/hrs for selected FY
 
 ### M3b. Project detail
-- [ ] `GET /api/projects/:key` — live FY stats + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
+- [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
 - [ ] `GET /api/projects/:key/attachments` — list item attachment links
 - [ ] Header: description, metadata tags (check-in can edit tags)
-- [ ] Stats card: sessions + hours (current FY)
+- [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)
 - [ ] Admin: edit display name/key/description; delete project
 

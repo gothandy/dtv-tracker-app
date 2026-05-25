@@ -115,6 +115,7 @@
             :group-key="(route.params.groupKey as string)"
             :date="store.session.date"
             :groups="editGroups"
+            :projects="editProjects"
             :edit-working="editWorking"
             :edit-error="editError"
             :allow-edit="profile.isCheckIn || profile.isAdmin"
@@ -197,7 +198,7 @@ import type { MediaItem } from '../types/media'
 import type { EntryItem } from '../types/entry'
 import type { PickerProfile } from '../components/ProfilePicker.vue'
 import type { EntryResponse } from '../../../types/api-responses'
-import type { GroupItem, SessionSaveData } from './modals/SessionEditModal.vue'
+import type { GroupItem, ProjectItem, SessionSaveData } from './modals/SessionEditModal.vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import TaskLayout from '../layouts/TaskLayout.vue'
@@ -208,6 +209,7 @@ import LayoutColumns from '../components/LayoutColumns.vue'
 import DebugData from '../components/DebugData.vue'
 import { useSessionDetailStore } from '../stores/sessionDetail'
 import { useGroupListStore } from '../stores/groupList'
+import { useProjectListStore } from '../stores/projectList'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { groupPath, sessionPath } from '../router/index'
@@ -238,6 +240,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useSessionDetailStore()
 const groupsStore = useGroupListStore()
+const projectsStore = useProjectListStore()
 const profile = useViewer()
 const mediaItems   = ref<MediaItem[]>([])
 const mediaLoading = ref(false)
@@ -257,10 +260,36 @@ const actionsRef = ref<InstanceType<typeof SessionDetailActions> | null>(null)
 const sessionGalleryRef = ref<InstanceType<typeof SessionDetailGallery> | null>(null)
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
-const editGroups = computed<GroupItem[]>(() =>
-  groupsStore.groups.map(g => ({ id: g.id, name: g.displayName ?? g.key, key: g.key }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-)
+function ensureEditOptionLists(): Promise<void> {
+  if (!profile.isAdmin) return Promise.resolve()
+  return Promise.all([groupsStore.fetch(), projectsStore.fetch()]).then(() => undefined)
+}
+
+const editGroups = computed<GroupItem[]>(() => {
+  const items = groupsStore.groups.map(g => ({ id: g.id, name: g.displayName ?? g.key, key: g.key }))
+  const s = store.session
+  if (s?.groupId != null && !items.some(g => g.id === s.groupId)) {
+    items.push({
+      id: s.groupId,
+      name: s.groupName ?? String(route.params.groupKey ?? ''),
+      key: String(route.params.groupKey ?? ''),
+    })
+  }
+  return items.sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const editProjects = computed<ProjectItem[]>(() => {
+  const items = projectsStore.projects.map(p => ({ id: p.id, name: p.displayName ?? p.key, key: p.key }))
+  const s = store.session
+  if (s?.projectId != null && !items.some(p => p.id === s.projectId)) {
+    items.push({
+      id: s.projectId,
+      name: s.projectTitle ?? s.projectKey ?? String(s.projectId),
+      key: s.projectKey ?? '',
+    })
+  }
+  return items.sort((a, b) => a.name.localeCompare(b.name))
+})
 const coverItem = computed<MediaItem | null>(() => {
   const s = store.session
   if (!s?.coverMediaId) return null
@@ -420,10 +449,21 @@ usePageTitle(titleText)
 /** Re-check express session before session edit — public session GET can outlive login. */
 async function beforeSessionEdit(): Promise<boolean> {
   const ok = await profile.refreshAuth()
-  if (ok) return true
-  await router.push({ path: '/login', query: { returnTo: route.fullPath, reason: 'session-expired' } })
-  return false
+  if (!ok) {
+    await router.push({ path: '/login', query: { returnTo: route.fullPath, reason: 'session-expired' } })
+    return false
+  }
+  await ensureEditOptionLists()
+  return true
 }
+
+watch(
+  () => profile.ready && profile.isAdmin,
+  load => {
+    if (load) ensureEditOptionLists()
+  },
+  { immediate: true },
+)
 
 async function onSaveTags(tags: Array<{ label: string; termGuid: string }>) {
   const groupKey = route.params.groupKey as string
@@ -763,6 +803,7 @@ async function onSessionSave(data: SessionSaveData) {
     if (profile.isAdmin) {
       body.date = data.date
       body.groupId = data.groupId
+      body.projectId = data.projectId
       body.limits = data.limits
       body.eventbriteEventId = data.eventbriteEventId
     }
@@ -809,7 +850,6 @@ onMounted(() => {
   load()
   fetchProfiles()
   fetchMedia(route.params.groupKey as string, route.params.date as string)
-  if (profile.isAdmin) groupsStore.fetch()
 })
 
 onBeforeUnmount(() => {

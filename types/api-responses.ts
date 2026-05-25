@@ -48,7 +48,6 @@ export interface ProjectResponse {
 }
 
 export interface ProjectDetailResponse extends ProjectResponse {
-  financialYear: string;
   stats: { sessions: number; hours: number };
   sessions: SessionResponse[];
 }
@@ -216,6 +215,9 @@ export interface SessionDetailResponse {
   groupId?: number;
   groupName?: string;
   groupDescription?: string;
+  projectId?: number;
+  projectKey?: string;
+  projectTitle?: string;
   limits: SessionLimits;
   storedLimits: SessionLimits;
   stats: SessionStats;

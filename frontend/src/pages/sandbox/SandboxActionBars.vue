@@ -14,6 +14,7 @@
         group-key="sheepskull"
         date="2025-03-01"
         :groups="mockGroups"
+        :projects="mockProjects"
         :edit-working="false"
         :allow-edit="true"
         :allow-email="true"
@@ -26,6 +27,7 @@
         group-key="sheepskull"
         date="2025-03-01"
         :groups="mockGroups"
+        :projects="mockProjects"
         :edit-working="false"
         :allow-edit="false"
         :allow-email="false"
@@ -38,6 +40,7 @@
         group-key="sheepskull"
         date="2025-03-01"
         :groups="mockGroups"
+        :projects="mockProjects"
         :edit-working="false"
         :allow-edit="false"
         :allow-email="false"
@@ -60,6 +63,7 @@
       <GroupDetailActions
         ref="actionsWithEbRef"
         :group="mockGroupWithEb"
+        :projects="mockProjects"
         @edit-group="data => onGroupAction(actionsWithEbRef, 'edit-group', data)"
         @add-session="data => onGroupAction(actionsWithEbRef, 'add-session', data)"
         @delete-group="onGroupAction(actionsWithEbRef, 'delete-group')"
@@ -69,6 +73,7 @@
       <GroupDetailActions
         ref="actionsWithoutEbRef"
         :group="mockGroup"
+        :projects="mockProjects"
         @edit-group="data => onGroupAction(actionsWithoutEbRef, 'edit-group', data)"
         @add-session="data => onGroupAction(actionsWithoutEbRef, 'add-session', data)"
         @delete-group="onGroupAction(actionsWithoutEbRef, 'delete-group')"
@@ -147,6 +152,10 @@ function onListAddTags() {
 const mockGroups = [
   { id: 1, name: 'Sheepskull', key: 'sheepskull' },
   { id: 2, name: 'Adhoc', key: 'adhoc' },
+]
+
+const mockProjects = [
+  { id: 10, name: 'River restoration', key: 'river-restoration' },
 ]
 
 const mockSession: SessionDetailResponse = {

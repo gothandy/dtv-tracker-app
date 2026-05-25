@@ -10,7 +10,6 @@ import {
   convertProject,
   convertSession,
   deriveLimits,
-  calculateCurrentFY,
   calculateFinancialYear,
   findProjectByKey,
   safeParseLookupId,
@@ -126,7 +125,6 @@ router.get('/projects', async (_req: Request, res: Response) => {
 router.get('/projects/:key', async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();
-    const fy = calculateCurrentFY();
 
     const [rawProjects, rawSessions, rawGroups, rawRegulars] = await Promise.all([
       projectsRepository.getAll(),
@@ -149,7 +147,7 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
       s => s.Date && safeParseLookupId(s[PROJECT_LOOKUP]) === projectId
     );
 
-    const stats = aggregateSessionStatsForScope(projectSessions, { projectId }, { fyScope: 'current' });
+    const stats = aggregateSessionStatsForScope(projectSessions, { projectId }, { fyScope: 'all' });
     const sessions = mapSessionsToResponses(projectSessions, key, rawGroups, rawRegulars);
 
     const data: ProjectDetailResponse = {
@@ -158,7 +156,6 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
       displayName: project.displayName,
       description: project.description,
       metadata: metadata.length ? metadata : undefined,
-      financialYear: `${fy.startYear}-${fy.endYear}`,
       stats,
       sessions,
     };

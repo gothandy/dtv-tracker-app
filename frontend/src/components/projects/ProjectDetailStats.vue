@@ -1,6 +1,6 @@
 <template>
   <div class="bg-dtv-gold px-6 py-4">
-    <h2 class="font-hero text-white text-xl uppercase leading-none mb-4">This financial year</h2>
+    <h2 class="font-hero text-white text-xl uppercase leading-none mb-4">Totals</h2>
     <dl class="text-sm text-white space-y-1">
       <div class="flex gap-3">
         <dt class="text-white/60 w-28 shrink-0">Sessions</dt>
@@ -17,6 +17,5 @@
 <script setup lang="ts">
 defineProps<{
   stats: { sessions: number; hours: number }
-  financialYear: string
 }>()
 </script>

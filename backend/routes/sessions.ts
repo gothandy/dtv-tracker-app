@@ -42,6 +42,23 @@ import { runSessionStatsRefresh } from '../services/session-stats';
 
 const router: Router = express.Router();
 
+function projectLookupFromBody(
+  projectId: unknown,
+  projectsRaw: Awaited<ReturnType<typeof projectsRepository.getAll>>
+): string | null {
+  if (projectId === null) return null;
+  if (typeof projectId !== 'number' || !Number.isFinite(projectId)) {
+    throw new Error('projectId must be a number or null');
+  }
+  const project = projectsRaw.find(p => p.ID === projectId);
+  if (!project) {
+    const err = new Error('Project not found') as Error & { statusCode?: number };
+    err.statusCode = 404;
+    throw err;
+  }
+  return String(projectId);
+}
+
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
     const [sessionsRaw, groupsRaw, regularsRaw, projectsRaw] = await Promise.all([
@@ -112,7 +129,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
 router.post('/sessions', async (req: Request, res: Response) => {
   try {
-    const { groupId, date, name, description } = req.body;
+    const { groupId, date, name, description, projectId } = req.body;
 
     if (!groupId || !date) {
       res.status(400).json({ success: false, error: 'groupId and date are required' });
@@ -125,7 +142,10 @@ router.post('/sessions', async (req: Request, res: Response) => {
       return;
     }
 
-    const groups = await groupsRepository.getAll();
+    const [groups, projectsRaw] = await Promise.all([
+      groupsRepository.getAll(),
+      projectsRepository.getAll(),
+    ]);
     const group = groups.find(g => g.ID === Number(groupId));
     if (!group) {
       res.status(404).json({ success: false, error: 'Group not found' });
@@ -155,6 +175,9 @@ router.post('/sessions', async (req: Request, res: Response) => {
     }
     if (typeof description === 'string' && description.trim()) {
       fields[SESSION_NOTES] = description.trim();
+    }
+    if (projectId !== undefined) {
+      fields[PROJECT_LOOKUP] = projectLookupFromBody(projectId, projectsRaw);
     }
 
     const id = await sessionsRepository.create(fields);
@@ -385,8 +408,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     // Phase 1: resolve group + session
     // getBySlug uses a 1h slug lookup cache; on miss does a single targeted OData query by Title.
-    const [rawGroups, spSession, rawSessions, rawRegulars] = await Promise.all([
+    const [rawGroups, rawProjects, spSession, rawSessions, rawRegulars] = await Promise.all([
       groupsRepository.getAll(),
+      projectsRepository.getAll(),
       sessionsRepository.getBySlug(groupKey, dateParam),
       sessionsRepository.getAll(),
       regularsRepository.getAll()
@@ -405,6 +429,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
 
     const groupId = spGroup.ID;
     const group = convertGroup(spGroup);
+    const sessionProjectId = safeParseLookupId(spSession[PROJECT_LOOKUP]);
+    const projectKeyMap = new Map(rawProjects.map(p => [p.ID, (p.Title || '').toLowerCase()]));
+    const projectTitleMap = new Map(rawProjects.map(p => [p.ID, p.Name || p.Title || '']));
     const metadata = extractMetadataTags(spSession[SESSION_METADATA]);
     const regularsCount = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === groupId).length || undefined;
     const storedStats = parseSessionStats(spSession[SESSION_STATS]);
@@ -429,6 +456,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         groupId: groupId,
         groupName: group.displayName,
         groupDescription: group.description,
+        projectId: sessionProjectId,
+        projectKey: sessionProjectId !== undefined ? projectKeyMap.get(sessionProjectId) : undefined,
+        projectTitle: sessionProjectId !== undefined ? projectTitleMap.get(sessionProjectId) : undefined,
         limits: sessionLimits,
         storedLimits: rawLimits,
         regularsCount,
@@ -558,6 +588,9 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       groupId: groupId,
       groupName: group.displayName,
       groupDescription: group.description,
+      projectId: sessionProjectId,
+      projectKey: sessionProjectId !== undefined ? projectKeyMap.get(sessionProjectId) : undefined,
+      projectTitle: sessionProjectId !== undefined ? projectTitleMap.get(sessionProjectId) : undefined,
       limits: sessionLimits,
       storedLimits: rawLimits,
       regularsCount,
@@ -597,7 +630,13 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId, date, groupId, metadata, coverMediaId, limits } = req.body;
+    const { displayName, description, eventbriteEventId, date, groupId, projectId, metadata, coverMediaId, limits } = req.body;
+
+    const [rawGroups, rawProjects, spSession] = await Promise.all([
+      groupsRepository.getAll(),
+      projectsRepository.getAll(),
+      sessionsRepository.getBySlug(groupKey, dateParam)
+    ]);
 
     const fields: Record<string, any> = {};
     if (typeof displayName === 'string') fields.Name = displayName;
@@ -607,6 +646,9 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       fields.Date = date;
     }
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
+    if ('projectId' in req.body) {
+      fields[PROJECT_LOOKUP] = projectLookupFromBody(projectId, rawProjects);
+    }
     if (typeof coverMediaId === 'number') fields[SESSION_COVER_MEDIA] = String(coverMediaId);
     if (coverMediaId === null) fields[SESSION_COVER_MEDIA] = null;
     if (limits === null) {
@@ -629,11 +671,6 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
-
-    const [rawGroups, spSession] = await Promise.all([
-      groupsRepository.getAll(),
-      sessionsRepository.getBySlug(groupKey, dateParam)
-    ]);
 
     const spGroup = findGroupByKey(rawGroups, groupKey);
     if (!spGroup) {

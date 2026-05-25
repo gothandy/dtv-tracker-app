@@ -5,6 +5,7 @@
     action-icon="save"
     show-delete
     :working="working"
+    :error="error"
     @close="emit('close')"
     @action="save"
     @delete="confirmDelete = true"
@@ -26,6 +27,13 @@
         <FormRow title="Group" :full-width="true">
           <ModalFormSelect v-model="form.groupId">
             <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </ModalFormSelect>
+        </FormRow>
+
+        <FormRow title="Project" :full-width="true">
+          <ModalFormSelect v-model="form.projectId" :placeholder="form.projectId === null">
+            <option :value="null">No project</option>
+            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
           </ModalFormSelect>
         </FormRow>
 
@@ -67,11 +75,14 @@ import DeleteModal from './DeleteModal.vue'
 
 export interface GroupItem { id: number; name: string; key: string }
 
+export interface ProjectItem { id: number; name: string; key: string }
+
 export interface SessionSaveData {
   displayName: string
   description: string
   date: string
   groupId: number | null
+  projectId: number | null
   limits: Record<string, unknown> | null
   eventbriteEventId: string
 }
@@ -79,6 +90,7 @@ export interface SessionSaveData {
 const props = defineProps<{
   session: SessionDetailResponse
   groups: GroupItem[]
+  projects: ProjectItem[]
   working: boolean
   error?: string
 }>()
@@ -99,6 +111,7 @@ const form = reactive({
   description: props.session.description ?? '',
   date: props.session.date,
   groupId: props.session.groupId ?? null as number | null,
+  projectId: props.session.projectId ?? null as number | null,
   limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
   eventbriteEventId: props.session.eventbriteEventId ?? '',
 })
@@ -122,6 +135,7 @@ function save() {
     description: form.description,
     date: form.date,
     groupId: form.groupId,
+    projectId: form.projectId,
     limits,
     eventbriteEventId: form.eventbriteEventId,
   })

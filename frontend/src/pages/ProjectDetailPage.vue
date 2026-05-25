@@ -58,10 +58,7 @@
 
       <LayoutColumns ratio="1-2" align="start">
         <template #left>
-          <ProjectDetailStats
-            :stats="store.project.stats"
-            :financial-year="store.project.financialYear"
-          />
+          <ProjectDetailStats :stats="store.project.stats" />
         </template>
         <template #right>
           <ProjectDocsCard
