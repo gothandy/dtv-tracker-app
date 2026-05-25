@@ -14,7 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { ProjectResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
-import { withSessionTotals } from '../../utils/entitySessionTotals'
+import { withSessionTotals, entitiesWithSessionsInFy } from '../../utils/entitySessionTotals'
 
 export interface ProjectWithStats extends ProjectResponse {
   sessionCount: number
@@ -27,12 +27,17 @@ const emit = defineEmits<{ filtered: [projects: ProjectWithStats[]] }>()
 const route = useRoute()
 const router = useRouter()
 
-const fy = ref((route.query.fy as string) || 'future')
+const fy = ref((route.query.fy as string) || 'all')
 
-// Always list every project; FY filter only affects session/hours totals (projects may have no linked sessions yet).
-const filtered = computed<ProjectWithStats[]>(() =>
-  withSessionTotals(props.projects, props.sessions, (p, s) => s.projectId === p.id, fy.value)
-)
+const filtered = computed<ProjectWithStats[]>(() => {
+  const fyProjects = entitiesWithSessionsInFy(
+    props.projects,
+    props.sessions,
+    (p, s) => s.projectId === p.id,
+    fy.value,
+  )
+  return withSessionTotals(fyProjects, props.sessions, (p, s) => s.projectId === p.id, fy.value)
+})
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
