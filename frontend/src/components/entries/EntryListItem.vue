@@ -94,7 +94,9 @@ function formatDate(date: string): string {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.5rem;
+  /* Align text with px-6 content; border-left is outside this box */
+  padding-left: calc(1.5rem - 4px);
   flex: 1;
   min-width: 0;
   text-decoration: none;
