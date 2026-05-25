@@ -89,5 +89,23 @@ export const useSessionListStore = defineStore('sessions', () => {
     }
   }
 
-  return { sessions, loading, error, fetch, applyTag }
+  function applyProject(
+    sessionIds: number[],
+    project: { id: number | null; key?: string; title?: string },
+  ) {
+    for (const s of raw.value) {
+      if (!sessionIds.includes(s.id)) continue
+      if (project.id === null) {
+        delete s.projectId
+        delete s.projectKey
+        delete s.projectTitle
+      } else {
+        s.projectId = project.id
+        s.projectKey = project.key
+        s.projectTitle = project.title
+      }
+    }
+  }
+
+  return { sessions, loading, error, fetch, applyTag, applyProject }
 })

@@ -400,6 +400,47 @@ router.post('/sessions/bulk-tag', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/sessions/bulk-project', async (req: Request, res: Response) => {
+  try {
+    const { sessionIds, projectId } = req.body;
+
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+      res.status(400).json({ success: false, error: 'sessionIds array is required' });
+      return;
+    }
+    if (!('projectId' in req.body)) {
+      res.status(400).json({ success: false, error: 'projectId is required (use null for no project)' });
+      return;
+    }
+
+    const projectsRaw = await projectsRepository.getAll();
+    let lookupValue: string | null;
+    try {
+      lookupValue = projectLookupFromBody(projectId, projectsRaw);
+    } catch (err: any) {
+      const status = err.statusCode === 404 ? 404 : 400;
+      res.status(status).json({ success: false, error: err.message });
+      return;
+    }
+
+    let updated = 0;
+    for (const rawId of sessionIds) {
+      const id = parseInt(String(rawId), 10);
+      if (isNaN(id)) continue;
+      await sessionsRepository.updateFields(id, { [PROJECT_LOOKUP]: lookupValue });
+      updated++;
+    }
+
+    res.json({ success: true, data: { updated } } as ApiResponse<{ updated: number }>);
+  } catch (error: any) {
+    console.error('Error bulk updating session projects:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to bulk update session projects',
+      message: error.message
+    });
+  }
+});
 
 router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {

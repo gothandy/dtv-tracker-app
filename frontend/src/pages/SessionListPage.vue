@@ -8,6 +8,7 @@
       :can-bulk-tag="profile.isAdmin"
       v-model:selected="selected"
       @add-tags="showTagModal = true"
+      @update-project="openProjectModal"
       @add-session="showAddSession = true"
     />
     <SessionListResults :sessions="filtered" :loading="store.loading" v-model:selected="selected" />
@@ -19,6 +20,16 @@
       :error="tagError"
       @close="showTagModal = false"
       @save="onApplyTag"
+    />
+
+    <SessionBulkProjectModal
+      v-if="showProjectModal"
+      :count="visibleSelectedCount"
+      :projects="projectOptions"
+      :working="projectWorking"
+      :error="projectError"
+      @close="showProjectModal = false"
+      @save="onApplyProject"
     />
 
     <GroupAddSessionModal
@@ -42,6 +53,7 @@ import SessionListFilter from '../components/sessions/SessionListFilter.vue'
 import SessionListActions from '../components/sessions/SessionListActions.vue'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
 import SessionAddTagsModal from './modals/SessionAddTagsModal.vue'
+import SessionBulkProjectModal from './modals/SessionBulkProjectModal.vue'
 import GroupAddSessionModal from './modals/GroupAddSessionModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
 import { useSessionListStore } from '../stores/sessionList'
@@ -66,6 +78,9 @@ const selected = ref<number[]>([])
 const showTagModal = ref(false)
 const tagWorking = ref(false)
 const tagError = ref('')
+const showProjectModal = ref(false)
+const projectWorking = ref(false)
+const projectError = ref('')
 const showAddSession = ref(false)
 const addSessionWorking = ref(false)
 const addSessionError = ref('')
@@ -77,7 +92,14 @@ watch(filtered, list => {
 
 store.fetch()
 groupsStore.fetch()
-if (profile.isAdmin) projectsStore.fetch()
+
+watch(
+  () => profile.ready && profile.isAdmin,
+  shouldLoad => {
+    if (shouldLoad) projectsStore.fetch()
+  },
+  { immediate: true },
+)
 
 const visibleSelectedCount = computed(() =>
   visibleSelected(selected.value, filtered.value).length,
@@ -94,6 +116,13 @@ const projectOptions = computed<ProjectItem[]>(() =>
     .map(p => ({ id: p.id, key: p.key, name: p.displayName ?? p.key }))
     .sort((a, b) => a.name.localeCompare(b.name))
 )
+
+async function openProjectModal() {
+  if (profile.isAdmin && !projectsStore.projects.length && !projectsStore.loading) {
+    await projectsStore.fetch()
+  }
+  showProjectModal.value = true
+}
 
 async function onApplyTag(label: string, termGuid: string) {
   tagWorking.value = true
@@ -115,6 +144,38 @@ async function onApplyTag(label: string, termGuid: string) {
   showTagModal.value = false
   tagWorking.value = false
   tagError.value = ''
+  selected.value = []
+}
+
+async function onApplyProject(projectId: number | null) {
+  projectWorking.value = true
+  projectError.value = ''
+  const sessionIds = visibleSelected(selected.value, filtered.value).map(s => s.id)
+  const res = await fetch('/api/sessions/bulk-project', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionIds, projectId }),
+  })
+  if (!res.ok) {
+    projectError.value = 'Update project failed — please try again'
+    projectWorking.value = false
+    console.error('[SessionListPage] bulk-project failed', res.status)
+    return
+  }
+  const project = projectId === null
+    ? { id: null }
+    : (() => {
+        const p = projectsStore.projects.find(x => x.id === projectId)
+        return {
+          id: projectId,
+          key: p?.key,
+          title: p?.displayName ?? p?.key,
+        }
+      })()
+  store.applyProject(sessionIds, project)
+  showProjectModal.value = false
+  projectWorking.value = false
+  projectError.value = ''
   selected.value = []
 }
 

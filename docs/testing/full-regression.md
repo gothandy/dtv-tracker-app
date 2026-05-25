@@ -261,8 +261,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `entryQuality` preserved in URL when set; cleared when FY changes so the selected type no longer exists in data
 
 ### H30. Bulk tag sessions / CSV download
-- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" and "Download CSV" buttons become enabled
-- [ ] Click "Add Tags (N)" → tag tree picker opens (same modal as session detail)
+- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags", "Update Project", and "Download CSV" buttons become enabled
+- [ ] Click "Add Tags" → tag tree picker opens (same modal as session detail)
+- [ ] Click "Update Project" → project dropdown with "No project" and all projects → Apply → `POST /api/sessions/bulk-project` with `{ sessionIds, projectId }` (null clears project)
 - [ ] Modal title reads "Add Tag to N sessions"
 - [ ] Select a tag → OK → `POST /api/sessions/bulk-tag` — `{ sessionIds: [...], tags: [{ label, termGuid }] }`
 - [ ] Tags are merged with existing (not replaced); duplicate termGuids not added twice
@@ -548,7 +549,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Clearing one filter re-expands the other's options
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
-- [ ] "Add Tags (N)" enabled only when ≥1 session checked; label shows count
+- [ ] "Add Tags" and "Update Project" enabled only when ≥1 session checked
 - [ ] Closing Advanced clears selection and hides checkboxes
 
 ### L4. Sort
