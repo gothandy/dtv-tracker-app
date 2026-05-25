@@ -58,5 +58,4 @@ function toggle(id: number) {
 <style scoped>
 .gr-state { text-align: center; padding: 3rem; color: var(--color-text-muted); }
 .gr-state--error { color: var(--color-dtv-red); }
-.list-card-grid :deep(.group-card) { background: var(--color-dtv-sand); }
 </style>

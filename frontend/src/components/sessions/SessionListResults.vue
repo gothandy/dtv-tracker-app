@@ -68,5 +68,4 @@ function toggle(id: number) {
   color: var(--color-text-muted);
   font-size: 0.9rem;
 }
-.list-card-grid :deep(.session-card) { background: var(--color-dtv-sand); }
 </style>

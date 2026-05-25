@@ -22,5 +22,4 @@ defineProps<{
 <style scoped>
 .pr-state { text-align: center; padding: 3rem; color: var(--color-text-muted); }
 .pr-state--error { color: var(--color-dtv-red); }
-.list-card-grid :deep(.project-card) { background: var(--color-dtv-sand); }
 </style>
