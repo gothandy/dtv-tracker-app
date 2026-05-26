@@ -15,7 +15,11 @@
     </div>
 
     <div class="list-item-card__footer">
-      <ul v-if="hasCheckInAccess" class="list-item-card__stats">
+      <ul v-if="hasCheckInAccess && isPast" class="list-item-card__stats">
+        <li>{{ display.count }} Total</li>
+        <li v-if="display.hours">{{ display.hours }} Hours</li>
+      </ul>
+      <ul v-else-if="hasCheckInAccess" class="list-item-card__stats">
         <li v-if="display.count || display.totalLimit">
           {{ display.count }}<template v-if="display.totalLimit">/{{ display.totalLimit }}</template> Total
         </li>

@@ -33,11 +33,19 @@
         </template>
       </LayoutColumns>
 
-      <h2>Tracker Assist / Tracker Admin</h2>
+      <h2>Tracker Assist / Tracker Admin — upcoming</h2>
 
       <LayoutColumns ratio="1-1-1">
         <template #left>
           <SessionCard :session="adminSession" :profile="adminProfile" />
+        </template>
+      </LayoutColumns>
+
+      <h2>Tracker Assist / Tracker Admin — past</h2>
+
+      <LayoutColumns ratio="1-1-1">
+        <template #left>
+          <SessionCard :session="pastWithSessionCopy" :profile="adminProfile" />
         </template>
       </LayoutColumns>
 
