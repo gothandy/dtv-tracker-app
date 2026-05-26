@@ -184,7 +184,7 @@ All pages are Vue 3 SPA routes served at `/`.
 | Tools (admin UI) | `/tools` (`/admin` → redirect) | Eventbrite sync buttons, exports, site links |
 | Groups | `/groups` | Groups listing with FY filter |
 | Group Detail | `/groups/:key` | Stats, regulars, sessions, edit/delete |
-| Sessions | `/sessions` | Sessions listing with FY filter, search, term filters |
+| Sessions | `/sessions` | Sessions listing with FY filter, search, group/project/tag filters |
 | Session Detail | `/sessions/:group/:date` | Entries, check-in, set hours, gallery, edit/delete |
 | Volunteers | `/profiles` | Profiles with FY filter, sort, group filter, search |
 | Profile Detail | `/profiles/:slug` | FY stats, group hours, entries, records |

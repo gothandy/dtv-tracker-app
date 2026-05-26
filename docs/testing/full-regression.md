@@ -59,7 +59,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `/auth/me` returns `role: "admin"` or `role: "checkin"` based on env var
 - [ ] **Self-Service user** (profile has matching `Email`, magic link / code): no admin/check-in/edit controls visible
 - [ ] Self-Service: sessions page loads; CSV download button and session checkboxes **not shown** (trusted-only)
-- [ ] Self-Service: Advanced section on sessions page still functional (tag filter, group filter work)
+- [ ] Self-Service: Advanced section on sessions page still functional (tag, group, and project filters work)
 - [ ] Self-Service: groups page shows zero regulars count; group detail page shows **no regulars list**
 - [ ] Self-Service: group detail shows "You are a regular volunteer for this group" message if applicable
 - [ ] Self-Service: visiting own profile detail page loads and shows own data
@@ -545,10 +545,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### L19. Sessions advanced filters (client-side)
 - [ ] Opening Advanced shows checkboxes on all session cards
-- [ ] Group dropdown: shows only groups with sessions matching current FY + search + tag
-- [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group
-- [ ] Selecting a group narrows the tag options; selecting a tag narrows the group options
-- [ ] Clearing one filter re-expands the other's options
+- [ ] Group dropdown: shows only groups with sessions matching current FY + search + tag + project
+- [ ] Project dropdown: **All projects**, **No project**, then only projects linked to sessions matching current FY + search + group + tag
+- [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group + project
+- [ ] Selecting a group, project, or tag narrows the other dropdown options; clearing one filter re-expands the others
+- [ ] Project filter in URL as `?project=` (`__none__` or project key); cleared when that project has no sessions under the current FY/filters
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
 - [ ] "Add Tags" and "Update Project" enabled only when ≥1 session checked
