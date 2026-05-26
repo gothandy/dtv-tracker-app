@@ -26,7 +26,7 @@
         :class="{ 'pdc-lozenge-deleting': props.deletingIds.has(doc.id) }"
       >
         <a
-          :href="doc.webUrl"
+          :href="doc.url"
           target="_blank"
           rel="noopener noreferrer"
           class="pdc-name"

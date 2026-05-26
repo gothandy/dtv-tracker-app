@@ -59,7 +59,8 @@ export interface ProjectDetailResponse extends ProjectResponse {
 export interface ProjectAttachmentResponse {
   id: string;
   name: string;
-  webUrl: string;
+  /** Stable app URL — served via /docs/projects/:key/:itemId (no SharePoint login). */
+  url: string;
 }
 
 export interface SessionResponse {

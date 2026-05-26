@@ -36,6 +36,7 @@ import type {
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { documentsDriveId, tryDocumentsDriveId } from '../services/documents-drive';
+import { clearProjectDocsCache } from '../services/project-docs-cache';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
 import { normalizeMetadataTagsInput, updateListItemMetadata } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
@@ -234,7 +235,12 @@ router.get('/projects/:key/attachments', async (req: Request, res: Response) => 
       driveId,
       projectDocsFolderPath(key)
     );
-    res.json({ success: true, data: attachments } as ApiResponse<ProjectAttachmentResponse[]>);
+    const data: ProjectAttachmentResponse[] = attachments.map(a => ({
+      id: a.id,
+      name: a.name,
+      url: `/docs/projects/${key}/${encodeURIComponent(a.id)}`,
+    }));
+    res.json({ success: true, data } as ApiResponse<ProjectAttachmentResponse[]>);
   } catch (error: any) {
     console.error('Error fetching project documents:', error.message || error);
     res.status(500).json({
@@ -291,7 +297,11 @@ async function handleProjectDocUpload(req: Request, res: Response) {
       const filename = safeProjectFilename(file.originalname);
       const filePath = `${folderPath}/${filename}`;
       const item = await sharePointClient.uploadFile(driveId, filePath, file.buffer, file.mimetype);
-      uploaded.push({ id: item.id, name: item.name, webUrl: item.webUrl });
+      uploaded.push({
+        id: item.id,
+        name: item.name,
+        url: `/docs/projects/${key}/${encodeURIComponent(item.id)}`,
+      });
     }
 
     if (!uploaded.length) {
@@ -300,6 +310,7 @@ async function handleProjectDocUpload(req: Request, res: Response) {
     }
 
     sharePointClient.clearDocsFolderCache(folderPath);
+    clearProjectDocsCache(key);
     res.json({ success: true, data: uploaded } as ApiResponse<ProjectAttachmentResponse[]>);
   } catch (error: any) {
     console.error('Error uploading project documents:', error.message || error);
@@ -330,6 +341,7 @@ router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Re
     const driveId = documentsDriveId();
     await sharePointClient.deleteMediaItem(driveId, itemId);
     sharePointClient.clearDocsFolderCache(projectDocsFolderPath(key));
+    clearProjectDocsCache(key);
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error deleting project document:', error.message || error);

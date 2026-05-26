@@ -518,14 +518,14 @@ export class SharePointClient {
     try {
       const token = await this.getAccessToken();
       const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
-      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=name,webUrl,file,folder`;
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file,folder`;
 
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const result = (response.data.value as any[])
-        .filter(item => item.file && item.name && item.webUrl)
+        .filter(item => item.file && item.name && item.id)
         .map(item => ({
           id: item.id as string,
           name: item.name as string,
@@ -621,6 +621,29 @@ export class SharePointClient {
       if (error.response?.status === 404) return null;
       throw error;
     }
+  }
+
+  /** Download a drive item by Graph item id (used for public project-doc proxy). */
+  async downloadDriveItem(
+    driveId: string,
+    itemId: string
+  ): Promise<{ data: Buffer; contentType: string; name: string }> {
+    const token = await this.getAccessToken();
+    const metaResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}?$select=name,file`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const name: string = metaResponse.data.name ?? itemId;
+    const contentResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'arraybuffer',
+      }
+    );
+    const contentType =
+      (contentResponse.headers['content-type'] as string) || 'application/octet-stream';
+    return { data: Buffer.from(contentResponse.data), contentType, name };
   }
 
   /**

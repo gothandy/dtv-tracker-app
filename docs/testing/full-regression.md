@@ -325,7 +325,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H27. Clear cache
 - [ ] Tools page (`/tools`) → SharePoint section → "Clear all server caches" → success message; `POST /api/cache/clear` (legacy `/admin` redirects here)
-- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes); Term Store picker tree reloads in the current browser tab (no full page refresh required)
+- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes, project doc bytes); Term Store picker tree reloads in the current browser tab (no full page refresh required)
 
 ### H28. Upload button (entry detail — check-in/admin)
 - [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Self-Service (`checkin-only` class)
@@ -426,7 +426,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
-- [ ] `GET /api/projects/:key/attachments` — files from `Projects/{key}/` on Documents library drive
+- [ ] `GET /api/projects/:key/attachments` — `{ id, name, url }` with `url` like `/docs/projects/{key}/{itemId}` (not SharePoint `webUrl`)
+- [ ] **Public**: open a document `url` while logged out — file loads via app proxy (PDF/images inline); no SharePoint sign-in
+- [ ] Upload/delete project doc — list updates; re-open same `url` shows new file or 404 after delete
 - [ ] Public project detail: Documents card hidden when folder empty
 - [ ] Admin: Upload docs button; files appear as lozenges; × removes file
 - [ ] Upload a test PDF via admin or SharePoint; document link opens

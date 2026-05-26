@@ -48,7 +48,7 @@ Handlebars template system (`templates/email/`). `renderEmail(template, vars)` r
 
 `POST /api/backup/export-all` exports all lists + taxonomy + schema to `Backups/` in the Shared Documents library as JSON. SHA-256 diff check skips unchanged files. Also runs as the final step of the nightly Eventbrite sync.
 
-Project documents are read from `Projects/{slug}/` on the Documents library drive via Graph (`GET /api/projects/:key/attachments`). Same drive as nightly `Backups/` (`DOCUMENTS_DRIVE_ID`).
+Project documents live in `Projects/{slug}/` on the Documents library drive (`DOCUMENTS_DRIVE_ID`, same as `Backups/`). `GET /api/projects/:key/attachments` returns `{ id, name, url }` where `url` is a stable app path. Files are served to the public at `GET /docs/projects/:key/:itemId` (mirrors `Projects/{key}/` on the drive; no SharePoint login; 12h server / 24h browser cache), matching the session media proxy pattern.
 
 ## Stats Pipeline
 
