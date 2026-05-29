@@ -19,6 +19,7 @@ import {
   calculateFinancialYear,
   calculateRollingYear,
   findGroupByKey,
+  findTitleKeyClash,
   safeParseLookupId,
   parseHours,
   profileSlug,
@@ -108,7 +109,7 @@ router.post('/groups', async (req: Request, res: Response) => {
     const nameNorm = typeof name === 'string' ? name.trim().toLowerCase() : '';
 
     const existing = await groupsRepository.getAll();
-    const keyClash = existing.find(g => (g.Title || '').toLowerCase() === keyNorm);
+    const keyClash = findTitleKeyClash(existing, keyNorm);
     if (keyClash) {
       res.status(409).json({ success: false, error: `A group with key "${key.trim()}" already exists` });
       return;
@@ -373,6 +374,17 @@ router.patch('/groups/:key', async (req: Request, res: Response) => {
     if (!spGroup) {
       res.status(404).json({ success: false, error: 'Group not found' });
       return;
+    }
+
+    if (typeof fields.Title === 'string') {
+      const keyClash = findTitleKeyClash(rawGroups, fields.Title, spGroup.ID);
+      if (keyClash) {
+        res.status(409).json({
+          success: false,
+          error: `A group with key "${fields.Title}" already exists`,
+        });
+        return;
+      }
     }
 
     await groupsRepository.updateFields(spGroup.ID, fields);

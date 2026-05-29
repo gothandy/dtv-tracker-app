@@ -87,7 +87,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H3. Edit group
 - [ ] Group detail → pencil icon → modal with Display Name, Description, Eventbrite Series ID
-- [ ] `PATCH /api/groups/:key` — `{ displayName?, description?, eventbriteSeriesId? }`
+- [ ] `PATCH /api/groups/:key` — `{ displayName?, description?, eventbriteSeriesId?, key? }`
+- [ ] Renaming key to an existing group key returns 409 (no duplicate Title values)
 - [ ] Page reloads with updated values
 
 ### H4. Delete group
@@ -435,7 +436,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Header: description, metadata tags (check-in can edit tags)
 - [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)
-- [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); delete project
+- [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
 
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group

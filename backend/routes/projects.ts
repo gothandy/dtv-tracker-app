@@ -14,6 +14,7 @@ import {
   deriveLimits,
   calculateFinancialYear,
   findProjectByKey,
+  findTitleKeyClash,
   safeParseLookupId,
   extractMetadataTags,
   parseSessionStats,
@@ -371,7 +372,7 @@ router.post('/projects', async (req: Request, res: Response) => {
     const nameNorm = nameTrimmed.toLowerCase();
 
     const existing = await projectsRepository.getAll();
-    const keyClash = existing.find(p => (p.Title || '').toLowerCase() === keyNorm);
+    const keyClash = findTitleKeyClash(existing, keyNorm);
     if (keyClash) {
       res.status(409).json({ success: false, error: `A project with key "${key.trim()}" already exists` });
       return;
@@ -451,6 +452,17 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
         res.status(409).json({
           success: false,
           error: `A project with display name "${fields.Name}" already exists`,
+        });
+        return;
+      }
+    }
+
+    if (typeof fields.Title === 'string') {
+      const keyClash = findTitleKeyClash(rawProjects, fields.Title, spProject.ID);
+      if (keyClash) {
+        res.status(409).json({
+          success: false,
+          error: `A project with key "${fields.Title}" already exists`,
         });
         return;
       }

@@ -645,6 +645,18 @@ export function extractMetadataTags(raw: any): { label: string; termGuid: string
  * Finds a group by its lowercase key (Title).
  * Returns the raw SharePoint group or undefined.
  */
+/** Another list item with the same Title key (case-insensitive), optionally excluding one ID (for renames). */
+export function findTitleKeyClash<T extends { ID: number; Title?: string }>(
+  items: T[],
+  key: string,
+  excludeId?: number,
+): T | undefined {
+  const keyNorm = key.trim().toLowerCase();
+  return items.find(
+    item => item.ID !== excludeId && (item.Title || '').toLowerCase() === keyNorm,
+  );
+}
+
 export function findGroupByKey(groups: SharePointGroup[], key: string): SharePointGroup | undefined {
   const validated = validateArray(groups, validateGroup, 'Group');
   return validated.find(g => (g.Title || '').toLowerCase() === key);

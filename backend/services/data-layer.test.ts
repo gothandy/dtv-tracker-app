@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest'
-import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags } from './data-layer'
+import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags, findTitleKeyClash } from './data-layer'
 import type { SharePointEntry } from '../../types/sharepoint'
+
+describe('findTitleKeyClash', () => {
+  const items = [
+    { ID: 1, Title: 'alpha' },
+    { ID: 2, Title: 'Beta' },
+  ]
+
+  it('finds another item with the same key (case-insensitive)', () => {
+    expect(findTitleKeyClash(items, 'beta')?.ID).toBe(2)
+    expect(findTitleKeyClash(items, 'ALPHA')?.ID).toBe(1)
+  })
+
+  it('excludes the given ID (rename to self / case change)', () => {
+    expect(findTitleKeyClash(items, 'alpha', 1)).toBeUndefined()
+    expect(findTitleKeyClash(items, 'ALPHA', 1)).toBeUndefined()
+  })
+
+  it('returns undefined when no clash', () => {
+    expect(findTitleKeyClash(items, 'gamma')).toBeUndefined()
+  })
+})
 
 describe('toMatchName', () => {
   it('returns empty string for undefined',        () => expect(toMatchName(undefined)).toBe(''))
