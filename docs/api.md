@@ -47,6 +47,7 @@ Self-service users get the **Public** GET allowlist plus their own profile (`/pr
 | `/api/sessions/export` | GET | Admin | Export this FY sessions as CSV |
 | `/api/sessions/refresh-stats` | POST | Admin / API key | Bulk refresh pre-computed stats for all sessions |
 | `/api/sessions/bulk-tag` | POST | Admin | Apply taxonomy terms to multiple sessions |
+| `/api/sessions/bulk-project` | POST | Admin | Set project lookup on multiple sessions (`projectId: number \| null`) |
 | `/api/sessions/:group/:date` | GET | Public | Session detail with entries |
 | `/api/sessions/:group/:date` | PATCH | Check In+ | Update session (name, description, date, cover) |
 | `/api/sessions/:group/:date` | DELETE | Admin | Delete session |
@@ -183,7 +184,7 @@ All pages are Vue 3 SPA routes served at `/`.
 | Tools (admin UI) | `/tools` (`/admin` → redirect) | Eventbrite sync buttons, exports, site links |
 | Groups | `/groups` | Groups listing with FY filter |
 | Group Detail | `/groups/:key` | Stats, regulars, sessions, edit/delete |
-| Sessions | `/sessions` | Sessions listing with FY filter, search, term filters |
+| Sessions | `/sessions` | Sessions listing with FY filter, search, group/project/tag filters |
 | Session Detail | `/sessions/:group/:date` | Entries, check-in, set hours, gallery, edit/delete |
 | Volunteers | `/profiles` | Profiles with FY filter, sort, group filter, search |
 | Profile Detail | `/profiles/:slug` | FY stats, group hours, entries, records |

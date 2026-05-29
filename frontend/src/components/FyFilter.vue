@@ -7,18 +7,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useSessionListStore } from '../stores/sessionList'
+import { fyKeyToLabel } from '../utils/entitySessionTotals'
 
-const props = defineProps<{ modelValue: string; disabled?: boolean }>()
+const props = defineProps<{
+  modelValue: string
+  disabled?: boolean
+  /** When set, replaces the default session-based FY list (e.g. projects list). */
+  options?: { value: string; label: string }[]
+}>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const sessionsStore = useSessionListStore()
 
-function fyKeyToLabel(fyKey: string): string {
-  const startYear = parseInt(fyKey.replace('FY', ''))
-  return `FY ${String(startYear).slice(2)}/${String(startYear + 1).slice(2)}`
-}
-
 const options = computed(() => {
+  if (props.options?.length) return props.options
   const fyKeys = [...new Set(sessionsStore.sessions.map(s => s.financialYear))]
     .filter(k => k && k.startsWith('FY'))
     .sort()

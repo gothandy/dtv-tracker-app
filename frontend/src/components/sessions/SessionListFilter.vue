@@ -12,6 +12,11 @@
       <option value="">All groups</option>
       <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.name }}</option>
     </select>
+    <select v-model="projectKey" class="list-filter-select">
+      <option value="">All projects</option>
+      <option value="__none__">No project</option>
+      <option v-for="p in projectOptions" :key="p.key" :value="p.key">{{ p.title }}</option>
+    </select>
     <TermPicker
       v-model="tagLabel"
       :tree="taxonomyTree"
@@ -40,6 +45,7 @@ const router = useRouter()
 const fy       = ref((route.query.fy as string) || 'future')
 const search   = ref((route.query.search as string) || '')
 const groupKey = ref((route.query.group as string) || '')
+const projectKey = ref((route.query.project as string) || '')
 const tagLabel = ref((route.query.tag as string) || '')
 
 function rollingStart(): string {
@@ -71,6 +77,14 @@ function applyGroup(list: Session[]): Session[] {
   return groupKey.value ? list.filter(s => s.groupKey === groupKey.value) : list
 }
 
+function applyProject(list: Session[]): Session[] {
+  if (!projectKey.value) return list
+  if (projectKey.value === '__none__') return list.filter(s => !s.projectId)
+  return list.filter(s =>
+    s.projectKey === projectKey.value || String(s.projectId) === projectKey.value,
+  )
+}
+
 function applyTag(list: Session[]): Session[] {
   if (!tagLabel.value) return list
   if (tagLabel.value === '__none__') return list.filter(s => !s.metadata?.length)
@@ -84,20 +98,31 @@ const base = computed(() => applyBase(props.sessions))
 
 const groupOptions = computed(() => {
   const map = new Map<string, string>()
-  for (const s of applyTag(base.value)) {
+  for (const s of applyProject(applyTag(base.value))) {
     if (s.groupKey && s.groupName) map.set(s.groupKey, s.groupName)
   }
   return [...map.entries()].map(([key, name]) => ({ key, name })).sort((a, b) => a.name.localeCompare(b.name))
 })
 
+const projectOptions = computed(() => {
+  const map = new Map<string, { key: string; title: string }>()
+  for (const s of applyTag(applyGroup(base.value))) {
+    if (!s.projectId) continue
+    const key = s.projectKey ?? String(s.projectId)
+    const title = s.projectTitle ?? s.projectKey ?? String(s.projectId)
+    map.set(key, { key, title })
+  }
+  return [...map.values()].sort((a, b) => a.title.localeCompare(b.title))
+})
+
 const availableTagLabels = computed(() => {
   const labels = new Set<string>()
-  for (const s of applyGroup(base.value)) s.metadata?.forEach(t => labels.add(t.label))
+  for (const s of applyProject(applyGroup(base.value))) s.metadata?.forEach(t => labels.add(t.label))
   return labels
 })
 
 const filtered = computed(() => {
-  const list = applyTag(applyGroup(base.value))
+  const list = applyProject(applyTag(applyGroup(base.value)))
   return fy.value === 'future'
     ? [...list].sort((a, b) => a.date.localeCompare(b.date))
     : list
@@ -105,11 +130,17 @@ const filtered = computed(() => {
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
-watch([fy, search, groupKey, tagLabel], ([newFy, newSearch, newGroup, newTag]) => {
+watch(projectOptions, opts => {
+  if (!projectKey.value || projectKey.value === '__none__') return
+  if (!opts.some(p => p.key === projectKey.value)) projectKey.value = ''
+}, { immediate: true })
+
+watch([fy, search, groupKey, projectKey, tagLabel], ([newFy, newSearch, newGroup, newProject, newTag]) => {
   const query: Record<string, string> = {}
   if (newFy)     query.fy     = newFy
   if (newSearch) query.search = newSearch
   if (newGroup)  query.group  = newGroup
+  if (newProject) query.project = newProject
   if (newTag)    query.tag    = newTag
   router.replace({ query })
 })

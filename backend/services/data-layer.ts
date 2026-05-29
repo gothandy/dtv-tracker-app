@@ -9,6 +9,7 @@
  */
 
 import { SharePointGroup, Group } from '../../types/group';
+import { SharePointProject, Project } from '../../types/project';
 import { SharePointSession, Session } from '../../types/session';
 import {
   SharePointProfile,
@@ -118,6 +119,15 @@ export function convertGroup(spGroup: SharePointGroup): Group {
     displayName: spGroup.Name,
     description: spGroup.Description,
     eventbriteSeriesId: spGroup.EventbriteSeriesID
+  };
+}
+
+export function convertProject(spProject: SharePointProject): Project {
+  return {
+    sharePointId: spProject.ID,
+    lookupKeyName: spProject.Title,
+    displayName: spProject.Name,
+    description: spProject.Description,
   };
 }
 
@@ -344,6 +354,16 @@ export function validateGroup(group: any): group is SharePointGroup {
     typeof group.Title === 'string' &&
     typeof group.Created === 'string' &&
     typeof group.Modified === 'string'
+  );
+}
+
+export function validateProject(project: any): project is SharePointProject {
+  return (
+    typeof project === 'object' &&
+    typeof project.ID === 'number' &&
+    typeof project.Title === 'string' &&
+    typeof project.Created === 'string' &&
+    typeof project.Modified === 'string'
   );
 }
 
@@ -583,19 +603,36 @@ export function parseHours(value: any): number {
   return parseFloat(String(value)) || 0;
 }
 
+/** App taxonomy paths use `:`; SharePoint labels often use `>` or `/` (e.g. DH > Corkscrew). */
+export function normalizeTaxonomyPath(label: string): string {
+  return label
+    .replace(/\s*>\s*/g, ':')
+    .replace(/\//g, ':')
+    .replace(/:+/g, ':')
+    .replace(/^:|:$/g, '')
+    .trim();
+}
+
+function metadataTag(label: string, termGuid: string): { label: string; termGuid: string } {
+  return { label: normalizeTaxonomyPath(label), termGuid: termGuid || '' };
+}
+
 // Normalise SharePoint Managed Metadata field values to {label, termGuid}[] objects.
 // Handles single-value objects, multi-value arrays, and plain text strings.
 export function extractMetadataTags(raw: any): { label: string; termGuid: string }[] {
   if (!raw) return [];
-  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean).map(s => ({ label: s, termGuid: '' }));
-  if (Array.isArray(raw)) return raw.map((t: any) => ({
-    label: t.Label || t.label || String(t),
-    termGuid: t.TermGuid || t.termGuid || ''
-  })).filter(t => t.label);
+  if (typeof raw === 'string') {
+    return raw.split(',').map((s: string) => s.trim()).filter(Boolean).map(s => metadataTag(s, ''));
+  }
+  if (Array.isArray(raw)) {
+    return raw
+      .map((t: any) => metadataTag(t.Label || t.label || String(t), t.TermGuid || t.termGuid || ''))
+      .filter(t => t.label);
+  }
   if (typeof raw === 'object') {
     const label = raw.Label || raw.label;
     const termGuid = raw.TermGuid || raw.termGuid || '';
-    return label ? [{ label, termGuid }] : [];
+    return label ? [metadataTag(label, termGuid)] : [];
   }
   return [];
 }
@@ -608,9 +645,26 @@ export function extractMetadataTags(raw: any): { label: string; termGuid: string
  * Finds a group by its lowercase key (Title).
  * Returns the raw SharePoint group or undefined.
  */
+/** Another list item with the same Title key (case-insensitive), optionally excluding one ID (for renames). */
+export function findTitleKeyClash<T extends { ID: number; Title?: string }>(
+  items: T[],
+  key: string,
+  excludeId?: number,
+): T | undefined {
+  const keyNorm = key.trim().toLowerCase();
+  return items.find(
+    item => item.ID !== excludeId && (item.Title || '').toLowerCase() === keyNorm,
+  );
+}
+
 export function findGroupByKey(groups: SharePointGroup[], key: string): SharePointGroup | undefined {
   const validated = validateArray(groups, validateGroup, 'Group');
   return validated.find(g => (g.Title || '').toLowerCase() === key);
+}
+
+export function findProjectByKey(projects: SharePointProject[], key: string): SharePointProject | undefined {
+  const validated = validateArray(projects, validateProject, 'Project');
+  return validated.find(p => (p.Title || '').toLowerCase() === key);
 }
 
 /**

@@ -47,16 +47,21 @@
 }
 .list-filter-select:disabled { opacity: 0.5; cursor: default; }
 
-/* Shared card grid — Groups, Sessions list results */
+@import "./list-item-card.css";
+
+/* Shared card grid — Groups, Sessions, Projects list results */
 .list-card-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
   padding: 0 1.5rem;
 }
-@media (width < 48em) { .list-card-grid { grid-template-columns: 1fr; } }
+@media (width < 48em) { .list-card-grid { grid-template-columns: minmax(0, 1fr); } }
 
-.list-card-item { position: relative; }
+.list-card-item {
+  position: relative;
+  min-width: 0;
+}
 
 .list-card-checkbox {
   position: absolute;
@@ -66,6 +71,14 @@
   width: 16px; height: 16px;
   cursor: pointer;
   accent-color: var(--color-dtv-green);
+}
+
+.list-card-item:has(.list-card-checkbox) .list-item-card__title {
+  padding-right: 1.75rem;
+}
+
+.list-card-grid .list-item-card {
+  background: var(--color-dtv-sand);
 }
 
 /* Shared select-all row — Groups, Sessions, Entries, Profiles list results */

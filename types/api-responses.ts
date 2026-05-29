@@ -39,6 +39,30 @@ export interface GroupResponse {
   isCurrentUserRegular?: boolean;
 }
 
+export interface ProjectResponse {
+  id: number;
+  key: string;
+  displayName?: string;
+  description?: string;
+  metadata?: Array<{ label: string; termGuid: string }>;
+}
+
+export interface ProjectDetailResponse extends ProjectResponse {
+  stats: { sessions: number; hours: number };
+  sessions: SessionResponse[];
+  /** Open the Projects list item in SharePoint (metadata). */
+  sharePointItemUrl: string;
+  /** Open Projects/{key}/ in the Documents library when the folder exists. */
+  sharePointFolderUrl?: string;
+}
+
+export interface ProjectAttachmentResponse {
+  id: string;
+  name: string;
+  /** Stable app URL — served via /docs/projects/:key/:itemId (no SharePoint login). */
+  url: string;
+}
+
 export interface SessionResponse {
   id: number;
   displayName?: string;
@@ -56,6 +80,9 @@ export interface SessionResponse {
   isBookable: boolean;
   eventbriteEventId?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
+  projectId?: number;
+  projectKey?: string;
+  projectTitle?: string;
 }
 
 /** Microsoft Tracker role implied by Profile User + ADMIN_USERS — only on trusted responses. */
@@ -194,6 +221,9 @@ export interface SessionDetailResponse {
   groupId?: number;
   groupName?: string;
   groupDescription?: string;
+  projectId?: number;
+  projectKey?: string;
+  projectTitle?: string;
   limits: SessionLimits;
   storedLimits: SessionLimits;
   stats: SessionStats;

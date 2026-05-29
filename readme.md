@@ -24,11 +24,13 @@ SHAREPOINT_TENANT_ID=your_tenant_id_here
 
 # SharePoint List GUIDs (same for all developers)
 GROUPS_LIST_GUID=6e86cef7-a855-41a4-93e8-6e01a80434a2
+PROJECTS_LIST_GUID=669e479d-7b48-41dc-a0df-1ee7bc0fc2c7
 SESSIONS_LIST_GUID=583867bd-e032-4940-89b5-aa2d5158c5d0
 ENTRIES_LIST_GUID=7146b950-94e3-4c94-a0d7-310cf2fbd325
 PROFILES_LIST_GUID=84649143-9e10-42eb-b6ee-2e1f57033073
 REGULARS_LIST_GUID=925c96fd-9b3a-4f55-b179-ed51fc279d39
 RECORDS_LIST_GUID=2666a819-1275-4fce-83a3-5bb67b4da83a
+LOGINS_LIST_GUID=e3b5c7fb-313a-44b4-9363-a4e4d2b65a57
 
 # Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here
@@ -37,6 +39,7 @@ EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 # Optional
 API_SYNC_KEY=your_random_key_here
 MEDIA_LIBRARY_DRIVE_ID=   # find via admin page "Discover Drives"
+DOCUMENTS_DRIVE_ID=     # Documents library drive — top-level Backups/ + Projects/{slug}/
 ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
 SESSION_SECRET=your_session_secret_here
 MAIL_SENDER=noreply@dtv.org.uk
@@ -51,7 +54,7 @@ cd frontend && npm test && cd ..   # Vitest store unit tests (no live calls)
 npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
 
-Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, `npm run build` triggers an automatic nodemon restart.
+Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, run `npm run build:dev` while `npm run dev` is running (incremental compile; nodemon restarts after a short delay). Use `npm run build` for a clean compile (wipes `dist/` first) — stop the dev server first on Windows/OneDrive if you see `EBUSY` on files under `dist/`.
 
 ---
 

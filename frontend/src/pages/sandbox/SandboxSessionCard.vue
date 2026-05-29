@@ -5,7 +5,7 @@
       <SandboxBackLink />
       <h1>SessionCard</h1>
 
-      <h2>Public</h2>
+      <h2>Public — upcoming</h2>
 
       <LayoutColumns ratio="1-1-1">
         <template #left>
@@ -19,11 +19,33 @@
         </template>
       </LayoutColumns>
 
-      <h2>Tracker Assist / Tracker Admin</h2>
+      <h2>Public — past</h2>
+
+      <LayoutColumns ratio="1-1-1">
+        <template #left>
+          <SessionCard :session="pastWithSessionCopy" />
+        </template>
+        <template #middle>
+          <SessionCard :session="pastNoDisplayName" />
+        </template>
+        <template #right>
+          <SessionCard :session="pastNoDescription" />
+        </template>
+      </LayoutColumns>
+
+      <h2>Tracker Assist / Tracker Admin — upcoming</h2>
 
       <LayoutColumns ratio="1-1-1">
         <template #left>
           <SessionCard :session="adminSession" :profile="adminProfile" />
+        </template>
+      </LayoutColumns>
+
+      <h2>Tracker Assist / Tracker Admin — past</h2>
+
+      <LayoutColumns ratio="1-1-1">
+        <template #left>
+          <SessionCard :session="pastWithSessionCopy" :profile="adminProfile" />
         </template>
       </LayoutColumns>
 
@@ -87,6 +109,35 @@ const futureFullyBooked: Session = {
   ...base,
   id: 3,
   stats: { count: 16, hours: 0 },
+}
+
+const pastBase: Session = {
+  ...base,
+  date: '2025-11-08',
+  financialYear: '2025-26',
+  isBookable: false,
+  stats: { count: 14, hours: 56 },
+}
+
+const pastWithSessionCopy: Session = {
+  ...pastBase,
+  id: 5,
+  displayName: 'Sheepskull trail maintenance — November',
+  description: 'Banked berms on the lower loop and cleared drainage on the climb out of the valley.',
+}
+
+const pastNoDisplayName: Session = {
+  ...pastBase,
+  id: 6,
+  displayName: undefined,
+  description: 'Regular Saturday crew session.',
+}
+
+const pastNoDescription: Session = {
+  ...pastBase,
+  id: 7,
+  displayName: 'Autumn litter pick',
+  description: undefined,
 }
 </script>
 

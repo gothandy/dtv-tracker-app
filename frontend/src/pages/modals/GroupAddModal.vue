@@ -10,13 +10,13 @@
   >
     <FormLayout :disabled="working">
       <FormRow title="Key (short name, e.g. &quot;sat&quot;)" :full-width="true">
-        <input v-model="form.key" type="text" class="gam-input" placeholder="sat" />
+        <ModalFormInput v-model="form.key" placeholder="sat" />
       </FormRow>
       <FormRow title="Display Name (e.g. &quot;Saturday Dig&quot;)" :full-width="true">
-        <input v-model="form.name" type="text" class="gam-input" placeholder="Saturday Dig" />
+        <ModalFormInput v-model="form.name" placeholder="Saturday Dig" />
       </FormRow>
       <FormRow title="Description (optional)" :full-width="true">
-        <textarea v-model="form.description" class="gam-input gam-textarea"></textarea>
+        <ModalFormTextarea v-model="form.description" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -27,6 +27,8 @@ import { reactive } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 
 export type AddGroupPayload = {
   key: string
@@ -34,7 +36,7 @@ export type AddGroupPayload = {
   description?: string
 }
 
-const props = defineProps<{
+defineProps<{
   working: boolean
   error?: string
 }>()
@@ -46,17 +48,3 @@ const emit = defineEmits<{
 
 const form = reactive({ key: '', name: '', description: '' })
 </script>
-
-<style scoped>
-.gam-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-.gam-textarea { min-height: 60px; resize: vertical; }
-</style>

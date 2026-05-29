@@ -39,7 +39,9 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Dashboard with FY stats, next session card, personalised calendar ([HomePage.vue](frontend/src/pages/HomePage.vue))
 - Tools page (`/tools`, UI label **Tools**; `/admin` redirects) with Eventbrite sync buttons, exports, backup export, site shortcuts ([AdminPage.vue](frontend/src/pages/AdminPage.vue))
 - Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
+- Projects listing with FY filter ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
+- Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
 - Session detail with entries, check-in, set hours, move group, tags, photo gallery ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
 - Volunteers listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
@@ -53,13 +55,14 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 
 ## Data Model
 
-The application uses 7 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
+The application uses 8 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
 
 ### Lists (GUIDs)
 
 | List | GUID | Purpose |
 |------|------|---------|
 | Groups | `6e86cef7-a855-41a4-93e8-6e01a80434a2` | Volunteer crews |
+| Projects | `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` | Cross-group funded work / trails |
 | Sessions | `583867bd-e032-4940-89b5-aa2d5158c5d0` | Events/sessions |
 | Entries | `7146b950-94e3-4c94-a0d7-310cf2fbd325` | Volunteer↔session junction |
 | Profiles | `84649143-9e10-42eb-b6ee-2e1f57033073` | Volunteer profiles |
@@ -194,7 +197,7 @@ For a concise, language-agnostic checklist (naming, SRP, DRY, KISS, comments, YA
 
 ### Caching Architecture
 
-Four independent caches:
+Five independent caches:
 
 | Cache | Where | What | TTL | Invalidation |
 |---|---|---|---|---|
@@ -202,6 +205,7 @@ Four independent caches:
 | **Column schema cache** | `sharepoint-client.ts` | SharePoint column definitions | 1 hr | Manual admin clear |
 | **Taxonomy tree cache** (`treeCache`) | `taxonomy-client.ts` | Term Store hierarchy | 1 hr | Manual admin clear |
 | **Cover image cache** (`coverCache`) | `services/cover-cache.ts` | Session cover image bytes | 1 hr | Bust on `coverMediaId` change |
+| **Project docs cache** (`project-docs-cache.ts`) | `project-docs-cache.ts` | Project file bytes for `/docs/projects/` proxy | 12 hr | Upload/delete; admin cache clear |
 
 **NodeCache per-entity TTLs:**
 
@@ -211,7 +215,7 @@ Four independent caches:
 | `entries` | 5 min | Check-in tier — live writes on the day |
 | `records`, stats, media, slug/item keys | 24 hr | Targeted invalidation handles writes |
 
-Targeted invalidation: each repository write evicts only its own key(s). Entry writes also clear `sessions_FY*` keys. **Admin cache clear** (`POST /api/cache/clear`) flushes all four caches.
+Targeted invalidation: each repository write evicts only its own key(s). Entry writes also clear `sessions_FY*` keys. **Admin cache clear** (`POST /api/cache/clear`) flushes NodeCache, column schema, taxonomy tree, cover images, and project doc bytes.
 
 ### Calculated Fields Over Stored Fields
 
@@ -354,10 +358,10 @@ Feature inventory is split by area — read the relevant doc before working in t
 - `SHAREPOINT_TIMEZONE` env var: IANA timezone for date conversions (default `Europe/London`)
 - `MAIL_SENDER` env var: enables self-service email login (optional); must be a UPN with `Mail.Send` permission
 - `EMAIL_RATE_LIMIT_PER_HOUR` env var: global cap on auth emails (default `60`)
-- `AUTH_BASIC_TTL_HOURS` env var: magic link token lifetime (default `72`); stored as SHA-256 hashes in Logins list
+- `AUTH_BASIC_TTL_HOURS` env var: magic link token lifetime (default `72`); token hashes stored in Logins list (`LOGINS_LIST_GUID`)
 - `MEDIA_LIBRARY_DRIVE_ID` env var: required for photo uploads
 - `TAXONOMY_TERM_SET_ID` env var: required for session tags
-- `BACKUP_DRIVE_ID` env var: required for backup export (Shared Documents library Drive ID)
+- `DOCUMENTS_DRIVE_ID` env var: Documents library drive ID — top-level `Backups/` JSON export and `Projects/{slug}/` project files
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

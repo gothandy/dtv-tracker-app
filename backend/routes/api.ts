@@ -5,6 +5,7 @@
 import express, { Router } from 'express';
 import { requireAdmin } from '../middleware/require-admin';
 import groupsRoutes = require('./groups');
+import projectsRoutes = require('./projects');
 import sessionsRoutes = require('./sessions');
 import entriesRoutes = require('./entries');
 import profilesRoutes = require('./profiles');
@@ -20,6 +21,7 @@ const router: Router = express.Router();
 
 router.use(requireAdmin);
 router.use(groupsRoutes);
+router.use(projectsRoutes);
 router.use(sessionsRoutes);
 router.use(entriesRoutes);
 router.use(profilesRoutes);

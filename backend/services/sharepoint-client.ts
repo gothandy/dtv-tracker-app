@@ -67,6 +67,7 @@ export const CACHE_TTL = {
   sessions: 21600,  //  6 hr  — warmed nightly; invalidated on every write
   profiles: 21600,  //  6 hr  — warmed nightly; invalidated on every write
   regulars: 21600,  //  6 hr  — warmed nightly; invalidated on every write
+  projects: 21600,  //  6 hr  — warmed nightly; invalidated on every write
   entries:    300,  //  5 min — check-in tier: live updates on the day
   records:  86400,  // 24 hr  — invalidated on write; rarely changes between sessions
   stats:    86400,  // 24 hr  — recomputed after every entry/session write anyway
@@ -110,38 +111,40 @@ export class SharePointClient {
     });
   }
 
-  /**
-   * Get OAuth access token from Microsoft Entra ID
-   */
+  private async fetchClientCredentialsToken(scope: string): Promise<{ accessToken: string; expiresIn: number }> {
+    const tokenEndpoint = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
+    const params = new URLSearchParams({
+      client_id: this.clientId,
+      client_secret: this.clientSecret,
+      scope,
+      grant_type: 'client_credentials',
+    });
+
+    const response = await axios.post(tokenEndpoint, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
+    return {
+      accessToken: response.data.access_token,
+      expiresIn: response.data.expires_in,
+    };
+  }
+
+  /** Microsoft Graph (list data, drives, etc.) */
   async getAccessToken(): Promise<string> {
-    // Return cached token if still valid
     if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
     try {
-      const tokenEndpoint = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
-
-      const params = new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        scope: 'https://graph.microsoft.com/.default',
-        grant_type: 'client_credentials'
-      });
-
-      const response = await axios.post(tokenEndpoint, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-
-      this.accessToken = response.data.access_token;
-      // Set expiry to 5 minutes before actual expiry for safety
-      this.tokenExpiry = Date.now() + (response.data.expires_in - 300) * 1000;
-
-      return response.data.access_token;
+      const { accessToken, expiresIn } = await this.fetchClientCredentialsToken(
+        'https://graph.microsoft.com/.default'
+      );
+      this.accessToken = accessToken;
+      this.tokenExpiry = Date.now() + (expiresIn - 300) * 1000;
+      return accessToken;
     } catch (error: any) {
-      console.error('Error getting access token:', error.response?.data || error.message);
+      console.error('Error getting Graph access token:', error.response?.data || error.message);
       throw new Error('Failed to authenticate with SharePoint');
     }
   }
@@ -490,6 +493,121 @@ export class SharePointClient {
     this.columnCache.clear();
   }
 
+  /** DispForm URL for a Projects list item (edit metadata in SharePoint). */
+  async projectItemDispFormUrl(listGuid: string, itemId: number): Promise<string> {
+    const siteId = await this.getSiteId();
+    const list = await this.get(`sites/${siteId}/lists/${listGuid}?$select=webUrl`);
+    const listWebUrl = String(list.webUrl || this.siteUrl).replace(/\/$/, '');
+    return `${listWebUrl}/DispForm.aspx?ID=${itemId}`;
+  }
+
+  /**
+   * List files in a drive folder (e.g. Projects/{slug}). Returns [] if the folder does not exist.
+   */
+  async listDriveFolderFiles(
+    driveId: string,
+    folderPath: string
+  ): Promise<Array<{ id: string; name: string; webUrl: string }>> {
+    const cacheKey = `docs_folder_${folderPath}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached as Array<{ id: string; name: string; webUrl: string }>;
+    }
+
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file,folder`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const result = (response.data.value as any[])
+        .filter(item => item.file && item.name && item.id)
+        .map(item => ({
+          id: item.id as string,
+          name: item.name as string,
+          webUrl: item.webUrl as string,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      this.cache.set(cacheKey, result, CACHE_TTL.projects);
+      return result;
+    } catch (error: any) {
+      if (error.response?.status === 404) return [];
+      console.error(`Error listing drive folder at ${folderPath}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /** Drive item at a path; null if not found. */
+  async getDriveItemByPath(
+    driveId: string,
+    itemPath: string,
+  ): Promise<{ id: string; name: string; folder: boolean } | null> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = itemPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}?$select=id,name,folder`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return {
+        id: response.data.id as string,
+        name: response.data.name as string,
+        folder: !!response.data.folder,
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404) return null;
+      console.error(`Error getting drive item at ${itemPath}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /** Rename a drive item in place (same parent folder). */
+  async renameDriveItem(driveId: string, itemId: string, newName: string): Promise<void> {
+    const token = await this.getAccessToken();
+    try {
+      await axios.patch(
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}`,
+        { name: newName },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+    } catch (error: any) {
+      const status = error.response?.status;
+      console.error(`Error renaming drive item ${itemId}:`, error.response?.data || error.message);
+      if (status === 409) {
+        throw new Error(`A folder named "${newName}" already exists in the target location`);
+      }
+      throw error;
+    }
+  }
+
+  /** SharePoint browser URL for a drive folder; undefined if the folder does not exist yet. */
+  async getDriveFolderWebUrl(driveId: string, folderPath: string): Promise<string | undefined> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}?$select=webUrl,folder`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.data.folder) return undefined;
+      return response.data.webUrl as string | undefined;
+    } catch (error: any) {
+      if (error.response?.status === 404) return undefined;
+      throw error;
+    }
+  }
+
+  clearDocsFolderCache(folderPath: string): void {
+    this.cache.del(`docs_folder_${folderPath}`);
+  }
+
   /**
    * Upload a file to a SharePoint document library.
    * Uses the simple PUT upload (suitable for files up to ~4 MB).
@@ -547,6 +665,29 @@ export class SharePointClient {
       if (error.response?.status === 404) return null;
       throw error;
     }
+  }
+
+  /** Download a drive item by Graph item id (used for public project-doc proxy). */
+  async downloadDriveItem(
+    driveId: string,
+    itemId: string
+  ): Promise<{ data: Buffer; contentType: string; name: string }> {
+    const token = await this.getAccessToken();
+    const metaResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}?$select=name,file`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const name: string = metaResponse.data.name ?? itemId;
+    const contentResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'arraybuffer',
+      }
+    );
+    const contentType =
+      (contentResponse.headers['content-type'] as string) || 'application/octet-stream';
+    return { data: Buffer.from(contentResponse.data), contentType, name };
   }
 
   /**

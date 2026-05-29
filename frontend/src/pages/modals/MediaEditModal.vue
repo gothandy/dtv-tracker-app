@@ -28,29 +28,25 @@
       </p>
 
       <FormRow title="Public" :disabled="publicRowDisabled">
-        <input
+        <ModalFormCheckbox
           id="emm-public"
           v-model="form.isPublic"
-          type="checkbox"
-          class="emm-checkbox"
           :disabled="publicCheckboxDisabled"
           @change="onPublicChange"
         />
       </FormRow>
 
       <FormRow v-if="showCover" title="Cover" :disabled="coverRowDisabled">
-        <input
+        <ModalFormCheckbox
           id="emm-cover"
           v-model="form.isCover"
-          type="checkbox"
-          class="emm-checkbox"
           :disabled="coverCheckboxDisabled"
           @change="onCoverChange"
         />
       </FormRow>
 
       <FormRow title="Title" :full-width="true">
-        <textarea v-model="form.title" class="emm-input emm-textarea" placeholder="Optional caption" rows="2" />
+        <ModalFormTextarea v-model="form.title" placeholder="Optional caption" :rows="2" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -72,13 +68,14 @@ import AppButton from '../../components/AppButton.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import DeleteModal from './DeleteModal.vue'
+import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
+import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 import type { MediaItem } from '../../types/media'
 
 const props = withDefaults(defineProps<{
   item: MediaItem
   showCover?: boolean
   isCover?: boolean
-  /** When false, Delete is hidden (e.g. Check In — use private instead). */
   showDelete?: boolean
   working?: boolean
   error?: string
@@ -101,18 +98,15 @@ const form = reactive({
   isCover: props.isCover ?? false,
 })
 
-/** Session cover points at this file but IsPublic is false (SharePoint or stale list). */
 const isCoverPrivateInvalid = computed(() => form.isCover && !form.isPublic)
 
 const saveDisabled = computed(() => isCoverPrivateInvalid.value)
 
 const deleteDisabled = computed(() => form.isCover)
 
-/** Normal cover+public: cannot uncheck Public without clearing cover first. Invalid state: Public stays enabled. */
 const publicCheckboxDisabled = computed(() => form.isCover && form.isPublic)
 const publicRowDisabled = publicCheckboxDisabled
 
-/** Normal private: Cover off until Public on. Invalid cover+private: Cover stays enabled. */
 const coverCheckboxDisabled = computed(() => !form.isPublic && !isCoverPrivateInvalid.value)
 const coverRowDisabled = coverCheckboxDisabled
 
@@ -154,26 +148,5 @@ function doDelete() {
   line-height: 1.4;
   color: var(--color-text);
   background: var(--color-dtv-light);
-}
-
-.emm-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.emm-textarea {
-  resize: vertical;
-}
-
-.emm-checkbox {
-  width: 1.5rem;
-  height: 1.5rem;
-  cursor: pointer;
 }
 </style>

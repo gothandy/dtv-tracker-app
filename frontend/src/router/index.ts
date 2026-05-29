@@ -20,12 +20,19 @@ import AdminPage from '../pages/AdminPage.vue'
 import EntriesPage from '../pages/EntriesPage.vue'
 import ProfileListPage from '../pages/ProfileListPage.vue'
 import ProfileDetailPage from '../pages/ProfileDetailPage.vue'
+import ProjectListPage from '../pages/ProjectListPage.vue'
+import ProjectDetailPage from '../pages/ProjectDetailPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.
 export const sessionPath = (groupKey: string, date: string) => `/sessions/${groupKey}/${date}`
 export const groupsPath = () => '/groups'
 export const groupPath = (key: string) => `/groups/${key}`
+export const projectsPath = () => '/projects'
+export const projectPath = (key: string) => `/projects/${key}`
+export const projectUploadPath = (key: string) => `/projects/${key}/upload`
+export const projectDocPath = (projectKey: string, itemId: string) =>
+  `/docs/projects/${projectKey}/${encodeURIComponent(itemId)}`
 export const sessionsPath = () => '/sessions'
 export const profilesPath = () => '/profiles'
 export const profilePath = (slug: string) => `/profiles/${slug}`
@@ -43,6 +50,13 @@ export const router = createRouter({
     { path: '/', component: HomePage },
     { path: '/groups', component: GroupListPage },
     { path: '/groups/:key', component: GroupDetailPage },
+    { path: '/projects', component: ProjectListPage },
+    { path: '/projects/:key', component: ProjectDetailPage },
+    {
+      path: '/projects/:key/upload',
+      component: () => import('../pages/ProjectUploadPage.vue'),
+      meta: { requiresAdmin: true },
+    },
     { path: '/sessions', component: SessionListPage },
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },
     { path: '/privacy', component: PrivacyPage },

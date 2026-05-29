@@ -20,15 +20,14 @@
         <p v-if="accompanyingFor?.length" class="rem-info">
           Accompanying adult for {{ accompanyingFor.join(', ') }}
         </p>
-        <select
+        <ModalFormSelect
           v-else
-          class="rem-select"
-          :class="{ 'rem-select--placeholder': form.accompanyingAdultId === null }"
           v-model="form.accompanyingAdultId"
+          :placeholder="form.accompanyingAdultId === null"
         >
           <option :value="null">Select if child…</option>
           <option v-for="a in adults" :key="a.id" :value="a.id">{{ a.name }}</option>
-        </select>
+        </ModalFormSelect>
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -40,6 +39,7 @@ import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import AppButton from '../../components/AppButton.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 
 export interface RegularEditItem {
   name: string
@@ -82,18 +82,6 @@ function save() {
 .rem-actions {
   margin-bottom: 1.25rem;
 }
-
-.rem-select {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-.rem-select--placeholder { color: var(--color-text-muted); }
 
 .rem-info {
   margin: 0;

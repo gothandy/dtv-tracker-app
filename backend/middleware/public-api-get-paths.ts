@@ -9,6 +9,7 @@ export const PUBLIC_API_GET_PATH_PREFIXES: readonly string[] = [
   '/api/stats',
   '/api/sessions',
   '/api/groups',
+  '/api/projects',
   '/api/tags',
   '/api/media',
   '/api/email/sandbox',

@@ -1,5 +1,11 @@
 # Development Progress
 
+## Session: 2026-05-21 (Project documents via Graph; DOCUMENTS_DRIVE_ID)
+
+- Project files: `Projects/{slug}/` in Documents library (top level beside `Backups/`), via Graph.
+- Renamed `BACKUP_DRIVE_ID` → `DOCUMENTS_DRIVE_ID` (same drive: `Backups/` + project folders).
+- Removed SharePoint REST / ACS `appinv` attachment path; `docs/sharepoint-setup.md` §3 marked legacy.
+
 ## Session: 2026-05-10 (Microsoft requires Profile `User`; remove read-only role)
 
 - Microsoft sign-in only when a volunteer profile’s **`User`** field matches the Entra email (`ADMIN_USERS` → admin, else check-in). No session + **`/login?reason=dtv-not-authorised`** when there is no match.

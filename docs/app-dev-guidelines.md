@@ -193,6 +193,18 @@ The preferred default is:
 
 This keeps them reusable and avoids hidden data flows.
 
+**Fields inside `ModalLayout` + `FormLayout` + `FormRow`:** use the shared modal form system — one CSS file, thin Vue wrappers:
+
+| Piece | Location |
+|-------|----------|
+| Styles | `frontend/src/styles/modal-form.css` (imported globally) |
+| Components | `ModalFormInput`, `ModalFormTextarea`, `ModalFormSelect`, `ModalFormCheckbox` in `frontend/src/components/forms/` |
+| Reference | `/sandbox/form-components` |
+
+All standard text, textarea, select, and checkbox fields get the same off-white (`--color-dtv-light`) background. Prefer the `ModalForm*` components (they always apply the right classes). Native elements may use `.modal-form-control`, `.modal-form-control--multiline`, `.modal-form-control--narrow`, and `.modal-form-checkbox` directly when needed (e.g. static sandbox markup).
+
+Do **not** add per-modal `*-input` / `*-textarea` scoped classes — that pattern drifts easily. Exceptions (layout-only classes, banners, picker components) should stay modal-specific and must not re-define field chrome.
+
 ---
 
 ## Where logic should live

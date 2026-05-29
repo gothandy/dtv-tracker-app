@@ -25,6 +25,7 @@
             v-if="profile.isAdmin"
             ref="actionsRef"
             :group="store.group"
+            :projects="editProjects"
             @edit-group="onEditGroup"
             @add-session="onAddSession"
             @delete-group="onDeleteGroup"
@@ -131,11 +132,19 @@ import type { Session, SessionStats } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditGroupPayload } from './modals/GroupEditModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
+import type { ProjectItem } from './modals/SessionEditModal.vue'
+import { useProjectListStore } from '../stores/projectList'
 
 const route = useRoute()
 const router = useRouter()
 const store = useGroupDetailStore()
+const projectsStore = useProjectListStore()
 const profile = useViewer()
+
+const editProjects = computed<ProjectItem[]>(() =>
+  projectsStore.projects.map(p => ({ id: p.id, name: p.displayName ?? p.key, key: p.key }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+)
 
 const actionsRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
 const workingRegularSlug = ref<string | null>(null)
@@ -398,7 +407,10 @@ async function onRegularDelete() {
   }
 }
 
-onMounted(reload)
+onMounted(() => {
+  reload()
+  if (profile.isAdmin) projectsStore.fetch()
+})
 
 watch(() => route.params.key, key => {
   if (key) store.fetch(key as string)

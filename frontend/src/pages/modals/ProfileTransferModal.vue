@@ -20,18 +20,13 @@
       </FormRow>
       <FormRow v-if="targetProfile" title="Selected" :full-width="true">
         <span class="ptm-target">{{ targetProfile.name }}</span>
-        <button class="ptm-clear" @click="clearTarget">Clear</button>
+        <button type="button" class="ptm-clear" @click="clearTarget">Clear</button>
       </FormRow>
       <FormRow title="Add to emails" :full-width="true">
-        <input
-          v-model="addEmail"
-          type="checkbox"
-          class="ptm-checkbox"
-          :disabled="!canAddEmail"
-        />
+        <ModalFormCheckbox v-model="addEmail" :disabled="!canAddEmail" />
       </FormRow>
       <FormRow title="Delete after transfer" :full-width="true">
-        <input v-model="deleteAfter" type="checkbox" class="ptm-checkbox" />
+        <ModalFormCheckbox v-model="deleteAfter" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -45,6 +40,7 @@ import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ProfilePicker from '../../components/ProfilePicker.vue'
+import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
 
 export interface TransferProfilePayload {
   targetProfileId: number
@@ -71,14 +67,12 @@ const addEmail = ref(false)
 
 const sourceEmail = computed(() => props.profile.emails[0] ?? '')
 
-// Disable if no source email, or target already has the same primary email
 const canAddEmail = computed(() => {
   if (!sourceEmail.value) return false
-  if (!targetProfile.value) return true  // allow pre-checking before target is picked
+  if (!targetProfile.value) return true
   return targetProfile.value.email !== sourceEmail.value
 })
 
-// Clear the checkbox if it becomes invalid (e.g. user selects a target that already has the email)
 watch(canAddEmail, (ok) => { if (!ok) addEmail.value = false })
 
 const filteredProfiles = computed(() =>
@@ -122,13 +116,4 @@ function transfer() {
   font-family: inherit;
 }
 .ptm-clear:hover { text-decoration: underline; }
-
-.ptm-checkbox {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--color-dtv-green);
-  cursor: pointer;
-}
-
-
 </style>

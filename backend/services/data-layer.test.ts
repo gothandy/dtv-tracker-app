@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest'
-import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName } from './data-layer'
+import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags, findTitleKeyClash } from './data-layer'
 import type { SharePointEntry } from '../../types/sharepoint'
+
+describe('findTitleKeyClash', () => {
+  const items = [
+    { ID: 1, Title: 'alpha' },
+    { ID: 2, Title: 'Beta' },
+  ]
+
+  it('finds another item with the same key (case-insensitive)', () => {
+    expect(findTitleKeyClash(items, 'beta')?.ID).toBe(2)
+    expect(findTitleKeyClash(items, 'ALPHA')?.ID).toBe(1)
+  })
+
+  it('excludes the given ID (rename to self / case change)', () => {
+    expect(findTitleKeyClash(items, 'alpha', 1)).toBeUndefined()
+    expect(findTitleKeyClash(items, 'ALPHA', 1)).toBeUndefined()
+  })
+
+  it('returns undefined when no clash', () => {
+    expect(findTitleKeyClash(items, 'gamma')).toBeUndefined()
+  })
+})
 
 describe('toMatchName', () => {
   it('returns empty string for undefined',        () => expect(toMatchName(undefined)).toBe(''))
@@ -46,6 +67,18 @@ describe('calculateCurrentFY', () => {
 function entry(sessionId: string, overrides: Partial<SharePointEntry> = {}): SharePointEntry {
   return { ID: 1, Created: '', Modified: '', SessionLookupId: sessionId, Hours: 0, ...overrides }
 }
+
+describe('extractMetadataTags', () => {
+  it('normalises slash-separated SharePoint paths to colon paths', () => {
+    const tags = extractMetadataTags({ Label: 'DH/Corkscrew', TermGuid: 'abc-123' })
+    expect(tags).toEqual([{ label: 'DH:Corkscrew', termGuid: 'abc-123' }])
+  })
+
+  it('normalises greater-than-separated SharePoint paths to colon paths', () => {
+    const tags = extractMetadataTags({ Label: 'DH > Corkscrew', TermGuid: 'abc-123' })
+    expect(tags).toEqual([{ label: 'DH:Corkscrew', termGuid: 'abc-123' }])
+  })
+})
 
 describe('calculateSessionStats', () => {
   it('returns empty map for empty entries array', () => {

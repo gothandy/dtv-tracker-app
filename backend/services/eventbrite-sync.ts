@@ -192,7 +192,7 @@ export async function upsertConsentRecords(
   attendee: EventbriteAttendee,
   records: any[]
 ): Promise<{ created: number; updated: number }> {
-  if (!recordsRepository.available || !attendee.answers) return { created: 0, updated: 0 };
+  if (!attendee.answers) return { created: 0, updated: 0 };
 
   let created = 0;
   let updated = 0;

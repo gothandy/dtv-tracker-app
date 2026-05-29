@@ -33,6 +33,7 @@
       v-if="showEdit"
       :session="session"
       :groups="groups"
+      :projects="projects"
       :working="editWorking"
       :error="editError"
       @close="showEdit = false"
@@ -46,7 +47,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
-import type { GroupItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
+import type { GroupItem, ProjectItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
 import type { EmailAdult } from '../../pages/modals/SessionEmailSendModal.vue'
 import AppButton from '../AppButton.vue'
 import SessionEditModal from '../../pages/modals/SessionEditModal.vue'
@@ -60,6 +61,7 @@ const props = defineProps<{
   groupKey: string
   date: string
   groups: GroupItem[]
+  projects: ProjectItem[]
   editWorking: boolean
   editError?: string
   allowEdit: boolean
