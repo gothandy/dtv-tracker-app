@@ -542,6 +542,50 @@ export class SharePointClient {
     }
   }
 
+  /** Drive item at a path; null if not found. */
+  async getDriveItemByPath(
+    driveId: string,
+    itemPath: string,
+  ): Promise<{ id: string; name: string; folder: boolean } | null> {
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = itemPath.split('/').map(encodeURIComponent).join('/');
+      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}?$select=id,name,folder`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return {
+        id: response.data.id as string,
+        name: response.data.name as string,
+        folder: !!response.data.folder,
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404) return null;
+      console.error(`Error getting drive item at ${itemPath}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /** Rename a drive item in place (same parent folder). */
+  async renameDriveItem(driveId: string, itemId: string, newName: string): Promise<void> {
+    const token = await this.getAccessToken();
+    try {
+      await axios.patch(
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}`,
+        { name: newName },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+    } catch (error: any) {
+      const status = error.response?.status;
+      console.error(`Error renaming drive item ${itemId}:`, error.response?.data || error.message);
+      if (status === 409) {
+        throw new Error(`A folder named "${newName}" already exists in the target location`);
+      }
+      throw error;
+    }
+  }
+
   /** SharePoint browser URL for a drive folder; undefined if the folder does not exist yet. */
   async getDriveFolderWebUrl(driveId: string, folderPath: string): Promise<string | undefined> {
     try {

@@ -47,6 +47,34 @@ function projectDocsFolderPath(key: string): string {
   return `Projects/${key}`;
 }
 
+function normalizeProjectKey(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+/** Move Projects/{oldKey}/ → Projects/{newKey}/ when the list item key changes. */
+async function migrateProjectDocsFolder(oldKey: string, newKey: string): Promise<void> {
+  if (oldKey === newKey) return;
+
+  const driveId = tryDocumentsDriveId();
+  if (!driveId) return;
+
+  const oldPath = projectDocsFolderPath(oldKey);
+  const oldFolder = await sharePointClient.getDriveItemByPath(driveId, oldPath);
+  if (!oldFolder?.folder) return;
+
+  const newPath = projectDocsFolderPath(newKey);
+  const dest = await sharePointClient.getDriveItemByPath(driveId, newPath);
+  if (dest) {
+    throw Object.assign(new Error(`Project folder "${newPath}" already exists`), { statusCode: 409 });
+  }
+
+  await sharePointClient.renameDriveItem(driveId, oldFolder.id, newKey);
+  sharePointClient.clearDocsFolderCache(oldPath);
+  sharePointClient.clearDocsFolderCache(newPath);
+  clearProjectDocsCache(oldKey);
+  clearProjectDocsCache(newKey);
+}
+
 function safeProjectFilename(original: string): string {
   const base = path.basename(original).replace(/[^\w.\- ()]/g, '_').slice(0, 200);
   return base || 'document';
@@ -468,6 +496,21 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       }
     }
 
+    const resultKey = fields.Title ? normalizeProjectKey(String(fields.Title)) : key;
+
+    if (resultKey !== key) {
+      try {
+        await migrateProjectDocsFolder(key, resultKey);
+      } catch (migrateErr: any) {
+        const status = migrateErr.statusCode === 409 ? 409 : 502;
+        res.status(status).json({
+          success: false,
+          error: migrateErr.message || 'Failed to move project documents folder',
+        });
+        return;
+      }
+    }
+
     if (Object.keys(fields).length > 0) {
       await projectsRepository.updateFields(spProject.ID, fields as Record<string, string>);
     }
@@ -475,7 +518,6 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       await updateListItemMetadata(process.env.PROJECTS_LIST_GUID!, spProject.ID, PROJECT_METADATA, metadataTags);
     }
 
-    const resultKey = fields.Title ? String(fields.Title).toLowerCase() : key;
     res.json({ success: true, data: { key: resultKey } } as ApiResponse<{ key: string }>);
   } catch (error: any) {
     console.error('Error updating project:', error);
