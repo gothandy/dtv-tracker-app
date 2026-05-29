@@ -421,7 +421,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### M3a. Projects listing
 - [ ] `GET /api/projects` — all projects (public)
 - [ ] Projects page: FY filter, session/hours totals from linked sessions
-- [ ] Admin: "+" creates project; navigates to detail
+- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled) → navigates to detail
 - [ ] Cards show display name, description, sessions/hrs for selected FY
 
 ### M3b. Project detail
@@ -435,7 +435,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Header: description, metadata tags (check-in can edit tags)
 - [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)
-- [ ] Admin: edit display name/key/description; delete project
+- [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); delete project
 
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group

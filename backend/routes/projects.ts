@@ -361,9 +361,14 @@ router.post('/projects', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'Key is required' });
       return;
     }
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      res.status(400).json({ success: false, error: 'Display name is required' });
+      return;
+    }
 
     const keyNorm = key.trim().toLowerCase();
-    const nameNorm = typeof name === 'string' ? name.trim().toLowerCase() : '';
+    const nameTrimmed = name.trim();
+    const nameNorm = nameTrimmed.toLowerCase();
 
     const existing = await projectsRepository.getAll();
     const keyClash = existing.find(p => (p.Title || '').toLowerCase() === keyNorm);
@@ -371,25 +376,25 @@ router.post('/projects', async (req: Request, res: Response) => {
       res.status(409).json({ success: false, error: `A project with key "${key.trim()}" already exists` });
       return;
     }
-    if (nameNorm) {
-      const nameClash = existing.find(p => (p.Name || '').toLowerCase() === nameNorm);
-      if (nameClash) {
-        res.status(409).json({
-          success: false,
-          error: `A project with display name "${name.trim()}" already exists`,
-        });
-        return;
-      }
+    const nameClash = existing.find(p => (p.Name || '').toLowerCase() === nameNorm);
+    if (nameClash) {
+      res.status(409).json({
+        success: false,
+        error: `A project with display name "${nameTrimmed}" already exists`,
+      });
+      return;
     }
 
-    const fields: { Title: string; Name?: string; Description?: string } = { Title: key.trim() };
-    if (typeof name === 'string' && name.trim()) fields.Name = name.trim();
+    const fields: { Title: string; Name: string; Description?: string } = {
+      Title: key.trim(),
+      Name: nameTrimmed,
+    };
     if (typeof description === 'string' && description.trim()) fields.Description = description.trim();
 
     const id = await projectsRepository.create(fields);
     res.json({
       success: true,
-      data: { id, key: fields.Title.toLowerCase(), displayName: fields.Name || fields.Title },
+      data: { id, key: fields.Title.toLowerCase(), displayName: fields.Name },
     });
   } catch (error: any) {
     console.error('Error creating project:', error);
@@ -407,7 +412,13 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
     const { displayName, description, key: newKeyRaw, metadata } = req.body;
 
     const fields: Record<string, unknown> = {};
-    if (typeof displayName === 'string') fields.Name = displayName;
+    if (displayName !== undefined) {
+      if (typeof displayName !== 'string' || !displayName.trim()) {
+        res.status(400).json({ success: false, error: 'Display name is required' });
+        return;
+      }
+      fields.Name = displayName.trim();
+    }
     if (typeof description === 'string') fields.Description = description;
     if (typeof newKeyRaw === 'string' && newKeyRaw.trim()) {
       if (/\s/.test(newKeyRaw.trim())) {
@@ -429,6 +440,20 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
     if (!spProject) {
       res.status(404).json({ success: false, error: 'Project not found' });
       return;
+    }
+
+    if (typeof fields.Name === 'string') {
+      const nameNorm = fields.Name.toLowerCase();
+      const nameClash = rawProjects.find(
+        p => p.ID !== spProject.ID && (p.Name || '').toLowerCase() === nameNorm,
+      );
+      if (nameClash) {
+        res.status(409).json({
+          success: false,
+          error: `A project with display name "${fields.Name}" already exists`,
+        });
+        return;
+      }
     }
 
     if (Object.keys(fields).length > 0) {
