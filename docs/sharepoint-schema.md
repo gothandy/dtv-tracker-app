@@ -198,7 +198,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 ## 7. Logins List
 
-**Purpose**: Persistent auth token store for magic link sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `AUTH_BASIC_TTL_HOURS` (default 72h). Emergency revocation: delete all items.
+**Purpose**: Persistent auth token store for self-service sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `AUTH_BASIC_TTL_HOURS` (default 72h). Emergency revocation: delete all items.
 
 **List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57`
 

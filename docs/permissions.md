@@ -8,7 +8,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 |------|--------------|-------------|
 | **Admin** | Yes (Microsoft) | Profile **`User`** must match sign-in email **and** email must be in **`ADMIN_USERS`**. Full access (includes all Check In capabilities). |
 | **Check In** | Yes (Microsoft) | Profile **`User`** matches sign-in email; not in **`ADMIN_USERS`**. Field-day operations: check-in, hours, entries, sessions/profiles edits, regulars, uploads, consent collection, etc. |
-| **Self-Service** | Yes (magic link / verification code on email) | View own profile, register for sessions, upload own photos. Cannot view other volunteers' data. Matched via Profile **`Email`**. |
+| **Self-Service** | Yes (verification code on email) | View own profile, register for sessions, upload own photos. Cannot view other volunteers' data. Matched via Profile **`Email`**. |
 | **Public** | No | Limited access to non-privacy data (sessions, groups, stats) |
 
 > **"Trusted" (Microsoft)** = **Admin ∪ Check In** — both require a **Profile `User`** link to the volunteer’s Microsoft sign-in email. There is **no** Microsoft “read-only” fallback: if Entra succeeds but no profile **`User`** matches, sign-in is **rejected** (`/login?reason=dtv-not-authorised`) and no session is opened (this is **not** the same as browsing as Public). **Self-Service** is not trusted for other volunteers’ PII.
@@ -21,7 +21,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 ADMIN_USERS=first.last@dtv.org.uk,another.email@dtv.org.uk
 ```
 
-**Self-Service:** `Profile.Email` (comma-separated) contains the volunteer address used for magic link / code. Editable by Check In and Admin.
+**Self-Service:** `Profile.Email` (comma-separated) contains the volunteer address used for verification code. Editable by Check In and Admin.
 
 **Public:** no session.
 
@@ -45,7 +45,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | Profile detail | Redirected to `/login` |
 | Add entry, Entry detail, Admin | Redirected to `/login` |
 
-### Self-Service (magic link / email code)
+### Self-Service (verification code)
 
 | Page | Access |
 |------|--------|
@@ -168,7 +168,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 
 ### Backend
 
-1. **Role assignment** ([`routes/auth/dtv.ts`](../routes/auth/dtv.ts)): Microsoft callback requires a Profile **`User`** match; else session is destroyed and redirect **`/login?reason=dtv-not-authorised`**. If matched: `ADMIN_USERS` → **`admin`**, else **`checkin`**. Magic link / verify flows set **`selfservice`** when Profile **`Email`** matches; no match → `reason=not-approved`. Role is `req.session.user.role`. Public = no session.
+1. **Role assignment** ([`routes/auth/dtv.ts`](../routes/auth/dtv.ts)): Microsoft callback requires a Profile **`User`** match; else session is destroyed and redirect **`/login?reason=dtv-not-authorised`**. If matched: `ADMIN_USERS` → **`admin`**, else **`checkin`**. Verify flow set **`selfservice`** when Profile **`Email`** matches; no match → `reason=not-approved`. Role is `req.session.user.role`. Public = no session.
 
 2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/tags`, `/api/media`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths.
 

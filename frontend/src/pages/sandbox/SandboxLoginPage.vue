@@ -4,13 +4,13 @@
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
       <h1>LoginPage</h1>
 
-      <!-- Both cards (magic + Microsoft) -->
-      <h2>Cards — magic + Microsoft</h2>
+      <!-- Both cards (self-service + Microsoft) -->
+      <h2>Cards — self-service + Microsoft</h2>
       <div class="task-body">
         <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="email" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <AppButton usage="task" label="Send sign-in link" :disabled="!emailValid" />
+            <AppButton usage="task" label="Send verification code" :disabled="!emailValid" />
           </FormSubmitRow>
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
@@ -20,7 +20,7 @@
         </FormCard>
       </div>
 
-      <!-- Microsoft only (magic disabled) -->
+      <!-- Microsoft only (self-service disabled) -->
       <h2>Cards — Microsoft only</h2>
       <div class="task-body">
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
@@ -37,7 +37,7 @@
         <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="emailReason" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <AppButton usage="task" label="Send sign-in link" :disabled="!emailReasonValid" />
+            <AppButton usage="task" label="Send verification code" :disabled="!emailReasonValid" />
           </FormSubmitRow>
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
@@ -47,14 +47,14 @@
         </FormCard>
       </div>
 
-      <!-- Reason banner — expired link -->
+      <!-- Reason banner — expired code -->
       <h2>Reason banner — expired link</h2>
       <div class="task-body">
-        <AlertBanner message="That sign-in link has expired or is invalid — enter your email below to get a new one." type="info" />
+        <AlertBanner message="That verification code has expired — enter your email below to get a new one." type="info" />
         <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="emailExpired" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <AppButton usage="task" label="Send sign-in link" :disabled="!emailExpiredValid" />
+            <AppButton usage="task" label="Send verification code" :disabled="!emailExpiredValid" />
           </FormSubmitRow>
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
@@ -86,7 +86,7 @@
         <FormCard :title="cardTitleEmail" :subtitle="cardSubtitleEmail">
           <FormInput v-model="emailError" type="email" placeholder="your@email.com" autocomplete="email" />
           <FormSubmitRow>
-            <AppButton usage="task" label="Send sign-in link" :disabled="!emailErrorValid" />
+            <AppButton usage="task" label="Send verification code" :disabled="!emailErrorValid" />
             <p class="form-error">Something went wrong. Please try again.</p>
           </FormSubmitRow>
         </FormCard>

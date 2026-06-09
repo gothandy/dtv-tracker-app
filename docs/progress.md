@@ -2,63 +2,63 @@
 
 ## Session: 2026-05-10 (Microsoft requires Profile `User`; remove read-only role)
 
-- Microsoft sign-in only when a volunteer profile’s **`User`** field matches the Entra email (`ADMIN_USERS` → admin, else check-in). No session + **`/login?reason=dtv-not-authorised`** when there is no match.
+- Microsoft sign-in only when a volunteer profileâ€™s **`User`** field matches the Entra email (`ADMIN_USERS` â†’ admin, else check-in). No session + **`/login?reason=dtv-not-authorised`** when there is no match.
 - Frontend: **`hasCheckInAccess`** / **`isTrusted`** replace the old read-only / **`isOperational`** split; API adds optional **`trackerAccess`** on profile and entry payloads for trusted callers.
 - Docs: **`docs/permissions.md`**, **`docs/testing/full-regression.md`**, **`docs/app-dev-guidelines.md`**, **`AGENTS.md`** / **`docs/features/auth.md`** aligned with four permission levels and SPA paths.
 
-## Session: 2026-05-05 (Self-service booking cancel — permissions)
+## Session: 2026-05-05 (Self-service booking cancel â€” permissions)
 
 - Self-service may no longer `DELETE /api/entries/:id` (middleware block; hard delete remains admin-only in handler).
-- Self-service may `PATCH /api/entries/:id` with **only** `{ cancelled: true }`; ownership is the entry’s profile `Email` list containing `req.session.user.email` (case-insensitive), not `profileIds` alone.
+- Self-service may `PATCH /api/entries/:id` with **only** `{ cancelled: true }`; ownership is the entryâ€™s profile `Email` list containing `req.session.user.email` (case-insensitive), not `profileIds` alone.
 - Same email-based ownership for self-service `GET /api/entries/:id`, upload-context, and entry photos.
 - `SessionDetailForThis.vue` cancel action uses PATCH instead of DELETE.
 - Self-service cancel now rejects past sessions (`Session has already passed`) to prevent retroactive stats changes from historical attendance.
 
-## Session: 2026-04-24 (Vitest setup — closes #208)
+## Session: 2026-04-24 (Vitest setup â€” closes #208)
 
 ### Completed Tasks
 
-#### Vitest store unit tests ✓ (closes #208)
+#### Vitest store unit tests âœ“ (closes #208)
 
 Set up Vitest as the frontend unit test layer, targeting the Pinia stores as the middle tier between the visual sandbox mocks and the backend live tests.
 
 **Infrastructure:**
-- `frontend/package.json` — added `vitest`, `happy-dom` dev deps; added `"test": "vitest"` script
-- `frontend/vite.config.ts` — added `test: { environment: 'happy-dom', globals: true }` block; guarded `vite-plugin-checker` from test environment with `!process.env.VITEST`
+- `frontend/package.json` â€” added `vitest`, `happy-dom` dev deps; added `"test": "vitest"` script
+- `frontend/vite.config.ts` â€” added `test: { environment: 'happy-dom', globals: true }` block; guarded `vite-plugin-checker` from test environment with `!process.env.VITEST`
 
 **Test files (colocated in `frontend/src/stores/`):**
-- `groupList.test.ts` / `groupDetail.test.ts` — fetch success, error, loading state, httpStatus on 404
-- `sessionList.test.ts` — `mapSession` derived flags (`isRegistered`, `isAttended`, `isRegular`); `applyTag` add and deduplication; fetch error; `useViewer` mocked at module level with a mutable `mockViewer` object
-- `sessionDetail.test.ts` — fetch success, all three user-status flags default to false when API omits them, 404 httpStatus
-- `profileList.test.ts` — all `fy` param variants (`rolling`, `future`, `FY*`, `all`), `group` param, 401 redirect, AbortController cancellation (signal-aware mock), no-param clean URL
-- `profileDetail.test.ts` — fetch success, 401 redirect, 404 httpStatus; `useRouter` mocked via `vue-router` mock
-- `entryList.test.ts` — no-param clean URL (no `?`), each param individually, all params combined, non-ok response, network failure
+- `groupList.test.ts` / `groupDetail.test.ts` â€” fetch success, error, loading state, httpStatus on 404
+- `sessionList.test.ts` â€” `mapSession` derived flags (`isRegistered`, `isAttended`, `isRegular`); `applyTag` add and deduplication; fetch error; `useViewer` mocked at module level with a mutable `mockViewer` object
+- `sessionDetail.test.ts` â€” fetch success, all three user-status flags default to false when API omits them, 404 httpStatus
+- `profileList.test.ts` â€” all `fy` param variants (`rolling`, `future`, `FY*`, `all`), `group` param, 401 redirect, AbortController cancellation (signal-aware mock), no-param clean URL
+- `profileDetail.test.ts` â€” fetch success, 401 redirect, 404 httpStatus; `useRouter` mocked via `vue-router` mock
+- `entryList.test.ts` â€” no-param clean URL (no `?`), each param individually, all params combined, non-ok response, network failure
 
 **45 tests, all passing.** `npm run build` unaffected (checker guard).
 
 **Key decisions:**
 - `happy-dom` used globally (not per-file) because all stores call `window.fetch`, which requires `window` to be defined
-- AbortController cancel test uses a signal-aware mock (`signal.addEventListener('abort', reject)`) — a plain resolved mock would not honour the abort
+- AbortController cancel test uses a signal-aware mock (`signal.addEventListener('abort', reject)`) â€” a plain resolved mock would not honour the abort
 - `useViewer` mock uses a mutable plain object (`mockViewer`) mutated per-test; Vue's computed still reads the current value at evaluation time even without reactivity
 
 ---
 
-## Session: 2026-04-13 (Login revised — remove BroadcastChannel, add verification code)
+## Session: 2026-04-13 (Login revised â€” remove BroadcastChannel, add verification code)
 
 ### Completed Tasks
 
-#### Login revised approach ✓ (closes #129)
+#### Login revised approach âœ“ (closes #129)
 
 Removed BroadcastChannel entirely and introduced two selectable login methods for self-service volunteers.
 
 **Backend:**
-- `services/email-rate-limiter.ts` — new shared in-memory rate limiter; `EMAIL_RATE_LIMIT_PER_HOUR` env var (default 60); 429 on breach with user-facing message
-- `routes/auth/magic.ts` — added rate limiting; callback now does a direct `res.redirect(destWithFlash)` instead of serving an intermediate HTML page; `escapeHtml` helper removed (no longer needed); BroadcastChannel script removed
-- `routes/auth/verify.ts` — new router: `POST /auth/verify/send` (4-digit code, in-memory store, 15min TTL, email button links to login page with code pre-filled); `POST /auth/verify/check` (verifies code, max 5 attempts, sets dtv-auth cookie, returns flashName)
-- `routes/auth/index.ts` — mounts verifyRouter; providers endpoint now returns `{ magic, verify }` (both true when `MAIL_SENDER` is set)
+- `services/email-rate-limiter.ts` â€” new shared in-memory rate limiter; `EMAIL_RATE_LIMIT_PER_HOUR` env var (default 60); 429 on breach with user-facing message
+- `routes/auth/magic.ts` â€” added rate limiting; callback now does a direct `res.redirect(destWithFlash)` instead of serving an intermediate HTML page; `escapeHtml` helper removed (no longer needed); BroadcastChannel script removed
+- `routes/auth/verify.ts` â€” new router: `POST /auth/verify/send` (4-digit code, in-memory store, 15min TTL, email button links to login page with code pre-filled); `POST /auth/verify/check` (verifies code, max 5 attempts, sets dtv-auth cookie, returns flashName)
+- `routes/auth/index.ts` â€” mounts verifyRouter; providers endpoint now returns `{ magic, verify }` (both true when `MAIL_SENDER` is set)
 
 **Frontend (Vue v2):**
-- `LoginPage.vue` — BroadcastChannel logic removed completely; method selector (radio group) shown when both `magic` and `verify` are available; `sendLoginEmail()` branches to correct endpoint by method; magic link sent card shows confirmation code + static "close this window" copy (no countdown display); verification code sent card shows code entry input + countdown + verify button + error display; `checkCode()` POSTs to `/auth/verify/check` and navigates on success
+- `LoginPage.vue` â€” BroadcastChannel logic removed completely; method selector (radio group) shown when both `magic` and `verify` are available; `sendLoginEmail()` branches to correct endpoint by method; magic link sent card shows confirmation code + static "close this window" copy (no countdown display); verification code sent card shows code entry input + countdown + verify button + error display; `checkCode()` POSTs to `/auth/verify/check` and navigates on success
 
 **Copy:**
 - 429: "We've sent too many sign-in emails recently. Please wait a while and try again."
@@ -66,7 +66,7 @@ Removed BroadcastChannel entirely and introduced two selectable login methods fo
 - Wrong code: "That code does not match. Check the 4 digits and try again."
 - Too many attempts: "Too many incorrect attempts. Request a new code to continue."
 
-**v1 (`public/login.html`) not changed — frozen.**
+**v1 (`public/login.html`) not changed â€” frozen.**
 
 ---
 
@@ -74,27 +74,27 @@ Removed BroadcastChannel entirely and introduced two selectable login methods fo
 
 ### Completed Tasks
 
-#### ProfileEntryList + ProfileDetailPage wired ✓ (closes #76, #77)
+#### ProfileEntryList + ProfileDetailPage wired âœ“ (closes #76, #77)
 
 `SessionEntryList` refactor plan (docs/plans/session-entry-list.md) fully implemented. Plan archived to `docs/legacy/`.
 
-- `ProfileEntryList.vue` (`components/profiles/`) — session entries on profile page; `allowEdit` gates admin/check-in (inline hours + `EditEntryModal`) vs. self-service/read-only (click-through `RouterLink` to session); badge icons suppressed via `type=badge` filter (redundant on profile page — same for every row); `cardTitle()` formats as `date · groupName`
-- `ProfileDetailPage.vue` — `mapProfileEntry()` maps `ProfileEntryResponse` → `EntryItem`; `onEntryUpdate`/`onEditEntry` handlers PATCH/DELETE `/api/entries/:id`; `PageHeader` + `usePageTitle` wired; DebugData kept for dev
-- `EditEntryModal` — optional `title` prop added; profile page passes `cardTitle(editingEntry)` so modal shows date · group instead of profile name
+- `ProfileEntryList.vue` (`components/profiles/`) â€” session entries on profile page; `allowEdit` gates admin/check-in (inline hours + `EditEntryModal`) vs. self-service/read-only (click-through `RouterLink` to session); badge icons suppressed via `type=badge` filter (redundant on profile page â€” same for every row); `cardTitle()` formats as `date Â· groupName`
+- `ProfileDetailPage.vue` â€” `mapProfileEntry()` maps `ProfileEntryResponse` â†’ `EntryItem`; `onEntryUpdate`/`onEditEntry` handlers PATCH/DELETE `/api/entries/:id`; `PageHeader` + `usePageTitle` wired; DebugData kept for dev
+- `EditEntryModal` â€” optional `title` prop added; profile page passes `cardTitle(editingEntry)` so modal shows date Â· group instead of profile name
 
 **Key decisions:**
-- `type: 'badge'` already distinguishes profile-derived icons from note-based tags — no new field needed
-- `isMember` hard-coded `false` in `mapProfileEntry` (not in `ProfileDetailResponse`) — cosmetic only in modal, noted as follow-up
+- `type: 'badge'` already distinguishes profile-derived icons from note-based tags â€” no new field needed
+- `isMember` hard-coded `false` in `mapProfileEntry` (not in `ProfileDetailResponse`) â€” cosmetic only in modal, noted as follow-up
 
-#### FyFilter simplified + Rolling FY default ✓
+#### FyFilter simplified + Rolling FY default âœ“
 
 - `FyFilter.vue` replaced custom dropdown with standard `<select>` (matches groups filter style)
-- Options: `All FY` / `FY YY/YY` (from sessions store) / `Rolling FY` — Rolling is the new default
+- Options: `All FY` / `FY YY/YY` (from sessions store) / `Rolling FY` â€” Rolling is the new default
 - Rolling = last 12 months by date range; client-side filter in `SessionListFilter`, `GroupListFilter`, `GroupList`; sessions page already passes `fy` to API which handles it server-side
 
-#### Session action bar stats ✓
+#### Session action bar stats âœ“
 
-Replaced "No sessions selected." with `X / N sessions   X / N hours` — always visible, updates as selection changes.
+Replaced "No sessions selected." with `X / N sessions   X / N hours` â€” always visible, updates as selection changes.
 
 ---
 
@@ -102,42 +102,42 @@ Replaced "No sessions selected." with `X / N sessions   X / N hours` — always 
 
 ### Completed Tasks
 
-#### Session capacity limits ✓
+#### Session capacity limits âœ“
 
 Flexible optional limits per category (`new`, `repeat`, `total`, `child`) stored as JSON in the `Limits` single-line text field on the Sessions list. No defaults. Admin edits via raw JSON field in the edit modal.
 
 **Key decisions:**
-- `SessionLimits` interface: all fields optional — if absent, no limit for that category
+- `SessionLimits` interface: all fields optional â€” if absent, no limit for that category
 - `parseSessionLimits()` in `data-layer.ts`: parses the Limits field, returns only present numeric fields
 - `deriveLimits(limits, regularsCount?)` in `data-layer.ts`: derives a missing limit from the other two (`total - new - regularsCount = repeat`, or `total - repeat - regularsCount = new`). Applied server-side so all consumers get the derived value automatically
-- Limits are **not** stored in the Stats JSON field — they are editable config, not computed aggregates. Storing them in Stats caused stale reads when the Limits field was edited directly
+- Limits are **not** stored in the Stats JSON field â€” they are editable config, not computed aggregates. Storing them in Stats caused stale reads when the Limits field was edited directly
 - `Limits` field added to `selectFields` in `sessions-repository.ts` so it is fetched from SharePoint
 
 **Files changed:**
-- `services/field-names.ts` — `SESSION_LIMITS` constant
-- `services/data-layer.ts` — `SessionLimits` interface, `parseSessionLimits()`, `deriveLimits()`
-- `services/repositories/sessions-repository.ts` — added `SESSION_LIMITS` to select fields
-- `services/session-stats.ts` — removed `limits` from Stats JSON; removed `parseSessionLimits` import
-- `routes/sessions.ts` — applies `deriveLimits` in listing + detail routes; regulars always fetched for `groupRegularsCountMap`; PATCH handler saves `Limits` field
-- `routes/groups.ts` — applies `deriveLimits` with `regulars.length`
-- `types/api-responses.ts` — `SessionResponse` + `SessionDetailResponse` get `limits`, `regularsCount`, `isBookable`
-- `frontend/src/types/session.ts` — `SessionLimits`, `regularsCount`, `isBookable` on `Session`
-- `frontend/src/stores/sessions.ts` — maps new fields in `mapSession()`
-- `frontend/src/components/groups/GroupDetail.vue` — maps new fields in local `mapSession()`
-- `frontend/src/pages/modals/EditSessionModal.vue` — Limits JSON field (admin-only), validates JSON, sends null to clear
-- `public/session-detail.html` + `public/js/session-detail.js` — Limits JSON field in edit modal (old frontend)
+- `services/field-names.ts` â€” `SESSION_LIMITS` constant
+- `services/data-layer.ts` â€” `SessionLimits` interface, `parseSessionLimits()`, `deriveLimits()`
+- `services/repositories/sessions-repository.ts` â€” added `SESSION_LIMITS` to select fields
+- `services/session-stats.ts` â€” removed `limits` from Stats JSON; removed `parseSessionLimits` import
+- `routes/sessions.ts` â€” applies `deriveLimits` in listing + detail routes; regulars always fetched for `groupRegularsCountMap`; PATCH handler saves `Limits` field
+- `routes/groups.ts` â€” applies `deriveLimits` with `regulars.length`
+- `types/api-responses.ts` â€” `SessionResponse` + `SessionDetailResponse` get `limits`, `regularsCount`, `isBookable`
+- `frontend/src/types/session.ts` â€” `SessionLimits`, `regularsCount`, `isBookable` on `Session`
+- `frontend/src/stores/sessions.ts` â€” maps new fields in `mapSession()`
+- `frontend/src/components/groups/GroupDetail.vue` â€” maps new fields in local `mapSession()`
+- `frontend/src/pages/modals/EditSessionModal.vue` â€” Limits JSON field (admin-only), validates JSON, sends null to clear
+- `public/session-detail.html` + `public/js/session-detail.js` â€” Limits JSON field in edit modal (old frontend)
 
-#### Server-computed enrichment pattern ✓
+#### Server-computed enrichment pattern âœ“
 
 Fields that are derived from session data (not user-specific) are now computed server-side and included in the response, rather than being re-derived on the client.
 
-- `isBookable: date >= today` — computed in all three session routes (listing, detail, groups). Replaces the client-side computed in `SessionDetailPage.vue`. Available on `session.isBookable` for any component receiving the session prop — mockable in sandbox
-- `financialYear` — same pattern, already established
-- `regularsCount` — group's Regulars list count, included on session responses so the `X/Y Regular` stat can show the denominator
+- `isBookable: date >= today` â€” computed in all three session routes (listing, detail, groups). Replaces the client-side computed in `SessionDetailPage.vue`. Available on `session.isBookable` for any component receiving the session prop â€” mockable in sandbox
+- `financialYear` â€” same pattern, already established
+- `regularsCount` â€” group's Regulars list count, included on session responses so the `X/Y Regular` stat can show the denominator
 
-**Key decision**: removing the `const isBookable = computed(...)` from `SessionDetailPage.vue` and reading `store.session.isBookable` directly in the template. No local constant needed — the session object is the source of truth.
+**Key decision**: removing the `const isBookable = computed(...)` from `SessionDetailPage.vue` and reading `store.session.isBookable` directly in the template. No local constant needed â€” the session object is the source of truth.
 
-#### SessionDetailStats redesign ✓
+#### SessionDetailStats redesign âœ“
 
 Renamed from "The Day In Stats" to dynamic title: "Who's Going?" (isBookable) / "Who Went?" (!isBookable).
 
@@ -148,11 +148,11 @@ Stats now show `X/Y` format for operational users (Admin/Check-In), count only f
 - Children (childCount / limits.child)
 - Regulars (regularCount / regularsCount from Regulars list)
 
-Accepts `profile?: RoleContext` prop — same pattern as `SessionCard`. Page passes `:profile="profile.context"`.
+Accepts `profile?: RoleContext` prop â€” same pattern as `SessionCard`. Page passes `:profile="profile.context"`.
 
-#### Tech debt logged ✓
+#### Tech debt logged âœ“
 
-- gothandy/dtv-tracker-app#70 — derive `isRegistered`/`isRegular` client-side from `useProfile()` rather than embedding in `SessionResponse`
+- gothandy/dtv-tracker-app#70 â€” derive `isRegistered`/`isRegular` client-side from `useProfile()` rather than embedding in `SessionResponse`
 
 ---
 
@@ -160,9 +160,9 @@ Accepts `profile?: RoleContext` prop — same pattern as `SessionCard`. Page pas
 
 ### Completed Tasks
 
-#### useProfile composable + ESLint guard ✓
+#### useProfile composable + ESLint guard âœ“
 
-Introduced `useProfile()` as the single UI-facing auth composable, replacing `useRole.ts`. All pages and components now import from `useProfile` only — `useAuth` and `useRole` are blocked by ESLint.
+Introduced `useProfile()` as the single UI-facing auth composable, replacing `useRole.ts`. All pages and components now import from `useProfile` only â€” `useAuth` and `useRole` are blocked by ESLint.
 
 **Key decisions:**
 - `useViewer()` / profile context: boolean helpers (`isAdmin`, `hasCheckInAccess`, `isTrusted`, etc.) are exposed for templates and script
@@ -171,91 +171,91 @@ Introduced `useProfile()` as the single UI-facing auth composable, replacing `us
 - ESLint v9 flat config (`eslint.config.js`) with `no-restricted-imports` rule; exempts `useProfile.ts` and `router/index.ts`; `"type": "module"` added to `frontend/package.json`
 
 **New files:**
-- `frontend/src/composables/useProfile.ts` — replaces `useRole.ts`; exports `useProfile()` + `RoleContext` interface
-- `frontend/eslint.config.js` — blocks `useAuth`/`useRole` imports outside of permitted files
+- `frontend/src/composables/useProfile.ts` â€” replaces `useRole.ts`; exports `useProfile()` + `RoleContext` interface
+- `frontend/eslint.config.js` â€” blocks `useAuth`/`useRole` imports outside of permitted files
 
 **Deleted files:**
 - `frontend/src/composables/useRole.ts`
 
-**Updated files (useRole → useProfile):**
+**Updated files (useRole â†’ useProfile):**
 - `AppHeader.vue`, `AdminPage.vue`, `GroupDetail.vue`, `GroupDetailRegulars.vue`, `GroupList.vue`, `GroupListFilter.vue`, `SessionDetailPage.vue`, `SessionDetailActions.vue`, `SessionDetailTags.vue`, `SessionListResults.vue`, `SessionListActions.vue`, `EditSessionModal.vue`
 
-**Updated files (useAuth → useProfile):**
+**Updated files (useAuth â†’ useProfile):**
 - `HomePage.vue`, `UploadPickerModal.vue`, `SessionDetailForThis.vue`, `SandboxSessionCard.vue`
 
 **Updated files (package.json):**
 - Added `"type": "module"`, `"lint": "eslint src"` script, `eslint` + `typescript-eslint` devDependencies
 
-#### SessionCard role-aware stats + groupDescription ✓
+#### SessionCard role-aware stats + groupDescription âœ“
 
 SessionCard now shows operational stats (registrations, new, child, regular, Eventbrite counts) for Admin/Check-In users, and availability message for everyone else. `groupDescription` now surfaces on all cards.
 
 **Changes:**
-- `SessionCard.vue` — `profile?: RoleContext` prop; footer shows stats list or availability based on `hasCheckInAccess` / trusted context; layout: Group / Long Date / Description / [Stats or Availability] + View button
-- `SessionListResults.vue` — passes `:profile="profile.context"` to each SessionCard
-- `SessionConcertina.vue` — `profile?: RoleContext` prop, passes down to SessionCard
-- `HomePage.vue` — passes `:profile="profile.context"` to SessionConcertina
-- `SandboxSessionCard.vue` — mocks `adminProfile: RoleContext`; public cards have no profile prop
-- `routes/sessions.ts` — added `groupDescriptionMap` to listing endpoint; `groupDescription` included in each session response
-- `frontend/src/stores/sessions.ts` — added `groupDescription` to `SessionResponse` interface and `mapSession`
+- `SessionCard.vue` â€” `profile?: RoleContext` prop; footer shows stats list or availability based on `hasCheckInAccess` / trusted context; layout: Group / Long Date / Description / [Stats or Availability] + View button
+- `SessionListResults.vue` â€” passes `:profile="profile.context"` to each SessionCard
+- `SessionConcertina.vue` â€” `profile?: RoleContext` prop, passes down to SessionCard
+- `HomePage.vue` â€” passes `:profile="profile.context"` to SessionConcertina
+- `SandboxSessionCard.vue` â€” mocks `adminProfile: RoleContext`; public cards have no profile prop
+- `routes/sessions.ts` â€” added `groupDescriptionMap` to listing endpoint; `groupDescription` included in each session response
+- `frontend/src/stores/sessions.ts` â€” added `groupDescription` to `SessionResponse` interface and `mapSession`
 
 ---
 
-## Session: 2026-04-06 (Vue Groups & Sessions — card grid layouts)
+## Session: 2026-04-06 (Vue Groups & Sessions â€” card grid layouts)
 
 ### Completed Tasks
 
-#### GroupCard component + Groups/Sessions grid layout ✓
+#### GroupCard component + Groups/Sessions grid layout âœ“
 
 Replaced the inline card markup in both listing pages with dedicated card components displayed in a 3-column grid, matching the style of the existing `SessionCard`.
 
 **New files:**
-- `frontend/src/components/groups/GroupCard.vue` — mirrors `SessionCard` layout; body shows name + Eventbrite icon + description (3-line clamp); footer shows regulars/sessions/hrs stats stacked vertically left, View button bottom-right; hours rendered as rounded integers
-- `frontend/src/pages/sandbox/SandboxGroupCard.vue` — sandbox at `/sandbox/group-card` with three mock variants
+- `frontend/src/components/groups/GroupCard.vue` â€” mirrors `SessionCard` layout; body shows name + Eventbrite icon + description (3-line clamp); footer shows regulars/sessions/hrs stats stacked vertically left, View button bottom-right; hours rendered as rounded integers
+- `frontend/src/pages/sandbox/SandboxGroupCard.vue` â€” sandbox at `/sandbox/group-card` with three mock variants
 
 **Updated files:**
-- `frontend/src/components/groups/GroupListResults.vue` — now delegates to `GroupCard`; card background overridden to `dtv-sand` via `:deep()`
-- `frontend/src/components/sessions/SessionListResults.vue` — replaced vertical list with 3-column grid using `SessionCard`; card background overridden to `dtv-sand` via `:deep()`; admin checkbox repositioned as absolute overlay
-- `frontend/src/pages/GroupsPage.vue` — added `pb-6` bottom padding
-- `frontend/src/pages/SessionsPage.vue` — added `px-6 pb-6` padding
-- `frontend/src/router/index.ts` — registered `/sandbox/group-card` route
-- `frontend/src/pages/sandbox/SandboxIndex.vue` — added GroupCard link
+- `frontend/src/components/groups/GroupListResults.vue` â€” now delegates to `GroupCard`; card background overridden to `dtv-sand` via `:deep()`
+- `frontend/src/components/sessions/SessionListResults.vue` â€” replaced vertical list with 3-column grid using `SessionCard`; card background overridden to `dtv-sand` via `:deep()`; admin checkbox repositioned as absolute overlay
+- `frontend/src/pages/GroupsPage.vue` â€” added `pb-6` bottom padding
+- `frontend/src/pages/SessionsPage.vue` â€” added `px-6 pb-6` padding
+- `frontend/src/router/index.ts` â€” registered `/sandbox/group-card` route
+- `frontend/src/pages/sandbox/SandboxIndex.vue` â€” added GroupCard link
 
 
 
-## Session: 2026-03-30 (Vue session detail page — component architecture)
+## Session: 2026-03-30 (Vue session detail page â€” component architecture)
 
 ### Completed Tasks
 
-#### SessionDetailPage — decomposed into page-specific components ✓
+#### SessionDetailPage â€” decomposed into page-specific components âœ“
 
 The session detail page has been broken into focused, single-concern components under `frontend/src/pages/sessions/`. The page owns visibility logic (`v-if`) and passes data down as props; components own their own padding, styling, and internal layout.
 
 **Architecture decisions:**
-- Page-specific components live in `frontend/src/pages/sessions/` (sibling folder to `SessionDetailPage.vue`), not in `components/` — promoted to `components/` only if used by a second page
+- Page-specific components live in `frontend/src/pages/sessions/` (sibling folder to `SessionDetailPage.vue`), not in `components/` â€” promoted to `components/` only if used by a second page
 - Components own their internal padding; pages own layout/gaps only
 - Shared visual patterns (card chrome etc.) go in CSS files in `frontend/src/styles/`, not duplicated as Tailwind utilities
-- `isBookable` computed on the page (`session.date >= today`; remains open on day-of, closes next day — time field TBD); passed implicitly via `v-if` to control which cards render
+- `isBookable` computed on the page (`session.date >= today`; remains open on day-of, closes next day â€” time field TBD); passed implicitly via `v-if` to control which cards render
 
 **New components (`frontend/src/pages/sessions/`):**
-- `SessionHeaderCard.vue` — group name (green on black, `w-fit`), date/time/location table (black on white, full width), group description (white on dark, full width, `mt-auto` pushes to bottom of column); takes `session` prop
-- `CoverPhotoCard.vue` — renders `/media/:groupKey/:date/cover.jpg`; `aspect-[2/3]` enforces 2:3 ratio; shown only when `coverMediaId` is set; takes `groupKey`, `date`, `alt` props
-- `BookCard.vue` — booking CTA (days-to-go badge, Book button, spaces left chip, first-timer note); shown when `isBookable && !isRegistered`; `daysToGo` and `spacesLeft` computed internally; takes `session` prop
-- `LoginToBookCard.vue` — "Log in to book faster" prompt; hardcoded `/login` href; shown when `isBookable && !user`; dumb layout only
-- `WhatToExpectCard.vue` — static bullet list; shown when `isBookable`; no props
-- `WriteUpCard.vue` — session description with `white-space: pre-line` for SharePoint line breaks; shown when `!isBookable && session.description`; takes `description` prop
-- `SessionStatsCard.vue` — attended/hours/first-timers/children/regulars table (white on green); shown when `!isBookable`; takes `session` prop
-- `GroupTeaserCard.vue` — "Like the sound of this?" teaser with group description and link to next session; shown when `!isBookable && session.nextSession`; takes `groupName`, `groupDescription`, `nextSession` (URL string) props
+- `SessionHeaderCard.vue` â€” group name (green on black, `w-fit`), date/time/location table (black on white, full width), group description (white on dark, full width, `mt-auto` pushes to bottom of column); takes `session` prop
+- `CoverPhotoCard.vue` â€” renders `/media/:groupKey/:date/cover.jpg`; `aspect-[2/3]` enforces 2:3 ratio; shown only when `coverMediaId` is set; takes `groupKey`, `date`, `alt` props
+- `BookCard.vue` â€” booking CTA (days-to-go badge, Book button, spaces left chip, first-timer note); shown when `isBookable && !isRegistered`; `daysToGo` and `spacesLeft` computed internally; takes `session` prop
+- `LoginToBookCard.vue` â€” "Log in to book faster" prompt; hardcoded `/login` href; shown when `isBookable && !user`; dumb layout only
+- `WhatToExpectCard.vue` â€” static bullet list; shown when `isBookable`; no props
+- `WriteUpCard.vue` â€” session description with `white-space: pre-line` for SharePoint line breaks; shown when `!isBookable && session.description`; takes `description` prop
+- `SessionStatsCard.vue` â€” attended/hours/first-timers/children/regulars table (white on green); shown when `!isBookable`; takes `session` prop
+- `GroupTeaserCard.vue` â€” "Like the sound of this?" teaser with group description and link to next session; shown when `!isBookable && session.nextSession`; takes `groupName`, `groupDescription`, `nextSession` (URL string) props
 
 **Backend changes:**
-- `types/api-responses.ts` — added `nextSession?: string`, `isRegistered?`, `isAttended?`, `isRegular?` to `SessionDetailResponse`
-- `routes/sessions.ts` — `GET /api/sessions/:group/:date` now fetches `sessionsRepository.getAll()` in the Phase 1 parallel fetch; computes `nextSession` URL (`/sessions/:groupKey/:date`) for both public and authenticated response paths; `isRegistered`/`isAttended`/`isRegular` added to authenticated response
-- `stores/sessionDetail.ts` — normalises `isRegistered`/`isAttended`/`isRegular` from `undefined` to `false` on fetch so page logic can use simple `!isRegistered`
+- `types/api-responses.ts` â€” added `nextSession?: string`, `isRegistered?`, `isAttended?`, `isRegular?` to `SessionDetailResponse`
+- `routes/sessions.ts` â€” `GET /api/sessions/:group/:date` now fetches `sessionsRepository.getAll()` in the Phase 1 parallel fetch; computes `nextSession` URL (`/sessions/:groupKey/:date`) for both public and authenticated response paths; `isRegistered`/`isAttended`/`isRegular` added to authenticated response
+- `stores/sessionDetail.ts` â€” normalises `isRegistered`/`isAttended`/`isRegular` from `undefined` to `false` on fetch so page logic can use simple `!isRegistered`
 
 **Other changes:**
-- `frontend/vite.config.ts` — added `/media` proxy to Express (required for cover image in dev)
-- `frontend/src/components/LayoutColumns.vue` — left column changed from `self-start` to `self-stretch` so header card fills full row height (enables `mt-auto` description push)
-- `frontend/src/components/SessionList.vue` — next arrow SVG: removed white background wrapper, uses `brightness-0 invert` to render white on green
+- `frontend/vite.config.ts` â€” added `/media` proxy to Express (required for cover image in dev)
+- `frontend/src/components/LayoutColumns.vue` â€” left column changed from `self-start` to `self-stretch` so header card fills full row height (enables `mt-auto` description push)
+- `frontend/src/components/SessionList.vue` â€” next arrow SVG: removed white background wrapper, uses `brightness-0 invert` to render white on green
 
 ---
 
@@ -263,33 +263,33 @@ The session detail page has been broken into focused, single-concern components 
 
 ### Completed Tasks
 
-#### Frontend migration — scaffold ✓
+#### Frontend migration â€” scaffold âœ“
 
 New `frontend/` directory with a clean Vue 3 + Vite project. The old `public/` site is untouched throughout; `frontend/` is built in parallel and served at `/v2/` during migration. Cut-over happens when the new frontend is feature-complete.
 
 **New files:**
-- `frontend/package.json` — independent package (`dtv-tracker-frontend`); own `node_modules`
-- `frontend/vite.config.ts` — dev proxy for `/api`, `/auth`, `/img`, `/svg` → Express port 3000; `base` driven by `VITE_BASE_PATH` env var (default `/`)
-- `frontend/tsconfig.json` — Vue + Vite TypeScript config with `vite/client` types
-- `frontend/index.html` — Vite entry point
-- `frontend/src/main.ts` — app bootstrap (Vue + Pinia + Router)
-- `frontend/src/App.vue` — root component
-- `frontend/src/router/index.ts` — Vue Router (single route: `/` → `HomePage`)
-- `frontend/src/pages/HomePage.vue` — Hello World placeholder
+- `frontend/package.json` â€” independent package (`dtv-tracker-frontend`); own `node_modules`
+- `frontend/vite.config.ts` â€” dev proxy for `/api`, `/auth`, `/img`, `/svg` â†’ Express port 3000; `base` driven by `VITE_BASE_PATH` env var (default `/`)
+- `frontend/tsconfig.json` â€” Vue + Vite TypeScript config with `vite/client` types
+- `frontend/index.html` â€” Vite entry point
+- `frontend/src/main.ts` â€” app bootstrap (Vue + Pinia + Router)
+- `frontend/src/App.vue` â€” root component
+- `frontend/src/router/index.ts` â€” Vue Router (single route: `/` â†’ `HomePage`)
+- `frontend/src/pages/HomePage.vue` â€” Hello World placeholder
 
 **Modified:**
-- `routes/auth/dtv.ts` — post-login redirect uses `process.env.FRONTEND_URL` fallback; enables full end-to-end auth on Vite dev server
-- `routes/auth/magic.ts` — same `FRONTEND_URL` fallback on magic link callback
-- `app.js` — added two lines serving `frontend/dist/` at `/v2/` for live staging (Express 5 syntax: `/v2/*path`)
-- `.github/workflows/main_dtvtrackerapp.yml` — added frontend build step (`VITE_BASE_PATH=/v2/ npm run build`) and `frontend/dist/` included in deployment zip
-- `package.json` — added `frontend:dev`, `frontend:build`, `frontend:build:staging` convenience scripts; added `cross-env` dev dependency
+- `routes/auth/dtv.ts` â€” post-login redirect uses `process.env.FRONTEND_URL` fallback; enables full end-to-end auth on Vite dev server
+- `routes/auth/magic.ts` â€” same `FRONTEND_URL` fallback on magic link callback
+- `app.js` â€” added two lines serving `frontend/dist/` at `/v2/` for live staging (Express 5 syntax: `/v2/*path`)
+- `.github/workflows/main_dtvtrackerapp.yml` â€” added frontend build step (`VITE_BASE_PATH=/v2/ npm run build`) and `frontend/dist/` included in deployment zip
+- `package.json` â€” added `frontend:dev`, `frontend:build`, `frontend:build:staging` convenience scripts; added `cross-env` dev dependency
 
 **Development workflow:**
 - Terminal 1: `npm run dev` (Express on port 3000)
 - Terminal 2: `npm run frontend:dev` (Vite on port 5173)
 - Add `FRONTEND_URL=http://localhost:5173` to `.env` for full auth flow via Vite
 
-**Staging:** Push to `main` → GitHub Actions builds `frontend/dist/` with `VITE_BASE_PATH=/v2/` → live at `yoursite.com/v2/`
+**Staging:** Push to `main` â†’ GitHub Actions builds `frontend/dist/` with `VITE_BASE_PATH=/v2/` â†’ live at `yoursite.com/v2/`
 
 ---
 
@@ -297,54 +297,54 @@ New `frontend/` directory with a clean Vue 3 + Vite project. The old `public/` s
 
 ### Completed Tasks
 
-#### Standalone media gallery — Embla carousel ✓
+#### Standalone media gallery â€” Embla carousel âœ“
 
 New authenticated section at `/media/` providing a dedicated gallery experience separate from the session detail page.
 
-**New files (`public/media/` — untracked, not in git history):**
-- `public/media/index.html` — media library: loads all sessions with `mediaCount > 0` from `GET /api/sessions`, renders them as an Embla horizontal carousel using `/media/{groupKey}/{date}/cover.jpg` proxy URLs; clicking a session navigates to `session.html?groupKey=&date=`
-- `public/media/session.html` — session gallery: loads session data + media items in parallel, renders in `MediaGallery`; clicking any item calls `openLightbox()` from the shared `lightbox.js`
-- `public/media/embla/gallery.js` — `MediaGallery` class: Embla-powered horizontal carousel with variable-width slides (aspect ratio computed from natural image dimensions), prev/next nav buttons, keyboard arrow support, `onAction(item, index)` callback, `mg-selected` CSS class for the centred slide
-- `public/media/embla/gallery.css` — carousel styles: opacity dim on non-selected slides, caption gradient overlay, edit button on hover of selected slide, nav button positioning
+**New files (`public/media/` â€” untracked, not in git history):**
+- `public/media/index.html` â€” media library: loads all sessions with `mediaCount > 0` from `GET /api/sessions`, renders them as an Embla horizontal carousel using `/media/{groupKey}/{date}/cover.jpg` proxy URLs; clicking a session navigates to `session.html?groupKey=&date=`
+- `public/media/session.html` â€” session gallery: loads session data + media items in parallel, renders in `MediaGallery`; clicking any item calls `openLightbox()` from the shared `lightbox.js`
+- `public/media/embla/gallery.js` â€” `MediaGallery` class: Embla-powered horizontal carousel with variable-width slides (aspect ratio computed from natural image dimensions), prev/next nav buttons, keyboard arrow support, `onAction(item, index)` callback, `mg-selected` CSS class for the centred slide
+- `public/media/embla/gallery.css` â€” carousel styles: opacity dim on non-selected slides, caption gradient overlay, edit button on hover of selected slide, nav button positioning
 
 **Modified:**
-- `public/js/common.js` — breadcrumbs for `/media/` (Media library, one level below Home) and `/media/session.html` (Home > Media)
+- `public/js/common.js` â€” breadcrumbs for `/media/` (Media library, one level below Home) and `/media/session.html` (Home > Media)
 
-**Access:** Both pages served by post-auth `express.static('public')` — require login.
+**Access:** Both pages served by post-auth `express.static('public')` â€” require login.
 
-**Embla options:** `{ loop: false, align: 'center' }` — free momentum scrolling, centred snap. `containScroll: 'keepSnaps'` was tried and removed (restricted momentum to one slide per gesture). Click handler fires `onAction` directly on any slide (without requiring the slide to be pre-selected — the two-tap pattern was also removed).
+**Embla options:** `{ loop: false, align: 'center' }` â€” free momentum scrolling, centred snap. `containScroll: 'keepSnaps'` was tried and removed (restricted momentum to one slide per gesture). Click handler fires `onAction` directly on any slide (without requiring the slide to be pre-selected â€” the two-tap pattern was also removed).
 
 ---
 
-## Session: 2026-03-27 (Auth refactor — Passport.js + magic link + simplified Facebook flow)
+## Session: 2026-03-27 (Auth refactor â€” Passport.js + magic link + simplified Facebook flow)
 
 ### Completed Tasks
 
-#### Passport.js — replace DIY Google/Facebook auth ✓
+#### Passport.js â€” replace DIY Google/Facebook auth âœ“
 
-Replaced the hand-rolled `services/facebook-auth.ts` and `services/google-auth.ts` with `passport`, `passport-facebook`, and `passport-google-oauth20`. Both deleted; `routes/auth/index.ts` now configures strategies and calls `passport.initialize()`. Route handlers in `facebook.ts` and `google.ts` are simpler — they delegate all token exchange and profile fetching to Passport.
+Replaced the hand-rolled `services/facebook-auth.ts` and `services/google-auth.ts` with `passport`, `passport-facebook`, and `passport-google-oauth20`. Both deleted; `routes/auth/index.ts` now configures strategies and calls `passport.initialize()`. Route handlers in `facebook.ts` and `google.ts` are simpler â€” they delegate all token exchange and profile fetching to Passport.
 
 Facebook strategy uses `authorizationURL: 'https://m.facebook.com/v19.0/dialog/oauth'` to preserve the Android intent-filter workaround. Passport now handles CSRF state internally (resolves the long-standing CSRF regression from the 2026-03-17 refactor).
 
-#### Facebook login — simplified to direct navigation ✓
+#### Facebook login â€” simplified to direct navigation âœ“
 
-Removed the CCT + BroadcastChannel + `/auth/me` polling + `pendingFacebookAuth` localStorage + `visibilitychange` listener complexity from `login.html`. The Facebook flow is now identical to Google: click button → navigate to OAuth → callback sets session → redirect to destination. No multi-context completion detection needed.
+Removed the CCT + BroadcastChannel + `/auth/me` polling + `pendingFacebookAuth` localStorage + `visibilitychange` listener complexity from `login.html`. The Facebook flow is now identical to Google: click button â†’ navigate to OAuth â†’ callback sets session â†’ redirect to destination. No multi-context completion detection needed.
 
-The `fbcomplete=1` redirect was also removed from the Facebook callback — it now redirects directly to `dest`, same as Google.
+The `fbcomplete=1` redirect was also removed from the Facebook callback â€” it now redirects directly to `dest`, same as Google.
 
-#### Magic link email login ✓
+#### Magic link email login âœ“
 
-New auth option below Google/Facebook on the login page. User enters their email → 15-minute signed link sent via SMTP → click → logged in. Email matched against `Profile.Email` via existing `resolvePersonalSession()`.
+New auth option below Google/Facebook on the login page. User enters their email â†’ 15-minute signed link sent via SMTP â†’ click â†’ logged in. Email matched against `Profile.Email` via existing `resolvePersonalSession()`.
 
 New files:
-- `services/magic-auth.ts` — `MagicLoginStrategy` instance + nodemailer SMTP transport
-- `routes/auth/magic.ts` — `POST /auth/magic/send` + `GET /auth/magic/callback`
+- `services/magic-auth.ts` â€” `MagicLoginStrategy` instance + nodemailer SMTP transport
+- `routes/auth/magic.ts` â€” `POST /auth/magic/send` + `GET /auth/magic/callback`
 
 Magic link button is hidden when `SMTP_HOST` is not configured (reported by `GET /auth/providers`). New env vars: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`.
 
-#### WordPress OAuth (todo.md) ✓
+#### WordPress OAuth (todo.md) âœ“
 
-Added item to `docs/todo.md` — future integration making the tracker the "My DTV" section of the DTV website, with WordPress credentials used for login via `passport-oauth2` + WP OAuth Server plugin.
+Added item to `docs/todo.md` â€” future integration making the tracker the "My DTV" section of the DTV website, with WordPress credentials used for login via `passport-oauth2` + WP OAuth Server plugin.
 
 ---
 
@@ -352,22 +352,22 @@ Added item to `docs/todo.md` — future integration making the tracker the "My D
 
 ### Completed Tasks
 
-#### Backup — diff check, metadata, nightly integration ✓
+#### Backup â€” diff check, metadata, nightly integration âœ“
 
 - Extracted backup logic to `services/backup-export.ts` (`runBackupExport()`) matching the `session-stats.ts` pattern
 - Added SHA-256 diff check: downloads existing file, compares hash, skips upload if unchanged (sorts list items by ID first for stable ordering)
-- Added `Backups/taxonomy.json` (term set tree) and `Backups/schema.json` (all site lists with columns via single `GET /sites/{siteId}/lists?$expand=columns` call) — both with diff checking; volatile Graph API fields (`lastModifiedDateTime`, `eTag` etc.) stripped from schema JSON before hashing to avoid false positives
+- Added `Backups/taxonomy.json` (term set tree) and `Backups/schema.json` (all site lists with columns via single `GET /sites/{siteId}/lists?$expand=columns` call) â€” both with diff checking; volatile Graph API fields (`lastModifiedDateTime`, `eTag` etc.) stripped from schema JSON before hashing to avoid false positives
 - `routes/backup.ts` now a thin wrapper; `routes/eventbrite.ts` calls `runBackupExport()` as last nightly step and appends backup line to email summary
 - Added `/api/backup/` to `API_KEY_PATHS` in `require-auth.ts`
 - Admin button result updated to show updated/skipped breakdown
 - Added `downloadFile()` and `getAllListsWithColumns()` to `sharepoint-client.ts`
 
-#### Admin page site shortcuts ✓
+#### Admin page site shortcuts âœ“
 
 - Replaced 6 individual SharePoint list links with a single "Site Contents" button (`/sites/Tracker/_layouts/15/viewlsts.aspx?view=14`)
 - Removed Media shortcut; section now has 3 buttons: Site Contents, Term Store, Backup
 
-#### Bug consolidation ✓
+#### Bug consolidation âœ“
 
 - Merged `docs/bugs.md` into `docs/todo.md` with `**[BUG]**` tags in relevant sections; `bugs.md` archived to `docs/legacy/`
 
@@ -377,33 +377,33 @@ Added item to `docs/todo.md` — future integration making the tracker the "My D
 
 ### Completed Tasks
 
-#### Homepage recent sign-ups — spurious 401s for unauthenticated visitors ✓
+#### Homepage recent sign-ups â€” spurious 401s for unauthenticated visitors âœ“
 
 `initSignupsSection()` was calling `loadRecentSignups()` unconditionally on page load, firing `GET /api/entries/recent` for every visitor including unauthenticated ones (generating 401s visible in App Insights). The card was correctly hidden but the fetch still ran. Fixed by deferring the load until after the `authReady` event and only calling it when `window.currentUser` is set.
 
 ---
 
-## Session: 2026-03-23 (Performance — caching, targeted invalidation, asset delivery)
+## Session: 2026-03-23 (Performance â€” caching, targeted invalidation, asset delivery)
 
 ### Completed Tasks
 
-#### Nightly sync email formatting ✓
+#### Nightly sync email formatting âœ“
 
 Reformatted the `summary` field returned by `POST /api/eventbrite/event-and-attendee-update` (used by Azure Logic App email notifications):
 - Summary now uses `\n` line breaks (one item per line) instead of ` / ` separators
 - Sessions-processed count moved onto line 1 alongside the event totals (`X new sessions / Y sessions`)
-- Stats lines now include the IDs of updated items in parentheses when any were updated — e.g. `Session stats: 1/533 updated (567)` — to help diagnose unexpected stat changes
+- Stats lines now include the IDs of updated items in parentheses when any were updated â€” e.g. `Session stats: 1/533 updated (567)` â€” to help diagnose unexpected stat changes
 - `SessionStatsRefreshResult` and `ProfileStatsRefreshResult` interfaces extended with `updatedIds: number[]`; both `runSessionStatsRefresh()` and `runProfileStatsRefresh()` now collect and return the updated IDs
 
-#### Eventbrite sync — missing stats updates after entry creation ✓
+#### Eventbrite sync â€” missing stats updates after entry creation âœ“
 
 Two sync endpoints were creating entries without triggering a stats refresh:
 - **`POST /api/eventbrite/quick-sync`**: now runs `runSessionStatsRefresh()` and `runProfileStatsRefresh()` in parallel at the end of the sync loop, but only when `added > 0` (no-op syncs stay fast)
 - **`POST /api/eventbrite/sync-attendees`** (standalone): now runs both stats refreshes after `runSyncAttendees()` and includes the results in the response, matching the behaviour of the combined `event-and-attendee-update` endpoint
 
-#### Caching architecture — structural caches separated from NodeCache ✓
+#### Caching architecture â€” structural caches separated from NodeCache âœ“
 
-Root cause of `GET /api/tags/hours-by-taxonomy` consistently performing poorly: the taxonomy term tree was stored in NodeCache, which is flushed on every data write via `clearCache()`. During active use (check-ins, nightly sync with dozens of writes), the tree was effectively never warm — each cold request triggered multiple sequential Graph API beta calls to rebuild it.
+Root cause of `GET /api/tags/hours-by-taxonomy` consistently performing poorly: the taxonomy term tree was stored in NodeCache, which is flushed on every data write via `clearCache()`. During active use (check-ins, nightly sync with dozens of writes), the tree was effectively never warm â€” each cold request triggered multiple sequential Graph API beta calls to rebuild it.
 
 Three structural/schema caches now live in separate in-process Maps outside NodeCache and are not invalidated by data writes:
 
@@ -415,23 +415,23 @@ Three structural/schema caches now live in separate in-process Maps outside Node
 
 The `cover.jpg` proxy route also changed from `responseType: 'stream'` to `responseType: 'arraybuffer'` so the bytes can be buffered, cached, and sent without an intermediate pipe.
 
-#### NodeCache — targeted invalidation and per-entity TTLs ✓
+#### NodeCache â€” targeted invalidation and per-entity TTLs âœ“
 
 Replaced the global `clearCache()` (flushAll) pattern in all six repositories with targeted per-key eviction, and introduced tier-informed TTLs on every `cache.set()` call.
 
 **What changed:**
 
-- **`CACHE_TTL` constants** exported from `services/sharepoint-client.ts` — a single source of truth for all NodeCache TTLs, named by entity:
+- **`CACHE_TTL` constants** exported from `services/sharepoint-client.ts` â€” a single source of truth for all NodeCache TTLs, named by entity:
 
   | Entity | TTL | Rationale |
   |---|---|---|
-  | `groups` | 30 min | Admin-only changes — no reason to expire frequently |
-  | `sessions`, `profiles`, `regulars` | 5 min | Planning tier — Eventbrite sync and session edits happen in this window |
-  | `entries`, `records` | 1 min | Check-in tier — live updates during events; freshness matters |
-  | `stats_summary`, `stats_history` | 30 min | Summaries/reporting — trend data, stale for short periods is fine |
-  | `media-counts-{groupKey}` | 15 min | Tidy-up tier — photo uploads are post-event, not real-time |
+  | `groups` | 30 min | Admin-only changes â€” no reason to expire frequently |
+  | `sessions`, `profiles`, `regulars` | 5 min | Planning tier â€” Eventbrite sync and session edits happen in this window |
+  | `entries`, `records` | 1 min | Check-in tier â€” live updates during events; freshness matters |
+  | `stats_summary`, `stats_history` | 30 min | Summaries/reporting â€” trend data, stale for short periods is fine |
+  | `media-counts-{groupKey}` | 15 min | Tidy-up tier â€” photo uploads are post-event, not real-time |
 
-- **`clearCacheByPrefix(prefix)`** added to `SharePointClient` — deletes all NodeCache keys starting with the given prefix. Used to clear the `sessions_FY*` family (e.g. `sessions_FY2025`, `sessions_FY2026`) when entries or sessions change, since FY-filtered session results include aggregated entry data.
+- **`clearCacheByPrefix(prefix)`** added to `SharePointClient` â€” deletes all NodeCache keys starting with the given prefix. Used to clear the `sessions_FY*` family (e.g. `sessions_FY2025`, `sessions_FY2026`) when entries or sessions change, since FY-filtered session results include aggregated entry data.
 
 - **Per-repository targeted invalidation:**
 
@@ -444,15 +444,15 @@ Replaced the global `clearCache()` (flushAll) pattern in all six repositories wi
   | `records-repository.ts` | create, update, delete | `records` |
   | `regulars-repository.ts` | create, delete | `regulars` |
 
-  Previously every write in all six repos called `clearCache()` → `flushAll()`. A check-in write now evicts only `entries` + `sessions_FY*` — groups, sessions, profiles, records, and regulars stay warm.
+  Previously every write in all six repos called `clearCache()` â†’ `flushAll()`. A check-in write now evicts only `entries` + `sessions_FY*` â€” groups, sessions, profiles, records, and regulars stay warm.
 
-- **`routes/stats.ts`** — stats cache set calls now pass `CACHE_TTL.stats` (30 min) instead of relying on the NodeCache `stdTTL` default.
+- **`routes/stats.ts`** â€” stats cache set calls now pass `CACHE_TTL.stats` (30 min) instead of relying on the NodeCache `stdTTL` default.
 
 **Why entries clear `sessions_FY*`:** The `sessions_FY{year}` cache keys hold sessions filtered and annotated with FY-aggregated data derived from entries (hours, headcount). After a check-in or hours update these are stale. The base `sessions` key (the raw session list from SharePoint) is independent of entries and is not cleared by entry writes.
 
-**`clearCache()` (flushAll) is kept** — used only by the admin "Clear cache" endpoint (`POST /api/cache/clear`) which flushes all four caches. This remains the recommended action before reporting runs or after data-cleaning.
+**`clearCache()` (flushAll) is kept** â€” used only by the admin "Clear cache" endpoint (`POST /api/cache/clear`) which flushes all four caches. This remains the recommended action before reporting runs or after data-cleaning.
 
-#### Static asset browser caching ✓
+#### Static asset browser caching âœ“
 
 Added `maxAge: '1h'` to all four `express.static` middleware calls in `app.js` (`/img`, `/css`, `/js`, `/svg`). Previously no `Cache-Control: max-age` was set so browsers revalidated static assets (logo, SVG icons, stylesheets, scripts) on every navigation.
 
@@ -462,66 +462,66 @@ Added `maxAge: '1h'` to all four `express.static` middleware calls in `app.js` (
 
 ### Completed Tasks
 
-#### Date storage investigation and normalization ✓
+#### Date storage investigation and normalization âœ“
 
 The SharePoint Tracker site was historically configured on Pacific time (UTC-7/UTC-8), now corrected to (UTC) Dublin, Edinburgh, Lisbon, London. Session `Date` fields were stored with inconsistent UTC time components (`T12:00:00Z`, `T08:00:00Z`, `T07:00:00Z`) rather than the correct London-midnight UTC (`T00:00:00Z` for GMT months, `T23:00:00Z` for BST months).
 
-- **`scripts/check-session-dates.js`** — rewrote to use luxon and raw UTC fetching (no `dateOnlyFields` conversion). Computes expected UTC from Title date (midnight Europe/London → UTC) and compares to raw stored value. Reports correct/incorrect counts and shows two known-good checkpoint sessions (IDs 484 and 470). Includes day-of-week check for Wed/Sat/etc titled sessions.
-- **`scripts/normalize-session-dates.js`** — new one-off fix script. Dry-run by default; `--apply` writes corrected UTC values to SharePoint. Fixed 89 sessions, 0 failures.
-- **`services/sharepoint-client.ts`** — replaced Intl-based date helpers with `luxon`:
+- **`scripts/check-session-dates.js`** â€” rewrote to use luxon and raw UTC fetching (no `dateOnlyFields` conversion). Computes expected UTC from Title date (midnight Europe/London â†’ UTC) and compares to raw stored value. Reports correct/incorrect counts and shows two known-good checkpoint sessions (IDs 484 and 470). Includes day-of-week check for Wed/Sat/etc titled sessions.
+- **`scripts/normalize-session-dates.js`** â€” new one-off fix script. Dry-run by default; `--apply` writes corrected UTC values to SharePoint. Fixed 89 sessions, 0 failures.
+- **`services/sharepoint-client.ts`** â€” replaced Intl-based date helpers with `luxon`:
   - Read path (`utcToLocalDate`): `DateTime.fromISO(utcIso, { zone: 'UTC' }).setZone(SHAREPOINT_TIMEZONE).toISODate()`
   - Write path (`localDateToUtcIso`): `DateTime.fromISO(dateStr, { zone: SHAREPOINT_TIMEZONE }).toUTC().toISO()`
   - Both paths use `SHAREPOINT_TIMEZONE` env var (default `Europe/London`). Removed `_localDateFormatter` Intl object.
-- **`package.json`** — added `luxon` (production) and `@types/luxon` (dev).
+- **`package.json`** â€” added `luxon` (production) and `@types/luxon` (dev).
 
 Result: 533/533 sessions correct. Day-of-week check shows one known Sunday session (ID 386, Saturday crew) as the only mismatch.
 
 ---
 
-## Session: 2026-03-21 (Performance — Stats cache full implementation)
+## Session: 2026-03-21 (Performance â€” Stats cache full implementation)
 
 ### Completed Tasks
 
-#### Session Stats field — Phase A ✓
+#### Session Stats field â€” Phase A âœ“
 
 Added `Stats` multi-line text field to Sessions SharePoint list. Pre-computes `{ count, hours, media, new, child, regular, eventbrite }` JSON per session.
 
-- **`services/session-stats.ts`** — `computeAndSaveSessionStats()` helper: fetches entries for the session + media count via `getSessionMediaCount()`, computes and writes Stats JSON to SharePoint.
-- **`services/sharepoint-client.ts`** — `getSessionMediaCount()`: single lightweight Graph call to get `folder.childCount` for a session's media folder.
-- **`routes/sessions.ts`** — `POST /api/sessions/refresh-stats`: bulk nightly refresh, batched in groups of 10, API key auth, returns `{ updated: N, errors: [] }`. Sessions listing (`GET /api/sessions`) reads from Stats field — no `entriesRepository.getAll()` or media count calls.
-- **`public/admin.html`** — "Refresh Session Stats" button.
-- **`routes/entries.ts`** — targeted `computeAndSaveSessionStats()` call after every entry write/delete, media upload, session refresh, and remove no-shows.
+- **`services/session-stats.ts`** â€” `computeAndSaveSessionStats()` helper: fetches entries for the session + media count via `getSessionMediaCount()`, computes and writes Stats JSON to SharePoint.
+- **`services/sharepoint-client.ts`** â€” `getSessionMediaCount()`: single lightweight Graph call to get `folder.childCount` for a session's media folder.
+- **`routes/sessions.ts`** â€” `POST /api/sessions/refresh-stats`: bulk nightly refresh, batched in groups of 10, API key auth, returns `{ updated: N, errors: [] }`. Sessions listing (`GET /api/sessions`) reads from Stats field â€” no `entriesRepository.getAll()` or media count calls.
+- **`public/admin.html`** â€” "Refresh Session Stats" button.
+- **`routes/entries.ts`** â€” targeted `computeAndSaveSessionStats()` call after every entry write/delete, media upload, session refresh, and remove no-shows.
 
-#### Profile Stats field — Phase B ✓
+#### Profile Stats field â€” Phase B âœ“
 
 Added `Stats` multi-line text field to Profiles SharePoint list. Pre-computes `{ hoursByFY, sessionsByFY, isMember, cardStatus }` JSON per profile.
 
-- **`services/profile-stats.ts`** — `computeAndSaveProfileStats(profileId)`: fetches entries by profile (indexed Graph call) + records from cache; writes Stats JSON. `runProfileStatsRefresh()`: bulk nightly refresh.
-- **`routes/profiles.ts`** — `POST /api/profiles/refresh-stats`: bulk nightly refresh, API key auth. Fire-and-forget `computeAndSaveProfileStats()` after every entry write, record write (consent, membership, card), and profile transfer. Note: volunteers listing (`GET /api/profiles`) was later reverted to always compute live from entries (see 2026-03-21 fix below).
-- **`public/admin.html`** — "Refresh Profile Stats" button.
-- **`routes/stats.ts`** — `GET /api/stats` and `GET /api/stats/history` now read hours/sessions/activeGroups from session Stats field; volunteer counts from profile Stats field. No entries fetch needed.
-- **`routes/eventbrite.ts`** — nightly sync chain extended: Eventbrite sessions → attendees → session stats refresh → profile stats refresh.
+- **`services/profile-stats.ts`** â€” `computeAndSaveProfileStats(profileId)`: fetches entries by profile (indexed Graph call) + records from cache; writes Stats JSON. `runProfileStatsRefresh()`: bulk nightly refresh.
+- **`routes/profiles.ts`** â€” `POST /api/profiles/refresh-stats`: bulk nightly refresh, API key auth. Fire-and-forget `computeAndSaveProfileStats()` after every entry write, record write (consent, membership, card), and profile transfer. Note: volunteers listing (`GET /api/profiles`) was later reverted to always compute live from entries (see 2026-03-21 fix below).
+- **`public/admin.html`** â€” "Refresh Profile Stats" button.
+- **`routes/stats.ts`** â€” `GET /api/stats` and `GET /api/stats/history` now read hours/sessions/activeGroups from session Stats field; volunteer counts from profile Stats field. No entries fetch needed.
+- **`routes/eventbrite.ts`** â€” nightly sync chain extended: Eventbrite sessions â†’ attendees â†’ session stats refresh â†’ profile stats refresh.
 
-#### Recent signups filtered query — Phase C ✓
+#### Recent signups filtered query â€” Phase C âœ“
 
 `GET /api/entries/recent` replaced the full ~5,000-entry scan with a Graph OData filtered query using the `Created` index. Returns only entries created in the last 7 days.
 
-- **`services/repositories/entries-repository.ts`** — `getRecent(cutoff)`: `$filter=fields/Created ge '...'` (requires `Created` index on the Entries list).
+- **`services/repositories/entries-repository.ts`** â€” `getRecent(cutoff)`: `$filter=fields/Created ge '...'` (requires `Created` index on the Entries list).
 
-#### SharePoint indexes ✓
+#### SharePoint indexes âœ“
 
-All critical filtered-query indexes added via List Settings → Indexed Columns:
-- Entries `ProfileLookupId` — for `getByProfileId()` (profile detail, targeted stats updates)
-- Entries `Created` — for `getRecent()` (recent signups)
-- Records `ProfileLookupId` — for `getByProfile()` (consent, targeted stats updates)
+All critical filtered-query indexes added via List Settings â†’ Indexed Columns:
+- Entries `ProfileLookupId` â€” for `getByProfileId()` (profile detail, targeted stats updates)
+- Entries `Created` â€” for `getRecent()` (recent signups)
+- Records `ProfileLookupId` â€” for `getByProfile()` (consent, targeted stats updates)
 - Entries `SessionLookupId` and Entries `Modified` were already in place.
 
-#### Tech-debt resolved ✓
+#### Tech-debt resolved âœ“
 
-- **Profile Detail Fetches All Lists** — `GET /api/profiles/:slug` now uses `getByProfileId()` (indexed) and `recordsRepository.getByProfile()` instead of `getAll()` on both lists.
-- **Filter Logic Duplication** (2026-03-01) — `volunteers.js` filter pipeline extracted into `applyCommonFilters()` and `applyVolunteerFilters()` helpers. Sessions page inline JS (~485 lines) extracted to `public/js/sessions.js`.
-- **Silent Failure — `getColumnChoices`** (2026-03-01) — try/catch removed in `services/sharepoint-client.ts`; errors now propagate to route handler. `loadRecordOptions` in `volunteers.js` now logs on `!res.ok`.
-- **Silent Failure — `getTermSetIdForColumn`** (2026-03-02) — removed; tag route now reads term set ID directly from `TAXONOMY_TERM_SET_ID` env var.
+- **Profile Detail Fetches All Lists** â€” `GET /api/profiles/:slug` now uses `getByProfileId()` (indexed) and `recordsRepository.getByProfile()` instead of `getAll()` on both lists.
+- **Filter Logic Duplication** (2026-03-01) â€” `volunteers.js` filter pipeline extracted into `applyCommonFilters()` and `applyVolunteerFilters()` helpers. Sessions page inline JS (~485 lines) extracted to `public/js/sessions.js`.
+- **Silent Failure â€” `getColumnChoices`** (2026-03-01) â€” try/catch removed in `services/sharepoint-client.ts`; errors now propagate to route handler. `loadRecordOptions` in `volunteers.js` now logs on `!res.ok`.
+- **Silent Failure â€” `getTermSetIdForColumn`** (2026-03-02) â€” removed; tag route now reads term set ID directly from `TAXONOMY_TERM_SET_ID` env var.
 
 ---
 
@@ -529,10 +529,10 @@ All critical filtered-query indexes added via List Settings → Indexed Columns:
 
 ### Completed Tasks
 
-#### Volunteers listing — reverted to live entry computation ✓
+#### Volunteers listing â€” reverted to live entry computation âœ“
 
-- **`routes/profiles.ts`** — `GET /api/profiles` now always fetches entries, sessions, and groups to compute hours. The Stats-based fast path was removed because group + FY filter combinations were inconsistent (particularly FY=all + group returned wrong results). Accuracy over performance for this endpoint.
-- **`public/js/volunteers.js`** — Fixed pre-existing bug: when FY filter is "All" and a group is selected, profiles with no participation in that group were not being filtered out. Added `else if (currentGroup)` branch to filter by `hoursAll > 0 || sessionsAll > 0`.
+- **`routes/profiles.ts`** â€” `GET /api/profiles` now always fetches entries, sessions, and groups to compute hours. The Stats-based fast path was removed because group + FY filter combinations were inconsistent (particularly FY=all + group returned wrong results). Accuracy over performance for this endpoint.
+- **`public/js/volunteers.js`** â€” Fixed pre-existing bug: when FY filter is "All" and a group is selected, profiles with no participation in that group were not being filtered out. Added `else if (currentGroup)` branch to filter by `hoursAll > 0 || sessionsAll > 0`.
 
 ---
 
@@ -540,60 +540,60 @@ All critical filtered-query indexes added via List Settings → Indexed Columns:
 
 ### Completed Tasks
 
-#### Consent button on entry detail ✓
+#### Consent button on entry detail âœ“
 
-- **`routes/entries.ts`** — `GET /entries/:id` now fetches the volunteer's records and sets `hasPrivacyConsent: true` if there is an Accepted Privacy Consent record. Uses the already-imported `recordsRepository`.
-- **`types/api-responses.ts`** — Added `hasPrivacyConsent?: boolean` to `EntryDetailResponse`.
-- **`public/entry-detail.html`** — Renders a "Consent" button (checkboxes SVG icon) next to the Upload button in the entry header when `hasPrivacyConsent` is false. Clicking navigates to `/profiles/:slug/consent.html`. Button hidden once consent is signed.
-- **`public/css/styles.css`** — Added `.checkin-or-selfservice` CSS class: shown for admin, check-in, and self-service; hidden for read-only and public. Used by the consent button.
+- **`routes/entries.ts`** â€” `GET /entries/:id` now fetches the volunteer's records and sets `hasPrivacyConsent: true` if there is an Accepted Privacy Consent record. Uses the already-imported `recordsRepository`.
+- **`types/api-responses.ts`** â€” Added `hasPrivacyConsent?: boolean` to `EntryDetailResponse`.
+- **`public/entry-detail.html`** â€” Renders a "Consent" button (checkboxes SVG icon) next to the Upload button in the entry header when `hasPrivacyConsent` is false. Clicking navigates to `/profiles/:slug/consent.html`. Button hidden once consent is signed.
+- **`public/css/styles.css`** â€” Added `.checkin-or-selfservice` CSS class: shown for admin, check-in, and self-service; hidden for read-only and public. Used by the consent button.
 
-#### Self-service consent submission ✓
+#### Self-service consent submission âœ“
 
-- **`middleware/require-admin.ts`** — Added `POST /api/profiles/:id/consent` to `SELFSERVICE_ALLOWED_PATTERNS`.
-- **`routes/profiles.ts`** — Added ownership check to `POST /profiles/:id/consent`: self-service users can only submit consent for their own profile; returns 403 otherwise.
+- **`middleware/require-admin.ts`** â€” Added `POST /api/profiles/:id/consent` to `SELFSERVICE_ALLOWED_PATTERNS`.
+- **`routes/profiles.ts`** â€” Added ownership check to `POST /profiles/:id/consent`: self-service users can only submit consent for their own profile; returns 403 otherwise.
 
 This enables self-service volunteers to sign their own consent form directly from their entry detail page, paving the way for email-based consent collection.
 
 ---
 
-## Session: 2026-03-18 (Homepage personalisation — steps 1 & 2)
+## Session: 2026-03-18 (Homepage personalisation â€” steps 1 & 2)
 
 ### Completed Tasks
 
-#### Personalised homepage calendar ✓
+#### Personalised homepage calendar âœ“
 
-- **`public/js/home/session-section.js`** — after `authReady`, fetches the user's profile (self-service, check-in, admin-with-profile only); builds `myEntryMap` (keyed `date|groupKey`) and `regularGroupIds`; Next/Last buttons prefer the user's own sessions with global fallback; passes personalData to calendar and myEntryMap to session cards. Backup `authReady` listener handles the rare case where auth resolves after sessions load.
-- **`public/js/calendar.js`** — accepts optional `personalData` 4th argument (`myDates`, `regularDates` Sets); auto-selects user's next session on init; adds `cal-my-session` (filled dot) and `cal-regular-session` (outline dot) CSS classes to cells.
-- **`public/js/session-cards.js`** — accepts `myEntryMap` option; renders "Attended · Nh" (filled pill) or "Registered" (outline pill) below the session title when matched.
-- **`public/css/styles.css`** — dot and pill styles; dots switch to white on the selected (green) cell.
+- **`public/js/home/session-section.js`** â€” after `authReady`, fetches the user's profile (self-service, check-in, admin-with-profile only); builds `myEntryMap` (keyed `date|groupKey`) and `regularGroupIds`; Next/Last buttons prefer the user's own sessions with global fallback; passes personalData to calendar and myEntryMap to session cards. Backup `authReady` listener handles the rare case where auth resolves after sessions load.
+- **`public/js/calendar.js`** â€” accepts optional `personalData` 4th argument (`myDates`, `regularDates` Sets); auto-selects user's next session on init; adds `cal-my-session` (filled dot) and `cal-regular-session` (outline dot) CSS classes to cells.
+- **`public/js/session-cards.js`** â€” accepts `myEntryMap` option; renders "Attended Â· Nh" (filled pill) or "Registered" (outline pill) below the session title when matched.
+- **`public/css/styles.css`** â€” dot and pill styles; dots switch to white on the selected (green) cell.
 
-Public and read-only users see no change — personalisation is additive and role-gated.
+Public and read-only users see no change â€” personalisation is additive and role-gated.
 
-#### Word cloud Show History integration ✓
+#### Word cloud Show History integration âœ“
 
-- **`public/js/home/stats-section.js`** — `fullCloudItems` stores the full sorted set after each fetch; `updateWordCloudDisplay()` slices to top 5 when history is collapsed, passes all items when expanded; `toggleHistory()` calls `updateWordCloudDisplay()` in sync.
+- **`public/js/home/stats-section.js`** â€” `fullCloudItems` stores the full sorted set after each fetch; `updateWordCloudDisplay()` slices to top 5 when history is collapsed, passes all items when expanded; `toggleHistory()` calls `updateWordCloudDisplay()` in sync.
 
-Remaining homepage personalisation steps (3–5) added to `docs/todo.md`.
+Remaining homepage personalisation steps (3â€“5) added to `docs/todo.md`.
 
 ---
 
-## Session: 2026-03-17 (Auth refactor — split routes/auth.ts into per-provider files)
+## Session: 2026-03-17 (Auth refactor â€” split routes/auth.ts into per-provider files)
 
 ### Completed Tasks
 
-#### Auth route refactor ✓
+#### Auth route refactor âœ“
 
 `routes/auth.ts` (270-line monolith) split into focused per-provider files:
 
-- **`routes/auth/dtv.ts`** — DTV Account (Entra ID / Microsoft) login and callback
-- **`routes/auth/google.ts`** — Google OAuth login and callback
-- **`routes/auth/facebook.ts`** — Facebook OAuth login and callback
-- **`routes/auth/index.ts`** — shared routes: `/logout`, `/providers`, `/me`; mounts the three provider sub-routers
-- **`services/personal-auth.ts`** — extracted shared personal account resolution logic (`resolvePersonalSession`): matches OAuth email against Profile.Email, computes `selfservice` role, detects linked DTV Account for `trustedRole`. Used by both Google and Facebook callbacks.
+- **`routes/auth/dtv.ts`** â€” DTV Account (Entra ID / Microsoft) login and callback
+- **`routes/auth/google.ts`** â€” Google OAuth login and callback
+- **`routes/auth/facebook.ts`** â€” Facebook OAuth login and callback
+- **`routes/auth/index.ts`** â€” shared routes: `/logout`, `/providers`, `/me`; mounts the three provider sub-routers
+- **`services/personal-auth.ts`** â€” extracted shared personal account resolution logic (`resolvePersonalSession`): matches OAuth email against Profile.Email, computes `selfservice` role, detects linked DTV Account for `trustedRole`. Used by both Google and Facebook callbacks.
 
 No functional changes; all existing OAuth flows, session structure, and endpoint paths are identical.
 
-**Note — CSRF state regression**: The 2026-03-16 Facebook fix replaced session-based OAuth CSRF state with HMAC-signed stateless tokens (to fix Azure multi-instance failures). The refactor inadvertently reverted this: `routes/auth/facebook.ts` and `routes/auth/google.ts` both use session-based `req.session.oauthState` again. This is tracked in technical-debt.md.
+**Note â€” CSRF state regression**: The 2026-03-16 Facebook fix replaced session-based OAuth CSRF state with HMAC-signed stateless tokens (to fix Azure multi-instance failures). The refactor inadvertently reverted this: `routes/auth/facebook.ts` and `routes/auth/google.ts` both use session-based `req.session.oauthState` again. This is tracked in technical-debt.md.
 
 ---
 
@@ -601,89 +601,89 @@ No functional changes; all existing OAuth flows, session structure, and endpoint
 
 ### Completed Tasks
 
-#### Eventbrite session date timezone bug — investigated and fixed ✓
+#### Eventbrite session date timezone bug â€” investigated and fixed âœ“
 
 Root cause: when the Eventbrite sync created sessions, it posted plain date strings (e.g. `"2026-04-22"`) to SharePoint's Date field. SharePoint interpreted these as midnight in the site's London timezone (BST = UTC+1), converting them to UTC the previous day (e.g. `"2026-04-21T23:00:00Z"`). The Title field (plain text) was unaffected and always stored the correct date.
 
 This affected all sessions created on **2026-02-15** (the initial data migration) when the SharePoint timezone was configured as UTC+1. Sessions created later in GMT (Feb 22, Feb 24, Mar 1) were correct because London timezone = UTC in winter. Sessions created during BST going forward would also be affected without the code fix.
 
-**`services/eventbrite-client.ts`** — changed Eventbrite event date source from `e.start?.utc` to `e.start?.local || e.start?.utc`. Uses the event's local calendar date rather than UTC, so events near midnight don't shift.
+**`services/eventbrite-client.ts`** â€” changed Eventbrite event date source from `e.start?.utc` to `e.start?.local || e.start?.utc`. Uses the event's local calendar date rather than UTC, so events near midnight don't shift.
 
-**`routes/eventbrite.ts`** — `runSyncSessions()`: Date field now stored as `"${dateStr}T12:00:00Z"` (noon UTC) instead of a plain date string. Noon UTC cannot be shifted across a date boundary by any timezone offset, making storage robust regardless of SharePoint's timezone setting.
+**`routes/eventbrite.ts`** â€” `runSyncSessions()`: Date field now stored as `"${dateStr}T12:00:00Z"` (noon UTC) instead of a plain date string. Noon UTC cannot be shifted across a date boundary by any timezone offset, making storage robust regardless of SharePoint's timezone setting.
 
-**`routes/sessions.ts`** — PATCH endpoint: same noon UTC format applied when date is changed via session edit. Also auto-updates the Title field when date changes if the current Title starts with the old date string (e.g. `"2026-04-22 Wed"` → `"2026-04-23 Wed"`).
+**`routes/sessions.ts`** â€” PATCH endpoint: same noon UTC format applied when date is changed via session edit. Also auto-updates the Title field when date changes if the current Title starts with the old date string (e.g. `"2026-04-22 Wed"` â†’ `"2026-04-23 Wed"`).
 
-**`routes/entries.ts`** — Recent Sign-ups (`GET /api/entries/recent`): changed `date: session.Date.substring(0, 10)` to `date: session.Date`. Passing the full ISO datetime string to the browser lets `toLocaleDateString('en-GB')` handle BST conversion correctly, so shifted legacy dates (stored as `"2026-04-21T23:00:00Z"`) display as April 22 in a UK browser.
+**`routes/entries.ts`** â€” Recent Sign-ups (`GET /api/entries/recent`): changed `date: session.Date.substring(0, 10)` to `date: session.Date`. Passing the full ISO datetime string to the browser lets `toLocaleDateString('en-GB')` handle BST conversion correctly, so shifted legacy dates (stored as `"2026-04-21T23:00:00Z"`) display as April 22 in a UK browser.
 
-#### Diagnostic and correction scripts ✓
+#### Diagnostic and correction scripts âœ“
 
-**`scripts/check-session-dates.js`** — read-only diagnostic: reports sessions where the Title date doesn't match the Date field (in Europe/London timezone), and verifies Wed/Sat/etc sessions fall on the correct day of the week. Confirmed all 56 mismatches were from the 2026-02-15 migration.
+**`scripts/check-session-dates.js`** â€” read-only diagnostic: reports sessions where the Title date doesn't match the Date field (in Europe/London timezone), and verifies Wed/Sat/etc sessions fall on the correct day of the week. Confirmed all 56 mismatches were from the 2026-02-15 migration.
 
-**`scripts/fix-session-dates.js`** — one-off correction: updates Date fields to `"${titleDate}T12:00:00Z"` for all sessions where Title date doesn't match stored date. Dry-run by default (`--apply` to commit). Applied to 53 sessions (3 timesheet outliers with deliberately end-of-month dates had already been corrected manually).
+**`scripts/fix-session-dates.js`** â€” one-off correction: updates Date fields to `"${titleDate}T12:00:00Z"` for all sessions where Title date doesn't match stored date. Dry-run by default (`--apply` to commit). Applied to 53 sessions (3 timesheet outliers with deliberately end-of-month dates had already been corrected manually).
 
-#### Eventbrite sync concurrency lock ✓
+#### Eventbrite sync concurrency lock âœ“
 
 Added `syncInProgress` boolean flag in `routes/eventbrite.ts`. All three sync endpoints (`event-and-attendee-update`, `sync-sessions`, `sync-attendees`) check the flag on entry and return 409 if a sync is already running. Flag is cleared in `finally` block. Prevents duplicate entries caused by the Azure Logic App retrying a timed-out HTTP request while the first run was still processing.
 
 ---
 
-## Session: 2026-03-16 (Security audit — self-service privacy hardening, Facebook PWA login, login redirects)
+## Session: 2026-03-16 (Security audit â€” self-service privacy hardening, Facebook PWA login, login redirects)
 
 ### Completed Tasks
 
-#### Self-service volunteer data privacy — backend hardening ✓
-- `GET /api/profiles/:slug` — added ownership check: self-service users get 403 if the profile ID is not in `req.session.user.profileIds`. Strips `duplicates` and `linkedProfiles` from response for self-service users.
-- `GET /api/groups`, `GET /api/groups/:key` — regulars list returned as empty array for self-service/public; `isCurrentUserRegular` flag added to response so the frontend can show "You are a regular" without exposing other volunteers' names.
-- `GET /api/tags/hours-by-taxonomy?profile=` — requires authentication; returns 401 without session (prevents enumerating individual volunteer activity via public endpoint).
-- `GET /api/media/*` — `name` and `webUrl` fields stripped from unauthenticated responses (these fields embed the uploader's name in the generated filename).
-- `middleware/require-admin.ts` — profile slug regex tightened from `/^\/profiles\/[^/]+$/` to `/^\/profiles\/[^/]+-\d+$/` (prevents `/profiles/export` from matching self-service GET allowlist); sessions pattern updated to `/^\/sessions(?!\/export)/` (blocks self-service access to sessions CSV export).
+#### Self-service volunteer data privacy â€” backend hardening âœ“
+- `GET /api/profiles/:slug` â€” added ownership check: self-service users get 403 if the profile ID is not in `req.session.user.profileIds`. Strips `duplicates` and `linkedProfiles` from response for self-service users.
+- `GET /api/groups`, `GET /api/groups/:key` â€” regulars list returned as empty array for self-service/public; `isCurrentUserRegular` flag added to response so the frontend can show "You are a regular" without exposing other volunteers' names.
+- `GET /api/tags/hours-by-taxonomy?profile=` â€” requires authentication; returns 401 without session (prevents enumerating individual volunteer activity via public endpoint).
+- `GET /api/media/*` â€” `name` and `webUrl` fields stripped from unauthenticated responses (these fields embed the uploader's name in the generated filename).
+- `middleware/require-admin.ts` â€” profile slug regex tightened from `/^\/profiles\/[^/]+$/` to `/^\/profiles\/[^/]+-\d+$/` (prevents `/profiles/export` from matching self-service GET allowlist); sessions pattern updated to `/^\/sessions(?!\/export)/` (blocks self-service access to sessions CSV export).
 
-#### Self-service volunteer data privacy — frontend hardening ✓
-- Sessions page: CSV download button and session checkboxes are now `.trusted-only` — hidden from Self-Service and Public. Advanced section (tag filter etc.) remains accessible.
+#### Self-service volunteer data privacy â€” frontend hardening âœ“
+- Sessions page: CSV download button and session checkboxes are now `.trusted-only` â€” hidden from Self-Service and Public. Advanced section (tag filter etc.) remains accessible.
 - Sessions page JS: checkbox rendering gated on `isTrusted` role check in `sessions.js`.
 - Group detail: regulars list hidden for non-trusted; shows "You are a regular volunteer for this group" if `group.isCurrentUserRegular === true`.
 - Groups listing: "0 regulars" suppressed (zero count hidden for non-trusted).
 - Profile detail: graceful 403 handling with "You don't have permission" message and back link (instead of empty/broken page).
 - Added `.trusted-only` CSS class to `styles.css`.
 
-#### Facebook login on Android — full fix (Chrome + PWA standalone) ✓
+#### Facebook login on Android â€” full fix (Chrome + PWA standalone) âœ“
 Root cause: Android's intent filter for the Facebook native app claims `www.facebook.com`, intercepting the OAuth navigation. The callback then lands in the Facebook app's own WebView (a different cookie context), so the session is never visible to Chrome or the PWA.
 
-**`services/facebook-auth.ts`** — changed OAuth base URL from `https://www.facebook.com/v19.0/dialog/oauth` to `https://m.facebook.com/v19.0/dialog/oauth`. The Facebook app's intent filter does not claim `m.facebook.com`, so the OAuth opens in Chrome instead.
+**`services/facebook-auth.ts`** â€” changed OAuth base URL from `https://www.facebook.com/v19.0/dialog/oauth` to `https://m.facebook.com/v19.0/dialog/oauth`. The Facebook app's intent filter does not claim `m.facebook.com`, so the OAuth opens in Chrome instead.
 
-**`routes/auth.ts`** — replaced session-based CSRF state (broke on Azure multi-instance and across browser contexts) with HMAC-signed stateless tokens (`SESSION_SECRET` env var). Added `fbcomplete=1` redirect so the callback page can notify the waiting tab via BroadcastChannel before navigating to the destination.
+**`routes/auth.ts`** â€” replaced session-based CSRF state (broke on Azure multi-instance and across browser contexts) with HMAC-signed stateless tokens (`SESSION_SECRET` env var). Added `fbcomplete=1` redirect so the callback page can notify the waiting tab via BroadcastChannel before navigating to the destination.
 
-**`public/login.html`** — two-path Facebook click handler:
+**`public/login.html`** â€” two-path Facebook click handler:
 - *Chrome (non-standalone)*: `window.open()` opens OAuth in a new tab; original login.html stays alive running BroadcastChannel listener + `/auth/me` polling.
 - *PWA standalone*: `target="_blank"` on the button forces it into a Chrome Custom Tab (standalone PWAs have no tab concept so `_blank` always opens externally). OAuth completes in Chrome CCT (which shares cookies with the PWA). BroadcastChannel + polling detects session.
 
 Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendingFacebookAuth` localStorage item provides a fallback if the page reloads mid-flow; `visibilitychange` listener restarts polling if the page resumes from background without a reload; `reason` param check calls `/auth/me` before showing an error (guards against stale error URLs).
 
-#### Login redirect standardisation ✓
+#### Login redirect standardisation âœ“
 - All login redirects now go to `/login.html` (unified sign-in page):
-  - `middleware/require-auth.ts` — page redirect changed from `/auth/login` to `/login.html`
-  - `public/session-detail.html` — static `href` and dynamic JS href both updated
-  - `public/js/common.js` — `apiFetch` 401 redirect updated
+  - `middleware/require-auth.ts` â€” page redirect changed from `/auth/login` to `/login.html`
+  - `public/session-detail.html` â€” static `href` and dynamic JS href both updated
+  - `public/js/common.js` â€” `apiFetch` 401 redirect updated
 
-#### `types/api-responses.ts` ✓
+#### `types/api-responses.ts` âœ“
 - Added `isCurrentUserRegular?: boolean` to `GroupResponse` and `GroupDetailResponse`.
 
 ## Session: 2026-03-10 (Sessions CSV download, Eventbrite session name fix)
 
 ### Completed Tasks
 
-#### Sessions listing — CSV download of selected sessions ✓
+#### Sessions listing â€” CSV download of selected sessions âœ“
 - "Download CSV" button added to the Advanced section alongside "Add Tags"
 - Button is disabled until sessions are selected (checkbox mode); enables/disables in sync with Add Tags
 - Exports only the selected sessions; columns: Date, Group, Name, Registrations, Hours, New, Children, Regulars, Financial Year
 - No authentication required (public-accessible)
-- `public/sessions.html` — button added to advanced-row
-- `public/js/sessions.js` — `downloadSessionsCSV()` function; `updateBulkTagButton` updated to sync CSV button state
+- `public/sessions.html` â€” button added to advanced-row
+- `public/js/sessions.js` â€” `downloadSessionsCSV()` function; `updateBulkTagButton` updated to sync CSV button state
 
-#### Eventbrite session sync — blank Name for group-matched sessions ✓
+#### Eventbrite session sync â€” blank Name for group-matched sessions âœ“
 - New sessions created by `sync-sessions` are no longer given the Eventbrite event name as their display title
 - Sessions matched to a group fall back to group name + date, consistent with manually-created sessions
-- `routes/eventbrite.ts` — removed `fields.Name = event.name` from `runSyncSessions()`
+- `routes/eventbrite.ts` â€” removed `fields.Name = event.name` from `runSyncSessions()`
 
 ---
 
@@ -691,32 +691,32 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 
 ### Completed Tasks
 
-#### Profile slug now includes SharePoint ID ✓
+#### Profile slug now includes SharePoint ID âœ“
 - Profile URLs changed from `/profiles/gary-downs/` to `/profiles/gary-downs-42/` to prevent name collisions (e.g. two "Gary Downs" profiles)
-- `services/data-layer.ts` — added `profileSlug(name, id)` and `profileIdFromSlug(slug)` helpers
-- `routes/profiles.ts` — all slug generation uses `profileSlug`; all lookups extract ID from slug and find by `p.ID` (with legacy name-only fallback for old bookmarks)
-- `routes/auth.ts` — session `profileSlug` updated to include ID (used for header link and check-in self-edit permission)
-- `routes/entries.ts` — `volunteerSlug` generation and entry lookup both use ID-based slug; legacy fallback retained
-- `routes/sessions.ts` — `volunteerSlug` generation updated
-- `services/data-layer.ts` `groupRegularsByCrewId` — regulars slugs on group detail page updated
+- `services/data-layer.ts` â€” added `profileSlug(name, id)` and `profileIdFromSlug(slug)` helpers
+- `routes/profiles.ts` â€” all slug generation uses `profileSlug`; all lookups extract ID from slug and find by `p.ID` (with legacy name-only fallback for old bookmarks)
+- `routes/auth.ts` â€” session `profileSlug` updated to include ID (used for header link and check-in self-edit permission)
+- `routes/entries.ts` â€” `volunteerSlug` generation and entry lookup both use ID-based slug; legacy fallback retained
+- `routes/sessions.ts` â€” `volunteerSlug` generation updated
+- `services/data-layer.ts` `groupRegularsByCrewId` â€” regulars slugs on group detail page updated
 
-#### Entry detail — volunteer email ✓
+#### Entry detail â€” volunteer email âœ“
 - Email shown as a `mailto:` link on the entry detail page
 - Visible to any authenticated user (`auth-only`); hidden from public visitors
-- `types/api-responses.ts` — `volunteerEmail?` added to `EntryDetailResponse`
-- `routes/entries.ts` — `volunteerEmail: profile?.Email` populated in response
-- `public/entry-detail.html` — email field rendered above Checked In if present
+- `types/api-responses.ts` â€” `volunteerEmail?` added to `EntryDetailResponse`
+- `routes/entries.ts` â€” `volunteerEmail: profile?.Email` populated in response
+- `public/entry-detail.html` â€” email field rendered above Checked In if present
 
-#### Profile detail — bar chart toggle selection ✓
+#### Profile detail â€” bar chart toggle selection âœ“
 - Chart now loads with no year selected (all entries shown by default)
 - Clicking a bar selects that FY; clicking the selected bar again deselects back to all
 - `persistFY`/`getStoredFY` no longer used on profile detail (state not persisted across page loads)
 
-#### Profile detail — groups card always visible ✓
+#### Profile detail â€” groups card always visible âœ“
 - Groups card previously disappeared when a FY was selected and the volunteer had no hours in that year
 - Now always shows all groups the volunteer belongs to; hours figure updates for the selected FY (shows 0 if none that year)
 
-#### Profile detail — Transfer / Delete Profile button logic ✓
+#### Profile detail â€” Transfer / Delete Profile button logic âœ“
 - Transfer button hidden when profile has no entries (nothing to transfer)
 - Delete Profile button shown only when profile has no entries
 - Previously both could appear simultaneously
@@ -727,12 +727,12 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 
 ### Completed Tasks
 
-#### Eventbrite sync — name-clash detection ✓
+#### Eventbrite sync â€” name-clash detection âœ“
 - Two attendees with the same name but different emails now create separate profiles rather than being merged onto one. A `#Duplicate` (red warning) badge is added to the new entry so admins can spot and resolve it using the existing profile transfer function.
-- `services/eventbrite-sync.ts` — `findOrCreateProfile()` updated: name match with differing emails creates new profile and returns `clash: true`; name match with no email on the stored profile backfills the email; email is never matched alone (name always required)
-- `routes/eventbrite.ts` — destructures `clash`, adds `#Duplicate` to `noteTags`, tracks `duplicateWarnings` count, includes in sync summary string
-- `routes/entries.ts` — same `#Duplicate` tag handling for per-session refresh endpoint
-- `public/js/tag-icons.js` — `#Duplicate` registered as red `warning.svg` badge ("Duplicate Warning")
+- `services/eventbrite-sync.ts` â€” `findOrCreateProfile()` updated: name match with differing emails creates new profile and returns `clash: true`; name match with no email on the stored profile backfills the email; email is never matched alone (name always required)
+- `routes/eventbrite.ts` â€” destructures `clash`, adds `#Duplicate` to `noteTags`, tracks `duplicateWarnings` count, includes in sync summary string
+- `routes/entries.ts` â€” same `#Duplicate` tag handling for per-session refresh endpoint
+- `public/js/tag-icons.js` â€” `#Duplicate` registered as red `warning.svg` badge ("Duplicate Warning")
 
 ---
 
@@ -740,27 +740,27 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 
 ### Completed Tasks
 
-#### Upload page — session link on completion ✓
+#### Upload page â€” session link on completion âœ“
 - After successful upload, authenticated users see a "View session gallery" link back to the session detail page
 - Public/unauthenticated users do not see the link (photos are `IsPublic: false` until reviewed, so the gallery would appear empty)
-- `routes/upload.ts` — `sessionId` and `isAuthenticated` added to `UploadContextResponse`; `resolveCode` returns `sessionId`
-- `types/api-responses.ts` — `sessionId` and `isAuthenticated` added to `UploadContextResponse`
+- `routes/upload.ts` â€” `sessionId` and `isAuthenticated` added to `UploadContextResponse`; `resolveCode` returns `sessionId`
+- `types/api-responses.ts` â€” `sessionId` and `isAuthenticated` added to `UploadContextResponse`
 
-#### Upload page — thank-you message copy ✓
-- "Thank you for sharing your photos!" → "Thanks for sharing your media! It'll be reviewed by a volunteer coordinator and may be used in our gallery."
+#### Upload page â€” thank-you message copy âœ“
+- "Thank you for sharing your photos!" â†’ "Thanks for sharing your media! It'll be reviewed by a volunteer coordinator and may be used in our gallery."
 
-#### Media upload — video support ✓
+#### Media upload â€” video support âœ“
 - Upload page now accepts MP4, MOV, M4V in addition to images; 10 MB limit retained (suitable for short-form video)
-- `routes/upload.ts` — `video/mp4`, `video/quicktime`, `video/x-m4v` added to `ALLOWED_MIME_TYPES`
-- `public/upload.html` — `accept` attribute, hint text, button text, titles updated to reflect media (not photos only)
-- `services/media-upload.ts` — `exifDate()` extended to try `CreationDate`/`CreateDate` tags for MP4/MOV container metadata; falls back to upload time if not found
+- `routes/upload.ts` â€” `video/mp4`, `video/quicktime`, `video/x-m4v` added to `ALLOWED_MIME_TYPES`
+- `public/upload.html` â€” `accept` attribute, hint text, button text, titles updated to reflect media (not photos only)
+- `services/media-upload.ts` â€” `exifDate()` extended to try `CreationDate`/`CreateDate` tags for MP4/MOV container metadata; falls back to upload time if not found
 
-#### Session gallery — native inline video player ✓
+#### Session gallery â€” native inline video player âœ“
 - Videos in the session photo strip and cover now open in the lightbox instead of linking out to SharePoint
-- `public/js/lightbox.js` — lightbox now renders `<video controls autoplay playsinline>` for video MIME types; pauses video on close/prev/next to prevent audio bleed
-- `public/js/session-detail.js` — video carousel items and video cover now call `openLightbox()` like images
-- `services/sharepoint-client.ts` — new `getMediaItemDownloadUrl()` method: fetches item metadata (for `IsPublic`) then uses Graph API `/content` endpoint (which returns a 302 redirect to a pre-authenticated stream URL)
-- `routes/media.ts` — new `GET /api/media/:itemId/stream` endpoint: validates public access for unauthenticated users, then redirects to the pre-auth stream URL; lightbox uses `/api/media/{id}/stream` as video `src`
+- `public/js/lightbox.js` â€” lightbox now renders `<video controls autoplay playsinline>` for video MIME types; pauses video on close/prev/next to prevent audio bleed
+- `public/js/session-detail.js` â€” video carousel items and video cover now call `openLightbox()` like images
+- `services/sharepoint-client.ts` â€” new `getMediaItemDownloadUrl()` method: fetches item metadata (for `IsPublic`) then uses Graph API `/content` endpoint (which returns a 302 redirect to a pre-authenticated stream URL)
+- `routes/media.ts` â€” new `GET /api/media/:itemId/stream` endpoint: validates public access for unauthenticated users, then redirects to the pre-auth stream URL; lightbox uses `/api/media/{id}/stream` as video `src`
 
 ---
 
@@ -768,29 +768,29 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 
 ### Completed Tasks
 
-#### Sessions page FY querystring fix ✓
+#### Sessions page FY querystring fix âœ“
 - `sessions.js` was reading `?fy=` directly from `URLSearchParams`, bypassing `getStoredFY()` in `common.js`
-- Raw value `2024-2025` was passed to `filterSessions()` which expects `FY2024` format — filter silently did nothing
+- Raw value `2024-2025` was passed to `filterSessions()` which expects `FY2024` format â€” filter silently did nothing
 - Fix: replaced duplicate URL param read with `getStoredFY()`, which already handles format conversion, cookie fallback, and default FY
 
-#### Word cloud randomised order ✓
+#### Word cloud randomised order âœ“
 - `word-cloud.js` `render()` now shuffles items with Fisher-Yates (`.sort(() => Math.random() - 0.5)`) before rendering
 - Font size still scales with hours; CSV export order is unaffected (uses `lastItems` pre-shuffle)
 
-#### Homepage heading rename ✓
-- "About This System" → "About the DTV Tracker App" in `public/index.html`
+#### Homepage heading rename âœ“
+- "About This System" â†’ "About the DTV Tracker App" in `public/index.html`
 
-#### Partial public access ✓
+#### Partial public access âœ“
 - Homepage, sessions listing, groups listing, group detail, and session detail pages are now accessible without login
-- `middleware/require-auth.ts` — added `PUBLIC_GET_PATHS` whitelist (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/tags`, `/api/media`) before the session check; whitelisted handlers still receive `req.session.user` for conditional data stripping
-- `app.js` — added public HTML page routes before `app.use(requireAuth)` for the five public pages; all other pages (volunteers, profiles, entries, admin, add-entry) remain behind auth
-- `routes/groups.ts` — both GET handlers check `isAuthenticated`; unauthenticated requests receive `regulars: []` and `regularsCount: 0`
-- `routes/sessions.ts` — GET `/:group/:date` strips `entries: []` for unauthenticated requests (registrations/hours totals still returned)
-- `public/css/styles.css` — added `.auth-only` / `body[data-role] .auth-only` rule (mirrors existing `.admin-only` pattern)
-- `public/js/common.js` — unauthenticated `/auth/me` response now renders a "Log in" button in the header
-- `public/js/home/stats-section.js` — volunteers nav card gets `auth-only` class; admin gear button gets `admin-only` class
-- `public/js/home/signups-section.js` — changed `apiFetch` → plain `fetch` so a 401 silently hides the section without redirecting to login
-- `public/js/session-detail.js` — free parking card and entries section wrapped in `<div class="auth-only">` so they hide for unauthenticated visitors; group detail regulars already hidden when `regulars.length === 0` (no change needed)
+- `middleware/require-auth.ts` â€” added `PUBLIC_GET_PATHS` whitelist (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/tags`, `/api/media`) before the session check; whitelisted handlers still receive `req.session.user` for conditional data stripping
+- `app.js` â€” added public HTML page routes before `app.use(requireAuth)` for the five public pages; all other pages (volunteers, profiles, entries, admin, add-entry) remain behind auth
+- `routes/groups.ts` â€” both GET handlers check `isAuthenticated`; unauthenticated requests receive `regulars: []` and `regularsCount: 0`
+- `routes/sessions.ts` â€” GET `/:group/:date` strips `entries: []` for unauthenticated requests (registrations/hours totals still returned)
+- `public/css/styles.css` â€” added `.auth-only` / `body[data-role] .auth-only` rule (mirrors existing `.admin-only` pattern)
+- `public/js/common.js` â€” unauthenticated `/auth/me` response now renders a "Log in" button in the header
+- `public/js/home/stats-section.js` â€” volunteers nav card gets `auth-only` class; admin gear button gets `admin-only` class
+- `public/js/home/signups-section.js` â€” changed `apiFetch` â†’ plain `fetch` so a 401 silently hides the section without redirecting to login
+- `public/js/session-detail.js` â€” free parking card and entries section wrapped in `<div class="auth-only">` so they hide for unauthenticated visitors; group detail regulars already hidden when `regulars.length === 0` (no change needed)
 
 ---
 
@@ -798,7 +798,7 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 
 ### Completed Tasks
 
-#### Sessions listing — search, advanced filters, cascading dropdowns ✓
+#### Sessions listing â€” search, advanced filters, cascading dropdowns âœ“
 - Text search (min 3 chars) across session title and description
 - Advanced filter section (toggle) with group and tag dropdowns
 - Tag dropdown is a tree-picker widget matching the Add Tag modal style (reuses `session-tags.js` CSS/JS)
@@ -807,35 +807,35 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 - Tag label format: `"DH > Sheepskull > Top"` displayed as `"DH: Sheepskull: Top"` in the filter button
 - URL params persist all filters across page reloads (`?search=`, `?group=`, `?tag=`)
 
-#### Bulk session tagging ✓
+#### Bulk session tagging âœ“
 - Checkboxes appear on session cards when Advanced is open
 - "Select all / Deselect all" link respects current filter results
-- "Add Tags (N)" button enabled when ≥1 session selected; label shows count
+- "Add Tags (N)" button enabled when â‰¥1 session selected; label shows count
 - Reuses the shared `session-tags.js` tag picker modal; `initSessionTags` extended with `onConfirm` callback for non-session-detail contexts
 - `POST /api/sessions/bulk-tag` endpoint: merges tags into each session's existing metadata, deduplicates by `termGuid`
 - Sessions reload after bulk tag; selection cleared
 
-#### Volunteer checkbox selection ✓
+#### Volunteer checkbox selection âœ“
 - Checkboxes appear on volunteer cards when Advanced is open
 - "Select all / Deselect all" link respects all active filters (type, hours, records, search)
-- "Add Records (N)" and "Download CSV" buttons enabled only when ≥1 selected; both show count
+- "Add Records (N)" and "Download CSV" buttons enabled only when â‰¥1 selected; both show count
 - `openBulkRecords()` applies to selected volunteers (or all filtered if none selected)
 - `downloadCSV()` exports `?profileIds=...` for selected volunteers; `/api/profiles/export` extended with `profileIds` query param
 - Closing Advanced clears selection
 
-#### Frontend taxonomy cache removed ✓
+#### Frontend taxonomy cache removed âœ“
 - `_cachedTaxonomy` removed from `session-tags.js`; taxonomy now fetched fresh on every modal open
 - `tagTaxonomy` in `sessions.html` reset on every `loadSessions()` call
 - Server-side cache (NodeCache, 5-min TTL) provides the performance; homepage Refresh button now correctly clears the full taxonomy cache end-to-end
 
-#### CSS / style fixes ✓
+#### CSS / style fixes âœ“
 - `#groupSelect` padding and font-size aligned with `.advanced-row select` (was 0.85rem/0.4rem; now 0.9rem/0.5rem matching all other advanced dropdowns)
 - `.select-all-link` font-size raised from 0.85rem to 0.9rem
 - Consistent up-arrow character (`&#9652;`) across both sessions and volunteers Advanced toggles
 
-#### Documentation ✓
+#### Documentation âœ“
 - CLAUDE.md: updated page and file descriptions; added bulk tagging, volunteer selection, cascading filters, and CSV export to Implemented Features
-- technical-debt.md: added filter logic duplication item (volunteers.js ×3, sessions.html ×2) and noted sessions.html inline JS still outstanding
+- technical-debt.md: added filter logic duplication item (volunteers.js Ã—3, sessions.html Ã—2) and noted sessions.html inline JS still outstanding
 - test-script.md: updated H23 (bulk records now mentions checkbox path), added H30 (bulk tag sessions), updated L2 (volunteer checkboxes), added L3 sessions search, added L19 (sessions advanced filters), updated M5 (sessions listing)
 - progress.md: this entry
 
@@ -845,14 +845,14 @@ Supporting mechanisms: `fbcomplete=1` handler broadcasts auth completion; `pendi
 
 ### Completed Tasks
 
-#### Extract inline JS/CSS from HTML pages ✓
+#### Extract inline JS/CSS from HTML pages âœ“
 
 Resolved the "Inline JavaScript in HTML pages" technical debt item. All four large pages now load their logic from separate `.js` files:
 
-- `profile-detail.html` (839 → 120 lines) → `public/js/profile-detail.js`
-- `volunteers.html` (672 → 115 lines) → `public/js/volunteers.js`
-- `session-detail.html` (554 → 75 lines) → `public/js/session-detail.js`
-- `group-detail.html` (391 → 80 lines) → `public/js/group-detail.js`
+- `profile-detail.html` (839 â†’ 120 lines) â†’ `public/js/profile-detail.js`
+- `volunteers.html` (672 â†’ 115 lines) â†’ `public/js/volunteers.js`
+- `session-detail.html` (554 â†’ 75 lines) â†’ `public/js/session-detail.js`
+- `group-detail.html` (391 â†’ 80 lines) â†’ `public/js/group-detail.js`
 
 Page-specific CSS moved to `styles.css` under named section comments. FY bar chart CSS merged from both `profile-detail` and `group-detail` into a shared `/* === FY Bar Chart === */` section. Scripts loaded at bottom of `<body>` (no `defer`) so global functions remain accessible to inline `onclick` attributes.
 
@@ -862,22 +862,22 @@ Page-specific CSS moved to `styles.css` under named section comments. FY bar cha
 
 ### Completed Tasks
 
-#### Full codebase review — technical debt, architecture, CSS ✓
+#### Full codebase review â€” technical debt, architecture, CSS âœ“
 Comprehensive review of all files now the taxonomy tags, calendar, bar charts, and photo upload features are in place.
 
 **Key findings** (full detail in [technical-debt.md](technical-debt.md)):
 
-- **Inline JS in HTML pages** is the main growing risk: `profile-detail.html`, `volunteers.html`, and `session-detail.html` each have 400–600 lines of inline JS mixing rendering, state, API calls, and business rules. Recently added features (calendar, tags, lightbox) were correctly extracted as separate JS files — the original page logic should follow the same pattern.
+- **Inline JS in HTML pages** is the main growing risk: `profile-detail.html`, `volunteers.html`, and `session-detail.html` each have 400â€“600 lines of inline JS mixing rendering, state, API calls, and business rules. Recently added features (calendar, tags, lightbox) were correctly extracted as separate JS files â€” the original page logic should follow the same pattern.
 - **`profiles.ts`** (836 lines) handles profiles + records + regulars. Could be split when next touched.
-- **CSS button duplication**: `.btn-action` and `.dropdown-btn` are near-identical — could share a base.
+- **CSS button duplication**: `.btn-action` and `.dropdown-btn` are near-identical â€” could share a base.
 - **CSS green variables**: Five variants including two nearly identical light-tint backgrounds (`--green-light` / `--green-tint`). Audit and consolidate.
 - **Session tags CSS naming** at bottom of `styles.css` uses a different convention from the rest.
 - **`common.js` Eventbrite helpers**: `buildEventbriteLink()` / `initEventbriteButtons()` are specific to two pages but live in shared common.js.
 
 **Architecture in good shape**:
-- Backend route → repository → sharepoint-client chain is clean and consistent
+- Backend route â†’ repository â†’ sharepoint-client chain is clean and consistent
 - `data-layer.ts`, `sharepoint-client.ts`, `field-names.ts`, type system all holding up well
-- Cache invalidation strategy (write → clearCache) is correct
+- Cache invalidation strategy (write â†’ clearCache) is correct
 - New JS modules (calendar, session-tags, session-cards, lightbox) correctly separated
 
 **New items added to technical-debt.md**:
@@ -890,9 +890,9 @@ Comprehensive review of all files now the taxonomy tags, calendar, bar charts, a
 
 ---
 
-#### Persist upload codes to SharePoint ✓
+#### Persist upload codes to SharePoint âœ“
 - Added `Code` column to the Entries SharePoint list (single line of text)
-- `services/upload-tokens.ts` (in-memory store) removed — no longer needed
+- `services/upload-tokens.ts` (in-memory store) removed â€” no longer needed
 - `entries-repository.ts`: `Code` added to `selectFields`; new `getByCode(code)` method queries SP directly (bypasses cache); new `updateCode(entryId, code)` persists to SharePoint
 - `POST /entries/:id/upload-code`: reuses existing code if already set; generates and persists a new one otherwise
 - `resolveCode` in `upload.ts`: replaced in-memory lookup with `entriesRepository.getByCode()`; expiry now checks session date is within last 7 days (same logic, simpler query scope)
@@ -904,7 +904,7 @@ Comprehensive review of all files now the taxonomy tags, calendar, bar charts, a
 
 ### Completed Tasks
 
-#### Role-Based Permissions ✓
+#### Role-Based Permissions âœ“
 - Added Admin and Check In Only roles
 - Admin users configured via `ADMIN_USERS` env var (comma-separated emails)
 - Role computed at login, stored in session, exposed via `/auth/me`
@@ -922,33 +922,33 @@ Comprehensive review of all files now the taxonomy tags, calendar, bar charts, a
 
 ### Completed Tasks
 
-#### 1. Project Documentation ✓
+#### 1. Project Documentation âœ“
 - Created [claude.md](../claude.md) with comprehensive project context
 - Documented all SharePoint lists, relationships, and workflows
 - Added development guidelines and security considerations
 
-#### 2. Environment Setup ✓
+#### 2. Environment Setup âœ“
 - Created `.env` file with SharePoint credentials (git-ignored)
 - Installed dependencies:
   - `dotenv` for environment variable management
   - `axios` for HTTP requests
   - `express` already installed
 
-#### 3. SharePoint Integration Service ✓
+#### 3. SharePoint Integration Service âœ“
 - Created [services/sharepoint.js](../services/sharepoint.js) with:
   - OAuth authentication with Microsoft Entra ID
   - Access token caching with expiry management
   - Generic methods for SharePoint REST API calls
   - Convenience methods for all 5 lists (Groups, Sessions, Profiles, Entries, Regulars)
 
-#### 4. API Endpoints ✓
+#### 4. API Endpoints âœ“
 - Updated [app.js](../app.js) with REST API endpoints:
   - `GET /api/health` - Health check
   - `GET /api/groups` - Fetch all groups/crews
   - `GET /api/sessions` - Fetch all sessions/events
   - `GET /api/profiles` - Fetch all volunteer profiles
 
-#### 5. Testing Infrastructure ✓
+#### 5. Testing Infrastructure âœ“
 - Created [test-auth.js](../test-auth.js) for debugging authentication
 
 ### Current Status: BLOCKED
@@ -958,12 +958,12 @@ Comprehensive review of all files now the taxonomy tags, calendar, bar charts, a
 **Root Cause**: The Entra ID app has permissions granted, but the specific SharePoint site doesn't allow app-only access yet.
 
 **What Works**:
-- ✓ OAuth token acquisition from Microsoft Entra ID
-- ✓ Express server and API endpoints
-- ✓ Code structure and service layer
+- âœ“ OAuth token acquisition from Microsoft Entra ID
+- âœ“ Express server and API endpoints
+- âœ“ Code structure and service layer
 
 **What Doesn't Work**:
-- ✗ Actual SharePoint data retrieval (blocked by site permissions)
+- âœ— Actual SharePoint data retrieval (blocked by site permissions)
 
 ### Next Steps
 
@@ -994,7 +994,7 @@ Choose one of these options to proceed:
 **Entra ID App Registration**:
 - Client ID: `267fb092-69c0-48ea-b197-67b79dd4bc92`
 - Tenant ID: `0799305d-07e3-47b2-a19a-62d9931217f6`
-- Permissions Granted: `Sites.ReadWrite.All` (Application, Admin Consented ✓)
+- Permissions Granted: `Sites.ReadWrite.All` (Application, Admin Consented âœ“)
 
 **SharePoint Lists** (all GUIDs configured in `.env`):
 - Groups: `68f9eb4a-1eea-4c1f-88e5-9211cf56e002`
@@ -1051,7 +1051,7 @@ curl http://localhost:3000/api/profiles
 
 ### Completed Tasks
 
-#### 1. Microsoft Graph API Migration ✓
+#### 1. Microsoft Graph API Migration âœ“
 
 **Objective**: Resolve "Unsupported app only token" error by migrating from SharePoint REST API to Microsoft Graph API (Option B from previous session).
 
@@ -1083,23 +1083,23 @@ curl http://localhost:3000/api/profiles
 - [services/sharepoint.js](../services/sharepoint.js) - Complete API migration (~150 lines changed)
 - [test-auth.js](../test-auth.js) - Enhanced testing and diagnostics
 
-### Current Status: ✅ WORKING
+### Current Status: âœ… WORKING
 
 **What Works**:
-- ✓ OAuth token acquisition for Microsoft Graph API
-- ✓ Access token includes correct permission: `Sites.ReadWrite.All`
-- ✓ Site ID discovery from SharePoint URL
-- ✓ All 5 SharePoint list queries (Groups, Sessions, Entries, Profiles, Regulars)
-- ✓ Response format transformation (backward compatible with app.js)
-- ✓ Lookup field data retrieval (both display value and lookup ID)
-- ✓ Query parameters ($filter, $orderby, $select via expand)
+- âœ“ OAuth token acquisition for Microsoft Graph API
+- âœ“ Access token includes correct permission: `Sites.ReadWrite.All`
+- âœ“ Site ID discovery from SharePoint URL
+- âœ“ All 5 SharePoint list queries (Groups, Sessions, Entries, Profiles, Regulars)
+- âœ“ Response format transformation (backward compatible with app.js)
+- âœ“ Lookup field data retrieval (both display value and lookup ID)
+- âœ“ Query parameters ($filter, $orderby, $select via expand)
 
 **Test Results**:
 ```
-✓ Access token obtained with Sites.ReadWrite.All permission
-✓ Site ID: dtvolunteers.sharepoint.com,5d19359b-9b75-484a-adaa-ffe4d4ea12f5,8773ff53-f0bb-4791-8b86-81531dbdfe2d
-✓ Retrieved 25 groups
-✓ Retrieved 200 sessions with lookup fields working
+âœ“ Access token obtained with Sites.ReadWrite.All permission
+âœ“ Site ID: dtvolunteers.sharepoint.com,5d19359b-9b75-484a-adaa-ffe4d4ea12f5,8773ff53-f0bb-4791-8b86-81531dbdfe2d
+âœ“ Retrieved 25 groups
+âœ“ Retrieved 200 sessions with lookup fields working
 ```
 
 ### API Architecture
@@ -1157,10 +1157,10 @@ GET /sites/{siteId}/lists/{listGuid}/items?expand=fields(select=...)
   - Preventing accidental exposure if repo becomes public
 
 **Current Security Posture**:
-- ✓ Client credentials stored in `.env` (git-ignored)
-- ✓ Access tokens cached in memory only
-- ✓ Microsoft Graph API with tenant-level permissions
-- ✓ No secrets committed to repository
+- âœ“ Client credentials stored in `.env` (git-ignored)
+- âœ“ Access tokens cached in memory only
+- âœ“ Microsoft Graph API with tenant-level permissions
+- âœ“ No secrets committed to repository
 
 ### Testing Commands
 
@@ -1184,7 +1184,7 @@ curl http://localhost:3000/api/profiles
 
 ---
 
-#### 2. Groups List Page ✓
+#### 2. Groups List Page âœ“
 
 **Objective**: Build the first frontend UI page to display volunteer groups (crews).
 
@@ -1206,10 +1206,10 @@ curl http://localhost:3000/api/profiles
 - Simplified error logging in [services/sharepoint.js](../services/sharepoint.js)
 
 **Results**:
-- ✓ Groups page successfully displays all 25 volunteer crews
-- ✓ Express server correctly loads environment variables
-- ✓ API endpoint `/api/groups` working reliably
-- ✓ Clean, maintainable code ready for extension
+- âœ“ Groups page successfully displays all 25 volunteer crews
+- âœ“ Express server correctly loads environment variables
+- âœ“ API endpoint `/api/groups` working reliably
+- âœ“ Clean, maintainable code ready for extension
 
 **Files Modified**:
 - [public/groups.html](../public/groups.html) - New file (250 lines)
@@ -1224,13 +1224,13 @@ http://localhost:3000/
 http://localhost:3000/groups.html
 ```
 
-### Current Status: ✅ GROUPS PAGE COMPLETE
+### Current Status: âœ… GROUPS PAGE COMPLETE
 
 **What's Working**:
-- ✓ Microsoft Graph API integration (all 5 lists accessible)
-- ✓ Groups list page with 25 crews displayed
-- ✓ Home page with navigation
-- ✓ Express server with reliable API endpoints
+- âœ“ Microsoft Graph API integration (all 5 lists accessible)
+- âœ“ Groups list page with 25 crews displayed
+- âœ“ Home page with navigation
+- âœ“ Express server with reliable API endpoints
 
 **Pushed to GitHub**: 3 commits (Graph API migration + Groups page)
 
@@ -1240,7 +1240,7 @@ http://localhost:3000/groups.html
 
 ---
 
-#### 3. Mobile-First Requirements & Reporting Features ✓
+#### 3. Mobile-First Requirements & Reporting Features âœ“
 
 **Objective**: Implement mobile-first design principles and build public reporting features (Options 2 + 4).
 
@@ -1249,13 +1249,13 @@ http://localhost:3000/groups.html
   - Primary use case: On-site outdoor work with limited bandwidth
   - Big simple buttons (minimum 44px touch targets)
   - Server-side processing for aggregations
-  - Progressive disclosure pattern (list → detail)
+  - Progressive disclosure pattern (list â†’ detail)
   - High contrast for outdoor visibility
 
 **Implementation**:
 
 **A. Terminology Cleanup (Option 4)**
-- Updated all UI references: "Crew" → "Group"
+- Updated all UI references: "Crew" â†’ "Group"
 - [public/index.html](../public/index.html) - Navigation and about section
 - [public/groups.html](../public/groups.html) - Header and card display
 - Removed Name shorthand display (e.g., "Sat" is internal only)
@@ -1314,17 +1314,17 @@ curl http://localhost:3000/api/groups
 curl http://localhost:3000/api/sessions
 ```
 
-### Current Status: ✅ MOBILE-FIRST REPORTING COMPLETE
+### Current Status: âœ… MOBILE-FIRST REPORTING COMPLETE
 
 **What's Working**:
-- ✓ Mobile-first requirements documented
-- ✓ Terminology cleanup: "Crew" → "Group" throughout UI
-- ✓ Group Details page with big buttons and touch targets
-- ✓ Dashboard stats with big numbers (Groups, Sessions FY, Hours FY)
-- ✓ Sessions page with filter toggle (All vs This FY)
-- ✓ Server-side FY calculation and aggregation
-- ✓ Progressive disclosure pattern (list → detail)
-- ✓ All pages optimized for mobile devices
+- âœ“ Mobile-first requirements documented
+- âœ“ Terminology cleanup: "Crew" â†’ "Group" throughout UI
+- âœ“ Group Details page with big buttons and touch targets
+- âœ“ Dashboard stats with big numbers (Groups, Sessions FY, Hours FY)
+- âœ“ Sessions page with filter toggle (All vs This FY)
+- âœ“ Server-side FY calculation and aggregation
+- âœ“ Progressive disclosure pattern (list â†’ detail)
+- âœ“ All pages optimized for mobile devices
 
 **Key Technical Decisions**:
 - Financial Year calculation: `currentMonth >= 3 ? currentYear : currentYear - 1`
@@ -1347,7 +1347,7 @@ curl http://localhost:3000/api/sessions
 
 ### Completed Tasks
 
-#### 1. Fixed Critical Pagination Bug ✓
+#### 1. Fixed Critical Pagination Bug âœ“
 
 **Objective**: Resolve hours calculation discrepancy (67.5 hours vs expected 2826.5 hours)
 
@@ -1361,13 +1361,13 @@ curl http://localhost:3000/api/sessions
 
 **Results**:
 - **Before**: 200 sessions, 200 entries, 67.5 hours
-- **After**: 517 sessions, 3,242 entries, 2,628.5 hours ✓
+- **After**: 517 sessions, 3,242 entries, 2,628.5 hours âœ“
 - Dashboard now matches SharePoint pivot table perfectly
 
 **Files Modified**:
 - [services/sharepoint.js](../services/sharepoint.js) lines 176-230 - Added pagination loop
 
-#### 2. Implemented Hybrid Financial Year Filtering ✓
+#### 2. Implemented Hybrid Financial Year Filtering âœ“
 
 **Objective**: Use Sessions.FinancialYearFlow field as authoritative source for FY filtering
 
@@ -1386,7 +1386,7 @@ curl http://localhost:3000/api/sessions
 - [app.js](../app.js) lines 79-126 - Hybrid FY filtering logic
 - [docs/sharepoint-refactoring.md](sharepoint-refactoring.md) - Documented FY field usage
 
-#### 3. Added Active Groups Stat to Dashboard ✓
+#### 3. Added Active Groups Stat to Dashboard âœ“
 
 **Objective**: Show count of groups with active sessions in current FY (more meaningful than total groups)
 
@@ -1404,7 +1404,7 @@ curl http://localhost:3000/api/sessions
 - [app.js](../app.js) lines 133-145 - Active groups calculation
 - [public/index.html](../public/index.html) - Updated dashboard UI
 
-#### 4. Documentation & Refactoring ✓
+#### 4. Documentation & Refactoring âœ“
 
 **Documentation Created**:
 - [docs/sharepoint-refactoring.md](sharepoint-refactoring.md) - Tracks legacy columns, naming issues, and cleanup tasks
@@ -1432,7 +1432,7 @@ curl http://localhost:3000/api/sessions
 3. **Financial Year Data Model**:
    - Sessions.FinancialYearFlow = Authoritative source (maintained by Power Automate)
    - Entries.FinancialYearFlow = Deprecated (not maintained, delete column)
-   - Always join Entries → Sessions to get FY data
+   - Always join Entries â†’ Sessions to get FY data
 
 4. **Hybrid Filtering Pattern**: When a field isn't fully populated, use a hybrid approach:
    - Prefer the dedicated field when available
@@ -1444,14 +1444,14 @@ curl http://localhost:3000/api/sessions
    - `Name` = Full name (e.g., "Saturday Dig") - use for UI display
    - Schema documentation was backwards from actual usage
 
-### Current Status: ✅ DASHBOARD STATS WORKING
+### Current Status: âœ… DASHBOARD STATS WORKING
 
 **What's Working**:
-- ✓ Pagination retrieves all 3,242 entries and 517 sessions
-- ✓ Dashboard shows accurate FY stats: 14 active groups, 103 sessions, 2,628.5 hours
-- ✓ Numbers match SharePoint pivot table exactly
-- ✓ Hybrid FY filtering handles both new and legacy data
-- ✓ All three dashboard stats are FY-specific and consistent
+- âœ“ Pagination retrieves all 3,242 entries and 517 sessions
+- âœ“ Dashboard shows accurate FY stats: 14 active groups, 103 sessions, 2,628.5 hours
+- âœ“ Numbers match SharePoint pivot table exactly
+- âœ“ Hybrid FY filtering handles both new and legacy data
+- âœ“ All three dashboard stats are FY-specific and consistent
 
 **Files in This Session**:
 - [services/sharepoint.js](../services/sharepoint.js) - Pagination + hybrid filtering
@@ -1483,7 +1483,7 @@ curl http://localhost:3000/api/sessions
 
 ### Completed Tasks
 
-#### 1. Comment and Documentation Cleanup ✓
+#### 1. Comment and Documentation Cleanup âœ“
 
 Applied three documentation principles across the codebase:
 1. Readable code over comments - good naming conventions
@@ -1497,7 +1497,7 @@ Applied three documentation principles across the codebase:
 - Removed redundant CSS comment in index.html
 - Added documentation philosophy to CLAUDE.md
 
-#### 2. API TypeScript Conversion ✓
+#### 2. API TypeScript Conversion âœ“
 
 **Objective**: Convert `routes/api.js` to TypeScript with clean domain naming, preventing SharePoint field names from leaking into the HTTP API.
 
@@ -1517,7 +1517,7 @@ Applied three documentation principles across the codebase:
 - `app.js` imports from `./dist/routes/api` (compiled TypeScript)
 - nodemon config updated to watch `dist/` and `.ts` files
 
-**Field Name Mapping (old → new)**:
+**Field Name Mapping (old â†’ new)**:
 | SharePoint | API Response |
 |---|---|
 | `.ID` | `.id` |
@@ -1537,26 +1537,26 @@ Applied three documentation principles across the codebase:
 - [public/group-detail.html](../public/group-detail.html) - Updated all field references
 - [public/sessions.html](../public/sessions.html) - Updated all field references
 
-#### 3. Documentation Updates ✓
+#### 3. Documentation Updates âœ“
 
-- Updated readme.md: file structure (`api.js` → `api.ts`, added `api-responses.ts`), code style description
+- Updated readme.md: file structure (`api.js` â†’ `api.ts`, added `api-responses.ts`), code style description
 - Updated CLAUDE.md: current state, file structure, code style description
 - Updated docs/progress.md: this session entry
 
-### Current Status: ✅ API TYPESCRIPT CONVERSION COMPLETE
+### Current Status: âœ… API TYPESCRIPT CONVERSION COMPLETE
 
 **Architecture**:
 ```
-SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map to response types) → Frontend
+SharePoint â†’ Repository â†’ Data Layer (convert/enrich/validate) â†’ API (map to response types) â†’ Frontend
                           (heavy: business logic)                  (thin: HTTP plumbing)
 ```
 
 **What's Working**:
-- ✓ TypeScript API routes with compiler-enforced domain types
-- ✓ No SharePoint field names leak into HTTP responses
-- ✓ Clean separation: data layer owns business logic, API is thin HTTP adapter
-- ✓ All frontend pages updated and working with new field names
-- ✓ Dashboard, Groups, Group Detail, and Sessions pages all functional
+- âœ“ TypeScript API routes with compiler-enforced domain types
+- âœ“ No SharePoint field names leak into HTTP responses
+- âœ“ Clean separation: data layer owns business logic, API is thin HTTP adapter
+- âœ“ All frontend pages updated and working with new field names
+- âœ“ Dashboard, Groups, Group Detail, and Sessions pages all functional
 
 ---
 
@@ -1568,29 +1568,29 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 
 ### Completed Tasks
 
-#### 1. Homepage Next Session Card ✓
+#### 1. Homepage Next Session Card âœ“
 - Replaced custom `.next-dig-card` with shared `renderSessionList()` from common.js
 - Homepage "next session" block now matches the session card style on the sessions page
 
-#### 2. Session Details Check-in Checkboxes ✓
+#### 2. Session Details Check-in Checkboxes âœ“
 - Added check-in checkboxes to entry cards on the session detail page
 - Checkbox sits outside the `<a>` card as a sibling in a `.entry-row` wrapper, so both work independently
 - Uses existing `PATCH /api/entries/:id` endpoint with `{ checkedIn: boolean }`
 - Checkboxes only shown for the next upcoming session (when countdown is active)
 - Past sessions still show check-in state via the green left border but without checkboxes
 
-#### 3. Entry Card UI Refinements ✓
+#### 3. Entry Card UI Refinements âœ“
 - Hours meta hidden when value is 0
 - Tag icons (Child, Regular, New, etc.) now display inline to the right of volunteer name, wrapping only when space is tight
 
-#### 4. Delete Entry ✓
+#### 4. Delete Entry âœ“
 - Added `deleteListItem()` to SharePoint client (Graph API DELETE)
 - Added `delete()` to entries repository with cache invalidation
 - Added `DELETE /api/entries/:id` endpoint with ID validation
 - Added "Delete Entry" button on entry detail page with confirm dialog
 - Redirects back to session detail page on success
 
-#### 5. Terminology: "Entry" Over "Registration" ✓
+#### 5. Terminology: "Entry" Over "Registration" âœ“
 - Updated CLAUDE.md to document that "Entry" is the preferred UI term
 - An entry starts as a registration and becomes an attendance record after check-in
 - Avoids "registration" or "attendee" labels since the same record serves both purposes
@@ -1605,7 +1605,7 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 
 ### Completed Tasks
 
-#### 1. Profile Detail Page ✓
+#### 1. Profile Detail Page âœ“
 - Created [public/profile-detail.html](../public/profile-detail.html) with FY filtering
 - Shows volunteer stats: sessions attended, hours, per-group breakdown
 - Regulars toggle: add/remove volunteer as regular for any group
@@ -1614,7 +1614,7 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 - Entries list with tag icons, linked to entry edit page
 - FY filter (This FY / Last FY / All) changes all displayed stats
 
-#### 2. Session Detail Page Redesign ✓
+#### 2. Session Detail Page Redesign âœ“
 - Replaced absolute-positioned edit button with title-row button pattern
 - Added "Add Regulars" button: bulk-creates entries for all group regulars with `#Regular` tag
 - Added "Set Hours" button: applies default hours to all checked-in entries
@@ -1622,7 +1622,7 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 - Added `POST /api/sessions/:group/:date/add-regulars` endpoint
 - All actions available regardless of session timing (removed countdown gating)
 
-#### 3. Volunteers Page Redesign ✓
+#### 3. Volunteers Page Redesign âœ“
 - Replaced filter buttons with dropdown menus (filter + sort)
 - Filter dropdown: This FY (default), Last FY, All
 - Sort dropdown: A-Z (default), Hours (descending)
@@ -1630,14 +1630,14 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 - Added `sessionsLastFY` and `sessionsThisFY` to `ProfileResponse` type
 - Updated `GET /api/profiles` to count unique sessions per FY using `Set<number>`
 
-#### 4. Group Filter on Volunteers Page ✓
+#### 4. Group Filter on Volunteers Page âœ“
 - Added group dropdown to filter-row (left of search box)
 - Added optional `?group=<key>` query param to `GET /api/profiles`
 - When group selected, only counts entries for sessions belonging to that group
 - Sessions/hours scoped to the selected group
 - Groups loaded from `/api/groups` and populated into select
 
-#### 5. Mobile Responsiveness Fixes ✓
+#### 5. Mobile Responsiveness Fixes âœ“
 - Homepage: `flex-direction: column-reverse` on hours-progress-header so buttons appear above stats
 - Groups page: changed grid `minmax(350px, 1fr)` to `minmax(min(350px, 100%), 1fr)`
 - Compact header: reduced font sizes for mobile in global styles.css
@@ -1646,30 +1646,30 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 - Session detail: added `flex-wrap: wrap` on `.entries-header` for mobile
 - Global mobile overrides added to [public/css/styles.css](../public/css/styles.css)
 
-#### 6. Entry Detail & Add Entry Pages ✓
+#### 6. Entry Detail & Add Entry Pages âœ“
 - Created [public/entry-detail.html](../public/entry-detail.html) with tag buttons, auto-save fields
 - Created [public/add-entry.html](../public/add-entry.html) with volunteer search and create-new modal
 - Tag buttons for notes: #New, #Child, #DofE, #DigLead, #FirstAider, #Regular
 - Entry edit supports: checked-in toggle, count, hours, notes with hashtags
 - Delete entry with confirmation
 
-#### 7. Member Badges & Highlighting ✓
+#### 7. Member Badges & Highlighting âœ“
 - MEMBER badge on volunteer cards (based on overall member status across both FYs)
 - Green card highlighting changes with FY filter (only highlights if 15h met in selected FY)
 - At-risk members visible: badge but no highlight = hasn't reached 15h this FY yet
 
-#### 8. Authentication System ✓
+#### 8. Authentication System âœ“
 - Microsoft Entra ID OAuth flow ([routes/auth.ts](../routes/auth.ts))
 - Session-based auth with express-session
 - Auth middleware ([middleware/require-auth.ts](../middleware/require-auth.ts)) protects all routes
 - User display in header (name + logout link)
 - `/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me` endpoints
 
-#### 9. Eventbrite Integration Updates ✓
+#### 9. Eventbrite Integration Updates âœ“
 - Updated Eventbrite logo to official SVG
 - Eventbrite links on groups and sessions pages
 
-#### 10. Documentation Review ✓
+#### 10. Documentation Review âœ“
 - Updated CLAUDE.md: current state, implemented features, file structure
 - Updated progress.md: this session entry
 - Updated readme.md: API endpoints table
@@ -1699,77 +1699,77 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 
 ### Completed Tasks
 
-#### 1. CRUD Gaps — Groups and Sessions Delete ✓
+#### 1. CRUD Gaps â€” Groups and Sessions Delete âœ“
 - Added `DELETE /api/groups/:key` endpoint in `routes/groups.ts`
 - Added `delete()` to `sessions-repository.ts` and `DELETE /api/sessions/:group/:date` endpoint
 - Added delete buttons to group-detail.html and session-detail.html edit modals
 - Added date field to session edit modal, with redirect on date change
 
-#### 2. Eventbrite Session Sync (Node.js Migration) ✓
+#### 2. Eventbrite Session Sync (Node.js Migration) âœ“
 - Added `EventbriteEvent` interface and `getOrgEvents()` to `services/eventbrite-client.ts`
   - Fetches all live events from `GET /organizations/{orgId}/events/?status=live&page_size=100`
   - Handles pagination, maps to clean interface: `id`, `seriesId`, `name`, `startDate`, `description`
   - New env var: `EVENTBRITE_ORGANIZATION_ID`
-- Added `POST /api/eventbrite/sync-sessions` — matches Eventbrite events to groups via `EventbriteSeriesID`, creates missing sessions
-- Added `POST /api/eventbrite/sync-attendees` — fetches attendees for upcoming sessions, creates profiles/entries/consent records
-- Added `POST /api/eventbrite/event-and-attendee-update` — combined endpoint running both syncs, returns human-readable summary string
-- Added `GET /api/eventbrite/unmatched-events` — lists events with no matching group series
+- Added `POST /api/eventbrite/sync-sessions` â€” matches Eventbrite events to groups via `EventbriteSeriesID`, creates missing sessions
+- Added `POST /api/eventbrite/sync-attendees` â€” fetches attendees for upcoming sessions, creates profiles/entries/consent records
+- Added `POST /api/eventbrite/event-and-attendee-update` â€” combined endpoint running both syncs, returns human-readable summary string
+- Added `GET /api/eventbrite/unmatched-events` â€” lists events with no matching group series
 - Refactored sync logic into reusable `runSyncSessions()` and `runSyncAttendees()` helper functions
 
-#### 3. Admin Page ✓
+#### 3. Admin Page âœ“
 - Added Eventbrite section to `public/admin.html` with 4 buttons:
-  - **Run All** — runs sync-sessions → sync-attendees → unmatched-events sequentially
-  - **Refresh Events** — calls sync-sessions, shows event/matched/new counts
-  - **Fetch New Attendees** — calls sync-attendees, shows session/profile/entry/record counts
-  - **Unmatched Events** — displays list of Eventbrite events with no matching group
+  - **Run All** â€” runs sync-sessions â†’ sync-attendees â†’ unmatched-events sequentially
+  - **Refresh Events** â€” calls sync-sessions, shows event/matched/new counts
+  - **Fetch New Attendees** â€” calls sync-attendees, shows session/profile/entry/record counts
+  - **Unmatched Events** â€” displays list of Eventbrite events with no matching group
 - Added Exports section with FE Hours Download and Records Download links
 
-#### 4. Cleaned Up eventbriteUrl References ✓
+#### 4. Cleaned Up eventbriteUrl References âœ“
 - Removed `eventbriteUrl` from `SessionResponse` and `SessionDetailResponse` in `types/api-responses.ts`
 - Removed `eventbriteUrl` from `Session` interface in `types/session.ts`
 - Removed `eventbriteUrl` mappings in `routes/sessions.ts` and `routes/groups.ts`
 - Removed `eventbriteUrl` rendering in `public/session-detail.html`
 - The Tracker SharePoint site doesn't store this column on Sessions
 
-#### 5. API Key Auth for Scheduled Sync ✓
+#### 5. API Key Auth for Scheduled Sync âœ“
 - Added `API_SYNC_KEY` env var support to `middleware/require-auth.ts`
 - Requests with `X-Api-Key` header matching `API_SYNC_KEY` bypass session auth for `/api/eventbrite/` paths
 - Enables Azure Logic App to call sync endpoints without browser authentication
 
-#### 6. Scheduled Sync Setup (Azure Logic App) ✓
+#### 6. Scheduled Sync Setup (Azure Logic App) âœ“
 - Designed Azure Logic App (Consumption plan) for daily scheduled sync
 - Single HTTP POST to `/api/eventbrite/event-and-attendee-update` with `X-Api-Key` header
 - Response `summary` field suitable for email notifications
 - Note: Azure App Service Easy Auth must be set to "Allow unauthenticated requests" for API key auth to work
 
-#### 7. Comprehensive Documentation Update ✓
-- Updated `readme.md` — full rewrite with all 40+ endpoints, deployment section, env vars, pages table, project structure
-- Updated `CLAUDE.md` — current state, file structure, features list, Eventbrite integration details
-- Updated `docs/progress.md` — this session entry
-- Updated `docs/power-automate-flows.md` — Node.js migration status
-- Updated `docs/sharepoint-schema.md` — removed EventbriteUrl, added Records list
-- Updated `docs/technical-debt.md` — current status
+#### 7. Comprehensive Documentation Update âœ“
+- Updated `readme.md` â€” full rewrite with all 40+ endpoints, deployment section, env vars, pages table, project structure
+- Updated `CLAUDE.md` â€” current state, file structure, features list, Eventbrite integration details
+- Updated `docs/progress.md` â€” this session entry
+- Updated `docs/power-automate-flows.md` â€” Node.js migration status
+- Updated `docs/sharepoint-schema.md` â€” removed EventbriteUrl, added Records list
+- Updated `docs/technical-debt.md` â€” current status
 
 ### Key Technical Decisions
-- Homepage refresh button stays as cache clear only — Eventbrite sync is admin/scheduled only
-- No group auto-creation from Eventbrite — groups are rare and created manually
+- Homepage refresh button stays as cache clear only â€” Eventbrite sync is admin/scheduled only
+- No group auto-creation from Eventbrite â€” groups are rare and created manually
 - Combined `event-and-attendee-update` endpoint for scheduled use; individual endpoints for admin UI
 - Azure Logic App (Consumption) chosen over Power Automate Premium (HTTP connector licensing)
 - API key auth chosen for simplicity over Entra ID service-to-service tokens
 
 ### Files Modified
-- `services/eventbrite-client.ts` — added `EventbriteEvent`, `getOrgEvents()`
-- `services/repositories/sessions-repository.ts` — added `delete()`
-- `routes/eventbrite.ts` — added 4 new endpoints, refactored to helper functions
-- `routes/groups.ts` — added DELETE endpoint, removed eventbriteUrl
-- `routes/sessions.ts` — added DELETE endpoint, date to PATCH, removed eventbriteUrl
-- `middleware/require-auth.ts` — added API key bypass
-- `types/api-responses.ts` — removed eventbriteUrl from session types
-- `types/session.ts` — removed eventbriteUrl from Session
-- `public/admin.html` — Eventbrite sync buttons, exports, Run All
-- `public/group-detail.html` — delete button in edit modal
-- `public/session-detail.html` — delete button, date field, removed eventbriteUrl
-- `public/index.html` — reverted to cache-clear-only refresh
+- `services/eventbrite-client.ts` â€” added `EventbriteEvent`, `getOrgEvents()`
+- `services/repositories/sessions-repository.ts` â€” added `delete()`
+- `routes/eventbrite.ts` â€” added 4 new endpoints, refactored to helper functions
+- `routes/groups.ts` â€” added DELETE endpoint, removed eventbriteUrl
+- `routes/sessions.ts` â€” added DELETE endpoint, date to PATCH, removed eventbriteUrl
+- `middleware/require-auth.ts` â€” added API key bypass
+- `types/api-responses.ts` â€” removed eventbriteUrl from session types
+- `types/session.ts` â€” removed eventbriteUrl from Session
+- `public/admin.html` â€” Eventbrite sync buttons, exports, Run All
+- `public/group-detail.html` â€” delete button in edit modal
+- `public/session-detail.html` â€” delete button, date field, removed eventbriteUrl
+- `public/index.html` â€” reverted to cache-clear-only refresh
 
 ---
 
@@ -1781,65 +1781,65 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 
 ### Completed Tasks
 
-#### 1. SVG Badge & Tag Icons ✓
+#### 1. SVG Badge & Tag Icons âœ“
 - Replaced text-based badge pills (MEMBER, CARD, GROUP) with SVG icon images across all pages
 - Replaced emoji-based entry tag icons (#Child, #Regular, etc.) with SVG images from `public/icons/`
 - Added CSS filter-based coloring: green (default), orange (card invited), red (FirstAider, NoPhoto)
-- Icons are hot-swappable — replace the SVG file in `/public/icons/` and the change appears everywhere
+- Icons are hot-swappable â€” replace the SVG file in `/public/icons/` and the change appears everywhere
 
-#### 2. Tag Icons Configuration File ✓
+#### 2. Tag Icons Configuration File âœ“
 - Extracted `TAG_ICONS` array, `notesToIcons()`, `renderTagButtons()`, and `tagIconImg()` into `public/js/tag-icons.js`
 - Unified config format: `{ icon, alt, tag?, type: "badge"|"tag", color? }`
 - Covers both profile badges (member, card, group) and entry tags (child, regular, new, etc.)
 - Loaded after `common.js` on all pages that use icons
 
-#### 3. Icon Legend on Admin Page ✓
+#### 3. Icon Legend on Admin Page âœ“
 - Added "Icon Legend" section to admin.html showing all 12 icons with labels
 - Dynamically rendered from `TAG_ICONS` array
 - Respects color classes (orange for Card Invited, red for FirstAider/NoPhoto)
 
-#### 4. Bulk Add/Update Records ✓
+#### 4. Bulk Add/Update Records âœ“
 - Added `POST /api/records/bulk` endpoint in `routes/profiles.ts`
 - Accepts `{ profileIds, type, status, date }`, performs upsert (update existing record of same type, or create new)
 - Added "Add Records" button in volunteers advanced filters section
 - Modal with type/status/date dropdowns, filtered volunteer count, confirmation dialog
 - Groups excluded from bulk operations
 
-#### 5. Move Session Between Groups ✓
+#### 5. Move Session Between Groups âœ“
 - Added Group dropdown to session edit modal in `session-detail.html`
 - Updated `PATCH /api/sessions/:group/:date` to accept `groupId` parameter
 - Confirmation warning: "Move this session to [group]? All existing entries will remain attached."
 - Smart redirect to new group/date URL after move
 
-#### 6. Comprehensive Manual Test Script ✓
+#### 6. Comprehensive Manual Test Script âœ“
 - Created `docs/test-script.md` covering all app functionality
 - 26 HIGH priority items (SharePoint write operations)
 - 13 MEDIUM priority items (API read operations)
 - 15 LOW priority items (UI-only client-side features)
 
-#### 7. Documentation & Development Workflow Update ✓
+#### 7. Documentation & Development Workflow Update âœ“
 - Updated CLAUDE.md with strict documentation review rules: always plan first, review all docs after every change, archive outdated docs to `docs/legacy/`
 - Updated file structure to include `tag-icons.js`, `svg/`, `test-script.md`, `todo.md`, `legacy/`
 - Updated features list with SVG icons, bulk records, session move, test script
-- Updated `technical-debt.md` — marked tag icons duplication as resolved
-- Updated `todo.md` — marked bulk records as done, annotated tag and group items
+- Updated `technical-debt.md` â€” marked tag icons duplication as resolved
+- Updated `todo.md` â€” marked bulk records as done, annotated tag and group items
 
 ### Files Modified
-- `public/js/tag-icons.js` — New file (icon config + rendering functions)
-- `public/js/common.js` — Removed tag icon code (moved to tag-icons.js)
-- `public/css/styles.css` — SVG badge styles, icon color filter classes
-- `public/volunteers.html` — SVG badges, bulk records modal + JS
-- `public/session-detail.html` — SVG badges, group dropdown in edit modal
-- `public/profile-detail.html` — SVG badges, tag-icons.js script
-- `public/entry-detail.html` — SVG badges, tag-icons.js script
-- `public/add-entry.html` — tag-icons.js script
-- `public/admin.html` — Icon legend section, tag-icons.js script
-- `routes/profiles.ts` — `POST /api/records/bulk` endpoint
-- `routes/sessions.ts` — Group change support in PATCH
-- `docs/test-script.md` — New comprehensive test script
-- `CLAUDE.md` — Documentation workflow, file structure, features
-- `docs/technical-debt.md` — Tag icons resolved
-- `docs/todo.md` — Bulk records done, annotations
+- `public/js/tag-icons.js` â€” New file (icon config + rendering functions)
+- `public/js/common.js` â€” Removed tag icon code (moved to tag-icons.js)
+- `public/css/styles.css` â€” SVG badge styles, icon color filter classes
+- `public/volunteers.html` â€” SVG badges, bulk records modal + JS
+- `public/session-detail.html` â€” SVG badges, group dropdown in edit modal
+- `public/profile-detail.html` â€” SVG badges, tag-icons.js script
+- `public/entry-detail.html` â€” SVG badges, tag-icons.js script
+- `public/add-entry.html` â€” tag-icons.js script
+- `public/admin.html` â€” Icon legend section, tag-icons.js script
+- `routes/profiles.ts` â€” `POST /api/records/bulk` endpoint
+- `routes/sessions.ts` â€” Group change support in PATCH
+- `docs/test-script.md` â€” New comprehensive test script
+- `CLAUDE.md` â€” Documentation workflow, file structure, features
+- `docs/technical-debt.md` â€” Tag icons resolved
+- `docs/todo.md` â€” Bulk records done, annotations
 
 ---
 
@@ -1851,19 +1851,19 @@ SharePoint → Repository → Data Layer (convert/enrich/validate) → API (map 
 
 ### Completed Tasks
 
-#### 1. Brand Refresh — Website Visual Identity ✓
+#### 1. Brand Refresh â€” Website Visual Identity âœ“
 
 Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk) to the tracker app in three stages.
 
 **Stage 1: Brand Colours**
 - Updated CSS variables to match website palette
-- Primary green: `#2c5f2d` → `#4FAF4A` (brighter, vibrant)
+- Primary green: `#2c5f2d` â†’ `#4FAF4A` (brighter, vibrant)
 - Added `--dark: #0f0e17` (near-black for header/footer)
 - Added `--accent: #f00069` (pink, for destructive actions)
 - Derived light/tint/bg shades updated to match new green
 
 **Stage 2: Header with Logo**
-- Downloaded DTV logo from website → `public/img/logo.png`
+- Downloaded DTV logo from website â†’ `public/img/logo.png`
 - Header background changed from green to dark near-black (`--dark`)
 - Logo displayed inline with title (48px on desktop, 36px on mobile, smaller on compact)
 - Added Google Fonts import for "Rubik Dirt" display font on header title
@@ -1871,20 +1871,20 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 
 **Stage 3: Design Refinements**
 - Border radius reduced from 8px to 6px for tighter look
-- Breadcrumb nav bar darkened slightly (#f8f8f8 → #eee)
+- Breadcrumb nav bar darkened slightly (#f8f8f8 â†’ #eee)
 - Footer styled with dark background matching header (visual bookend)
 - Delete button uses brand accent colour (#f00069) instead of generic red
 
 ### Files Modified
-- `public/css/styles.css` — colour variables, Google Font import, header/footer/nav/delete styles
-- `public/js/common.js` — header template with logo image and brand wrapper
-- `public/img/logo.png` — New file (downloaded from website)
+- `public/css/styles.css` â€” colour variables, Google Font import, header/footer/nav/delete styles
+- `public/js/common.js` â€” header template with logo image and brand wrapper
+- `public/img/logo.png` â€” New file (downloaded from website)
 
-#### 2. Profile Page Tidy-Up ✓
+#### 2. Profile Page Tidy-Up âœ“
 
 **Entry card redesign:**
 - Single-row layout: Group name (Rubik Dirt font) | Date (green) | Icons | Hours (right)
-- On mobile (≤600px), group name wraps to its own line via `flex-basis: 100%`
+- On mobile (â‰¤600px), group name wraps to its own line via `flex-basis: 100%`
 - Hours moved outside the `<a>` card into an inline `<input type="number">` or plain text
 
 **Inline hours editing:**
@@ -1906,16 +1906,16 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 - Added `<link rel="icon">` tags (SVG + ICO fallback) to all 10 HTML pages
 - Files already existed (`public/img/favicon.svg`, `public/favicon.ico`) but were never referenced
 
-#### 3. Favicon Fix ✓
+#### 3. Favicon Fix âœ“
 - Discovered `favicon.svg`, `favicon.ico`, and `apple-touch-icon.png` were all WordPress 404 HTML pages saved as binary files (fetched from the website and got a 404 response)
-- Switched favicon to use `logo.png` (existing 500×500 PNG) as a stopgap
-- Updated `common.js` to reference `/img/logo.png` with `type="image/png"` — single source of truth
+- Switched favicon to use `logo.png` (existing 500Ã—500 PNG) as a stopgap
+- Updated `common.js` to reference `/img/logo.png` with `type="image/png"` â€” single source of truth
 - Removed redundant static `<link rel="icon">` tags from all 10 HTML pages (they duplicate what common.js injects)
 - Added tech debt item to get a proper SVG favicon
 
 ### Files Modified
-- `public/profile-detail.html` — entry card redesign, inline hours, group filter, transfer button, favicon
-- All 10 `public/*.html` files — added favicon link tags
+- `public/profile-detail.html` â€” entry card redesign, inline hours, group filter, transfer button, favicon
+- All 10 `public/*.html` files â€” added favicon link tags
 
 ---
 
@@ -1927,33 +1927,33 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 
 ### Completed Tasks
 
-#### 1. PWA Web Manifest & Add to Home Screen ✓
+#### 1. PWA Web Manifest & Add to Home Screen âœ“
 
 - Created `public/site.webmanifest` with app name, theme colour (`#4FAF4A`), and icon references
 - Generated `public/img/icon-192.png` and `public/img/icon-512.png` from `logo-930.jpg` using PowerShell + System.Drawing (high-quality bicubic scaling, white background, centred)
-- Updated `common.js` to inject `<link rel="manifest" href="/site.webmanifest">` alongside the existing favicon link — all pages pick it up automatically
+- Updated `common.js` to inject `<link rel="manifest" href="/site.webmanifest">` alongside the existing favicon link â€” all pages pick it up automatically
 - Chrome on Android will now offer "Add to Home Screen" with the DTV logo
 
-#### 2. Favicon Fixed ✓
+#### 2. Favicon Fixed âœ“
 
 - Replaced bogus `favicon.ico` (which was WordPress HTML accidentally saved as a binary) with a real ICO file
-- Generated 32x32 PNG from `logo-930.jpg` (PowerShell), then wrapped in ICO container format (Node.js) — modern ICO with embedded PNG, works in all browsers
-- Source image for all icons is `public/img/logo-930.jpg` (930x924px) — use this for any future icon sizes
+- Generated 32x32 PNG from `logo-930.jpg` (PowerShell), then wrapped in ICO container format (Node.js) â€” modern ICO with embedded PNG, works in all browsers
+- Source image for all icons is `public/img/logo-930.jpg` (930x924px) â€” use this for any future icon sizes
 
-#### 3. Static Assets Served Before Auth ✓
+#### 3. Static Assets Served Before Auth âœ“
 
 - `public/site.webmanifest`, `/img`, `/css`, `/js`, `/svg`, and `/favicon.ico` are now served **before** `requireAuth` in `app.js`
 - Fixes 302 redirect Chrome was getting when fetching the manifest for an unauthenticated "Add to Home Screen" request
 - HTML pages still require auth; only assets are public
 
 ### Files Modified
-- `app.js` — public static asset routes before `requireAuth`
-- `public/site.webmanifest` — New file
-- `public/favicon.ico` — Replaced with real 32x32 ICO
-- `public/img/logo-930.jpg` — New file (source for icon generation)
-- `public/img/icon-192.png` — New file (generated)
-- `public/img/icon-512.png` — New file (generated)
-- `public/js/common.js` — Added manifest link injection
+- `app.js` â€” public static asset routes before `requireAuth`
+- `public/site.webmanifest` â€” New file
+- `public/favicon.ico` â€” Replaced with real 32x32 ICO
+- `public/img/logo-930.jpg` â€” New file (source for icon generation)
+- `public/img/icon-192.png` â€” New file (generated)
+- `public/img/icon-512.png` â€” New file (generated)
+- `public/js/common.js` â€” Added manifest link injection
 
 ---
 
@@ -1961,25 +1961,25 @@ Applied the visual identity from the new DTV website (deantrailvolunteers.org.uk
 
 ### Completed Tasks
 
-#### 1. Eventbrite Consent Record Matching Fix ✓
+#### 1. Eventbrite Consent Record Matching Fix âœ“
 
 **Problem**: Consent records were not being created for attendees on Saturday and Tablesale events after forms were added to those events. Wednesday digs had been working fine as the original events with consent forms.
 
 **Root Cause**: The consent question mapping in `routes/eventbrite.ts` used hardcoded Eventbrite question IDs (`315115173`, `315115803`) specific to the Wednesday dig forms. When forms were added to other events, Eventbrite assigned new question IDs (`320634006`, `320634007`), so attendee answers never matched the map and no records were created.
 
-**Secondary Finding**: Attendees who registered before the form was added to an event receive empty answer stubs from the Eventbrite API (answer object present but no `answer` field). The old code would have incorrectly created `Declined` records for these attendees — now guarded with `if (!ans.answer) continue`.
+**Secondary Finding**: Attendees who registered before the form was added to an event receive empty answer stubs from the Eventbrite API (answer object present but no `answer` field). The old code would have incorrectly created `Declined` records for these attendees â€” now guarded with `if (!ans.answer) continue`.
 
 **Fix**: Replaced hardcoded question ID lookup with question text matching:
-- `"Personal Data Consent"` → `Privacy Consent`
-- `"Photo and Video Consent"` → `Photo Consent`
+- `"Personal Data Consent"` â†’ `Privacy Consent`
+- `"Photo and Video Consent"` â†’ `Photo Consent`
 
 This works across all events regardless of what question IDs Eventbrite assigns.
 
 **Investigation**: Added `test/test-event-questions.js` to inspect questions and attendee answers for a specific event ID. Confirmed Paul and Joseph Kelly (registered after forms were set up) have `"answer":"accepted"` on both questions; earlier attendees have no answer field.
 
 ### Files Modified
-- `routes/eventbrite.ts` — question text matching, skip absent answers
-- `test/test-event-questions.js` — new diagnostic test script
+- `routes/eventbrite.ts` â€” question text matching, skip absent answers
+- `test/test-event-questions.js` â€” new diagnostic test script
 
 ---
 
@@ -1991,37 +1991,37 @@ This works across all events regardless of what question IDs Eventbrite assigns.
 
 ### Completed Tasks
 
-#### 1. Volunteer Photo Upload — Method 3 (Upload Code) ✓
+#### 1. Volunteer Photo Upload â€” Method 3 (Upload Code) âœ“
 
 Admins can generate a short 4-letter code from the entry detail page and share it with a volunteer. The volunteer visits `tracker.dtv.org.uk/upload`, enters the code, and uploads photos without needing an account.
 
 **Flow:**
-1. Admin opens entry detail page → clicks cloud **link** button (top-right, admin-only)
+1. Admin opens entry detail page â†’ clicks cloud **link** button (top-right, admin-only)
 2. A 4-letter code (e.g. `MXKP`) and shareable URL appear on screen
 3. Admin shares via WhatsApp (`/upload/MXKP` pre-fills the code) or reads it aloud
 4. Volunteer visits the page, code is validated, volunteer name and session are confirmed
-5. Volunteer selects photos and uploads — files land in `{groupKey}/{date}/` in the SharePoint Media Library
+5. Volunteer selects photos and uploads â€” files land in `{groupKey}/{date}/` in the SharePoint Media Library
 
 **Technical design:**
-- Codes are 4 random uppercase letters — 26⁴ = 456,976 combinations
-- Held in a module-level `Map<string, number>` (code → entryId) in `services/upload-tokens.ts`
+- Codes are 4 random uppercase letters â€” 26â´ = 456,976 combinations
+- Held in a module-level `Map<string, number>` (code â†’ entryId) in `services/upload-tokens.ts`
 - Expiry computed at validation time: session date + 7 days (not stored)
 - Resending a code replaces the previous code for that entry
-- Known limitation: codes are lost on server restart — migrate to `UploadCode`/`UploadExpiry` columns on Entries list if this proves problematic
-- Express 5 note: optional route params (`/upload/:code?`) not supported — two explicit routes used instead
+- Known limitation: codes are lost on server restart â€” migrate to `UploadCode`/`UploadExpiry` columns on Entries list if this proves problematic
+- Express 5 note: optional route params (`/upload/:code?`) not supported â€” two explicit routes used instead
 
 **New files:**
-- `services/upload-tokens.ts` — `generateCode`, `storeCode`, `lookupCode`
-- `routes/upload.ts` — `POST /api/upload/validate`, `POST /api/upload/files` (both public, mounted before `requireAuth`)
-- `public/upload.html` — standalone public upload page (three-step: code entry → upload → done)
+- `services/upload-tokens.ts` â€” `generateCode`, `storeCode`, `lookupCode`
+- `routes/upload.ts` â€” `POST /api/upload/validate`, `POST /api/upload/files` (both public, mounted before `requireAuth`)
+- `public/upload.html` â€” standalone public upload page (three-step: code entry â†’ upload â†’ done)
 
 **Modified files:**
-- `routes/entries.ts` — added `POST /api/entries/:id/upload-code` (admin only)
-- `types/api-responses.ts` — added `UploadCodeResponse`, `UploadContextResponse`
-- `app.js` — serves `/upload` and `/upload/:code`; mounts upload API routes before `requireAuth`
-- `public/entry-detail.html` — cloud "link" button top-right (admin-only), code panel with copy button
-- `docs/media-upload.md` — added Method 3 section
-- `CLAUDE.md`, `readme.md`, `docs/permissions.md`, `docs/test-script.md` — updated for this feature
+- `routes/entries.ts` â€” added `POST /api/entries/:id/upload-code` (admin only)
+- `types/api-responses.ts` â€” added `UploadCodeResponse`, `UploadContextResponse`
+- `app.js` â€” serves `/upload` and `/upload/:code`; mounts upload API routes before `requireAuth`
+- `public/entry-detail.html` â€” cloud "link" button top-right (admin-only), code panel with copy button
+- `docs/media-upload.md` â€” added Method 3 section
+- `CLAUDE.md`, `readme.md`, `docs/permissions.md`, `docs/test-script.md` â€” updated for this feature
 
 ---
 
@@ -2033,9 +2033,9 @@ Admins can generate a short 4-letter code from the entry detail page and share i
 
 ### Completed Tasks
 
-#### 1. Media Count Moved to API ✓
+#### 1. Media Count Moved to API âœ“
 
-**Problem**: Session cards showed "Media: N" by calling a separate `/api/photos/counts` endpoint client-side after the initial render. This caused a two-pass render (cards appear, then counts appear), and — critically — the dashboard (`index.html`) was missing the `attachPhotoCounts` call entirely so media counts never appeared there. On the sessions listing page, all sessions (hundreds) were being sent as one giant comma-separated URL, which was wasteful and close to URL length limits.
+**Problem**: Session cards showed "Media: N" by calling a separate `/api/photos/counts` endpoint client-side after the initial render. This caused a two-pass render (cards appear, then counts appear), and â€” critically â€” the dashboard (`index.html`) was missing the `attachPhotoCounts` call entirely so media counts never appeared there. On the sessions listing page, all sessions (hundreds) were being sent as one giant comma-separated URL, which was wasteful and close to URL length limits.
 
 **Fix**: Moved photo count fetching into the sessions and group detail API endpoints server-side.
 - `GET /api/sessions` and `GET /api/groups/:key` now call `listGroupDateCounts` for each unique group and attach `mediaCount` to each `SessionResponse`
@@ -2045,7 +2045,7 @@ Admins can generate a short 4-letter code from the entry detail page and share i
 - `index.html` gets counts automatically (no code change needed)
 - `listGroupDateCounts` in `sharepoint-client.ts` is now cached with `media-counts-${groupKey}` key
 
-#### 2. Consistent Cache Invalidation on All Writes ✓
+#### 2. Consistent Cache Invalidation on All Writes âœ“
 
 **Problem**: Repository write methods only cleared their own specific cache key (e.g. `entriesRepository` cleared `'entries'` but not `'sessions_FY*'` derived keys). Several write operations had no cache clearing at all: Eventbrite sync endpoints, the session `refresh` endpoint, all record endpoints in `routes/profiles.ts`.
 
@@ -2058,22 +2058,31 @@ Admins can generate a short 4-letter code from the entry detail page and share i
 **Effect**: No more "wait 5 minutes" stale data after any create/update/delete operation.
 
 ### Files Modified
-- `types/api-responses.ts` — added `mediaCount?: number` to `SessionResponse`
-- `services/sharepoint-client.ts` — `listGroupDateCounts` now cached (`media-counts-${groupKey}`)
-- `routes/sessions.ts` — attaches `mediaCount` to session responses; imports `sharePointClient`
-- `routes/groups.ts` — attaches `mediaCount` to group detail session responses; imports `sharePointClient`
-- `public/js/session-cards.js` — renamed `photoCount` → `mediaCount`, removed `attachPhotoCounts` function
-- `public/sessions.html` — removed two-pass render
-- `public/group-detail.html` — removed two-pass render
-- `services/repositories/sessions-repository.ts` — `clearCache()` on writes
-- `services/repositories/entries-repository.ts` — `clearCache()` on writes
-- `services/repositories/groups-repository.ts` — `clearCache()` on writes
-- `services/repositories/profiles-repository.ts` — `clearCache()` on writes
-- `services/repositories/records-repository.ts` — `clearCache()` on writes
-- `services/repositories/regulars-repository.ts` — `clearCache()` on writes
-- `routes/profiles.ts` — consolidated cache clearing in transfer endpoint
-- `routes/photos.ts` — added `clearCache()` after successful upload
+- `types/api-responses.ts` â€” added `mediaCount?: number` to `SessionResponse`
+- `services/sharepoint-client.ts` â€” `listGroupDateCounts` now cached (`media-counts-${groupKey}`)
+- `routes/sessions.ts` â€” attaches `mediaCount` to session responses; imports `sharePointClient`
+- `routes/groups.ts` â€” attaches `mediaCount` to group detail session responses; imports `sharePointClient`
+- `public/js/session-cards.js` â€” renamed `photoCount` â†’ `mediaCount`, removed `attachPhotoCounts` function
+- `public/sessions.html` â€” removed two-pass render
+- `public/group-detail.html` â€” removed two-pass render
+- `services/repositories/sessions-repository.ts` â€” `clearCache()` on writes
+- `services/repositories/entries-repository.ts` â€” `clearCache()` on writes
+- `services/repositories/groups-repository.ts` â€” `clearCache()` on writes
+- `services/repositories/profiles-repository.ts` â€” `clearCache()` on writes
+- `services/repositories/records-repository.ts` â€” `clearCache()` on writes
+- `services/repositories/regulars-repository.ts` â€” `clearCache()` on writes
+- `routes/profiles.ts` â€” consolidated cache clearing in transfer endpoint
+- `routes/photos.ts` â€” added `clearCache()` after successful upload
 
 ---
 
 *Last Updated: 2026-02-22*
+
+
+## Session: 2026-06-08 (Remove magic link â€” verification code only)
+
+- Removed `backend/routes/auth/magic.ts` and JWT magic-link flow
+- `GET /auth/providers` now returns `{ selfService }` only
+- `LoginPage.vue` simplified to verification-code-only self-service login
+- Kept 4-digit codes; generation uses `crypto.randomInt`
+- Docs and regression checklist updated

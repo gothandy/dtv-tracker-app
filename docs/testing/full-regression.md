@@ -23,13 +23,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated `GET /api/entries/recent` returns 401
 - [ ] Unauthenticated visit to `/` does not trigger a `GET /api/entries/recent` request (check Network tab — recent sign-ups section should not be fetched)
 - [ ] Unauthenticated API 401 from the SPA fetch layer redirects to `/login?returnTo=...` (not `/auth/login`)
-- [ ] `/login` shows self-service (magic link / code) and Microsoft cards; email card only when mail sending is configured
-- [ ] Enter email, click "Send sign-in link" → both cards hide, sent-confirmation section appears with 15:00 countdown
+- [ ] `/login` shows self-service (verification code) and Microsoft cards; email card only when mail sending is configured
+- [ ] Enter email, click "Send verification code" → both cards hide, sent-confirmation section appears with 15:00 countdown
 - [ ] Countdown ticks down to 00:00 then stops
-- [ ] Click "Didn't receive the link? Back to Login" → cards restored, countdown stopped, form re-enabled
-- [ ] Click magic link in email → signed in, redirected to destination (or `/` if no returnTo)
-- [ ] Click expired magic link → redirected to `/login?reason=invalid-state` (or equivalent)
-- [ ] Email not in Profiles → redirected to `/login?reason=not-approved` with warning banner
+- [ ] Click "Didn't receive the email? Back to log-in" → cards restored, countdown stopped, form re-enabled
+- [ ] Enter verification code from email → signed in, redirected to destination (or / if no returnTo)
+- [ ] Open email prefill link (/login?email=...&code=...) → code entry shown; verify → signed in
+- [ ] Wrong code 5 times → must request a new code
+- [ ] Expired code → expired card shown; resend works
+- [ ] Email not in Profiles → inline error on verify (not a redirect)
 - [ ] **Microsoft without Profile `User`:** Entra completes but no volunteer row has `User` = signed-in email → session cleared → `/login?reason=dtv-not-authorised` with explanation (not browsing as Public with a session)
 - [ ] After `dtv-not-authorised`, user can still use self-service login or fix `User` in SharePoint and retry Microsoft
 - [ ] Successful Microsoft login redirects back to `/` (or originally requested page via `returnTo`)
@@ -57,7 +59,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Check In Only: `GET /api/sessions/export` returns 403 (GDPR)
 - [ ] Check In Only: admin page shows only Icon Legend section
 - [ ] `/auth/me` returns `role: "admin"` or `role: "checkin"` based on env var
-- [ ] **Self-Service user** (profile has matching `Email`, magic link / code): no admin/check-in/edit controls visible
+- [ ] **Self-Service user** (profile has matching `Email`, verification code): no admin/check-in/edit controls visible
 - [ ] Self-Service: sessions page loads; CSV download button and session checkboxes **not shown** (trusted-only)
 - [ ] Self-Service: Advanced section on sessions page still functional (tag filter, group filter work)
 - [ ] Self-Service: groups page shows zero regulars count; group detail page shows **no regulars list**

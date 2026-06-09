@@ -1,3 +1,4 @@
+﻿import { randomInt } from 'crypto';
 import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import { sendEmail } from '../../services/graph-mail';
@@ -65,7 +66,7 @@ async function resolveVerifyCode(email: string, code: string, userAgent?: string
   return { ok: true, displayName: result.sessionUser.displayName };
 }
 
-// POST /auth/verify/send — generate a 4-digit code, store it, send it by email
+// POST /auth/verify/send â€” generate a 4-digit code, store it, send it by email
 // Body: { destination: string, returnTo?: string }
 router.post('/verify/send', async (req: Request, res: Response) => {
   const email = (req.body?.destination as string || '').trim().toLowerCase();
@@ -84,8 +85,8 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     return;
   }
 
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  // One code per email — delete any previous entry (expired or not) before storing the new one.
+  const code = String(randomInt(1000, 10000));
+  // One code per email â€” delete any previous entry (expired or not) before storing the new one.
   // Expired entries for abandoned requests stay in the map until the same email sends again or
   // /check is called; at volunteer-app scale this is acceptable without a sweep timer.
   codeStore.delete(email);
@@ -95,7 +96,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
   const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/') && returnTo.length <= 200
     ? returnTo : null;
 
-  // Link in the email opens the login page with code pre-filled — user reviews and hits enter.
+  // Link in the email opens the login page with code pre-filled â€” user reviews and hits enter.
   const base = `${req.protocol}://${req.get('host')}`;
   const loginUrl = `${base}/login`;
   const callbackUrl = safeReturnTo
@@ -118,7 +119,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
   }
 });
 
-// POST /auth/verify/check — verify a code entered in the browser tab
+// POST /auth/verify/check â€” verify a code entered in the browser tab
 // Body: { email: string, code: string }
 router.post('/verify/check', async (req: Request, res: Response) => {
   const email = (req.body?.email as string || '').trim().toLowerCase();
