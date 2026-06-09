@@ -63,6 +63,7 @@ const sessions: Session[] = [
     groupDescription: 'Our popular mid-week dig.', financialYear: '2026-27',
     isBookable: false, limits: {}, stats: { count: 15, hours: 45, new: 1, regular: 13, eventbrite: 2 },
     metadata: [{ label: 'DH:Sheepskull', termGuid: 'aaa' }],
+    projectId: 1, projectKey: 'spooky-wood', projectTitle: 'Spooky Wood',
     isRegistered: false, isAttended: false, isRegular: false,
   },
   {

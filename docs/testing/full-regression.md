@@ -61,7 +61,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `/auth/me` returns `role: "admin"` or `role: "checkin"` based on env var
 - [ ] **Self-Service user** (profile has matching `Email`, verification code): no admin/check-in/edit controls visible
 - [ ] Self-Service: sessions page loads; CSV download button and session checkboxes **not shown** (trusted-only)
-- [ ] Self-Service: Advanced section on sessions page still functional (tag filter, group filter work)
+- [ ] Self-Service: Advanced section on sessions page still functional (tag, group, and project filters work)
 - [ ] Self-Service: groups page shows zero regulars count; group detail page shows **no regulars list**
 - [ ] Self-Service: group detail shows "You are a regular volunteer for this group" message if applicable
 - [ ] Self-Service: visiting own profile detail page loads and shows own data
@@ -89,7 +89,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H3. Edit group
 - [ ] Group detail → pencil icon → modal with Display Name, Description, Eventbrite Series ID
-- [ ] `PATCH /api/groups/:key` — `{ displayName?, description?, eventbriteSeriesId? }`
+- [ ] `PATCH /api/groups/:key` — `{ displayName?, description?, eventbriteSeriesId?, key? }`
+- [ ] Renaming key to an existing group key returns 409 (no duplicate Title values)
 - [ ] Page reloads with updated values
 
 ### H4. Delete group
@@ -263,8 +264,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `entryQuality` preserved in URL when set; cleared when FY changes so the selected type no longer exists in data
 
 ### H30. Bulk tag sessions / CSV download
-- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags (N)" and "Download CSV" buttons become enabled
-- [ ] Click "Add Tags (N)" → tag tree picker opens (same modal as session detail)
+- [ ] Sessions page → Advanced → check 2–3 session cards → "Add Tags", "Update Project", and "Download CSV" buttons become enabled
+- [ ] Click "Add Tags" → tag tree picker opens (same modal as session detail)
+- [ ] Click "Update Project" → project dropdown with "No project" and all projects → Apply → `POST /api/sessions/bulk-project` with `{ sessionIds, projectId }` (null clears project)
 - [ ] Modal title reads "Add Tag to N sessions"
 - [ ] Select a tag → OK → `POST /api/sessions/bulk-tag` — `{ sessionIds: [...], tags: [{ label, termGuid }] }`
 - [ ] Tags are merged with existing (not replaced); duplicate termGuids not added twice
@@ -326,7 +328,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### H27. Clear cache
 - [ ] Tools page (`/tools`) → SharePoint section → "Clear all server caches" → success message; `POST /api/cache/clear` (legacy `/admin` redirects here)
-- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes)
+- [ ] Forces fresh data on next request (list cache, column schema, taxonomy, media bytes, cover image bytes, project doc bytes); Term Store picker tree reloads in the current browser tab (no full page refresh required)
 
 ### H28. Upload button (entry detail — check-in/admin)
 - [ ] Entry detail → "Upload" button visible for Admin and Check In; hidden for Self-Service (`checkin-only` class)
@@ -418,6 +420,26 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Cards show: display name, Eventbrite icon (if linked), description (3-line clamp), regulars/sessions/hrs stats stacked left, View button bottom-right
 - [ ] Hours shown as rounded integers (no decimals)
 - [ ] Bottom padding present (cards don't sit flush against footer)
+
+### M3a. Projects listing
+- [ ] `GET /api/projects` — all projects (public)
+- [ ] Projects page: FY filter, session/hours totals from linked sessions
+- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled) → navigates to detail
+- [ ] Cards show display name, description, sessions/hrs for selected FY
+
+### M3b. Project detail
+- [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
+- [ ] `GET /api/projects/:key/attachments` — `{ id, name, url }` with `url` like `/docs/projects/{key}/{itemId}` (not SharePoint `webUrl`)
+- [ ] **Public**: open a document `url` while logged out — file loads via app proxy (PDF/images inline); no SharePoint sign-in
+- [ ] Upload/delete project doc — list updates; re-open same `url` shows new file or 404 after delete
+- [ ] Public project detail: Documents card hidden when folder empty
+- [ ] Admin: Upload docs button; files appear as lozenges; × removes file
+- [ ] Upload a test PDF via admin or SharePoint; document link opens
+- [ ] Header: description, metadata tags (check-in can edit tags)
+- [ ] Stats card: sessions + hours (all linked sessions, all FYs)
+- [ ] Carousel: cover photos from linked sessions (newest first)
+- [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
+- [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/docs/projects/{new}/…` URLs work
 
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group
@@ -527,13 +549,14 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### L19. Sessions advanced filters (client-side)
 - [ ] Opening Advanced shows checkboxes on all session cards
-- [ ] Group dropdown: shows only groups with sessions matching current FY + search + tag
-- [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group
-- [ ] Selecting a group narrows the tag options; selecting a tag narrows the group options
-- [ ] Clearing one filter re-expands the other's options
+- [ ] Group dropdown: shows only groups with sessions matching current FY + search + tag + project
+- [ ] Project dropdown: **All projects**, **No project**, then only projects linked to sessions matching current FY + search + group + tag
+- [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group + project
+- [ ] Selecting a group, project, or tag narrows the other dropdown options; clearing one filter re-expands the others
+- [ ] Project filter in URL as `?project=` (`__none__` or project key); cleared when that project has no sessions under the current FY/filters
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
-- [ ] "Add Tags (N)" enabled only when ≥1 session checked; label shows count
+- [ ] "Add Tags" and "Update Project" enabled only when ≥1 session checked
 - [ ] Closing Advanced clears selection and hides checkboxes
 
 ### L4. Sort

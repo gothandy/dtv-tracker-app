@@ -15,7 +15,7 @@
 
     <FormLayout :disabled="working">
       <FormRow title="Hours (per person)">
-        <input v-model.number="hours" type="number" min="0" step="0.5" class="shm-input" />
+        <ModalFormInput v-model="hours" type="number" narrow min="0" step="0.5" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -26,6 +26,7 @@ import { ref } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 
 const props = defineProps<{ entryCount: number; defaultHours: number; working: boolean; error?: string }>()
 const emit = defineEmits<{ close: []; setHours: [hours: number] }>()
@@ -33,7 +34,7 @@ const emit = defineEmits<{ close: []; setHours: [hours: number] }>()
 const hours = ref(props.defaultHours)
 
 function apply() {
-  emit('setHours', hours.value)
+  emit('setHours', Number(hours.value))
 }
 </script>
 
@@ -43,15 +44,5 @@ function apply() {
   opacity: 0.8;
   margin-bottom: 1rem;
   line-height: 1.5;
-}
-
-.shm-input {
-  width: 5rem;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
 }
 </style>

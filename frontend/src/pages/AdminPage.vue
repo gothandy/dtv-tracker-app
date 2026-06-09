@@ -117,6 +117,7 @@ import { usePageTitle } from '../composables/usePageTitle'
 import { LABEL_ICONS } from '../utils/labelIcons'
 
 import { ACCESS_LABEL_ADMIN_TOOLS_PAGE } from '../utils/accessLabels'
+import { reloadTaxonomy } from '../composables/useTaxonomy'
 
 usePageTitle(ACCESS_LABEL_ADMIN_TOOLS_PAGE)
 
@@ -303,6 +304,13 @@ async function clearAllServerCaches() {
     const data = await res.json()
     if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Clear failed')
     cacheClearResult.value = data.message || 'Caches cleared.'
+    try {
+      await reloadTaxonomy()
+      cacheClearResult.value += ' Term Store tree refreshed in this tab.'
+    } catch (reloadErr) {
+      console.error('Taxonomy reload after cache clear:', reloadErr)
+      cacheClearResult.value += ' Visit a tagging screen or reload the page to pick up new Term Store terms.'
+    }
   } catch (e: any) {
     cacheClearResult.value = e.message || 'Clear failed'
     cacheClearError.value = true

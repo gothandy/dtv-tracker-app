@@ -1,0 +1,95 @@
+/* Shared list grid card — Sessions, Groups, Projects (see SessionCard template) */
+
+.list-item-card {
+  background: var(--color-dtv-light);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.list-item-card__body {
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.list-item-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.list-item-card__title-row .list-item-card__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-item-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-dtv-dark);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item-card__title-badge {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.list-item-card__subtext {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-dtv-dark);
+}
+
+.list-item-card__description {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  color: var(--color-dtv-dark);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.list-item-card__stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-dtv-dark);
+}
+
+.list-item-card__stats strong {
+  font-weight: 700;
+}

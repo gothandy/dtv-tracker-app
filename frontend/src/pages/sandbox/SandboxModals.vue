@@ -84,6 +84,7 @@
         v-if="open === 'session-edit'"
         :session="mockSession"
         :groups="mockGroups"
+        :projects="mockProjects"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -198,6 +199,7 @@
       <GroupAddSessionModal
         v-if="open === 'group-add-session'"
         :group="mockGroup"
+        :projects="mockProjects"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -403,6 +405,11 @@ const mockGroups = [
   { id: 1, name: 'Sheepskull', key: 'sheepskull' },
   { id: 2, name: 'Adhoc', key: 'adhoc' },
   { id: 3, name: 'Fundraising', key: 'fundraising' },
+]
+
+const mockProjects = [
+  { id: 10, name: 'River restoration', key: 'river-restoration' },
+  { id: 11, name: 'Hedge planting', key: 'hedge-planting' },
 ]
 
 const mockSession = {

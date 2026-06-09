@@ -6,7 +6,10 @@ import { safeParseLookupId } from './data-layer';
 // Title = SHA-256 hash of the raw token (indexed by default).
 // Profile = lookup to Profiles list.
 // Created = auth issue date (auto-managed by SharePoint) — used as freshAuthAt.
-const LOGINS_LIST_GUID = 'e3b5c7fb-313a-44b4-9363-a4e4d2b65a57';
+
+function loginsListGuid(): string {
+  return process.env.LOGINS_LIST_GUID!;
+}
 
 function hashToken(rawToken: string): string {
   return crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -20,7 +23,7 @@ export async function createAuthToken(profileId: number, userAgent?: string): Pr
   const hash = hashToken(rawToken);
   const fields: Record<string, unknown> = { Title: hash, ProfileLookupId: profileId };
   if (userAgent) fields.Agent = userAgent.slice(0, 255); // single line of text — 255 char max
-  await sharePointClient.createListItem(LOGINS_LIST_GUID, fields);
+  await sharePointClient.createListItem(loginsListGuid(), fields);
   return rawToken;
 }
 
@@ -34,7 +37,7 @@ export async function validateAuthToken(rawToken: string): Promise<{ profileId: 
     const since = new Date(Date.now() - ttlHours * 60 * 60 * 1000).toISOString();
 
     const items = await sharePointClient.getListItems(
-      LOGINS_LIST_GUID,
+      loginsListGuid(),
       'Title,ProfileLookupId,Created',
       `fields/Title eq '${hash}' and fields/Created ge '${since}'`
     );

@@ -105,7 +105,7 @@ function toggle(id: number) {
 
 .elr-checkbox {
   position: absolute;
-  left: 0.75rem;
+  left: 1.5rem;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
@@ -115,7 +115,7 @@ function toggle(id: number) {
 }
 
 .elr-item--selectable :deep(.eli-content) {
-  padding-left: 2.75rem;
+  padding-left: calc(1.5rem + 1.25rem + 0.5rem);
 }
 
 .elr-edit-btn {

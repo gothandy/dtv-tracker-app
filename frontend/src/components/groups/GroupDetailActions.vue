@@ -24,6 +24,7 @@
     <GroupAddSessionModal
       v-if="showAdd"
       :group="group"
+      :projects="projects"
       :working="workingAdd"
       :error="addError"
       @close="showAdd = false"
@@ -47,9 +48,13 @@ import type { GroupDetailResponse } from '../../../../types/api-responses'
 import AppButton from '../AppButton.vue'
 import GroupEditModal, { type EditGroupPayload } from '../../pages/modals/GroupEditModal.vue'
 import GroupAddSessionModal, { type AddSessionPayload } from '../../pages/modals/GroupAddSessionModal.vue'
+import type { ProjectItem } from '../../pages/modals/SessionEditModal.vue'
 import DeleteModal from '../../pages/modals/DeleteModal.vue'
 
-const props = defineProps<{ group: GroupDetailResponse }>()
+const props = defineProps<{
+  group: GroupDetailResponse
+  projects: ProjectItem[]
+}>()
 const emit = defineEmits<{
   editGroup: [data: EditGroupPayload]
   addSession: [data: AddSessionPayload]

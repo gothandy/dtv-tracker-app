@@ -6,6 +6,7 @@
   "scripts": {
     "prebuild": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "tsc",
+    "build:dev": "tsc",
     "start": "node app.js",
     "dev": "cross-env NODE_ENV=development nodemon app.js",
     "test": "vitest",
@@ -14,6 +15,7 @@
     "frontend:build": "cd frontend && npm run build"
   },
   "nodemonConfig": {
+    "delay": 2000,
     "ignore": [
       "node_modules/",
       "docs/",

@@ -1,14 +1,25 @@
 <template>
-  <div class="session-card">
+  <div class="list-item-card session-card">
 
-    <div class="session-card__body">
-      <p class="session-card__group">{{ session.groupName }}</p>
-      <p class="session-card__date">{{ formatDate(session.date) }}</p>
-      <p v-if="session.groupDescription" class="session-card__description prose">{{ session.groupDescription }}</p>
+    <div class="list-item-card__body">
+      <template v-if="isPast">
+        <p class="list-item-card__title">{{ pastTitle }}</p>
+        <p class="list-item-card__subtext">{{ formatDate(session.date) }}</p>
+        <p v-if="session.description" class="list-item-card__description prose">{{ session.description }}</p>
+      </template>
+      <template v-else>
+        <p class="list-item-card__title">{{ session.groupName }}</p>
+        <p class="list-item-card__subtext">{{ formatDate(session.date) }}</p>
+        <p v-if="session.groupDescription" class="list-item-card__description prose">{{ session.groupDescription }}</p>
+      </template>
     </div>
 
-    <div class="session-card__footer">
-      <ul v-if="hasCheckInAccess" class="session-card__stats">
+    <div class="list-item-card__footer">
+      <ul v-if="hasCheckInAccess && isPast" class="list-item-card__stats">
+        <li>{{ display.count }} Total</li>
+        <li v-if="display.hours">{{ display.hours }} Hours</li>
+      </ul>
+      <ul v-else-if="hasCheckInAccess" class="list-item-card__stats">
         <li v-if="display.count || display.totalLimit">
           {{ display.count }}<template v-if="display.totalLimit">/{{ display.totalLimit }}</template> Total
         </li>
@@ -48,6 +59,10 @@ const props = defineProps<{
 
 const hasCheckInAccess = computed(() => props.profile?.hasCheckInAccess ?? false)
 
+const isPast = computed(() => !props.session.isBookable)
+
+const pastTitle = computed(() => props.session.displayName || props.session.groupName)
+
 const viewPath = computed(() => sessionPath(props.session.groupKey!, props.session.date))
 
 function formatDate(dateStr: string): string {
@@ -70,60 +85,6 @@ const availabilityClass = computed(() => ({
 </script>
 
 <style scoped>
-.session-card {
-  background: var(--color-dtv-light);
-  display: flex;
-  flex-direction: column;
-}
-
-.session-card__body {
-  padding: 1rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.session-card__group {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-dtv-dark);
-}
-
-.session-card__date {
-  font-size: 0.85rem;
-  color: var(--color-dtv-dark);
-}
-
-.session-card__description {
-  font-size: 1rem;
-  color: var(--color-dtv-dark);
-  margin-top: 0.25rem;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.session-card__footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0.75rem 1.5rem;
-}
-
-.session-card__stats {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  font-size: 0.85rem;
-  color: var(--color-dtv-dark);
-}
-
 .session-card__availability {
   font-size: 0.85rem;
   color: var(--color-dtv-green);

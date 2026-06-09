@@ -67,20 +67,20 @@ async function main() {
     }
 
     // --- Backup document library ---
-    console.log('\nBackup document library (BACKUP_DRIVE_ID):');
-    const backupDriveId = process.env.BACKUP_DRIVE_ID;
+    console.log('\nShared Documents library (DOCUMENTS_DRIVE_ID):');
+    const documentsDriveId = process.env.DOCUMENTS_DRIVE_ID;
 
-    if (!backupDriveId) {
-        console.log('  (skipped — BACKUP_DRIVE_ID not set)');
+    if (!documentsDriveId) {
+        console.log('  (skipped — DOCUMENTS_DRIVE_ID not set)');
     } else {
         // Same direct-drive-root probe as for the media library — downloadFile() also swallows
         // all 404s, so an invalid drive ID would silently return null and still pass.
         const token = await sharePointClient.getAccessToken();
         const driveRes = await axios.get(
-            `https://graph.microsoft.com/v1.0/drives/${backupDriveId}`,
+            `https://graph.microsoft.com/v1.0/drives/${documentsDriveId}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        assert('Backup drive is accessible', driveRes.status === 200, `HTTP ${driveRes.status}`);
+        assert('Documents drive is accessible', driveRes.status === 200, `HTTP ${driveRes.status}`);
         assert('Drive has id', typeof driveRes.data?.id === 'string', `got ${typeof driveRes.data?.id}`);
     }
 

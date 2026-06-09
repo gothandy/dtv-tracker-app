@@ -126,9 +126,16 @@ Your API permissions table should look like this:
 
 ---
 
-## 3. Grant SharePoint Site-Level Permissions
+## 3. Grant SharePoint Site-Level Permissions (legacy — not required for DTV Tracker)
 
-Even with API-level permissions, SharePoint requires explicit site-level access for app-only authentication.
+**DTV Tracker uses Microsoft Graph with Entra ID application permissions (`Sites.ReadWrite.All`).** List CRUD, media library, nightly backups (`Backups/`), and project documents (`Projects/{slug}/` in the Documents library) all use Graph — no `appinv.aspx` step is needed.
+
+The section below is the **Azure ACS** site-trust model. ACS is [retired for SharePoint Online on 2026-04-02](https://learn.microsoft.com/en-us/sharepoint/dev/sp-add-ins/retirement-announcement-for-azure-acs). Do not set up new ACS principals for this app.
+
+<details>
+<summary>Legacy ACS appinv instructions (reference only)</summary>
+
+Even with API-level permissions, SharePoint historically required explicit site-level access for ACS app-only authentication.
 
 ### A. Navigate to App Permissions Page
 
@@ -199,6 +206,8 @@ https://dtvolunteers.sharepoint.com/sites/tracker/_layouts/15/appprincipals.aspx
 | `Read` | Read-only access |
 
 **Recommendation**: Use the narrowest scope and rights needed. Start with site collection scope and FullControl, reduce if possible later.
+
+</details>
 
 ---
 

@@ -20,6 +20,18 @@ async function load() {
   }
 }
 
+/** Drop the in-memory tree so the next load hits the server (e.g. after admin cache clear). */
+export function invalidateTaxonomyCache(): void {
+  loaded.value = false
+  tree.value = []
+}
+
+/** Refetch term tree from the API — used after server taxonomy cache is busted. */
+export async function reloadTaxonomy(): Promise<void> {
+  invalidateTaxonomyCache()
+  await load()
+}
+
 export function useTaxonomy() {
   if (!loaded.value && !loading.value) load()
   return { tree, loading }

@@ -103,6 +103,28 @@ describe('sessionList store', () => {
     })
   })
 
+  describe('applyProject', () => {
+    it('sets project on matching sessions', async () => {
+      mockFetch({ data: [baseSession] })
+      const store = useSessionListStore()
+      await store.fetch()
+      store.applyProject([1], { id: 5, key: 'freeminers', title: 'Freeminers 2025' })
+      expect(store.sessions[0].projectId).toBe(5)
+      expect(store.sessions[0].projectKey).toBe('freeminers')
+      expect(store.sessions[0].projectTitle).toBe('Freeminers 2025')
+    })
+
+    it('clears project when id is null', async () => {
+      const withProject = { ...baseSession, projectId: 5, projectKey: 'x', projectTitle: 'X' }
+      mockFetch({ data: [withProject] })
+      const store = useSessionListStore()
+      await store.fetch()
+      store.applyProject([1], { id: null })
+      expect(store.sessions[0].projectId).toBeUndefined()
+      expect(store.sessions[0].projectKey).toBeUndefined()
+    })
+  })
+
   it('sets error on failed fetch', async () => {
     mockFetch({}, false)
     const store = useSessionListStore()

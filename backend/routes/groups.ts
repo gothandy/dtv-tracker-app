@@ -19,6 +19,7 @@ import {
   calculateFinancialYear,
   calculateRollingYear,
   findGroupByKey,
+  findTitleKeyClash,
   safeParseLookupId,
   parseHours,
   profileSlug,
@@ -29,6 +30,7 @@ import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_STATS, SESSION_NO
 import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
+import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
 
 const router: Router = express.Router();
 
@@ -107,7 +109,7 @@ router.post('/groups', async (req: Request, res: Response) => {
     const nameNorm = typeof name === 'string' ? name.trim().toLowerCase() : '';
 
     const existing = await groupsRepository.getAll();
-    const keyClash = existing.find(g => (g.Title || '').toLowerCase() === keyNorm);
+    const keyClash = findTitleKeyClash(existing, keyNorm);
     if (keyClash) {
       res.status(409).json({ success: false, error: `A group with key "${key.trim()}" already exists` });
       return;
@@ -182,11 +184,12 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       return d >= fyStart && d <= fyEnd;
     });
 
-    // Aggregate FY stats from pre-computed Stats field on each session
-    let totalHours = 0, newVolunteers = 0, children = 0, totalRegistrations = 0;
+    const fyAgg = aggregateSessionStatsForScope(groupSessions, { groupId }, { fyScope: 'current' });
+
+    // Aggregate FY detail stats from pre-computed Stats field on each session
+    let newVolunteers = 0, children = 0, totalRegistrations = 0;
     for (const s of fySessions) {
       const stats = parseSessionStats(s[SESSION_STATS]);
-      totalHours         += stats.hours;
       newVolunteers      += stats.new   || 0;
       children           += stats.child || 0;
       totalRegistrations += stats.count;
@@ -324,8 +327,8 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
       ...(isCurrentUserRegular !== undefined && { isCurrentUserRegular }),
       financialYear: `${fy.startYear}-${fy.endYear}`,
       stats: {
-        sessions: fySessions.length,
-        hours: Math.round(totalHours * 10) / 10,
+        sessions: fyAgg.sessions,
+        hours: fyAgg.hours,
         newVolunteers,
         children,
         totalVolunteers: totalRegistrations,  // total registrations — unique volunteer count deferred to Phase 2
@@ -371,6 +374,17 @@ router.patch('/groups/:key', async (req: Request, res: Response) => {
     if (!spGroup) {
       res.status(404).json({ success: false, error: 'Group not found' });
       return;
+    }
+
+    if (typeof fields.Title === 'string') {
+      const keyClash = findTitleKeyClash(rawGroups, fields.Title, spGroup.ID);
+      if (keyClash) {
+        res.status(409).json({
+          success: false,
+          error: `A group with key "${fields.Title}" already exists`,
+        });
+        return;
+      }
     }
 
     await groupsRepository.updateFields(spGroup.ID, fields);

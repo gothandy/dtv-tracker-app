@@ -17,6 +17,10 @@ const { SESSION_NOTES, SESSION_COVER_MEDIA } = require('./dist/backend/services/
 const { mediaDriveId } = require('./dist/backend/services/media-upload');
 const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
 const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
+const { getProjectDocCache, setProjectDocCache } = require('./dist/backend/services/project-docs-cache');
+const { tryDocumentsDriveId } = require('./dist/backend/services/documents-drive');
+const { projectsRepository } = require('./dist/backend/services/repositories/projects-repository');
+const { findProjectByKey } = require('./dist/backend/services/data-layer');
 const axios = require('axios');
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -134,6 +138,48 @@ app.get('/media/:group/:date/:id', async (req, res) => {
         await fetchAndServe(true);
     } catch (err) {
         console.error(`Error serving media ${groupKey}/${dateParam}/${listItemId}:`, err);
+        res.status(502).end();
+    }
+});
+
+// Public project documents proxy — files under Projects/{key}/ on the Documents library drive.
+// No SharePoint session required; bytes cached 12h in memory, 24h in browser.
+app.get('/docs/projects/:key/:itemId', async (req, res) => {
+    const key = String(req.params.key).toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const itemId = String(req.params.itemId);
+    if (!key || !itemId || itemId.length > 256 || !/^[\w.!-]+$/i.test(itemId)) {
+        return res.status(400).end();
+    }
+
+    const cacheKey = `${key}/${itemId}`;
+    const cached = getProjectDocCache(cacheKey);
+    if (cached) {
+        res.set('Content-Type', cached.contentType);
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.send(cached.data);
+    }
+
+    try {
+        const driveId = tryDocumentsDriveId();
+        if (!driveId) return res.status(503).end();
+
+        const rawProjects = await projectsRepository.getAll();
+        if (!findProjectByKey(rawProjects, key)) return res.status(404).end();
+
+        const folderPath = `Projects/${key}`;
+        const files = await sharePointClient.listDriveFolderFiles(driveId, folderPath);
+        if (!files.some(f => f.id === itemId)) return res.status(404).end();
+
+        const { data, contentType, name } = await sharePointClient.downloadDriveItem(driveId, itemId);
+        setProjectDocCache(cacheKey, data, contentType);
+
+        const safeName = String(name).replace(/[^\w.\-]/g, '_');
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=86400');
+        res.set('Content-Disposition', `inline; filename="${safeName}"`);
+        res.send(data);
+    } catch (err) {
+        console.error(`Error serving project doc ${key}/${itemId}:`, err);
         res.status(502).end();
     }
 });

@@ -63,6 +63,9 @@ function toggle(id: number) {
 <style scoped>
 /* Clears page footer; replaces SessionListPage wrapper pb-6. */
 .sr-section { padding: 0; padding-block-end: 1.5rem; }
-.sr-empty { padding: 1.5rem 0; color: var(--color-text-muted); font-size: 0.9rem; }
-.list-card-grid :deep(.session-card) { background: var(--color-dtv-sand); }
+.sr-empty {
+  padding: 1.25rem 1.5rem 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
 </style>

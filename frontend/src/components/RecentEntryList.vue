@@ -174,11 +174,16 @@ function mapEntry(e: RecentSignupResponse): EntryListItemResponse {
     groupName: e.groupName,
     notes: e.notes,
     checkedIn: e.checkedIn,
-    hours: 0,
-    count: 1,
-    isGroup: false,
-    hasAccompanyingAdult: false,
+    hours: e.hours,
+    count: e.count,
+    isGroup: e.isGroup ?? false,
+    hasAccompanyingAdult: e.accompanyingAdultId != null,
     cancelled: e.cancelled,
+    isMember: e.isMember,
+    cardStatus: e.cardStatus,
+    hasProfileWarning: e.hasProfileWarning,
+    labels: e.labels,
+    eventbriteAttendeeId: e.eventbriteAttendeeId,
   }
 }
 
@@ -210,7 +215,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem;
   background: var(--color-dtv-light);
 }
 
@@ -232,7 +237,7 @@ onMounted(load)
 }
 
 .rel-empty {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   font-size: 0.9rem;
   color: var(--color-text-muted);
 }

@@ -24,6 +24,25 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 ---
 
+## 1a. Projects List
+
+**Purpose**: Stores cross-group volunteer projects (funded work, trails, etc.)
+
+**List GUID**: `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` (`PROJECTS_LIST_GUID`)
+
+### Columns
+
+| Column Name | Internal Name | Type | Required | Description |
+|------------|---------------|------|----------|-------------|
+| **ID** | ID | Counter | Auto | Unique identifier (Primary Key) |
+| **Title** | Title | Single line of text | Yes | Shorthand key (slug, e.g. `bridge`) — used in URLs |
+| **Name** | Name | Single line of text | No | Display name |
+| **Description** | Description | Multiple lines of text | No | Project description |
+| **Metadata** | Metadata | Managed metadata | No | Taxonomy tags (same term set as Sessions) |
+| *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`; `DOCUMENTS_DRIVE_ID`) |
+
+---
+
 ## 2. Sessions List
 
 **Purpose**: Stores volunteer session information with dates and planning notes
@@ -40,6 +59,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Date** | Date | Date (Date only) | Yes | Session date |
 | **Notes** | Notes | Multiple lines of text | No | Planning notes, work done, and actions |
 | **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
+| **Project** | Project | Lookup | No | Links to Projects list (shows Title) |
 | **EventbriteEventID** | EventbriteEventID | Single line of text | No | Eventbrite Event identifier |
 | **Stats** | Stats | Multiple lines of text | No | Pre-computed JSON: `{ "count": N, "hours": N, "media": N, "new": N, "child": N, "regular": N, "cancelledRegular": N, "eventbrite": N }` |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
@@ -47,6 +67,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 ### Lookup Fields
 - **Group** / **GroupLookupId**: Lookup to Groups list — associates the session with a volunteer group
+- **Project** / **ProjectLookupId**: Lookup to Projects list — optional cross-group project link (Phase 1: set in SharePoint; app reads only)
 
 ### Calculated Fields (not stored)
 - **Financial Year**: Calculated from Date field (April–March rule)
@@ -200,7 +221,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 **Purpose**: Persistent auth token store for self-service sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `AUTH_BASIC_TTL_HOURS` (default 72h). Emergency revocation: delete all items.
 
-**List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57`
+**List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` (`LOGINS_LIST_GUID`)
 
 ### Columns
 

@@ -13,19 +13,19 @@
   >
     <FormLayout :disabled="working">
       <FormRow title="Name" :full-width="true">
-        <input v-model="form.name" class="pem-input" type="text" />
+        <ModalFormInput v-model="form.name" />
       </FormRow>
       <FormRow title="Emails" :full-width="true">
-        <input v-model="form.emails" class="pem-input" type="text" placeholder="email comma-separated" />
+        <ModalFormInput v-model="form.emails" placeholder="email comma-separated" />
       </FormRow>
       <FormRow title="Match Name" :full-width="true">
-        <input v-model="form.matchName" class="pem-input" type="text" />
+        <ModalFormInput v-model="form.matchName" />
       </FormRow>
       <FormRow v-if="showUser" title="Username" :full-width="true">
-        <input v-model="form.user" class="pem-input" type="text" placeholder="e.g. andrew.davies@dtv.org.uk" />
+        <ModalFormInput v-model="form.user" placeholder="e.g. andrew.davies@dtv.org.uk" />
       </FormRow>
       <FormRow title="Is Group" :full-width="true">
-        <input v-model="form.isGroup" type="checkbox" class="pem-checkbox" />
+        <ModalFormCheckbox v-model="form.isGroup" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -37,6 +37,8 @@ import type { ProfileDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
 
 export interface EditProfilePayload {
   name: string
@@ -79,23 +81,3 @@ function save() {
   })
 }
 </script>
-
-<style scoped>
-.pem-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.pem-checkbox {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--color-dtv-green);
-  cursor: pointer;
-}
-</style>

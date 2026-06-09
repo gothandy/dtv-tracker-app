@@ -15,6 +15,7 @@ import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { GroupResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
+import { withSessionTotals, entitiesWithSessionsInFy } from '../../utils/entitySessionTotals'
 
 export interface GroupWithStats extends GroupResponse {
   sessionCount: number
@@ -29,32 +30,14 @@ const router = useRouter()
 
 const fy = ref((route.query.fy as string) || 'future')
 
-function rollingStart(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
-function matchesFy(s: Session): boolean {
-  if (fy.value === 'all') return true
-  if (fy.value === 'future') return s.date >= new Date().toISOString().slice(0, 10)
-  if (fy.value === 'rolling') return s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10)
-  return s.financialYear === fy.value
-}
-
 const filtered = computed<GroupWithStats[]>(() => {
-  const fyGroups = fy.value === 'all'
-    ? props.groups
-    : props.groups.filter(g => props.sessions.some(s => s.groupId === g.id && matchesFy(s)))
-
-  return fyGroups.map(g => {
-    const groupSessions = props.sessions.filter(s => s.groupId === g.id && matchesFy(s))
-    return {
-      ...g,
-      sessionCount: groupSessions.length,
-      hours: Math.round(groupSessions.reduce((sum, s) => sum + (s.stats.hours || 0), 0) * 10) / 10,
-    }
-  })
+  const fyGroups = entitiesWithSessionsInFy(
+    props.groups,
+    props.sessions,
+    (g, s) => s.groupId === g.id,
+    fy.value
+  )
+  return withSessionTotals(fyGroups, props.sessions, (g, s) => s.groupId === g.id, fy.value)
 })
 
 watch(filtered, list => emit('filtered', list), { immediate: true })

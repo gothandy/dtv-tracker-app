@@ -5,42 +5,50 @@
     action-icon="save"
     show-delete
     :working="working"
+    :error="error"
     @close="emit('close')"
     @action="save"
     @delete="confirmDelete = true"
   >
     <FormLayout :disabled="working">
       <FormRow title="Display Name" :full-width="true">
-        <input v-model="form.displayName" class="sem-input" placeholder="Leave blank to use group name" />
+        <ModalFormInput v-model="form.displayName" placeholder="Leave blank to use group name" />
       </FormRow>
 
       <FormRow title="Description" :full-width="true">
-        <textarea v-model="form.description" class="sem-textarea" rows="3" />
+        <ModalFormTextarea v-model="form.description" />
       </FormRow>
 
       <template v-if="profile.isAdmin">
         <FormRow title="Date" :full-width="true">
-          <input v-model="form.date" type="date" class="sem-input" />
+          <ModalFormInput v-model="form.date" type="date" />
         </FormRow>
 
         <FormRow title="Group" :full-width="true">
-          <select v-model="form.groupId" class="sem-select">
+          <ModalFormSelect v-model="form.groupId">
             <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-          </select>
+          </ModalFormSelect>
+        </FormRow>
+
+        <FormRow title="Project" :full-width="true">
+          <ModalFormSelect v-model="form.projectId" :placeholder="form.projectId === null">
+            <option :value="null">No project</option>
+            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </ModalFormSelect>
         </FormRow>
 
         <FormRow title="Limits JSON" :full-width="true">
-          <input v-model="form.limitsRaw" class="sem-input" placeholder='{"new":4,"total":20}' />
+          <ModalFormInput v-model="form.limitsRaw" placeholder='{"new":4,"total":20}' />
         </FormRow>
 
         <FormRow title="Eventbrite Event ID" :full-width="true">
-          <input v-model="form.eventbriteEventId" class="sem-input" />
+          <ModalFormInput v-model="form.eventbriteEventId" />
         </FormRow>
       </template>
     </FormLayout>
 
-    <div v-if="validationError" class="sem-error">{{ validationError }}</div>
-    <div v-else-if="error" class="sem-error">{{ error }}</div>
+    <p v-if="validationError" class="modal-form-error">{{ validationError }}</p>
+    <p v-else-if="error" class="modal-form-error">{{ error }}</p>
   </ModalLayout>
 
   <DeleteModal
@@ -60,15 +68,21 @@ import type { SessionDetailResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import DeleteModal from './DeleteModal.vue'
 
 export interface GroupItem { id: number; name: string; key: string }
+
+export interface ProjectItem { id: number; name: string; key: string }
 
 export interface SessionSaveData {
   displayName: string
   description: string
   date: string
   groupId: number | null
+  projectId: number | null
   limits: Record<string, unknown> | null
   eventbriteEventId: string
 }
@@ -76,6 +90,7 @@ export interface SessionSaveData {
 const props = defineProps<{
   session: SessionDetailResponse
   groups: GroupItem[]
+  projects: ProjectItem[]
   working: boolean
   error?: string
 }>()
@@ -96,6 +111,7 @@ const form = reactive({
   description: props.session.description ?? '',
   date: props.session.date,
   groupId: props.session.groupId ?? null as number | null,
+  projectId: props.session.projectId ?? null as number | null,
   limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
   eventbriteEventId: props.session.eventbriteEventId ?? '',
 })
@@ -119,32 +135,9 @@ function save() {
     description: form.description,
     date: form.date,
     groupId: form.groupId,
+    projectId: form.projectId,
     limits,
     eventbriteEventId: form.eventbriteEventId,
   })
 }
 </script>
-
-<style scoped>
-.sem-input,
-.sem-select,
-.sem-textarea {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.sem-select { cursor: pointer; }
-.sem-textarea { resize: vertical; }
-
-.sem-error {
-  color: var(--color-error);
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-}
-</style>

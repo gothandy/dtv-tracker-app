@@ -20,6 +20,9 @@ interface SessionResponse {
   mediaCount?: number
   coverUrl?: string
   metadata?: Array<{ label: string; termGuid: string }>
+  projectId?: number
+  projectKey?: string
+  projectTitle?: string
 }
 
 function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; regularGroupIds?: number[] } | undefined): Session {
@@ -40,6 +43,9 @@ function mapSession(r: SessionResponse, profileStats: { sessionIds?: number[]; r
     mediaCount: r.mediaCount,
     coverUrl: r.coverUrl,
     metadata: r.metadata,
+    projectId: r.projectId,
+    projectKey: r.projectKey,
+    projectTitle: r.projectTitle,
     isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
     isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),
     isRegular: profileStats?.regularGroupIds?.includes(r.groupId ?? -1) ?? false,
@@ -83,5 +89,23 @@ export const useSessionListStore = defineStore('sessions', () => {
     }
   }
 
-  return { sessions, loading, error, fetch, applyTag }
+  function applyProject(
+    sessionIds: number[],
+    project: { id: number | null; key?: string; title?: string },
+  ) {
+    for (const s of raw.value) {
+      if (!sessionIds.includes(s.id)) continue
+      if (project.id === null) {
+        delete s.projectId
+        delete s.projectKey
+        delete s.projectTitle
+      } else {
+        s.projectId = project.id
+        s.projectKey = project.key
+        s.projectTitle = project.title
+      }
+    }
+  }
+
+  return { sessions, loading, error, fetch, applyTag, applyProject }
 })

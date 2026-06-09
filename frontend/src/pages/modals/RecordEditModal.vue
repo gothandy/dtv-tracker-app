@@ -12,15 +12,15 @@
   >
     <FormLayout :disabled="working">
       <FormRow title="Type" :full-width="true">
-        <span class="rem-type">{{ record.type }}</span>
+        <span class="modal-form-readonly">{{ record.type }}</span>
       </FormRow>
       <FormRow title="Status" :full-width="true">
-        <select v-model="form.status" class="rem-select">
+        <ModalFormSelect v-model="form.status">
           <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
-        </select>
+        </ModalFormSelect>
       </FormRow>
       <FormRow title="Date" :full-width="true">
-        <input v-model="form.date" class="rem-input" type="date" />
+        <ModalFormInput v-model="form.date" type="date" />
       </FormRow>
     </FormLayout>
   </ModalLayout>
@@ -32,6 +32,8 @@ import type { ConsentRecordResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
+import ModalFormInput from '../../components/forms/ModalFormInput.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 
 export interface SaveRecordPayload {
   status: string
@@ -63,22 +65,3 @@ function save() {
   })
 }
 </script>
-
-<style scoped>
-.rem-select,
-.rem-input {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.rem-type {
-  font-size: 0.95rem;
-  color: var(--color-text-muted);
-}
-</style>

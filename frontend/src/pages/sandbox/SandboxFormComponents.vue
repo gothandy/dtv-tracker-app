@@ -5,23 +5,25 @@
       <SandboxBackLink />
       <h1>Form Components</h1>
 
+      <p class="sfc-note">Modal fields use shared styles from <code>frontend/src/styles/modal-form.css</code> (classes below or <code>ModalForm*</code> components).</p>
+
       <!-- Textbox -->
       <h2>Textbox</h2>
       <FormLayout>
         <FormRow title="Name">
-          <input class="sfc-input" value="Andrew Davies" />
+          <input class="modal-form-control" value="Andrew Davies" />
         </FormRow>
         <FormRow title="Placeholder">
-          <input class="sfc-input" placeholder="Search by name…" />
+          <input class="modal-form-control" placeholder="Search by name…" />
         </FormRow>
         <FormRow title="Disabled">
-          <input class="sfc-input" value="gothandy@hotmail.com" disabled />
+          <input class="modal-form-control" value="gothandy@hotmail.com" disabled />
         </FormRow>
         <FormRow title="Multiline" :full-width="true">
-          <textarea class="sfc-input sfc-input--multiline" rows="4">This is a longer note that spans multiple lines. It can contain descriptions, session write-ups, or any free-form text the user needs to enter.</textarea>
+          <textarea class="modal-form-control modal-form-control--multiline" rows="4">This is a longer note that spans multiple lines. It can contain descriptions, session write-ups, or any free-form text the user needs to enter.</textarea>
         </FormRow>
         <FormRow title="Multiline disabled" :full-width="true">
-          <textarea class="sfc-input sfc-input--multiline" rows="4" disabled>This field is disabled.</textarea>
+          <textarea class="modal-form-control modal-form-control--multiline" rows="4" disabled>This field is disabled.</textarea>
         </FormRow>
       </FormLayout>
 
@@ -29,13 +31,13 @@
       <h2>Number</h2>
       <FormLayout>
         <FormRow title="Count">
-          <input type="number" class="sfc-input sfc-input--narrow" value="3" min="0" />
+          <input type="number" class="modal-form-control modal-form-control--narrow" value="3" min="0" />
         </FormRow>
         <FormRow title="Hours">
-          <input type="number" class="sfc-input sfc-input--narrow" value="2.5" min="0" step="0.5" />
+          <input type="number" class="modal-form-control modal-form-control--narrow" value="2.5" min="0" step="0.5" />
         </FormRow>
         <FormRow title="Disabled">
-          <input type="number" class="sfc-input sfc-input--narrow" value="1" disabled />
+          <input type="number" class="modal-form-control modal-form-control--narrow" value="1" disabled />
         </FormRow>
       </FormLayout>
 
@@ -43,16 +45,16 @@
       <h2>Checkbox</h2>
       <FormLayout>
         <FormRow title="Unselected">
-          <input type="checkbox" class="sfc-checkbox" />
+          <input type="checkbox" class="modal-form-checkbox" />
         </FormRow>
         <FormRow title="Selected">
-          <input type="checkbox" class="sfc-checkbox" checked />
+          <input type="checkbox" class="modal-form-checkbox" checked />
         </FormRow>
         <FormRow title="Disabled">
-          <input type="checkbox" class="sfc-checkbox" disabled />
+          <input type="checkbox" class="modal-form-checkbox" disabled />
         </FormRow>
         <FormRow title="Disabled checked">
-          <input type="checkbox" class="sfc-checkbox" disabled checked />
+          <input type="checkbox" class="modal-form-checkbox" disabled checked />
         </FormRow>
       </FormLayout>
 
@@ -74,10 +76,10 @@
       <h2>Date Picker</h2>
       <FormLayout>
         <FormRow title="Date">
-          <input type="date" class="sfc-input" v-model="dateValue" />
+          <input type="date" class="modal-form-control" v-model="dateValue" />
         </FormRow>
         <FormRow title="Disabled">
-          <input type="date" class="sfc-input" value="2026-04-05" disabled />
+          <input type="date" class="modal-form-control" value="2026-04-05" disabled />
         </FormRow>
       </FormLayout>
 
@@ -85,14 +87,14 @@
       <h2>Standard Dropdown</h2>
       <FormLayout>
         <FormRow title="Option">
-          <select class="sfc-select">
+          <select class="modal-form-control">
             <option>Option A</option>
             <option>Option B</option>
             <option>Option C</option>
           </select>
         </FormRow>
         <FormRow title="Disabled">
-          <select class="sfc-select" disabled>
+          <select class="modal-form-control" disabled>
             <option>Option A</option>
           </select>
         </FormRow>
@@ -102,13 +104,13 @@
       <h2>Group Dropdown</h2>
       <FormLayout>
         <FormRow title="Group">
-          <select class="sfc-select" v-model="selectedGroup">
+          <select class="modal-form-control" v-model="selectedGroup">
             <option value="">All groups</option>
             <option v-for="g in groups" :key="g.key" :value="g.key">{{ g.name }}</option>
           </select>
         </FormRow>
         <FormRow title="Disabled">
-          <select class="sfc-select" disabled>
+          <select class="modal-form-control" disabled>
             <option>All groups</option>
           </select>
         </FormRow>
@@ -193,13 +195,13 @@
       <h2>FormLayout disabled</h2>
       <FormLayout disabled>
         <FormRow title="Name">
-          <input class="sfc-input" value="Andrew Davies" />
+          <input class="modal-form-control" value="Andrew Davies" />
         </FormRow>
         <FormRow title="Checked In">
-          <input type="checkbox" class="sfc-checkbox" checked />
+          <input type="checkbox" class="modal-form-checkbox" checked />
         </FormRow>
         <FormRow title="Notes" :full-width="true">
-          <textarea class="sfc-input sfc-input--multiline" rows="3">Some notes here.</textarea>
+          <textarea class="modal-form-control modal-form-control--multiline" rows="3">Some notes here.</textarea>
         </FormRow>
         <FormRow title="FY Filter">
           <FyFilter v-model="fyValueSelected" />
@@ -292,34 +294,17 @@ const consentPhoto = ref(false)
 .sandbox { gap: 1rem; }
 
 /* Narrow wrapper to preview form-page components at their intended width */
+.sfc-note {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
 .sfc-narrow {
   max-width: 26rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.sfc-input,
-.sfc-select {
-  width: 100%;
-  background: var(--color-dtv-light);
-  border: none;
-  color: var(--color-text);
-  padding: 0.3rem 0.5rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.sfc-select { cursor: pointer; }
-.sfc-input--narrow { width: 5rem; }
-.sfc-input--multiline { resize: vertical; }
-
-.sfc-checkbox {
-  width: 1.5rem;
-  height: 1.5rem;
-  accent-color: var(--color-dtv-green);
-  cursor: pointer;
-  flex-shrink: 0;
 }
 </style>

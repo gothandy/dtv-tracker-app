@@ -5,6 +5,7 @@ import { isPublicApiGet } from './public-api-get-paths';
 const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/entries\/\d+$/ },           // check-in + set hours
   { method: 'PATCH', pattern: /^\/sessions\/[^/]+\/[^/]+$/ }, // edit session title/description
+  { method: 'PATCH', pattern: /^\/projects\/[^/]+$/ },       // edit project metadata / fields
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular
   { method: 'PATCH', pattern: /^\/regulars\/\d+$/ },          // update regular (e.g. accompanying adult)
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular
@@ -34,6 +35,7 @@ const SELFSERVICE_ALLOWED_GET_PATTERNS = [
   /^\/stats/,
   /^\/sessions(?!\/export)/,            // session list + detail — handler filters entries to own-only; excludes /sessions/export
   /^\/groups/,
+  /^\/projects/,
   /^\/tags/,
   /^\/media/,
   /^\/entries\/\d+$/,                  // own entry detail by ID; handler enforces ownership

@@ -35,18 +35,11 @@ import { ref, computed, watch } from 'vue'
 import TermPicker from '../TermPicker.vue'
 import type { TaxNode } from '../../composables/useTaxonomy'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
-
-type TagItem = { label: string; termGuid: string }
-
-interface TagPill {
-  shortLabel: string
-  pathKey: string
-  depth: number
-  termGuid: string | null
-}
+import { expandMetadataToPills, resolveMetadataTags, type MetadataTag } from '../../utils/taxonomyPath'
 
 const props = defineProps<{
-  session: SessionDetailResponse
+  session?: SessionDetailResponse
+  metadata?: MetadataTag[]
   allowEdit: boolean
   working: boolean
   error?: string
@@ -54,43 +47,18 @@ const props = defineProps<{
   taxonomyLoading?: boolean
 }>()
 
-const emit = defineEmits<{ saveTags: [tags: TagItem[]] }>()
+const emit = defineEmits<{ saveTags: [tags: MetadataTag[]] }>()
 
-const tags = computed<TagItem[]>(() => props.session.metadata ?? [])
+const rawTags = computed<MetadataTag[]>(() => props.metadata ?? props.session?.metadata ?? [])
+
+const expandedPills = computed(() => expandMetadataToPills(rawTags.value, props.tree))
+
+const tags = computed(() => resolveMetadataTags(rawTags.value, props.tree))
+
 const pickedLabel = ref('')
 const deletingGuids = ref(new Set<string>())
 
-// Build the expanded list of ancestor + leaf pills from session.metadata.
-// Each tag label is a colon-separated path, e.g. "XC:Verderers:Red Option".
-// We expand every prefix into a separate pill, deduplicate by pathKey,
-// and attach termGuid only when the full path matches a metadata entry.
-const expandedPills = computed<TagPill[]>(() => {
-  const byPath = new Map<string, TagPill>()
-
-  const metaByPath = new Map<string, string>() // pathKey → termGuid
-  for (const tag of tags.value) {
-    metaByPath.set(tag.label, tag.termGuid)
-  }
-
-  for (const tag of tags.value) {
-    const parts = tag.label.split(':')
-    for (let d = 0; d < parts.length; d++) {
-      const pathKey = parts.slice(0, d + 1).join(':')
-      const termGuid = metaByPath.get(pathKey) ?? null
-
-      if (!byPath.has(pathKey)) {
-        byPath.set(pathKey, { shortLabel: parts[d], pathKey, depth: d, termGuid })
-      } else if (termGuid !== null) {
-        // Merge termGuid if this path exists directly in metadata
-        byPath.get(pathKey)!.termGuid = termGuid
-      }
-    }
-  }
-
-  return [...byPath.values()].sort((a, b) => a.depth - b.depth)
-})
-
-watch(tags, (newTags) => {
+watch(rawTags, newTags => {
   for (const guid of deletingGuids.value) {
     if (!newTags.some(t => t.termGuid === guid)) {
       deletingGuids.value.delete(guid)

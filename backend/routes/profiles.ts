@@ -67,7 +67,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       entriesRepository.getAll(),
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      recordsRepository.getAll()
     ]);
 
     const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -202,7 +202,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       entriesRepository.getAll(),
       sessionsRepository.getAll(),
       groupsRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      recordsRepository.getAll()
     ]);
 
     const validProfiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -348,10 +348,6 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
 
 router.get('/profiles/records/options', async (req: Request, res: Response) => {
   try {
-    if (!recordsRepository.available) {
-      res.json({ success: true, data: { types: [], statuses: [] } });
-      return;
-    }
     const listGuid = process.env.RECORDS_LIST_GUID!;
     const [types, statuses] = await Promise.all([
       sharePointClient.getColumnChoices(listGuid, 'Type'),
@@ -371,11 +367,6 @@ router.post('/profiles/:id/records', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'Invalid profile ID' });
       return;
     }
-    if (!recordsRepository.available) {
-      res.status(400).json({ success: false, error: 'Records list not configured' });
-      return;
-    }
-
     const { type, status, date } = req.body;
     if (!type || !status) {
       res.status(400).json({ success: false, error: 'type and status are required' });
@@ -405,11 +396,6 @@ router.patch('/records/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'Invalid record ID' });
       return;
     }
-    if (!recordsRepository.available) {
-      res.status(400).json({ success: false, error: 'Records list not configured' });
-      return;
-    }
-
     const { status, date } = req.body;
     const fields: { Status?: string; Date?: string } = {};
     if (typeof status === 'string') fields.Status = status;
@@ -445,11 +431,6 @@ router.delete('/records/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'Invalid record ID' });
       return;
     }
-    if (!recordsRepository.available) {
-      res.status(400).json({ success: false, error: 'Records list not configured' });
-      return;
-    }
-
     // Look up profile ID from cache before the write clears it
     const allRecordsForDelete = await recordsRepository.getAll();
     const recordForDelete = allRecordsForDelete.find(r => r.ID === recordId);
@@ -470,11 +451,6 @@ router.delete('/records/:id', async (req: Request, res: Response) => {
 
 router.post('/records/bulk', async (req: Request, res: Response) => {
   try {
-    if (!recordsRepository.available) {
-      res.status(400).json({ success: false, error: 'Records list not configured' });
-      return;
-    }
-
     const { profileIds, type, status, date } = req.body;
     if (!Array.isArray(profileIds) || profileIds.length === 0) {
       res.status(400).json({ success: false, error: 'profileIds array is required' });
@@ -531,11 +507,6 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'Invalid profile ID' });
       return;
     }
-    if (!recordsRepository.available) {
-      res.status(400).json({ success: false, error: 'Records list not configured' });
-      return;
-    }
-
     // Self-service users may only submit consent for their own profile
     if (req.session.user?.role === 'selfservice') {
       const ownIds = req.session.user.profileIds?.length
@@ -905,7 +876,7 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       profilesRepository.getAll(),
       entriesRepository.getAll(),
       regularsRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      recordsRepository.getAll()
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
@@ -969,26 +940,24 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
 
     // Transfer records (skip if target already has the same type)
     let recordsTransferred = 0;
-    if (recordsRepository.available) {
-      const sourceRecords = rawRecords.filter(r =>
-        safeParseLookupId(r.ProfileLookupId as unknown as string) === sourceProfile.ID
-      );
-      const targetRecordTypes = new Set(
-        rawRecords
-          .filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === targetProfile.ID)
-          .map(r => r.Type)
-      );
-      const recordsListGuid = process.env.RECORDS_LIST_GUID!;
+    const sourceRecords = rawRecords.filter(r =>
+      safeParseLookupId(r.ProfileLookupId as unknown as string) === sourceProfile.ID
+    );
+    const targetRecordTypes = new Set(
+      rawRecords
+        .filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === targetProfile.ID)
+        .map(r => r.Type)
+    );
+    const recordsListGuid = process.env.RECORDS_LIST_GUID!;
 
-      for (const record of sourceRecords) {
-        if (!targetRecordTypes.has(record.Type)) {
-          await sharePointClient.updateListItem(recordsListGuid, record.ID, {
-            ProfileLookupId: String(targetProfile.ID)
-          });
-          recordsTransferred++;
-        } else {
-          await sharePointClient.deleteListItem(recordsListGuid, record.ID);
-        }
+    for (const record of sourceRecords) {
+      if (!targetRecordTypes.has(record.Type)) {
+        await sharePointClient.updateListItem(recordsListGuid, record.ID, {
+          ProfileLookupId: String(targetProfile.ID)
+        });
+        recordsTransferred++;
+      } else {
+        await sharePointClient.deleteListItem(recordsListGuid, record.ID);
       }
     }
 
@@ -1057,7 +1026,7 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
       profilesRepository.getAll(),
       entriesRepository.getAll(),
       regularsRepository.getAll(),
-      recordsRepository.available ? recordsRepository.getAll() : Promise.resolve([])
+      recordsRepository.getAll()
     ]);
 
     const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
