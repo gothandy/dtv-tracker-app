@@ -8,6 +8,7 @@
 import axios from 'axios';
 import NodeCache from 'node-cache';
 import { DateTime } from 'luxon';
+import { FILE_PROXY_CACHE_TTL_SEC } from './file-proxy-cache-ttl';
 
 // ---------------------------------------------------------------------------
 // Regional date helpers
@@ -71,7 +72,7 @@ export const CACHE_TTL = {
   entries:    300,  //  5 min — check-in tier: live updates on the day
   records:  86400,  // 24 hr  — invalidated on write; rarely changes between sessions
   stats:    86400,  // 24 hr  — recomputed after every entry/session write anyway
-  media:     3600,  //  1 hr  — thumbnail URLs have ~24h token validity; shorter TTL recovers from missed invalidation
+  fileProxy: FILE_PROXY_CACHE_TTL_SEC, //  6 hr — media/doc folder listings; see file-proxy-cache-ttl.ts
   slug:     86400,  // 24 hr  — group+date→ID mappings; cleared on session create/update/delete
 } as const;
 
@@ -533,7 +534,7 @@ export class SharePointClient {
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
-      this.cache.set(cacheKey, result, CACHE_TTL.projects);
+      this.cache.set(cacheKey, result, CACHE_TTL.fileProxy);
       return result;
     } catch (error: any) {
       if (error.response?.status === 404) return [];
@@ -650,7 +651,7 @@ export class SharePointClient {
         return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
       });
 
-      this.cache.set(cacheKey, items, CACHE_TTL.projects);
+      this.cache.set(cacheKey, items, CACHE_TTL.fileProxy);
       return items;
     } catch (error: any) {
       if (error.response?.status === 404) return [];
@@ -784,7 +785,7 @@ export class SharePointClient {
           counts.set(item.name as string, item.folder.childCount as number);
         }
       }
-      this.cache.set(cacheKey, counts, CACHE_TTL.media);
+      this.cache.set(cacheKey, counts, CACHE_TTL.fileProxy);
       return counts;
     } catch (error: any) {
       if (error.response?.status === 404) return new Map();
@@ -832,7 +833,7 @@ export class SharePointClient {
           title: (item.listItem?.fields?.Title as string | undefined) || null,
         }));
 
-      this.cache.set(cacheKey, result, CACHE_TTL.media);
+      this.cache.set(cacheKey, result, CACHE_TTL.fileProxy);
       return result;
     } catch (error: any) {
       if (error.response?.status === 404) return [];

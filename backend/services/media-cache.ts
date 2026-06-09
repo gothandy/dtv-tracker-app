@@ -1,4 +1,4 @@
-const TTL_MS = 12 * 60 * 60 * 1000; // 12h — within SharePoint pre-auth URL lifetime
+import { isFileProxyCacheValid } from './file-proxy-cache-ttl';
 
 interface CacheEntry {
   data: Buffer;
@@ -11,7 +11,7 @@ const cache = new Map<number, CacheEntry>();
 export function getMediaCache(listItemId: number): CacheEntry | null {
   const entry = cache.get(listItemId);
   if (!entry) return null;
-  if (Date.now() - entry.fetchedAt > TTL_MS) {
+  if (!isFileProxyCacheValid(entry.fetchedAt)) {
     cache.delete(listItemId);
     return null;
   }

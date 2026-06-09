@@ -6,6 +6,7 @@
 import { sharePointClient } from './sharepoint-client';
 import { tryDocumentsDriveId } from './documents-drive';
 import { nameToSlug } from './data-layer';
+import { isFileProxyCacheValid } from './file-proxy-cache-ttl';
 import type { DocsTreeNode } from '../../types/api-responses';
 
 export const GOVERNANCE_DOCS_ROOT = 'Docs';
@@ -91,14 +92,17 @@ async function buildInternalTree(
   return nodes;
 }
 
-let cachedInternalTree: InternalDocsNode[] | null = null;
+let cachedInternalTree: { tree: InternalDocsNode[]; fetchedAt: number } | null = null;
 
 async function getInternalTree(): Promise<InternalDocsNode[]> {
-  if (cachedInternalTree) return cachedInternalTree;
+  if (cachedInternalTree && isFileProxyCacheValid(cachedInternalTree.fetchedAt)) {
+    return cachedInternalTree.tree;
+  }
   const driveId = tryDocumentsDriveId();
   if (!driveId) return [];
-  cachedInternalTree = await buildInternalTree(driveId, GOVERNANCE_DOCS_ROOT, []);
-  return cachedInternalTree;
+  const tree = await buildInternalTree(driveId, GOVERNANCE_DOCS_ROOT, []);
+  cachedInternalTree = { tree, fetchedAt: Date.now() };
+  return tree;
 }
 
 export function clearGovernanceDocsTreeCache(): void {

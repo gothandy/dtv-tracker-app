@@ -206,7 +206,7 @@ Five independent caches:
 | **Column schema cache** | `sharepoint-client.ts` | SharePoint column definitions | 1 hr | Manual admin clear |
 | **Taxonomy tree cache** (`treeCache`) | `taxonomy-client.ts` | Term Store hierarchy | 1 hr | Manual admin clear |
 | **Cover image cache** (`coverCache`) | `services/cover-cache.ts` | Session cover image bytes | 1 hr | Bust on `coverMediaId` change |
-| **Project docs cache** (`project-docs-cache.ts`) | `project-docs-cache.ts` | Project file bytes for `/docs/projects/` proxy | 12 hr | Upload/delete; admin cache clear |
+| **File proxy caches** | `media-cache.ts`, `project-docs-cache.ts`, `governance-docs-cache.ts`, governance tree | Proxied media/doc bytes + governance folder tree | 6 hr | Upload/delete; admin cache clear |
 
 **NodeCache per-entity TTLs:**
 
@@ -214,7 +214,8 @@ Five independent caches:
 |---|---|---|
 | `groups`, `sessions`, `profiles`, `regulars` | 6 hr | Warmed nightly; covers check-in window |
 | `entries` | 5 min | Check-in tier — live writes on the day |
-| `records`, stats, media, slug/item keys | 24 hr | Targeted invalidation handles writes |
+| `records`, stats, slug/item keys | 24 hr | Targeted invalidation handles writes |
+| `fileProxy` (media folders, project/governance doc folders) | 6 hr | Shared with file proxy byte caches; admin cache clear |
 
 Targeted invalidation: each repository write evicts only its own key(s). Entry writes also clear `sessions_FY*` keys. **Admin cache clear** (`POST /api/cache/clear`) flushes NodeCache, column schema, taxonomy tree, cover images, and project doc bytes.
 

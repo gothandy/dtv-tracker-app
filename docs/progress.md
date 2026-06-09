@@ -1,5 +1,9 @@
 # Development Progress
 
+## Session: 2026-06-09 (File proxy cache TTL unification)
+
+- Shared **6 hr** TTL in `file-proxy-cache-ttl.ts` for session media, project docs, and governance docs (folder listings + proxied bytes + governance tree).
+
 ## Session: 2026-06-09 (Public governance Docs page)
 
 - Public **Docs** page at `/docs` and burger menu link; reads SharePoint `Docs/` from Documents library (`DOCUMENTS_DRIVE_ID`).
