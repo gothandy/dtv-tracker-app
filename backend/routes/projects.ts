@@ -267,7 +267,7 @@ router.get('/projects/:key/attachments', async (req: Request, res: Response) => 
     const data: ProjectAttachmentResponse[] = attachments.map(a => ({
       id: a.id,
       name: a.name,
-      url: `/docs/projects/${key}/${encodeURIComponent(a.id)}`,
+      url: `/projects/${key}/files/${encodeURIComponent(a.id)}`,
     }));
     res.json({ success: true, data } as ApiResponse<ProjectAttachmentResponse[]>);
   } catch (error: any) {
@@ -329,7 +329,7 @@ async function handleProjectDocUpload(req: Request, res: Response) {
       uploaded.push({
         id: item.id,
         name: item.name,
-        url: `/docs/projects/${key}/${encodeURIComponent(item.id)}`,
+        url: `/projects/${key}/files/${encodeURIComponent(item.id)}`,
       });
     }
 

@@ -93,12 +93,12 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | GET | `/api/sessions`, `/api/sessions/:group/:date` | No volunteer names/emails |
 | GET | `/api/groups`, `/api/groups/:key` | No regulars list (empty array returned) |
 | GET | `/api/projects`, `/api/projects/:key`, `/api/projects/:key/attachments` | Live all-FY totals from linked sessions; document `url` points at app proxy (not SharePoint) |
-| GET | `/docs/projects/:key/:itemId` | Public download/view of files in `Projects/{key}/` (no auth) |
+| GET | `/projects/:key/files/:itemId` | Public download/view of files in `Projects/{key}/` (no auth) |
 | GET | `/api/tags/*` | Tag metadata only; `?profile=` param requires auth |
 | GET | `/api/media/*` | `isPublic` items only; `name` and `webUrl` fields stripped (contain uploader's name in filename) |
 | GET | `/api/docs` | Governance folder tree from SharePoint `Docs/`; file nodes return stable tracker `url` only |
 | GET | `/docs/*.pdf` | Governance PDF byte proxy (app.js); server-side from Documents library |
-| GET | `/docs/projects/:key/:itemId` | Project document byte proxy (app.js); server-side from `Projects/{key}/` |
+| GET | `/projects/:key/files/:itemId` | Project document byte proxy (app.js); server-side from `Projects/{key}/` |
 
 All other endpoints require authentication (return 401 from `require-auth.ts`).
 
@@ -180,7 +180,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 
 1. **Role assignment** ([`routes/auth/dtv.ts`](../routes/auth/dtv.ts)): Microsoft callback requires a Profile **`User`** match; else session is destroyed and redirect **`/login?reason=dtv-not-authorised`**. If matched: `ADMIN_USERS` → **`admin`**, else **`checkin`**. Verify flow set **`selfservice`** when Profile **`Email`** matches; no match → `reason=not-approved`. Role is `req.session.user.role`. Public = no session.
 
-2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/projects`, `/api/tags`, `/api/media`, `/api/docs`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths. Document proxies at `/docs/*.pdf` and `/docs/projects/:key/:itemId` require no session.
+2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/projects`, `/api/tags`, `/api/media`, `/api/docs`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths. Document proxies at `/docs/*.pdf` and `/projects/:key/files/:itemId` require no session.
 
 3. **Role enforcement** (`middleware/require-admin.ts`): After `requireAuth` on API routes:
    - **Public GETs** (same path set as `require-auth.ts`, resolved with `baseUrl` + `path` inside the `/api` mount): **always** allowed without a session user so anonymous and post-logout home/session list loads are not blocked.

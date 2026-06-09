@@ -432,7 +432,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
-- [ ] `GET /api/projects/:key/attachments` — `{ id, name, url }` with `url` like `/docs/projects/{key}/{itemId}` (not SharePoint `webUrl`)
+- [ ] `GET /api/projects/:key/attachments` — `{ id, name, url }` with `url` like `/projects/{key}/files/{itemId}` (not SharePoint `webUrl`)
 - [ ] **Public**: open a document `url` while logged out — file loads via app proxy (PDF/images inline); no SharePoint sign-in
 - [ ] Upload/delete project doc — list updates; re-open same `url` shows new file or 404 after delete
 - [ ] Public project detail: Documents card hidden when folder empty
@@ -442,7 +442,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)
 - [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
-- [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/docs/projects/{new}/…` URLs work
+- [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/projects/{new}/files/…` URLs work
 
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group

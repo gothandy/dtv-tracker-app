@@ -7,7 +7,7 @@
 ## Session: 2026-06-09 (Public governance Docs page)
 
 - Public **Docs** page at `/docs` and burger menu link; reads SharePoint `Docs/` from Documents library (`DOCUMENTS_DRIVE_ID`).
-- `GET /api/docs` + `GET /docs/*.pdf` byte proxy (same pattern as `/docs/projects/:key/:itemId`).
+- `GET /api/docs` + `GET /docs/*.pdf` byte proxy (project files use `/projects/:key/files/:itemId`).
 - Lozenge file links (`DocLozengeLink.vue`); heading hierarchy H2/H3/bold; slug paths via `nameToSlug`.
 
 ## Session: 2026-05-21 (Project documents via Graph; DOCUMENTS_DRIVE_ID)

@@ -59,7 +59,7 @@ export interface ProjectDetailResponse extends ProjectResponse {
 export interface ProjectAttachmentResponse {
   id: string;
   name: string;
-  /** Stable app URL — served via /docs/projects/:key/:itemId (no SharePoint login). */
+  /** Stable app URL — served via /projects/:key/files/:itemId (no SharePoint login). */
   url: string;
 }
 

@@ -144,9 +144,9 @@ app.get('/media/:group/:date/:id', async (req, res) => {
     }
 });
 
-// Public project documents proxy — files under Projects/{key}/ on the Documents library drive.
+// Public project documents proxy — /projects/:key/files/:itemId (not under /docs/ — avoids governance path clash).
 // No SharePoint session required; bytes cached 12h in memory, 24h in browser.
-app.get('/docs/projects/:key/:itemId', async (req, res) => {
+app.get('/projects/:key/files/:itemId', async (req, res) => {
     const key = String(req.params.key).toLowerCase().replace(/[^a-z0-9-]/g, '');
     const itemId = String(req.params.itemId);
     if (!key || !itemId || itemId.length > 256 || !/^[\w.!-]+$/i.test(itemId)) {
