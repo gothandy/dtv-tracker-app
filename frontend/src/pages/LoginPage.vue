@@ -1,48 +1,22 @@
-<template>
-  <!-- Magic link sent — stripped-back page, no header/footer, nothing else to click -->
-  <div v-if="method === 'link' && sent && !expired" class="close-tab-page">
-    <div class="close-tab-card">
-      <p class="close-tab-body">DTV Tracker sent you a log-in link. This link expires at:</p>
-      <div class="close-tab-code">{{ expiryTime }}</div>
-      <p class="close-tab-body">You can close this window and return to your original tab.</p>
-    </div>
-  </div>
-
-  <!-- All other states in the normal layout -->
-  <TaskLayout v-else>
+﻿<template>
+  <TaskLayout>
     <h1 class="sr-only">Login</h1>
 
     <div class="login-stack">
 
-      <!-- Reason banner -->
       <AlertBanner
         v-if="reasonMessage"
         :message="reasonMessage"
         :type="loginReasonBannerType"
       />
 
-      <!-- Login cards -->
       <template v-if="!sent">
 
-        <!-- Volunteer sign-in (magic link / verification code) -->
         <FormCard
-          v-if="magicEnabled || verifyEnabled"
+          v-if="selfServiceEnabled"
           :title="ACCESS_LABEL_SELF_SERVICE"
           subtitle="Sign in with email to view your volunteer profile, manage your sessions, and upload photos."
         >
-          <!-- Method selector — only shown when both options are available -->
-          <p v-if="magicEnabled && verifyEnabled" class="method-prompt">Choose how we verify your email.</p>
-          <div v-if="magicEnabled && verifyEnabled" class="method-selector">
-            <label class="method-option">
-              <input type="radio" v-model="method" value="link" class="method-radio" />
-              <span>Click a link</span>
-            </label>
-            <label class="method-option">
-              <input type="radio" v-model="method" value="code" class="method-radio" />
-              <span>Enter a code</span>
-            </label>
-          </div>
-
           <FormInput
             v-model="email"
             type="email"
@@ -55,16 +29,15 @@
             <AppButton
               usage="task"
               :icon="sending ? undefined : 'tick'"
-              :label="sending ? 'Sending…' : 'Send log-in email'"
+              :label="sending ? 'Sending...' : 'Send verification code'"
               :disabled="!emailValid || sending"
               :working="sending"
               @click="sendLoginEmail"
             />
-            <p v-if="magicError" class="form-error">{{ magicError }}</p>
+            <p v-if="loginError" class="form-error">{{ loginError }}</p>
           </FormSubmitRow>
         </FormCard>
 
-        <!-- Microsoft sign-in (Tracker Assist / Tracker Admin at auth) -->
         <FormCard
           :title="ACCESS_LABEL_CHECK_IN"
           subtitle="Sign in with your Microsoft account, using an address ending @dtv.org.uk"
@@ -76,17 +49,16 @@
 
       </template>
 
-      <!-- Expired -->
-      <FormCard v-else-if="expired" title="This log-in link has expired">
-        <p class="sent-body">Click below to send a new log-in email.</p>
+      <FormCard v-else-if="expired" title="Your verification code has expired">
+        <p class="sent-body">Click below to send a new verification code.</p>
         <FormSubmitRow>
-          <AppButton usage="task" label="Send a new log-in email" :working="sending" @click="sendLoginEmail" />
+          <AppButton usage="task" label="Send a new verification code" :working="sending" @click="sendLoginEmail" />
+          <p v-if="loginError" class="form-error">{{ loginError }}</p>
         </FormSubmitRow>
       </FormCard>
 
-      <!-- Verification code entry (method === 'code' && sent && !expired) -->
       <FormCard v-else title="Enter your verification code">
-        <p class="sent-body">We've sent a verification code to your email. Enter it below — it expires in {{ countdown }}.</p>
+        <p class="sent-body">We've sent a verification code to your email. Enter it below - it expires in {{ countdown }}.</p>
         <FormInput
           v-model="verifyInput"
           type="text"
@@ -129,14 +101,11 @@ usePageTitle('Login')
 const route = useRoute()
 const email = ref('')
 const sending = ref(false)
-const magicError = ref('')
+const loginError = ref('')
 const sent = ref(false)
-const method = ref<'link' | 'code'>('link')
-const magicEnabled = ref(false)
-const verifyEnabled = ref(false)
+const selfServiceEnabled = ref(false)
 const reasonMessage = ref('')
 const countdownSeconds = ref(0)
-const expiryTime = ref('')
 const verifyInput = ref('')
 const verifyError = ref('')
 const verifying = ref(false)
@@ -167,42 +136,37 @@ const countdown = computed(() => {
 const reasons: Record<string, (email?: string) => string> = {
   'not-approved': (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'not-found':    (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
-  'invalid-state': () => 'That sign-in link has expired or is invalid — enter your email below to get a new one.',
   'dtv-not-authorised': () =>
     `Access denied. Your Microsoft account is not set up for ${ACCESS_LABEL_CHECK_IN}. Please contact your admin.`,
   'session-expired': () =>
-    'Your sign-in has expired. Sign in again to continue — you will return to this page afterwards.',
+    'Your sign-in has expired. Sign in again to continue - you will return to this page afterwards.',
 }
 
 async function sendLoginEmail() {
   if (!email.value.trim()) return
   sending.value = true
-  magicError.value = ''
-
-  const endpoint = method.value === 'code' ? '/auth/verify/send' : '/auth/magic/send'
+  loginError.value = ''
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch('/auth/verify/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ destination: email.value.trim(), returnTo: returnTo.value }),
     })
     if (res.ok) {
-      if (method.value === 'link') {
-        const data = await res.json()
-        expiryTime.value = data.expiresAt ?? ''
-      }
       sent.value = true
+      verifyInput.value = ''
+      verifyError.value = ''
       startCountdown(15 * 60)
     } else if (res.status === 429) {
       const data = await res.json().catch(() => ({}))
-      magicError.value = data.error || 'Too many attempts — please try again later.'
+      loginError.value = data.error || 'Too many attempts - please try again later.'
     } else {
       const data = await res.json().catch(() => ({}))
-      magicError.value = data.error || 'Something went wrong. Please try again.'
+      loginError.value = data.error || 'Something went wrong. Please try again.'
     }
   } catch {
-    magicError.value = 'Could not send email. Please check your connection and try again.'
+    loginError.value = 'Could not send email. Please check your connection and try again.'
   } finally {
     sending.value = false
   }
@@ -255,8 +219,7 @@ function backToLogin() {
 
 onMounted(async () => {
   fetch('/auth/providers').then(r => r.json()).then(p => {
-    magicEnabled.value = !!p.magic
-    verifyEnabled.value = !!p.verify
+    selfServiceEnabled.value = !!p.selfService
   }).catch(() => {})
 
   const reason = route.query.reason as string | undefined
@@ -265,12 +228,9 @@ onMounted(async () => {
     reasonMessage.value = reasons[reason](reasonEmail)
   }
 
-  // Pre-fill from verification code email button (?method=code&email=...&code=...)
-  const methodParam = route.query.method as string | undefined
   const prefillCode = route.query.code as string | undefined
   const prefillEmail = route.query.email as string | undefined
-  if (methodParam === 'code' && prefillCode && prefillEmail) {
-    method.value = 'code'
+  if (prefillCode && prefillEmail) {
     email.value = prefillEmail
     verifyInput.value = prefillCode
     sent.value = true
@@ -284,76 +244,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Close-tab page — full screen, no app chrome */
-.close-tab-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f5f5;
-  padding: 1rem;
-  box-sizing: border-box;
-}
-
-.close-tab-card {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  max-width: 360px;
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.close-tab-body {
-  color: #555;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0 0 0.5rem;
-}
-
-.close-tab-code {
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--color-dtv-green);
-  letter-spacing: 0.15em;
-  margin: 0.75rem 0;
-}
-
-/* Login stack */
 .login-stack {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.method-prompt {
-  font-size: 0.9rem;
-  color: var(--color-dtv-dark);
-  margin: 0 0 0.5rem;
-}
-
-.method-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.method-option {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  color: var(--color-dtv-dark);
-  cursor: pointer;
-}
-
-.method-radio {
-  accent-color: var(--color-dtv-green);
-  width: 1.1rem;
-  height: 1.1rem;
-  cursor: pointer;
 }
 
 .form-btn--link {

@@ -47,7 +47,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Volunteers listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
 - Profile detail with FY stats, FY bar chart, group hours, entries, records ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
 - Entries page (admin-only): all entries with notes/adult filters, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
-- Unified sign-in page: magic link + verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
+- Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
 
@@ -68,7 +68,7 @@ The application uses 8 SharePoint lists on the Tracker site (`/sites/tracker`). 
 | Profiles | `84649143-9e10-42eb-b6ee-2e1f57033073` | Volunteer profiles |
 | Regulars | `925c96fd-9b3a-4f55-b179-ed51fc279d39` | Profile↔group regulars |
 | Records | `2666a819-1275-4fce-83a3-5bb67b4da83a` | Consents/governance |
-| Logins | `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` | Magic link token hashes |
+| Logins | `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` | Session token hashes |
 
 ### Entity Relationships
 
@@ -232,7 +232,7 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ### Permissions / Authorization
 
-- Four app permission levels (+ Microsoft auth rules): **Admin** (`ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / magic link — own data), **Public** (unauthenticated).
+- Four app permission levels (+ Microsoft auth rules): **Admin** (`ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
 - Capability stack (additive): **Public** ⊆ **Check In tier** ⊆ **Admin tier** (`admin = public + check-in + admin-only`). UI should be additive (admin sees check-in surface plus extra controls), not unrelated “modes”.
 - **"Trusted"** (Microsoft-linked) = Admin ∪ Check In. Self-Service is not trusted for other volunteers’ PII.
 - **Microsoft sign-in**: requires a Profiles list **`User`** value matching the signed-in work email. If not linked, sign-in is **rejected** (session cleared, `/login?reason=dtv-not-authorised`) — not the same as choosing public browsing. **Admin** still needs **`ADMIN_USERS`** in addition to **`User`**.
@@ -301,7 +301,7 @@ dtv-tracker-app/
 │   ├── groups.ts / sessions.ts / entries.ts / profiles.ts
 │   ├── regulars.ts / stats.ts / eventbrite.ts / tags.ts
 │   ├── media.ts / backup.ts / email.ts
-│   └── auth/                       # dtv.ts, magic.ts, verify.ts
+│   └── auth/                       # dtv.ts, verify.ts
 ├── middleware/
 │   ├── auth.ts                     # Cookie auth → req.session.user
 │   ├── require-auth.ts
@@ -358,7 +358,7 @@ Feature inventory is split by area — read the relevant doc before working in t
 - `SHAREPOINT_TIMEZONE` env var: IANA timezone for date conversions (default `Europe/London`)
 - `MAIL_SENDER` env var: enables self-service email login (optional); must be a UPN with `Mail.Send` permission
 - `EMAIL_RATE_LIMIT_PER_HOUR` env var: global cap on auth emails (default `60`)
-- `AUTH_BASIC_TTL_HOURS` env var: magic link token lifetime (default `72`); token hashes stored in Logins list (`LOGINS_LIST_GUID`)
+- `AUTH_BASIC_TTL_HOURS` env var: self-service session token lifetime (default `72`); stored as SHA-256 hashes in Logins list
 - `MEDIA_LIBRARY_DRIVE_ID` env var: required for photo uploads
 - `TAXONOMY_TERM_SET_ID` env var: required for session tags
 - `DOCUMENTS_DRIVE_ID` env var: Documents library drive ID — top-level `Backups/` JSON export and `Projects/{slug}/` project files

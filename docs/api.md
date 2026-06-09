@@ -167,8 +167,6 @@ Auth routes are not under `/api/` and are not subject to `requireAuth` or `requi
 | `/auth/logout` | GET | Public | Clear session and cookie |
 | `/auth/login` | GET | Public | Initiate Microsoft Entra ID login |
 | `/auth/callback` | GET | Public | Microsoft OAuth callback |
-| `/auth/magic/send` | POST | Public | Send magic link email |
-| `/auth/magic/callback` | GET | Public | Redeem magic link token |
 | `/auth/verify/send` | POST | Public | Send verification code email |
 | `/auth/verify/check` | POST | Public | Verify code and set session |
 
@@ -189,6 +187,6 @@ All pages are Vue 3 SPA routes served at `/`.
 | Volunteers | `/profiles` | Profiles with FY filter, sort, group filter, search |
 | Profile Detail | `/profiles/:slug` | FY stats, group hours, entries, records |
 | Entries | `/entries` | Admin-only: all entries with filters and edit modal |
-| Login | `/login` | Magic link + verification code (self-service) and Microsoft (trusted users) |
+| Login | `/login` | Verification code (self-service) and Microsoft (trusted users) |
 | Upload | `/upload` | Volunteer photo upload (authenticated, `?entryId=` param) |
 | Consent | `/profiles/:slug/consent` | Privacy and photo consent collection |

@@ -15,13 +15,12 @@ Operators can set **`User`** in SharePoint when the in-app profile editor is ins
 
 Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session stored server-side; `dtv-auth` cookie identifies the session.
 
-## Self-Service Login (Magic Link + Verification Code)
+## Self-Service Login (Verification Code)
 
 Volunteers sign in by email — no Microsoft account required. Access is controlled by the `Email` field on the volunteer's Profile (comma-separated list supports multiple addresses).
 
-Two methods, both sending via Microsoft Graph Mail (`MAIL_SENDER` env var required):
+Volunteers receive a verification code by email via Microsoft Graph Mail (MAIL_SENDER env var required):
 
-- **Magic link** ([backend/routes/auth/magic.ts](../../backend/routes/auth/magic.ts)): 15-minute JWT link emailed to the volunteer; clicking sets the session directly
 - **Verification code** ([backend/routes/auth/verify.ts](../../backend/routes/auth/verify.ts)): 4-digit code valid for 15 minutes; volunteer enters it on the login page
 
 Session token: 128-bit random, SHA-256 hash stored in SharePoint Logins list. TTL controlled by `AUTH_BASIC_TTL_HOURS` (default 72h). Global send rate limit: `EMAIL_RATE_LIMIT_PER_HOUR` (default 60).
@@ -33,7 +32,7 @@ App levels (see also capability stack in [AGENTS.md](../../AGENTS.md)):
 | Role | How assigned | Access |
 |------|-------------|--------|
 | **Public** | Unauthenticated | Limited non-privacy view |
-| **Self-Service** | Profile email match (magic link) | Own profile, own entries, future session sign-up, own photo upload |
+| **Self-Service** | Profile email match (verification code) | Own profile, own entries, future session sign-up, own photo upload |
 | **Check In** | Microsoft + Profile **`User`** match (not admin list) | Field-day ops: check-in, hours, entries, edit sessions/profiles |
 | **Admin** | Microsoft + **`User`** match **and** **`ADMIN_USERS`** | Full access (includes everything Check In can do) |
 

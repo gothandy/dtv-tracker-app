@@ -1,13 +1,11 @@
-import express, { Request, Response, Router } from 'express';
+﻿import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import dtvRouter from './dtv';
-import magicRouter from './magic';
 import verifyRouter from './verify';
 
 const router: Router = express.Router();
 
 router.use(dtvRouter);
-router.use(magicRouter);
 router.use(verifyRouter);
 
 // GET /auth/logout — clear app session and cookie, return to homepage
@@ -20,9 +18,9 @@ router.get('/logout', (req: Request, res: Response) => {
   });
 });
 
-// GET /auth/providers — which self-service login methods are configured
+// GET /auth/providers — whether self-service email login is configured
 router.get('/providers', (_req: Request, res: Response) => {
-  res.json({ magic: !!process.env.MAIL_SENDER, verify: !!process.env.MAIL_SENDER });
+  res.json({ selfService: !!process.env.MAIL_SENDER });
 });
 
 // GET /auth/me — return current user info (no auth required)
