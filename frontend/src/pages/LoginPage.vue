@@ -53,6 +53,7 @@
         <p class="sent-body">Click below to send a new verification code.</p>
         <FormSubmitRow>
           <AppButton usage="task" label="Send a new verification code" :working="sending" @click="sendLoginEmail" />
+          <p v-if="loginError" class="form-error">{{ loginError }}</p>
         </FormSubmitRow>
       </FormCard>
 
@@ -154,6 +155,8 @@ async function sendLoginEmail() {
     })
     if (res.ok) {
       sent.value = true
+      verifyInput.value = ''
+      verifyError.value = ''
       startCountdown(15 * 60)
     } else if (res.status === 429) {
       const data = await res.json().catch(() => ({}))
