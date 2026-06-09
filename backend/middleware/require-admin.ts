@@ -38,6 +38,7 @@ const SELFSERVICE_ALLOWED_GET_PATTERNS = [
   /^\/projects/,
   /^\/tags/,
   /^\/media/,
+  /^\/docs/,
   /^\/entries\/\d+$/,                  // own entry detail by ID; handler enforces ownership
   /^\/entries\/\d+\/upload-context$/, // own entry upload context; handler enforces ownership
 ];

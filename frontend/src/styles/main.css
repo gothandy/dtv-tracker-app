@@ -4,6 +4,7 @@
 @import "./admin.css";
 @import "./list.css";
 @import "./modal-form.css";
+@import "./doc-lozenge.css";
 
 @theme {
   /* DTV brand colours — keep in sync with shared/brand.ts (used by email renderer) */

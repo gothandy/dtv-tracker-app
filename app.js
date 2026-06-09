@@ -18,6 +18,8 @@ const { mediaDriveId } = require('./dist/backend/services/media-upload');
 const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
 const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
 const { getProjectDocCache, setProjectDocCache } = require('./dist/backend/services/project-docs-cache');
+const { getGovernanceDocCache, setGovernanceDocCache } = require('./dist/backend/services/governance-docs-cache');
+const { fetchGovernanceDocPdf } = require('./dist/backend/services/governance-docs-service');
 const { tryDocumentsDriveId } = require('./dist/backend/services/documents-drive');
 const { projectsRepository } = require('./dist/backend/services/repositories/projects-repository');
 const { findProjectByKey } = require('./dist/backend/services/data-layer');
@@ -180,6 +182,33 @@ app.get('/docs/projects/:key/:itemId', async (req, res) => {
         res.send(data);
     } catch (err) {
         console.error(`Error serving project doc ${key}/${itemId}:`, err);
+        res.status(502).end();
+    }
+});
+
+// Public governance docs proxy — PDFs under Docs/ on the Documents library drive.
+app.get(/^\/docs\/.+\.pdf$/i, async (req, res) => {
+    const slugPath = req.path.replace(/^\/docs\//, '');
+    if (!slugPath) return res.status(400).end();
+
+    const cached = getGovernanceDocCache(slugPath);
+    if (cached) {
+        res.set('Content-Type', cached.contentType);
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.send(cached.data);
+    }
+
+    try {
+        const data = await fetchGovernanceDocPdf(slugPath);
+        if (!data) return res.status(404).end();
+        setGovernanceDocCache(slugPath, data, 'application/pdf');
+        const safeName = slugPath.split('/').pop().replace(/[^\w.\-]/g, '_');
+        res.set('Content-Type', 'application/pdf');
+        res.set('Content-Disposition', `inline; filename="${safeName}"`);
+        res.set('Cache-Control', 'public, max-age=86400');
+        res.send(data);
+    } catch (err) {
+        console.error(`Error serving governance doc ${slugPath}:`, err);
         res.status(502).end();
     }
 });

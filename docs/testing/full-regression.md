@@ -16,6 +16,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/` (homepage) loads without redirect — stats, sessions, groups nav cards visible; volunteers nav card hidden; admin button hidden; header shows "Log in" button
 - [ ] Unauthenticated visit to `/sessions` loads without redirect
 - [ ] Unauthenticated visit to `/groups` loads without redirect; regulars count shows 0
+- [ ] Unauthenticated visit to `/docs` loads without redirect; burger menu shows **Docs** link
+- [ ] `/docs` lists governance folders from SharePoint `Docs/` (H2/H3/bold hierarchy); PDF lozenge opens via tracker URL (`/docs/.../file.pdf`), not SharePoint
+- [ ] `/docs/health-and-safety` scrolls to Health and Safety section (v1: full tree + scroll-to)
 - [ ] Unauthenticated visit to `/groups/:key` loads without redirect; regulars section hidden
 - [ ] Unauthenticated visit to `/sessions/:group/:date` loads; entries section and free parking card hidden
 - [ ] Unauthenticated visit to `/profiles` redirects to `/login` (trusted route)

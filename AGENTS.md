@@ -50,6 +50,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
+- Governance docs page at `/docs` — public; reads SharePoint `Docs/` folder; PDFs via tracker proxy ([DocsPage.vue](frontend/src/pages/DocsPage.vue))
 
 ---
 

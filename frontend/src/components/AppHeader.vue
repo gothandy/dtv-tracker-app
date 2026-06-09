@@ -22,6 +22,7 @@
           <RouterLink to="/sessions" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Sessions</RouterLink>
           <RouterLink to="/groups" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Groups</RouterLink>
           <RouterLink to="/projects" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Projects</RouterLink>
+          <RouterLink to="/docs" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Docs</RouterLink>
           <RouterLink v-if="profile.isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Profiles</RouterLink>
           <RouterLink v-if="profile.isAdmin" to="/entries" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Entries</RouterLink>
           <RouterLink v-if="profile.isAdmin" :to="toolsPath()" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">{{ ACCESS_LABEL_ADMIN_TOOLS_PAGE }}</RouterLink>

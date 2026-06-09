@@ -349,6 +349,14 @@ export interface TagHoursItem {
 
 export type TagHoursResponse = TagHoursItem[];
 
+export interface DocsTreeNode {
+  name: string;
+  slug: string;
+  type: 'folder' | 'file';
+  url?: string;
+  children?: DocsTreeNode[];
+}
+
 export interface EntryUploadContextResponse {
   entryId: number;
   sessionId: number;

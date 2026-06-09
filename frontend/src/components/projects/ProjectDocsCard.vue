@@ -19,36 +19,22 @@
     <p v-else-if="allowManage && !attachments.length" class="pdc-empty">No documents yet.</p>
 
     <div v-else-if="attachments.length" class="pdc-grid">
-      <span
+      <DocLozengeLink
         v-for="doc in attachments"
         :key="doc.id"
-        class="pdc-lozenge"
-        :class="{ 'pdc-lozenge-deleting': props.deletingIds.has(doc.id) }"
-      >
-        <a
-          :href="doc.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="pdc-name"
-          :title="doc.name"
-        >{{ doc.name }}</a>
-        <button
-          v-if="allowManage"
-          type="button"
-          class="pdc-remove"
-          aria-label="Remove document"
-          :disabled="props.deletingIds.has(doc.id)"
-          @click="onDelete(doc.id)"
-        >
-          <img src="/icons/close.svg" width="10" height="10" alt="" class="svg-black" />
-        </button>
-      </span>
+        :label="doc.name"
+        :url="doc.url"
+        :removable="allowManage"
+        :deleting="props.deletingIds.has(doc.id)"
+        @remove="onDelete(doc.id)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import AppButton from '../AppButton.vue'
+import DocLozengeLink from '../docs/DocLozengeLink.vue'
 import LoadingSpinner from '../LoadingSpinner.vue'
 import { projectUploadPath } from '../../router/index'
 import type { ProjectAttachmentResponse } from '../../../../types/api-responses'
@@ -106,61 +92,4 @@ function onDelete(itemId: string) {
   color: var(--color-dtv-dirt);
 }
 
-.pdc-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.pdc-lozenge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: var(--color-dtv-sand);
-  padding: 0.5rem 0.75rem;
-  border: 2px solid transparent;
-  max-width: 100%;
-}
-
-.pdc-lozenge:hover {
-  background: var(--color-dtv-sand-dark);
-}
-
-.pdc-lozenge-deleting {
-  opacity: 0.55;
-}
-
-.pdc-name {
-  font-size: 0.9rem;
-  color: var(--color-text);
-  text-decoration: none;
-  max-width: 14rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pdc-name:hover {
-  text-decoration: underline;
-}
-
-.pdc-remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.pdc-remove:hover img {
-  filter: invert(20%) sepia(95%) saturate(5000%) hue-rotate(0deg) brightness(90%) contrast(90%);
-}
-
-.pdc-remove:disabled {
-  cursor: wait;
-  opacity: 0.5;
-}
 </style>

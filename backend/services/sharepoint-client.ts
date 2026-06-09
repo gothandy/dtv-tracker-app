@@ -609,6 +609,62 @@ export class SharePointClient {
   }
 
   /**
+   * List subfolders and PDF files under a governance Docs/ path.
+   * Returns [] if the folder does not exist.
+   */
+  async listGovernanceFolderChildren(
+    driveId: string,
+    folderPath: string,
+  ): Promise<Array<{ name: string; isFolder: boolean }>> {
+    const cacheKey = `gov_docs_folder_${folderPath}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached as Array<{ name: string; isFolder: boolean }>;
+    }
+
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      let url: string | undefined =
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=name,folder,file`;
+
+      const items: Array<{ name: string; isFolder: boolean }> = [];
+
+      while (url) {
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        for (const item of response.data.value as any[]) {
+          if (item.folder && item.name) {
+            items.push({ name: item.name as string, isFolder: true });
+          } else if (item.file?.mimeType === 'application/pdf' && item.name) {
+            items.push({ name: item.name as string, isFolder: false });
+          }
+        }
+        url = response.data['@odata.nextLink'] as string | undefined;
+      }
+
+      items.sort((a, b) => {
+        if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      });
+
+      this.cache.set(cacheKey, items, CACHE_TTL.projects);
+      return items;
+    } catch (error: any) {
+      if (error.response?.status === 404) return [];
+      console.error(`Error listing governance folder at ${folderPath}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  clearGovernanceFolderCache(): void {
+    const keys = this.cache.keys().filter(k => typeof k === 'string' && k.startsWith('gov_docs_folder_'));
+    for (const key of keys) this.cache.del(key);
+  }
+
+  /**
    * Upload a file to a SharePoint document library.
    * Uses the simple PUT upload (suitable for files up to ~4 MB).
    * Graph auto-creates intermediate folders in the path.
