@@ -18,10 +18,11 @@ All `.env` variables must be configured in Azure App Service → Configuration �
 3. Bind a free **App Service Managed Certificate** for that hostname
 4. Ensure `FRONTEND_URL=https://tracker.dtv.org.uk` is set in Application settings
 
-Path-preserving redirect examples:
+Redirect examples:
 
 - `https://docs.dtv.org.uk/` → `https://tracker.dtv.org.uk/docs`
-- `https://docs.dtv.org.uk/it-and-data/foo.pdf` → `https://tracker.dtv.org.uk/docs/it-and-data/foo.pdf`
+- `https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf` → `https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf` (legacy path mapping in `app.js`)
+- Other paths: prefix preserved — `https://docs.dtv.org.uk/foo.pdf` → `https://tracker.dtv.org.uk/docs/foo.pdf`
 
 Optional override for non-production: `DOCS_REDIRECT_HOST` (hostname that triggers the redirect).
 

@@ -2,7 +2,7 @@
 
 ## Session: 2026-06-10 (docs.dtv.org.uk redirect)
 
-- Early middleware in `app.js` 301-redirects `docs.dtv.org.uk` to `FRONTEND_URL` + `/docs` (path and query preserved).
+- Early middleware in `app.js` 301-redirects `docs.dtv.org.uk` to `FRONTEND_URL` + `/docs` (path and query preserved); legacy privacy-notice path mapped to canonical slug.
 - `docs/azure-app-service.md` — custom domain setup for the legacy docs hostname.
 
 ## Session: 2026-06-10 (Project docs tree + RR prep)
