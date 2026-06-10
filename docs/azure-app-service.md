@@ -4,6 +4,27 @@ The app is hosted on **Azure App Service** (Node.js, UK South).
 
 All `.env` variables must be configured in Azure App Service → Configuration → Application settings.
 
+## Custom domains
+
+| Host | Purpose |
+|------|---------|
+| `tracker.dtv.org.uk` | Primary app URL (`FRONTEND_URL`) |
+| `docs.dtv.org.uk` | Legacy docs hostname — 301 redirect to `/docs` on the canonical host (see `app.js`) |
+
+**Azure setup for `docs.dtv.org.uk`:**
+
+1. DNS: CNAME `docs` → `<app-name>.azurewebsites.net`
+2. App Service → **Custom domains** → add `docs.dtv.org.uk`
+3. Bind a free **App Service Managed Certificate** for that hostname
+4. Ensure `FRONTEND_URL=https://tracker.dtv.org.uk` is set in Application settings
+
+Path-preserving redirect examples:
+
+- `https://docs.dtv.org.uk/` → `https://tracker.dtv.org.uk/docs`
+- `https://docs.dtv.org.uk/it-and-data/foo.pdf` → `https://tracker.dtv.org.uk/docs/it-and-data/foo.pdf`
+
+Optional override for non-production: `DOCS_REDIRECT_HOST` (hostname that triggers the redirect).
+
 ## CI/CD — GitHub Actions
 
 Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on every push to `main`.

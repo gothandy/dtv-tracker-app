@@ -61,7 +61,7 @@
 
       <section>
         <h2 class="text-xl font-bold mb-2">Contact</h2>
-        <p>For questions about these terms, contact Dean Trail Volunteers via the details in our <a href="https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">Privacy Notice (PDF)</a>.</p>
+        <p>For questions about these terms, contact Dean Trail Volunteers via the details in our <a href="https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">Privacy Notice (PDF)</a>.</p>
       </section>
     </div>
     </div>

@@ -19,6 +19,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/docs` loads without redirect; burger menu shows **Docs** link
 - [ ] `/docs` lists governance folders from SharePoint `Docs/` (H2/H3/bold hierarchy); PDF lozenge opens via tracker URL (`/docs/.../file.pdf`), not SharePoint
 - [ ] `/docs/health-and-safety` scrolls to Health and Safety section (v1: full tree + scroll-to)
+- [ ] `https://docs.dtv.org.uk/` returns 301 to `https://tracker.dtv.org.uk/docs`; deep path (e.g. `/it-and-data/.../file.pdf`) preserves path under `/docs/...`
 - [ ] Unauthenticated visit to `/groups/:key` loads without redirect; regulars section hidden
 - [ ] Unauthenticated visit to `/sessions/:group/:date` loads; entries section and free parking card hidden
 - [ ] Unauthenticated visit to `/profiles` redirects to `/login` (trusted route)
