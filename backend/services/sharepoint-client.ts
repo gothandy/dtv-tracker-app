@@ -647,7 +647,7 @@ export class SharePointClient {
       }
 
       items.sort((a, b) => {
-        if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
+        if (a.isFolder !== b.isFolder) return a.isFolder ? 1 : -1;
         return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
       });
 
@@ -662,6 +662,63 @@ export class SharePointClient {
 
   clearGovernanceFolderCache(): void {
     const keys = this.cache.keys().filter(k => typeof k === 'string' && k.startsWith('gov_docs_folder_'));
+    for (const key of keys) this.cache.del(key);
+  }
+
+  /**
+   * List subfolders and files under a Projects/{key}/ path (all file types).
+   * Returns [] if the folder does not exist.
+   */
+  async listProjectDocsFolderChildren(
+    driveId: string,
+    folderPath: string,
+  ): Promise<Array<{ name: string; isFolder: boolean; id?: string }>> {
+    const cacheKey = `project_docs_folder_${folderPath}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Hit: ${cacheKey}`);
+      return cached as Array<{ name: string; isFolder: boolean; id?: string }>;
+    }
+
+    try {
+      const token = await this.getAccessToken();
+      const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+      let url: string | undefined =
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=name,folder,file,id`;
+
+      const items: Array<{ name: string; isFolder: boolean; id?: string }> = [];
+
+      while (url) {
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        for (const item of response.data.value as any[]) {
+          if (item.folder && item.name) {
+            items.push({ name: item.name as string, isFolder: true });
+          } else if (item.file && item.name && item.id) {
+            items.push({ name: item.name as string, isFolder: false, id: item.id as string });
+          }
+        }
+        url = response.data['@odata.nextLink'] as string | undefined;
+      }
+
+      items.sort((a, b) => {
+        if (a.isFolder !== b.isFolder) return a.isFolder ? 1 : -1;
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      });
+
+      this.cache.set(cacheKey, items, CACHE_TTL.fileProxy);
+      return items;
+    } catch (error: any) {
+      if (error.response?.status === 404) return [];
+      console.error(`Error listing project docs folder at ${folderPath}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  clearProjectDocsFolderCache(projectKey?: string): void {
+    const prefix = projectKey ? `project_docs_folder_Projects/${projectKey}` : 'project_docs_folder_';
+    const keys = this.cache.keys().filter(k => typeof k === 'string' && k.startsWith(prefix));
     for (const key of keys) this.cache.del(key);
   }
 

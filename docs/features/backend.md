@@ -48,7 +48,7 @@ Handlebars template system (`templates/email/`). `renderEmail(template, vars)` r
 
 `POST /api/backup/export-all` exports all lists + taxonomy + schema to `Backups/` in the Shared Documents library as JSON. SHA-256 diff check skips unchanged files. Also runs as the final step of the nightly Eventbrite sync.
 
-Project documents live in `Projects/{slug}/` on the Documents library drive (`DOCUMENTS_DRIVE_ID`, same as `Backups/`). `GET /api/projects/:key/attachments` returns `{ id, name, url }` where `url` is a stable app path. Files are served to the public at `GET /projects/:key/files/:itemId` (mirrors `Projects/{key}/` on the drive; no SharePoint login; 6h server / 24h browser cache), matching the session media proxy pattern. Governance PDFs use `/docs/*.pdf` only. Renaming a project key (`PATCH`) moves the drive folder to `Projects/{newKey}/` before updating the list item (409 if the destination folder already exists).
+Project documents live in `Projects/{slug}/` on the Documents library drive (`DOCUMENTS_DRIVE_ID`, same as `Backups/`). Subfolders are supported. `GET /api/projects/:key/attachments` returns a `DocsTreeNode[]` tree (folders + files with slug URLs). Files are served to the public at `GET /projects/:key/docs/{slug-path}` (recursive mirror of `Projects/{key}/`; no SharePoint login; 6h server / 24h browser cache). Governance PDFs use `/docs/*.pdf` only. Renaming a project key (`PATCH`) moves the drive folder to `Projects/{newKey}/` before updating the list item (409 if the destination folder already exists).
 
 ## Stats Pipeline
 

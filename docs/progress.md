@@ -1,5 +1,11 @@
 # Development Progress
 
+## Session: 2026-06-10 (Project docs tree + RR prep)
+
+- Project attachments API returns `DocsTreeNode[]`; byte proxy at `/projects/:key/docs/{slug-path}` (recursive `Projects/{key}/` mirror).
+- `ProjectDocsCard` reuses `DocsSection` (same hierarchy/lozenges as governance Docs); admin delete via file `id`.
+- Listing order: files before folders, alphabetical within each level; project card typography aligned with Totals hero + stepped folder headings.
+
 ## Session: 2026-06-09 (File proxy cache TTL unification)
 
 - Shared **6 hr** TTL in `file-proxy-cache-ttl.ts` for session media, project docs, and governance docs (folder listings + proxied bytes + governance tree).
@@ -7,7 +13,7 @@
 ## Session: 2026-06-09 (Public governance Docs page)
 
 - Public **Docs** page at `/docs` and burger menu link; reads SharePoint `Docs/` from Documents library (`DOCUMENTS_DRIVE_ID`).
-- `GET /api/docs` + `GET /docs/*.pdf` byte proxy (project files use `/projects/:key/files/:itemId`).
+- `GET /api/docs` + `GET /docs/*.pdf` byte proxy; project docs tree at `/api/projects/:key/attachments` with `/projects/:key/docs/{slug-path}` proxy.
 - Lozenge file links (`DocLozengeLink.vue`); heading hierarchy H2/H3/bold; slug paths via `nameToSlug`.
 
 ## Session: 2026-05-21 (Project documents via Graph; DOCUMENTS_DRIVE_ID)

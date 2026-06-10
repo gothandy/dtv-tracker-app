@@ -6,7 +6,7 @@ interface CacheEntry {
   fetchedAt: number;
 }
 
-/** Keys are `{projectKey}/{driveItemId}`. */
+/** Keys are `{projectKey}/{slugPath}`. */
 const cache = new Map<string, CacheEntry>();
 
 export function getProjectDocCache(cacheKey: string): CacheEntry | null {

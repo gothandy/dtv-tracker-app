@@ -32,12 +32,18 @@ import type {
   ProjectResponse,
   ProjectDetailResponse,
   ProjectAttachmentResponse,
+  DocsTreeNode,
   SessionResponse,
 } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { documentsDriveId, tryDocumentsDriveId } from '../services/documents-drive';
 import { clearProjectDocsCache } from '../services/project-docs-cache';
+import {
+  getProjectDocsTree,
+  clearProjectDocsTreeCache,
+  projectDocUrlForFilename,
+} from '../services/project-docs-service';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
 import { normalizeMetadataTagsInput, updateListItemMetadata } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
@@ -73,6 +79,8 @@ async function migrateProjectDocsFolder(oldKey: string, newKey: string): Promise
   sharePointClient.clearDocsFolderCache(newPath);
   clearProjectDocsCache(oldKey);
   clearProjectDocsCache(newKey);
+  clearProjectDocsTreeCache(oldKey);
+  clearProjectDocsTreeCache(newKey);
 }
 
 function safeProjectFilename(original: string): string {
@@ -256,20 +264,12 @@ router.get('/projects/:key/attachments', async (req: Request, res: Response) => 
     const driveId = tryDocumentsDriveId();
     if (!driveId) {
       console.warn('[projects] DOCUMENTS_DRIVE_ID not set — returning empty project documents');
-      res.json({ success: true, data: [] } as ApiResponse<ProjectAttachmentResponse[]>);
+      res.json({ success: true, data: [] } as ApiResponse<DocsTreeNode[]>);
       return;
     }
 
-    const attachments = await sharePointClient.listDriveFolderFiles(
-      driveId,
-      projectDocsFolderPath(key)
-    );
-    const data: ProjectAttachmentResponse[] = attachments.map(a => ({
-      id: a.id,
-      name: a.name,
-      url: `/projects/${key}/files/${encodeURIComponent(a.id)}`,
-    }));
-    res.json({ success: true, data } as ApiResponse<ProjectAttachmentResponse[]>);
+    const data = await getProjectDocsTree(key);
+    res.json({ success: true, data } as ApiResponse<DocsTreeNode[]>);
   } catch (error: any) {
     console.error('Error fetching project documents:', error.message || error);
     res.status(500).json({
@@ -329,7 +329,7 @@ async function handleProjectDocUpload(req: Request, res: Response) {
       uploaded.push({
         id: item.id,
         name: item.name,
-        url: `/projects/${key}/files/${encodeURIComponent(item.id)}`,
+        url: projectDocUrlForFilename(key, item.name),
       });
     }
 
@@ -339,7 +339,9 @@ async function handleProjectDocUpload(req: Request, res: Response) {
     }
 
     sharePointClient.clearDocsFolderCache(folderPath);
+    sharePointClient.clearProjectDocsFolderCache(key);
     clearProjectDocsCache(key);
+    clearProjectDocsTreeCache(key);
     res.json({ success: true, data: uploaded } as ApiResponse<ProjectAttachmentResponse[]>);
   } catch (error: any) {
     console.error('Error uploading project documents:', error.message || error);
@@ -370,7 +372,9 @@ router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Re
     const driveId = documentsDriveId();
     await sharePointClient.deleteMediaItem(driveId, itemId);
     sharePointClient.clearDocsFolderCache(projectDocsFolderPath(key));
+    sharePointClient.clearProjectDocsFolderCache(key);
     clearProjectDocsCache(key);
+    clearProjectDocsTreeCache(key);
     res.json({ success: true } as ApiResponse<void>);
   } catch (error: any) {
     console.error('Error deleting project document:', error.message || error);

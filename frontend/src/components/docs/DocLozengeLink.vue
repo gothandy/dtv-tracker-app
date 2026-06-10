@@ -35,5 +35,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{ remove: [] }>()
 
-const displayLabel = computed(() => props.label.replace(/\.pdf$/i, ''))
+const displayLabel = computed(() => {
+  const dot = props.label.lastIndexOf('.')
+  return dot > 0 ? props.label.slice(0, dot) : props.label
+})
 </script>

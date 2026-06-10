@@ -32,8 +32,8 @@ export const groupPath = (key: string) => `/groups/${key}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`
 export const projectUploadPath = (key: string) => `/projects/${key}/upload`
-export const projectDocPath = (projectKey: string, itemId: string) =>
-  `/projects/${projectKey}/files/${encodeURIComponent(itemId)}`
+export const projectDocPath = (projectKey: string, ...slugSegments: string[]) =>
+  `/projects/${projectKey}/docs/${slugSegments.join('/')}`
 export const sessionsPath = () => '/sessions'
 export const profilesPath = () => '/profiles'
 export const profilePath = (slug: string) => `/profiles/${slug}`

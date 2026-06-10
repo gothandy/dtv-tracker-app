@@ -50,7 +50,7 @@ function scrollToSection() {
   const pathParam = route.params.pathMatch
   const segments = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : []
   const sectionPath = segments.join('/')
-  if (!sectionPath || sectionPath.startsWith('projects/')) return
+  if (!sectionPath) return
   nextTick(() => {
     document.getElementById(sectionPath)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })

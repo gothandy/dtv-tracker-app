@@ -59,7 +59,7 @@ export interface ProjectDetailResponse extends ProjectResponse {
 export interface ProjectAttachmentResponse {
   id: string;
   name: string;
-  /** Stable app URL — served via /projects/:key/files/:itemId (no SharePoint login). */
+  /** Stable app URL — served via /projects/:key/docs/{slug-path} (no SharePoint login). */
   url: string;
 }
 
@@ -354,6 +354,8 @@ export interface DocsTreeNode {
   slug: string;
   type: 'folder' | 'file';
   url?: string;
+  /** SharePoint drive item id — present on project file nodes (admin delete). */
+  id?: string;
   children?: DocsTreeNode[];
 }
 

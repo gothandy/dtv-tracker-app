@@ -1,10 +1,11 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { ProjectDetailResponse, ProjectAttachmentResponse } from '../../../types/api-responses'
+import type { ProjectDetailResponse, DocsTreeNode } from '../../../types/api-responses'
+import { removeDocFromTree } from '../utils/docsTree'
 
 export const useProjectDetailStore = defineStore('projectDetail', () => {
   const project = ref<ProjectDetailResponse | null>(null)
-  const attachments = ref<ProjectAttachmentResponse[]>([])
+  const docsTree = ref<DocsTreeNode[]>([])
   const loading = ref(false)
   const attachmentsLoading = ref(false)
   const attachmentsError = ref<string | null>(null)
@@ -41,10 +42,10 @@ export const useProjectDetailStore = defineStore('projectDetail', () => {
         const msg = json.message || json.error || `Failed to load documents (${res.status})`
         throw new Error(msg)
       }
-      attachments.value = json.data as ProjectAttachmentResponse[]
+      docsTree.value = json.data as DocsTreeNode[]
     } catch (e) {
       console.error('[projectDetail store] fetchAttachments', e)
-      attachments.value = []
+      docsTree.value = []
       attachmentsError.value = e instanceof Error ? e.message : 'Failed to load documents'
     } finally {
       attachmentsLoading.value = false
@@ -61,7 +62,7 @@ export const useProjectDetailStore = defineStore('projectDetail', () => {
       if (!res.ok) {
         throw new Error(json.error || json.message || `Delete failed (${res.status})`)
       }
-      attachments.value = attachments.value.filter(a => a.id !== itemId)
+      docsTree.value = removeDocFromTree(docsTree.value, itemId)
       return true
     } catch (e) {
       console.error('[projectDetail store] deleteDocument', e)
@@ -87,7 +88,7 @@ export const useProjectDetailStore = defineStore('projectDetail', () => {
 
   return {
     project,
-    attachments,
+    docsTree,
     loading,
     attachmentsLoading,
     attachmentsError,

@@ -1,7 +1,7 @@
 <template>
   <div class="pdc-wrap">
     <div class="pdc-header">
-      <h3 class="pdc-title">Documents</h3>
+      <h2 class="font-hero text-dtv-dark text-xl uppercase leading-none m-0">Documents</h2>
       <AppButton
         v-if="allowManage && projectKey"
         label="Upload docs"
@@ -16,32 +16,33 @@
 
     <p v-else-if="error" class="pdc-error">{{ error }}</p>
 
-    <p v-else-if="allowManage && !attachments.length" class="pdc-empty">No documents yet.</p>
+    <p v-else-if="allowManage && !hasFiles" class="pdc-empty">No documents yet.</p>
 
-    <div v-else-if="attachments.length" class="pdc-grid">
-      <DocLozengeLink
-        v-for="doc in attachments"
-        :key="doc.id"
-        :label="doc.name"
-        :url="doc.url"
-        :removable="allowManage"
-        :deleting="props.deletingIds.has(doc.id)"
-        @remove="onDelete(doc.id)"
+    <div v-else-if="hasFiles" class="pdc-tree">
+      <DocsSection
+        :nodes="tree"
+        :depth="0"
+        subsection-headings
+        :allow-manage="allowManage"
+        :deleting-ids="deletingIds"
+        @delete="onDelete"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import AppButton from '../AppButton.vue'
-import DocLozengeLink from '../docs/DocLozengeLink.vue'
+import DocsSection from '../docs/DocsSection.vue'
 import LoadingSpinner from '../LoadingSpinner.vue'
 import { projectUploadPath } from '../../router/index'
-import type { ProjectAttachmentResponse } from '../../../../types/api-responses'
+import { docsTreeHasFiles } from '../../utils/docsTree'
+import type { DocsTreeNode } from '../../../../types/api-responses'
 
 const props = withDefaults(
   defineProps<{
-    attachments: ProjectAttachmentResponse[]
+    tree: DocsTreeNode[]
     projectKey: string
     loading?: boolean
     error?: string | null
@@ -52,6 +53,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ delete: [itemId: string] }>()
+
+const hasFiles = computed(() => docsTreeHasFiles(props.tree))
 
 function onDelete(itemId: string) {
   emit('delete', itemId)
@@ -70,14 +73,7 @@ function onDelete(itemId: string) {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.pdc-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0;
-  color: var(--color-dtv-dark);
+  margin-bottom: 1rem;
 }
 
 .pdc-empty {
@@ -91,5 +87,4 @@ function onDelete(itemId: string) {
   font-size: 0.85rem;
   color: var(--color-dtv-dirt);
 }
-
 </style>
