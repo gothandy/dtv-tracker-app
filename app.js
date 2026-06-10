@@ -44,6 +44,24 @@ const app = express();
 // Trust Azure App Service reverse proxy (for correct req.protocol)
 app.set('trust proxy', 1);
 
+// docs.dtv.org.uk is bound to the same App Service; send visitors to governance Docs on the canonical host.
+const DOCS_REDIRECT_HOST = (process.env.DOCS_REDIRECT_HOST || 'docs.dtv.org.uk').toLowerCase();
+const TRACKER_CANONICAL_ORIGIN = (process.env.FRONTEND_URL || 'https://tracker.dtv.org.uk').replace(/\/$/, '');
+const DOCS_LEGACY_PATH_REDIRECTS = {
+    '/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf': '/docs/data-protection/dtv-privacy-notice.pdf',
+};
+
+app.use((req, res, next) => {
+    if ((req.hostname || '').toLowerCase() !== DOCS_REDIRECT_HOST) return next();
+    const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+    const legacyTarget = DOCS_LEGACY_PATH_REDIRECTS[req.path.toLowerCase()];
+    if (legacyTarget) {
+        return res.redirect(301, `${TRACKER_CANONICAL_ORIGIN}${legacyTarget}${query}`);
+    }
+    const suffix = req.path === '/' ? '/docs' : `/docs${req.path}`;
+    res.redirect(301, `${TRACKER_CANONICAL_ORIGIN}${suffix}${query}`);
+});
+
 app.use(express.json());
 app.use(cookieParser());
 

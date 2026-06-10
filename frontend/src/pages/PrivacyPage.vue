@@ -6,7 +6,7 @@
     <p class="text-sm text-gray-500 mb-8">Dean Trail Volunteers &mdash; Registered Charity 1208988<br>Last updated: March 2026</p>
 
     <div class="prose max-w-none text-black space-y-6">
-      <p>This privacy policy explains how the DTV Tracker application (<strong>tracker.dtv.org.uk</strong>) collects, uses, and stores your personal data. It applies specifically to this application. For the full Dean Trail Volunteers privacy notice, see our <a href="https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">DTV Privacy Notice (PDF)</a>.</p>
+      <p>This privacy policy explains how the DTV Tracker application (<strong>tracker.dtv.org.uk</strong>) collects, uses, and stores your personal data. It applies specifically to this application. For the full Dean Trail Volunteers privacy notice, see our <a href="https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">DTV Privacy Notice (PDF)</a>.</p>
 
       <section>
         <h2 class="text-xl font-bold mb-2">Who we are</h2>
@@ -54,12 +54,12 @@
 
       <section>
         <h2 class="text-xl font-bold mb-2">How long we keep your data</h2>
-        <p>Volunteer records are retained for as long as you are an active volunteer, and for a reasonable period thereafter in line with our <a href="https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">full privacy notice</a>. You may request deletion of your data by contacting us.</p>
+        <p>Volunteer records are retained for as long as you are an active volunteer, and for a reasonable period thereafter in line with our <a href="https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">full privacy notice</a>. You may request deletion of your data by contacting us.</p>
       </section>
 
       <section>
         <h2 class="text-xl font-bold mb-2">Your rights</h2>
-        <p>Under UK GDPR you have the right to access, correct, or request deletion of your personal data. To exercise these rights, contact the DTV data controller as described in our <a href="https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">full privacy notice</a>.</p>
+        <p>Under UK GDPR you have the right to access, correct, or request deletion of your personal data. To exercise these rights, contact the DTV data controller as described in our <a href="https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">full privacy notice</a>.</p>
       </section>
 
       <section>
@@ -69,7 +69,7 @@
 
       <section>
         <h2 class="text-xl font-bold mb-2">Contact</h2>
-        <p>For questions about this privacy policy or your data, contact Dean Trail Volunteers via the details in our <a href="https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">full privacy notice</a>.</p>
+        <p>For questions about this privacy policy or your data, contact Dean Trail Volunteers via the details in our <a href="https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf" target="_blank" rel="noopener" class="text-dtv-green hover:underline">full privacy notice</a>.</p>
       </section>
     </div>
     </div>
