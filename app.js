@@ -18,7 +18,9 @@ const { mediaDriveId } = require('./dist/backend/services/media-upload');
 const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
 const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
 const { getProjectDocCache, setProjectDocCache } = require('./dist/backend/services/project-docs-cache');
-const { tryDocumentsDriveId } = require('./dist/backend/services/documents-drive');
+const { getGovernanceDocCache, setGovernanceDocCache } = require('./dist/backend/services/governance-docs-cache');
+const { fetchGovernanceDocPdf } = require('./dist/backend/services/governance-docs-service');
+const { fetchProjectDoc } = require('./dist/backend/services/project-docs-service');
 const { projectsRepository } = require('./dist/backend/services/repositories/projects-repository');
 const { findProjectByKey } = require('./dist/backend/services/data-layer');
 const axios = require('axios');
@@ -142,16 +144,13 @@ app.get('/media/:group/:date/:id', async (req, res) => {
     }
 });
 
-// Public project documents proxy — files under Projects/{key}/ on the Documents library drive.
-// No SharePoint session required; bytes cached 12h in memory, 24h in browser.
-app.get('/docs/projects/:key/:itemId', async (req, res) => {
-    const key = String(req.params.key).toLowerCase().replace(/[^a-z0-9-]/g, '');
-    const itemId = String(req.params.itemId);
-    if (!key || !itemId || itemId.length > 256 || !/^[\w.!-]+$/i.test(itemId)) {
-        return res.status(400).end();
-    }
+// Public project documents proxy — slug paths under /projects/:key/docs/ (recursive Projects/{key}/ tree).
+app.get(/^\/projects\/([a-z0-9-]+)\/docs\/(.+)$/i, async (req, res) => {
+    const key = String(req.params[0]).toLowerCase();
+    const slugPath = String(req.params[1]);
+    if (!key || !slugPath) return res.status(400).end();
 
-    const cacheKey = `${key}/${itemId}`;
+    const cacheKey = `${key}/${slugPath}`;
     const cached = getProjectDocCache(cacheKey);
     if (cached) {
         res.set('Content-Type', cached.contentType);
@@ -160,26 +159,47 @@ app.get('/docs/projects/:key/:itemId', async (req, res) => {
     }
 
     try {
-        const driveId = tryDocumentsDriveId();
-        if (!driveId) return res.status(503).end();
-
         const rawProjects = await projectsRepository.getAll();
         if (!findProjectByKey(rawProjects, key)) return res.status(404).end();
 
-        const folderPath = `Projects/${key}`;
-        const files = await sharePointClient.listDriveFolderFiles(driveId, folderPath);
-        if (!files.some(f => f.id === itemId)) return res.status(404).end();
+        const result = await fetchProjectDoc(key, slugPath);
+        if (!result) return res.status(404).end();
 
-        const { data, contentType, name } = await sharePointClient.downloadDriveItem(driveId, itemId);
-        setProjectDocCache(cacheKey, data, contentType);
-
-        const safeName = String(name).replace(/[^\w.\-]/g, '_');
-        res.set('Content-Type', contentType);
+        setProjectDocCache(cacheKey, result.data, result.contentType);
+        const safeName = String(result.name).replace(/[^\w.\-]/g, '_');
+        res.set('Content-Type', result.contentType);
         res.set('Cache-Control', 'public, max-age=86400');
         res.set('Content-Disposition', `inline; filename="${safeName}"`);
+        res.send(result.data);
+    } catch (err) {
+        console.error(`Error serving project doc ${key}/${slugPath}:`, err);
+        res.status(502).end();
+    }
+});
+
+// Public governance docs proxy — PDFs under Docs/ on the Documents library drive.
+app.get(/^\/docs\/.+\.pdf$/i, async (req, res) => {
+    const slugPath = req.path.replace(/^\/docs\//, '');
+    if (!slugPath) return res.status(400).end();
+
+    const cached = getGovernanceDocCache(slugPath);
+    if (cached) {
+        res.set('Content-Type', cached.contentType);
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.send(cached.data);
+    }
+
+    try {
+        const data = await fetchGovernanceDocPdf(slugPath);
+        if (!data) return res.status(404).end();
+        setGovernanceDocCache(slugPath, data, 'application/pdf');
+        const safeName = slugPath.split('/').pop().replace(/[^\w.\-]/g, '_');
+        res.set('Content-Type', 'application/pdf');
+        res.set('Content-Disposition', `inline; filename="${safeName}"`);
+        res.set('Cache-Control', 'public, max-age=86400');
         res.send(data);
     } catch (err) {
-        console.error(`Error serving project doc ${key}/${itemId}:`, err);
+        console.error(`Error serving governance doc ${slugPath}:`, err);
         res.status(502).end();
     }
 });

@@ -62,7 +62,7 @@
         </template>
         <template #right>
           <ProjectDocsCard
-            :attachments="store.attachments"
+            :tree="store.docsTree"
             :project-key="store.project.key"
             :loading="store.attachmentsLoading"
             :error="store.attachmentsError"
@@ -113,6 +113,7 @@ import ProjectDocsCard from '../components/projects/ProjectDocsCard.vue'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import { sessionPath, projectPath, projectsPath } from '../router/index'
+import { docsTreeHasFiles } from '../utils/docsTree'
 import type { SessionResponse } from '../../../types/api-responses'
 import type { Session, SessionStats } from '../types/session'
 import type { MediaItem } from '../types/media'
@@ -170,7 +171,7 @@ const linkedSessions = computed<Session[]>(() =>
 
 const showDocumentsCard = computed(() => {
   if (profile.isAdmin) return true
-  return store.attachmentsLoading || store.attachments.length > 0
+  return store.attachmentsLoading || docsTreeHasFiles(store.docsTree)
 })
 
 function onCoverSelect(index: number) {

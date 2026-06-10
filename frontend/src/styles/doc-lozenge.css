@@ -1,0 +1,63 @@
+/* Shared document lozenge links — project details + governance docs */
+.pdc-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pdc-lozenge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-dtv-sand);
+  padding: 0.5rem 0.75rem;
+  border: 2px solid transparent;
+  max-width: 14rem;
+}
+
+.pdc-lozenge--removable {
+  max-width: calc(14rem + 1.75rem);
+}
+
+.pdc-lozenge:hover {
+  background: var(--color-dtv-sand-dark);
+}
+
+.pdc-name {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdc-name:hover {
+  text-decoration: underline;
+}
+
+.pdc-lozenge-deleting {
+  opacity: 0.55;
+}
+
+.pdc-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pdc-remove:hover img {
+  filter: invert(20%) sepia(95%) saturate(5000%) hue-rotate(0deg) brightness(90%) contrast(90%);
+}
+
+.pdc-remove:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}

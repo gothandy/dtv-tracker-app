@@ -4,6 +4,9 @@ import { taxonomyClient } from '../services/taxonomy-client';
 import { clearMediaCache } from '../services/media-cache';
 import { clearCoverCache } from '../services/cover-cache';
 import { clearProjectDocsCache } from '../services/project-docs-cache';
+import { clearProjectDocsTreeCache } from '../services/project-docs-service';
+import { clearGovernanceDocsCache } from '../services/governance-docs-cache';
+import { clearGovernanceDocsTreeCache } from '../services/governance-docs-service';
 import { sessionsRepository } from '../services/repositories/sessions-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { calculateCurrentFY, calculateFinancialYear, safeParseLookupId } from '../services/data-layer';
@@ -217,6 +220,9 @@ router.post('/cache/clear', (req: Request, res: Response) => {
     clearMediaCache();
     clearCoverCache();
     clearProjectDocsCache();
+    clearProjectDocsTreeCache();
+    clearGovernanceDocsCache();
+    clearGovernanceDocsTreeCache();
     res.json({ success: true, message: 'Cache cleared successfully' });
   } catch (error: any) {
     console.error('Error clearing cache:', error);

@@ -1,4 +1,4 @@
-const TTL_MS = 12 * 60 * 60 * 1000; // 12h — within SharePoint pre-auth URL lifetime
+import { isFileProxyCacheValid } from './file-proxy-cache-ttl';
 
 interface CacheEntry {
   data: Buffer;
@@ -6,13 +6,13 @@ interface CacheEntry {
   fetchedAt: number;
 }
 
-/** Keys are `{projectKey}/{driveItemId}`. */
+/** Keys are `{projectKey}/{slugPath}`. */
 const cache = new Map<string, CacheEntry>();
 
 export function getProjectDocCache(cacheKey: string): CacheEntry | null {
   const entry = cache.get(cacheKey);
   if (!entry) return null;
-  if (Date.now() - entry.fetchedAt > TTL_MS) {
+  if (!isFileProxyCacheValid(entry.fetchedAt)) {
     cache.delete(cacheKey);
     return null;
   }

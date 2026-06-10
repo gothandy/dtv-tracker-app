@@ -22,6 +22,7 @@ import ProfileListPage from '../pages/ProfileListPage.vue'
 import ProfileDetailPage from '../pages/ProfileDetailPage.vue'
 import ProjectListPage from '../pages/ProjectListPage.vue'
 import ProjectDetailPage from '../pages/ProjectDetailPage.vue'
+import DocsPage from '../pages/DocsPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.
@@ -31,8 +32,8 @@ export const groupPath = (key: string) => `/groups/${key}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`
 export const projectUploadPath = (key: string) => `/projects/${key}/upload`
-export const projectDocPath = (projectKey: string, itemId: string) =>
-  `/docs/projects/${projectKey}/${encodeURIComponent(itemId)}`
+export const projectDocPath = (projectKey: string, ...slugSegments: string[]) =>
+  `/projects/${projectKey}/docs/${slugSegments.join('/')}`
 export const sessionsPath = () => '/sessions'
 export const profilesPath = () => '/profiles'
 export const profilePath = (slug: string) => `/profiles/${slug}`
@@ -42,6 +43,9 @@ export const entriesPath = () => '/entries'
 export const toolsPath = () => '/tools'
 export const consentPath = (slug: string) => `/profiles/${slug}/consent`
 export const uploadPath  = (entryId: number) => `/upload?entryId=${entryId}`
+export const docsPath = () => '/docs'
+export const docsSectionPath = (...segments: string[]) =>
+  segments.length ? `/docs/${segments.join('/')}` : '/docs'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,6 +65,8 @@ export const router = createRouter({
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },
     { path: '/privacy', component: PrivacyPage },
     { path: '/terms', component: TermsPage },
+    { path: '/docs', component: DocsPage },
+    { path: '/docs/:pathMatch(.*)*', component: DocsPage },
     { path: '/login', component: LoginPage },
     { path: '/entries', component: EntriesPage, meta: { requiresAdmin: true } },
     { path: '/admin', redirect: '/tools' },

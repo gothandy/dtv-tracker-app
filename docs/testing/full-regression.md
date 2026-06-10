@@ -16,6 +16,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/` (homepage) loads without redirect — stats, sessions, groups nav cards visible; volunteers nav card hidden; admin button hidden; header shows "Log in" button
 - [ ] Unauthenticated visit to `/sessions` loads without redirect
 - [ ] Unauthenticated visit to `/groups` loads without redirect; regulars count shows 0
+- [ ] Unauthenticated visit to `/docs` loads without redirect; burger menu shows **Docs** link
+- [ ] `/docs` lists governance folders from SharePoint `Docs/` (H2/H3/bold hierarchy); PDF lozenge opens via tracker URL (`/docs/.../file.pdf`), not SharePoint
+- [ ] `/docs/health-and-safety` scrolls to Health and Safety section (v1: full tree + scroll-to)
 - [ ] Unauthenticated visit to `/groups/:key` loads without redirect; regulars section hidden
 - [ ] Unauthenticated visit to `/sessions/:group/:date` loads; entries section and free parking card hidden
 - [ ] Unauthenticated visit to `/profiles` redirects to `/login` (trusted route)
@@ -429,8 +432,12 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
-- [ ] `GET /api/projects/:key/attachments` — `{ id, name, url }` with `url` like `/docs/projects/{key}/{itemId}` (not SharePoint `webUrl`)
+- [ ] `GET /api/projects/:key/attachments` — `DocsTreeNode[]` tree; file `url` like `/projects/{key}/docs/{slug-path}` (not SharePoint `webUrl`); subfolders shown as nested sections
+- [ ] Project detail Documents card: root files listed **above** folder headings; files and folders alphabetically sorted at each level
+- [ ] Documents section title matches Totals hero font (dark, not gold); folder headings one step smaller
+- [ ] SharePoint subfolders under `Projects/{key}/` appear nested (e.g. `drafts/`, `sketches/`) with files inside each section
 - [ ] **Public**: open a document `url` while logged out — file loads via app proxy (PDF/images inline); no SharePoint sign-in
+- [ ] Governance PDF under `Docs/Projects/…` opens at `/docs/projects/…/file.pdf` (not caught by project proxy)
 - [ ] Upload/delete project doc — list updates; re-open same `url` shows new file or 404 after delete
 - [ ] Public project detail: Documents card hidden when folder empty
 - [ ] Admin: Upload docs button; files appear as lozenges; × removes file
@@ -439,7 +446,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)
 - [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
-- [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/docs/projects/{new}/…` URLs work
+- [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/projects/{new}/docs/…` URLs work
 
 ### M4. Group detail
 - [ ] `GET /api/groups/:key` — stats, regulars, sessions for the group

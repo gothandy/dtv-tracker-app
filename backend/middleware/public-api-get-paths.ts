@@ -12,6 +12,7 @@ export const PUBLIC_API_GET_PATH_PREFIXES: readonly string[] = [
   '/api/projects',
   '/api/tags',
   '/api/media',
+  '/api/docs',
   '/api/email/sandbox',
 ];
 
