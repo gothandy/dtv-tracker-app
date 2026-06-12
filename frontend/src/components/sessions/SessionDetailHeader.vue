@@ -10,7 +10,7 @@
         </div>
         <div class="flex gap-3">
           <dt class="text-gray-400 w-20 shrink-0">Time</dt>
-          <dd>9:30 to 12:30 (3h)</dd><!-- TODO: add time field to API -->
+          <dd>{{ timeLabel }}</dd>
         </div>
         <div class="flex gap-3">
           <dt class="text-gray-400 w-20 shrink-0">Location</dt>
@@ -28,9 +28,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { SessionDetailResponse } from '../../../../types/api-responses'
+import { formatSessionTimeRange } from '../../utils/sessionTime'
 
 const props = defineProps<{ session: SessionDetailResponse }>()
+
+const timeLabel = computed(() => formatSessionTimeRange(props.session.time, props.session.length))
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', {

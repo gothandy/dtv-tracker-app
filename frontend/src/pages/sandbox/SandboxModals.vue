@@ -290,6 +290,7 @@ import type { MediaItem } from '../../types/media'
 import type { EntryItem } from '../../types/entry'
 import type { PickerProfile } from '../../components/ProfilePicker.vue'
 import type { SessionSaveData } from '../modals/SessionEditModal.vue'
+import type { SessionDetailResponse } from '../../../../types/api-responses'
 
 usePageTitle('Sandbox')
 
@@ -412,18 +413,18 @@ const mockProjects = [
   { id: 11, name: 'Hedge planting', key: 'hedge-planting' },
 ]
 
-const mockSession = {
+const mockSession: SessionDetailResponse = {
   id: 1,
   displayName: 'Morning Session',
   description: 'A description of the session.',
   date: '2026-04-03',
+  time: '09:30',
+  length: 3,
   groupId: 1,
   eventbriteEventId: '',
   limits: { new: 4, total: 20 },
   storedLimits: { new: 4, total: 20 },
   stats: { count: 3, hours: 9 },
-  registrations: 3,
-  hours: 9,
   financialYear: '2025/26',
   isBookable: false,
   coverMediaId: null,

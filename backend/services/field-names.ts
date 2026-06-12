@@ -28,6 +28,8 @@ export const PROJECT_METADATA    = 'Metadata';
 export const SESSION_COVER_MEDIA = 'CoverMediaLookupId'; // Lookup to Media library (ID field, consistent with GROUP_LOOKUP pattern)
 export const SESSION_STATS       = 'Stats';  // Pre-computed JSON stats stored on Session items (avoid full entries scan on listing views)
 export const SESSION_LIMITS      = 'Limits'; // Per-session capacity limits JSON: {"new": 4, "total": 16}
+export const SESSION_TIME        = 'Time';   // Start time HH:MM (24-hour clock)
+export const SESSION_LENGTH      = 'Length'; // Session duration in hours
 export const PROFILE_STATS       = 'Stats';  // Same field name on Profiles list
 export const ENTRY_CANCELLED             = 'Cancelled';         // Date/time when entry was cancelled; null = active booking
 export const ENTRY_LABELS                = 'Labels';            // Multi-select choice: Regular | CSR | Late | FirstAider | DigLead

@@ -218,6 +218,10 @@ export interface SessionDetailResponse {
   displayName?: string;
   description?: string;
   date: string;
+  /** Start time HH:MM (24-hour clock); defaults to 09:30 when SharePoint Time is unset */
+  time: string;
+  /** Session duration in hours; defaults to 3 when SharePoint Length is unset */
+  length: number;
   groupId?: number;
   groupName?: string;
   groupDescription?: string;

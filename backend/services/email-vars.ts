@@ -1,7 +1,7 @@
 import { SharePointEntry, SharePointProfile } from '../../types/sharepoint';
 import { SharePointSession } from '../../types/session';
 import { SharePointGroup } from '../../types/group';
-import { extractMetadataTags, safeParseLookupId, parseHours } from './data-layer';
+import { extractMetadataTags, safeParseLookupId, parseHours, sessionScheduleFields, formatSessionTimeRangeProse } from './data-layer';
 import {
   SESSION_NOTES, SESSION_METADATA, SESSION_STATS, SESSION_COVER_MEDIA,
   GROUP_LOOKUP, PROFILE_DISPLAY, ENTRY_CANCELLED,
@@ -58,6 +58,7 @@ export interface PreSessionVars extends Record<string, unknown> {
   sessionTitle: string | null;
   formattedDateShort: string;
   formattedDateLong: string;
+  formattedTime: string;
   description: string;
   sessionUrl: string;
   loginUrl: string;
@@ -79,6 +80,8 @@ export function buildPreSessionVars(
   const groupKey = (group.Title || '').toLowerCase();
   const dateParam = session.Date;
   const { formattedDateShort, formattedDateLong } = formatDate(dateParam);
+  const { time, length } = sessionScheduleFields(session);
+  const formattedTime = formatSessionTimeRangeProse(time, length);
 
   const myChildEntries = findChildEntries(sessionEntries, profileId);
   const myChildNames = myChildEntries
@@ -96,6 +99,7 @@ export function buildPreSessionVars(
     sessionTitle: session.Name || null,
     formattedDateShort,
     formattedDateLong,
+    formattedTime,
     description: (session[SESSION_NOTES] as string | undefined) || '',
     sessionUrl: `${baseUrl}/sessions/${groupKey}/${dateParam}`,
     loginUrl: `${baseUrl}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`,
