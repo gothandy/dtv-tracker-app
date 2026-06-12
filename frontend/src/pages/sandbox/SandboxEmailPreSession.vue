@@ -41,6 +41,7 @@ const FIXTURE: Record<string, unknown> = {
   sessionTitle: 'Spring Conservation Day',
   formattedDateShort: '23 April',
   formattedDateLong: 'Wednesday, 23 April 2026',
+  formattedTime: '9:30 to 12:30 (about 3 hours)',
   description: 'Meet at the usual car park.<br>Bring waterproofs.',
   sessionUrl: 'http://localhost:3000/sessions/sheepskull/2026-04-23',
   loginUrl: 'http://localhost:3000/login?returnTo=/sessions/sheepskull/2026-04-23',

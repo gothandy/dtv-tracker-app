@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags, findTitleKeyClash } from './data-layer'
+import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags, findTitleKeyClash, sessionScheduleFields, formatSessionTimeRangeProse } from './data-layer'
+import { SESSION_TIME, SESSION_LENGTH } from './field-names'
 import type { SharePointEntry } from '../../types/sharepoint'
+import type { SharePointSession } from '../../types/session'
 
 describe('findTitleKeyClash', () => {
   const items = [
@@ -172,5 +174,41 @@ describe('calculateSessionStats', () => {
   it('ignores entries with no SessionLookupId', () => {
     const stats = calculateSessionStats([{ ID: 1, Created: '', Modified: '', Hours: 3 } as SharePointEntry])
     expect(stats.size).toBe(0)
+  })
+})
+
+describe('formatSessionTimeRangeProse', () => {
+  it('formats default schedule in email prose', () => {
+    expect(formatSessionTimeRangeProse('09:30', 3)).toBe('9:30 to 12:30 (about 3 hours)')
+  })
+
+  it('supports fractional hours and singular hour', () => {
+    expect(formatSessionTimeRangeProse('10:00', 2.5)).toBe('10:00 to 12:30 (about 2.5 hours)')
+    expect(formatSessionTimeRangeProse('09:00', 1)).toBe('9:00 to 10:00 (about 1 hour)')
+  })
+})
+
+describe('sessionScheduleFields', () => {
+  it('uses SharePoint Time and Length when set', () => {
+    expect(sessionScheduleFields({
+      ID: 1,
+      Date: '2026-06-12',
+      Created: '',
+      Modified: '',
+      [SESSION_TIME]: '10:00',
+      [SESSION_LENGTH]: 2.5,
+    } as SharePointSession)).toEqual({ time: '10:00', length: 2.5 })
+  })
+
+  it('defaults to 09:30 and 3 hours when SharePoint fields are unset', () => {
+    expect(sessionScheduleFields({
+      ID: 1,
+      Date: '2026-06-12',
+      Created: '',
+      Modified: '',
+    } as SharePointSession)).toEqual({
+      time: '09:30',
+      length: 3,
+    })
   })
 })

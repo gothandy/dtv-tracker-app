@@ -161,6 +161,8 @@ const mockProjects = [
 const mockSession: SessionDetailResponse = {
   id: 1,
   date: '2025-03-01',
+  time: '09:30',
+  length: 3,
   displayName: 'Sheepskull Morning Session',
   groupId: 1,
   groupName: 'Sheepskull',

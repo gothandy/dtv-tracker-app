@@ -25,7 +25,8 @@ import {
   parseHours,
   profileSlug,
   extractMetadataTags,
-  parseEmails
+  parseEmails,
+  sessionScheduleFields,
 } from '../services/data-layer';
 import { parseSessionStats } from '../services/data-layer';
 import {
@@ -494,6 +495,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         displayName: spSession.Name || spSession.Title,
         description: spSession[SESSION_NOTES],
         date: spSession.Date,
+        ...sessionScheduleFields(spSession),
         groupId: groupId,
         groupName: group.displayName,
         groupDescription: group.description,
@@ -626,6 +628,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
       displayName: spSession.Name || spSession.Title,
       description: spSession[SESSION_NOTES],
       date: spSession.Date,
+      ...sessionScheduleFields(spSession),
       groupId: groupId,
       groupName: group.displayName,
       groupDescription: group.description,

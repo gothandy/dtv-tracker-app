@@ -6,6 +6,7 @@ const PRE_SESSION_VARS = {
   groupName:         'Trail Crew',
   formattedDateLong: 'Saturday 3 May 2025',
   formattedDateShort:'3 May',
+  formattedTime:     '9:30 to 12:30 (about 3 hours)',
   sessionUrl:        'https://example.com/sessions/trail-crew/2025-05-03',
   loginUrl:          'https://example.com/login',
 }
@@ -50,6 +51,15 @@ describe('pre-session email', () => {
   it('renders non-empty text', async () => {
     const { text } = await renderEmail('pre-session', PRE_SESSION_VARS)
     expect(text.length).toBeGreaterThan(0)
+  })
+
+  it('renders session time from template vars', async () => {
+    const { html, text } = await renderEmail('pre-session', {
+      ...PRE_SESSION_VARS,
+      formattedTime: '10:00 to 12:30 (about 2.5 hours)',
+    })
+    expect(html).toContain('10:00 to 12:30 (about 2.5 hours)')
+    expect(text).toContain('Time: 10:00 to 12:30 (about 2.5 hours)')
   })
 
   it('omits isRegular block when not set', async () => {

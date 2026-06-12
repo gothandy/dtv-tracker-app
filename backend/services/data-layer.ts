@@ -25,7 +25,7 @@ import {
   GROUP_LOOKUP, GROUP_DISPLAY,
   SESSION_LOOKUP, SESSION_DISPLAY,
   PROFILE_LOOKUP, PROFILE_DISPLAY,
-  SESSION_NOTES, SESSION_LIMITS,
+  SESSION_NOTES, SESSION_LIMITS, SESSION_TIME, SESSION_LENGTH,
 } from './field-names';
 import type { SessionStats } from '../../types/api-responses';
 
@@ -72,6 +72,66 @@ export function parseSessionLimits(spSession: SharePointSession): SessionLimits 
   } catch {
     return {};
   }
+}
+
+/** Normalises SharePoint Time (HH:MM, 24-hour) for API responses. */
+export function parseSessionTime(raw: unknown): string | undefined {
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  const match = raw.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return undefined;
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  if (hours > 23 || minutes > 59) return undefined;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+/** Normalises SharePoint Length (hours) for API responses. */
+export function parseSessionLength(raw: unknown): number | undefined {
+  if (raw === null || raw === undefined || raw === '') return undefined;
+  const value = typeof raw === 'number' ? raw : parseFloat(String(raw));
+  if (!Number.isFinite(value) || value <= 0) return undefined;
+  return value;
+}
+
+export const DEFAULT_SESSION_TIME = '09:30';
+export const DEFAULT_SESSION_LENGTH = 3;
+
+/** Schedule fields for session detail API — SharePoint values with DTV defaults when unset. */
+export function sessionScheduleFields(spSession: SharePointSession): { time: string; length: number } {
+  return {
+    time: parseSessionTime(spSession[SESSION_TIME]) ?? DEFAULT_SESSION_TIME,
+    length: parseSessionLength(spSession[SESSION_LENGTH]) ?? DEFAULT_SESSION_LENGTH,
+  };
+}
+
+function sessionTimeToMinutes(time: string): number | null {
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function formatSessionMinutesAsTime(totalMinutes: number): string {
+  const wrapped = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hours = Math.floor(wrapped / 60);
+  const minutes = wrapped % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')}`;
+}
+
+function formatSessionLengthProse(hours: number): string {
+  const value = Number.isInteger(hours) ? String(hours) : String(hours);
+  const unit = hours === 1 ? 'hour' : 'hours';
+  return `about ${value} ${unit}`;
+}
+
+/** Prose time range for emails, e.g. "9:30 to 12:30 (about 3 hours)". */
+export function formatSessionTimeRangeProse(time: string, lengthHours: number): string {
+  const startMinutes = sessionTimeToMinutes(time);
+  if (startMinutes === null) return formatSessionLengthProse(lengthHours);
+  const endMinutes = startMinutes + lengthHours * 60;
+  return `${formatSessionMinutesAsTime(startMinutes)} to ${formatSessionMinutesAsTime(endMinutes)} (${formatSessionLengthProse(lengthHours)})`;
 }
 
 /**
