@@ -186,6 +186,10 @@ describe('formatSessionTimeRangeProse', () => {
     expect(formatSessionTimeRangeProse('10:00', 2.5)).toBe('10:00 to 12:30 (about 2.5 hours)')
     expect(formatSessionTimeRangeProse('09:00', 1)).toBe('9:00 to 10:00 (about 1 hour)')
   })
+
+  it('rounds fractional-minute end times from floating-point arithmetic', () => {
+    expect(formatSessionTimeRangeProse('09:30', 2.33)).toBe('9:30 to 11:50 (about 2.33 hours)')
+  })
 })
 
 describe('sessionScheduleFields', () => {

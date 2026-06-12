@@ -10,6 +10,10 @@ describe('formatSessionTimeRange', () => {
     expect(formatSessionTimeRange('10:00', 2.5)).toBe('10:00 to 12:30 (2.5h)')
   })
 
+  it('rounds fractional-minute end times from floating-point arithmetic', () => {
+    expect(formatSessionTimeRange('09:30', 2.33)).toBe('9:30 to 11:50 (2.33h)')
+  })
+
   it('shows start time only when length is missing', () => {
     expect(formatSessionTimeRange('09:30')).toBe('9:30')
   })

@@ -8,7 +8,8 @@ function parseTimeToMinutes(time: string): number | null {
 }
 
 function formatMinutesAsTime(totalMinutes: number): string {
-  const wrapped = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60)
+  const rounded = Math.round(totalMinutes)
+  const wrapped = ((rounded % (24 * 60)) + 24 * 60) % (24 * 60)
   const hours = Math.floor(wrapped / 60)
   const minutes = wrapped % 60
   return `${hours}:${String(minutes).padStart(2, '0')}`
