@@ -17,7 +17,8 @@ Profile Stats are a parallel system — stored on Profile items — and feed int
   "regular": 8,
   "cancelledRegular": 1,
   "eventbrite": 3,
-  "media": 5
+  "media": 5,
+  "mediaStatus": "public"
 }
 ```
 
@@ -34,7 +35,8 @@ All counts exclude cancelled entries, except `cancelledRegular` which counts onl
 | `regular` | non-cancelled entries with `Labels.includes('Regular')` | |
 | `cancelledRegular` | **cancelled** entries with `Labels.includes('Regular')` | used to warn when regular didn't show |
 | `eventbrite` | non-cancelled entries with `EventbriteAttendeeID` set | |
-| `media` | public photo/video count from SharePoint media library | not derived from entries; used by homepage carousel to find sessions with photos |
+| `media` | total photo/video count in session media folder | not derived from entries; used by homepage carousel |
+| `mediaStatus` | `listFolderPhotos` + `CoverMediaLookupId` | `none` / `allPrivate` / `noCover` / `public` — sessions list Media filter |
 
 ### Entry classification
 

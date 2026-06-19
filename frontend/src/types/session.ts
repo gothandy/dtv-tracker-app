@@ -2,9 +2,9 @@
 // Mapped from SessionResponse (types/api-responses.ts) in the sessions store.
 // To add a field: add it here, then map it in src/stores/sessions.ts.
 
-import type { SessionStats } from '../../../types/api-responses'
+import type { SessionStats, MediaStatus } from '../../../types/api-responses'
 
-export type { SessionStats }
+export type { SessionStats, MediaStatus }
 
 export interface SessionLimits {
   new?: number

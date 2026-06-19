@@ -751,7 +751,7 @@ async function onMediaSave(item: MediaItem, data: { title: string; isPublic: boo
   mediaSaveWorking.value = true
   mediaSaveError.value = undefined
   try {
-    const res = await fetch(`/api/media/${item.id}`, {
+    const res = await fetch(`/api/media/${item.id}?groupKey=${groupKey}&date=${date}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: data.title, isPublic: data.isPublic }),

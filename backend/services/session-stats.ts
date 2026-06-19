@@ -7,14 +7,60 @@ import { entriesRepository } from './repositories/entries-repository';
 import { groupsRepository } from './repositories/groups-repository';
 import { profilesRepository } from './repositories/profiles-repository';
 import { sharePointClient } from './sharepoint-client';
-import { calculateSessionStats, safeParseLookupId, parseSessionLimits } from './data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED, PROFILE_LOOKUP } from './field-names';
+import {
+  calculateSessionStats,
+  safeParseLookupId,
+  mediaStatsFromFolderItems,
+} from './data-layer';
+import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, SESSION_COVER_MEDIA, ENTRY_CANCELLED, PROFILE_LOOKUP } from './field-names';
+import type { MediaStatus } from '../../types/api-responses';
 
 export interface SessionStatsRefreshResult {
   total: number;
   updated: number;
   updatedIds: number[];
   errors: string[];
+}
+
+function storedStatsMatch(
+  existing: Record<string, unknown>,
+  newStats: Record<string, unknown>,
+): boolean {
+  const keys = [
+    'count', 'hours', 'media', 'mediaStatus', 'new', 'child',
+    'regular', 'cancelledRegular', 'eventbrite',
+  ] as const;
+  return keys.every(k => existing[k] === newStats[k]);
+}
+
+/** Recomputes media count + mediaStatus for one session and merges into stored Stats. */
+export async function refreshSessionMediaStats(
+  sessionId: number,
+  groupKey: string,
+  date: string,
+): Promise<void> {
+  const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
+  if (!mediaDriveId) return;
+
+  const spSession = await sessionsRepository.getById(sessionId);
+  if (!spSession) return;
+
+  sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+
+  let existingStats: Record<string, unknown> = {};
+  try {
+    existingStats = JSON.parse(spSession[SESSION_STATS] || '{}');
+  } catch { /* malformed — overwrite with fresh entry fields on next entry write */ }
+
+  const coverMediaId = safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null;
+  const photos = await sharePointClient.listFolderPhotos(mediaDriveId, `${groupKey}/${date}`);
+  const { media, mediaStatus } = mediaStatsFromFolderItems(photos, coverMediaId);
+
+  await sessionsRepository.updateStats(sessionId, {
+    ...existingStats,
+    media,
+    mediaStatus,
+  });
 }
 
 export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResult> {
@@ -90,11 +136,24 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           mediaCount = mediaCountsByGroup.get(groupKey)!.get(date) || 0;
         }
 
+        let media = mediaCount;
+        let mediaStatus: MediaStatus = 'none';
+        if (mediaCount === 0) {
+          mediaStatus = 'none';
+        } else if (mediaDriveId && groupKey && date) {
+          const coverMediaId = safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null;
+          const photos = await sharePointClient.listFolderPhotos(mediaDriveId, `${groupKey}/${date}`);
+          const computed = mediaStatsFromFolderItems(photos, coverMediaId);
+          media = computed.media;
+          mediaStatus = computed.mediaStatus;
+        }
+
         const cancelledRegular = cancelledRegularMap.get(String(spSession.ID)) ?? 0;
         const newStats = {
           count: entryStats?.registrations || 0,
           hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
-          media: mediaCount,
+          media,
+          mediaStatus,
           new: entryStats?.newCount || 0,
           child: entryStats?.childCount || 0,
           regular: entryStats?.regularCount || 0,
@@ -107,16 +166,7 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
         if (stored) {
           try {
             const existing = JSON.parse(stored);
-            if (
-              existing.count            === newStats.count &&
-              existing.hours            === newStats.hours &&
-              existing.media            === newStats.media &&
-              existing.new              === newStats.new &&
-              existing.child            === newStats.child &&
-              existing.regular          === newStats.regular &&
-              existing.cancelledRegular === newStats.cancelledRegular &&
-              existing.eventbrite       === newStats.eventbrite
-            ) {
+            if (storedStatsMatch(existing, newStats)) {
               return; // unchanged — skip write
             }
           } catch { /* malformed JSON — fall through to write */ }

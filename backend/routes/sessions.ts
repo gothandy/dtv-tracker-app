@@ -39,7 +39,7 @@ import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import { taxonomyClient } from '../services/taxonomy-client';
-import { runSessionStatsRefresh } from '../services/session-stats';
+import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/session-stats';
 
 const router: Router = express.Router();
 
@@ -757,6 +757,9 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     // Cover image changed — bust sessions listing cache so coverUrl updates immediately
     if (SESSION_COVER_MEDIA in fields) {
       sharePointClient.clearCacheByPrefix('sessions_FY');
+      refreshSessionMediaStats(spSession.ID, groupKey, dateParam).catch(err =>
+        console.error(`[Stats] Failed media stats refresh after cover change for session ${spSession.ID}:`, err)
+      );
     }
 
     const newDate = fields.Date || dateParam;

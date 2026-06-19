@@ -17,6 +17,13 @@
       <option value="__none__">No project</option>
       <option v-for="p in projectOptions" :key="p.key" :value="p.key">{{ p.title }}</option>
     </select>
+    <select v-model="mediaStatus" class="list-filter-select">
+      <option value="">All sessions</option>
+      <option v-if="profile?.hasCheckInAccess" value="none">No media</option>
+      <option v-if="profile?.hasCheckInAccess" value="allPrivate">All private</option>
+      <option v-if="profile?.hasCheckInAccess" value="noCover">No cover</option>
+      <option value="public">Public</option>
+    </select>
     <TermPicker
       v-model="tagLabel"
       :tree="taxonomyTree"
@@ -33,9 +40,13 @@ import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import TermPicker from '../TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
+import type { RoleContext } from '../../composables/useViewer'
+import type { MediaStatus } from '../../types/session'
 import type { Session } from '../../types/session'
 
-const props = defineProps<{ sessions: Session[] }>()
+const TRUSTED_MEDIA_FILTERS = new Set<MediaStatus>(['none', 'allPrivate', 'noCover'])
+
+const props = defineProps<{ sessions: Session[]; profile?: RoleContext }>()
 const emit = defineEmits<{ filtered: [sessions: Session[]] }>()
 
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
@@ -47,6 +58,16 @@ const search   = ref((route.query.search as string) || '')
 const groupKey = ref((route.query.group as string) || '')
 const projectKey = ref((route.query.project as string) || '')
 const tagLabel = ref((route.query.tag as string) || '')
+
+function initialMediaFilter(): string {
+  const raw = (route.query.media as string) || ''
+  if (!raw) return ''
+  if (raw === 'public') return 'public'
+  if (props.profile?.hasCheckInAccess && TRUSTED_MEDIA_FILTERS.has(raw as MediaStatus)) return raw
+  return ''
+}
+
+const mediaStatus = ref(initialMediaFilter())
 
 function rollingStart(): string {
   const d = new Date()
@@ -93,12 +114,17 @@ function applyTag(list: Session[]): Session[] {
   )
 }
 
+function applyMedia(list: Session[]): Session[] {
+  if (!mediaStatus.value) return list
+  return list.filter(s => s.stats.mediaStatus === mediaStatus.value)
+}
+
 // Cascading: each dropdown only shows options present in sessions matching all other filters
 const base = computed(() => applyBase(props.sessions))
 
 const groupOptions = computed(() => {
   const map = new Map<string, string>()
-  for (const s of applyProject(applyTag(base.value))) {
+  for (const s of applyMedia(applyProject(applyTag(base.value)))) {
     if (s.groupKey && s.groupName) map.set(s.groupKey, s.groupName)
   }
   return [...map.entries()].map(([key, name]) => ({ key, name })).sort((a, b) => a.name.localeCompare(b.name))
@@ -106,7 +132,7 @@ const groupOptions = computed(() => {
 
 const projectOptions = computed(() => {
   const map = new Map<string, { key: string; title: string }>()
-  for (const s of applyTag(applyGroup(base.value))) {
+  for (const s of applyMedia(applyTag(applyGroup(base.value)))) {
     if (!s.projectId) continue
     const key = s.projectKey ?? String(s.projectId)
     const title = s.projectTitle ?? s.projectKey ?? String(s.projectId)
@@ -117,12 +143,12 @@ const projectOptions = computed(() => {
 
 const availableTagLabels = computed(() => {
   const labels = new Set<string>()
-  for (const s of applyProject(applyGroup(base.value))) s.metadata?.forEach(t => labels.add(t.label))
+  for (const s of applyMedia(applyProject(applyGroup(base.value)))) s.metadata?.forEach(t => labels.add(t.label))
   return labels
 })
 
 const filtered = computed(() => {
-  const list = applyProject(applyTag(applyGroup(base.value)))
+  const list = applyMedia(applyProject(applyTag(applyGroup(base.value))))
   return fy.value === 'future'
     ? [...list].sort((a, b) => a.date.localeCompare(b.date))
     : list
@@ -135,13 +161,23 @@ watch(projectOptions, opts => {
   if (!opts.some(p => p.key === projectKey.value)) projectKey.value = ''
 }, { immediate: true })
 
-watch([fy, search, groupKey, projectKey, tagLabel], ([newFy, newSearch, newGroup, newProject, newTag]) => {
+watch(
+  () => props.profile?.hasCheckInAccess,
+  hasAccess => {
+    if (!hasAccess && TRUSTED_MEDIA_FILTERS.has(mediaStatus.value as MediaStatus)) {
+      mediaStatus.value = ''
+    }
+  },
+)
+
+watch([fy, search, groupKey, projectKey, tagLabel, mediaStatus], ([newFy, newSearch, newGroup, newProject, newTag, newMedia]) => {
   const query: Record<string, string> = {}
   if (newFy)     query.fy     = newFy
   if (newSearch) query.search = newSearch
   if (newGroup)  query.group  = newGroup
   if (newProject) query.project = newProject
   if (newTag)    query.tag    = newTag
+  if (newMedia)  query.media  = newMedia
   router.replace({ query })
 })
 </script>

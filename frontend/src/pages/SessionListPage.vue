@@ -2,7 +2,7 @@
   <DefaultLayout>
     <h1 class="sr-only">Sessions</h1>
     <PageHeader>Sessions</PageHeader>
-    <SessionListFilter :sessions="store.sessions" @filtered="filtered = $event" />
+    <SessionListFilter :sessions="store.sessions" :profile="profile.context" @filtered="filtered = $event" />
     <SessionListActions
       :sessions="filtered"
       :can-bulk-tag="profile.isAdmin"

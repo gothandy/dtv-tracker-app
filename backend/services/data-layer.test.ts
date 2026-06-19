@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags, findTitleKeyClash, sessionScheduleFields, formatSessionTimeRangeProse } from './data-layer'
+import { calculateFinancialYear, calculateCurrentFY, calculateSessionStats, toMatchName, extractMetadataTags, findTitleKeyClash, sessionScheduleFields, formatSessionTimeRangeProse, deriveMediaStatus, mediaStatsFromFolderItems } from './data-layer'
 import { SESSION_TIME, SESSION_LENGTH } from './field-names'
 import type { SharePointEntry } from '../../types/sharepoint'
 import type { SharePointSession } from '../../types/session'
@@ -214,5 +214,37 @@ describe('sessionScheduleFields', () => {
       time: '09:30',
       length: 3,
     })
+  })
+})
+
+describe('deriveMediaStatus', () => {
+  it('returns none when folder is empty', () => {
+    expect(deriveMediaStatus(0, 0, null, false)).toBe('none')
+  })
+
+  it('returns allPrivate when files exist but none are public', () => {
+    expect(deriveMediaStatus(3, 0, 42, false)).toBe('allPrivate')
+  })
+
+  it('returns public when cover is set and public', () => {
+    expect(deriveMediaStatus(2, 1, 10, true)).toBe('public')
+  })
+
+  it('returns noCover when public files exist but cover is unset or not public', () => {
+    expect(deriveMediaStatus(2, 1, null, false)).toBe('noCover')
+    expect(deriveMediaStatus(2, 1, 10, false)).toBe('noCover')
+  })
+})
+
+describe('mediaStatsFromFolderItems', () => {
+  const items = [
+    { listItemId: 1, isPublic: false },
+    { listItemId: 2, isPublic: true },
+  ]
+
+  it('classifies from folder items and cover lookup', () => {
+    expect(mediaStatsFromFolderItems(items, 2)).toEqual({ media: 2, mediaStatus: 'public' })
+    expect(mediaStatsFromFolderItems(items, null)).toEqual({ media: 2, mediaStatus: 'noCover' })
+    expect(mediaStatsFromFolderItems(items, 1)).toEqual({ media: 2, mediaStatus: 'noCover' })
   })
 })

@@ -563,6 +563,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group + project
 - [ ] Selecting a group, project, or tag narrows the other dropdown options; clearing one filter re-expands the others
 - [ ] Project filter in URL as `?project=` (`__none__` or project key); cleared when that project has no sessions under the current FY/filters
+- [ ] Media filter: **All sessions** (default); **Public** visible to everyone; **No media**, **All private**, **No cover** visible to check-in/admin only
+- [ ] Media filter URL param `?media=` (`none`, `allPrivate`, `noCover`, `public`); trusted-only values ignored for public users
+- [ ] Media filter only matches sessions with stored `stats.mediaStatus` (run session stats refresh after deploy to backfill)
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
 - [ ] "Add Tags" and "Update Project" enabled only when ≥1 session checked
