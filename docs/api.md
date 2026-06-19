@@ -48,6 +48,7 @@ Self-service users get the **Public** GET allowlist plus their own profile (`/pr
 | `/api/sessions/refresh-stats` | POST | Admin / API key | Bulk refresh pre-computed stats for all sessions |
 | `/api/sessions/bulk-tag` | POST | Admin | Apply taxonomy terms to multiple sessions |
 | `/api/sessions/bulk-project` | POST | Admin | Set project lookup on multiple sessions (`projectId: number \| null`) |
+| `/api/sessions/bulk-media-public` | POST | Admin | Mark all media in selected session folders as public |
 | `/api/sessions/:group/:date` | GET | Public | Session detail with entries |
 | `/api/sessions/:group/:date` | PATCH | Check In+ | Update session (name, description, date, cover) |
 | `/api/sessions/:group/:date` | DELETE | Admin | Delete session |

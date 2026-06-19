@@ -6,9 +6,11 @@
     <SessionListActions
       :sessions="filtered"
       :can-bulk-tag="profile.isAdmin"
+      :media-public-working="mediaPublicWorking"
       v-model:selected="selected"
       @add-tags="showTagModal = true"
       @update-project="openProjectModal"
+      @media-public="showMediaPublicModal = true"
       @add-session="showAddSession = true"
     />
     <SessionListResults :sessions="filtered" :loading="store.loading" v-model:selected="selected" />
@@ -30,6 +32,15 @@
       :error="projectError"
       @close="showProjectModal = false"
       @save="onApplyProject"
+    />
+
+    <SessionBulkMediaPublicModal
+      v-if="showMediaPublicModal"
+      :count="visibleSelectedCount"
+      :working="mediaPublicWorking"
+      :error="mediaPublicError"
+      @close="showMediaPublicModal = false"
+      @confirm="onApplyMediaPublic"
     />
 
     <GroupAddSessionModal
@@ -54,6 +65,7 @@ import SessionListActions from '../components/sessions/SessionListActions.vue'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
 import SessionAddTagsModal from './modals/SessionAddTagsModal.vue'
 import SessionBulkProjectModal from './modals/SessionBulkProjectModal.vue'
+import SessionBulkMediaPublicModal from './modals/SessionBulkMediaPublicModal.vue'
 import GroupAddSessionModal from './modals/GroupAddSessionModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
 import { useSessionListStore } from '../stores/sessionList'
@@ -81,6 +93,9 @@ const tagError = ref('')
 const showProjectModal = ref(false)
 const projectWorking = ref(false)
 const projectError = ref('')
+const showMediaPublicModal = ref(false)
+const mediaPublicWorking = ref(false)
+const mediaPublicError = ref('')
 const showAddSession = ref(false)
 const addSessionWorking = ref(false)
 const addSessionError = ref('')
@@ -177,6 +192,35 @@ async function onApplyProject(projectId: number | null) {
   projectWorking.value = false
   projectError.value = ''
   selected.value = []
+}
+
+async function onApplyMediaPublic() {
+  mediaPublicWorking.value = true
+  mediaPublicError.value = ''
+  const sessionIds = visibleSelected(selected.value, filtered.value).map(s => s.id)
+  try {
+    const res = await fetch('/api/sessions/bulk-media-public', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionIds }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({})) as { error?: string }
+      throw new Error(json.error || 'Make media public failed — please try again')
+    }
+    const json = await res.json() as { data?: { errors?: string[] } }
+    if (json.data?.errors?.length) {
+      console.error('[SessionListPage] bulk-media-public partial errors', json.data.errors)
+    }
+    showMediaPublicModal.value = false
+    selected.value = []
+    await store.fetch()
+  } catch (e) {
+    mediaPublicError.value = e instanceof Error ? e.message : 'An error occurred'
+    console.error('[SessionListPage] bulk-media-public failed', e)
+  } finally {
+    mediaPublicWorking.value = false
+  }
 }
 
 async function onAddSession(data: AddSessionPayload) {

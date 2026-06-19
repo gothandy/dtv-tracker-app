@@ -40,6 +40,7 @@ import { sharePointClient } from '../services/sharepoint-client';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/session-stats';
+import { mediaDriveId } from '../services/media-upload';
 
 const router: Router = express.Router();
 
@@ -438,6 +439,81 @@ router.post('/sessions/bulk-project', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to bulk update session projects',
+      message: error.message
+    });
+  }
+});
+
+router.post('/sessions/bulk-media-public', async (req: Request, res: Response) => {
+  try {
+    const { sessionIds } = req.body;
+
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+      res.status(400).json({ success: false, error: 'sessionIds array is required' });
+      return;
+    }
+
+    let driveId: string;
+    try {
+      driveId = mediaDriveId();
+    } catch {
+      res.status(400).json({ success: false, error: 'Media library not configured' });
+      return;
+    }
+
+    const [rawSessions, rawGroups] = await Promise.all([
+      sessionsRepository.getAll(),
+      groupsRepository.getAll(),
+    ]);
+    const groupKeyMap = new Map(rawGroups.map(g => [g.ID, (g.Title || '').toLowerCase()]));
+
+    let sessionsUpdated = 0;
+    let itemsUpdated = 0;
+    const errors: string[] = [];
+
+    for (const rawId of sessionIds) {
+      const id = parseInt(String(rawId), 10);
+      if (isNaN(id)) continue;
+
+      const spSession = rawSessions.find(s => s.ID === id);
+      if (!spSession?.Date) continue;
+
+      const gid = safeParseLookupId(spSession[GROUP_LOOKUP]);
+      const groupKey = gid !== undefined ? groupKeyMap.get(gid) : undefined;
+      if (!groupKey) continue;
+
+      try {
+        const folderPath = `${groupKey}/${spSession.Date}`;
+        const photos = await sharePointClient.listFolderPhotos(driveId, folderPath);
+        const privateItems = photos.filter(p => !p.isPublic);
+
+        for (const item of privateItems) {
+          await sharePointClient.updateMediaItemFields(driveId, item.id, { IsPublic: true });
+          itemsUpdated++;
+        }
+
+        if (privateItems.length > 0) {
+          sharePointClient.clearMediaFolderCache(folderPath);
+        }
+
+        await refreshSessionMediaStats(id, groupKey, spSession.Date);
+        sessionsUpdated++;
+      } catch (err: any) {
+        const msg = `Session ${id}: ${err.message}`;
+        console.error(`[Bulk media public] ${msg}`);
+        errors.push(msg);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: { sessionsUpdated, itemsUpdated, errors },
+    } as ApiResponse<{ sessionsUpdated: number; itemsUpdated: number; errors: string[] }>);
+  } catch (error: any) {
+    console.error('Error bulk making session media public:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to bulk make session media public',
       message: error.message
     });
   }

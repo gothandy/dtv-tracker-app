@@ -568,7 +568,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Media filter only matches sessions with stored `stats.mediaStatus` (run session stats refresh after deploy to backfill)
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
-- [ ] "Add Tags" and "Update Project" enabled only when ≥1 session checked
+- [ ] "Media Public" enabled when ≥1 session checked; confirm modal → `POST /api/sessions/bulk-media-public` with `{ sessionIds }` → private media in those folders marked public; sessions list refreshes
 - [ ] Closing Advanced clears selection and hides checkboxes
 
 ### L4. Sort
