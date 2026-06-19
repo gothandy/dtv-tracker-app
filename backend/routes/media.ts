@@ -158,6 +158,7 @@ router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response)
     const date = sanitisePathSegment(req.query.date as string, /[^0-9-]/g);
     if (groupKey && date) {
       sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+      sharePointClient.clearCacheKey(`media-counts-${groupKey}`);
       refreshMediaStatsForSession(groupKey, date).catch(err =>
         console.error(`[Stats] Failed media stats refresh after PATCH for ${groupKey}/${date}:`, err)
       );
@@ -178,6 +179,7 @@ router.delete('/media/:itemId', requireAdmin, async (req: Request, res: Response
     await sharePointClient.deleteMediaItem(driveId, String(req.params.itemId));
     if (groupKey && date) {
       sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+      sharePointClient.clearCacheKey(`media-counts-${groupKey}`);
       refreshMediaStatsForSession(groupKey, date).catch(err =>
         console.error(`[Stats] Failed media stats refresh after DELETE for ${groupKey}/${date}:`, err)
       );

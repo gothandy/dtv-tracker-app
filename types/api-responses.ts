@@ -7,7 +7,7 @@
 
 import type { SessionLimits } from '../backend/services/data-layer';
 
-export type MediaStatus = 'none' | 'allPrivate' | 'noCover' | 'public'
+export type MediaStatus = 'none' | 'allPrivate' | 'noCover' | 'coverPrivate' | 'public'
 
 export interface SessionStats {
   count: number
@@ -375,4 +375,6 @@ export interface EntryUploadContextResponse {
   groupKey: string;
   groupName: string;
   profileName: string;
+  /** True when this uploader's files are saved as public (admin/check-in). */
+  uploadsPublicDefault: boolean;
 }

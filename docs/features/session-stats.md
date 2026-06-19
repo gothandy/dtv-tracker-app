@@ -35,8 +35,8 @@ All counts exclude cancelled entries, except `cancelledRegular` which counts onl
 | `regular` | non-cancelled entries with `Labels.includes('Regular')` | |
 | `cancelledRegular` | **cancelled** entries with `Labels.includes('Regular')` | used to warn when regular didn't show |
 | `eventbrite` | non-cancelled entries with `EventbriteAttendeeID` set | |
-| `media` | total photo/video count in session media folder | not derived from entries; used by homepage carousel |
-| `mediaStatus` | `listFolderPhotos` + `CoverMediaLookupId` | `none` / `allPrivate` / `noCover` / `public` — sessions list Media filter |
+| `media` | photo count in session media folder | images only — videos in the folder are ignored until carousel support (#244) |
+| `mediaStatus` | cover/public classification for sessions list Photos filter | derived from images only; `none` = no photos (empty folder or video-only) |
 
 ### Entry classification
 
@@ -62,7 +62,7 @@ Session stats are written in three different contexts. All use the same field de
 
 **When:** Fire-and-forget after any entry write (PATCH, POST create, POST refresh, DELETE).
 
-**How:** Fetches only that session's entries + all profiles (to build `profileFirstSessionMap` for `new` count). Reads the existing `media` count from the cached session Stats so it isn't wiped on every entry change.
+**How:** Fetches only that session's entries + all profiles (to build `profileFirstSessionMap` for `new` count). Preserves existing `media` / `mediaStatus` in Stats so entry-only writes do not wipe media fields (media is refreshed separately via `refreshSessionMediaStats` on upload/delete/cover change).
 
 ### 2. Full bulk refresh
 
@@ -70,7 +70,7 @@ Session stats are written in three different contexts. All use the same field de
 
 **When:** `POST /sessions/refresh-stats` (admin UI) or triggered by the nightly Eventbrite sync.
 
-**How:** Fetches all sessions, entries, groups, and profiles in one pass. Re-fetches media counts from SharePoint for each group. Skips sessions where stored stats already match to minimise Graph API writes. Clears the sessions cache after the bulk update.
+**How:** Clears cached media folder listings, then fetches all sessions, entries, groups, and profiles. For each session with a media library folder, reads the live folder via `listFolderPhotos` and derives `media` + `mediaStatus`. Entry aggregates come from live entries and whatever profile Stats are currently stored (run profile stats refresh first when accurate `new` counts matter — nightly Eventbrite sync does profile then session). Stored Stats are compared only to skip unchanged Graph writes — never used to decide what to fetch. Clears the sessions cache after the bulk update.
 
 ### 3. Session detail live computation
 

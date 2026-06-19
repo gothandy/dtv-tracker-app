@@ -17,12 +17,12 @@
       <option value="__none__">No project</option>
       <option v-for="p in projectOptions" :key="p.key" :value="p.key">{{ p.title }}</option>
     </select>
-    <select v-model="mediaStatus" class="list-filter-select">
+    <select v-model="mediaStatus" class="list-filter-select" aria-label="Photos filter">
       <option value="">All sessions</option>
-      <option v-if="profile?.hasCheckInAccess" value="none">No media</option>
-      <option v-if="profile?.hasCheckInAccess" value="allPrivate">All private</option>
-      <option v-if="profile?.hasCheckInAccess" value="noCover">No cover</option>
-      <option value="public">Public</option>
+      <option v-if="profile?.hasCheckInAccess" value="none">No photos</option>
+      <option v-if="profile?.hasCheckInAccess" value="allPrivate">All photos private</option>
+      <option v-if="profile?.hasCheckInAccess" value="noCover">No cover photo</option>
+      <option value="public">Public cover</option>
     </select>
     <TermPicker
       v-model="tagLabel"
@@ -59,15 +59,31 @@ const groupKey = ref((route.query.group as string) || '')
 const projectKey = ref((route.query.project as string) || '')
 const tagLabel = ref((route.query.tag as string) || '')
 
-function initialMediaFilter(): string {
+function mediaFromRouteQuery(): string {
   const raw = (route.query.media as string) || ''
-  if (!raw) return ''
   if (raw === 'public') return 'public'
-  if (props.profile?.hasCheckInAccess && TRUSTED_MEDIA_FILTERS.has(raw as MediaStatus)) return raw
+  if (TRUSTED_MEDIA_FILTERS.has(raw as MediaStatus)) return raw
   return ''
 }
 
-const mediaStatus = ref(initialMediaFilter())
+const mediaStatus = ref(mediaFromRouteQuery())
+
+// Trusted media filters require check-in access — but auth loads after first paint on refresh.
+// Keep the URL value until we know the viewer is not check-in/admin.
+watch(
+  () => [props.profile?.isPublic, props.profile?.isAuthenticated, props.profile?.hasCheckInAccess] as const,
+  ([isPublic, isAuthenticated, hasAccess]) => {
+    const raw = mediaFromRouteQuery()
+    if (!raw) return
+    if (raw === 'public') {
+      mediaStatus.value = 'public'
+      return
+    }
+    if (!isPublic && !isAuthenticated && !hasAccess) return
+    mediaStatus.value = hasAccess ? raw : ''
+  },
+  { immediate: true },
+)
 
 function rollingStart(): string {
   const d = new Date()
@@ -116,6 +132,15 @@ function applyTag(list: Session[]): Session[] {
 
 function applyMedia(list: Session[]): Session[] {
   if (!mediaStatus.value) return list
+  if (mediaStatus.value === 'none') {
+    return list.filter(s => s.stats.mediaStatus === 'none')
+  }
+  if (mediaStatus.value === 'noCover') {
+    return list.filter(s =>
+      s.stats.mediaStatus === 'noCover'
+      && !s.coverUrl,
+    )
+  }
   return list.filter(s => s.stats.mediaStatus === mediaStatus.value)
 }
 
@@ -160,15 +185,6 @@ watch(projectOptions, opts => {
   if (!projectKey.value || projectKey.value === '__none__') return
   if (!opts.some(p => p.key === projectKey.value)) projectKey.value = ''
 }, { immediate: true })
-
-watch(
-  () => props.profile?.hasCheckInAccess,
-  hasAccess => {
-    if (!hasAccess && TRUSTED_MEDIA_FILTERS.has(mediaStatus.value as MediaStatus)) {
-      mediaStatus.value = ''
-    }
-  },
-)
 
 watch([fy, search, groupKey, projectKey, tagLabel, mediaStatus], ([newFy, newSearch, newGroup, newProject, newTag, newMedia]) => {
   const query: Record<string, string> = {}

@@ -29,7 +29,7 @@ import {
 } from './field-names';
 import type { MediaStatus, SessionStats } from '../../types/api-responses';
 
-const MEDIA_STATUS_VALUES = new Set<MediaStatus>(['none', 'allPrivate', 'noCover', 'public']);
+const MEDIA_STATUS_VALUES = new Set<MediaStatus>(['none', 'allPrivate', 'noCover', 'coverPrivate', 'public']);
 
 function parseMediaStatus(raw: unknown): MediaStatus | undefined {
   return typeof raw === 'string' && MEDIA_STATUS_VALUES.has(raw as MediaStatus)
@@ -47,20 +47,23 @@ export function deriveMediaStatus(
   if (mediaCount === 0) return 'none';
   if (publicMediaCount === 0) return 'allPrivate';
   if (coverMediaId != null && coverIsPublic) return 'public';
-  return 'noCover';
+  if (publicMediaCount > 0 && coverMediaId == null) return 'noCover';
+  return 'coverPrivate';
 }
 
 export function mediaStatsFromFolderItems(
-  items: { listItemId: number; isPublic: boolean }[],
+  items: { listItemId: number; isPublic: boolean; mimeType: string }[],
   coverMediaId: number | null | undefined,
 ): { media: number; mediaStatus: MediaStatus } {
-  const mediaCount = items.length;
-  const publicMediaCount = items.filter(p => p.isPublic).length;
+  // Photos only — videos in the folder are ignored until session carousel supports them (#244).
+  const images = items.filter(i => i.mimeType.startsWith('image/'));
+  const imageCount = images.length;
+  const publicImageCount = images.filter(p => p.isPublic).length;
   const coverIsPublic = coverMediaId != null
-    && items.some(p => p.listItemId === coverMediaId && p.isPublic);
+    && images.some(p => p.listItemId === coverMediaId && p.isPublic);
   return {
-    media: mediaCount,
-    mediaStatus: deriveMediaStatus(mediaCount, publicMediaCount, coverMediaId, coverIsPublic),
+    media: imageCount,
+    mediaStatus: deriveMediaStatus(imageCount, publicImageCount, coverMediaId, coverIsPublic),
   };
 }
 

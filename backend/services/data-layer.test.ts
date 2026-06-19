@@ -230,21 +230,36 @@ describe('deriveMediaStatus', () => {
     expect(deriveMediaStatus(2, 1, 10, true)).toBe('public')
   })
 
-  it('returns noCover when public files exist but cover is unset or not public', () => {
+  it('returns noCover only when public files exist and no cover is selected', () => {
     expect(deriveMediaStatus(2, 1, null, false)).toBe('noCover')
-    expect(deriveMediaStatus(2, 1, 10, false)).toBe('noCover')
+    expect(deriveMediaStatus(0, 0, null, false)).toBe('none')
+  })
+
+  it('returns coverPrivate when public files exist but cover is set and not public', () => {
+    expect(deriveMediaStatus(2, 1, 10, false)).toBe('coverPrivate')
   })
 })
 
 describe('mediaStatsFromFolderItems', () => {
   const items = [
-    { listItemId: 1, isPublic: false },
-    { listItemId: 2, isPublic: true },
+    { listItemId: 1, isPublic: false, mimeType: 'image/jpeg' },
+    { listItemId: 2, isPublic: true, mimeType: 'image/jpeg' },
   ]
 
   it('classifies from folder items and cover lookup', () => {
     expect(mediaStatsFromFolderItems(items, 2)).toEqual({ media: 2, mediaStatus: 'public' })
     expect(mediaStatsFromFolderItems(items, null)).toEqual({ media: 2, mediaStatus: 'noCover' })
-    expect(mediaStatsFromFolderItems(items, 1)).toEqual({ media: 2, mediaStatus: 'noCover' })
+    expect(mediaStatsFromFolderItems(items, 1)).toEqual({ media: 2, mediaStatus: 'coverPrivate' })
+  })
+
+  it('counts videos in media but not in mediaStatus (cover is photo-only)', () => {
+    const videoOnly = [{ listItemId: 9, isPublic: true, mimeType: 'video/mp4' }]
+    expect(mediaStatsFromFolderItems(videoOnly, null)).toEqual({ media: 0, mediaStatus: 'none' })
+
+    const mixed = [
+      { listItemId: 1, isPublic: true, mimeType: 'video/mp4' },
+      { listItemId: 2, isPublic: true, mimeType: 'image/jpeg' },
+    ]
+    expect(mediaStatsFromFolderItems(mixed, null)).toEqual({ media: 1, mediaStatus: 'noCover' })
   })
 })
