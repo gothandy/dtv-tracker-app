@@ -1049,7 +1049,8 @@ router.get('/entries/:id/upload-context', async (req: Request, res: Response) =>
       date: spSession.Date,
       groupKey: group?.lookupKeyName || '',
       groupName: group?.displayName || group?.lookupKeyName || '',
-      profileName: profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer'
+      profileName: profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer',
+      uploadsPublicDefault: req.session.user?.role === 'admin' || req.session.user?.role === 'checkin',
     };
 
     res.json({ success: true, data } as ApiResponse<EntryUploadContextResponse>);
@@ -1121,6 +1122,8 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
 
     const groupKey = (group?.lookupKeyName || '').toLowerCase();
     const date = spSession.Date;
+    const role = req.session.user?.role;
+    const uploadsPublicDefault = role === 'admin' || role === 'checkin';
     const folderPath = `${groupKey}/${date}`;
     let uploaded = 0;
 
@@ -1132,7 +1135,7 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       const takenAt = exifDate(file.buffer) ?? new Date();
       const filename = mediaFilename(file.originalname, profileName, takenAt);
       const uploadedItem = await sharePointClient.uploadFile(driveId, `${folderPath}/${filename}`, file.buffer, file.mimetype);
-      await sharePointClient.updateMediaItemFields(driveId, uploadedItem.id, { IsPublic: false });
+      await sharePointClient.updateMediaItemFields(driveId, uploadedItem.id, { IsPublic: uploadsPublicDefault });
       uploaded++;
     }
 

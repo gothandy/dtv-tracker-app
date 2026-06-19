@@ -18,7 +18,7 @@
         <p class="status-text">
           <strong>{{ uploadedTotal }}</strong> {{ uploadedTotal === 1 ? 'file' : 'files' }} uploaded successfully.
         </p>
-        <p class="status-note">Photos are reviewed before appearing publicly.</p>
+        <p class="status-note">{{ completionNote }}</p>
         <FormSubmitRow>
           <AppButton usage="task" label="View session gallery" @click="router.push(galleryHref)" />
         </FormSubmitRow>
@@ -29,12 +29,18 @@
         :title="`Upload for ${ctx.profileName}`"
         :subtitle="sessionSubtitle"
       >
+        <AlertBanner
+          v-if="hasVideoSelection"
+          type="info"
+          message="Tracker currently doesn't support viewing video. Your video will be uploaded and will be available to users once this feature is available."
+        />
         <FileUploadPicker
           ref="pickerRef"
           accept=".jpg,.jpeg,.png,.webp,.heic,.mp4,.mov"
           empty-label="Tap or drag to add photos &amp; videos"
           hint="JPG, PNG, WebP, HEIC, MP4, MOV · max 15 MB each · up to 10 files"
           :upload-file="uploadPhoto"
+          @selection-change="onSelectionChange"
           @done="onUploadDone"
         />
       </FormCard>
@@ -51,7 +57,9 @@ import FormCard from '../components/forms/FormCard.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
 import FileUploadPicker from '../components/FileUploadPicker.vue'
+import AlertBanner from '../components/forms/AlertBanner.vue'
 import { sessionPath } from '../router/index'
+import { isVideoFile } from '../utils/mediaFiles'
 
 usePageTitle('Upload Photos')
 
@@ -67,6 +75,7 @@ interface UploadContext {
   groupKey: string
   groupName: string
   profileName: string
+  uploadsPublicDefault: boolean
 }
 
 interface LoadError {
@@ -87,13 +96,20 @@ const ctx = ref<UploadContext>({
   groupKey: '',
   groupName: '',
   profileName: '',
+  uploadsPublicDefault: false,
 })
 
 const done = ref(false)
 const uploadedTotal = ref(0)
+const hasVideoSelection = ref(false)
 
 const galleryHref = computed(() => sessionPath(ctx.value.groupKey, ctx.value.date))
 const sessionSubtitle = computed(() => `${formatDateShort(ctx.value.date)}, ${ctx.value.groupName}`)
+const completionNote = computed(() =>
+  ctx.value.uploadsPublicDefault
+    ? 'Photos are added to the session gallery.'
+    : 'Photos are private until a volunteer coordinator marks them public.',
+)
 
 function formatDateShort(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
@@ -112,6 +128,10 @@ async function uploadPhoto(file: File): Promise<boolean> {
     return false
   }
   return res.ok
+}
+
+function onSelectionChange(files: File[]) {
+  hasVideoSelection.value = files.some(isVideoFile)
 }
 
 function onUploadDone(count: number) {
@@ -166,6 +186,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.upload-stack :deep(.alert-banner) {
+  margin-bottom: 0.75rem;
 }
 
 .status-text {
