@@ -70,7 +70,7 @@ Session stats are written in three different contexts. All use the same field de
 
 **When:** `POST /sessions/refresh-stats` (admin UI) or triggered by the nightly Eventbrite sync.
 
-**How:** Clears cached media folder listings, then fetches all sessions, entries, groups, and profiles. For each session with a media library folder, reads the live folder via `listFolderPhotos` and derives `media` + `mediaStatus`. Entry aggregates come from live entries and whatever profile Stats are currently stored (run profile stats refresh first when accurate `new` counts matter — nightly Eventbrite sync does profile then session). Stored Stats are compared only to skip unchanged Graph writes — never used to decide what to fetch. Clears the sessions cache after the bulk update.
+**How:** Clears cached media folder listings, then fetches all sessions, entries, groups, and profiles. For each session with a media library folder, reads the live folder via `listFolderPhotos` (pages through Graph `@odata.nextLink` so large folders are fully counted) and derives `media` + `mediaStatus`. Entry aggregates come from live entries and whatever profile Stats are currently stored (run profile stats refresh first when accurate `new` counts matter — nightly Eventbrite sync does profile then session). Stored Stats are compared only to skip unchanged Graph writes — never used to decide what to fetch. Clears the sessions cache after the bulk update.
 
 ### 3. Session detail live computation
 

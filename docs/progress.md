@@ -4,6 +4,7 @@
 
 - `mediaStatus` on session Stats JSON (`none` / `allPrivate` / `noCover` / `public`) computed in bulk refresh and on media/cover writes.
 - Sessions list Media filter dropdown — Public for all users; operational states for check-in/admin.
+- `listFolderPhotos` follows Graph `@odata.nextLink` so media stats include all folder pages (not just the first page).
 - Run **Refresh Session Stats** after deploy to backfill existing sessions.
 
 ## Session: 2026-06-10 (docs.dtv.org.uk redirect)
