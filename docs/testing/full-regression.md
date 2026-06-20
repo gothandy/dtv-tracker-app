@@ -352,6 +352,10 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Upload → each file shows "✓ Uploaded" status; non-supported file (e.g. PDF) shows "✗ Failed"
 - [ ] Files appear in SharePoint Media Library at `{groupKey}/{date}/`
 - [ ] Completion step shows file count ("N files uploaded") and "View session gallery" link
+- [ ] Self-service completion note mentions photos stay private until marked public; check-in/admin note says photos are added to the gallery
+- [ ] Selecting a video file shows info banner (video stored but not yet viewable in Tracker); photos-only selection does not
+- [ ] Self-service upload → SharePoint media item `IsPublic` false
+- [ ] Check-in/admin upload → SharePoint media item `IsPublic` true
 - [ ] "View session gallery" link navigates to the correct session detail page
 - [ ] `POST /api/entries/:id/photos` — self-service for another volunteer's entry returns 403
 
@@ -563,9 +567,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group + project
 - [ ] Selecting a group, project, or tag narrows the other dropdown options; clearing one filter re-expands the others
 - [ ] Project filter in URL as `?project=` (`__none__` or project key); cleared when that project has no sessions under the current FY/filters
+- [ ] Photos filter: **All sessions** (default); **Public photos** visible to everyone; **No photos**, **All photos private**, **No cover photo** visible to check-in/admin only
+- [ ] **Public photos** filter (`media=public`): each session card shows cover image above the card (4:3 crop); filter still requires public cover selected in stats
+- [ ] Photos filter URL param `?media=` (`none`, `allPrivate`, `noCover`, `public`); trusted-only values ignored for public users
+- [ ] Photos filter only matches stored `stats.mediaStatus` (run session stats refresh after deploy to backfill)
+- [ ] **No photos** (`media=none`): no images in folder — includes empty folders and video-only sessions (videos ignored in stats until #244)
+- [ ] **No cover photo**: at least one public image, no cover lookup (`mediaStatus=noCover`, no `coverUrl`)
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
-- [ ] "Add Tags" and "Update Project" enabled only when ≥1 session checked
+- [ ] "Make Public" enabled when ≥1 session checked; confirm modal → `POST /api/sessions/bulk-media-public` with `{ sessionIds }` → private media in those folders marked public; sessions list refreshes
 - [ ] Closing Advanced clears selection and hides checkboxes
 
 ### L4. Sort

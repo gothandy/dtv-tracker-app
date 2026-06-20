@@ -7,6 +7,8 @@
 
 import type { SessionLimits } from '../backend/services/data-layer';
 
+export type MediaStatus = 'none' | 'allPrivate' | 'noCover' | 'coverPrivate' | 'public'
+
 export interface SessionStats {
   count: number
   hours: number
@@ -16,6 +18,8 @@ export interface SessionStats {
   cancelledRegular?: number
   eventbrite?: number
   media?: number
+  /** Pre-computed from media folder privacy and cover selection — used by sessions list Media filter. */
+  mediaStatus?: MediaStatus
 }
 
 export interface GroupRegularResponse {
@@ -371,4 +375,6 @@ export interface EntryUploadContextResponse {
   groupKey: string;
   groupName: string;
   profileName: string;
+  /** True when this uploader's files are saved as public (admin/check-in). */
+  uploadsPublicDefault: boolean;
 }

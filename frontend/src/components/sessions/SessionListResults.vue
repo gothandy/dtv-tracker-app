@@ -12,14 +12,22 @@
 
       <div class="list-card-grid">
         <div v-for="s in sessions" :key="s.id" class="list-card-item">
-          <input
-            v-if="profile.isAdmin && selected"
-            type="checkbox"
-            class="list-card-checkbox"
-            :checked="selected.includes(s.id)"
-            @change="toggle(s.id)"
+          <img
+            v-if="showCoverPhotos && s.coverUrl"
+            :src="s.coverUrl"
+            :alt="coverAlt(s)"
+            class="session-list-cover"
           />
-          <SessionCard :session="s" :profile="profile.context" />
+          <div class="list-card-entry">
+            <input
+              v-if="profile.isAdmin && selected"
+              type="checkbox"
+              class="list-card-checkbox"
+              :checked="selected.includes(s.id)"
+              @change="toggle(s.id)"
+            />
+            <SessionCard :session="s" :profile="profile.context" />
+          </div>
         </div>
       </div>
     </template>
@@ -37,6 +45,8 @@ const props = defineProps<{
   sessions: Session[]
   loading?: boolean
   selected?: number[]
+  /** When Photos filter is Public photos — show cover image above each card. */
+  showCoverPhotos?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:selected': [ids: number[]] }>()
@@ -58,6 +68,12 @@ function toggle(id: number) {
     : [...props.selected, id]
   emit('update:selected', next)
 }
+
+function coverAlt(s: Session): string {
+  const date = new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const name = s.displayName || s.groupName || s.groupKey || 'Session'
+  return `${name}, ${date}`
+}
 </script>
 
 <style scoped>
@@ -67,5 +83,22 @@ function toggle(id: number) {
   padding: 1.25rem 1.5rem 1.5rem;
   color: var(--color-text-muted);
   font-size: 0.9rem;
+}
+
+.session-list-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--color-dtv-dark);
+}
+
+.list-card-entry {
+  position: relative;
+}
+
+.list-card-entry > .list-card-checkbox {
+  top: 1rem;
+  right: 1.5rem;
 }
 </style>

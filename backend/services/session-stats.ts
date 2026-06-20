@@ -1,5 +1,11 @@
 /**
  * Session stats refresh — shared logic used by the admin endpoint and the nightly Eventbrite sync.
+ *
+ * Always computes from live SharePoint/list data. Stored Stats are only used to skip
+ * unchanged Graph writes — never to decide what to fetch or how to classify media.
+ *
+ * Callers that need accurate session "new" counts should run profile stats refresh first
+ * (session new-count uses profile.sessionIds). This module does not run profile stats itself.
  */
 
 import { sessionsRepository } from './repositories/sessions-repository';
@@ -7,8 +13,9 @@ import { entriesRepository } from './repositories/entries-repository';
 import { groupsRepository } from './repositories/groups-repository';
 import { profilesRepository } from './repositories/profiles-repository';
 import { sharePointClient } from './sharepoint-client';
-import { calculateSessionStats, safeParseLookupId, parseSessionLimits } from './data-layer';
-import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, ENTRY_CANCELLED, PROFILE_LOOKUP } from './field-names';
+import { calculateSessionStats, safeParseLookupId, mediaStatsFromFolderItems } from './data-layer';
+import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, SESSION_COVER_MEDIA, ENTRY_CANCELLED } from './field-names';
+import type { MediaStatus } from '../../types/api-responses';
 
 export interface SessionStatsRefreshResult {
   total: number;
@@ -17,20 +24,18 @@ export interface SessionStatsRefreshResult {
   errors: string[];
 }
 
-export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResult> {
-  const start = Date.now();
-  console.log('[Stats] Starting session stats refresh');
+function storedStatsMatch(
+  existing: Record<string, unknown>,
+  newStats: Record<string, unknown>,
+): boolean {
+  const keys = [
+    'count', 'hours', 'media', 'mediaStatus', 'new', 'child',
+    'regular', 'cancelledRegular', 'eventbrite',
+  ] as const;
+  return keys.every(k => existing[k] === newStats[k]);
+}
 
-  const [sessionsRaw, entriesRaw, groupsRaw, profilesRaw] = await Promise.all([
-    sessionsRepository.getAll(),
-    entriesRepository.getAll(),
-    groupsRepository.getAll(),
-    profilesRepository.getAll()
-  ]);
-
-  console.log(`[Stats] Fetched ${sessionsRaw.length} sessions, ${entriesRaw.length} entries in ${Date.now() - start}ms`);
-
-  // Build profileId → first sessionId from profile.stats.sessionIds[0]
+function buildProfileFirstSessionMap(profilesRaw: Awaited<ReturnType<typeof profilesRepository.getAll>>): Map<number, number> {
   const profileFirstSessionMap = new Map<number, number>();
   for (const p of profilesRaw) {
     try {
@@ -39,11 +44,69 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
         profileFirstSessionMap.set(p.ID, ps.sessionIds[0]);
     } catch { /* malformed */ }
   }
+  return profileFirstSessionMap;
+}
 
+async function liveMediaStats(
+  mediaDriveId: string,
+  groupKey: string,
+  date: string,
+  coverMediaId: number | null,
+): Promise<{ media: number; mediaStatus: MediaStatus }> {
+  const photos = await sharePointClient.listFolderPhotos(mediaDriveId, `${groupKey}/${date}`);
+  return mediaStatsFromFolderItems(photos, coverMediaId);
+}
+
+/** Recomputes media count + mediaStatus for one session from the live media folder. */
+export async function refreshSessionMediaStats(
+  sessionId: number,
+  groupKey: string,
+  date: string,
+): Promise<void> {
+  const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
+  if (!mediaDriveId) return;
+
+  const spSession = await sessionsRepository.getById(sessionId);
+  if (!spSession) return;
+
+  sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+
+  const coverMediaId = safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null;
+  const { media, mediaStatus } = await liveMediaStats(mediaDriveId, groupKey, date, coverMediaId);
+
+  let existingStats: Record<string, unknown> = {};
+  try {
+    existingStats = JSON.parse(spSession[SESSION_STATS] || '{}');
+  } catch { /* malformed */ }
+
+  await sessionsRepository.updateStats(sessionId, {
+    ...existingStats,
+    media,
+    mediaStatus,
+  });
+}
+
+export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResult> {
+  const start = Date.now();
+  console.log('[Stats] Starting session stats refresh');
+
+  // Bust cached media listings so every session reads the live folder.
+  sharePointClient.clearCacheByPrefix('media_folder_');
+  sharePointClient.clearCacheByPrefix('media-counts-');
+
+  const [sessionsRaw, entriesRaw, groupsRaw, profilesRaw] = await Promise.all([
+    sessionsRepository.getAll(),
+    entriesRepository.getAll(),
+    groupsRepository.getAll(),
+    profilesRepository.getAll(),
+  ]);
+
+  console.log(`[Stats] Fetched ${sessionsRaw.length} sessions, ${entriesRaw.length} entries in ${Date.now() - start}ms`);
+
+  const profileFirstSessionMap = buildProfileFirstSessionMap(profilesRaw);
   const groupKeyMap = new Map(groupsRaw.map(g => [g.ID, (g.Title || '').toLowerCase()]));
   const statsMap = calculateSessionStats(entriesRaw, profileFirstSessionMap);
 
-  // Build per-session cancelled regular counts
   const cancelledRegularMap = new Map<string, number>();
   for (const e of entriesRaw) {
     if (!e[ENTRY_CANCELLED]) continue;
@@ -53,24 +116,6 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
   }
 
   const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
-  const mediaCountsByGroup = new Map<string, Map<string, number>>();
-  if (mediaDriveId) {
-    const uniqueGroupKeys = [...new Set(
-      sessionsRaw
-        .map(s => {
-          const gid = safeParseLookupId(s[GROUP_LOOKUP]);
-          return gid !== undefined ? groupKeyMap.get(gid) : undefined;
-        })
-        .filter((k): k is string => !!k)
-    )];
-    const mediaStart = Date.now();
-    await Promise.all(uniqueGroupKeys.map(async (groupKey) => {
-      const counts = await sharePointClient.listGroupDateCounts(mediaDriveId, groupKey);
-      mediaCountsByGroup.set(groupKey, counts);
-    }));
-    console.log(`[Stats] Media counts fetched for ${uniqueGroupKeys.length} groups in ${Date.now() - mediaStart}ms`);
-  }
-
   const total = sessionsRaw.length;
   let updated = 0;
   const updatedIds: number[] = [];
@@ -85,16 +130,21 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
         const groupKey = gid !== undefined ? groupKeyMap.get(gid) : undefined;
         const date = spSession.Date;
 
-        let mediaCount = 0;
-        if (groupKey && date && mediaCountsByGroup.has(groupKey)) {
-          mediaCount = mediaCountsByGroup.get(groupKey)!.get(date) || 0;
+        let media = 0;
+        let mediaStatus: MediaStatus = 'none';
+        if (mediaDriveId && groupKey && date) {
+          const coverMediaId = safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null;
+          const computed = await liveMediaStats(mediaDriveId, groupKey, date, coverMediaId);
+          media = computed.media;
+          mediaStatus = computed.mediaStatus;
         }
 
         const cancelledRegular = cancelledRegularMap.get(String(spSession.ID)) ?? 0;
         const newStats = {
           count: entryStats?.registrations || 0,
           hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
-          media: mediaCount,
+          media,
+          mediaStatus,
           new: entryStats?.newCount || 0,
           child: entryStats?.childCount || 0,
           regular: entryStats?.regularCount || 0,
@@ -102,22 +152,12 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
           eventbrite: entryStats?.eventbriteCount || 0,
         };
 
-        // Skip if stored stats already match — avoids unnecessary Graph writes
         const stored = spSession[SESSION_STATS];
         if (stored) {
           try {
             const existing = JSON.parse(stored);
-            if (
-              existing.count            === newStats.count &&
-              existing.hours            === newStats.hours &&
-              existing.media            === newStats.media &&
-              existing.new              === newStats.new &&
-              existing.child            === newStats.child &&
-              existing.regular          === newStats.regular &&
-              existing.cancelledRegular === newStats.cancelledRegular &&
-              existing.eventbrite       === newStats.eventbrite
-            ) {
-              return; // unchanged — skip write
+            if (storedStatsMatch(existing, newStats)) {
+              return;
             }
           } catch { /* malformed JSON — fall through to write */ }
         }

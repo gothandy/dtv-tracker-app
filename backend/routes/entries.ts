@@ -38,11 +38,12 @@ import { renderEmail } from '../services/email-renderer';
 import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
+import { refreshSessionMediaStats } from '../services/session-stats';
 import multer from 'multer';
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload';
 
-import type { EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../../types/api-responses';
+import type { MediaStatus, EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../../types/api-responses';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
 
@@ -50,8 +51,11 @@ const router: Router = express.Router();
 
 // Recomputes and saves the Stats field for a single session after an entry change.
 // Called as fire-and-forget after entry writes so the response isn't delayed.
-// existingMedia is extracted from the cached session Stats before the write clears the cache.
-async function computeAndSaveSessionStats(sessionId: number, existingMedia: number = 0): Promise<void> {
+// preservedMedia is extracted from cached session Stats before the write clears the cache.
+async function computeAndSaveSessionStats(
+  sessionId: number,
+  preservedMedia: { media?: number; mediaStatus?: MediaStatus } = {},
+): Promise<void> {
   const start = Date.now();
   const [sessionEntries, profilesRaw] = await Promise.all([
     entriesRepository.getBySessionIds([sessionId]),
@@ -70,17 +74,30 @@ async function computeAndSaveSessionStats(sessionId: number, existingMedia: numb
   const statsMap = calculateSessionStats(sessionEntries, profileFirstSessionMap);
   const entryStats = statsMap.get(String(sessionId));
   const cancelledRegular = sessionEntries.filter(e => e[ENTRY_CANCELLED] && e.Labels?.includes('Regular')).length;
-  await sessionsRepository.updateStats(sessionId, {
+  const statsPayload: Record<string, number | MediaStatus | undefined> = {
     count: entryStats?.registrations || 0,
     hours: entryStats ? Math.round(entryStats.hours * 10) / 10 : 0,
-    media: existingMedia,
+    media: preservedMedia.media ?? 0,
     new: entryStats?.newCount || 0,
     child: entryStats?.childCount || 0,
     regular: entryStats?.regularCount || 0,
     cancelledRegular,
-    eventbrite: entryStats?.eventbriteCount || 0
-  });
+    eventbrite: entryStats?.eventbriteCount || 0,
+  };
+  if (preservedMedia.mediaStatus !== undefined) {
+    statsPayload.mediaStatus = preservedMedia.mediaStatus;
+  }
+  await sessionsRepository.updateStats(sessionId, statsPayload);
   console.log(`[Stats] Session ${sessionId} targeted stats update in ${Date.now() - start}ms`);
+}
+
+function preservedMediaFromStats(raw: string | undefined): { media?: number; mediaStatus?: MediaStatus } {
+  try {
+    const p = JSON.parse(raw || '{}');
+    return { media: p.media, mediaStatus: p.mediaStatus };
+  } catch {
+    return {};
+  }
 }
 
 const upload = multer({
@@ -459,7 +476,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       }
 
       const sessionIdSelf = safeParseLookupId(spEntrySelf[SESSION_LOOKUP]);
-      let existingMediaSelf = 0;
+      let preservedMediaSelf: { media?: number; mediaStatus?: MediaStatus } = {};
       if (sessionIdSelf !== undefined) {
         const spSessionSelf = await sessionsRepository.getById(sessionIdSelf);
         if (!spSessionSelf) {
@@ -471,7 +488,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
           res.status(400).json({ success: false, error: 'Session has already passed' });
           return;
         }
-        try { existingMediaSelf = JSON.parse(spSessionSelf?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+        preservedMediaSelf = preservedMediaFromStats(spSessionSelf[SESSION_STATS]);
       } else {
         res.status(404).json({ success: false, error: 'Session not found' });
         return;
@@ -482,7 +499,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       }
 
       if (sessionIdSelf !== undefined) {
-        computeAndSaveSessionStats(sessionIdSelf, existingMediaSelf).catch(err =>
+        computeAndSaveSessionStats(sessionIdSelf, preservedMediaSelf).catch(err =>
           console.error(`[Stats] Failed session stats for entry ${entryId}:`, err)
         );
       }
@@ -568,10 +585,10 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     // Read session ID + existing media count — direct Graph calls, bypass cache entirely
     const spEntry = await entriesRepository.getById(entryId);
     const sessionId = spEntry ? safeParseLookupId(spEntry[SESSION_LOOKUP]) : undefined;
-    let existingMedia = 0;
+    let preservedMedia: { media?: number; mediaStatus?: MediaStatus } = {};
     if (sessionId !== undefined) {
       const spSession = await sessionsRepository.getById(sessionId);
-      try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+      preservedMedia = preservedMediaFromStats(spSession?.[SESSION_STATS]);
     }
 
     const profileId = spEntry ? safeParseLookupId(spEntry[PROFILE_LOOKUP]) : undefined;
@@ -585,7 +602,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     }
 
     if (sessionId !== undefined) {
-      computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
+      computeAndSaveSessionStats(sessionId, preservedMedia).catch(err =>
         console.error(`[Stats] Failed session stats for entry ${entryId}:`, err)
       );
     }
@@ -635,10 +652,10 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
 
     // Read existing media count before delete clears the cache
     const sessionId = safeParseLookupId(entry[SESSION_LOOKUP]);
-    let existingMedia = 0;
+    let preservedMedia: { media?: number; mediaStatus?: MediaStatus } = {};
     if (sessionId !== undefined) {
       const spSession = await sessionsRepository.getById(sessionId);
-      try { existingMedia = JSON.parse(spSession?.[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+      preservedMedia = preservedMediaFromStats(spSession?.[SESSION_STATS]);
     }
 
     const profileId = safeParseLookupId(entry[PROFILE_LOOKUP]);
@@ -646,7 +663,7 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
     await entriesRepository.delete(entryId);
 
     if (sessionId !== undefined) {
-      computeAndSaveSessionStats(sessionId, existingMedia).catch(err =>
+      computeAndSaveSessionStats(sessionId, preservedMedia).catch(err =>
         console.error(`[Stats] Failed targeted update for session ${sessionId}:`, err)
       );
     }
@@ -732,12 +749,11 @@ router.post('/sessions/:group/:date/entries', async (req: Request, res: Response
     const entryNotes = typeof notes === 'string' && notes.trim() ? notes : undefined;
     if (entryNotes) fields.Notes = entryNotes;
 
-    let existingMedia = 0;
-    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    const preservedMedia = preservedMediaFromStats(spSession[SESSION_STATS]);
 
     const id = await entriesRepository.create(fields);
 
-    computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+    computeAndSaveSessionStats(spSession.ID, preservedMedia).catch(err =>
       console.error(`[Stats] Failed session stats for entry ${id}:`, err)
     );
     computeAndSaveProfileStats(volunteerId).catch(err =>
@@ -863,8 +879,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     }
 
     // Update stats in dependency order: Profile → Session
-    let existingMedia = 0;
-    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    const preservedMedia = preservedMediaFromStats(spSession[SESSION_STATS]);
 
     await Promise.all([...existingVolunteerIds].map(vid =>
       computeAndSaveProfileStats(vid).catch(err =>
@@ -872,7 +887,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       )
     ));
 
-    await computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+    await computeAndSaveSessionStats(spSession.ID, preservedMedia).catch(err =>
       console.error(`[Stats] Failed session stats after refresh:`, err)
     );
 
@@ -913,10 +928,9 @@ router.post('/sessions/:group/:date/stats', async (req: Request, res: Response) 
       return;
     }
 
-    let existingMedia = 0;
-    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    const preservedMedia = preservedMediaFromStats(spSession[SESSION_STATS]);
 
-    await computeAndSaveSessionStats(spSession.ID, existingMedia);
+    await computeAndSaveSessionStats(spSession.ID, preservedMedia);
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error updating session stats:', error);
@@ -950,8 +964,7 @@ router.delete('/sessions/:group/:date/unchecked-entries', async (req: Request, r
     const sessionEntries = rawEntries.filter(e => safeParseLookupId(e[SESSION_LOOKUP]) === spSession.ID);
     const unchecked = sessionEntries.filter(e => !e.Checked);
 
-    let existingMedia = 0;
-    try { existingMedia = JSON.parse(spSession[SESSION_STATS] || '{}').media || 0; } catch { /* ignore */ }
+    const preservedMedia = preservedMediaFromStats(spSession[SESSION_STATS]);
 
     const uncheckedProfileIds = unchecked
       .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
@@ -960,7 +973,7 @@ router.delete('/sessions/:group/:date/unchecked-entries', async (req: Request, r
     await Promise.all(unchecked.map(e => entriesRepository.delete(e.ID)));
 
     if (unchecked.length > 0) {
-      computeAndSaveSessionStats(spSession.ID, existingMedia).catch(err =>
+      computeAndSaveSessionStats(spSession.ID, preservedMedia).catch(err =>
         console.error(`[Stats] Failed targeted update after removing no-shows for session ${spSession.ID}:`, err)
       );
       for (const vid of uncheckedProfileIds) {
@@ -1036,7 +1049,8 @@ router.get('/entries/:id/upload-context', async (req: Request, res: Response) =>
       date: spSession.Date,
       groupKey: group?.lookupKeyName || '',
       groupName: group?.displayName || group?.lookupKeyName || '',
-      profileName: profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer'
+      profileName: profile?.Title || rawEntry[PROFILE_DISPLAY] || 'Volunteer',
+      uploadsPublicDefault: req.session.user?.role === 'admin' || req.session.user?.role === 'checkin',
     };
 
     res.json({ success: true, data } as ApiResponse<EntryUploadContextResponse>);
@@ -1108,6 +1122,8 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
 
     const groupKey = (group?.lookupKeyName || '').toLowerCase();
     const date = spSession.Date;
+    const role = req.session.user?.role;
+    const uploadsPublicDefault = role === 'admin' || role === 'checkin';
     const folderPath = `${groupKey}/${date}`;
     let uploaded = 0;
 
@@ -1119,7 +1135,7 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       const takenAt = exifDate(file.buffer) ?? new Date();
       const filename = mediaFilename(file.originalname, profileName, takenAt);
       const uploadedItem = await sharePointClient.uploadFile(driveId, `${folderPath}/${filename}`, file.buffer, file.mimetype);
-      await sharePointClient.updateMediaItemFields(driveId, uploadedItem.id, { IsPublic: false });
+      await sharePointClient.updateMediaItemFields(driveId, uploadedItem.id, { IsPublic: uploadsPublicDefault });
       uploaded++;
     }
 
@@ -1128,14 +1144,9 @@ router.post('/entries/:id/photos', upload.array('photos', 10), async (req: Reque
       sharePointClient.clearCacheByPrefix(`media-counts-${groupKey}`);
       // Update session Stats with fresh media count (fire-and-forget)
       if (sessionId !== undefined) {
-        (async () => {
-          try {
-            const mediaCount = await sharePointClient.getSessionMediaCount(driveId, groupKey, date);
-            await computeAndSaveSessionStats(sessionId, mediaCount);
-          } catch (err) {
-            console.error(`[Stats] Failed targeted update after upload for session ${sessionId}:`, err);
-          }
-        })();
+        refreshSessionMediaStats(sessionId, groupKey, date).catch(err => {
+          console.error(`[Stats] Failed targeted update after upload for session ${sessionId}:`, err);
+        });
       }
     }
 

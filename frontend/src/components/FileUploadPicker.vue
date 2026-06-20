@@ -79,7 +79,7 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits<{ done: [uploadedCount: number] }>()
+const emit = defineEmits<{ done: [uploadedCount: number]; selectionChange: [files: File[]] }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
@@ -97,6 +97,10 @@ function statusLabel(status: FileUploadItemStatus) {
   return 'Failed'
 }
 
+function emitSelection() {
+  emit('selectionChange', files.value.map(f => f.file))
+}
+
 function addFiles(incoming: FileList | null) {
   if (!incoming || uploading.value) return
   for (const file of Array.from(incoming)) {
@@ -104,6 +108,7 @@ function addFiles(incoming: FileList | null) {
       files.value.push({ file, name: file.name, status: 'pending' })
     }
   }
+  emitSelection()
 }
 
 function onDrop(e: DragEvent) {

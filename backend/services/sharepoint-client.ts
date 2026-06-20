@@ -870,13 +870,20 @@ export class SharePointClient {
       const token = await this.getAccessToken();
       const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
       // Include listItem to get SharePoint list item ID (for CoverMedia lookup) and custom columns
-      const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file&$expand=thumbnails,listItem($select=id;$expand=fields($select=Title,IsPublic))`;
+      let url: string | undefined =
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${encodedPath}:/children?$select=id,name,webUrl,file&$expand=thumbnails,listItem($select=id;$expand=fields($select=Title,IsPublic))&$top=999`;
 
-      const response = await axios.get(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const rawItems: any[] = [];
 
-      const result = (response.data.value as any[])
+      while (url) {
+        const response = await axios.get(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        rawItems.push(...(response.data.value as any[]));
+        url = response.data['@odata.nextLink'] as string | undefined;
+      }
+
+      const result = rawItems
         .filter(item => item.file?.mimeType?.startsWith('image/') || item.file?.mimeType?.startsWith('video/'))
         .map(item => ({
           id: item.id as string,

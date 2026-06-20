@@ -26,6 +26,8 @@ Path derived from the session's group key and date — browsable directly in Sha
 
 Upload page at `/upload?entryId=:id`. Requires authentication — self-service users can upload to their own entries; Admin and Check In can upload to any entry.
 
+**Default visibility:** self-service uploads are saved **private** (`IsPublic: false`); admin and check-in uploads default to **public** (`IsPublic: true`). Set in `POST /api/entries/:id/photos` from session role.
+
 Accepted formats: photos (JPG, PNG, WebP, HEIC) and short videos (MP4, MOV). Up to 10 files, 10 MB each.
 
 Capture date is extracted server-side from EXIF data (images) or MP4/MOV container metadata (videos) and used when writing the file to SharePoint. Implementation: `media-upload.ts`.
@@ -34,9 +36,11 @@ Completion screen shows file count and links to the session gallery.
 
 ## Gallery
 
-Session detail page shows a photo/video gallery with an inline lightbox. Rendered from `GET /api/media?groupKey=&date=`, which lists files from the session's folder in the Media library.
+Session detail page shows a photo gallery with an inline lightbox. Rendered from `GET /api/media?groupKey=&date=`, which lists files from the session's folder in the Media library.
 
-Videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect).
+**Photos-only in the app today:** session stats, list filters, and the detail carousel all ignore videos. Videos can be uploaded and stored in SharePoint but are invisible in the UI until [#244](https://github.com/gothandy/dtv-tracker-app/issues/244) (carousel + playback).
+
+Videos play inline in the lightbox via `GET /api/media/:itemId/stream` (Graph API `/content` redirect) — planned when #244 is implemented.
 
 Public users see only items marked `IsPublic`. The `name` and `webUrl` fields (which contain the uploader's name in the filename) are stripped from public API responses.
 

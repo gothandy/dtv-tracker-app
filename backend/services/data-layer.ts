@@ -27,7 +27,45 @@ import {
   PROFILE_LOOKUP, PROFILE_DISPLAY,
   SESSION_NOTES, SESSION_LIMITS, SESSION_TIME, SESSION_LENGTH,
 } from './field-names';
-import type { SessionStats } from '../../types/api-responses';
+import type { MediaStatus, SessionStats } from '../../types/api-responses';
+
+const MEDIA_STATUS_VALUES = new Set<MediaStatus>(['none', 'allPrivate', 'noCover', 'coverPrivate', 'public']);
+
+function parseMediaStatus(raw: unknown): MediaStatus | undefined {
+  return typeof raw === 'string' && MEDIA_STATUS_VALUES.has(raw as MediaStatus)
+    ? raw as MediaStatus
+    : undefined;
+}
+
+/** Classifies session media for the sessions list filter (mutually exclusive states). */
+export function deriveMediaStatus(
+  mediaCount: number,
+  publicMediaCount: number,
+  coverMediaId: number | null | undefined,
+  coverIsPublic: boolean,
+): MediaStatus {
+  if (mediaCount === 0) return 'none';
+  if (publicMediaCount === 0) return 'allPrivate';
+  if (coverMediaId != null && coverIsPublic) return 'public';
+  if (publicMediaCount > 0 && coverMediaId == null) return 'noCover';
+  return 'coverPrivate';
+}
+
+export function mediaStatsFromFolderItems(
+  items: { listItemId: number; isPublic: boolean; mimeType: string }[],
+  coverMediaId: number | null | undefined,
+): { media: number; mediaStatus: MediaStatus } {
+  // Photos only — videos in the folder are ignored until session carousel supports them (#244).
+  const images = items.filter(i => i.mimeType.startsWith('image/'));
+  const imageCount = images.length;
+  const publicImageCount = images.filter(p => p.isPublic).length;
+  const coverIsPublic = coverMediaId != null
+    && images.some(p => p.listItemId === coverMediaId && p.isPublic);
+  return {
+    media: imageCount,
+    mediaStatus: deriveMediaStatus(imageCount, publicImageCount, coverMediaId, coverIsPublic),
+  };
+}
 
 /** Parses the session Stats JSON field into a typed SessionStats object. */
 export function parseSessionStats(raw: string | undefined | null): SessionStats {
@@ -42,6 +80,7 @@ export function parseSessionStats(raw: string | undefined | null): SessionStats 
       cancelledRegular: p.cancelledRegular || undefined,
       eventbrite: p.eventbrite || undefined,
       media: p.media || undefined,
+      mediaStatus: parseMediaStatus(p.mediaStatus),
     };
   } catch {
     return { count: 0, hours: 0 };

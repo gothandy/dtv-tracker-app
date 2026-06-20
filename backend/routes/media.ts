@@ -4,8 +4,21 @@ import { Readable } from 'stream';
 import { sharePointClient } from '../services/sharepoint-client';
 import { mediaDriveId } from '../services/media-upload';
 import { requireAdmin } from '../middleware/require-admin';
+import { sessionsRepository } from '../services/repositories/sessions-repository';
+import { refreshSessionMediaStats } from '../services/session-stats';
 
 const router: Router = express.Router();
+
+function sanitisePathSegment(value: string, pattern: RegExp): string {
+  return (value || '').replace(pattern, '');
+}
+
+async function refreshMediaStatsForSession(groupKey: string, date: string): Promise<void> {
+  if (!groupKey || !date) return;
+  const spSession = await sessionsRepository.getBySlug(groupKey, date);
+  if (!spSession) return;
+  await refreshSessionMediaStats(spSession.ID, groupKey, date);
+}
 
 // Batch media count by session folder. Accepts comma-separated groupKey/date paths;
 // returns non-zero counts keyed by path. Makes one Graph call per unique group key.
@@ -141,6 +154,17 @@ router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response)
   try {
     const driveId = mediaDriveId();
     await sharePointClient.updateMediaItemFields(driveId, String(req.params.itemId), fields);
+    const groupKey = sanitisePathSegment(req.query.groupKey as string, /[^a-zA-Z0-9-]/g);
+    const date = sanitisePathSegment(req.query.date as string, /[^0-9-]/g);
+    if (groupKey && date) {
+      sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+      sharePointClient.clearCacheKey(`media-counts-${groupKey}`);
+      try {
+        await refreshMediaStatsForSession(groupKey, date);
+      } catch (err) {
+        console.error(`[Stats] Failed media stats refresh after PATCH for ${groupKey}/${date}:`, err);
+      }
+    }
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error updating media item:', error);
@@ -155,7 +179,15 @@ router.delete('/media/:itemId', requireAdmin, async (req: Request, res: Response
   try {
     const driveId = mediaDriveId();
     await sharePointClient.deleteMediaItem(driveId, String(req.params.itemId));
-    if (groupKey && date) sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+    if (groupKey && date) {
+      sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
+      sharePointClient.clearCacheKey(`media-counts-${groupKey}`);
+      try {
+        await refreshMediaStatsForSession(groupKey, date);
+      } catch (err) {
+        console.error(`[Stats] Failed media stats refresh after DELETE for ${groupKey}/${date}:`, err);
+      }
+    }
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting media item:', error);
