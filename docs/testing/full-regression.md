@@ -575,7 +575,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] **No cover photo**: at least one public image, no cover lookup (`mediaStatus=noCover`, no `coverUrl`)
 - [ ] If the active tag is not present in the newly selected group, tag is auto-cleared
 - [ ] "Select all" / "Deselect all" respects current visible sessions
-- [ ] "Media Public" enabled when ≥1 session checked; confirm modal → `POST /api/sessions/bulk-media-public` with `{ sessionIds }` → private media in those folders marked public; sessions list refreshes
+- [ ] "Make Public" enabled when ≥1 session checked; confirm modal → `POST /api/sessions/bulk-media-public` with `{ sessionIds }` → private media in those folders marked public; sessions list refreshes
 - [ ] Closing Advanced clears selection and hides checkboxes
 
 ### L4. Sort

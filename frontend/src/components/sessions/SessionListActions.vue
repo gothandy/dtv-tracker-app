@@ -7,7 +7,7 @@
     <div class="list-actions-buttons">
       <AppButton label="Add Tags" icon="add" mode="icon-responsive" :disabled="!selectedSessions.length" @click="emit('add-tags')" />
       <AppButton label="Update Project" icon="save" mode="icon-responsive" :disabled="!selectedSessions.length" @click="emit('update-project')" />
-      <AppButton label="Media Public" icon="uploadphoto" mode="icon-responsive" :disabled="!selectedSessions.length" :working="mediaPublicWorking" @click="emit('media-public')" />
+      <AppButton label="Make Public" icon="uploadphoto" mode="icon-responsive" :disabled="!selectedSessions.length" :working="mediaPublicWorking" @click="emit('media-public')" />
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="!selectedSessions.length" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
       <AppButton label="Add session" icon="add" mode="icon-only" @click="emit('add-session')" />
