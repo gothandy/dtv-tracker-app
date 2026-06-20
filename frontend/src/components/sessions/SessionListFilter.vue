@@ -22,7 +22,7 @@
       <option v-if="profile?.hasCheckInAccess" value="none">No photos</option>
       <option v-if="profile?.hasCheckInAccess" value="allPrivate">All photos private</option>
       <option v-if="profile?.hasCheckInAccess" value="noCover">No cover photo</option>
-      <option value="public">Public cover</option>
+      <option value="public">Public photos</option>
     </select>
     <TermPicker
       v-model="tagLabel"

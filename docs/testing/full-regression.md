@@ -567,7 +567,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Tag dropdown (tree picker): shows only tags present in sessions matching current FY + search + group + project
 - [ ] Selecting a group, project, or tag narrows the other dropdown options; clearing one filter re-expands the others
 - [ ] Project filter in URL as `?project=` (`__none__` or project key); cleared when that project has no sessions under the current FY/filters
-- [ ] Photos filter: **All sessions** (default); **Public cover** visible to everyone; **No photos**, **All photos private**, **No cover photo** visible to check-in/admin only
+- [ ] Photos filter: **All sessions** (default); **Public photos** visible to everyone; **No photos**, **All photos private**, **No cover photo** visible to check-in/admin only
+- [ ] **Public photos** filter (`media=public`): each session card shows cover image above the card (4:3 crop); filter still requires public cover selected in stats
 - [ ] Photos filter URL param `?media=` (`none`, `allPrivate`, `noCover`, `public`); trusted-only values ignored for public users
 - [ ] Photos filter only matches stored `stats.mediaStatus` (run session stats refresh after deploy to backfill)
 - [ ] **No photos** (`media=none`): no images in folder — includes empty folders and video-only sessions (videos ignored in stats until #244)

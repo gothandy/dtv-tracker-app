@@ -830,12 +830,13 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
         process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
       );
     }
-    // Cover image changed — bust sessions listing cache so coverUrl updates immediately
+    // Cover image changed — recompute media stats before responding so list filters stay in sync
     if (SESSION_COVER_MEDIA in fields) {
-      sharePointClient.clearCacheByPrefix('sessions_FY');
-      refreshSessionMediaStats(spSession.ID, groupKey, dateParam).catch(err =>
-        console.error(`[Stats] Failed media stats refresh after cover change for session ${spSession.ID}:`, err)
-      );
+      try {
+        await refreshSessionMediaStats(spSession.ID, groupKey, dateParam);
+      } catch (err) {
+        console.error(`[Stats] Failed media stats refresh after cover change for session ${spSession.ID}:`, err);
+      }
     }
 
     const newDate = fields.Date || dateParam;

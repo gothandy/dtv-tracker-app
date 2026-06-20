@@ -13,7 +13,12 @@
       @media-public="showMediaPublicModal = true"
       @add-session="showAddSession = true"
     />
-    <SessionListResults :sessions="filtered" :loading="store.loading" v-model:selected="selected" />
+    <SessionListResults
+      :sessions="filtered"
+      :loading="store.loading"
+      :show-cover-photos="showCoverPhotos"
+      v-model:selected="selected"
+    />
 
     <SessionAddTagsModal
       v-if="showTagModal"
@@ -57,6 +62,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
@@ -73,18 +79,19 @@ import { useGroupListStore } from '../stores/groupList'
 import { useProjectListStore } from '../stores/projectList'
 import type { ProjectItem } from './modals/SessionEditModal.vue'
 import { useViewer } from '../composables/useViewer'
-import { useRouter } from 'vue-router'
 import { sessionPath } from '../router'
 import type { Session } from '../types/session'
 import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 usePageTitle('Sessions')
 
+const route = useRoute()
 const store = useSessionListStore()
 const groupsStore = useGroupListStore()
 const projectsStore = useProjectListStore()
 const profile = useViewer()
 const router = useRouter()
+const showCoverPhotos = computed(() => route.query.media === 'public')
 const filtered = ref<Session[]>([])
 const selected = ref<number[]>([])
 const showTagModal = ref(false)

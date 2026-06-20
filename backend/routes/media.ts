@@ -159,9 +159,11 @@ router.patch('/media/:itemId', requireAdmin, async (req: Request, res: Response)
     if (groupKey && date) {
       sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
       sharePointClient.clearCacheKey(`media-counts-${groupKey}`);
-      refreshMediaStatsForSession(groupKey, date).catch(err =>
-        console.error(`[Stats] Failed media stats refresh after PATCH for ${groupKey}/${date}:`, err)
-      );
+      try {
+        await refreshMediaStatsForSession(groupKey, date);
+      } catch (err) {
+        console.error(`[Stats] Failed media stats refresh after PATCH for ${groupKey}/${date}:`, err);
+      }
     }
     res.json({ success: true });
   } catch (error: any) {
@@ -180,9 +182,11 @@ router.delete('/media/:itemId', requireAdmin, async (req: Request, res: Response
     if (groupKey && date) {
       sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
       sharePointClient.clearCacheKey(`media-counts-${groupKey}`);
-      refreshMediaStatsForSession(groupKey, date).catch(err =>
-        console.error(`[Stats] Failed media stats refresh after DELETE for ${groupKey}/${date}:`, err)
-      );
+      try {
+        await refreshMediaStatsForSession(groupKey, date);
+      } catch (err) {
+        console.error(`[Stats] Failed media stats refresh after DELETE for ${groupKey}/${date}:`, err);
+      }
     }
     res.json({ success: true });
   } catch (error: any) {
