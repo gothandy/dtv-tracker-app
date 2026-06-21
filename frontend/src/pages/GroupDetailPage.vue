@@ -259,10 +259,10 @@ watchEffect(async () => {
   }
 })
 
-function onSelectedBarClick() {
+function onSelectedBarClick(fy: string) {
   const key = store.group?.key
   if (!key) return
-  router.push({ path: '/sessions', query: { fy: 'all', group: key } })
+  router.push({ path: '/sessions', query: { fy, group: key, media: 'public' } })
 }
 
 function onTagClick(_termGuid: string, label: string) {

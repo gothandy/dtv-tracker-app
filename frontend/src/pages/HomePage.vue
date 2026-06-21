@@ -317,8 +317,8 @@ watchEffect(async () => {
   }
 })
 
-function onSelectedBarClick() {
-  router.push({ path: '/sessions', query: { fy: 'all' } })
+function onSelectedBarClick(fy: string) {
+  router.push({ path: '/sessions', query: { fy, media: 'public' } })
 }
 
 function onTagClick(_termGuid: string, label: string) {
