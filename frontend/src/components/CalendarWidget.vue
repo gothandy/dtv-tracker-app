@@ -201,6 +201,16 @@ function dateKey(day: number): string {
   return `${currentYear.value}-${m}-${d}`
 }
 
+function isValidDateKey(key: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key)
+  if (!match) return false
+  const y = Number(match[1])
+  const m = Number(match[2])
+  const d = Number(match[3])
+  const date = new Date(y, m - 1, d)
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d
+}
+
 function cellClasses(day: number): string[] {
   const key = dateKey(day)
   const hasSession = sessionIndex.value.has(key)
@@ -212,8 +222,10 @@ function cellClasses(day: number): string[] {
     'relative aspect-square w-full flex flex-col items-center justify-center text-sm select-none',
     isToday ? 'font-bold' : '',
     hasSession && !isSelected ? 'bg-dtv-gold text-white cursor-pointer hover:brightness-110' : '',
-    isSelected ? '!bg-dtv-green !text-white cursor-pointer' : '',
-    !hasSession ? 'bg-white text-dtv-dark/40 cursor-default' : '',
+    isSelected ? '!bg-dtv-green !text-white' : '',
+    isSelected && hasSession ? 'cursor-pointer' : '',
+    !hasSession && !isSelected ? 'bg-white text-dtv-dark/40 cursor-default' : '',
+    !hasSession && isSelected ? 'cursor-default' : '',
     hasDot ? 'pb-2' : '',
   ].filter(Boolean)
 }
@@ -230,14 +242,19 @@ function handleDayClick(day: number) {
   if (belowBreakpointMd()) el.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function selectDate(key: string) {
-  if (!sessionIndex.value.has(key)) return
+function setSelectedDate(key: string) {
+  if (!isValidDateKey(key)) return
   selectedKey.value = key
   const [y, m] = key.split('-').map(Number)
   currentYear.value = y
   currentMonth.value = m - 1
   emit('update:modelValue', key)
-  emit('select', sessionIndex.value.get(key)!)
+  emit('select', sessionIndex.value.get(key) ?? [])
+}
+
+function selectDate(key: string) {
+  if (!sessionIndex.value.has(key)) return
+  setSelectedDate(key)
 }
 
 function navigateMonth(delta: number) {
@@ -273,17 +290,19 @@ function findDefaultKey(): string | null {
 }
 
 watch(() => props.modelValue, (val) => {
-  if (val && val !== selectedKey.value) selectDate(val)
+  if (val && val !== selectedKey.value && isValidDateKey(val)) setSelectedDate(val)
   else if (!val) selectedKey.value = null
 })
 
 // Re-run selection when sessions load (store fetch completes after mount)
 watch(() => props.sessions, () => {
+  if (props.modelValue && isValidDateKey(props.modelValue)) {
+    setSelectedDate(props.modelValue)
+    return
+  }
   if (selectedKey.value && sessionIndex.value.has(selectedKey.value)) {
-    // Sessions just arrived — re-emit for the already-selected key (e.g. from URL)
-    selectDate(selectedKey.value)
+    setSelectedDate(selectedKey.value)
   } else {
-    // No valid selection — pick the best default for these sessions
     selectedKey.value = null
     const key = findDefaultKey()
     if (key) selectDate(key)
@@ -291,14 +310,13 @@ watch(() => props.sessions, () => {
 })
 
 onMounted(() => {
+  if (props.modelValue && isValidDateKey(props.modelValue)) {
+    setSelectedDate(props.modelValue)
+    return
+  }
   if (!selectedKey.value) {
     const key = findDefaultKey()
     if (key) selectDate(key)
-  } else {
-    const [y, m] = selectedKey.value.split('-').map(Number)
-    currentYear.value = y
-    currentMonth.value = m - 1
-    emit('select', sessionIndex.value.get(selectedKey.value) ?? [])
   }
 })
 </script>

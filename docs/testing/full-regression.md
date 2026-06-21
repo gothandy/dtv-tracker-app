@@ -529,6 +529,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 **As a public or read-only user:**
 - [ ] Calendar, Next/Last, and session cards behave exactly as before — no personalisation applied
 
+**Calendar date query (`/?date=YYYY-MM-DD`):**
+- [ ] Valid date with sessions opens that month with the date selected and sessions listed
+- [ ] Valid date without sessions opens that month with the date highlighted (green); session panel empty; empty dates still not clickable
+- [ ] Invalid or missing `date` query falls back to default next/last session selection
+
 **Word cloud:**
 - [ ] Homepage loads with top 5 tags visible by default (cloud still shows, just limited)
 - [ ] Clicking Show History expands the full word cloud alongside the FY bar chart
@@ -583,6 +588,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### L20. Taxonomy tag word cloud
 - [ ] **Homepage**: Word cloud card appears below FY stats (requires sessions tagged with taxonomy tags); font sizes vary by hours; selecting a different FY from the bar chart updates the cloud
+- [ ] **Homepage**: Clicking the already-selected FY bar navigates to `/sessions?fy=FY20XX&media=public` for that year (cover photos visible)
 - [ ] **Group detail**: Word cloud card appears between FY bar chart and sessions list; selecting a different FY updates the cloud; selecting "All" hides the FY param (shows all-time for that group)
 - [ ] **Profile detail**: Word cloud card appears between Groups card and Records card; FY filter change updates the cloud; selecting a group from the group dropdown updates the cloud (scoped to that group)
 - [ ] **Hierarchy**: A parent tag (e.g. "DH") appears larger/darker than its children (e.g. "Sheepskull"), which appear larger than grandchildren — depth shown via colour and size
