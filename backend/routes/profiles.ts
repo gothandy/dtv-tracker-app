@@ -23,8 +23,11 @@ import {
   profileSlug,
   profileIdFromSlug,
   toMatchName,
-  parseEmails
+  parseEmails,
 } from '../services/data-layer';
+import { renderEmail } from '../services/email-renderer';
+import { buildProfileTemplateVars, PROFILE_EMAIL_TEMPLATES, type ProfileEmailTemplate } from '../services/email-vars';
+import { sendEmail } from '../services/graph-mail';
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
@@ -36,7 +39,7 @@ import {
 } from '../services/field-names';
 import type { ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
-import type { ApiResponse } from '../../types/sharepoint';
+import type { ApiResponse, SharePointProfile } from '../../types/sharepoint';
 
 const router: Router = express.Router();
 
@@ -497,6 +500,98 @@ router.post('/records/bulk', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error bulk updating records:', error);
     res.status(500).json({ success: false, error: 'Failed to bulk update records', message: error.message });
+  }
+});
+
+router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
+  try {
+    if (!process.env.MAIL_SENDER) {
+      res.status(503).json({ success: false, error: 'MAIL_SENDER env var is not set' });
+      return;
+    }
+
+    const { profileIds, template, preview } = req.body as {
+      profileIds?: unknown;
+      template?: string;
+      preview?: boolean;
+    };
+
+    if (!Array.isArray(profileIds) || profileIds.length === 0) {
+      res.status(400).json({ success: false, error: 'profileIds array is required' });
+      return;
+    }
+    const templateName = (template as ProfileEmailTemplate) || 'membership-invite';
+    if (!PROFILE_EMAIL_TEMPLATES.includes(templateName)) {
+      res.status(400).json({ success: false, error: `Unknown template: ${template}` });
+      return;
+    }
+
+    const allProfiles = await profilesRepository.getAll();
+    const allRecords = await recordsRepository.getAll();
+    const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+
+    const recordsForProfile = (profileId: number) =>
+      allRecords.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId);
+
+    const targets: Array<{ profile: SharePointProfile; email: string }> = [];
+    let skipped = 0;
+
+    for (const profileId of profileIds) {
+      const id = parseInt(String(profileId), 10);
+      if (isNaN(id)) {
+        skipped++;
+        continue;
+      }
+      const spProfile = allProfiles.find(p => p.ID === id);
+      if (!spProfile || spProfile.IsGroup) {
+        skipped++;
+        continue;
+      }
+      const primaryEmail = parseEmails(spProfile.Email)[0];
+      if (!primaryEmail) {
+        skipped++;
+        continue;
+      }
+      targets.push({ profile: spProfile, email: primaryEmail });
+    }
+
+    if (!targets.length) {
+      res.status(400).json({ success: false, error: 'No selected profiles have an email address' });
+      return;
+    }
+
+    const renderAndSend = async (profile: SharePointProfile, toEmail: string) => {
+      const vars = buildProfileTemplateVars(
+        templateName,
+        profile,
+        base,
+        recordsForProfile(profile.ID),
+      );
+      const rendered = await renderEmail(templateName, vars);
+      await sendEmail({ to: toEmail, subject: rendered.subject, html: rendered.html, text: rendered.text });
+    };
+
+    if (preview === true) {
+      const adminEmail = req.session.user?.email;
+      if (!adminEmail) {
+        res.status(400).json({ success: false, error: 'No email address on your account for preview' });
+        return;
+      }
+      await renderAndSend(targets[0].profile, adminEmail);
+      res.json({ success: true, data: { sent: 1, skipped } } as ApiResponse<{ sent: number; skipped: number }>);
+      return;
+    }
+
+    let sent = 0;
+    for (const { profile, email } of targets) {
+      await renderAndSend(profile, email);
+      sent++;
+    }
+
+    res.json({ success: true, data: { sent, skipped } } as ApiResponse<{ sent: number; skipped: number }>);
+  } catch (error: any) {
+    console.error('Error sending bulk profile email:', error);
+    res.status(500).json({ success: false, error: 'Failed to send email', message: error.message });
   }
 });
 

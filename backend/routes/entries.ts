@@ -35,7 +35,7 @@ import {
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { renderEmail } from '../services/email-renderer';
-import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
+import { buildPreSessionVars, buildPostSessionVars, buildPreAgmVars } from '../services/email-vars';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { refreshSessionMediaStats } from '../services/session-stats';
@@ -321,6 +321,85 @@ router.get('/entries', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching entries list:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch entries', message: error.message });
+  }
+});
+
+router.post('/entries/bulk', async (req: Request, res: Response) => {
+  try {
+    const { profileIds, sessionId } = req.body;
+    if (!Array.isArray(profileIds) || profileIds.length === 0) {
+      res.status(400).json({ success: false, error: 'profileIds array is required' });
+      return;
+    }
+    const sid = parseInt(String(sessionId), 10);
+    if (isNaN(sid)) {
+      res.status(400).json({ success: false, error: 'sessionId is required and must be a number' });
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const [rawSessions, rawProfiles] = await Promise.all([
+      sessionsRepository.getAll(),
+      profilesRepository.getAll(),
+    ]);
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => s.ID === sid);
+    if (!spSession?.Date) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+    if (spSession.Date < today) {
+      res.status(400).json({ success: false, error: 'Session has already passed' });
+      return;
+    }
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profileMap = new Map(profiles.map(p => [p.ID, p]));
+    const requestedIds = profileIds
+      .map((id: unknown) => parseInt(String(id), 10))
+      .filter((id: number) => !isNaN(id));
+
+    const sessionEntries = await entriesRepository.getBySessionIds([sid]);
+    const existingProfileIds = new Set(
+      sessionEntries
+        .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
+        .filter((id): id is number => id !== undefined)
+    );
+
+    const preservedMedia = preservedMediaFromStats(spSession[SESSION_STATS]);
+    let created = 0;
+    let skipped = 0;
+
+    for (const profileId of requestedIds) {
+      const profile = profileMap.get(profileId);
+      if (!profile?.ID || profile.IsGroup) {
+        skipped++;
+        continue;
+      }
+      if (existingProfileIds.has(profileId)) {
+        skipped++;
+        continue;
+      }
+      await entriesRepository.create({
+        [SESSION_LOOKUP]: String(sid),
+        [PROFILE_LOOKUP]: String(profileId),
+      });
+      existingProfileIds.add(profileId);
+      created++;
+      computeAndSaveProfileStats(profileId).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
+      );
+    }
+
+    computeAndSaveSessionStats(sid, preservedMedia).catch(err =>
+      console.error(`[Stats] Failed session stats for bulk entries on session ${sid}:`, err)
+    );
+
+    res.json({ success: true, data: { created, skipped } } as ApiResponse<{ created: number; skipped: number }>);
+  } catch (error: any) {
+    console.error('Error bulk creating entries:', error);
+    res.status(500).json({ success: false, error: 'Failed to bulk create entries', message: error.message });
   }
 });
 
@@ -798,7 +877,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     }
 
     const todayStr = new Date().toISOString().slice(0, 10);
-    if ((spSession.Date || '').slice(0, 10) < todayStr) {
+    if ((spSession.Date || '').slice(0, 10) < todayStr && req.session.user?.role !== 'admin') {
       res.status(400).json({ success: false, error: 'Cannot refresh a past session' });
       return;
     }
@@ -1210,12 +1289,17 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
     }
 
     const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
+    const profileRecords = profileId !== undefined
+      ? await recordsRepository.getByProfile(profileId)
+      : [];
 
     const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
     const templateName = (req.body?.template as string) || 'pre-session';
     const vars = templateName === 'post-session'
-      ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base)
-      : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base);
+      ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base, profileRecords)
+      : templateName === 'pre-agm'
+      ? buildPreAgmVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords)
+      : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords);
     const { subject, html, text } = await renderEmail(templateName, vars);
 
     const preview = req.body?.preview === true;

@@ -118,12 +118,11 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     return sid !== undefined && (sessionDateMap.get(sid) ?? '') > today;
   });
   const hasPrivacyConsent = profileRecordsRaw.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
-  const hasPhotoConsent = profileRecordsRaw.some(r => r.Type === 'Photo Consent' && r.Status === 'Accepted');
   const warnings: Array<{ text: string; url?: string }> = [];
   if (hasDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(thisProfile?.Title || '')}` });
   if (hasMatchNameError) warnings.push({ text: 'Match Name Error' });
   if (hasChildNoAdult) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${profileId}&profileName=${encodeURIComponent(thisProfile?.Title || '')}` });
-  if (!thisProfile?.IsGroup && hasFutureBooking && (!hasPrivacyConsent || !hasPhotoConsent)) {
+  if (!thisProfile?.IsGroup && hasFutureBooking && !hasPrivacyConsent) {
     warnings.push({ text: 'No Consent' });
   }
 
@@ -246,7 +245,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
   }
   const noPhotoIds = new Set(profilesRaw.filter(p => !consentedPhotoIds.has(p.ID)).map(p => p.ID));
 
-  // No Consent: future booking but missing Privacy or Photo consent
+  // No Consent: future booking but missing Accepted Privacy Consent (photo consent is separate — noPhoto badge)
   const futureBookingIds = new Set<number>();
   for (const e of entriesRaw) {
     if (e[ENTRY_CANCELLED]) continue;
@@ -298,7 +297,7 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
         if (possibleDuplicateIds.has(spProfile.ID)) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(spProfile.Title || '')}` });
         if (spProfile.Title && spProfile.MatchName && toMatchName(spProfile.Title) !== spProfile.MatchName) warnings.push({ text: 'Match Name Error' });
         if (childNoAdultIds.has(spProfile.ID)) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${spProfile.ID}&profileName=${encodeURIComponent(spProfile.Title || '')}` });
-        if (!spProfile.IsGroup && futureBookingIds.has(spProfile.ID) && (!consentedPrivacyIds.has(spProfile.ID) || !consentedPhotoIds.has(spProfile.ID))) {
+        if (!spProfile.IsGroup && futureBookingIds.has(spProfile.ID) && !consentedPrivacyIds.has(spProfile.ID)) {
           warnings.push({ text: 'No Consent' });
         }
         if (spProfile.IsGroup && memberIds.has(spProfile.ID)) warnings.push({ text: 'Group + Member' });

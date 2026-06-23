@@ -48,11 +48,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] **Admin user** (in `ADMIN_USERS` env var): all edit/create/delete buttons visible, all API calls succeed
 - [ ] **Check In user** (profile has matching `User` field): admin buttons hidden, check-in controls visible
 - [ ] Check In: check-in checkbox on session detail works (PATCH `/api/entries/:id`)
-- [ ] Check In: Set Hours button on session detail works
+- [ ] Check In: Set Hours button on session detail works (today/future sessions; disabled on past sessions)
 - [ ] Check In: session edit modal shows only Display Name and Description (Group, Date, Eventbrite ID, Delete hidden)
 - [ ] Check In: saving session edit with title/description works (PATCH succeeds)
 - [ ] Check In: regulars checkbox on profile detail works (add/remove)
-- [ ] Check In: Refresh button visible on session detail, can refresh session
+- [ ] Check In: Refresh button visible on session detail; enabled for today/future sessions only (disabled on past sessions)
 - [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In: edit profile button visible, can update name/email
@@ -157,12 +157,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### H12. Set default hours (bulk)
 - [ ] Session detail → "Set Hours" button → modal with hours input (default 3)
 - [ ] Applies to checked-in entries where hours = 0
+- [ ] Admin on past session: Set Hours enabled; applies to all active entries without hours (marks checked in)
+- [ ] Check In on past session: Set Hours disabled when no checked-in entries without hours
 - [ ] Multiple `PATCH /api/entries/:id` calls in parallel
 - [ ] Does not overwrite entries with existing hours
 
 ### H13. Refresh session (bulk)
 - [ ] Session detail → "Refresh" button
 - [ ] `POST /api/sessions/:group/:date/refresh`
+- [ ] Admin on past session: Refresh enabled; Check In on past session: button disabled, API returns 400
 - [ ] Adds missing regulars, syncs Eventbrite attendees (with `EventbriteAttendeeID`), tags #NoPhoto
 - [ ] Shows summary: "Added: X regulars, Y from Eventbrite, Z new profiles, W #NoPhoto"
 
@@ -237,6 +240,21 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] `POST /api/records/bulk` — `{ profileIds, type, status, date? }`
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
+
+### H23b. Bulk send email (admin)
+- [ ] Volunteers page → select profiles with emails → "Send Email" enabled; profiles without email excluded from count
+- [ ] Modal: template dropdown (Membership Invite); preview checkbox defaults on
+- [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
+- [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
+- [ ] Group profiles and profiles without email skipped (`skipped` count in response)
+- [ ] Requires `MAIL_SENDER` env var
+
+### H23c. Bulk add entries (admin)
+- [ ] Volunteers page → select individual profiles → "Add Entries" enabled (groups excluded)
+- [ ] Modal: session dropdown lists future sessions only, next session first (`date — group name`)
+- [ ] `POST /api/entries/bulk` — `{ profileIds, sessionId }`; past session → 400
+- [ ] Profiles already on session skipped (including cancelled bookings — cancellation left in place); returns `{ created, skipped }`
+- [ ] On success: modal closes, selection cleared, profile list reloads
 
 ### H24b. Entries page (admin)
 
@@ -316,8 +334,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### H27b. Profile stats warnings
 - [ ] After `POST /api/profiles/refresh-stats`, a profile whose Title matches another profile has `"Possible Duplicate"` in its stored `Stats.warnings` array (verify in SharePoint or via `GET /api/profiles`)
 - [ ] After refresh, a profile with an active entry containing `#child` in Notes but no `AccompanyingAdultLookupId` has `"Child No Adult"` in `Stats.warnings`; the warning URL includes `profileId` and `profileName` query params
-- [ ] After refresh, a profile with a future booking but no accepted Privacy Consent or Photo Consent has `"No Consent"` in `Stats.warnings`
-- [ ] After refresh, a profile with a future booking and both Privacy and Photo Consent accepted does **not** have `"No Consent"`
+- [ ] After refresh, a profile with a future booking but no accepted Privacy Consent has `"No Consent"` in `Stats.warnings`
+- [ ] After refresh, a profile with a future booking and Accepted Privacy Consent does **not** have `"No Consent"` (Photo Consent Declined is OK — use noPhoto badge instead)
 - [ ] After refresh, a profile with no future bookings does **not** have `"No Consent"` (past sessions only)
 - [ ] After refresh, a clean profile (no duplicates, no unassigned child entries, consent present) has `warnings: []`
 - [ ] Fixing the condition and re-running refresh removes the warning
@@ -394,9 +412,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Arrow-key navigation (left/right) scrolls the carousel
 - [ ] Breadcrumb: Home > Media (Home links to `/`, Media links to `/media/`)
 
-### H32. Pre-session email
-- [ ] Session detail → "Notify" button → `POST /api/entries/:id/notify` — email sent to volunteer
-- [ ] Email renders with correct volunteer name, group name, date, session URL, login URL
+### H32. Session email (pre-session / post-session / pre-agm)
+- [ ] Session detail → "Send Email" → template dropdown includes Pre-Session, Post-Session, Pre-AGM
+- [ ] `POST /api/entries/:id/notify` with `template: pre-session` — email sent to volunteer
+- [ ] Pre-AGM: renders volunteer name, AGM doc links, and session URL (My Tracker link)
+- [ ] Send All sends to each entry with an email address
 - [ ] Description block present when session has notes; absent when no notes
 - [ ] Regular block shown for regular volunteers; absent otherwise
 - [ ] Child block shown when entry has accompanying child name; absent otherwise

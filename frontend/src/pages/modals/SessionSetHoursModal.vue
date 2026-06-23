@@ -9,7 +9,12 @@
     @action="apply"
   >
     <p class="shm-desc">
-      Sets hours for all checked-in entries where hours are not yet recorded.
+      <template v-if="pastSessionAdmin">
+        Sets hours for all active entries where hours are not yet recorded (and marks them checked in).
+      </template>
+      <template v-else>
+        Sets hours for all checked-in entries where hours are not yet recorded.
+      </template>
       {{ entryCount === 1 ? '1 entry' : `${entryCount} entries` }} will be updated.
     </p>
 
@@ -28,7 +33,7 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 
-const props = defineProps<{ entryCount: number; defaultHours: number; working: boolean; error?: string }>()
+const props = defineProps<{ entryCount: number; defaultHours: number; pastSessionAdmin?: boolean; working: boolean; error?: string }>()
 const emit = defineEmits<{ close: []; setHours: [hours: number] }>()
 
 const hours = ref(props.defaultHours)

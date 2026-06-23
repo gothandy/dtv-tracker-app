@@ -42,7 +42,7 @@ Four independent caches (NodeCache, column schema, taxonomy tree, cover image). 
 
 ## Pre-Session Email Notifications
 
-Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Sent via Microsoft Graph Mail using app credentials (`MAIL_SENDER` env var). Sandbox preview at `POST /api/email/render`.
+Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-session`, `post-session`, and `pre-agm`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail using app credentials (`MAIL_SENDER` env var). Sandbox preview at `POST /api/email/render`.
 
 ## Nightly Backup Export
 

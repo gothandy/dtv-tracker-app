@@ -65,6 +65,7 @@ Volunteer attendance records are personal data. The list endpoint is Admin-only.
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/api/entries` | GET | Admin | All entries across all sessions |
+| `/api/entries/bulk` | POST | Admin | Bulk add entries for selected profiles to a future session (skips profiles with any existing entry) |
 | `/api/entries/recent` | GET | Trusted | Recent entries |
 | `/api/entries/refresh-stats` | POST | Admin | Bulk refresh entry stats |
 | `/api/entries/:id` | GET | SS (own) / Trusted | Entry detail with FY hours |
@@ -101,6 +102,7 @@ Consent and governance records are personal data. All write access is Admin-only
 |---|---|---|---|
 | `/api/records/export` | GET | Admin | Export records as CSV |
 | `/api/records/bulk` | POST | Admin | Bulk create or update records |
+| `/api/profiles/bulk-email` | POST | Admin | Bulk send profile email (`membership-invite`) |
 | `/api/records/:id` | PATCH | Admin | Update record |
 | `/api/records/:id` | DELETE | Admin | Delete record |
 
