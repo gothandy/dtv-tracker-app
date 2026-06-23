@@ -238,6 +238,14 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
+### H23b. Bulk send email (admin)
+- [ ] Volunteers page → select profiles with emails → "Send Email" enabled; profiles without email excluded from count
+- [ ] Modal: template dropdown (Membership Invite); preview checkbox defaults on
+- [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
+- [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
+- [ ] Group profiles and profiles without email skipped (`skipped` count in response)
+- [ ] Requires `MAIL_SENDER` env var
+
 ### H24b. Entries page (admin)
 
 - [ ] Admin: "Entries" nav link visible in header; non-admin users (Check In, Self-Service, Public) do not see the link
@@ -316,8 +324,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### H27b. Profile stats warnings
 - [ ] After `POST /api/profiles/refresh-stats`, a profile whose Title matches another profile has `"Possible Duplicate"` in its stored `Stats.warnings` array (verify in SharePoint or via `GET /api/profiles`)
 - [ ] After refresh, a profile with an active entry containing `#child` in Notes but no `AccompanyingAdultLookupId` has `"Child No Adult"` in `Stats.warnings`; the warning URL includes `profileId` and `profileName` query params
-- [ ] After refresh, a profile with a future booking but no accepted Privacy Consent or Photo Consent has `"No Consent"` in `Stats.warnings`
-- [ ] After refresh, a profile with a future booking and both Privacy and Photo Consent accepted does **not** have `"No Consent"`
+- [ ] After refresh, a profile with a future booking but no accepted Privacy Consent has `"No Consent"` in `Stats.warnings`
+- [ ] After refresh, a profile with a future booking and Accepted Privacy Consent does **not** have `"No Consent"` (Photo Consent Declined is OK — use noPhoto badge instead)
 - [ ] After refresh, a profile with no future bookings does **not** have `"No Consent"` (past sessions only)
 - [ ] After refresh, a clean profile (no duplicates, no unassigned child entries, consent present) has `warnings: []`
 - [ ] Fixing the condition and re-running refresh removes the warning
@@ -394,9 +402,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Arrow-key navigation (left/right) scrolls the carousel
 - [ ] Breadcrumb: Home > Media (Home links to `/`, Media links to `/media/`)
 
-### H32. Pre-session email
-- [ ] Session detail → "Notify" button → `POST /api/entries/:id/notify` — email sent to volunteer
-- [ ] Email renders with correct volunteer name, group name, date, session URL, login URL
+### H32. Session email (pre-session / post-session / pre-agm)
+- [ ] Session detail → "Send Email" → template dropdown includes Pre-Session, Post-Session, Pre-AGM
+- [ ] `POST /api/entries/:id/notify` with `template: pre-session` — email sent to volunteer
+- [ ] Pre-AGM: renders volunteer name, AGM doc links, and session URL (My Tracker link)
+- [ ] Send All sends to each entry with an email address
 - [ ] Description block present when session has notes; absent when no notes
 - [ ] Regular block shown for regular volunteers; absent otherwise
 - [ ] Child block shown when entry has accompanying child name; absent otherwise

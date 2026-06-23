@@ -101,6 +101,7 @@ Consent and governance records are personal data. All write access is Admin-only
 |---|---|---|---|
 | `/api/records/export` | GET | Admin | Export records as CSV |
 | `/api/records/bulk` | POST | Admin | Bulk create or update records |
+| `/api/profiles/bulk-email` | POST | Admin | Bulk send profile email (`membership-invite`) |
 | `/api/records/:id` | PATCH | Admin | Update record |
 | `/api/records/:id` | DELETE | Admin | Delete record |
 

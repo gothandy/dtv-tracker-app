@@ -230,8 +230,10 @@ onMounted(async () => {
 
   const prefillCode = route.query.code as string | undefined
   const prefillEmail = route.query.email as string | undefined
-  if (prefillCode && prefillEmail) {
+  if (prefillEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prefillEmail)) {
     email.value = prefillEmail
+  }
+  if (prefillCode && prefillEmail) {
     verifyInput.value = prefillCode
     sent.value = true
     startCountdown(15 * 60)

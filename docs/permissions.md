@@ -166,6 +166,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | PATCH | `/records/:id` | Edit record |
 | DELETE | `/records/:id` | Delete record |
 | POST | `/records/bulk` | Bulk create/update records |
+| POST | `/profiles/bulk-email` | Bulk send Handlebars email to selected profiles |
 | POST | `/profiles/:slug/transfer` | Transfer profile |
 | DELETE | `/profiles/:slug` | Delete profile |
 | DELETE | `/media/:itemId` | Delete session photo from media library |

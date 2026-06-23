@@ -1,7 +1,8 @@
 import { SharePointEntry, SharePointProfile } from '../../types/sharepoint';
 import { SharePointSession } from '../../types/session';
 import { SharePointGroup } from '../../types/group';
-import { extractMetadataTags, safeParseLookupId, parseHours, sessionScheduleFields, formatSessionTimeRangeProse } from './data-layer';
+import { extractMetadataTags, safeParseLookupId, parseHours, sessionScheduleFields, formatSessionTimeRangeProse, parseEmails } from './data-layer';
+import type { SharePointRecord } from '../../types/sharepoint';
 import {
   SESSION_NOTES, SESSION_METADATA, SESSION_STATS, SESSION_COVER_MEDIA,
   GROUP_LOOKUP, PROFILE_DISPLAY, ENTRY_CANCELLED,
@@ -47,6 +48,13 @@ function findChildEntries(sessionEntries: SharePointEntry[], profileId: number |
     : [];
 }
 
+const CHARITY_MEMBERSHIP_TYPE = 'Charity Membership';
+
+/** True when the profile has an Accepted Charity Membership record. */
+export function profileIsMember(profileRecords: SharePointRecord[]): boolean {
+  return profileRecords.some(r => r.Type === CHARITY_MEMBERSHIP_TYPE && r.Status === 'Accepted');
+}
+
 // ============================================================================
 // Pre-session
 // ============================================================================
@@ -64,6 +72,7 @@ export interface PreSessionVars extends Record<string, unknown> {
   loginUrl: string;
   myChildNames: string | null;
   isRegular: boolean;
+  isMember: boolean;
   tags: string | null;
 }
 
@@ -73,7 +82,8 @@ export function buildPreSessionVars(
   profile: SharePointProfile,
   group: SharePointGroup,
   sessionEntries: SharePointEntry[],
-  baseUrl: string
+  baseUrl: string,
+  profileRecords: SharePointRecord[] = [],
 ): PreSessionVars {
   const profileId = entry.ProfileLookupId as number | undefined;
   const groupName = group.Name || group.Title || '';
@@ -105,7 +115,44 @@ export function buildPreSessionVars(
     loginUrl: `${baseUrl}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`,
     myChildNames: myChildNames || null,
     isRegular: /#Regular\b/i.test(String(entry.Notes || '')),
+    isMember: profileIsMember(profileRecords),
     tags,
+  };
+}
+
+// ============================================================================
+// Pre-AGM (session entry notify)
+// ============================================================================
+
+/** FY2025-26 AGM documents on the public docs proxy. */
+const AGM_REPORTS_PATH = '/docs/charity/annual-reports/2025-26';
+
+export interface PreAgmVars extends PreSessionVars {
+  agendaUrl: string;
+  reportUrl: string;
+  financialUrl: string;
+}
+
+function buildPreAgmDocUrls(baseUrl: string) {
+  return {
+    agendaUrl: `${baseUrl}${AGM_REPORTS_PATH}/agm-agenda-25-26.pdf`,
+    reportUrl: `${baseUrl}${AGM_REPORTS_PATH}/agm-presentation-25-26.pdf`,
+    financialUrl: `${baseUrl}${AGM_REPORTS_PATH}/dtv-draft-accounts-2025-26-22-jun-2026-14-53.pdf`,
+  };
+}
+
+export function buildPreAgmVars(
+  entry: SharePointEntry,
+  session: SharePointSession,
+  profile: SharePointProfile,
+  group: SharePointGroup,
+  sessionEntries: SharePointEntry[],
+  baseUrl: string,
+  profileRecords: SharePointRecord[] = [],
+): PreAgmVars {
+  return {
+    ...buildPreSessionVars(entry, session, profile, group, sessionEntries, baseUrl, profileRecords),
+    ...buildPreAgmDocUrls(baseUrl),
   };
 }
 
@@ -136,6 +183,7 @@ export interface PostSessionVars extends Record<string, unknown> {
   myChildNames: string | null;
   myChildHours: number | null;
   isRegular: boolean;
+  isMember: boolean;
   stats: SessionStats | null;
   nextSessionUrl: string | null;
   nextSessionDate: string | null;
@@ -150,7 +198,8 @@ export function buildPostSessionVars(
   group: SharePointGroup,
   sessionEntries: SharePointEntry[],
   allSessions: SharePointSession[],
-  baseUrl: string
+  baseUrl: string,
+  profileRecords: SharePointRecord[] = [],
 ): PostSessionVars {
   const profileId = entry.ProfileLookupId as number | undefined;
   const groupName = group.Name || group.Title || '';
@@ -197,10 +246,61 @@ export function buildPostSessionVars(
     myChildNames: myChildNames || null,
     myChildHours: myChildHours > 0 ? myChildHours : null,
     isRegular: /#Regular\b/i.test(String(entry.Notes || '')),
+    isMember: profileIsMember(profileRecords),
     stats,
     nextSessionUrl,
     nextSessionDate,
     uploadUrl: `${baseUrl}/upload?entryId=${entry.ID}`,
     loginUrl: `${baseUrl}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`,
   };
+}
+
+// ============================================================================
+// Profile bulk email
+// ============================================================================
+
+export const PROFILE_EMAIL_TEMPLATES = ['membership-invite'] as const;
+export type ProfileEmailTemplate = typeof PROFILE_EMAIL_TEMPLATES[number];
+
+export interface ProfileEmailVars extends Record<string, unknown> {
+  baseUrl: string;
+  name: string;
+  email: string;
+  loginUrl: string;
+  charityMembershipDate?: string | null;
+}
+
+function formatRecordDate(dateParam: string): string {
+  const d = new Date(dateParam);
+  if (isNaN(d.getTime())) return dateParam;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export function buildProfileLoginUrl(baseUrl: string, email: string): string {
+  return `${baseUrl}/login?email=${encodeURIComponent(email)}`;
+}
+
+function charityMembershipRecord(records: SharePointRecord[]): SharePointRecord | undefined {
+  const matching = records.filter(r => r.Type === CHARITY_MEMBERSHIP_TYPE);
+  return matching.find(r => r.Status === 'Accepted') ?? matching[0];
+}
+
+export function buildProfileTemplateVars(
+  template: ProfileEmailTemplate,
+  profile: SharePointProfile,
+  baseUrl: string,
+  profileRecords: SharePointRecord[],
+): ProfileEmailVars {
+  const name = String(profile.Title || '').trim();
+  const email = parseEmails(profile.Email)[0] || '';
+  const loginUrl = buildProfileLoginUrl(baseUrl, email);
+
+  const vars: ProfileEmailVars = { baseUrl, name, email, loginUrl };
+
+  if (template === 'membership-invite') {
+    const record = charityMembershipRecord(profileRecords);
+    vars.charityMembershipDate = record?.Date ? formatRecordDate(record.Date) : null;
+  }
+
+  return vars;
 }

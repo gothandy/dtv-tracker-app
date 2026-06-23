@@ -126,3 +126,50 @@ describe('post-session email', () => {
     expect(html).toContain('7 June')
   })
 })
+
+describe('pre-agm email', () => {
+  const PRE_AGM_VARS = {
+    baseUrl: 'https://example.com',
+    volunteerName: 'Alice',
+    groupName: 'Trail Crew',
+    sessionTitle: null,
+    formattedDateShort: '26 June',
+    formattedDateLong: 'Friday, 26 June 2026',
+    formattedTime: '7pm',
+    description: '',
+    sessionUrl: 'https://example.com/sessions/trail-crew/2026-06-26',
+    loginUrl: 'https://example.com/login?returnTo=%2Fsessions%2Ftrail-crew%2F2026-06-26',
+    myChildNames: null,
+    isRegular: false,
+    isMember: false,
+    tags: null,
+    agendaUrl: 'https://example.com/docs/charity/annual-reports/2025-26/agm-agenda-25-26.pdf',
+    reportUrl: 'https://example.com/docs/charity/annual-reports/2025-26/agm-presentation-25-26.pdf',
+    financialUrl: 'https://example.com/docs/charity/annual-reports/2025-26/dtv-draft-accounts-2025-26-22-jun-2026-14-53.pdf',
+  }
+
+  it('renders AGM copy with doc and session links', async () => {
+    const { subject, text, html } = await renderEmail('pre-agm', PRE_AGM_VARS)
+    expect(subject).toContain("Thursday's AGM")
+    expect(text).toContain('Dear Alice')
+    expect(text).toContain('agm-agenda-25-26.pdf')
+    expect(text).toContain('sessions/trail-crew/2026-06-26')
+    expect(html).toContain('Dear Alice')
+    expect(html).toContain('href="' + PRE_AGM_VARS.sessionUrl + '"')
+    expect(html).toContain('>My Tracker</a>')
+  })
+})
+
+describe('membership-invite email', () => {
+  it('renders membership date when set', async () => {
+    const { html, text } = await renderEmail('membership-invite', {
+      baseUrl: 'https://example.com',
+      name: 'Alice',
+      email: 'alice@example.com',
+      loginUrl: 'https://example.com/login?email=alice%40example.com',
+      charityMembershipDate: '1 April 2024',
+    })
+    expect(text).toContain('1 April 2024')
+    expect(html).toContain('1 April 2024')
+  })
+})

@@ -15,6 +15,7 @@
       :can-bulk-edit="profile.isAdmin"
       :fy="fy"
       @add-records="showBulkModal = true"
+      @send-email="showEmailModal = true"
       @add-profile="showAddProfile = true"
       @update:selected="selected = $event"
     />
@@ -45,6 +46,15 @@
       @close="showBulkModal = false"
       @save="onBulkSave"
     />
+
+    <ProfileBulkEmailModal
+      v-if="showEmailModal"
+      :count="emailableSelectedCount"
+      :working="emailWorking"
+      :error="emailError"
+      @close="showEmailModal = false"
+      @send="onBulkEmail"
+    />
   </DefaultLayout>
 </template>
 
@@ -57,6 +67,8 @@ import ProfileListActions from '../components/profiles/ProfileListActions.vue'
 import ProfileListResults from '../components/profiles/ProfileListResults.vue'
 import ProfileBulkRecordsModal from './modals/ProfileBulkRecordsModal.vue'
 import type { BulkRecordPayload } from './modals/ProfileBulkRecordsModal.vue'
+import ProfileBulkEmailModal from './modals/ProfileBulkEmailModal.vue'
+import type { BulkEmailPayload } from './modals/ProfileBulkEmailModal.vue'
 import ProfileAddModal from './modals/ProfileAddModal.vue'
 import type { AddProfilePayload } from './modals/ProfileAddModal.vue'
 import { usePageTitle } from '../composables/usePageTitle'
@@ -82,6 +94,9 @@ const selected = ref<number[]>([])
 const showBulkModal = ref(false)
 const bulkWorking = ref(false)
 const bulkError = ref('')
+const showEmailModal = ref(false)
+const emailWorking = ref(false)
+const emailError = ref('')
 const showAddProfile = ref(false)
 const addProfileWorking = ref(false)
 const addProfileError = ref('')
@@ -94,6 +109,10 @@ watch(filtered, list => {
 
 const individualSelectedCount = computed(() =>
   visibleSelected(selected.value, filtered.value).filter(p => !p.isGroup).length,
+)
+
+const emailableSelectedCount = computed(() =>
+  visibleSelected(selected.value, filtered.value).filter(p => !p.isGroup && !!p.email?.trim()).length,
 )
 
 function onFiltersChange({ fy: newFy, group: newGroup }: { fy: string; group: string }) {
@@ -123,6 +142,30 @@ async function onBulkSave(payload: BulkRecordPayload) {
     console.error('[ProfileListPage] onBulkSave', e)
   } finally {
     bulkWorking.value = false
+  }
+}
+
+async function onBulkEmail(payload: BulkEmailPayload) {
+  emailWorking.value = true
+  emailError.value = ''
+  try {
+    const profileIds = visibleSelected(selected.value, filtered.value)
+      .filter(p => !p.isGroup && !!p.email?.trim())
+      .map(p => p.id)
+    const res = await fetch('/api/profiles/bulk-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileIds, ...payload }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(json.error || `Send email failed (${res.status})`)
+    showEmailModal.value = false
+    if (!payload.preview) selected.value = []
+  } catch (e) {
+    emailError.value = e instanceof Error ? e.message : 'An error occurred'
+    console.error('[ProfileListPage] onBulkEmail', e)
+  } finally {
+    emailWorking.value = false
   }
 }
 

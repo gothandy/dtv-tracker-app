@@ -35,7 +35,7 @@ import {
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { renderEmail } from '../services/email-renderer';
-import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
+import { buildPreSessionVars, buildPostSessionVars, buildPreAgmVars } from '../services/email-vars';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { refreshSessionMediaStats } from '../services/session-stats';
@@ -1210,12 +1210,17 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
     }
 
     const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
+    const profileRecords = profileId !== undefined
+      ? await recordsRepository.getByProfile(profileId)
+      : [];
 
     const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
     const templateName = (req.body?.template as string) || 'pre-session';
     const vars = templateName === 'post-session'
-      ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base)
-      : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base);
+      ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base, profileRecords)
+      : templateName === 'pre-agm'
+      ? buildPreAgmVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords)
+      : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords);
     const { subject, html, text } = await renderEmail(templateName, vars);
 
     const preview = req.body?.preview === true;

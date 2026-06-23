@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { buildPreSessionVars } from './email-vars'
+import { buildPreSessionVars, buildPreAgmVars, buildProfileTemplateVars, buildProfileLoginUrl, profileIsMember } from './email-vars'
 import { SESSION_TIME, SESSION_LENGTH } from './field-names'
-import type { SharePointEntry, SharePointProfile } from '../../types/sharepoint'
+import type { SharePointEntry, SharePointProfile, SharePointRecord } from '../../types/sharepoint'
 import type { SharePointSession } from '../../types/session'
 import type { SharePointGroup } from '../../types/group'
 
@@ -54,5 +54,107 @@ describe('buildPreSessionVars', () => {
     const vars = buildPreSessionVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
 
     expect(vars.formattedTime).toBe('10:00 to 12:00 (about 2 hours)')
+  })
+
+  it('sets isMember from Charity Membership record', () => {
+    const session = {
+      ID: 100,
+      Date: '2026-04-23',
+      Created: '',
+      Modified: '',
+    } as SharePointSession
+
+    const records = [{
+      ID: 1,
+      Type: 'Charity Membership',
+      Status: 'Accepted',
+      Created: '',
+      Modified: '',
+    }] as SharePointRecord[]
+
+    const vars = buildPreSessionVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com', records)
+    expect(vars.isMember).toBe(true)
+  })
+})
+
+describe('buildPreAgmVars', () => {
+  it('includes session URL and AGM doc links', () => {
+    const session = {
+      ID: 100,
+      Date: '2026-06-26',
+      Created: '',
+      Modified: '',
+    } as SharePointSession
+
+    const vars = buildPreAgmVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
+
+    expect(vars.volunteerName).toBe('Alice')
+    expect(vars.sessionUrl).toBe('https://example.com/sessions/trail crew/2026-06-26')
+    expect(vars.agendaUrl).toContain('agm-agenda-25-26.pdf')
+    expect(vars.reportUrl).toContain('agm-presentation-25-26.pdf')
+    expect(vars.financialUrl).toContain('dtv-draft-accounts')
+  })
+})
+describe('profileIsMember', () => {
+  it('is true for Accepted Charity Membership', () => {
+    expect(profileIsMember([{
+      ID: 1,
+      Type: 'Charity Membership',
+      Status: 'Accepted',
+      Created: '',
+      Modified: '',
+    } as SharePointRecord])).toBe(true)
+  })
+
+  it('is false for Invited or missing record', () => {
+    expect(profileIsMember([{
+      ID: 1,
+      Type: 'Charity Membership',
+      Status: 'Invited',
+      Created: '',
+      Modified: '',
+    } as SharePointRecord])).toBe(false)
+    expect(profileIsMember([])).toBe(false)
+  })
+})
+
+describe('buildProfileTemplateVars', () => {
+  const profile = {
+    ID: 42,
+    Title: 'Alice Smith',
+    Email: 'alice@example.com, other@example.com',
+    Created: '',
+    Modified: '',
+  } as SharePointProfile
+
+  it('builds membership-invite vars with loginUrl', () => {
+    const vars = buildProfileTemplateVars('membership-invite', profile, 'https://example.com', [])
+
+    expect(vars.name).toBe('Alice Smith')
+    expect(vars.email).toBe('alice@example.com')
+    expect(vars.loginUrl).toBe('https://example.com/login?email=alice%40example.com')
+  })
+
+  it('includes charityMembershipDate for membership-invite', () => {
+    const records = [{
+      ID: 1,
+      Type: 'Charity Membership',
+      Status: 'Accepted',
+      Date: '2024-04-01T00:00:00Z',
+      Created: '',
+      Modified: '',
+    }] as SharePointRecord[]
+
+    const vars = buildProfileTemplateVars('membership-invite', profile, 'https://example.com', records)
+
+    expect(vars.charityMembershipDate).toBe('1 April 2024')
+  })
+})
+
+describe('buildProfileLoginUrl', () => {
+  it('encodes email in login query param', () => {
+    expect(buildProfileLoginUrl('https://example.com', 'a+b@c.com')).toBe(
+      'https://example.com/login?email=a%2Bb%40c.com',
+    )
   })
 })

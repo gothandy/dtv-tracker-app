@@ -5,6 +5,7 @@
     </span>
     <div class="list-actions-buttons">
       <AppButton label="Add Records" icon="file-add" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-records')" />
+      <AppButton label="Send Email" icon="email" mode="icon-responsive" :disabled="emailableSelected.length === 0" @click="emit('send-email')" />
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="selectedInFiltered.length === 0" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
       <AppButton label="Add profile" icon="add" mode="icon-only" @click="emit('add-profile')" />
@@ -29,12 +30,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   'add-records': []
   'add-profile': []
+  'send-email': []
   'update:selected': [ids: number[]]
 }>()
 
 const selectedInFiltered = computed(() => props.filteredProfiles.filter(p => props.selected.includes(p.id)))
 
 const individualSelected = computed(() => selectedInFiltered.value.filter(p => !p.isGroup))
+
+const emailableSelected = computed(() =>
+  individualSelected.value.filter(p => !!p.email?.trim())
+)
 
 function hoursFor(p: ProfileResponse): number {
   return props.fy === 'all' ? p.hoursAll : p.hoursThisFY
