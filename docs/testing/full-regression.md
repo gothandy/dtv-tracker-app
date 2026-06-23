@@ -246,6 +246,13 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
 - [ ] Requires `MAIL_SENDER` env var
 
+### H23c. Bulk add entries (admin)
+- [ ] Volunteers page → select individual profiles → "Add Entries" enabled (groups excluded)
+- [ ] Modal: session dropdown lists future sessions only, next session first (`date — group name`)
+- [ ] `POST /api/entries/bulk` — `{ profileIds, sessionId }`; past session → 400
+- [ ] Profiles already on session skipped (including cancelled bookings — cancellation left in place); returns `{ created, skipped }`
+- [ ] On success: modal closes, selection cleared, profile list reloads
+
 ### H24b. Entries page (admin)
 
 - [ ] Admin: "Entries" nav link visible in header; non-admin users (Check In, Self-Service, Public) do not see the link

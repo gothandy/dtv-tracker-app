@@ -324,6 +324,85 @@ router.get('/entries', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/entries/bulk', async (req: Request, res: Response) => {
+  try {
+    const { profileIds, sessionId } = req.body;
+    if (!Array.isArray(profileIds) || profileIds.length === 0) {
+      res.status(400).json({ success: false, error: 'profileIds array is required' });
+      return;
+    }
+    const sid = parseInt(String(sessionId), 10);
+    if (isNaN(sid)) {
+      res.status(400).json({ success: false, error: 'sessionId is required and must be a number' });
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const [rawSessions, rawProfiles] = await Promise.all([
+      sessionsRepository.getAll(),
+      profilesRepository.getAll(),
+    ]);
+
+    const sessions = validateArray(rawSessions, validateSession, 'Session');
+    const spSession = sessions.find(s => s.ID === sid);
+    if (!spSession?.Date) {
+      res.status(404).json({ success: false, error: 'Session not found' });
+      return;
+    }
+    if (spSession.Date < today) {
+      res.status(400).json({ success: false, error: 'Session has already passed' });
+      return;
+    }
+
+    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
+    const profileMap = new Map(profiles.map(p => [p.ID, p]));
+    const requestedIds = profileIds
+      .map((id: unknown) => parseInt(String(id), 10))
+      .filter((id: number) => !isNaN(id));
+
+    const sessionEntries = await entriesRepository.getBySessionIds([sid]);
+    const existingProfileIds = new Set(
+      sessionEntries
+        .map(e => safeParseLookupId(e[PROFILE_LOOKUP]))
+        .filter((id): id is number => id !== undefined)
+    );
+
+    const preservedMedia = preservedMediaFromStats(spSession[SESSION_STATS]);
+    let created = 0;
+    let skipped = 0;
+
+    for (const profileId of requestedIds) {
+      const profile = profileMap.get(profileId);
+      if (!profile?.ID || profile.IsGroup) {
+        skipped++;
+        continue;
+      }
+      if (existingProfileIds.has(profileId)) {
+        skipped++;
+        continue;
+      }
+      await entriesRepository.create({
+        [SESSION_LOOKUP]: String(sid),
+        [PROFILE_LOOKUP]: String(profileId),
+      });
+      existingProfileIds.add(profileId);
+      created++;
+      computeAndSaveProfileStats(profileId).catch(err =>
+        console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
+      );
+    }
+
+    computeAndSaveSessionStats(sid, preservedMedia).catch(err =>
+      console.error(`[Stats] Failed session stats for bulk entries on session ${sid}:`, err)
+    );
+
+    res.json({ success: true, data: { created, skipped } } as ApiResponse<{ created: number; skipped: number }>);
+  } catch (error: any) {
+    console.error('Error bulk creating entries:', error);
+    res.status(500).json({ success: false, error: 'Failed to bulk create entries', message: error.message });
+  }
+});
+
 // GET /entries/:id — entry detail by SharePoint ID
 router.get('/entries/:id', async (req: Request, res: Response) => {
   try {

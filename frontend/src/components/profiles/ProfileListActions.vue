@@ -5,6 +5,7 @@
     </span>
     <div class="list-actions-buttons">
       <AppButton label="Add Records" icon="file-add" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-records')" />
+      <AppButton label="Add Entries" icon="register" mode="icon-responsive" :disabled="individualSelected.length === 0" @click="emit('add-entries')" />
       <AppButton label="Send Email" icon="email" mode="icon-responsive" :disabled="emailableSelected.length === 0" @click="emit('send-email')" />
       <AppButton label="Download CSV" icon="download" mode="icon-only" :disabled="selectedInFiltered.length === 0" @click="onDownload" />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
@@ -29,6 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'add-records': []
+  'add-entries': []
   'add-profile': []
   'send-email': []
   'update:selected': [ids: number[]]

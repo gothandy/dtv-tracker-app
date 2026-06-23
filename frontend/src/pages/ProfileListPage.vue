@@ -15,6 +15,7 @@
       :can-bulk-edit="profile.isAdmin"
       :fy="fy"
       @add-records="showBulkModal = true"
+      @add-entries="showEntriesModal = true"
       @send-email="showEmailModal = true"
       @add-profile="showAddProfile = true"
       @update:selected="selected = $event"
@@ -55,6 +56,15 @@
       @close="showEmailModal = false"
       @send="onBulkEmail"
     />
+
+    <ProfileBulkEntriesModal
+      v-if="showEntriesModal"
+      :count="individualSelectedCount"
+      :working="entriesWorking"
+      :error="entriesError"
+      @close="showEntriesModal = false"
+      @save="onBulkEntries"
+    />
   </DefaultLayout>
 </template>
 
@@ -69,6 +79,8 @@ import ProfileBulkRecordsModal from './modals/ProfileBulkRecordsModal.vue'
 import type { BulkRecordPayload } from './modals/ProfileBulkRecordsModal.vue'
 import ProfileBulkEmailModal from './modals/ProfileBulkEmailModal.vue'
 import type { BulkEmailPayload } from './modals/ProfileBulkEmailModal.vue'
+import ProfileBulkEntriesModal from './modals/ProfileBulkEntriesModal.vue'
+import type { BulkEntriesPayload } from './modals/ProfileBulkEntriesModal.vue'
 import ProfileAddModal from './modals/ProfileAddModal.vue'
 import type { AddProfilePayload } from './modals/ProfileAddModal.vue'
 import { usePageTitle } from '../composables/usePageTitle'
@@ -97,6 +109,9 @@ const bulkError = ref('')
 const showEmailModal = ref(false)
 const emailWorking = ref(false)
 const emailError = ref('')
+const showEntriesModal = ref(false)
+const entriesWorking = ref(false)
+const entriesError = ref('')
 const showAddProfile = ref(false)
 const addProfileWorking = ref(false)
 const addProfileError = ref('')
@@ -142,6 +157,31 @@ async function onBulkSave(payload: BulkRecordPayload) {
     console.error('[ProfileListPage] onBulkSave', e)
   } finally {
     bulkWorking.value = false
+  }
+}
+
+async function onBulkEntries(payload: BulkEntriesPayload) {
+  entriesWorking.value = true
+  entriesError.value = ''
+  try {
+    const profileIds = visibleSelected(selected.value, filtered.value)
+      .filter(p => !p.isGroup)
+      .map(p => p.id)
+    const res = await fetch('/api/entries/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileIds, sessionId: payload.sessionId }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(json.error || `Add entries failed (${res.status})`)
+    showEntriesModal.value = false
+    selected.value = []
+    await store.fetch(fy.value, group.value)
+  } catch (e) {
+    entriesError.value = e instanceof Error ? e.message : 'An error occurred'
+    console.error('[ProfileListPage] onBulkEntries', e)
+  } finally {
+    entriesWorking.value = false
   }
 }
 

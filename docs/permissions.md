@@ -74,7 +74,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Edit (title + description); photo edit (caption, public, cover — not delete) | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
-| **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records |
+| **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email |
 | **Profile detail** | Redirected (auth required) | Edit profile (name/email/match name), Regulars checkboxes, inline hours (own profile only), Collect Consent | **`User`** field in edit modal, Add Record, record pill editing, inline hours (all profiles), Transfer, Delete Profile |
 | **Consent page** | Redirected (auth required) | Full access | Full access |
 | **Admin** | Redirected (auth required) | — | Eventbrite sync, Exports, Site link |
@@ -167,6 +167,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | DELETE | `/records/:id` | Delete record |
 | POST | `/records/bulk` | Bulk create/update records |
 | POST | `/profiles/bulk-email` | Bulk send Handlebars email to selected profiles |
+| POST | `/entries/bulk` | Bulk add entries for profiles to a future session (skips anyone with any existing entry, including cancelled) |
 | POST | `/profiles/:slug/transfer` | Transfer profile |
 | DELETE | `/profiles/:slug` | Delete profile |
 | DELETE | `/media/:itemId` | Delete session photo from media library |
