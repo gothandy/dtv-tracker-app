@@ -8,7 +8,7 @@
         <span v-if="activeCount" class="sel-count">({{ checkedCount }} / {{ activeCount }})</span>
       </h2>
       <div v-if="allowEdit" class="sel-actions">
-        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" :working="refreshWorking" :disabled="isPastSession" @click="emit('refreshRequest')" />
+        <AppButton label="Refresh" icon="refresh" mode="icon-responsive" :working="refreshWorking" :disabled="refreshDisabled" @click="emit('refreshRequest')" />
         <AppButton label="Set Hours" icon="clock" mode="icon-responsive" :disabled="eligibleCount === 0" @click="showSetHours = true" />
         <AppButton label="Add" icon="add" mode="icon-responsive" @click="showAdd = true" />
       </div>
@@ -58,6 +58,7 @@
       v-if="showSetHours"
       :entry-count="eligibleCount"
       :default-hours="3"
+      :past-session-admin="!!(isPastSession && isAdmin)"
       :working="workingSetHours"
       :error="setHoursError"
       @close="closeSetHoursModal"
@@ -120,6 +121,8 @@ function entryHeadcount(e: EntryItem): number {
   return 1
 }
 
+const refreshDisabled = computed(() => !!props.isPastSession && !props.isAdmin)
+
 const activeCount = computed(() =>
   props.entries.filter(e => !e.cancelled).reduce((sum, e) => sum + entryHeadcount(e), 0)
 )
@@ -128,7 +131,12 @@ const checkedCount = computed(() =>
     .filter(e => e.checkedIn && !e.cancelled)
     .reduce((sum, e) => sum + entryHeadcount(e), 0)
 )
-const eligibleCount = computed(() => props.entries.filter(e => e.checkedIn && !e.hours).length)
+const eligibleCount = computed(() => {
+  if (props.isPastSession && props.isAdmin) {
+    return props.entries.filter(e => !e.cancelled && !e.hours).length
+  }
+  return props.entries.filter(e => e.checkedIn && !e.hours).length
+})
 const sessionAdults = computed(() =>
   props.entries
     .filter(e => e.profileId && !e.profile.isGroup && !e.accompanyingAdultId)

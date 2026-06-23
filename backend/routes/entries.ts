@@ -877,7 +877,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     }
 
     const todayStr = new Date().toISOString().slice(0, 10);
-    if ((spSession.Date || '').slice(0, 10) < todayStr) {
+    if ((spSession.Date || '').slice(0, 10) < todayStr && req.session.user?.role !== 'admin') {
       res.status(400).json({ success: false, error: 'Cannot refresh a past session' });
       return;
     }

@@ -562,7 +562,12 @@ function entryHeadcountForHours(count: number | undefined): number {
 }
 
 async function onSetHours(hoursPerPerson: number) {
-  const eligible = store.session?.entries.filter(e => e.checkedIn && !e.hours) ?? []
+  const past = isPastSession.value
+  const eligible = store.session?.entries.filter(e => {
+    if (e.cancelled || e.hours) return false
+    if (profile.isAdmin && past) return true
+    return e.checkedIn
+  }) ?? []
   try {
     await Promise.all(eligible.map(e => {
       const storedHours = hoursPerPerson * entryHeadcountForHours(e.count)

@@ -71,7 +71,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Groups list** | Full view, regulars count | — | — |
 | **Group detail** | Group info, stats, sessions, regulars list | — | Edit button, Create Session button |
 | **Sessions list** | Full view | CSV download, checkboxes (Advanced) | Add Tags, Update Project buttons |
-| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Edit (title + description); photo edit (caption, public, cover — not delete) | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID |
+| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
 | **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email |

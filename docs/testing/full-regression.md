@@ -48,11 +48,11 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] **Admin user** (in `ADMIN_USERS` env var): all edit/create/delete buttons visible, all API calls succeed
 - [ ] **Check In user** (profile has matching `User` field): admin buttons hidden, check-in controls visible
 - [ ] Check In: check-in checkbox on session detail works (PATCH `/api/entries/:id`)
-- [ ] Check In: Set Hours button on session detail works
+- [ ] Check In: Set Hours button on session detail works (today/future sessions; disabled on past sessions)
 - [ ] Check In: session edit modal shows only Display Name and Description (Group, Date, Eventbrite ID, Delete hidden)
 - [ ] Check In: saving session edit with title/description works (PATCH succeeds)
 - [ ] Check In: regulars checkbox on profile detail works (add/remove)
-- [ ] Check In: Refresh button visible on session detail, can refresh session
+- [ ] Check In: Refresh button visible on session detail; enabled for today/future sessions only (disabled on past sessions)
 - [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In: edit profile button visible, can update name/email
@@ -157,12 +157,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 ### H12. Set default hours (bulk)
 - [ ] Session detail → "Set Hours" button → modal with hours input (default 3)
 - [ ] Applies to checked-in entries where hours = 0
+- [ ] Admin on past session: Set Hours enabled; applies to all active entries without hours (marks checked in)
+- [ ] Check In on past session: Set Hours disabled when no checked-in entries without hours
 - [ ] Multiple `PATCH /api/entries/:id` calls in parallel
 - [ ] Does not overwrite entries with existing hours
 
 ### H13. Refresh session (bulk)
 - [ ] Session detail → "Refresh" button
 - [ ] `POST /api/sessions/:group/:date/refresh`
+- [ ] Admin on past session: Refresh enabled; Check In on past session: button disabled, API returns 400
 - [ ] Adds missing regulars, syncs Eventbrite attendees (with `EventbriteAttendeeID`), tags #NoPhoto
 - [ ] Shows summary: "Added: X regulars, Y from Eventbrite, Z new profiles, W #NoPhoto"
 
