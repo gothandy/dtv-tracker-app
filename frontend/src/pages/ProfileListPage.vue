@@ -15,7 +15,7 @@
       :can-bulk-edit="profile.isAdmin"
       :fy="fy"
       @add-records="showBulkModal = true"
-      @add-entries="showEntriesModal = true"
+      @add-entries="onAddEntries"
       @send-email="showEmailModal = true"
       @add-profile="showAddProfile = true"
       @update:selected="selected = $event"
@@ -60,6 +60,9 @@
     <ProfileBulkEntriesModal
       v-if="showEntriesModal"
       :count="individualSelectedCount"
+      :session-options="bulkEntrySessionOptions"
+      :sessions-loading="sessionsStore.loading"
+      :sessions-error="sessionsStore.error ?? undefined"
       :working="entriesWorking"
       :error="entriesError"
       @close="showEntriesModal = false"
@@ -87,6 +90,8 @@ import { usePageTitle } from '../composables/usePageTitle'
 import { useViewer } from '../composables/useViewer'
 import { useProfileListStore } from '../stores/profileList'
 import { useGroupListStore } from '../stores/groupList'
+import { useSessionListStore } from '../stores/sessionList'
+import { bulkEntrySessionOptions as buildBulkEntrySessionOptions } from '../utils/bulkEntrySessionOptions'
 import { useRouter } from 'vue-router'
 import { profilePath } from '../router'
 import type { ProfileResponse } from '../../../types/api-responses'
@@ -98,6 +103,7 @@ const profile = useViewer()
 const router = useRouter()
 const store = useProfileListStore()
 const groupsStore = useGroupListStore()
+const sessionsStore = useSessionListStore()
 
 const fy = ref('future')
 const group = ref('')
@@ -129,6 +135,13 @@ const individualSelectedCount = computed(() =>
 const emailableSelectedCount = computed(() =>
   visibleSelected(selected.value, filtered.value).filter(p => !p.isGroup && !!p.email?.trim()).length,
 )
+
+const bulkEntrySessionOptions = computed(() => buildBulkEntrySessionOptions(sessionsStore.sessions))
+
+function onAddEntries() {
+  showEntriesModal.value = true
+  sessionsStore.fetch()
+}
 
 function onFiltersChange({ fy: newFy, group: newGroup }: { fy: string; group: string }) {
   fy.value = newFy
