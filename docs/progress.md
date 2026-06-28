@@ -1,5 +1,15 @@
 # Development Progress
 
+## Session: 2026-06-28 (Session card tidy-up + Facebook OG)
+
+- Shared `mapSession()` in `frontend/src/utils/mapSession.ts` — used by session list store, group detail, and project detail.
+- `SessionCard` public footer: future sessions show availability; past sessions show `{count} Attended`.
+- Removed unused `SessionList.vue` (superseded by `SessionConcertina` + `SessionListResults`).
+- `SessionResponse` type includes `groupDescription` (already returned by listing API).
+- Session page Open Graph injection includes `fb:app_id` when `FACEBOOK_APP_ID` is set.
+- `backend/services/og-meta.ts` — Open Graph for all public SPA routes (home, lists, group/project/session detail, docs, legal pages).
+- Dev mode injects the same OG tags on HTML navigations (before Vite middleware); assets/HMR unchanged.
+
 ## Session: 2026-06-19 (Sessions list Media filter)
 
 - `mediaStatus` on session Stats JSON (`none` / `allPrivate` / `noCover` / `public`) computed in bulk refresh and on media/cover writes.

@@ -332,11 +332,10 @@ const display = computed(() =>
 
 ### Components that use this pattern
 
-- `SessionCard.vue` — sessions listing, group detail, homepage
+- `SessionCard.vue` — sessions listing, group detail, homepage concertina
 - `SessionDetailStats.vue` — session detail page
-- `SessionList.vue` — compact calendar list view
 
-All three call the same helper. All three are dumb renderers.
+Both call the same helper. Both are dumb renderers.
 
 ---
 

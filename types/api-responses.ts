@@ -75,6 +75,7 @@ export interface SessionResponse {
   groupId?: number;
   groupKey?: string;
   groupName?: string;
+  groupDescription?: string;
   limits: SessionLimits;
   stats: SessionStats;
   regularsCount?: number;

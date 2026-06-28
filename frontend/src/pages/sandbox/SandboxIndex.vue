@@ -104,8 +104,7 @@
           <li>SessionDetailGroupTeaser — next session teaser; test via session detail page (past session)</li>
           <li>SessionEntryList — check-in entry workflow; test via session detail page (operational user)</li>
           <li>SessionConcertina — concertina session picker; test via home page calendar</li>
-          <li>SessionList — session list with grouped dates; test via home or sessions page</li>
-          <li>SessionListResults — session card grid with checkboxes; test via sessions page</li>
+          <li>SessionListResults — session card grid; test via sessions page or group detail</li>
           <li>GroupDetailHeader — group info display; test via group detail page</li>
           <li>GroupDetailRegulars — regulars management; test via group detail page</li>
           <li>GroupListResults — group card grid; test via groups page</li>

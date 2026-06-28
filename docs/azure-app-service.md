@@ -26,6 +26,10 @@ Redirect examples:
 
 Optional override for non-production: `DOCS_REDIRECT_HOST` (hostname that triggers the redirect).
 
+### Facebook link previews (session pages)
+
+Public SPA routes inject Open Graph tags server-side in production (`backend/services/og-meta.ts`): home, groups, projects, sessions (list + detail), docs, privacy, terms, login. Set **`FACEBOOK_APP_ID`** (e.g. `1973664160696548`) in Application settings. **`FRONTEND_URL`** should be `https://tracker.dtv.org.uk` so `og:url` and `og:image` use the canonical host. After deploy, use [Sharing Debugger](https://developers.facebook.com/tools/debug/) → **Scrape Again**. Cover images require a **public** session cover photo.
+
 ## CI/CD — GitHub Actions
 
 Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on every push to `main`.

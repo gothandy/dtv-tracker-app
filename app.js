@@ -10,10 +10,6 @@ const apiRoutes = require('./dist/backend/routes/api');
 const authRoutes = require('./dist/backend/routes/auth');
 const { requireAuth } = require('./dist/backend/middleware/require-auth');
 const { authMiddleware } = require('./dist/backend/middleware/auth');
-const { groupsRepository } = require('./dist/backend/services/repositories/groups-repository');
-const { sessionsRepository } = require('./dist/backend/services/repositories/sessions-repository');
-const { findGroupByKey, findSessionByGroupAndDate, convertGroup } = require('./dist/backend/services/data-layer');
-const { SESSION_NOTES, SESSION_COVER_MEDIA } = require('./dist/backend/services/field-names');
 const { mediaDriveId } = require('./dist/backend/services/media-upload');
 const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
 const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
@@ -23,6 +19,7 @@ const { fetchGovernanceDocPdf } = require('./dist/backend/services/governance-do
 const { fetchProjectDoc } = require('./dist/backend/services/project-docs-service');
 const { projectsRepository } = require('./dist/backend/services/repositories/projects-repository');
 const { findProjectByKey } = require('./dist/backend/services/data-layer');
+const { resolveOgMeta, buildOgHeadTags } = require('./dist/backend/services/og-meta');
 const axios = require('axios');
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -35,8 +32,44 @@ async function getV2IndexTemplate() {
     return _v2IndexHtml;
 }
 
-function escapeHtmlAttr(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const facebookAppId = (process.env.FACEBOOK_APP_ID || '').trim();
+
+function publicBaseUrl(req) {
+    const configured = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    return configured || `${req.protocol}://${req.get('host')}`;
+}
+
+/** Browser document navigations only — not Vite assets, API, or proxied media/docs. */
+function isSpaHtmlNavigation(req) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) return false;
+    if (req.path.startsWith('/media/')) return false;
+    if (req.path.startsWith('/@') || req.path.startsWith('/node_modules/') || req.path.startsWith('/src/')) {
+        return false;
+    }
+    if (/\.[a-z0-9]+$/i.test(req.path)) return false;
+    const accept = req.headers.accept || '';
+    return accept.includes('text/html');
+}
+
+async function buildSpaHtml(req, loadHtml) {
+    const meta = await resolveOgMeta(req.path, publicBaseUrl(req));
+    let html = await loadHtml();
+    if (meta) {
+        html = html.replace('</head>', buildOgHeadTags(meta, facebookAppId) + `</head>`);
+    }
+    return html;
+}
+
+async function serveSpaHtml(req, res) {
+    const indexPath = path.join(__dirname, 'frontend', 'dist', 'index.html');
+    try {
+        const html = await buildSpaHtml(req, getV2IndexTemplate);
+        res.set('Content-Type', 'text/html').send(html);
+    } catch (err) {
+        console.error(`Error rendering OG meta for ${req.path}:`, err);
+        res.sendFile(indexPath);
+    }
 }
 
 const app = express();
@@ -90,7 +123,8 @@ app.get('/api/health', (req, res) => {
 // Auth routes (unprotected — login/callback/logout/me)
 app.use('/auth', authRoutes);
 
-const staticOptions = { maxAge: '1h' };
+// index: false — / must reach serveSpaHtml for Open Graph injection, not raw dist/index.html
+const staticOptions = { maxAge: '1h', index: false };
 
 if (!isDev) {
     // Production: serve built static assets (includes frontend/public/ files verbatim)
@@ -238,62 +272,9 @@ app.use('/api', apiRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 if (!isDev) {
-    // Server-side OG meta tag injection for session detail pages (social crawler support).
-    // Must be before the SPA fallback so crawlers get real og:image/title/description.
-    app.get('/sessions/:group/:date', async (req, res) => {
-        const groupKey = req.params.group.toLowerCase();
-        const dateParam = req.params.date;
-        try {
-            const [rawGroups, rawSessions] = await Promise.all([
-                groupsRepository.getAll(),
-                sessionsRepository.getAll()
-            ]);
-            const spGroup = findGroupByKey(rawGroups, groupKey);
-            const spSession = spGroup ? findSessionByGroupAndDate(rawSessions, spGroup.ID, dateParam) : null;
-
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const canonicalUrl = `${baseUrl}${req.path}`;
-
-            let imageUrl = `${baseUrl}/img/logo-930.jpg`;
-            try {
-                const driveId = mediaDriveId();
-                const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${dateParam}`);
-                const coverMediaId = spSession?.[SESSION_COVER_MEDIA] ? parseInt(String(spSession[SESSION_COVER_MEDIA]), 10) || null : null;
-                const coverPhoto = coverMediaId ? photos.find(p => p.listItemId === coverMediaId && p.isPublic === true) : null;
-                if (coverPhoto) imageUrl = `${baseUrl}/media/${groupKey}/${dateParam}/${coverPhoto.listItemId}`;
-            } catch { /* media library not configured or folder missing */ }
-
-            let title = 'Session Details - DTV Tracker';
-            let description = 'DTV volunteer session';
-            if (spGroup && spSession) {
-                const group = convertGroup(spGroup);
-                const sessionName = spSession.Name || spSession.Title || group.displayName;
-                const date = new Date(dateParam);
-                const formattedDate = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-                title = `${sessionName} — ${formattedDate}`;
-                description = spSession[SESSION_NOTES] || `${group.displayName} volunteer session on ${formattedDate}`;
-            }
-
-            let html = await getV2IndexTemplate();
-            html = html.replace(
-                '</head>',
-                `<title>${escapeHtmlAttr(title)}</title>` +
-                `<meta property="og:title" content="${escapeHtmlAttr(title)}">` +
-                `<meta property="og:description" content="${escapeHtmlAttr(description)}">` +
-                `<meta property="og:url" content="${canonicalUrl}">` +
-                `<meta property="og:image" content="${escapeHtmlAttr(imageUrl)}">` +
-                `<meta property="og:type" content="website">` +
-                `</head>`
-            );
-            res.set('Content-Type', 'text/html').send(html);
-        } catch (err) {
-            console.error(`Error rendering session meta tags for ${groupKey}/${dateParam}:`, err);
-            res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
-        }
-    });
-
-    // SPA fallback for all other client-side routes
-    app.get('/*path', (req, res) => res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html')));
+    // Server-side Open Graph injection for public SPA routes (social crawlers do not run Vue).
+    app.get('/', (req, res) => serveSpaHtml(req, res));
+    app.get('/*path', (req, res) => serveSpaHtml(req, res));
 }
 
 // Start server — async to support Vite middleware in dev mode
@@ -312,6 +293,21 @@ const port = process.env.PORT || 3000;
             root: path.join(__dirname, 'frontend'),
             server: { middlewareMode: true, hmr: { server: httpServer } },
             appType: 'spa',
+        });
+
+        // Same OG injection as production, on HTML navigations only — Vite still handles assets/HMR.
+        app.use(async (req, res, next) => {
+            if (!isSpaHtmlNavigation(req)) return next();
+            try {
+                const html = await buildSpaHtml(req, async () => {
+                    const raw = await fs.readFile(path.join(__dirname, 'frontend', 'index.html'), 'utf8');
+                    return vite.transformIndexHtml(req.originalUrl, raw);
+                });
+                res.set('Content-Type', 'text/html').send(html);
+            } catch (err) {
+                console.error(`Error rendering OG meta for ${req.path}:`, err);
+                next();
+            }
         });
 
         // Vite middleware handles asset serving, HMR, and SPA routing (catch-all index.html)
