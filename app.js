@@ -123,7 +123,8 @@ app.get('/api/health', (req, res) => {
 // Auth routes (unprotected — login/callback/logout/me)
 app.use('/auth', authRoutes);
 
-const staticOptions = { maxAge: '1h' };
+// index: false — / must reach serveSpaHtml for Open Graph injection, not raw dist/index.html
+const staticOptions = { maxAge: '1h', index: false };
 
 if (!isDev) {
     // Production: serve built static assets (includes frontend/public/ files verbatim)
