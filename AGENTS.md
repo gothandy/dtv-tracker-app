@@ -364,6 +364,7 @@ Feature inventory is split by area — read the relevant doc before working in t
 - `MEDIA_LIBRARY_DRIVE_ID` env var: required for photo uploads
 - `TAXONOMY_TERM_SET_ID` env var: required for session tags
 - `DOCUMENTS_DRIVE_ID` env var: Documents library drive ID — top-level `Backups/` JSON export and `Projects/{slug}/` project files
+- `FACEBOOK_APP_ID` env var: Meta app ID for `fb:app_id` on session page Open Graph tags (Facebook link previews)
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

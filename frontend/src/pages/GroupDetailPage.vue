@@ -127,8 +127,9 @@ import TermCloud from '../components/TermCloud.vue'
 import CardTitle from '../components/CardTitle.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import { sessionPath, groupPath, groupsPath, profilePath } from '../router/index'
+import { mapSession } from '../utils/mapSession'
 import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
-import type { Session, SessionStats } from '../types/session'
+import type { Session } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditGroupPayload } from './modals/GroupEditModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
@@ -181,34 +182,10 @@ const selectedCoverIndex = ref<number | null>(null)
 
 const today = new Date().toISOString().slice(0, 10)
 
-function mapSession(r: SessionResponse): Session {
-  const profileStats = profile.user?.profileStats
-  return {
-    id: r.id,
-    date: r.date,
-    groupId: r.groupId,
-    groupKey: r.groupKey,
-    groupName: r.groupName,
-    displayName: r.displayName,
-    description: r.description,
-    financialYear: r.financialYear,
-    isBookable: r.isBookable,
-    limits: r.limits,
-    stats: r.stats as SessionStats,
-    regularsCount: r.regularsCount,
-    mediaCount: r.mediaCount,
-    coverUrl: r.coverUrl,
-    metadata: r.metadata,
-    isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
-    isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),
-    isRegular: profileStats?.regularGroupIds?.includes(r.groupId ?? -1) ?? false,
-  }
-}
-
 const futureSessions = computed<Session[]>(() =>
   (store.group?.sessions ?? [])
     .filter(s => s.date >= today)
-    .map(mapSession)
+    .map(r => mapSession(r, profile.user?.profileStats))
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 6)
 )

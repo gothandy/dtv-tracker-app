@@ -38,6 +38,7 @@ EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 
 # Optional
 API_SYNC_KEY=your_random_key_here
+FACEBOOK_APP_ID=1973664160696548   # Meta app — Facebook link previews on session pages
 MEDIA_LIBRARY_DRIVE_ID=   # find via admin page "Discover Drives"
 DOCUMENTS_DRIVE_ID=     # Documents library drive — top-level Backups/ + Projects/{slug}/
 ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk

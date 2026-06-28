@@ -114,8 +114,9 @@ import SessionListResults from '../components/sessions/SessionListResults.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import { sessionPath, projectPath, projectsPath } from '../router/index'
 import { docsTreeHasFiles } from '../utils/docsTree'
+import { mapSession } from '../utils/mapSession'
 import type { SessionResponse } from '../../../types/api-responses'
-import type { Session, SessionStats } from '../types/session'
+import type { Session } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditProjectPayload } from './modals/ProjectEditModal.vue'
 import { buildSessionCoverCarouselItems } from '../utils/sessionCarousel'
@@ -138,35 +139,8 @@ const coverItems = computed<MediaItem[]>(() =>
   store.project ? buildSessionCoverCarouselItems(store.project.sessions) : []
 )
 
-function mapSession(r: SessionResponse): Session {
-  const profileStats = profile.user?.profileStats
-  return {
-    id: r.id,
-    date: r.date,
-    groupId: r.groupId,
-    groupKey: r.groupKey,
-    groupName: r.groupName,
-    displayName: r.displayName,
-    description: r.description,
-    financialYear: r.financialYear,
-    isBookable: r.isBookable,
-    limits: r.limits,
-    stats: r.stats as SessionStats,
-    regularsCount: r.regularsCount,
-    mediaCount: r.mediaCount,
-    coverUrl: r.coverUrl,
-    metadata: r.metadata,
-    projectId: r.projectId,
-    projectKey: r.projectKey,
-    projectTitle: r.projectTitle,
-    isRegistered: profileStats?.sessionIds?.includes(r.id) ?? false,
-    isAttended: !r.isBookable && (profileStats?.sessionIds?.includes(r.id) ?? false),
-    isRegular: profileStats?.regularGroupIds?.includes(r.groupId ?? -1) ?? false,
-  }
-}
-
 const linkedSessions = computed<Session[]>(() =>
-  (store.project?.sessions ?? []).map(mapSession)
+  (store.project?.sessions ?? []).map(r => mapSession(r, profile.user?.profileStats))
 )
 
 const showDocumentsCard = computed(() => {

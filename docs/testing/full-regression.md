@@ -685,3 +685,14 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Consent button (checkboxes icon + "Consent" label) shown next to Upload when volunteer has no Accepted Privacy Consent
 - [ ] Consent button hidden when volunteer already has Accepted Privacy Consent
 - [ ] Consent button visible for Admin, Check In, and Self-Service (`checkin-or-selfservice` / equivalent gating)
+
+### L21. Facebook link preview (production)
+
+Requires `FACEBOOK_APP_ID` in Azure Application settings. Test several public URLs after deploy.
+
+- [ ] [Sharing Debugger](https://developers.facebook.com/tools/debug/) — **Scrape Again** after deploy; no missing `fb:app_id`
+- [ ] `/` — site title and default description
+- [ ] `/groups`, `/projects`, `/sessions` — list page titles
+- [ ] `/groups/{key}`, `/projects/{key}` — entity name + description; image from latest public session cover when available
+- [ ] `/sessions/{group}/{date}` — session title, description, public cover or logo
+- [ ] `og:image` URL returns HTTP 200 for Facebook crawler

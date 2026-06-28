@@ -37,6 +37,7 @@
         </li>
         <li v-if="display.eventbrite">{{ display.eventbrite }} Eventbrite</li>
       </ul>
+      <span v-else-if="isPast" class="session-card__attended">{{ display.count }} Attended</span>
       <span v-else class="session-card__availability" :class="availabilityClass">{{ availabilityLabel }}</span>
       <RouterLink :to="viewPath"><AppButton label="View" /></RouterLink>
     </div>
@@ -85,8 +86,16 @@ const availabilityClass = computed(() => ({
 </script>
 
 <style scoped>
+.session-card__attended,
 .session-card__availability {
   font-size: 0.85rem;
+}
+
+.session-card__attended {
+  color: var(--color-dtv-dark);
+}
+
+.session-card__availability {
   color: var(--color-dtv-green);
 }
 
