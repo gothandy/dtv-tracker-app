@@ -7,16 +7,10 @@
       <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
       <p v-else-if="!tree.length" class="text-sm text-gray-500">No documents available.</p>
       <template v-else>
-        <nav v-if="breadcrumb.length > 1" class="docs-breadcrumb" aria-label="Docs location">
+        <nav v-if="topLevelFolder" class="docs-breadcrumb" aria-label="Docs location">
           <RouterLink :to="docsPath()">Docs</RouterLink>
-          <template v-for="(crumb, index) in breadcrumb" :key="crumb.slug">
-            <span class="docs-breadcrumb-sep" aria-hidden="true">/</span>
-            <RouterLink
-              v-if="index < breadcrumb.length - 1"
-              :to="docsSectionPath(...breadcrumb.slice(0, index + 1).map(item => item.slug))"
-            >{{ crumb.name }}</RouterLink>
-            <span v-else class="docs-breadcrumb-current">{{ crumb.name }}</span>
-          </template>
+          <span class="docs-breadcrumb-sep" aria-hidden="true">/</span>
+          <span class="docs-breadcrumb-current">{{ topLevelFolder.name }}</span>
         </nav>
 
         <template v-if="!pathSegments.length">
@@ -39,11 +33,9 @@
           <p v-if="!rootFolders.length && !rootFiles.length" class="text-sm text-gray-500">No documents available.</p>
         </template>
 
-        <DocsFolderContents
-          v-else-if="activeFolder"
-          :folder="activeFolder"
-          :path-segments="pathSegments"
-        />
+        <div v-else-if="topLevelFolder" class="text-black">
+          <DocsSection :nodes="topLevelFolder.children ?? []" :depth="0" />
+        </div>
 
         <p v-else class="text-sm text-gray-500">
           This section could not be found.
@@ -55,20 +47,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import DocLozengeLink from '../components/docs/DocLozengeLink.vue'
-import DocsFolderContents from '../components/docs/DocsFolderContents.vue'
 import DocsFolderLink from '../components/docs/DocsFolderLink.vue'
+import DocsSection from '../components/docs/DocsSection.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import { docsPath, docsSectionPath } from '../router/index'
-import {
-  docsFolderBreadcrumb,
-  findDocsFolderByPath,
-  partitionDocsNodes,
-} from '../utils/docsTree'
+import { findTopLevelFolder, partitionDocsNodes } from '../utils/docsTree'
 import type { DocsTreeNode } from '../../../types/api-responses'
 
 const route = useRoute()
@@ -82,20 +70,19 @@ const pathSegments = computed(() => {
   return segments.filter(Boolean)
 })
 
-const activeFolder = computed(() =>
-  pathSegments.value.length ? findDocsFolderByPath(tree.value, pathSegments.value) : null
+const topLevelFolder = computed(() =>
+  pathSegments.value.length ? findTopLevelFolder(tree.value, pathSegments.value[0]) : null
 )
 
-const breadcrumb = computed(() => docsFolderBreadcrumb(tree.value, pathSegments.value))
+const scrollSectionId = computed(() =>
+  pathSegments.value.length > 1 ? pathSegments.value.slice(1).join('/') : ''
+)
 
 const rootContents = computed(() => partitionDocsNodes(tree.value))
 const rootFolders = computed(() => rootContents.value.folders)
 const rootFiles = computed(() => rootContents.value.files)
 
-const pageHeading = computed(() => {
-  if (activeFolder.value) return activeFolder.value.name
-  return 'Docs'
-})
+const pageHeading = computed(() => topLevelFolder.value?.name ?? 'Docs')
 
 usePageTitle(pageHeading)
 
@@ -116,7 +103,18 @@ async function loadTree() {
   }
 }
 
-loadTree()
+function scrollToSection() {
+  const sectionId = scrollSectionId.value
+  if (!sectionId) return
+  nextTick(() => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
+loadTree().then(scrollToSection)
+watch(() => route.params.pathMatch, () => {
+  if (!loading.value) scrollToSection()
+})
 </script>
 
 <style scoped>

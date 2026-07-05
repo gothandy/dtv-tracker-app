@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { docsTreeHasFiles, removeDocFromTree, findDocsFolderByPath, docsFolderBreadcrumb, partitionDocsNodes } from './docsTree'
+import { docsTreeHasFiles, removeDocFromTree, findTopLevelFolder, partitionDocsNodes } from './docsTree'
 import type { DocsTreeNode } from '../../../types/api-responses'
 
 const sampleTree: DocsTreeNode[] = [
@@ -33,23 +33,14 @@ describe('removeDocFromTree', () => {
   })
 })
 
-describe('findDocsFolderByPath', () => {
-  it('returns folder node for valid path', () => {
-    const folder = findDocsFolderByPath(sampleTree, ['reports'])
-    expect(folder?.name).toBe('Reports')
+describe('findTopLevelFolder', () => {
+  it('returns a root folder by slug', () => {
+    expect(findTopLevelFolder(sampleTree, 'reports')?.name).toBe('Reports')
   })
 
-  it('returns null for missing or file paths', () => {
-    expect(findDocsFolderByPath(sampleTree, ['missing'])).toBeNull()
-    expect(findDocsFolderByPath(sampleTree, ['overview.pdf'])).toBeNull()
-  })
-})
-
-describe('docsFolderBreadcrumb', () => {
-  it('returns trail of folder nodes', () => {
-    const trail = docsFolderBreadcrumb(sampleTree, ['reports'])
-    expect(trail).toHaveLength(1)
-    expect(trail[0].name).toBe('Reports')
+  it('returns null for missing slug or nested-only slug', () => {
+    expect(findTopLevelFolder(sampleTree, 'missing')).toBeNull()
+    expect(findTopLevelFolder(sampleTree, 'overview.pdf')).toBeNull()
   })
 })
 

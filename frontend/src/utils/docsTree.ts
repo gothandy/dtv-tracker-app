@@ -11,31 +11,10 @@ export function partitionDocsNodes(nodes: DocsTreeNode[]): { folders: DocsTreeNo
   }
 }
 
-/** Resolve a folder node from slug path segments; returns null if any segment is missing or not a folder. */
-export function findDocsFolderByPath(tree: DocsTreeNode[], segments: string[]): DocsTreeNode | null {
-  if (!segments.length) return null
-  let nodes = tree
-  let found: DocsTreeNode | null = null
-  for (const segment of segments) {
-    const node = nodes.find(n => n.slug === segment && n.type === 'folder')
-    if (!node) return null
-    found = node
-    nodes = node.children ?? []
-  }
-  return found
-}
-
-/** Breadcrumb entries from root to the folder at `segments` (inclusive). */
-export function docsFolderBreadcrumb(tree: DocsTreeNode[], segments: string[]): DocsTreeNode[] {
-  const trail: DocsTreeNode[] = []
-  let nodes = tree
-  for (const segment of segments) {
-    const node = nodes.find(n => n.slug === segment && n.type === 'folder')
-    if (!node) break
-    trail.push(node)
-    nodes = node.children ?? []
-  }
-  return trail
+/** Top-level folder matching the first path segment. */
+export function findTopLevelFolder(tree: DocsTreeNode[], slug: string): DocsTreeNode | null {
+  const node = tree.find(n => n.slug === slug && n.type === 'folder')
+  return node ?? null
 }
 
 export function docsTreeHasFiles(nodes: DocsTreeNode[]): boolean {

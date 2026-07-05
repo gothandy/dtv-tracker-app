@@ -18,7 +18,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/groups` loads without redirect; regulars count shows 0
 - [ ] Unauthenticated visit to `/docs` loads without redirect; burger menu shows **Docs** link
 - [ ] `/docs` lists top-level governance folders from SharePoint `Docs/` only (no nested content); PDF lozenge opens via tracker URL (`/docs/.../file.pdf`), not SharePoint
-- [ ] `/docs/health-and-safety` opens the Health and Safety folder (files + subfolder links); URL is shareable
+- [ ] `/docs/health-and-safety` opens the Health and Safety section with nested folders expanded on one page; URL is shareable
+- [ ] `/docs/charity/annual-reports/2025-26` opens the Charity section and scrolls to the nested folder
 - [ ] `https://docs.dtv.org.uk/` returns 301 to `https://tracker.dtv.org.uk/docs`
 - [ ] Legacy privacy notice URL `https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf` returns 301 to `https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf` (not `/docs/it-and-data/...`)
 - [ ] Unauthenticated visit to `/groups/:key` loads without redirect; regulars section hidden

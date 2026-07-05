@@ -2,8 +2,8 @@
 
 ## Session: 2026-07-05 (Governance Docs folder navigation)
 
-- `/docs` landing page lists top-level folders only; folder URLs (`/docs/{slug}/…`) show that section's files and subfolder links.
-- `DocsFolderLink`, `DocsFolderContents`; tree helpers in `docsTree.ts` (`findDocsFolderByPath`, `partitionDocsNodes`, `docsFolderBreadcrumb`).
+- `/docs` landing page lists top-level folders only; `/docs/{top-level}/…` opens that section with nested folders expanded inline (scroll-to for deeper paths).
+- `DocsFolderLink`; tree helpers in `docsTree.ts` (`findTopLevelFolder`, `partitionDocsNodes`).
 - Project detail docs card unchanged (`DocsSection` still expands full tree inline).
 
 ## Session: 2026-06-28 (Session card tidy-up + Facebook OG)
