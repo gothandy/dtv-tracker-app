@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { docsTreeHasFiles, removeDocFromTree } from './docsTree'
+import { docsTreeHasFiles, removeDocFromTree, findDocsFolderByPath, docsFolderBreadcrumb, partitionDocsNodes } from './docsTree'
 import type { DocsTreeNode } from '../../../types/api-responses'
 
 const sampleTree: DocsTreeNode[] = [
@@ -30,5 +30,33 @@ describe('removeDocFromTree', () => {
     const result = removeDocFromTree(sampleTree, 'a1')
     expect(docsTreeHasFiles(result)).toBe(true)
     expect(result[0].children).toHaveLength(0)
+  })
+})
+
+describe('findDocsFolderByPath', () => {
+  it('returns folder node for valid path', () => {
+    const folder = findDocsFolderByPath(sampleTree, ['reports'])
+    expect(folder?.name).toBe('Reports')
+  })
+
+  it('returns null for missing or file paths', () => {
+    expect(findDocsFolderByPath(sampleTree, ['missing'])).toBeNull()
+    expect(findDocsFolderByPath(sampleTree, ['overview.pdf'])).toBeNull()
+  })
+})
+
+describe('docsFolderBreadcrumb', () => {
+  it('returns trail of folder nodes', () => {
+    const trail = docsFolderBreadcrumb(sampleTree, ['reports'])
+    expect(trail).toHaveLength(1)
+    expect(trail[0].name).toBe('Reports')
+  })
+})
+
+describe('partitionDocsNodes', () => {
+  it('splits folders and files', () => {
+    const { folders, files } = partitionDocsNodes(sampleTree)
+    expect(folders).toHaveLength(1)
+    expect(files).toHaveLength(1)
   })
 })

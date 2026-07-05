@@ -1,5 +1,11 @@
 # Development Progress
 
+## Session: 2026-07-05 (Governance Docs folder navigation)
+
+- `/docs` landing page lists top-level folders only; folder URLs (`/docs/{slug}/…`) show that section's files and subfolder links.
+- `DocsFolderLink`, `DocsFolderContents`; tree helpers in `docsTree.ts` (`findDocsFolderByPath`, `partitionDocsNodes`, `docsFolderBreadcrumb`).
+- Project detail docs card unchanged (`DocsSection` still expands full tree inline).
+
 ## Session: 2026-06-28 (Session card tidy-up + Facebook OG)
 
 - Shared `mapSession()` in `frontend/src/utils/mapSession.ts` — used by session list store, group detail, and project detail.
