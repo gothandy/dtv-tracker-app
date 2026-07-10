@@ -154,7 +154,7 @@
             class="session-parking-notice mx-6 mb-6"
             role="note"
           >
-            Free car parking is available. If the Forest England parking tablet is not available please email
+            Free car parking is available. If the Forestry England parking tablet is not available please email
             <a href="mailto:fodtrails@forestryengland.uk" class="session-parking-notice__link">fodtrails@forestryengland.uk</a>
             with list of car registrations.
           </div>
