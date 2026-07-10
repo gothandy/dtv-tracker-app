@@ -1,5 +1,9 @@
 # Development Progress
 
+## Session: 2026-07-10 (Session-day parking notice)
+
+- Session detail: check-in/admin-only parking notice under title/description/tags for today and future sessions; mailto `fodtrails@forestryengland.uk`.
+
 ## Session: 2026-07-05 (Governance Docs folder navigation)
 
 - `/docs` landing page lists top-level folders only; `/docs/{top-level}/…` opens that section with nested folders expanded inline (scroll-to for deeper paths).

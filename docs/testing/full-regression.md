@@ -54,6 +54,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Check In: saving session edit with title/description works (PATCH succeeds)
 - [ ] Check In: regulars checkbox on profile detail works (add/remove)
 - [ ] Check In: Refresh button visible on session detail; enabled for today/future sessions only (disabled on past sessions)
+- [ ] Check In / Admin: on today and future sessions, parking notice appears under title/description/tags with mailto link to `fodtrails@forestryengland.uk`; hidden for public/self-service and past sessions
 - [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In: edit profile button visible, can update name/email
