@@ -149,6 +149,15 @@
               @save-tags="onSaveTags"
             />
           </div>
+          <div
+            v-if="profile.hasCheckInAccess && !isPastSession"
+            class="session-parking-notice mx-6 mb-6"
+            role="note"
+          >
+            Free car parking is available. If the Forestry England parking tablet is not available please email
+            <a href="mailto:fodtrails@forestryengland.uk" class="session-parking-notice__link">fodtrails@forestryengland.uk</a>
+            with list of car registrations.
+          </div>
         </template>
       </LayoutColumns>
 
@@ -892,5 +901,23 @@ watch(() => [route.params.groupKey, route.params.date], () => {
   opacity: 0.7;
   text-align: center;
   margin: 0 0 0.5rem;
+}
+
+.session-parking-notice {
+  background: var(--color-dtv-sand-light);
+  color: var(--color-dtv-dark);
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.session-parking-notice__link {
+  color: var(--color-dtv-green);
+  text-decoration: underline;
+}
+
+.session-parking-notice__link:hover {
+  color: var(--color-dtv-green-dark);
 }
 </style>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { docsTreeHasFiles, removeDocFromTree } from './docsTree'
+import { docsTreeHasFiles, removeDocFromTree, findTopLevelFolder, partitionDocsNodes } from './docsTree'
 import type { DocsTreeNode } from '../../../types/api-responses'
 
 const sampleTree: DocsTreeNode[] = [
@@ -30,5 +30,24 @@ describe('removeDocFromTree', () => {
     const result = removeDocFromTree(sampleTree, 'a1')
     expect(docsTreeHasFiles(result)).toBe(true)
     expect(result[0].children).toHaveLength(0)
+  })
+})
+
+describe('findTopLevelFolder', () => {
+  it('returns a root folder by slug', () => {
+    expect(findTopLevelFolder(sampleTree, 'reports')?.name).toBe('Reports')
+  })
+
+  it('returns null for missing slug or nested-only slug', () => {
+    expect(findTopLevelFolder(sampleTree, 'missing')).toBeNull()
+    expect(findTopLevelFolder(sampleTree, 'overview.pdf')).toBeNull()
+  })
+})
+
+describe('partitionDocsNodes', () => {
+  it('splits folders and files', () => {
+    const { folders, files } = partitionDocsNodes(sampleTree)
+    expect(folders).toHaveLength(1)
+    expect(files).toHaveLength(1)
   })
 })

@@ -17,8 +17,9 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Unauthenticated visit to `/sessions` loads without redirect
 - [ ] Unauthenticated visit to `/groups` loads without redirect; regulars count shows 0
 - [ ] Unauthenticated visit to `/docs` loads without redirect; burger menu shows **Docs** link
-- [ ] `/docs` lists governance folders from SharePoint `Docs/` (H2/H3/bold hierarchy); PDF lozenge opens via tracker URL (`/docs/.../file.pdf`), not SharePoint
-- [ ] `/docs/health-and-safety` scrolls to Health and Safety section (v1: full tree + scroll-to)
+- [ ] `/docs` lists top-level governance folders from SharePoint `Docs/` only (no nested content); PDF lozenge opens via tracker URL (`/docs/.../file.pdf`), not SharePoint
+- [ ] `/docs/health-and-safety` opens the Health and Safety section with nested folders expanded on one page; URL is shareable
+- [ ] `/docs/charity/annual-reports/2025-26` opens the Charity section and scrolls to the nested folder
 - [ ] `https://docs.dtv.org.uk/` returns 301 to `https://tracker.dtv.org.uk/docs`
 - [ ] Legacy privacy notice URL `https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf` returns 301 to `https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf` (not `/docs/it-and-data/...`)
 - [ ] Unauthenticated visit to `/groups/:key` loads without redirect; regulars section hidden
@@ -53,6 +54,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Check In: saving session edit with title/description works (PATCH succeeds)
 - [ ] Check In: regulars checkbox on profile detail works (add/remove)
 - [ ] Check In: Refresh button visible on session detail; enabled for today/future sessions only (disabled on past sessions)
+- [ ] Check In / Admin: on today and future sessions, parking notice appears under title/description/tags with mailto link to `fodtrails@forestryengland.uk`; hidden for public/self-service and past sessions
 - [ ] Check In: Add Entry link visible on session detail, can add entry for existing volunteer
 - [ ] Check In: can create new profile from add-entry page ("+ Add New" button)
 - [ ] Check In: edit profile button visible, can update name/email
