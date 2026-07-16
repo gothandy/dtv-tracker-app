@@ -24,6 +24,14 @@
           <ModalFormInput v-model="form.date" type="date" />
         </FormRow>
 
+        <FormRow title="Start time" :full-width="true">
+          <ModalFormInput v-model="form.time" type="time" />
+        </FormRow>
+
+        <FormRow title="Length (hours)" :full-width="true">
+          <ModalFormInput v-model="form.length" type="number" min="0.25" step="0.25" placeholder="3" />
+        </FormRow>
+
         <FormRow title="Group" :full-width="true">
           <ModalFormSelect v-model="form.groupId">
             <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
@@ -81,10 +89,28 @@ export interface SessionSaveData {
   displayName: string
   description: string
   date: string
+  /** HH:MM 24-hour; blank → 09:30 */
+  time: string
+  /** Hours; blank → 3 */
+  length: number
   groupId: number | null
   projectId: number | null
   limits: Record<string, unknown> | null
   eventbriteEventId: string
+}
+
+const DEFAULT_SESSION_TIME = '09:30'
+const DEFAULT_SESSION_LENGTH = 3
+
+function resolveSessionTime(raw: string): string {
+  return raw.trim() || DEFAULT_SESSION_TIME
+}
+
+function resolveSessionLength(raw: string | number): number {
+  if (raw === '' || raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
+  const value = typeof raw === 'number' ? raw : parseFloat(String(raw).trim())
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SESSION_LENGTH
+  return value
 }
 
 const props = defineProps<{
@@ -110,6 +136,8 @@ const form = reactive({
   displayName: props.session.displayName ?? '',
   description: props.session.description ?? '',
   date: props.session.date,
+  time: props.session.time ?? DEFAULT_SESSION_TIME,
+  length: (props.session.length ?? DEFAULT_SESSION_LENGTH) as string | number,
   groupId: props.session.groupId ?? null as number | null,
   projectId: props.session.projectId ?? null as number | null,
   limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
@@ -134,6 +162,8 @@ function save() {
     displayName: form.displayName,
     description: form.description,
     date: form.date,
+    time: resolveSessionTime(form.time),
+    length: resolveSessionLength(form.length),
     groupId: form.groupId,
     projectId: form.projectId,
     limits,

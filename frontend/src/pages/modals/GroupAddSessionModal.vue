@@ -27,6 +27,14 @@
         <ModalFormInput v-model="form.date" type="date" />
       </FormRow>
 
+      <FormRow title="Start time" :full-width="true">
+        <ModalFormInput v-model="form.time" type="time" />
+      </FormRow>
+
+      <FormRow title="Length (hours)" :full-width="true">
+        <ModalFormInput v-model="form.length" type="number" min="0.25" step="0.25" placeholder="3" />
+      </FormRow>
+
       <FormRow title="Display Name" :full-width="true">
         <ModalFormInput v-model="form.name" :placeholder="group?.displayName || group?.key || ''" />
       </FormRow>
@@ -47,8 +55,26 @@ import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 export type AddSessionPayload = {
   groupId: number
   date: string
+  /** HH:MM 24-hour; blank / omitted → 09:30 */
+  time?: string
+  /** Hours; blank / omitted → 3 */
+  length?: number
   name?: string
   projectId?: number | null
+}
+
+const DEFAULT_SESSION_TIME = '09:30'
+const DEFAULT_SESSION_LENGTH = 3
+
+function resolveSessionTime(raw: string): string {
+  return raw.trim() || DEFAULT_SESSION_TIME
+}
+
+function resolveSessionLength(raw: string | number): number {
+  if (raw === '' || raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
+  const value = typeof raw === 'number' ? raw : parseFloat(String(raw).trim())
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SESSION_LENGTH
+  return value
 }
 
 type GroupOption = { id: number; key: string; displayName?: string | null }
@@ -68,6 +94,8 @@ const emit = defineEmits<{
 
 const form = reactive({
   date: '',
+  time: '',
+  length: '' as string | number,
   name: '',
   groupId: '' as number | '',
   projectId: null as number | null,
@@ -82,6 +110,8 @@ function add() {
   emit('add', {
     groupId: resolvedGroupId.value,
     date: form.date,
+    time: resolveSessionTime(form.time),
+    length: resolveSessionLength(form.length),
     name: form.name || undefined,
     projectId: form.projectId,
   })

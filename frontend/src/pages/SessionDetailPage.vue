@@ -831,6 +831,8 @@ async function onSessionSave(data: SessionSaveData) {
     }
     if (profile.isAdmin) {
       body.date = data.date
+      body.time = data.time
+      body.length = data.length
       body.groupId = data.groupId
       body.projectId = data.projectId
       body.limits = data.limits

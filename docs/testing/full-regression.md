@@ -106,14 +106,18 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Redirects to groups listing
 
 ### H5. Create session
-- [ ] Group detail or sessions page → "New Session" button → modal with Group, Date (required), Name, Description
-- [ ] `POST /api/sessions` — `{ groupId, date, name?, description? }`
+- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time (optional), Length (optional), Name
+- [ ] Start time blank → stored/treated as `09:30`; non-default times saved as HH:MM (24-hour)
+- [ ] Length blank → stored/treated as `3` hours
+- [ ] `POST /api/sessions` — `{ groupId, date, time?, length?, name?, description?, projectId? }`
 - [ ] Redirects to session detail / appears in list
 
 ### H6. Edit session
-- [ ] Session detail → pencil icon → modal with Group dropdown, Date, Display Name, Description, Eventbrite Event ID
+- [ ] Session detail → pencil icon → modal with Display Name, Description; admin also sees Date, Start time, Length, Group, Project, Limits, Eventbrite Event ID
+- [ ] Start time prefills from session (default `09:30`); blank on save → `09:30`
+- [ ] Length prefills from session (default `3`); blank on save → `3`
 - [ ] Group dropdown pre-selects current group
-- [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, groupId? }`
+- [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, time?, length?, groupId?, projectId?, limits? }`
 - [ ] Changing date redirects to new URL
 - [ ] Changing date on a session whose Title matches the auto-generated format (`YYYY-MM-DD GroupKey`) — Title is automatically updated to the new date; verify in SharePoint
 - [ ] Changing group shows confirmation: "Move this session to [group]? All existing entries will remain attached."

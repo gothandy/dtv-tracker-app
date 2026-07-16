@@ -57,10 +57,14 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Title** | Title | Single line of text | No | Lookup key (e.g., "2026-02-15 Sat") |
 | **Name** | Name | Single line of text | No | Display name for the session |
 | **Date** | Date | Date (Date only) | Yes | Session date |
+| **Time** | Time | Single line of text | No | Start time HH:MM (24-hour); app defaults to 09:30 when blank |
+| **Length** | Length | Number | No | Session duration in hours; app defaults to 3 when blank |
 | **Notes** | Notes | Multiple lines of text | No | Planning notes, work done, and actions |
 | **Group** | Group | Lookup | No | Links to Groups list (shows Title) |
 | **Project** | Project | Lookup | No | Links to Projects list (shows Title) |
 | **EventbriteEventID** | EventbriteEventID | Single line of text | No | Eventbrite Event identifier |
+| **Limits** | Limits | Single line of text | No | JSON capacity config e.g. `{"new":4,"total":20}` |
+| **CoverMedia** | CoverMedia | Number | No | Media library item ID used as session cover photo |
 | **Stats** | Stats | Multiple lines of text | No | Pre-computed JSON: `{ "count": N, "hours": N, "media": N, "new": N, "child": N, "regular": N, "cancelledRegular": N, "eventbrite": N }` |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |

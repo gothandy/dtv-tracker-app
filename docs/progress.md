@@ -1,5 +1,11 @@
 # Development Progress
 
+## Session: 2026-07-16 (Session start time / length in create/edit modals)
+
+- Add/edit session modals include Start time (`type="time"`, HH:MM; blank → `09:30`) and Length in hours (blank → `3`).
+- `POST` / `PATCH /api/sessions` accept `time` / `length` and write SharePoint `Time` / `Length` (same defaults + validation).
+- Schema + regression checklist updated for Time/Length.
+
 ## Session: 2026-07-10 (Session-day parking notice)
 
 - Session detail: check-in/admin-only parking notice under title/description/tags for today and future sessions; mailto `fodtrails@forestryengland.uk`.
