@@ -191,6 +191,7 @@
             :working-id="workingId"
             :refresh-working="refreshWorking"
             :is-past-session="isPastSession"
+            :session-length="store.session.length"
             @refresh-request="onRefreshRequest"
             @update="onEntryUpdate"
             @set-hours="onSetHours"

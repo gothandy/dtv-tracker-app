@@ -160,7 +160,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Redirects to session detail or profile
 
 ### H12. Set default hours (bulk)
-- [ ] Session detail → "Set Hours" button → modal with hours input (default 3)
+- [ ] Session detail → "Set Hours" button → modal with hours input (defaults to session length, 3 when unset)
 - [ ] Applies to checked-in entries where hours = 0
 - [ ] Admin on past session: Set Hours enabled; applies to all active entries without hours (marks checked in)
 - [ ] Check In on past session: Set Hours disabled when no checked-in entries without hours
