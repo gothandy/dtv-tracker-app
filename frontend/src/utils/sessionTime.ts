@@ -1,3 +1,19 @@
+/** Matches backend DEFAULT_SESSION_TIME / DEFAULT_SESSION_LENGTH when SharePoint fields are blank. */
+export const DEFAULT_SESSION_TIME = '09:30'
+export const DEFAULT_SESSION_LENGTH = 3
+
+export function resolveSessionTime(raw: string | null | undefined): string {
+  if (raw === null || raw === undefined) return DEFAULT_SESSION_TIME
+  return String(raw).trim() || DEFAULT_SESSION_TIME
+}
+
+export function resolveSessionLength(raw: string | number | null | undefined): number {
+  if (raw === '' || raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
+  const value = typeof raw === 'number' ? raw : parseFloat(String(raw).trim())
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SESSION_LENGTH
+  return value
+}
+
 function parseTimeToMinutes(time: string): number | null {
   const match = time.trim().match(/^(\d{1,2}):(\d{2})$/)
   if (!match) return null
@@ -20,18 +36,14 @@ function formatLengthHours(hours: number): string {
   return `${label}h`
 }
 
-/** Formats session start time and duration for display, e.g. "9:30 to 12:30 (3h)". */
-export function formatSessionTimeRange(time?: string, lengthHours?: number): string | null {
-  if (!time && lengthHours === undefined) return null
-
-  const startMinutes = time ? parseTimeToMinutes(time) : null
-  const lengthLabel = lengthHours !== undefined ? formatLengthHours(lengthHours) : null
-
-  if (startMinutes !== null && lengthHours !== undefined && lengthHours > 0) {
-    const endMinutes = startMinutes + lengthHours * 60
-    return `${formatMinutesAsTime(startMinutes)} to ${formatMinutesAsTime(endMinutes)} (${lengthLabel})`
-  }
-  if (startMinutes !== null) return formatMinutesAsTime(startMinutes)
-  if (lengthLabel) return lengthLabel
-  return null
+/**
+ * Formats session start time and duration for display, e.g. "9:30 to 12:30 (3h)".
+ * Blank / missing values use the same defaults as the API (09:30, 3h).
+ */
+export function formatSessionTimeRange(time?: string, lengthHours?: number): string {
+  const resolvedTime = resolveSessionTime(time)
+  const resolvedLength = resolveSessionLength(lengthHours)
+  const startMinutes = parseTimeToMinutes(resolvedTime) ?? parseTimeToMinutes(DEFAULT_SESSION_TIME)!
+  const endMinutes = startMinutes + resolvedLength * 60
+  return `${formatMinutesAsTime(startMinutes)} to ${formatMinutesAsTime(endMinutes)} (${formatLengthHours(resolvedLength)})`
 }

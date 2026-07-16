@@ -32,7 +32,7 @@
       </FormRow>
 
       <FormRow title="Length (hours)" :full-width="true">
-        <ModalFormInput v-model="form.length" type="number" min="0.25" step="0.25" placeholder="3" />
+        <ModalFormInput v-model="form.hours" type="number" min="0.25" step="0.25" />
       </FormRow>
 
       <FormRow title="Display Name" :full-width="true">
@@ -51,6 +51,12 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
+import {
+  DEFAULT_SESSION_LENGTH,
+  DEFAULT_SESSION_TIME,
+  resolveSessionLength,
+  resolveSessionTime,
+} from '../../utils/sessionTime'
 
 export type AddSessionPayload = {
   groupId: number
@@ -61,20 +67,6 @@ export type AddSessionPayload = {
   length?: number
   name?: string
   projectId?: number | null
-}
-
-const DEFAULT_SESSION_TIME = '09:30'
-const DEFAULT_SESSION_LENGTH = 3
-
-function resolveSessionTime(raw: string): string {
-  return raw.trim() || DEFAULT_SESSION_TIME
-}
-
-function resolveSessionLength(raw: string | number): number {
-  if (raw === '' || raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
-  const value = typeof raw === 'number' ? raw : parseFloat(String(raw).trim())
-  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SESSION_LENGTH
-  return value
 }
 
 type GroupOption = { id: number; key: string; displayName?: string | null }
@@ -94,8 +86,9 @@ const emit = defineEmits<{
 
 const form = reactive({
   date: '',
-  time: '',
-  length: '' as string | number,
+  time: DEFAULT_SESSION_TIME,
+  // Named hours (not length) — reactive objects with a numeric `length` break v-model updates
+  hours: String(DEFAULT_SESSION_LENGTH),
   name: '',
   groupId: '' as number | '',
   projectId: null as number | null,
@@ -111,7 +104,7 @@ function add() {
     groupId: resolvedGroupId.value,
     date: form.date,
     time: resolveSessionTime(form.time),
-    length: resolveSessionLength(form.length),
+    length: resolveSessionLength(form.hours),
     name: form.name || undefined,
     projectId: form.projectId,
   })

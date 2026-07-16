@@ -106,16 +106,15 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Redirects to groups listing
 
 ### H5. Create session
-- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time (optional), Length (optional), Name
-- [ ] Start time blank → stored/treated as `09:30`; non-default times saved as HH:MM (24-hour)
-- [ ] Length blank → stored/treated as `3` hours
+- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time, Length, Name
+- [ ] Start time and Length prefill defaults (`09:30`, `3`); blank on submit still stores those defaults
 - [ ] `POST /api/sessions` — `{ groupId, date, time?, length?, name?, description?, projectId? }`
 - [ ] Redirects to session detail / appears in list
 
 ### H6. Edit session
 - [ ] Session detail → pencil icon → modal with Display Name, Description; admin also sees Date, Start time, Length, Group, Project, Limits, Eventbrite Event ID
-- [ ] Start time prefills from session (default `09:30`); blank on save → `09:30`
-- [ ] Length prefills from session (default `3`); blank on save → `3`
+- [ ] Start time / Length prefill from session (blank SharePoint → `09:30` / `3`); blank on save → same defaults
+- [ ] Session detail Time row always shows a range (defaults when SharePoint Time/Length blank)
 - [ ] Group dropdown pre-selects current group
 - [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, time?, length?, groupId?, projectId?, limits? }`
 - [ ] Changing date redirects to new URL

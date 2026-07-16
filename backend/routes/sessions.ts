@@ -67,7 +67,7 @@ function resolveSessionLengthFromBody(length: unknown): { length: number } | { e
     return { length: DEFAULT_SESSION_LENGTH };
   }
   const parsed = parseSessionLength(length);
-  if (!parsed) {
+  if (parsed === undefined) {
     return { error: 'length must be a positive number of hours' };
   }
   return { length: parsed };

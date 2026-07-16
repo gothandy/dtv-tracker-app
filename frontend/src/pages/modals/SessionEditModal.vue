@@ -29,7 +29,7 @@
         </FormRow>
 
         <FormRow title="Length (hours)" :full-width="true">
-          <ModalFormInput v-model="form.length" type="number" min="0.25" step="0.25" placeholder="3" />
+          <ModalFormInput v-model="form.hours" type="number" min="0.25" step="0.25" />
         </FormRow>
 
         <FormRow title="Group" :full-width="true">
@@ -80,6 +80,10 @@ import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import DeleteModal from './DeleteModal.vue'
+import {
+  resolveSessionLength,
+  resolveSessionTime,
+} from '../../utils/sessionTime'
 
 export interface GroupItem { id: number; name: string; key: string }
 
@@ -97,20 +101,6 @@ export interface SessionSaveData {
   projectId: number | null
   limits: Record<string, unknown> | null
   eventbriteEventId: string
-}
-
-const DEFAULT_SESSION_TIME = '09:30'
-const DEFAULT_SESSION_LENGTH = 3
-
-function resolveSessionTime(raw: string): string {
-  return raw.trim() || DEFAULT_SESSION_TIME
-}
-
-function resolveSessionLength(raw: string | number): number {
-  if (raw === '' || raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
-  const value = typeof raw === 'number' ? raw : parseFloat(String(raw).trim())
-  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SESSION_LENGTH
-  return value
 }
 
 const props = defineProps<{
@@ -136,8 +126,9 @@ const form = reactive({
   displayName: props.session.displayName ?? '',
   description: props.session.description ?? '',
   date: props.session.date,
-  time: props.session.time ?? DEFAULT_SESSION_TIME,
-  length: (props.session.length ?? DEFAULT_SESSION_LENGTH) as string | number,
+  time: resolveSessionTime(props.session.time),
+  // Named hours (not length) — reactive objects with a numeric `length` break v-model updates
+  hours: String(resolveSessionLength(props.session.length)),
   groupId: props.session.groupId ?? null as number | null,
   projectId: props.session.projectId ?? null as number | null,
   limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
@@ -163,7 +154,7 @@ function save() {
     description: form.description,
     date: form.date,
     time: resolveSessionTime(form.time),
-    length: resolveSessionLength(form.length),
+    length: resolveSessionLength(form.hours),
     groupId: form.groupId,
     projectId: form.projectId,
     limits,
