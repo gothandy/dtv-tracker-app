@@ -21,12 +21,18 @@ describe('resolveSessionTime', () => {
 })
 
 describe('resolveSessionLength', () => {
-  it('returns default for blank or invalid values', () => {
+  it('returns default for blank values only', () => {
     expect(resolveSessionLength('')).toBe(DEFAULT_SESSION_LENGTH)
+    expect(resolveSessionLength('   ')).toBe(DEFAULT_SESSION_LENGTH)
     expect(resolveSessionLength(undefined)).toBe(DEFAULT_SESSION_LENGTH)
     expect(resolveSessionLength(null)).toBe(DEFAULT_SESSION_LENGTH)
-    expect(resolveSessionLength(0)).toBe(DEFAULT_SESSION_LENGTH)
-    expect(resolveSessionLength(-1)).toBe(DEFAULT_SESSION_LENGTH)
+  })
+
+  it('returns null for invalid non-blank values', () => {
+    expect(resolveSessionLength(0)).toBeNull()
+    expect(resolveSessionLength(-1)).toBeNull()
+    expect(resolveSessionLength('0')).toBeNull()
+    expect(resolveSessionLength('abc')).toBeNull()
   })
 
   it('keeps positive lengths', () => {

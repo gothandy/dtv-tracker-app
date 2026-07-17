@@ -7,10 +7,15 @@ export function resolveSessionTime(raw: string | null | undefined): string {
   return String(raw).trim() || DEFAULT_SESSION_TIME
 }
 
-export function resolveSessionLength(raw: string | number | null | undefined): number {
-  if (raw === '' || raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
+/**
+ * Blank / omitted → default 3 hours.
+ * Invalid non-blank values (0, negative, NaN) → null so callers can show an error.
+ */
+export function resolveSessionLength(raw: string | number | null | undefined): number | null {
+  if (raw === null || raw === undefined) return DEFAULT_SESSION_LENGTH
+  if (typeof raw === 'string' && !raw.trim()) return DEFAULT_SESSION_LENGTH
   const value = typeof raw === 'number' ? raw : parseFloat(String(raw).trim())
-  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SESSION_LENGTH
+  if (!Number.isFinite(value) || value <= 0) return null
   return value
 }
 
@@ -42,7 +47,7 @@ function formatLengthHours(hours: number): string {
  */
 export function formatSessionTimeRange(time?: string, lengthHours?: number): string {
   const resolvedTime = resolveSessionTime(time)
-  const resolvedLength = resolveSessionLength(lengthHours)
+  const resolvedLength = resolveSessionLength(lengthHours) ?? DEFAULT_SESSION_LENGTH
   const startMinutes = parseTimeToMinutes(resolvedTime) ?? parseTimeToMinutes(DEFAULT_SESSION_TIME)!
   const endMinutes = startMinutes + resolvedLength * 60
   return `${formatMinutesAsTime(startMinutes)} to ${formatMinutesAsTime(endMinutes)} (${formatLengthHours(resolvedLength)})`

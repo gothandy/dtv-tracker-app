@@ -81,6 +81,7 @@ import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import DeleteModal from './DeleteModal.vue'
 import {
+  DEFAULT_SESSION_LENGTH,
   resolveSessionLength,
   resolveSessionTime,
 } from '../../utils/sessionTime'
@@ -128,7 +129,7 @@ const form = reactive({
   date: props.session.date,
   time: resolveSessionTime(props.session.time),
   // Named hours (not length) — reactive objects with a numeric `length` break v-model updates
-  hours: String(resolveSessionLength(props.session.length)),
+  hours: String(resolveSessionLength(props.session.length) ?? DEFAULT_SESSION_LENGTH),
   groupId: props.session.groupId ?? null as number | null,
   projectId: props.session.projectId ?? null as number | null,
   limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
@@ -149,12 +150,17 @@ function save() {
       }
     }
   }
+  const length = resolveSessionLength(form.hours)
+  if (length === null) {
+    validationError.value = 'Length must be a positive number of hours'
+    return
+  }
   emit('save', {
     displayName: form.displayName,
     description: form.description,
     date: form.date,
     time: resolveSessionTime(form.time),
-    length: resolveSessionLength(form.hours),
+    length,
     groupId: form.groupId,
     projectId: form.projectId,
     limits,

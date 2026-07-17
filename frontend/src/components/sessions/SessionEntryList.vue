@@ -57,7 +57,7 @@
     <SessionSetHoursModal
       v-if="showSetHours"
       :entry-count="eligibleCount"
-      :default-hours="resolveSessionLength(sessionLength)"
+      :default-hours="resolveSessionLength(sessionLength) ?? DEFAULT_SESSION_LENGTH"
       :past-session-admin="!!(isPastSession && isAdmin)"
       :working="workingSetHours"
       :error="setHoursError"
@@ -81,7 +81,7 @@ import EntryAddModal from '../../pages/modals/EntryAddModal.vue'
 import SessionSetHoursModal from '../../pages/modals/SessionSetHoursModal.vue'
 import { profilePath } from '../../router/index'
 import { iconsForEntry } from '../../utils/labelIcons'
-import { resolveSessionLength } from '../../utils/sessionTime'
+import { DEFAULT_SESSION_LENGTH, resolveSessionLength } from '../../utils/sessionTime'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }

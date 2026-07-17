@@ -39,11 +39,13 @@
         <ModalFormInput v-model="form.name" :placeholder="group?.displayName || group?.key || ''" />
       </FormRow>
     </FormLayout>
+
+    <p v-if="validationError" class="modal-form-error">{{ validationError }}</p>
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 import type { ProjectItem } from './SessionEditModal.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
@@ -84,6 +86,8 @@ const emit = defineEmits<{
   add: [payload: AddSessionPayload]
 }>()
 
+const validationError = ref('')
+
 const form = reactive({
   date: '',
   time: DEFAULT_SESSION_TIME,
@@ -100,11 +104,17 @@ const resolvedGroupId = computed(() =>
 
 function add() {
   if (!resolvedGroupId.value) return
+  validationError.value = ''
+  const length = resolveSessionLength(form.hours)
+  if (length === null) {
+    validationError.value = 'Length must be a positive number of hours'
+    return
+  }
   emit('add', {
     groupId: resolvedGroupId.value,
     date: form.date,
     time: resolveSessionTime(form.time),
-    length: resolveSessionLength(form.hours),
+    length,
     name: form.name || undefined,
     projectId: form.projectId,
   })
