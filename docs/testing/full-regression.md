@@ -106,14 +106,19 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Redirects to groups listing
 
 ### H5. Create session
-- [ ] Group detail or sessions page → "New Session" button → modal with Group, Date (required), Name, Description
-- [ ] `POST /api/sessions` — `{ groupId, date, name?, description? }`
+- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time, Length, Name
+- [ ] Start time and Length prefill defaults (`09:30`, `3`); blank on submit still stores those defaults
+- [ ] Invalid Length (0, negative) shows an error and does not create the session
+- [ ] `POST /api/sessions` — `{ groupId, date, time?, length?, name?, description?, projectId? }`
 - [ ] Redirects to session detail / appears in list
 
 ### H6. Edit session
-- [ ] Session detail → pencil icon → modal with Group dropdown, Date, Display Name, Description, Eventbrite Event ID
+- [ ] Session detail → pencil icon → modal with Display Name, Description; admin also sees Date, Start time, Length, Group, Project, Limits, Eventbrite Event ID
+- [ ] Start time / Length prefill from session (blank SharePoint → `09:30` / `3`); blank on save → same defaults
+- [ ] Invalid Length (0, negative) shows an error and does not save / overwrite the session
+- [ ] Session detail Time row always shows a range (defaults when SharePoint Time/Length blank)
 - [ ] Group dropdown pre-selects current group
-- [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, groupId? }`
+- [ ] `PATCH /api/sessions/:group/:date` — `{ displayName?, description?, eventbriteEventId?, date?, time?, length?, groupId?, projectId?, limits? }`
 - [ ] Changing date redirects to new URL
 - [ ] Changing date on a session whose Title matches the auto-generated format (`YYYY-MM-DD GroupKey`) — Title is automatically updated to the new date; verify in SharePoint
 - [ ] Changing group shows confirmation: "Move this session to [group]? All existing entries will remain attached."
@@ -157,7 +162,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Redirects to session detail or profile
 
 ### H12. Set default hours (bulk)
-- [ ] Session detail → "Set Hours" button → modal with hours input (default 3)
+- [ ] Session detail → "Set Hours" button → modal with hours input (defaults to session length, 3 when unset)
 - [ ] Applies to checked-in entries where hours = 0
 - [ ] Admin on past session: Set Hours enabled; applies to all active entries without hours (marks checked in)
 - [ ] Check In on past session: Set Hours disabled when no checked-in entries without hours

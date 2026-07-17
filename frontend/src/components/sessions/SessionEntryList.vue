@@ -57,7 +57,7 @@
     <SessionSetHoursModal
       v-if="showSetHours"
       :entry-count="eligibleCount"
-      :default-hours="3"
+      :default-hours="resolveSessionLength(sessionLength) ?? DEFAULT_SESSION_LENGTH"
       :past-session-admin="!!(isPastSession && isAdmin)"
       :working="workingSetHours"
       :error="setHoursError"
@@ -81,6 +81,7 @@ import EntryAddModal from '../../pages/modals/EntryAddModal.vue'
 import SessionSetHoursModal from '../../pages/modals/SessionSetHoursModal.vue'
 import { profilePath } from '../../router/index'
 import { iconsForEntry } from '../../utils/labelIcons'
+import { DEFAULT_SESSION_LENGTH, resolveSessionLength } from '../../utils/sessionTime'
 
 type AddPayload = { profileId: number } | { newName: string; newEmail: string }
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
@@ -93,6 +94,8 @@ const props = defineProps<{
   workingId?: number | null
   refreshWorking?: boolean
   isPastSession?: boolean
+  /** Session duration in hours (SharePoint Length; defaults to 3 when unset) */
+  sessionLength?: number
 }>()
 
 const emit = defineEmits<{

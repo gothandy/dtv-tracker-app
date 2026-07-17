@@ -24,6 +24,14 @@
           <ModalFormInput v-model="form.date" type="date" />
         </FormRow>
 
+        <FormRow title="Start time" :full-width="true">
+          <ModalFormInput v-model="form.time" type="time" />
+        </FormRow>
+
+        <FormRow title="Length (hours)" :full-width="true">
+          <ModalFormInput v-model="form.hours" type="number" min="0.25" step="0.25" />
+        </FormRow>
+
         <FormRow title="Group" :full-width="true">
           <ModalFormSelect v-model="form.groupId">
             <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
@@ -72,6 +80,11 @@ import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import DeleteModal from './DeleteModal.vue'
+import {
+  DEFAULT_SESSION_LENGTH,
+  resolveSessionLength,
+  resolveSessionTime,
+} from '../../utils/sessionTime'
 
 export interface GroupItem { id: number; name: string; key: string }
 
@@ -81,6 +94,10 @@ export interface SessionSaveData {
   displayName: string
   description: string
   date: string
+  /** HH:MM 24-hour; blank → 09:30 */
+  time: string
+  /** Hours; blank → 3 */
+  length: number
   groupId: number | null
   projectId: number | null
   limits: Record<string, unknown> | null
@@ -110,6 +127,9 @@ const form = reactive({
   displayName: props.session.displayName ?? '',
   description: props.session.description ?? '',
   date: props.session.date,
+  time: resolveSessionTime(props.session.time),
+  // Named hours (not length) — reactive objects with a numeric `length` break v-model updates
+  hours: String(resolveSessionLength(props.session.length) ?? DEFAULT_SESSION_LENGTH),
   groupId: props.session.groupId ?? null as number | null,
   projectId: props.session.projectId ?? null as number | null,
   limitsRaw: props.session.storedLimits && Object.keys(props.session.storedLimits).length ? JSON.stringify(props.session.storedLimits) : '',
@@ -130,10 +150,17 @@ function save() {
       }
     }
   }
+  const length = resolveSessionLength(form.hours)
+  if (length === null) {
+    validationError.value = 'Length must be a positive number of hours'
+    return
+  }
   emit('save', {
     displayName: form.displayName,
     description: form.description,
     date: form.date,
+    time: resolveSessionTime(form.time),
+    length,
     groupId: form.groupId,
     projectId: form.projectId,
     limits,

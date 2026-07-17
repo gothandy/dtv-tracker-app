@@ -1,5 +1,45 @@
 import { describe, expect, it } from 'vitest'
-import { formatSessionTimeRange } from './sessionTime'
+import {
+  DEFAULT_SESSION_LENGTH,
+  DEFAULT_SESSION_TIME,
+  formatSessionTimeRange,
+  resolveSessionLength,
+  resolveSessionTime,
+} from './sessionTime'
+
+describe('resolveSessionTime', () => {
+  it('returns default for blank values', () => {
+    expect(resolveSessionTime('')).toBe(DEFAULT_SESSION_TIME)
+    expect(resolveSessionTime('   ')).toBe(DEFAULT_SESSION_TIME)
+    expect(resolveSessionTime(undefined)).toBe(DEFAULT_SESSION_TIME)
+    expect(resolveSessionTime(null)).toBe(DEFAULT_SESSION_TIME)
+  })
+
+  it('keeps explicit times', () => {
+    expect(resolveSessionTime('10:00')).toBe('10:00')
+  })
+})
+
+describe('resolveSessionLength', () => {
+  it('returns default for blank values only', () => {
+    expect(resolveSessionLength('')).toBe(DEFAULT_SESSION_LENGTH)
+    expect(resolveSessionLength('   ')).toBe(DEFAULT_SESSION_LENGTH)
+    expect(resolveSessionLength(undefined)).toBe(DEFAULT_SESSION_LENGTH)
+    expect(resolveSessionLength(null)).toBe(DEFAULT_SESSION_LENGTH)
+  })
+
+  it('returns null for invalid non-blank values', () => {
+    expect(resolveSessionLength(0)).toBeNull()
+    expect(resolveSessionLength(-1)).toBeNull()
+    expect(resolveSessionLength('0')).toBeNull()
+    expect(resolveSessionLength('abc')).toBeNull()
+  })
+
+  it('keeps positive lengths', () => {
+    expect(resolveSessionLength(2.5)).toBe(2.5)
+    expect(resolveSessionLength('4')).toBe(4)
+  })
+})
 
 describe('formatSessionTimeRange', () => {
   it('formats start time, end time, and duration', () => {
@@ -14,15 +54,16 @@ describe('formatSessionTimeRange', () => {
     expect(formatSessionTimeRange('09:30', 2.33)).toBe('9:30 to 11:50 (2.33h)')
   })
 
-  it('shows start time only when length is missing', () => {
-    expect(formatSessionTimeRange('09:30')).toBe('9:30')
+  it('defaults blank time and length to 09:30 and 3h', () => {
+    expect(formatSessionTimeRange()).toBe('9:30 to 12:30 (3h)')
+    expect(formatSessionTimeRange('', undefined)).toBe('9:30 to 12:30 (3h)')
   })
 
-  it('shows duration only when start time is missing', () => {
-    expect(formatSessionTimeRange(undefined, 3)).toBe('3h')
+  it('defaults missing length when only time is provided', () => {
+    expect(formatSessionTimeRange('10:00')).toBe('10:00 to 13:00 (3h)')
   })
 
-  it('returns null when both values are missing', () => {
-    expect(formatSessionTimeRange()).toBeNull()
+  it('defaults missing time when only length is provided', () => {
+    expect(formatSessionTimeRange(undefined, 2)).toBe('9:30 to 11:30 (2h)')
   })
 })

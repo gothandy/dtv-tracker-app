@@ -1,5 +1,14 @@
 # Development Progress
 
+## Session: 2026-07-16 (Session start time / length in create/edit modals)
+
+- Add/edit session modals include Start time and Length; both screens prefill `09:30` / `3` (blank SharePoint or cleared fields resolve to the same defaults).
+- Invalid Length (0, negative, non-numeric) is rejected in the modal and by POST/PATCH — only blank uses the 3h default.
+- Shared frontend helpers in `sessionTime.ts`; detail Time display always shows a full range with those defaults.
+- Form field stored as `hours` (not `length`) so reactive v-model updates correctly.
+- `POST` / `PATCH /api/sessions` accept `time` / `length` and write SharePoint `Time` / `Length`.
+- Schema + regression checklist updated for Time/Length.
+
 ## Session: 2026-07-10 (Session-day parking notice)
 
 - Session detail: check-in/admin-only parking notice under title/description/tags for today and future sessions; mailto `fodtrails@forestryengland.uk`.

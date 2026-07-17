@@ -191,6 +191,7 @@
             :working-id="workingId"
             :refresh-working="refreshWorking"
             :is-past-session="isPastSession"
+            :session-length="store.session.length"
             @refresh-request="onRefreshRequest"
             @update="onEntryUpdate"
             @set-hours="onSetHours"
@@ -831,6 +832,8 @@ async function onSessionSave(data: SessionSaveData) {
     }
     if (profile.isAdmin) {
       body.date = data.date
+      body.time = data.time
+      body.length = data.length
       body.groupId = data.groupId
       body.projectId = data.projectId
       body.limits = data.limits

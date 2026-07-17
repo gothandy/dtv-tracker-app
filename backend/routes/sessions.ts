@@ -27,11 +27,16 @@ import {
   extractMetadataTags,
   parseEmails,
   sessionScheduleFields,
+  parseSessionTime,
+  parseSessionLength,
+  DEFAULT_SESSION_TIME,
+  DEFAULT_SESSION_LENGTH,
 } from '../services/data-layer';
 import { parseSessionStats } from '../services/data-layer';
 import {
   GROUP_LOOKUP, GROUP_DISPLAY, PROJECT_LOOKUP,
   SESSION_LOOKUP, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS,
+  SESSION_TIME, SESSION_LENGTH,
   PROFILE_LOOKUP, PROFILE_DISPLAY, PROFILE_STATS, ENTRY_CANCELLED, ENTRY_EVENTBRITE_ATTENDEE_ID
 } from '../services/field-names';
 import type { SessionResponse, SessionDetailResponse, EntryResponse } from '../../types/api-responses';
@@ -43,6 +48,30 @@ import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/se
 import { mediaDriveId } from '../services/media-upload';
 
 const router: Router = express.Router();
+
+/** Resolve body time to HH:MM; blank/omitted → 09:30. Returns error message if invalid. */
+function resolveSessionTimeFromBody(time: unknown): { time: string } | { error: string } {
+  if (time === undefined || time === null || (typeof time === 'string' && !time.trim())) {
+    return { time: DEFAULT_SESSION_TIME };
+  }
+  const parsed = parseSessionTime(time);
+  if (!parsed) {
+    return { error: 'time must be HH:MM (24-hour clock)' };
+  }
+  return { time: parsed };
+}
+
+/** Resolve body length in hours; blank/omitted → 3. Returns error message if invalid. */
+function resolveSessionLengthFromBody(length: unknown): { length: number } | { error: string } {
+  if (length === undefined || length === null || length === '' || (typeof length === 'string' && !String(length).trim())) {
+    return { length: DEFAULT_SESSION_LENGTH };
+  }
+  const parsed = parseSessionLength(length);
+  if (parsed === undefined) {
+    return { error: 'length must be a positive number of hours' };
+  }
+  return { length: parsed };
+}
 
 function projectLookupFromBody(
   projectId: unknown,
@@ -131,7 +160,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
 router.post('/sessions', async (req: Request, res: Response) => {
   try {
-    const { groupId, date, name, description, projectId } = req.body;
+    const { groupId, date, name, description, projectId, time, length } = req.body;
 
     if (!groupId || !date) {
       res.status(400).json({ success: false, error: 'groupId and date are required' });
@@ -141,6 +170,17 @@ router.post('/sessions', async (req: Request, res: Response) => {
     const dateStr = String(date);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       res.status(400).json({ success: false, error: 'date must be YYYY-MM-DD format' });
+      return;
+    }
+
+    const resolvedTime = resolveSessionTimeFromBody(time);
+    if ('error' in resolvedTime) {
+      res.status(400).json({ success: false, error: resolvedTime.error });
+      return;
+    }
+    const resolvedLength = resolveSessionLengthFromBody(length);
+    if ('error' in resolvedLength) {
+      res.status(400).json({ success: false, error: resolvedLength.error });
       return;
     }
 
@@ -170,7 +210,9 @@ router.post('/sessions', async (req: Request, res: Response) => {
     const fields: { Title: string; Date: string; [key: string]: any } = {
       Title: title,
       Date: dateStr,
-      [GROUP_LOOKUP]: String(groupId)
+      [GROUP_LOOKUP]: String(groupId),
+      [SESSION_TIME]: resolvedTime.time,
+      [SESSION_LENGTH]: resolvedLength.length,
     };
     if (typeof name === 'string' && name.trim()) {
       fields.Name = name.trim();
@@ -750,7 +792,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
   try {
     const groupKey = String(req.params.group).toLowerCase();
     const dateParam = String(req.params.date);
-    const { displayName, description, eventbriteEventId, date, groupId, projectId, metadata, coverMediaId, limits } = req.body;
+    const { displayName, description, eventbriteEventId, date, groupId, projectId, metadata, coverMediaId, limits, time, length } = req.body;
 
     const [rawGroups, rawProjects, spSession] = await Promise.all([
       groupsRepository.getAll(),
@@ -764,6 +806,22 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     if (typeof eventbriteEventId === 'string') fields.EventbriteEventID = eventbriteEventId;
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       fields.Date = date;
+    }
+    if ('time' in req.body) {
+      const resolvedTime = resolveSessionTimeFromBody(time);
+      if ('error' in resolvedTime) {
+        res.status(400).json({ success: false, error: resolvedTime.error });
+        return;
+      }
+      fields[SESSION_TIME] = resolvedTime.time;
+    }
+    if ('length' in req.body) {
+      const resolvedLength = resolveSessionLengthFromBody(length);
+      if ('error' in resolvedLength) {
+        res.status(400).json({ success: false, error: resolvedLength.error });
+        return;
+      }
+      fields[SESSION_LENGTH] = resolvedLength.length;
     }
     if (typeof groupId === 'number') fields[GROUP_LOOKUP] = String(groupId);
     if ('projectId' in req.body) {
