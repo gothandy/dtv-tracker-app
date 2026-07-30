@@ -12,9 +12,9 @@
     <FormLayout>
       <FormRow title="Template">
         <ModalFormSelect v-model="template">
-          <option value="pre-session">Pre-Session</option>
+          <option value="pre-dig">Pre-Dig</option>
+          <option value="pre-social">Pre-Social</option>
           <option value="post-session">Post-Session</option>
-          <option value="pre-agm">Pre-AGM</option>
         </ModalFormSelect>
       </FormRow>
 
@@ -62,7 +62,7 @@ const emit = defineEmits<{
   send: [{ recipient: number | 'send-all', preview: boolean, template: string }]
 }>()
 
-const template = ref<'pre-session' | 'post-session' | 'pre-agm'>('pre-session')
+const template = ref<'pre-dig' | 'pre-social' | 'post-session'>('pre-dig')
 const recipient = ref<number | 'send-all'>(props.adults.find(a => a.email)?.entryId ?? 'send-all')
 const preview = ref(true)
 

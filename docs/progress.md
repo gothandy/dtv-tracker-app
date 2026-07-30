@@ -1,5 +1,13 @@
 # Development Progress
 
+## Session: 2026-07-30 (Session email templates: Pre-Dig / Pre-Social)
+
+- Renamed Pre-Session template to Pre-Dig (`templates/email/pre-dig/`).
+- Added Pre-Social (`templates/email/pre-social/`) — same as Pre-Dig without dig clothing/tools guidance.
+- Removed Pre-AGM template and `buildPreAgmVars`.
+- Send Email modal dropdown: Pre-Dig, Pre-Social, Post-Session (default Pre-Dig).
+- Sandbox previews at `/sandbox/email-pre-dig` and `/sandbox/email-pre-social`.
+
 ## Session: 2026-07-16 (Session start time / length in create/edit modals)
 
 - Add/edit session modals include Start time and Length; both screens prefill `09:30` / `3` (blank SharePoint or cleared fields resolve to the same defaults).

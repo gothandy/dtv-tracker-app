@@ -2,7 +2,7 @@
   <DefaultLayout>
     <div class="sandbox">
       <RouterLink to="/sandbox" class="back">← Sandbox</RouterLink>
-      <h1>Email: Pre-session</h1>
+      <h1>Email: Pre-Social</h1>
 
       <template v-if="rendered">
         <section class="panel">
@@ -33,21 +33,21 @@ import { ref, onMounted } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 
-usePageTitle('Sandbox — Email: Pre-session')
+usePageTitle('Sandbox — Email: Pre-Social')
 
 const FIXTURE: Record<string, unknown> = {
   volunteerName: 'Alice Example',
-  groupName: 'Sheepskull',
-  sessionTitle: 'Spring Conservation Day',
+  groupName: 'Social Ride',
+  sessionTitle: 'Summer Social',
   formattedDateShort: '23 April',
   formattedDateLong: 'Wednesday, 23 April 2026',
-  formattedTime: '9:30 to 12:30 (about 3 hours)',
-  description: 'Meet at the usual car park.<br>Bring waterproofs.',
-  sessionUrl: 'http://localhost:3000/sessions/sheepskull/2026-04-23',
-  loginUrl: 'http://localhost:3000/login?returnTo=/sessions/sheepskull/2026-04-23',
-  myChildNames: 'Ben Example',
-  isRegular: true,
-  tags: '#DH #Sheepskull #Endo',
+  formattedTime: '6:00 to 8:00 (about 2 hours)',
+  description: 'Meet at the containers for a social ride and picnic.',
+  sessionUrl: 'http://localhost:3000/sessions/social/2026-04-23',
+  loginUrl: 'http://localhost:3000/login?returnTo=/sessions/social/2026-04-23',
+  myChildNames: null,
+  isRegular: false,
+  tags: null,
 }
 
 interface RenderedEmail {
@@ -63,7 +63,7 @@ onMounted(async () => {
   const res = await fetch('/api/email/render', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ template: 'pre-session', vars: FIXTURE }),
+    body: JSON.stringify({ template: 'pre-social', vars: FIXTURE }),
   })
   if (res.ok) {
     rendered.value = await res.json()

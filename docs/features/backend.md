@@ -40,9 +40,9 @@ Upload, storage, and serving — see [docs/features/media.md](media.md).
 
 Four independent caches (NodeCache, column schema, taxonomy tree, cover image). Targeted invalidation on writes — only the affected keys are evicted. Session listing performance relies on pre-computed `Stats` JSON field on Sessions list, refreshed after every entry write and via nightly bulk refresh. See [AGENTS.md](../../AGENTS.md#caching-architecture) for TTL table.
 
-## Pre-Session Email Notifications
+## Session Email Notifications
 
-Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-session`, `post-session`, and `pre-agm`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail using app credentials (`MAIL_SENDER` env var). Sandbox preview at `POST /api/email/render`.
+Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail using app credentials (`MAIL_SENDER` env var). Sandbox preview at `POST /api/email/render`.
 
 ## Nightly Backup Export
 

@@ -56,7 +56,7 @@ export function profileIsMember(profileRecords: SharePointRecord[]): boolean {
 }
 
 // ============================================================================
-// Pre-session
+// Pre-dig / Pre-social (shared vars)
 // ============================================================================
 
 export interface PreSessionVars extends Record<string, unknown> {
@@ -117,42 +117,6 @@ export function buildPreSessionVars(
     isRegular: /#Regular\b/i.test(String(entry.Notes || '')),
     isMember: profileIsMember(profileRecords),
     tags,
-  };
-}
-
-// ============================================================================
-// Pre-AGM (session entry notify)
-// ============================================================================
-
-/** FY2025-26 AGM documents on the public docs proxy. */
-const AGM_REPORTS_PATH = '/docs/charity/annual-reports/2025-26';
-
-export interface PreAgmVars extends PreSessionVars {
-  agendaUrl: string;
-  reportUrl: string;
-  financialUrl: string;
-}
-
-function buildPreAgmDocUrls(baseUrl: string) {
-  return {
-    agendaUrl: `${baseUrl}${AGM_REPORTS_PATH}/agm-agenda-25-26.pdf`,
-    reportUrl: `${baseUrl}${AGM_REPORTS_PATH}/agm-presentation-25-26.pdf`,
-    financialUrl: `${baseUrl}${AGM_REPORTS_PATH}/dtv-draft-accounts-2025-26-22-jun-2026-14-53.pdf`,
-  };
-}
-
-export function buildPreAgmVars(
-  entry: SharePointEntry,
-  session: SharePointSession,
-  profile: SharePointProfile,
-  group: SharePointGroup,
-  sessionEntries: SharePointEntry[],
-  baseUrl: string,
-  profileRecords: SharePointRecord[] = [],
-): PreAgmVars {
-  return {
-    ...buildPreSessionVars(entry, session, profile, group, sessionEntries, baseUrl, profileRecords),
-    ...buildPreAgmDocUrls(baseUrl),
   };
 }
 
