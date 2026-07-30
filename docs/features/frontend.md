@@ -48,7 +48,7 @@ Term picker on session detail (Admin/Check In). Hierarchical picker backed by Sh
 
 ## Email Sandbox
 
-Preview page at `/sandbox/email-pre-session` renders the pre-session Handlebars email template with fixture data for design review without sending.
+Preview pages at `/sandbox/email-pre-dig` and `/sandbox/email-pre-social` render the Handlebars email templates with fixture data for design review without sending.
 
 ## Planned
 

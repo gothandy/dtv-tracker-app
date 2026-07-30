@@ -117,7 +117,8 @@ export const router = createRouter({
     { path: '/sandbox/consent-page', component: () => import('../pages/sandbox/SandboxConsentPage.vue') },
     { path: '/sandbox/upload-page', component: () => import('../pages/sandbox/SandboxUploadPage.vue') },
     { path: '/sandbox/error-pages', component: () => import('../pages/sandbox/SandboxErrorPages.vue') },
-    { path: '/sandbox/email-pre-session', component: () => import('../pages/sandbox/SandboxEmailPreSession.vue') },
+    { path: '/sandbox/email-pre-dig', component: () => import('../pages/sandbox/SandboxEmailPreDig.vue') },
+    { path: '/sandbox/email-pre-social', component: () => import('../pages/sandbox/SandboxEmailPreSocial.vue') },
     { path: '/sandbox/email-post-session', component: () => import('../pages/sandbox/SandboxEmailPostSession.vue') },
     { path: '/:pathMatch(.*)*', component: () => import('../pages/NotFoundPage.vue') },
   ]

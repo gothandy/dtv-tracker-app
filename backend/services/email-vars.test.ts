@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPreSessionVars, buildPreAgmVars, buildProfileTemplateVars, buildProfileLoginUrl, profileIsMember } from './email-vars'
+import { buildPreSessionVars, buildProfileTemplateVars, buildProfileLoginUrl, profileIsMember } from './email-vars'
 import { SESSION_TIME, SESSION_LENGTH } from './field-names'
 import type { SharePointEntry, SharePointProfile, SharePointRecord } from '../../types/sharepoint'
 import type { SharePointSession } from '../../types/session'
@@ -77,24 +77,6 @@ describe('buildPreSessionVars', () => {
   })
 })
 
-describe('buildPreAgmVars', () => {
-  it('includes session URL and AGM doc links', () => {
-    const session = {
-      ID: 100,
-      Date: '2026-06-26',
-      Created: '',
-      Modified: '',
-    } as SharePointSession
-
-    const vars = buildPreAgmVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
-
-    expect(vars.volunteerName).toBe('Alice')
-    expect(vars.sessionUrl).toBe('https://example.com/sessions/trail crew/2026-06-26')
-    expect(vars.agendaUrl).toContain('agm-agenda-25-26.pdf')
-    expect(vars.reportUrl).toContain('agm-presentation-25-26.pdf')
-    expect(vars.financialUrl).toContain('dtv-draft-accounts')
-  })
-})
 describe('profileIsMember', () => {
   it('is true for Accepted Charity Membership', () => {
     expect(profileIsMember([{
