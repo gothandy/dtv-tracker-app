@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ProjectDetailResponse, DocsTreeNode } from '../../../types/api-responses'
 import { removeDocFromTree } from '../utils/docsTree'
+import { apiErrorMessage } from '../utils/apiError'
 
 export const useProjectDetailStore = defineStore('projectDetail', () => {
   const project = ref<ProjectDetailResponse | null>(null)
@@ -21,7 +22,7 @@ export const useProjectDetailStore = defineStore('projectDetail', () => {
     try {
       const res = await window.fetch(`/api/projects/${key}`)
       httpStatus.value = res.status
-      if (!res.ok) throw new Error(`Failed to load project (${res.status})`)
+      if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load project (${res.status})`))
       const json: { data: ProjectDetailResponse } = await res.json()
       project.value = json.data
     } catch (e) {
