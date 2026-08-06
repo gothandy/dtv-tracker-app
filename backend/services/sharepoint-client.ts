@@ -9,6 +9,7 @@ import axios from 'axios';
 import NodeCache from 'node-cache';
 import { DateTime } from 'luxon';
 import { FILE_PROXY_CACHE_TTL_SEC } from './file-proxy-cache-ttl';
+import { isClientCredentialsAuthError, mapClientCredentialsAuthError } from './entra-auth-errors';
 
 // ---------------------------------------------------------------------------
 // Regional date helpers
@@ -146,7 +147,7 @@ export class SharePointClient {
       return accessToken;
     } catch (error: any) {
       console.error('Error getting Graph access token:', error.response?.data || error.message);
-      throw new Error('Failed to authenticate with SharePoint');
+      throw new Error(mapClientCredentialsAuthError(error));
     }
   }
 
@@ -199,6 +200,9 @@ export class SharePointClient {
       }
     } catch (error: any) {
       console.error('Error getting site ID:', error.response?.data || error.message);
+      if (isClientCredentialsAuthError(error)) {
+        throw error instanceof Error ? error : new Error(mapClientCredentialsAuthError(error));
+      }
       throw new Error('Failed to retrieve SharePoint site ID from Microsoft Graph');
     }
   }

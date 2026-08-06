@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { SessionDetailResponse } from '../../../types/api-responses'
+import { apiErrorMessage } from '../utils/apiError'
 
 export const useSessionDetailStore = defineStore('sessionDetail', () => {
   const session = ref<SessionDetailResponse | null>(null)
@@ -16,7 +17,7 @@ export const useSessionDetailStore = defineStore('sessionDetail', () => {
     try {
       const res = await window.fetch(`/api/sessions/${groupKey}/${date}`)
       httpStatus.value = res.status
-      if (!res.ok) throw new Error(`Failed to load session (${res.status})`)
+      if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load session (${res.status})`))
       const json = await res.json()
       const d = json.data
       session.value = { ...d, isRegistered: d.isRegistered ?? false, isAttended: d.isAttended ?? false, isRegular: d.isRegular ?? false }

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { GroupDetailResponse } from '../../../types/api-responses'
+import { apiErrorMessage } from '../utils/apiError'
 
 export const useGroupDetailStore = defineStore('groupDetail', () => {
   const group = ref<GroupDetailResponse | null>(null)
@@ -16,7 +17,7 @@ export const useGroupDetailStore = defineStore('groupDetail', () => {
     try {
       const res = await window.fetch(`/api/groups/${key}`)
       httpStatus.value = res.status
-      if (!res.ok) throw new Error(`Failed to load group (${res.status})`)
+      if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load group (${res.status})`))
       const json: { data: GroupDetailResponse } = await res.json()
       group.value = json.data
     } catch (e) {

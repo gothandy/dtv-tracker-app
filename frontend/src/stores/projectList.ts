@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ProjectResponse } from '../../../types/api-responses'
+import { apiErrorMessage } from '../utils/apiError'
 
 export const useProjectListStore = defineStore('projects', () => {
   const projects = ref<ProjectResponse[]>([])
@@ -12,7 +13,7 @@ export const useProjectListStore = defineStore('projects', () => {
     error.value = null
     try {
       const res = await window.fetch('/api/projects')
-      if (!res.ok) throw new Error(`Failed to load projects (${res.status})`)
+      if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load projects (${res.status})`))
       const json: { data: ProjectResponse[] } = await res.json()
       projects.value = json.data
     } catch (e) {

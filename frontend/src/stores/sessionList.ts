@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useViewer } from '../composables/useViewer'
 import { mapSession } from '../utils/mapSession'
+import { apiErrorMessage } from '../utils/apiError'
 import type { SessionResponse } from '../../../types/api-responses'
 
 export const useSessionListStore = defineStore('sessions', () => {
@@ -19,7 +20,7 @@ export const useSessionListStore = defineStore('sessions', () => {
     error.value = null
     try {
       const res = await window.fetch('/api/sessions')
-      if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`)
+      if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load sessions (${res.status})`))
       const json: { data: SessionResponse[] } = await res.json()
       raw.value = json.data
     } catch (e) {

@@ -449,6 +449,7 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 
 ### M2. Health check
 - [ ] `GET /api/health` — returns `{ success: true }` (no auth required)
+- [ ] If `SHAREPOINT_CLIENT_SECRET` is expired, pages that load list data show **Entra ID secret needs updating, see readme.** (not a raw AADSTS dump or status-only text)
 
 ### M3. Groups listing
 - [ ] `GET /api/groups` — all groups with regulars counts

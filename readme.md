@@ -87,9 +87,20 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 - No extra spaces in `.env` values
 - Correct SharePoint site URL
 
+### "Entra ID secret needs updating, see readme."
+
+The app registration client secret (`SHAREPOINT_CLIENT_SECRET`) has expired or is invalid.
+
+1. In [Entra ID → App registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps), open **DTV Volunteer Tracker**
+2. **Certificates & secrets** → create a new client secret (copy the **Value** immediately)
+3. Update `SHAREPOINT_CLIENT_SECRET` in local `.env` **and** Azure App Service → Configuration → Application settings
+4. Restart the app / save App Service settings, then reload
+
+Full steps: [docs/sharepoint-setup.md](docs/sharepoint-setup.md) (Create Client Secret / Ongoing Maintenance).
+
 ### "401 Unauthorized" or "Invalid client secret"
 
-Credentials in `.env` are incorrect or expired. Contact your team lead.
+Credentials in `.env` are incorrect or expired. Same fix as above.
 
 ### "Unsupported app only token" error
 
