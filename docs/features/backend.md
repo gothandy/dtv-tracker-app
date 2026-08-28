@@ -54,6 +54,10 @@ Project documents live in `Projects/{slug}/` on the Documents library drive (`DO
 
 Pre-computed `Stats` field on Sessions list stores aggregate JSON (count, hours, new, child, regular, eventbrite, media). Kept fresh by `computeAndSaveSessionStats()` after every entry/record/media write. Profiles list has a similar `Stats` field used by the dashboard. Detail pages always fetch live entry data — Stats used only by listing and aggregate views.
 
+## Auth / Graph client credentials
+
+Expired or invalid `SHAREPOINT_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
+
 ## Planned
 
 - Sync logging to a SharePoint Logs list

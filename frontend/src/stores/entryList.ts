@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { EntryListItemResponse } from '../../../types/api-responses'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useEntryListStore = defineStore('entryList', () => {
   const entries = ref<EntryListItemResponse[]>([])
@@ -21,7 +22,7 @@ export const useEntryListStore = defineStore('entryList', () => {
       const res = await window.fetch(`/api/entries${qs ? `?${qs}` : ''}`)
       if (!res.ok) {
         console.error(`[entryList] fetch failed: ${res.status} ${res.url}`)
-        error.value = `Failed to load entries (${res.status})`
+        error.value = await apiErrorMessage(res, `Failed to load entries (${res.status})`)
         return
       }
       const json = await res.json()

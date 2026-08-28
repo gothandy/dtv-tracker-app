@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router'
 import type { ProfileResponse } from '../../../types/api-responses'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useProfileListStore = defineStore('profiles', () => {
   const profiles = ref<ProfileResponse[]>([])
@@ -32,7 +33,7 @@ export const useProfileListStore = defineStore('profiles', () => {
         router.push(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`)
         return
       }
-      if (!res.ok) throw new Error(`Failed to load profiles (${res.status})`)
+      if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load profiles (${res.status})`))
       const json: { data: ProfileResponse[] } = await res.json()
       profiles.value = json.data
     } catch (e) {

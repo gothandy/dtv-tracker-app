@@ -329,7 +329,9 @@ To grant access to more SharePoint sites:
 **Solution**:
 - Create new client secret
 - Copy the **Value** field carefully
+- Update `SHAREPOINT_CLIENT_SECRET` in `.env` and Azure App Service settings
 - Use password manager to avoid copy/paste issues
+- The app UI shows **Entra ID secret needs updating, see readme.** for AADSTS7000222 / 7000215
 
 ### "AADSTS7000215: Invalid client secret provided"
 

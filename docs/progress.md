@@ -1,5 +1,11 @@
 # Development Progress
 
+## Session: 2026-08-06 (Entra secret expired — clearer UI error)
+
+- Expired/invalid `SHAREPOINT_CLIENT_SECRET` (AADSTS7000222 / 7000215) surfaces as **Entra ID secret needs updating, see readme.** instead of a raw Graph failure or status-only store message.
+- `mapClientCredentialsAuthError` in `entra-auth-errors.ts`; listing/detail stores use `apiErrorMessage()` to show the API `message`.
+- Readme troubleshooting documents the rotation steps.
+
 ## Session: 2026-07-30 (Session email templates: Pre-Dig / Pre-Social)
 
 - Renamed Pre-Session template to Pre-Dig (`templates/email/pre-dig/`).
