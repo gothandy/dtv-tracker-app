@@ -10,7 +10,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 ## Tech Stack
 
-- **Backend**: Node.js with Express 5, TypeScript for services/types
+- **Backend**: Node.js 24 with Express 5, TypeScript for services/types
 - **Frontend**: Vue 3 + Vite + TypeScript (mobile-first SPA)
 - **Data Storage**: SharePoint Online lists via Microsoft Graph API
 - **External Integration**: Eventbrite API
@@ -24,7 +24,7 @@ Feature-complete volunteer tracking application with:
 - TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 11 route modules
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
 - TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
-- Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts))
+- Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts)); attendee names decoded on fetch (`b'Name'` → `Name`)
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
 - Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
 - Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
@@ -321,6 +321,8 @@ cd frontend && npm install && cd ..
 npm run build       # Compile TypeScript
 npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
+
+Requires Node.js 24 (see `.nvmrc`).
 
 Frontend build (for production):
 ```bash

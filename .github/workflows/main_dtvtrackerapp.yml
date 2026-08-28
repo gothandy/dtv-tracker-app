@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
+          node-version-file: '.nvmrc'
 
       - name: Install and build
         run: |
@@ -85,6 +85,10 @@ jobs:
 
       - name: Configure app settings
         run: |
+          az webapp config set \
+            --resource-group ${{ steps.get-rg.outputs.resource_group }} \
+            --name DTVTrackerApp \
+            --linux-fx-version "NODE|24-lts"
           az webapp config appsettings set \
             --resource-group ${{ steps.get-rg.outputs.resource_group }} \
             --name DTVTrackerApp \

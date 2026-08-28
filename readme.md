@@ -4,7 +4,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 ## Get Started
 
-You'll need Node.js 18+, credentials from your team lead (SharePoint Client ID/Secret/Tenant, Eventbrite API key), and SharePoint already configured — see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) if it isn't.
+You'll need Node.js 24, credentials from your team lead (SharePoint Client ID/Secret/Tenant, Eventbrite API key), and SharePoint already configured — see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) if it isn't.
 
 ```bash
 git clone https://github.com/gothandy/dtv-tracker-app

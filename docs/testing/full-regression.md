@@ -324,6 +324,8 @@ Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
 - [ ] Attendee name matches existing profile, email is one of the profile's secondary emails → profile reused, no duplicate
 - [ ] Attendee name matches existing profile with no stored email → email is backfilled on the existing profile, no duplicate created
 - [ ] Attendee email matches an existing profile's email but name differs → name match used, not email; behaves by name logic
+- [ ] Attendee name arrives as Python bytes (`b'PAUL' b'HARTWELL'`) → stored and matched as `PAUL HARTWELL`
+- [ ] Transient Eventbrite 502 during fetch is retried; persistent 502 shows a short unavailable message (no HTML dump)
 - [ ] Triggering sync while one is already running returns 409 "Sync already in progress" (second request rejected immediately)
 
 ### H25b. Eventbrite backfill

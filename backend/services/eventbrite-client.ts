@@ -31,6 +31,73 @@ export interface EventbriteAttendee {
   answers?: EventbriteAnswer[];
 }
 
+/** Python bytes literal: b'PAUL' or b"PAUL" (Eventbrite sometimes returns these as names). */
+const PYTHON_BYTES_TOKEN = /^[bB](['"])(.*)\1$/;
+
+function unescapePythonBytesContent(value: string): string {
+  return value.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+}
+
+/**
+ * Strips Python bytes-literal wrapping that Eventbrite occasionally returns
+ * as attendee names, e.g. `b'PAUL' b'HARTWELL'` → `PAUL HARTWELL`.
+ * Real names (including apostrophes) are left unchanged.
+ */
+export function decodePythonBytesName(name: string | undefined): string {
+  if (!name) return '';
+  const trimmed = name.trim();
+  if (!trimmed) return '';
+
+  const parts = trimmed.split(/\s+/);
+  const decodedParts = parts.map(part => {
+    const match = part.match(PYTHON_BYTES_TOKEN);
+    return match ? unescapePythonBytesContent(match[2]) : part;
+  });
+  if (decodedParts.some((part, i) => part !== parts[i])) {
+    return decodedParts.join(' ');
+  }
+
+  const whole = trimmed.match(PYTHON_BYTES_TOKEN);
+  if (whole) return unescapePythonBytesContent(whole[2]);
+
+  return trimmed;
+}
+
+function decodeNameField(value: string | undefined): string | undefined {
+  if (!value) return value;
+  return decodePythonBytesName(value) || value;
+}
+
+function normaliseAttendee(attendee: EventbriteAttendee): EventbriteAttendee {
+  const profile = attendee.profile;
+  if (!profile) return attendee;
+  return {
+    ...attendee,
+    profile: {
+      ...profile,
+      name: decodeNameField(profile.name) ?? profile.name,
+      first_name: decodeNameField(profile.first_name),
+      last_name: decodeNameField(profile.last_name)
+    }
+  };
+}
+
+const TRANSIENT_STATUSES = new Set([429, 502, 503]);
+const MAX_ATTEMPTS = 3;
+
+function stripHtml(value: string): string {
+  return value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Readable Eventbrite HTTP error — strips HTML gateway pages. */
+export function formatEventbriteError(status: number, body: string): string {
+  if (status === 502 || status === 503) {
+    return `Eventbrite API ${status} — their service is temporarily unavailable. Try again shortly.`;
+  }
+  const snippet = stripHtml(body).slice(0, 160);
+  return snippet ? `Eventbrite API ${status}: ${snippet}` : `Eventbrite API ${status}`;
+}
+
 async function fetchEventbrite<T>(path: string): Promise<T> {
   const apiKey = process.env.EVENTBRITE_API_KEY;
   if (!apiKey) throw new Error('EVENTBRITE_API_KEY not configured');
@@ -38,16 +105,24 @@ async function fetchEventbrite<T>(path: string): Promise<T> {
   const url = `${BASE_URL}${path}`;
   console.log(`[Eventbrite] GET ${url}`);
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${apiKey}` }
-  });
+  let lastStatus = 0;
+  let lastBody = '';
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    if (res.ok) return res.json() as Promise<T>;
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Eventbrite API ${res.status}: ${text}`);
+    lastStatus = res.status;
+    lastBody = await res.text();
+    if (!TRANSIENT_STATUSES.has(res.status) || attempt === MAX_ATTEMPTS) break;
+
+    const delayMs = 1000 * 2 ** (attempt - 1);
+    console.warn(`[Eventbrite] ${res.status} on ${path} — retry ${attempt}/${MAX_ATTEMPTS - 1} in ${delayMs}ms`);
+    await new Promise(resolve => setTimeout(resolve, delayMs));
   }
 
-  return res.json() as Promise<T>;
+  throw new Error(formatEventbriteError(lastStatus, lastBody));
 }
 
 export interface EventbriteEvent {
@@ -111,7 +186,7 @@ export async function getAttendees(eventId: string, changedSince?: Date): Promis
       pagination: { has_more_items: boolean; page_number: number };
     }>(`/events/${eventId}/attendees/?status=attending&expand=answers,order&page=${page}${sinceParam}`);
 
-    all.push(...(data.attendees || []));
+    all.push(...(data.attendees || []).map(normaliseAttendee));
     hasMore = data.pagination?.has_more_items || false;
     page++;
   }
@@ -130,7 +205,7 @@ export async function getCancelledAttendees(eventId: string): Promise<Eventbrite
       pagination: { has_more_items: boolean };
     }>(`/events/${eventId}/attendees/?status=not_attending&expand=answers,order&page=${page}`);
 
-    all.push(...(data.attendees || []));
+    all.push(...(data.attendees || []).map(normaliseAttendee));
     hasMore = data.pagination?.has_more_items || false;
     page++;
   }

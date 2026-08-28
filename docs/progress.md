@@ -1,5 +1,16 @@
 # Development Progress
 
+## Session: 2026-08-28 (Eventbrite `b'Name'` bytes-literal names)
+
+- Eventbrite sometimes returns attendee names as Python bytes literals (`b'PAUL' b'HARTWELL'`). Those were stored as Profile titles and broke matching.
+- `decodePythonBytesName()` runs in the Eventbrite client as attendees are fetched. Matching and profile create/update are unchanged.
+- Eventbrite attendee fetches retry twice on 429/502/503; gateway HTML is not shown in the UI error.
+
+## Session: 2026-08-28 (Node 24 LTS)
+
+- Pinned to Node 24 LTS: `.nvmrc`, `package.json` `engines`, GitHub Actions `setup-node`, Azure App Service `NODE|24-lts` on deploy.
+- Readme / Azure docs updated (was “18+” / unversioned).
+
 ## Session: 2026-08-06 (Entra secret expired — clearer UI error)
 
 - Expired/invalid `SHAREPOINT_CLIENT_SECRET` (AADSTS7000222 / 7000215) surfaces as **Entra ID secret needs updating, see readme.** instead of a raw Graph failure or status-only store message.
