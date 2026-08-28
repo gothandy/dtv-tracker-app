@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ProjectDetailResponse, DocsTreeNode } from '../../../types/api-responses'
 import { removeDocFromTree } from '../utils/docsTree'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useProjectDetailStore = defineStore('projectDetail', () => {
   const project = ref<ProjectDetailResponse | null>(null)

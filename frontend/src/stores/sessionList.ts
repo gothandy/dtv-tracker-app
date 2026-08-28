@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useViewer } from '../composables/useViewer'
 import { mapSession } from '../utils/mapSession'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 import type { SessionResponse } from '../../../types/api-responses'
 
 export const useSessionListStore = defineStore('sessions', () => {

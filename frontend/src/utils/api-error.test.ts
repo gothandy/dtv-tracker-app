@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { apiErrorMessage } from './apiError'
+import { apiErrorMessage } from './api-error'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

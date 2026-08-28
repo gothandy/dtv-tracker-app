@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { GroupResponse } from '../../../types/api-responses'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 
 export { GroupResponse }
 

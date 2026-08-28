@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ProjectResponse } from '../../../types/api-responses'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useProjectListStore = defineStore('projects', () => {
   const projects = ref<ProjectResponse[]>([])

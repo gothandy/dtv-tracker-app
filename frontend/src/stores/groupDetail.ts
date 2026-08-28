@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { GroupDetailResponse } from '../../../types/api-responses'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useGroupDetailStore = defineStore('groupDetail', () => {
   const group = ref<GroupDetailResponse | null>(null)

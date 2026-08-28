@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router'
 import type { ProfileDetailResponse } from '../../../types/api-responses'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useProfileDetailStore = defineStore('profileDetail', () => {
   const profile = ref<ProfileDetailResponse | null>(null)

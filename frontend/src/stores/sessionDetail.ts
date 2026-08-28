@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { SessionDetailResponse } from '../../../types/api-responses'
-import { apiErrorMessage } from '../utils/apiError'
+import { apiErrorMessage } from '../utils/api-error'
 
 export const useSessionDetailStore = defineStore('sessionDetail', () => {
   const session = ref<SessionDetailResponse | null>(null)
