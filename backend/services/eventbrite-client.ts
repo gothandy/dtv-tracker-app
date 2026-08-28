@@ -31,16 +31,50 @@ export interface EventbriteAttendee {
   answers?: EventbriteAnswer[];
 }
 
-/** Python bytes literal: b'PAUL' or b"PAUL" (Eventbrite sometimes returns these as names). */
-const PYTHON_BYTES_TOKEN = /^[bB](['"])(.*)\1$/;
+/** Complete Python bytes literal, including spaces inside the quotes. */
+const PYTHON_BYTES_LITERAL = /[bB](['"])((?:\\.|(?!\1).)*)\1/g;
 
+/**
+ * Interprets a Python bytes-literal payload: `\xNN` as a byte, then UTF-8.
+ * `b'Jos\xc3\xa9'` → `José`. Also unescapes quotes and backslashes.
+ */
 function unescapePythonBytesContent(value: string): string {
-  return value.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  const bytes: number[] = [];
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] !== '\\' || i + 1 >= value.length) {
+      const code = value.charCodeAt(i);
+      if (code <= 0xff) bytes.push(code);
+      else bytes.push(...Buffer.from(value[i], 'utf8'));
+      continue;
+    }
+
+    const next = value[i + 1];
+    if (next === 'x' && i + 3 < value.length) {
+      const hex = value.slice(i + 2, i + 4);
+      if (/^[0-9a-fA-F]{2}$/.test(hex)) {
+        bytes.push(parseInt(hex, 16));
+        i += 3;
+        continue;
+      }
+    }
+
+    const simple: Record<string, number> = { n: 0x0a, t: 0x09, r: 0x0d, "'": 0x27, '"': 0x22, '\\': 0x5c };
+    if (next in simple) {
+      bytes.push(simple[next]);
+      i += 1;
+      continue;
+    }
+
+    bytes.push(value.charCodeAt(i + 1));
+    i += 1;
+  }
+  return Buffer.from(bytes).toString('utf8');
 }
 
 /**
  * Strips Python bytes-literal wrapping that Eventbrite occasionally returns
- * as attendee names, e.g. `b'PAUL' b'HARTWELL'` → `PAUL HARTWELL`.
+ * as attendee names, e.g. `b'PAUL' b'HARTWELL'` → `PAUL HARTWELL` and
+ * `b'Mary Jane' b'Smith'` → `Mary Jane Smith`, `b'Jos\xc3\xa9'` → `José`.
  * Real names (including apostrophes) are left unchanged.
  */
 export function decodePythonBytesName(name: string | undefined): string {
@@ -48,19 +82,13 @@ export function decodePythonBytesName(name: string | undefined): string {
   const trimmed = name.trim();
   if (!trimmed) return '';
 
-  const parts = trimmed.split(/\s+/);
-  const decodedParts = parts.map(part => {
-    const match = part.match(PYTHON_BYTES_TOKEN);
-    return match ? unescapePythonBytesContent(match[2]) : part;
+  PYTHON_BYTES_LITERAL.lastIndex = 0;
+  let decodedAny = false;
+  const result = trimmed.replace(PYTHON_BYTES_LITERAL, (_match, _quote, content: string) => {
+    decodedAny = true;
+    return unescapePythonBytesContent(content);
   });
-  if (decodedParts.some((part, i) => part !== parts[i])) {
-    return decodedParts.join(' ');
-  }
-
-  const whole = trimmed.match(PYTHON_BYTES_TOKEN);
-  if (whole) return unescapePythonBytesContent(whole[2]);
-
-  return trimmed;
+  return decodedAny ? result.replace(/\s+/g, ' ').trim() : trimmed;
 }
 
 function decodeNameField(value: string | undefined): string | undefined {

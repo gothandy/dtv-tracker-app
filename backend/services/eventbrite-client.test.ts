@@ -11,6 +11,11 @@ describe('decodePythonBytesName', () => {
     expect(decodePythonBytesName("b'Paul Hartwell'")).toBe('Paul Hartwell')
   })
 
+  it('decodes multiword names inside either literal', () => {
+    expect(decodePythonBytesName("b'Mary Jane' b'Smith'")).toBe('Mary Jane Smith')
+    expect(decodePythonBytesName("b'Mary' b'Van Dyke'")).toBe('Mary Van Dyke')
+  })
+
   it('decodes mixed tokens (only the bytes ones)', () => {
     expect(decodePythonBytesName("b'josh' Friday")).toBe('josh Friday')
   })
@@ -18,6 +23,7 @@ describe('decodePythonBytesName', () => {
   it('accepts double quotes and uppercase B prefix', () => {
     expect(decodePythonBytesName('b"PAUL" b"HARTWELL"')).toBe('PAUL HARTWELL')
     expect(decodePythonBytesName("B'PAUL'")).toBe('PAUL')
+    expect(decodePythonBytesName('b"Mary Jane" b"Van Dyke"')).toBe('Mary Jane Van Dyke')
   })
 
   it('leaves ordinary names unchanged', () => {
@@ -29,6 +35,11 @@ describe('decodePythonBytesName', () => {
   it('returns empty string for missing or blank input', () => {
     expect(decodePythonBytesName(undefined)).toBe('')
     expect(decodePythonBytesName('  ')).toBe('')
+  })
+
+  it('decodes UTF-8 hex escapes inside a bytes literal', () => {
+    expect(decodePythonBytesName(String.raw`b'Jos\xc3\xa9'`)).toBe('José')
+    expect(decodePythonBytesName(String.raw`b'Jos\xc3\xa9' b'Smith'`)).toBe('José Smith')
   })
 })
 
