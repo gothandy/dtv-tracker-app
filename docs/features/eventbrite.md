@@ -26,7 +26,7 @@ Attendees are matched to existing Entries and Profiles via a priority chain:
 
 1. **`EventbriteAttendeeID` match** (deterministic) — if an Entry already carries the attendee ID, only consent records are updated. No entry data is changed.
 2. **Profile ID match** — if no AttendeeID match but the Profile is already booked on this session, `EventbriteAttendeeID` is stamped onto the existing Entry (only if not already set). Consent records are updated.
-3. **Name + email match** — `Profile.MatchName` / `Profile.Title` normalised to lowercase, combined with booking email. High confidence — a new Entry is created with `EventbriteAttendeeID`.
+3. **Name + email match** — `Profile.MatchName` / `Profile.Title` normalised to lowercase, combined with booking email. High confidence — a new Entry is created with `EventbriteAttendeeID`. Attendee names are decoded first (`b'PAUL' b'HARTWELL'` → `PAUL HARTWELL`) when fetched from Eventbrite.
 4. **Name-only match** — used when emails are compatible (absent on one or both sides). A new Entry is created.
 5. **No match, or name match with conflicting emails** — a new Profile and Entry are created. Conflicting emails mean a different person; creating a duplicate is safer than a wrong match.
 
@@ -42,6 +42,8 @@ This runs two steps in sequence:
 
 1. **sync-sessions** — finds Eventbrite events by `EventbriteSeriesID` and creates missing Sessions.
 2. **sync-entries** — fetches attendees for Eventbrite-linked Sessions (today or future), matches them to Profiles, and creates missing Entries. Uses the shared `syncAttendeesForSession()` function. Also processes cancellations: sets `Cancelled` to the sync run timestamp on any Entry whose `EventbriteAttendeeID` matches a cancelled attendee, but only if `Cancelled` is not already set (preserving any earlier manual cancellation date). The Eventbrite API does not expose a cancellation date on the attendee object, so the sync timestamp is used.
+
+Eventbrite HTTP calls retry twice on 429, 502, and 503 (1s then 2s). A gateway HTML page is not passed through as the UI error.
 
 Both steps are also available individually for manual runs from the Admin page.
 

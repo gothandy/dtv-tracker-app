@@ -1,6 +1,6 @@
 # Azure App Service Deployment
 
-The app is hosted on **Azure App Service** (Node.js, UK South).
+The app is hosted on **Azure App Service** (Node.js 24 LTS, UK South). GitHub Actions builds with Node 24 (`.nvmrc`); each deploy sets the App Service stack to `NODE|24-lts`.
 
 All `.env` variables must be configured in Azure App Service → Configuration → Application settings.
 
@@ -35,16 +35,18 @@ Public SPA routes inject Open Graph tags server-side in production (`backend/ser
 Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on every push to `main`.
 
 **Build job:**
-1. Installs root dependencies
-2. Compiles TypeScript
-3. Installs frontend dependencies and builds — output to `frontend/dist/`
-4. Prunes dev dependencies
-5. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, and `frontend/dist/`
+1. Installs Node 24 from `.nvmrc`
+2. Installs root dependencies
+3. Compiles TypeScript
+4. Installs frontend dependencies and builds — output to `frontend/dist/`
+5. Prunes dev dependencies
+6. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, and `frontend/dist/`
 
 **Deploy job:**
 1. Authenticates with Azure via OIDC (no stored secrets — uses federated identity)
-2. Disables Kudu build-on-deploy (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`)
-3. Deploys `release.zip` to Azure App Service
+2. Sets the App Service Linux stack to `NODE|24-lts`
+3. Disables Kudu build-on-deploy (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`)
+4. Deploys `release.zip` to Azure App Service
 
 ## Scheduled Eventbrite Sync
 

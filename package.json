@@ -32,6 +32,9 @@
   "author": "",
   "license": "MIT",
   "type": "commonjs",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "dependencies": {
     "@azure/msal-node": "^5.0.3",
     "@types/cookie-parser": "^1.4.10",
