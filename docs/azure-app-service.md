@@ -90,7 +90,7 @@ PRs from forks run the build job only; they don't get secrets, so they aren't de
 4. Custom domain **`preview.tracker.dtv.org.uk`** on the `preview` slot:
    - DNS: `CNAME preview.tracker` → the slot's default hostname (slot Overview), and `TXT asuid.preview.tracker` → the Custom Domain Verification ID shown in the *Add custom domain* pane.
    - Slot → *Custom domains → Add custom domain*, certificate: **App Service Managed Certificate**, TLS/SSL type **SNI SSL**.
-   - The workflow uses the custom domain automatically once bound.
+   - The workflow links to the custom domain once it is added. Its health check always uses the slot's own `azurewebsites.net` address, so a missing or pending certificate never fails a deploy.
 5. In Entra ID, on the tracker's sign-in app registration (`SHAREPOINT_CLIENT_ID`): add `https://preview.tracker.dtv.org.uk/auth/callback` as a web redirect URI (Authentication → Web → Redirect URIs).
 
 `FRONTEND_URL` stays as `https://tracker.dtv.org.uk` on the slot (cloned). Session and profile emails sent from the preview therefore link to production. Magic-link sign-in links use the host the request came from, so signing in on the preview works.

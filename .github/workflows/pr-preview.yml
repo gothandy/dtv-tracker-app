@@ -96,17 +96,17 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_94C7F51E6E60439880C12B615207E225 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_659B92CC0E6B4EC59EC9372AB5981C14 }}
 
-      - name: Find resource group and slot URL
+      - name: Find resource group and slot URLs
         id: slot
         run: |
           RG=$(az webapp list --query "[?name=='DTVTrackerApp'].resourceGroup" -o tsv)
-          # Prefer the custom domain (preview.tracker.dtv.org.uk) once bound; fall back to the azurewebsites.net name.
-          HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query "hostNames[?!contains(@, 'azurewebsites.net')] | [0]" -o tsv)
-          if [ -z "$HOST" ]; then
-            HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query defaultHostName -o tsv)
-          fi
+          # Health check uses the slot's own azurewebsites.net name: its certificate is always valid.
+          DEFAULT_HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query defaultHostName -o tsv)
+          # People use the custom domain (preview.tracker.dtv.org.uk) once bound.
+          CUSTOM_HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query "hostNames[?!contains(@, 'azurewebsites.net')] | [0]" -o tsv)
           echo "resource_group=$RG" >> $GITHUB_OUTPUT
-          echo "url=https://$HOST" >> $GITHUB_OUTPUT
+          echo "health_url=https://$DEFAULT_HOST/api/health" >> $GITHUB_OUTPUT
+          echo "url=https://${CUSTOM_HOST:-$DEFAULT_HOST}" >> $GITHUB_OUTPUT
 
       - name: Deploy to preview slot
         run: |
@@ -138,7 +138,7 @@ jobs:
 
       - name: Wait for preview to be healthy
         run: |
-          URL="${{ steps.slot.outputs.url }}/api/health"
+          URL="${{ steps.slot.outputs.health_url }}"
           echo "Waiting for $URL ..."
           for i in $(seq 1 60); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL") || STATUS="000"
