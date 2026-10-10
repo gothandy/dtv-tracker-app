@@ -54,8 +54,8 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 
 | Branch | On push | Purpose |
 | --- | --- | --- |
-| `task/…` | **Build job** only: same build as production, plus backend and frontend unit tests (`vitest run`). About 2 minutes. | Day-to-day work; commit as often as needed. |
-| PR branch (PR into `main`) | **Build job**, then **deploy job**: deploys to the `preview` slot, waits for `/api/health` (up to 10 minutes), and comments the preview URL on the PR. | Squash the task branch into it when ready to test. |
+| `task/<name>` | **Build job** only: same build as production, plus backend and frontend unit tests (`vitest run`). About 2 minutes. | Day-to-day work; commit as often as needed. |
+| `preview/<name>` (PR into `main`) | **Build job**, then **deploy job**: deploys to the `preview` slot, waits for `/api/health` (up to 10 minutes), and comments the preview URL on the PR. | Squash the task branch into it when ready to test. |
 
 Merging the PR into `main` deploys to production via `main_dtvtrackerapp.yml` as before.
 
@@ -67,7 +67,7 @@ PRs from forks run the build job only; they don't get secrets, so they aren't de
 
 These are the steps used to create `preview` on 10 Oct 2026. Use them for any further slot (replace `<slot>`); allow about an hour, mostly waiting for DNS and the certificate.
 
-**Prerequisite:** the App Service plan (`ASP-DTV-a457`) must be Premium v3 P0v3 or above. Basic doesn't support slots. P0v3 allows up to 20 slots; they all share the plan's 1 vCPU / 4 GB with production, at no extra cost.
+**Prerequisite:** the App Service plan (`ASP-DTV-a457`) must support deployment slots: **Standard S1 or above** (Basic doesn't). We use **Premium v3 P0v3**: it costs less than S1, performs better, and Azure now lists Standard as legacy. P0v3 allows up to 20 slots; they all share the plan's 1 vCPU / 4 GB with production, at no extra cost.
 
 1. **Create the slot.** *DTVTrackerApp → Deployment slots → Add slot* `<slot>`, **clone settings from production**. The slot gets its **own copy** of every setting (see *Keeping slots in step* below).
 2. **Note its default hostname** from the slot's *Overview*, e.g. `dtvtrackerapp-<slot>-<random>.uksouth-01.azurewebsites.net`.
@@ -107,6 +107,7 @@ An earlier credential created through the portal form with an ID-based subject n
 A slot's settings were **copied** from production when it was created. They don't follow later changes.
 
 - **When a secret is renewed** (e.g. `SHAREPOINT_CLIENT_SECRET`) or any setting changes, update it on production **and every slot**.
+- **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh (no double runs against live data). To test a job change on a slot, run it on demand from the Tools page.
 - `FRONTEND_URL` stays `https://tracker.dtv.org.uk` on slots, so emails sent from a slot link to production. Magic-link sign-in uses the host the request came from, so signing in on a slot works.
 
 ### Per-developer slots (possible later)

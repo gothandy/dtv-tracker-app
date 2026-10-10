@@ -27,23 +27,25 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 | Level | What it is | Where it lives | Done means | Who decides |
 |---|---|---|---|---|
 | **Principles** | Goals and rules for the whole app; reviewed occasionally, always applied | This file, [docs/](docs/), roadmap milestones | — | Maintainer |
-| **Feature / PR** | A planned chunk of **releasable** work: consistent, explainable, meaningful, or hidden if unfinished | Issue(s) → `feature/…` branch → pull request → preview | Tested on preview, so merge to production | Maintainer merges |
-| **Task** | Something **testable**: it works correctly, or a rapid feedback loop on a UI problem | `task/…` branch; a checklist item in the PR description | Seen working, so promote into the feature branch | Agreed together |
+| **Feature / PR** | A planned chunk of **releasable** work: consistent, explainable, meaningful, or hidden if unfinished | Issue(s) → `preview/<name>` branch → pull request → preview | Tested on preview, so merge to production | Maintainer merges |
+| **Task** | Something **testable**: it works correctly, or a rapid feedback loop on a UI problem | `task/<name>` branch; a checklist item in the PR description | Seen working, so promote into the feature branch | Agreed together |
 | **Commit** | A **reversible code step** inside the task loop | Commit on the task branch | Builds and tests pass | Whoever is coding |
 
 ### Branches and environments
 
 | Branch | On push | Environment |
 |---|---|---|
-| `task/…` | Build and unit tests only (about 2 minutes) | None. Pull it to run locally if needed. |
-| `feature/…` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
+| `task/<name>` | Build and unit tests only (about 2 minutes) | None. Pull it to run locally if needed. |
+| `preview/<name>` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
 | `main` | Build, tests, deploy | **Production**: https://tracker.dtv.org.uk |
 
 - **All work happens on the task branch.** Pull before starting, push when done, and fetch and rebase before pushing so nobody else's commits are lost.
-- **Nobody commits directly to a feature branch.** It only changes when a task is **promoted**: the task branch is squashed into it as one commit with a clear message. Each promotion deploys to preview, so promote deliberately.
-- **Merging to `main` redeploys production.** Keep merges to about one a day at most, group related changes into one PR, and always squash-merge.
+- **Branches come in pairs with the same name:** `preview/<name>` holds the PR; `task/<name>` is where the work happens. Use a short name for the PR (e.g. `event-types`), so it's always clear which branches belong together and which can be deleted after merge.
+- **Nobody commits directly to a `preview/` branch.** It only changes when a task is **promoted**: `task/<name>` is squashed into it as one commit with a clear message. Each promotion deploys to preview, so promote deliberately.
+- **Merging to `main` redeploys production.** Keep merges to about one a day at most, group related changes into one PR, and always squash-merge. After merging, delete both `preview/<name>` and `task/<name>`.
 - **Unfinished work merged to production must be hidden** (admin-only or behind a setting), never half-visible to volunteers.
-- **Reversal:** commits can be undone freely; a promoted task is reverted on the feature branch before merge; a merged PR is reversed by a new PR, never by rewriting `main`.
+- **Reversal:** commits can be undone freely; a promoted task is reverted on the `preview/` branch before merge; a merged PR is reversed by a new PR, never by rewriting `main`.
+- **Write access means trusted maintainer.** Any PR from this repository deploys to a slot with production credentials and live data, and anyone with write access could also change the workflows or push to `main`. Keep write access to a small, known group with two-factor authentication, and remove it when someone stops volunteering. The coding-agent apps (Claude, Codex) count as maintainers too: only the maintainer prompts them. Longer-term hardening: [#278](https://github.com/gothandy/dtv-tracker-app/issues/278).
 - **Preview is pre-production, not a test environment.** It is cloned from production: live SharePoint data and real emails. Local development uses the same live data. Treat both as production. Details: [docs/azure-app-service.md](docs/azure-app-service.md).
 
 ### Planning a feature

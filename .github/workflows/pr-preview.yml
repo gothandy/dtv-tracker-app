@@ -1,8 +1,9 @@
 # Pull request checks + deploy to the pre-production "preview" slot.
 #
-# Branching: work happens on task/* branches (build + test on every push, no
-# deploy). When ready to test, the task branch is squashed into the PR branch;
-# that push deploys to the preview slot.
+# Branching: branches come in pairs, preview/<name> (the PR into main) and
+# task/<name>. Work happens on task/<name> (build + test on every push, no
+# deploy). When ready to test, it is squashed into preview/<name>; that push
+# deploys to the preview slot.
 #
 # The preview slot is a clone of production: same settings, live SharePoint
 # data, real emails. Treat it as production. One slot is shared by all PRs;
@@ -112,7 +113,26 @@ jobs:
           echo "health_url=https://$DEFAULT_HOST/api/health" >> $GITHUB_OUTPUT
           echo "url=https://${CUSTOM_HOST:-$DEFAULT_HOST}" >> $GITHUB_OUTPUT
 
+      # Builds can finish out of order. Only deploy if this is still the PR's latest commit,
+      # so an older, slower build never overwrites a newer preview.
+      - name: Skip if a newer commit exists
+        id: fresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "ok=true" >> $GITHUB_OUTPUT; exit 0
+          fi
+          LATEST=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq .head.sha)
+          if [ "$LATEST" = "${{ github.event.pull_request.head.sha }}" ]; then
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "ok=false" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping deploy: PR has moved on to ${LATEST:0:7}; that run will deploy instead."
+          fi
+
       - name: Deploy to preview slot
+        if: steps.fresh.outputs.ok == 'true'
         run: |
           az webapp deploy \
             --resource-group ${{ steps.slot.outputs.resource_group }} \
@@ -123,6 +143,7 @@ jobs:
             --clean true
 
       - name: Configure slot settings
+        if: steps.fresh.outputs.ok == 'true'
         run: |
           az webapp config set \
             --resource-group ${{ steps.slot.outputs.resource_group }} \
@@ -141,6 +162,7 @@ jobs:
             --setting-names WEBSITE_RUN_FROM_PACKAGE SITE_MODE 2>/dev/null || true
 
       - name: Wait for preview to be healthy
+        if: steps.fresh.outputs.ok == 'true'
         run: |
           URL="${{ steps.slot.outputs.health_url }}"
           echo "Waiting for $URL ..."
@@ -157,7 +179,7 @@ jobs:
           exit 1
 
       - name: Comment preview URL on the PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.fresh.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           URL: ${{ steps.slot.outputs.url }}
