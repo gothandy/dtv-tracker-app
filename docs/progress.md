@@ -1,5 +1,12 @@
 # Development Progress
 
+## Session: 2026-10-10 (PR checks + preview slot)
+
+- App Service plan upgraded Basic B1 → Premium v3 P0v3 (supports deployment slots). Azure nonprofit grant renewed to 10 Oct 2027.
+- New `.github/workflows/pr-preview.yml`: every PR builds, runs backend and frontend unit tests, then deploys to the `preview` slot and comments the URL on the PR.
+- The `preview` slot is pre-production: cloned production settings, live SharePoint data, real emails.
+- Issues reorganised into one milestone per roadmap priority; `tech-debt` issues have no milestone and are fixed in passing.
+
 ## Session: 2026-08-28 (Eventbrite `b'Name'` bytes-literal names)
 
 - Eventbrite sometimes returns attendee names as Python bytes literals (`b'PAUL' b'HARTWELL'`). Those were stored as Profile titles and broke matching.

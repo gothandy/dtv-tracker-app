@@ -48,6 +48,23 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 3. Disables Kudu build-on-deploy (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`)
 4. Deploys `release.zip` to Azure App Service
 
+## Pull request previews — `preview` slot
+
+Every pull request into `main` runs `.github/workflows/pr-preview.yml`:
+
+1. **Build job**: same build as production, plus backend and frontend unit tests (`vitest run`). A failure shows as a red check on the PR.
+2. **Deploy job**: deploys the build to the `preview` deployment slot, waits for `/api/health`, and comments the preview URL on the PR.
+
+The `preview` slot is **pre-production**. It was cloned from production, so it uses the same settings, **live SharePoint data and real emails**. Treat anything done on the preview as done in production. There is one slot, so the most recent PR push replaces the previous preview.
+
+PRs from forks run the build job only; they don't get secrets, so they aren't deployed.
+
+**One-off Azure setup:**
+1. App Service plan must be Premium v3 (P0v3) or above; Basic doesn't support slots.
+2. *DTVTrackerApp → Deployment slots → Add slot* `preview`, cloning settings from production.
+3. In Entra ID, on the app registration GitHub uses to deploy (client ID in the `AZUREAPPSERVICE_CLIENTID_…` secret): *Certificates & secrets → Federated credentials → Add → GitHub Actions*, organisation `gothandy`, repository `dtv-tracker-app`, entity type **Environment**, environment name `preview`. Then give that app registration **Contributor** on the `preview` slot (it already has it if it was granted on the resource group).
+4. In Entra ID, on the tracker's sign-in app registration (`SHAREPOINT_CLIENT_ID`): add `https://<preview slot hostname>/auth/callback` as a web redirect URI (Authentication → Web → Redirect URIs).
+
 ## Scheduled Eventbrite Sync
 
 An **Azure Logic App** (Consumption plan) runs a daily sync:
