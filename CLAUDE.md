@@ -6,6 +6,8 @@ See [AGENTS.md](AGENTS.md) for full project context, data model, dev guidelines,
 
 - **Always plan first**: Use plan mode before implementing any change. Explore the codebase, understand existing patterns, and get approval before writing code. For trival changes still explain what you are about to do and why before acting.
 
+- **Tech debt is fixed in passing, not scheduled**: `tech-debt` issues have no milestone. When planning a change, search open `tech-debt` issues for the files and features being touched. Fold in fixes that are small and low-risk, and reference the issue in the PR (`Fixes #123`). If a related fix is larger, name it in the plan and ask before including it.
+
 - **Documentation review after every change**:
   - [AGENTS.md](AGENTS.md) — project context, file structure, features list
   - [docs/testing/full-regression.md](docs/testing/full-regression.md) — add/update test cases
