@@ -1,5 +1,9 @@
 # Pull request checks + deploy to the pre-production "preview" slot.
 #
+# Branching: work happens on task/* branches (build + test on every push, no
+# deploy). When ready to test, the task branch is squashed into the PR branch;
+# that push deploys to the preview slot.
+#
 # The preview slot is a clone of production: same settings, live SharePoint
 # data, real emails. Treat it as production. One slot is shared by all PRs;
 # the most recent push wins.
@@ -12,14 +16,15 @@
 name: PR checks and preview deploy
 
 on:
+  # PRs into main: build, test and deploy to the preview slot.
   pull_request:
     branches:
       - main
+  # Task branches: build and test only (fast feedback, no deploy).
+  push:
+    branches:
+      - 'task/**'
   workflow_dispatch:
-
-concurrency:
-  group: preview-slot
-  cancel-in-progress: true
 
 jobs:
   build:
@@ -63,8 +68,13 @@ jobs:
   deploy-preview:
     runs-on: ubuntu-latest
     needs: build
-    # Secrets aren't available to PRs from forks; only deploy PRs from this repo.
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    # Only PRs into main (and manual runs) deploy. Secrets aren't available to
+    # PRs from forks, so those build but don't deploy.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    # One preview slot: a newer deploy cancels one still in progress.
+    concurrency:
+      group: preview-slot
+      cancel-in-progress: true
     environment:
       name: preview
       url: ${{ steps.slot.outputs.url }}
@@ -106,8 +116,7 @@ jobs:
             --slot preview \
             --src-path release.zip \
             --type zip \
-            --clean true \
-            --async
+            --clean true
 
       - name: Configure slot settings
         run: |
@@ -131,7 +140,7 @@ jobs:
         run: |
           URL="${{ steps.slot.outputs.url }}/api/health"
           echo "Waiting for $URL ..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL") || STATUS="000"
             echo "Attempt $i: HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
@@ -140,7 +149,7 @@ jobs:
             fi
             sleep 10
           done
-          echo "Preview did not become healthy within 5 minutes."
+          echo "Preview did not become healthy within 10 minutes."
           exit 1
 
       - name: Comment preview URL on the PR

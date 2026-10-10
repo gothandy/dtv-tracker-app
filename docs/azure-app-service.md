@@ -50,10 +50,14 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 
 ## Pull request previews — `preview` slot
 
-Every pull request into `main` runs `.github/workflows/pr-preview.yml`:
+`.github/workflows/pr-preview.yml` supports a two-level branch model, so the slow deploy only happens when there's something to test:
 
-1. **Build job**: same build as production, plus backend and frontend unit tests (`vitest run`). A failure shows as a red check on the PR.
-2. **Deploy job**: deploys the build to the `preview` deployment slot, waits for `/api/health`, and comments the preview URL on the PR.
+| Branch | On push | Purpose |
+| --- | --- | --- |
+| `task/…` | **Build job** only: same build as production, plus backend and frontend unit tests (`vitest run`). About 2 minutes. | Day-to-day work; commit as often as needed. |
+| PR branch (PR into `main`) | **Build job**, then **deploy job**: deploys to the `preview` slot, waits for `/api/health` (up to 10 minutes), and comments the preview URL on the PR. | Squash the task branch into it when ready to test. |
+
+Merging the PR into `main` deploys to production via `main_dtvtrackerapp.yml` as before.
 
 The `preview` slot is **pre-production**. It was cloned from production, so it uses the same settings, **live SharePoint data and real emails**. Treat anything done on the preview as done in production. There is one slot, so the most recent PR push replaces the previous preview.
 
