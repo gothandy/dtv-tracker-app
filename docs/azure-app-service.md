@@ -62,7 +62,27 @@ PRs from forks run the build job only; they don't get secrets, so they aren't de
 **One-off Azure setup:**
 1. App Service plan must be Premium v3 (P0v3) or above; Basic doesn't support slots.
 2. *DTVTrackerApp → Deployment slots → Add slot* `preview`, cloning settings from production.
-3. In Entra ID, on the app registration GitHub uses to deploy (client ID in the `AZUREAPPSERVICE_CLIENTID_…` secret): *Certificates & secrets → Federated credentials → Add → GitHub Actions*, organisation `gothandy`, repository `dtv-tracker-app`, entity type **Environment**, environment name `preview`. Then give that app registration **Contributor** on the `preview` slot (it already has it if it was granted on the resource group).
+3. Let GitHub deploy to the slot. GitHub logs in as the user-assigned managed identity **`oidc-msi-ad79`** (created by Deployment Center; it has *Website Contributor* on DTVTrackerApp, which covers its slots). It needs a federated credential per thing it deploys:
+
+   | Credential | Subject | Used by |
+   | --- | --- | --- |
+   | `oidc-credential-b66a` | `repo:gothandy/dtv-tracker-app:ref:refs/heads/main` | Production deploy (`main_dtvtrackerapp.yml`) |
+   | `preview-slot-plain` | `repo:gothandy/dtv-tracker-app:environment:preview` | Preview deploy (`pr-preview.yml`) |
+
+   Add the preview credential from **Cloud Shell (Bash)**. The portal form now builds an ID-based subject (`repo:gothandy@5618305/…`) that doesn't match what these workflows send.
+
+   ```bash
+   RG=$(az identity list --query "[?name=='oidc-msi-ad79'].resourceGroup" -o tsv)
+   az identity federated-credential create \
+     --name preview-slot-plain \
+     --identity-name oidc-msi-ad79 \
+     --resource-group "$RG" \
+     --issuer https://token.actions.githubusercontent.com \
+     --subject "repo:gothandy/dtv-tracker-app:environment:preview" \
+     --audiences api://AzureADTokenExchange
+   ```
+
+   An `AADSTS700213: No matching federated identity record` error in the deploy job means this subject doesn't match exactly.
 4. Custom domain **`preview.tracker.dtv.org.uk`** on the `preview` slot:
    - DNS: `CNAME preview.tracker` → the slot's default hostname (slot Overview), and `TXT asuid.preview.tracker` → the Custom Domain Verification ID shown in the *Add custom domain* pane.
    - Slot → *Custom domains → Add custom domain*, certificate: **App Service Managed Certificate**, TLS/SSL type **SNI SSL**.
