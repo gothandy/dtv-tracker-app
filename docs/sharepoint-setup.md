@@ -2,7 +2,7 @@
 
 **Audience**: Organization admin / SharePoint administrator
 
-This is a **one-time setup** guide for configuring SharePoint and Microsoft Entra ID for the DTV Tracker App. New developers joining the project won't need to repeat these steps - they just need the credentials (see [../readme.md](../readme.md)).
+This is a **one-time setup** guide for configuring SharePoint and Microsoft Entra ID for the DTV Tracker App. New developers joining the project won't need to repeat these steps - they just need the credentials (see [local-development.md](local-development.md)).
 
 ---
 
@@ -381,7 +381,7 @@ To grant access to more SharePoint sites:
 
 For issues with this setup:
 1. Check troubleshooting section above
-2. Review [../docs/progress.md](progress.md) for known issues
+2. Search [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues) for known problems
 3. Verify all steps were completed in order
 4. Contact your Azure/SharePoint administrator
 
