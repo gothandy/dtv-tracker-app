@@ -13,7 +13,7 @@
 # "GitHub Actions → Environment: preview" on this repo, and the DTVTrackerApp
 # app needs a "preview" deployment slot. See docs/azure-app-service.md.
 
-name: PR checks and preview deploy
+name: Preview Deploy
 
 on:
   # PRs into main: build, test and deploy to the preview slot.
