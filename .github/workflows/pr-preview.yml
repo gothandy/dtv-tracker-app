@@ -90,7 +90,11 @@ jobs:
         id: slot
         run: |
           RG=$(az webapp list --query "[?name=='DTVTrackerApp'].resourceGroup" -o tsv)
-          HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query defaultHostName -o tsv)
+          # Prefer the custom domain (preview.tracker.dtv.org.uk) once bound; fall back to the azurewebsites.net name.
+          HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query "hostNames[?!contains(@, 'azurewebsites.net')] | [0]" -o tsv)
+          if [ -z "$HOST" ]; then
+            HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query defaultHostName -o tsv)
+          fi
           echo "resource_group=$RG" >> $GITHUB_OUTPUT
           echo "url=https://$HOST" >> $GITHUB_OUTPUT
 

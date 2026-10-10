@@ -63,7 +63,13 @@ PRs from forks run the build job only; they don't get secrets, so they aren't de
 1. App Service plan must be Premium v3 (P0v3) or above; Basic doesn't support slots.
 2. *DTVTrackerApp → Deployment slots → Add slot* `preview`, cloning settings from production.
 3. In Entra ID, on the app registration GitHub uses to deploy (client ID in the `AZUREAPPSERVICE_CLIENTID_…` secret): *Certificates & secrets → Federated credentials → Add → GitHub Actions*, organisation `gothandy`, repository `dtv-tracker-app`, entity type **Environment**, environment name `preview`. Then give that app registration **Contributor** on the `preview` slot (it already has it if it was granted on the resource group).
-4. In Entra ID, on the tracker's sign-in app registration (`SHAREPOINT_CLIENT_ID`): add `https://<preview slot hostname>/auth/callback` as a web redirect URI (Authentication → Web → Redirect URIs).
+4. Custom domain **`preview.tracker.dtv.org.uk`** on the `preview` slot:
+   - DNS: `CNAME preview.tracker` → the slot's default hostname (slot Overview), and `TXT asuid.preview.tracker` → the Custom Domain Verification ID shown in the *Add custom domain* pane.
+   - Slot → *Custom domains → Add custom domain*, certificate: **App Service Managed Certificate**, TLS/SSL type **SNI SSL**.
+   - The workflow uses the custom domain automatically once bound.
+5. In Entra ID, on the tracker's sign-in app registration (`SHAREPOINT_CLIENT_ID`): add `https://preview.tracker.dtv.org.uk/auth/callback` as a web redirect URI (Authentication → Web → Redirect URIs).
+
+`FRONTEND_URL` stays as `https://tracker.dtv.org.uk` on the slot (cloned). Session and profile emails sent from the preview therefore link to production. Magic-link sign-in links use the host the request came from, so signing in on the preview works.
 
 ## Scheduled Eventbrite Sync
 
