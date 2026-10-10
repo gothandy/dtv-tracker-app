@@ -1,6 +1,6 @@
 # DTV Tracker — Manual Test Script
 
-Run with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID.
+Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID. Both use live data.
 
 **Priority key:**
 - **HIGH** — Writes to SharePoint (creates, updates, deletes data)
@@ -706,3 +706,8 @@ Requires `FACEBOOK_APP_ID` in Azure Application settings. Test several public UR
 - [ ] `/groups/{key}`, `/projects/{key}` — entity name + description; image from latest public session cover when available
 - [ ] `/sessions/{group}/{date}` — session title, description, public cover or logo
 - [ ] `og:image` URL returns HTTP 200 for Facebook crawler
+
+### L22. About modal build link
+
+- [ ] Production: About → **GitHub** shows a 7-character commit and opens that commit on GitHub
+- [ ] Preview: About → **GitHub** shows **PR #N · sha** and opens the pull request; the sha matches the commit named in the latest preview comment on the PR

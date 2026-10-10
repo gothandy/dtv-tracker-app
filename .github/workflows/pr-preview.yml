@@ -47,6 +47,10 @@ jobs:
           npx vitest run
 
       - name: Build and test frontend
+        env:
+          # For PRs, record the PR's own commit (not GitHub's merge commit) and number for the About modal.
+          BUILD_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BUILD_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           cd frontend
           npm install
@@ -158,9 +162,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           URL: ${{ steps.slot.outputs.url }}
           SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
         run: |
           gh pr comment ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --body "🚀 Deployed \`${SHA:0:7}\` to the **preview** slot: $URL
+            --body "🚀 Deployed PR at \`${SHA:0:7}\` (merged with main as \`${MERGE_SHA:0:7}\`) to the **preview** slot: $URL
 
           ⚠️ Pre-production: live SharePoint data and real emails. Another PR deploying will replace this."
