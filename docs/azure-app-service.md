@@ -107,6 +107,7 @@ An earlier credential created through the portal form with an ID-based subject n
 A slot's settings were **copied** from production when it was created. They don't follow later changes.
 
 - **When a secret is renewed** (e.g. `SHAREPOINT_CLIENT_SECRET`) or any setting changes, update it on production **and every slot**.
+- **One shared `preview` slot.** Deploys are only checked for staleness within a PR, not across PRs, so if two PRs are open the slot shows whichever deployed last. Check the About modal shows the PR you're testing (*PR #N · sha*); if not, re-run that PR's deploy job. Accepted while there's one developer; use per-developer slots (below) if parallel PRs become normal.
 - **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh (no double runs against live data). To test a job change on a slot, run it on demand from the Tools page.
 - `FRONTEND_URL` stays `https://tracker.dtv.org.uk` on slots, so emails sent from a slot link to production. Magic-link sign-in uses the host the request came from, so signing in on a slot works.
 
