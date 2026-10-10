@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Project context and development guidelines for coding agents. For Claude Code-specific instructions see [CLAUDE.md](CLAUDE.md).
+Project context, ways of working and development guidelines for coding agents and people. This file is tool-agnostic and is the single source of truth. Tool-specific notes live elsewhere (Claude Code: [CLAUDE.md](CLAUDE.md)).
 
 ---
 
@@ -14,23 +14,79 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 - **Frontend**: Vue 3 + Vite + TypeScript (mobile-first SPA)
 - **Data Storage**: SharePoint Online lists via Microsoft Graph API
 - **External Integration**: Eventbrite API
-- **Server**: Express server running on http://localhost:3000
+- **Hosting**: Azure App Service (Linux, Premium v3 P0v3, UK South). Production at https://tracker.dtv.org.uk; `preview` deployment slot at https://preview.tracker.dtv.org.uk
+- **Identity**: Microsoft Entra ID (sign-in and Graph app credentials); GitHub Actions deploys with a federated managed identity (no stored secrets)
+- **CI/CD**: GitHub Actions: `task/**` build and test; PRs deploy to the preview slot; `main` deploys to production
+- **Scheduling**: Azure Logic App for the nightly Eventbrite sync
+- **Local dev**: single Express server with Vite middleware at http://localhost:3000
+
+## How we work
+
+### Four levels of work
+
+| Level | What it is | Where it lives | Done means | Who decides |
+|---|---|---|---|---|
+| **Principles** | Goals and rules for the whole app; reviewed occasionally, always applied | This file, [docs/](docs/), roadmap milestones | — | Maintainer |
+| **Feature / PR** | A planned chunk of **releasable** work: consistent, explainable, meaningful, or hidden if unfinished | Issue(s) → `preview/<name>` branch → pull request → preview | Tested on preview, so merge to production | Maintainer merges |
+| **Task** | Something **testable**: it works correctly, or a rapid feedback loop on a UI problem | `task/<name>` branch; a checklist item in the PR description | Seen working, so promote into the feature branch | Agreed together |
+| **Commit** | A **reversible code step** inside the task loop | Commit on the task branch | Builds and tests pass | Whoever is coding |
+
+### Branches and environments
+
+| Branch | On push | Environment |
+|---|---|---|
+| `task/<name>` | Build and unit tests only (about 2 minutes) | None. Pull it to run locally if needed. |
+| `preview/<name>` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
+| `main` | Build, tests, deploy | **Production**: https://tracker.dtv.org.uk |
+
+- **All work happens on the task branch.** Pull before starting, push when done, and fetch and rebase before pushing so nobody else's commits are lost.
+- **Branches come in pairs with the same name:** `preview/<name>` holds the PR; `task/<name>` is where the work happens. Use a short name for the PR (e.g. `event-types`), so it's always clear which branches belong together and which can be deleted after merge.
+- **Nobody commits directly to a `preview/` branch.** It only changes when a task is **promoted**: `task/<name>` is squashed into it as one commit with a clear message. Each promotion deploys to preview, so promote deliberately.
+- **Merging to `main` redeploys production.** Keep merges to about one a day at most, group related changes into one PR, and always squash-merge. After merging, delete both `preview/<name>` and `task/<name>`.
+- **Unfinished work merged to production must be hidden** (admin-only or behind a setting), never half-visible to volunteers.
+- **Reversal:** commits can be undone freely; a promoted task is reverted on the `preview/` branch before merge; a merged PR is reversed by a new PR, never by rewriting `main`.
+- **Write access means trusted maintainer.** Any PR from this repository deploys to a slot with production credentials and live data, and anyone with write access could also change the workflows or push to `main`. Keep write access to a small, known group with two-factor authentication, and remove it when someone stops volunteering. The coding-agent apps (Claude, Codex) count as maintainers too: only the maintainer prompts them. Longer-term hardening: [#278](https://github.com/gothandy/dtv-tracker-app/issues/278).
+- **Preview is pre-production, not a test environment.** It is cloned from production: live SharePoint data and real emails. Local development uses the same live data. Treat both as production. Details: [docs/azure-app-service.md](docs/azure-app-service.md).
+
+### Planning a feature
+
+- **Plan first.** Before writing code, explore the relevant code and existing patterns, then write the PR plan: the tasks as a checklist and a plain-English **What to check** list for testing on preview. Get the maintainer's approval before starting. For trivial changes, still explain what you'll do and why before acting.
+- **Issues and milestones.** Work is tracked in [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues), one milestone per roadmap priority. PRs reference the issues they close (`Closes #123`).
+- **Tech debt is fixed in passing, not scheduled.** `tech-debt` issues have no milestone. When planning, search open `tech-debt` issues for the files and features being touched. Fold in fixes that are small and low-risk as an extra task and reference the issue; if a related fix is larger, name it in the plan and ask before including it.
+
+### Documentation review after every task
+
+Update whichever of these the change affects, in the same task:
+
+- [AGENTS.md](AGENTS.md): project context, file structure, ways of working
+- [docs/testing/full-regression.md](docs/testing/full-regression.md): add or update test cases
+- [docs/permissions.md](docs/permissions.md): if roles or endpoint access change
+- [docs/sharepoint-schema.md](docs/sharepoint-schema.md): if SharePoint fields change
+- [docs/azure-app-service.md](docs/azure-app-service.md): if hosting, deployment or Azure setup changes
+- [readme.md](readme.md), [docs/configuration.md](docs/configuration.md), [docs/local-development.md](docs/local-development.md): if dependencies, configuration or setup change
+- [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues): new bugs, follow-ups, tech debt found along the way
+
+History lives in pull requests, issues and `git log`; there is no separate progress log.
+
+**Clear out, don't archive.** Delete files, code and docs that are no longer used rather than keeping "old" or "legacy" copies. Git history can always recover them.
+
+---
 
 ## Current State
 
 Feature-complete volunteer tracking application with:
 - Express server entry point ([app.js](app.js)) loading compiled TypeScript routes; in dev integrates Vite as middleware (HMR at `:3000`); in production serves `frontend/dist/` as static
-- Microsoft Entra ID authentication with session management ([routes/auth/dtv.ts](routes/auth/dtv.ts))
-- TypeScript API routes split by domain ([routes/](routes/)) — 40+ endpoints across 11 route modules
+- Microsoft Entra ID authentication with session management ([backend/routes/auth/dtv.ts](backend/routes/auth/dtv.ts))
+- TypeScript API routes split by domain ([backend/routes/](backend/routes/))
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
-- TypeScript service layer with Graph API client ([services/sharepoint-client.ts](services/sharepoint-client.ts))
-- Eventbrite API client for event and attendee sync ([services/eventbrite-client.ts](services/eventbrite-client.ts)); attendee names decoded on fetch (`b'Name'` → `Name`)
-- Data layer handling SharePoint quirks, enrichment, and FY stats ([services/data-layer.ts](services/data-layer.ts))
-- Repository pattern for each SharePoint list ([services/repositories/](services/repositories/))
-- Auth middleware with session auth + API key bypass ([middleware/require-auth.ts](middleware/require-auth.ts))
-- Role-based authorization: Admin, Check In, Self-Service, and Public ([middleware/require-admin.ts](middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes)
+- TypeScript service layer with Graph API client ([backend/services/sharepoint-client.ts](backend/services/sharepoint-client.ts))
+- Eventbrite API client for event and attendee sync ([backend/services/eventbrite-client.ts](backend/services/eventbrite-client.ts)); attendee names decoded on fetch (`b'Name'` → `Name`)
+- Data layer handling SharePoint quirks, enrichment, and FY stats ([backend/services/data-layer.ts](backend/services/data-layer.ts))
+- Repository pattern for each SharePoint list ([backend/services/repositories/](backend/services/repositories/))
+- Auth middleware with session auth + API key bypass ([backend/middleware/require-auth.ts](backend/middleware/require-auth.ts))
+- Role-based authorization: Admin, Check In, Self-Service, and Public ([backend/middleware/require-admin.ts](backend/middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes)
 - Server-side caching with tier-informed per-entity TTLs and targeted per-repository invalidation
-- Hosted on Azure App Service with Azure Logic App for scheduled Eventbrite sync
+- Hosted on Azure App Service (production + `preview` deployment slot) with an Azure Logic App for scheduled Eventbrite sync
 
 ### Pages
 
@@ -113,7 +169,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 - Groups have `EventbriteSeriesID` for linking to Eventbrite recurring series
 - Sessions have `EventbriteEventID` for linking to specific events
 - Profiles use `MatchName` field (lowercase name) for Eventbrite matching
-- Sync endpoints ([routes/eventbrite.ts](routes/eventbrite.ts)):
+- Sync endpoints ([backend/routes/eventbrite.ts](backend/routes/eventbrite.ts)):
   - `POST /api/eventbrite/nightly-update` — full nightly run
   - `POST /api/eventbrite/sync-sessions` — matches events to groups by SeriesID, creates missing sessions
   - `POST /api/eventbrite/sync-attendees` — creates profiles/entries/consent; `#Duplicate` tag on name clashes
@@ -126,7 +182,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 ### SharePoint
 
 - All data in SharePoint Online lists via Microsoft Graph API
-- Field name constants in `services/field-names.ts` — use these, not hardcoded strings
+- Field name constants in `backend/services/field-names.ts` — use these, not hardcoded strings
 - `safeParseLookupId()` from `data-layer.ts` for lookup ID comparisons
 
 ---
@@ -223,7 +279,7 @@ Targeted invalidation: each repository write evicts only its own key(s). Entry w
 
 Always calculate derived values (hours totals, counts) from source entries at query time. The app is the source of truth — no Power Automate flows update fields. NodeCache keeps this performant.
 
-**Exception — Pre-computed Stats fields**: The Sessions list has a `Stats` JSON field for performance (avoids fetching ~5,000 entries on listing page load). Kept fresh by `computeAndSaveSessionStats()` after every entry/record/media write and a nightly bulk refresh. Only computed aggregates belong in Stats — editable config fields (e.g. `Limits`) must never be stored there. Session detail responses use this persisted `Stats` for the `stats` payload for **all** roles (public and authenticated); do not overlay alternate totals in `routes/sessions.ts` — fix drift by refreshing stored stats instead.
+**Exception — Pre-computed Stats fields**: The Sessions list has a `Stats` JSON field for performance (avoids fetching ~5,000 entries on listing page load). Kept fresh by `computeAndSaveSessionStats()` after every entry/record/media write and a nightly bulk refresh. Only computed aggregates belong in Stats — editable config fields (e.g. `Limits`) must never be stored there. Session detail responses use this persisted `Stats` for the `stats` payload for **all** roles (public and authenticated); do not overlay alternate totals in `backend/routes/sessions.ts` — fix drift by refreshing stored stats instead.
 
 The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsByFY`, `isMember`, `cardStatus`, `regularGroupIds`, `repeatGroupIds`, `sessionIds`, `linkedProfileIds`, `isFirstAider`, and `warnings`. The `warnings` array holds human-readable flag strings (e.g. `"Possible Duplicate"`, `"Child No Adult"`) computed during stats refresh. The warnings filter on the volunteers listing reads from this stored value. Adding a new warning type means adding a detection pass in `runProfileStatsRefresh()` and `computeAndSaveProfileStats()` in `backend/services/profile-stats.ts`; removing one requires only deleting the detection — it disappears from all profiles on the next refresh.
 
@@ -264,51 +320,35 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ```
 dtv-tracker-app/
-├── app.js                          # Express server entry point (CommonJS)
-├── AGENTS.md                       # This file — project context for coding agents
-├── CLAUDE.md                       # Claude Code-specific workflow instructions
-├── public/                         # Static assets at fixed URLs
-│   └── icons/                      # SVG icons for badges and tags
-├── frontend/                       # Vue 3 + Vite frontend
+├── app.js                          # Express entry point (CommonJS); Vite middleware in dev, serves frontend/dist in prod
+├── AGENTS.md                       # This file
+├── CLAUDE.md                       # Claude Code-specific notes
+├── .github/workflows/
+│   ├── main_dtvtrackerapp.yml      # Push to main → production
+│   └── pr-preview.yml              # task/** → build+test; PR into main → preview slot
+├── backend/
+│   ├── routes/                     # API routes by domain; api.ts mounts them; auth/ (dtv.ts, verify.ts)
+│   ├── services/                   # Graph client, data layer, stats, Eventbrite, email, caches (+ colocated *.test.ts)
+│   │   └── repositories/           # CRUD per SharePoint list
+│   ├── middleware/                 # auth.ts, require-auth.ts, require-admin.ts, public-api-get-paths.ts
+│   ├── shared/                     # Shared constants (brand)
+│   └── scripts/                    # One-off maintenance scripts
+├── types/                          # api-responses.ts (HTTP contract), domain + SharePoint types
+├── frontend/                       # Vue 3 + Vite SPA
 │   └── src/
-│       ├── main.ts
 │       ├── router/index.ts         # Route definitions + path builder functions
-│       ├── composables/
-│       │   ├── useAuth.ts          # Internal — use useViewer in UI
-│       │   └── useViewer.ts        # Single UI auth composable
-│       ├── stores/                 # Pinia stores (sessionList, sessionDetail, etc.) + colocated *.test.ts
-│       ├── types/                  # Frontend domain types
-│       ├── utils/                  # labelIcons, breakpoints, fetchSessionAdults, sessionStats
+│       ├── composables/            # useViewer (single UI auth composable), useAuth (internal), …
+│       ├── stores/                 # Pinia stores + colocated *.test.ts
+│       ├── pages/                  # Page components
 │       ├── components/             # Shared components
-│       ├── layouts/DefaultLayout.vue
-│       └── pages/                  # Page components
-├── docs/                           # Reference documentation
-├── types/
-│   ├── api-responses.ts            # HTTP contract types
-│   ├── group.ts / session.ts / sharepoint.ts
-│   └── express-session.d.ts
-├── services/
-│   ├── sharepoint-client.ts        # Graph API client (auth, caching, pagination)
-│   ├── eventbrite-client.ts
-│   ├── eventbrite-sync.ts
-│   ├── taxonomy-client.ts          # SharePoint Term Store (Graph beta)
-│   ├── data-layer.ts               # Conversion, enrichment, validation
-│   ├── field-names.ts              # SharePoint field name constants
-│   ├── email-renderer.ts           # Handlebars email renderer
-│   ├── backup-export.ts
-│   ├── cover-cache.ts
-│   └── repositories/               # CRUD per SharePoint list
-├── routes/
-│   ├── api.ts                      # Mounts all route modules
-│   ├── groups.ts / sessions.ts / entries.ts / profiles.ts
-│   ├── regulars.ts / stats.ts / eventbrite.ts / tags.ts
-│   ├── media.ts / backup.ts / email.ts
-│   └── auth/                       # dtv.ts, verify.ts
-├── middleware/
-│   ├── auth.ts                     # Cookie auth → req.session.user
-│   ├── require-auth.ts
-│   └── require-admin.ts
-└── templates/email/                # Handlebars email templates
+│       ├── layouts/                # DefaultLayout.vue
+│       ├── styles/                 # main.css (tokens) + shared styles
+│       ├── types/                  # Frontend domain types
+│       └── utils/                  # sessionStats, breakpoints, labelIcons, …
+├── public/                         # Static assets at fixed URLs (icons)
+├── templates/email/                # Handlebars email templates
+├── tests/                          # Live integration tests (test:live)
+└── docs/                           # Reference documentation (features/, testing/, design/, …)
 ```
 
 ---
@@ -322,7 +362,7 @@ npm run build       # Compile TypeScript
 npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
 
-Requires Node.js 24 (see `.nvmrc`).
+Requires Node.js 24 (see `.nvmrc`). Setup and troubleshooting: [docs/local-development.md](docs/local-development.md); all settings: [docs/configuration.md](docs/configuration.md).
 
 Frontend build (for production):
 ```bash
@@ -351,22 +391,19 @@ Feature inventory is split by area — read the relevant doc before working in t
 | [docs/testing/full-regression.md](docs/testing/full-regression.md) | Manual test checklist before release |
 
 **Running tests:**
-- `npm run test:live` — backend live tests (SharePoint connectivity, data contracts)
-- `cd frontend && npm test` — Vitest store unit tests (45 tests, no live calls)
+- `npx vitest run` — backend unit tests (`backend/**/*.test.ts`, no live calls)
+- `cd frontend && npx vitest run` — frontend unit tests (stores, composables, utils; no live calls)
+- `npm run test:all` — both of the above
+- `npm run test:live` — live integration tests against SharePoint (needs `.env`; run `npm run build` first)
+
+CI runs the backend and frontend unit tests on every task-branch push and pull request.
 
 ---
 
 ## Important Notes
 
 - Financial year runs April 1 to March 31
-- `SHAREPOINT_TIMEZONE` env var: IANA timezone for date conversions (default `Europe/London`)
-- `MAIL_SENDER` env var: enables self-service email login (optional); must be a UPN with `Mail.Send` permission
-- `EMAIL_RATE_LIMIT_PER_HOUR` env var: global cap on auth emails (default `60`)
-- `AUTH_BASIC_TTL_HOURS` env var: self-service session token lifetime (default `72`); stored as SHA-256 hashes in Logins list
-- `MEDIA_LIBRARY_DRIVE_ID` env var: required for photo uploads
-- `TAXONOMY_TERM_SET_ID` env var: required for session tags
-- `DOCUMENTS_DRIVE_ID` env var: Documents library drive ID — top-level `Backups/` JSON export and `Projects/{slug}/` project files
-- `FACEBOOK_APP_ID` env var: Meta app ID for `fb:app_id` on session page Open Graph tags (Facebook link previews)
+- All configuration is environment variables; the full list with descriptions is in [docs/configuration.md](docs/configuration.md). Production and preview use the same values (preview settings are cloned).
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

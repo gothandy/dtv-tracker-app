@@ -1,0 +1,193 @@
+# Pull request checks + deploy to the pre-production "preview" slot.
+#
+# Branching: branches come in pairs, preview/<name> (the PR into main) and
+# task/<name>. Work happens on task/<name> (build + test on every push, no
+# deploy). When ready to test, it is squashed into preview/<name>; that push
+# deploys to the preview slot.
+#
+# The preview slot is a clone of production: same settings, live SharePoint
+# data, real emails. Treat it as production. One slot is shared by all PRs;
+# the most recent push wins.
+#
+# Azure setup (one-off): the deploy job runs in the GitHub environment
+# "preview", so the deploy app registration needs a federated credential for
+# "GitHub Actions → Environment: preview" on this repo, and the DTVTrackerApp
+# app needs a "preview" deployment slot. See docs/azure-app-service.md.
+
+name: Preview Deploy
+
+on:
+  # PRs into main: build, test and deploy to the preview slot.
+  pull_request:
+    branches:
+      - main
+  # Task branches: build and test only (fast feedback, no deploy).
+  push:
+    branches:
+      - 'task/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install, build and test backend
+        run: |
+          npm install
+          npm run build
+          npx vitest run
+
+      - name: Build and test frontend
+        env:
+          # For PRs, record the PR's own commit (not GitHub's merge commit) and number for the About modal.
+          BUILD_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BUILD_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          cd frontend
+          npm install
+          npm run build
+          npx vitest run
+
+      - name: Prune dev dependencies
+        run: npm prune --production
+
+      - name: Create deployment zip
+        run: zip -r release.zip app.js package.json dist/ node_modules/ frontend/dist/ templates/
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v6
+        with:
+          name: node-app
+          path: release.zip
+
+  deploy-preview:
+    runs-on: ubuntu-latest
+    needs: build
+    # Only PRs into main (and manual runs) deploy. Secrets aren't available to
+    # PRs from forks, so those build but don't deploy.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    # One preview slot: a newer deploy cancels one still in progress.
+    concurrency:
+      group: preview-slot
+      cancel-in-progress: true
+    environment:
+      name: preview
+      url: ${{ steps.slot.outputs.url }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v7
+        with:
+          name: node-app
+
+      - name: Login to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_BFA8880C27E84E65B0C3011181A0AC76 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_94C7F51E6E60439880C12B615207E225 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_659B92CC0E6B4EC59EC9372AB5981C14 }}
+
+      - name: Find resource group and slot URLs
+        id: slot
+        run: |
+          RG=$(az webapp list --query "[?name=='DTVTrackerApp'].resourceGroup" -o tsv)
+          # Health check uses the slot's own azurewebsites.net name: its certificate is always valid.
+          DEFAULT_HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query defaultHostName -o tsv)
+          # People use the custom domain (preview.tracker.dtv.org.uk) once bound.
+          CUSTOM_HOST=$(az webapp show --resource-group "$RG" --name DTVTrackerApp --slot preview --query "hostNames[?!contains(@, 'azurewebsites.net')] | [0]" -o tsv)
+          echo "resource_group=$RG" >> $GITHUB_OUTPUT
+          echo "health_url=https://$DEFAULT_HOST/api/health" >> $GITHUB_OUTPUT
+          echo "url=https://${CUSTOM_HOST:-$DEFAULT_HOST}" >> $GITHUB_OUTPUT
+
+      # Builds can finish out of order. Only deploy if this is still the PR's latest commit,
+      # so an older, slower build never overwrites a newer preview.
+      - name: Skip if a newer commit exists
+        id: fresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "ok=true" >> $GITHUB_OUTPUT; exit 0
+          fi
+          LATEST=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq .head.sha)
+          if [ "$LATEST" = "${{ github.event.pull_request.head.sha }}" ]; then
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "ok=false" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping deploy: PR has moved on to ${LATEST:0:7}; that run will deploy instead."
+          fi
+
+      - name: Deploy to preview slot
+        if: steps.fresh.outputs.ok == 'true'
+        run: |
+          az webapp deploy \
+            --resource-group ${{ steps.slot.outputs.resource_group }} \
+            --name DTVTrackerApp \
+            --slot preview \
+            --src-path release.zip \
+            --type zip \
+            --clean true
+
+      - name: Configure slot settings
+        if: steps.fresh.outputs.ok == 'true'
+        run: |
+          az webapp config set \
+            --resource-group ${{ steps.slot.outputs.resource_group }} \
+            --name DTVTrackerApp \
+            --slot preview \
+            --linux-fx-version "NODE|24-lts"
+          az webapp config appsettings set \
+            --resource-group ${{ steps.slot.outputs.resource_group }} \
+            --name DTVTrackerApp \
+            --slot preview \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+          az webapp config appsettings delete \
+            --resource-group ${{ steps.slot.outputs.resource_group }} \
+            --name DTVTrackerApp \
+            --slot preview \
+            --setting-names WEBSITE_RUN_FROM_PACKAGE SITE_MODE 2>/dev/null || true
+
+      - name: Wait for preview to be healthy
+        if: steps.fresh.outputs.ok == 'true'
+        run: |
+          URL="${{ steps.slot.outputs.health_url }}"
+          echo "Waiting for $URL ..."
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL") || STATUS="000"
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Preview is healthy."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Preview did not become healthy within 10 minutes."
+          exit 1
+
+      - name: Comment preview URL on the PR
+        if: github.event_name == 'pull_request' && steps.fresh.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.slot.outputs.url }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "🚀 Deployed PR at \`${SHA:0:7}\` (merged with main as \`${MERGE_SHA:0:7}\`) to the **preview** slot: $URL
+
+          ⚠️ Pre-production: live SharePoint data and real emails. Another PR deploying will replace this."

@@ -15,9 +15,9 @@
       </div>
       <div class="flex gap-3">
         <span class="font-bold w-24 shrink-0">GitHub</span>
-        <a v-if="commit" :href="`https://github.com/gothandy/dtv-tracker-app/commit/${commitFull}`"
+        <a v-if="github" :href="github.href"
           target="_blank" rel="noopener"
-          class="text-dtv-green hover:underline">{{ commit }}</a>
+          class="text-dtv-green hover:underline">{{ github.label }}</a>
         <span v-else>—</span>
       </div>
       <div class="flex gap-3">
@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+import { buildLink } from '../utils/buildInfo'
 import ModalLayout from './ModalLayout.vue'
 
 withDefaults(
@@ -49,11 +50,11 @@ const emit = defineEmits<{ close: [] }>()
 
 declare const __BUILD_TIME__: string
 declare const __GIT_COMMIT__: string
+declare const __PR_NUMBER__: string
 
 const d = new Date(__BUILD_TIME__)
 const pad = (n: number) => String(n).padStart(2, '0')
 const build = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 
-const commitFull = __GIT_COMMIT__
-const commit = commitFull ? commitFull.slice(0, 7) : null
+const github = buildLink(__GIT_COMMIT__, __PR_NUMBER__)
 </script>

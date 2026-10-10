@@ -1,61 +1,35 @@
 # DTV Tracker App
 
-A volunteer hours tracking and registration system for managing volunteer crews, events/sessions, and volunteer profiles. Integrates with SharePoint for data storage and Eventbrite for event management.
+A volunteer hours tracking and registration system for Dean Trail Volunteers: volunteer crews, sessions, profiles, check-in and hours. Data lives in SharePoint; bookings sync from Eventbrite.
 
-## Get Started
+- **Production:** https://tracker.dtv.org.uk
+- **Preview** (pre-production, live data): https://preview.tracker.dtv.org.uk
 
-You'll need Node.js 24, credentials from your team lead (SharePoint Client ID/Secret/Tenant, Eventbrite API key), and SharePoint already configured — see [docs/sharepoint-setup.md](docs/sharepoint-setup.md) if it isn't.
+## Getting started
 
-```bash
-git clone https://github.com/gothandy/dtv-tracker-app
-cd dtv-tracker-app
-npm install
-cd frontend && npm install && cd ..
-```
+Changes are made **prompt-driven**: you describe what you want, a coding agent (Claude) plans and builds it, and you test it on the preview before it goes live. You don't need a local copy or a code editor.
 
-Create a `.env` file in the project root (never commit it — already in `.gitignore`):
+### What you need
 
-```bash
-# SharePoint
-SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
-SHAREPOINT_CLIENT_ID=your_client_id_here
-SHAREPOINT_CLIENT_SECRET=your_client_secret_here
-SHAREPOINT_TENANT_ID=your_tenant_id_here
+- Access to this GitHub repository
+- [Claude](https://claude.ai/code) with GitHub connected, and the Claude GitHub App installed on this repository
+- Azure portal access only for hosting or billing changes
 
-# SharePoint List GUIDs (same for all developers)
-GROUPS_LIST_GUID=6e86cef7-a855-41a4-93e8-6e01a80434a2
-PROJECTS_LIST_GUID=669e479d-7b48-41dc-a0df-1ee7bc0fc2c7
-SESSIONS_LIST_GUID=583867bd-e032-4940-89b5-aa2d5158c5d0
-ENTRIES_LIST_GUID=7146b950-94e3-4c94-a0d7-310cf2fbd325
-PROFILES_LIST_GUID=84649143-9e10-42eb-b6ee-2e1f57033073
-REGULARS_LIST_GUID=925c96fd-9b3a-4f55-b179-ed51fc279d39
-RECORDS_LIST_GUID=2666a819-1275-4fce-83a3-5bb67b4da83a
-LOGINS_LIST_GUID=e3b5c7fb-313a-44b4-9363-a4e4d2b65a57
+### How a change happens
 
-# Eventbrite
-EVENTBRITE_API_KEY=your_eventbrite_api_key_here
-EVENTBRITE_ORGANIZATION_ID=your_org_id_here
+1. **Ask.** Describe the change, or point at an issue.
+2. **Plan.** The agent writes the plan into a pull request: a checklist of tasks and a *What to check* list. You approve it.
+3. **Build.** Work happens on a `task/…` branch in small commits; each push runs the build and tests.
+4. **Preview.** When you say *promote*, the task is squashed into the PR and deployed to the preview site. Test it there.
+5. **Release.** When it's right, **Squash and merge** the PR. That deploys to production.
 
-# Optional
-API_SYNC_KEY=your_random_key_here
-FACEBOOK_APP_ID=1973664160696548   # Meta app — Facebook link previews on session pages
-MEDIA_LIBRARY_DRIVE_ID=   # find via admin page "Discover Drives"
-DOCUMENTS_DRIVE_ID=     # Documents library drive — top-level Backups/ + Projects/{slug}/
-ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
-SESSION_SECRET=your_session_secret_here
-MAIL_SENDER=noreply@dtv.org.uk
-```
+The detail, including the rules agents follow, is in [AGENTS.md → How we work](AGENTS.md#how-we-work). To run the app yourself, see [docs/local-development.md](docs/local-development.md).
 
-Build, verify your credentials hit live SharePoint, then run:
+### Where to look
 
-```bash
-npm run build       # compile TypeScript (required before test:live and dev)
-npm run test:live   # all green = credentials and list access confirmed
-cd frontend && npm test && cd ..   # Vitest store unit tests (no live calls)
-npm run dev         # Express + Vite HMR at http://localhost:3000
-```
-
-Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, run `npm run build:dev` while `npm run dev` is running (incremental compile; nodemon restarts after a short delay). Use `npm run build` for a clean compile (wipes `dist/` first) — stop the dev server first on Windows/OneDrive if you see `EBUSY` on files under `dist/`.
+- [Issues and milestones](https://github.com/gothandy/dtv-tracker-app/milestones): what's planned, in roadmap order
+- [Pull requests](https://github.com/gothandy/dtv-tracker-app/pulls): work in progress, its task checklist, and the preview link
+- [Actions](https://github.com/gothandy/dtv-tracker-app/actions): builds, tests and deploys
 
 ---
 
@@ -63,29 +37,25 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 
 | Doc | When to read |
 |-----|-------------|
+| [AGENTS.md](AGENTS.md) | **Start here**: ways of working, project context, coding guidelines |
+| [docs/local-development.md](docs/local-development.md) | Running the app on your own machine |
+| [docs/configuration.md](docs/configuration.md) | Every setting (`.env` locally, app settings in Azure) |
 | [docs/api.md](docs/api.md) | All API endpoints and pages |
 | [docs/permissions.md](docs/permissions.md) | Roles and what each can do |
 | [docs/sharepoint-schema.md](docs/sharepoint-schema.md) | Data model — list structure and field names |
 | [docs/sharepoint-setup.md](docs/sharepoint-setup.md) | First-time SharePoint/Entra ID setup (admin only) |
-| [docs/azure-app-service.md](docs/azure-app-service.md) | CI/CD, deployment, and scheduled sync (hosting) |
+| [docs/azure-app-service.md](docs/azure-app-service.md) | Hosting: production, preview slot, CI/CD, scheduled sync |
 | [docs/features/](docs/features/) | Feature inventory by area (auth, frontend, backend, media, taxonomy) |
 | [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) | Building Vue features — layering, components, stats pattern |
 | [docs/testing/test-strategy.md](docs/testing/test-strategy.md) | Testing approach and layers |
 | [docs/testing/full-regression.md](docs/testing/full-regression.md) | Manual test checklist before release |
 | [docs/design/](docs/design/) | Product vision, UX flows, visual guidelines |
-| [AGENTS.md](AGENTS.md) | Full project context and coding guidelines |
 
 ---
 
-
 ## Troubleshooting
 
-### Cannot connect to SharePoint
-
-- `.env` file exists with all required variables
-- Client ID, Secret, and Tenant ID are correct
-- No extra spaces in `.env` values
-- Correct SharePoint site URL
+Local setup problems: see [docs/local-development.md](docs/local-development.md#troubleshooting). Preview deploy problems: see [docs/azure-app-service.md](docs/azure-app-service.md).
 
 ### "Entra ID secret needs updating, see readme."
 
@@ -93,27 +63,7 @@ The app registration client secret (`SHAREPOINT_CLIENT_SECRET`) has expired or i
 
 1. In [Entra ID → App registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps), open **DTV Volunteer Tracker**
 2. **Certificates & secrets** → create a new client secret (copy the **Value** immediately)
-3. Update `SHAREPOINT_CLIENT_SECRET` in local `.env` **and** Azure App Service → Configuration → Application settings
-4. Restart the app / save App Service settings, then reload
+3. Update `SHAREPOINT_CLIENT_SECRET` in Azure on **both** DTVTrackerApp and its `preview` slot (*Environment variables*; the slot keeps its own copy), and in any local `.env`
+4. Save; the app restarts. Reload the page
 
 Full steps: [docs/sharepoint-setup.md](docs/sharepoint-setup.md) (Create Client Secret / Ongoing Maintenance).
-
-### "401 Unauthorized" or "Invalid client secret"
-
-Credentials in `.env` are incorrect or expired. Same fix as above.
-
-### "Unsupported app only token" error
-
-SharePoint site permissions issue. See [docs/sharepoint-setup.md](docs/sharepoint-setup.md) section 3.
-
-### `ERR_MODULE_NOT_FOUND: vite`
-
-Frontend dependencies not installed. Run `cd frontend && npm install`.
-
-### Tests fail
-
-```bash
-npm run test:live
-```
-
-Failing assertions are shown with `✗`. Authentication errors surface from `test-auth.js`.
