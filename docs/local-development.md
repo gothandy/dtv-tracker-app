@@ -10,7 +10,7 @@ git fetch && git checkout task/<name> && git pull
 
 ## Setup
 
-You'll need Node.js 24, credentials from your team lead (SharePoint Client ID/Secret/Tenant, Eventbrite API key), and SharePoint already configured — see [sharepoint-setup.md](sharepoint-setup.md) if it isn't.
+You'll need Node.js 24, credentials from your team lead (the Entra client ID and secret, and the Eventbrite API key), and SharePoint already configured — see [sharepoint-setup.md](sharepoint-setup.md) if it isn't.
 
 ```bash
 git clone https://github.com/gothandy/dtv-tracker-app
@@ -22,35 +22,23 @@ cd frontend && npm install && cd ..
 Create a `.env` file in the project root (never commit it — already in `.gitignore`). Every setting is described in [configuration.md](configuration.md).
 
 ```bash
+# Entra app registration (SharePoint, email, Microsoft sign-in)
+ENTRA_CLIENT_ID=your_client_id_here
+ENTRA_CLIENT_SECRET=your_client_secret_here
+
 # SharePoint
 SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
-SHAREPOINT_CLIENT_ID=your_client_id_here
-SHAREPOINT_CLIENT_SECRET=your_client_secret_here
-SHAREPOINT_TENANT_ID=your_tenant_id_here
-
-# SharePoint List GUIDs (same for all developers)
-GROUPS_LIST_GUID=6e86cef7-a855-41a4-93e8-6e01a80434a2
-PROJECTS_LIST_GUID=669e479d-7b48-41dc-a0df-1ee7bc0fc2c7
-SESSIONS_LIST_GUID=583867bd-e032-4940-89b5-aa2d5158c5d0
-ENTRIES_LIST_GUID=7146b950-94e3-4c94-a0d7-310cf2fbd325
-PROFILES_LIST_GUID=84649143-9e10-42eb-b6ee-2e1f57033073
-REGULARS_LIST_GUID=925c96fd-9b3a-4f55-b179-ed51fc279d39
-RECORDS_LIST_GUID=2666a819-1275-4fce-83a3-5bb67b4da83a
-LOGINS_LIST_GUID=e3b5c7fb-313a-44b4-9363-a4e4d2b65a57
 
 # Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here
-EVENTBRITE_ORGANIZATION_ID=your_org_id_here
 
-# Optional
-API_SYNC_KEY=your_random_key_here
-FACEBOOK_APP_ID=1973664160696548   # Meta app — Facebook link previews on session pages
-MEDIA_LIBRARY_DRIVE_ID=   # media library drive on the tracker site
-DOCUMENTS_DRIVE_ID=     # Documents library drive — top-level Backups/ + Projects/{slug}/
-ADMIN_USERS=a...s@dtv.org.uk,b...o@dtv.org.uk
-SESSION_SECRET=your_session_secret_here
-MAIL_SENDER=noreply@dtv.org.uk
+# Tracker
+TRACKER_COOKIE_SECRET=any_long_random_value
+TRACKER_JOBS_API_KEY=any_long_random_value
+TRACKER_ADMIN_USERS=you@dtv.org.uk
 ```
+
+List IDs, drive IDs, the term set and the mail sender are fixed values in `backend/config.ts`, so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.
 
 Build, verify your credentials hit live SharePoint, then run:
 
@@ -67,8 +55,8 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 
 ### Cannot connect to SharePoint
 
-- `.env` file exists with all required variables
-- Client ID, Secret, and Tenant ID are correct
+- `.env` file exists with all seven settings (the app names any that are missing)
+- `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` are correct and from the same registration
 - No extra spaces in `.env` values
 - Correct SharePoint site URL
 
@@ -76,9 +64,9 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 
 Credentials in `.env` are incorrect or expired. If the secret has expired, follow [Entra ID secret needs updating](../readme.md#entra-id-secret-needs-updating-see-readme) in the readme.
 
-### "Unsupported app only token" error
+### "Access denied" (403) from SharePoint
 
-SharePoint site permissions issue. See [docs/sharepoint-setup.md](sharepoint-setup.md) section 3.
+The app registration hasn't been given the tracker site. See [sharepoint-setup.md](sharepoint-setup.md) section 3.
 
 ### `ERR_MODULE_NOT_FOUND: vite`
 

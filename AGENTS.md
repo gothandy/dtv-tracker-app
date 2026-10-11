@@ -116,6 +116,8 @@ The application uses 8 SharePoint lists on the Tracker site (`/sites/tracker`). 
 
 ### Lists (GUIDs)
 
+The code reads these from `sharePoint.lists` in `backend/config.ts`.
+
 | List | GUID | Purpose |
 |------|------|---------|
 | Groups | `6e86cef7-a855-41a4-93e8-6e01a80434a2` | Volunteer crews |
@@ -177,7 +179,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 ### Scheduled Sync
 
 - **Azure Logic App** calls `POST /api/eventbrite/nightly-update` daily at 05:30 UTC
-- Auth: `X-Api-Key` header; env var: `API_SYNC_KEY`
+- Auth: `X-Api-Key` header; setting: `TRACKER_JOBS_API_KEY`
 
 ### SharePoint
 
@@ -246,6 +248,8 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 
 This codebase is maintained by a small team (often volunteers). **Prefer linear, single paths** over “clever” optimisations that duplicate logic.
 
+**The code is the primary guard for volunteer data.** The app holds a key that can read and write the tracker's lists (self-service and scheduled jobs need it), so what protects volunteer data is code that is simple enough to review properly: every route checks who is asking and what they may see, and every change is reviewed before it reaches the preview or production. Permissions limit what the key can reach beyond that (one SharePoint site, one mailbox).
+
 - **One source of truth**: If aggregates are stored (e.g. session `Stats` JSON), compute them in the existing stats pipeline (`calculateSessionStats` → `computeAndSaveSessionStats` / bulk refresh). **Do not** recompute the same numbers again in a route handler for some roles only — that doubles behaviour to test and risks drift between public and trusted views.
 - **Same behaviour for every login** where possible: API consumers should see the same rules; differences should be driven by **data the caller is allowed to see** (e.g. no entry list for public), not by a second formula.
 - **Tests follow the pipeline**: Favour unit tests on shared functions (e.g. `data-layer.ts`) over branching integration tests per route.
@@ -290,10 +294,10 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ### Permissions / Authorization
 
-- Four app permission levels (+ Microsoft auth rules): **Admin** (`ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
+- Four app permission levels (+ Microsoft auth rules): **Admin** (`TRACKER_ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
 - Capability stack (additive): **Public** ⊆ **Check In tier** ⊆ **Admin tier** (`admin = public + check-in + admin-only`). UI should be additive (admin sees check-in surface plus extra controls), not unrelated “modes”.
 - **"Trusted"** (Microsoft-linked) = Admin ∪ Check In. Self-Service is not trusted for other volunteers’ PII.
-- **Microsoft sign-in**: requires a Profiles list **`User`** value matching the signed-in work email. If not linked, sign-in is **rejected** (session cleared, `/login?reason=dtv-not-authorised`) — not the same as choosing public browsing. **Admin** still needs **`ADMIN_USERS`** in addition to **`User`**.
+- **Microsoft sign-in**: requires a Profiles list **`User`** value matching the signed-in work email. If not linked, sign-in is **rejected** (session cleared, `/login?reason=dtv-not-authorised`) — not the same as choosing public browsing. **Admin** still needs **`TRACKER_ADMIN_USERS`** in addition to **`User`**.
 - Backend: `requireAuth` gates all API routes; `requireAdmin` enforces role rules; handlers enforce ownership for self-service.
 - Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only`, `.auth-only`, `.unauth-only`, `.selfservice-only`.
 - All login redirects go to `/login` — never `/auth/login`.
@@ -409,7 +413,7 @@ CI runs the backend and frontend unit tests on every task-branch push and pull r
 ## Important Notes
 
 - Financial year runs April 1 to March 31
-- All configuration is environment variables; the full list with descriptions is in [docs/configuration.md](docs/configuration.md). Production and preview use the same values (preview settings are cloned).
+- All configuration is in `backend/config.ts`. Only secrets and values that differ between environments are settings (seven, named `{WHO}_{WHAT}`); see [docs/configuration.md](docs/configuration.md). Production and each slot keep their own copy of the settings.
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

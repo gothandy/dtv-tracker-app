@@ -124,10 +124,10 @@ The Graph API `/items/{id}/fields` PATCH **rejects all direct writes** to Manage
 - `$expand=children` is **silently ignored** on `/sets/{id}/children` in the beta API
 - Children must be fetched recursively: `GET /beta/termStore/sets/{setId}/terms/{termId}/children`
 - Terms only expose: `id`, `labels`, `descriptions`, `createdDateTime`, `lastModifiedDateTime` — no `parent`, no `isDeprecated`
-- `$expand=termColumn` is not supported on either v1.0 or beta columns endpoint — term set ID resolved from `TAXONOMY_TERM_SET_ID` env var
+- `$expand=termColumn` is not supported on either v1.0 or beta columns endpoint — term set ID is fixed in `backend/config.ts`
 
 #### Configuration
-- `TAXONOMY_TERM_SET_ID` env var: term set GUID (`14c7dfc2-ee1e-4c30-80f3-0d9149045311`)
+- Term set GUID (`14c7dfc2-ee1e-4c30-80f3-0d9149045311`): `tagsTermSetId` in `backend/config.ts`
 - Term taxonomy is managed directly in the SharePoint Term Store admin — the app reads it dynamically
 
 ### Inheritance Value

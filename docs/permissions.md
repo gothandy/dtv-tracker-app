@@ -6,8 +6,8 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 
 | Role | Auth required | Description |
 |------|--------------|-------------|
-| **Admin** | Yes (Microsoft) | Profile **`User`** must match sign-in email **and** email must be in **`ADMIN_USERS`**. Full access (includes all Check In capabilities). |
-| **Check In** | Yes (Microsoft) | Profile **`User`** matches sign-in email; not in **`ADMIN_USERS`**. Field-day operations: check-in, hours, entries, sessions/profiles edits, regulars, uploads, consent collection, etc. |
+| **Admin** | Yes (Microsoft) | Profile **`User`** must match sign-in email **and** email must be in **`TRACKER_ADMIN_USERS`**. Full access (includes all Check In capabilities). |
+| **Check In** | Yes (Microsoft) | Profile **`User`** matches sign-in email; not in **`TRACKER_ADMIN_USERS`**. Field-day operations: check-in, hours, entries, sessions/profiles edits, regulars, uploads, consent collection, etc. |
 | **Self-Service** | Yes (verification code on email) | View own profile, register for sessions, upload own photos. Cannot view other volunteers' data. Matched via Profile **`Email`**. |
 | **Public** | No | Limited access to non-privacy data (sessions, groups, stats) |
 
@@ -15,10 +15,10 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 
 ## Configuration
 
-**Microsoft (Check In / Admin):** A volunteer **Profiles** row must have **`User`** set to the person’s DTV Microsoft email. **Admin** additionally requires that email in **`ADMIN_USERS`** (comma-separated, case-insensitive):
+**Microsoft (Check In / Admin):** A volunteer **Profiles** row must have **`User`** set to the person’s DTV Microsoft email. **Admin** additionally requires that email in **`TRACKER_ADMIN_USERS`** (comma-separated, case-insensitive):
 
 ```
-ADMIN_USERS=first.last@dtv.org.uk,another.email@dtv.org.uk
+TRACKER_ADMIN_USERS=first.last@dtv.org.uk,another.email@dtv.org.uk
 ```
 
 **Self-Service:** `Profile.Email` (comma-separated) contains the volunteer address used for verification code. Editable by Check In and Admin.
@@ -180,7 +180,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 
 ### Backend
 
-1. **Role assignment** ([`routes/auth/dtv.ts`](../routes/auth/dtv.ts)): Microsoft callback requires a Profile **`User`** match; else session is destroyed and redirect **`/login?reason=dtv-not-authorised`**. If matched: `ADMIN_USERS` → **`admin`**, else **`checkin`**. Verify flow set **`selfservice`** when Profile **`Email`** matches; no match → `reason=not-approved`. Role is `req.session.user.role`. Public = no session.
+1. **Role assignment** ([`routes/auth/dtv.ts`](../routes/auth/dtv.ts)): Microsoft callback requires a Profile **`User`** match; else session is destroyed and redirect **`/login?reason=dtv-not-authorised`**. If matched: `TRACKER_ADMIN_USERS` → **`admin`**, else **`checkin`**. Verify flow set **`selfservice`** when Profile **`Email`** matches; no match → `reason=not-approved`. Role is `req.session.user.role`. Public = no session.
 
 2. **Auth middleware** (`middleware/require-auth.ts`): Whitelist of public GET paths (`/api/stats`, `/api/sessions`, `/api/groups`, `/api/projects`, `/api/tags`, `/api/media`, `/api/docs`). All other paths require a session. Page requests redirect to `/login`; API requests return 401. API key auth bypasses this for `/api/eventbrite/` paths. Document proxies at `/docs/*.pdf` and `/projects/:key/docs/*` require no session.
 

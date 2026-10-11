@@ -1,25 +1,42 @@
 # Configuration
 
-All settings are environment variables: in `.env` locally, and under *Environment variables* in Azure (the `preview` slot uses the same values as production).
+All configuration is in [`backend/config.ts`](../backend/config.ts). Nothing else reads environment variables.
 
-| Setting | Required | Purpose |
+## Settings
+
+A value is a **setting** (an environment variable) only if it is a secret or differs between environments. Everything else, such as list IDs, drive IDs, the mail sender and the tenant ID, is a fixed value in `config.ts`, reviewed and versioned like code.
+
+Settings are named `{WHO}_{WHAT}`: WHO is the system the value belongs to or was issued by, so the name tells you where to find or renew it.
+
+| Setting | Where it comes from | Purpose |
 |---|---|---|
-| `SHAREPOINT_SITE_URL`, `SHAREPOINT_CLIENT_ID`, `SHAREPOINT_CLIENT_SECRET`, `SHAREPOINT_TENANT_ID` | Yes | SharePoint site and Entra app credentials (also used for Microsoft sign-in and sending email) |
-| `*_LIST_GUID` (Groups, Projects, Sessions, Entries, Profiles, Regulars, Records, Logins) | Yes | SharePoint list IDs; same for everyone |
-| `SESSION_SECRET` | Yes in production | Signs session cookies |
-| `ADMIN_USERS` | Yes | Comma-separated emails with Admin access (also need a Profile `User`) |
-| `EVENTBRITE_API_KEY`, `EVENTBRITE_ORGANIZATION_ID` | For Eventbrite sync | Eventbrite API access |
-| `API_SYNC_KEY` | For scheduled sync | `X-Api-Key` the Azure Logic App sends to the nightly sync endpoint |
-| `MAIL_SENDER` | For email | Mailbox (UPN) that sends verification codes and session emails; needs Graph `Mail.Send` |
-| `EMAIL_RATE_LIMIT_PER_HOUR` | No (default `60`) | Global cap on sign-in emails |
-| `AUTH_BASIC_TTL_HOURS` | No (default `72`) | Self-service session lifetime; token hashes stored in the Logins list |
-| `MEDIA_LIBRARY_DRIVE_ID` | For photo uploads | Media library drive on the tracker site (Graph: `GET /sites/{site-id}/drives`) |
-| `DOCUMENTS_DRIVE_ID` | For backups and project docs | Documents library drive: `Backups/` and `Projects/{slug}/` |
-| `TAXONOMY_TERM_SET_ID` | For session tags | SharePoint Term Store term set |
-| `SHAREPOINT_TIMEZONE` | No (default `Europe/London`) | IANA timezone for date conversion |
-| `FRONTEND_URL` | Production | Canonical origin (`https://tracker.dtv.org.uk`) for links in emails and Open Graph tags |
-| `DOCS_REDIRECT_HOST` | No (default `docs.dtv.org.uk`) | Host that redirects to `/docs` on the tracker |
-| `FACEBOOK_APP_ID` | No | Meta app ID for Facebook link previews |
-| `PORT`, `NODE_ENV` | No | Set by the host / `npm run dev` |
+| `ENTRA_CLIENT_ID` | Entra ID → App registrations → *DTV Tracker (Restricted)* → Overview | The tracker's app registration: SharePoint, email and Microsoft sign-in |
+| `ENTRA_CLIENT_SECRET` | Same registration → Certificates & secrets | Its secret. Expires; see [Entra ID secret needs updating](../readme.md#entra-id-secret-needs-updating-see-readme) |
+| `SHAREPOINT_SITE_URL` | The tracker site, `https://dtvolunteers.sharepoint.com/sites/tracker` | Picks the site; its list and drive IDs are in `config.ts` |
+| `EVENTBRITE_API_KEY` | Eventbrite → Account settings → API keys | Eventbrite sync |
+| `TRACKER_COOKIE_SECRET` | Any long random value, e.g. `openssl rand -base64 32` | Signs the login cookie. Changing it signs everyone out |
+| `TRACKER_JOBS_API_KEY` | Any long random value; the same value is in the Azure Logic App | `X-Api-Key` header for the scheduled jobs (sync, stats refresh, backup) |
+| `TRACKER_ADMIN_USERS` | Comma-separated `@dtv.org.uk` emails | Who has Admin access (they also need a Profile `User`) |
 
-Local development: put these in `.env` in the project root (see [local-development.md](local-development.md)). Azure: *DTVTrackerApp → Environment variables*; see [azure-app-service.md](azure-app-service.md).
+All seven are required, listed in [`backend/required-settings.json`](../backend/required-settings.json). Azure also sets `NODE_ENV=production` and `PORT`; `npm run dev` sets `NODE_ENV=development`.
+
+## When a setting is missing
+
+Problems are surfaced, not hidden (see *Error Handling* in [AGENTS.md](../AGENTS.md)):
+
+- **Deploy:** the production and preview deploys check every required setting exists before deploying. If one is missing, the deploy fails and names it, and the running app is left as it was.
+- **Start-up:** if a setting goes missing later (removed or renamed in Azure), the tracker doesn't start. Every page says it isn't set up correctly and names the missing settings, and `/api/health` returns 503.
+
+## Adding or changing a setting
+
+1. Add it to `backend/config.ts` (read it with `setting('NAME')`) and to `backend/required-settings.json`.
+2. Add it to this page and to the `.env` example in [local-development.md](local-development.md).
+3. Add it in Azure (*DTVTrackerApp → Environment variables*) on production **and** the `preview` slot before merging, or the deploy check will stop the deploy.
+
+Renaming a setting: add the new name alongside the old one, merge, then delete the old name once the deploy is healthy.
+
+## Where the values live
+
+- **Local development:** `.env` in the project root; see [local-development.md](local-development.md).
+- **Azure:** *DTVTrackerApp → Environment variables*, separately for production and each slot; see [azure-app-service.md](azure-app-service.md).
+- **App registration and permissions:** see [sharepoint-setup.md](sharepoint-setup.md).

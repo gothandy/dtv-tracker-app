@@ -46,7 +46,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] API key auth: `POST /api/eventbrite/nightly-update` with valid `X-Api-Key` succeeds without session
 - [ ] Invalid/missing API key returns 401
 - [ ] API key only works for `/api/eventbrite/` paths — rejected on other endpoints
-- [ ] **Admin user** (in `ADMIN_USERS` env var): all edit/create/delete buttons visible, all API calls succeed
+- [ ] **Admin user** (in `TRACKER_ADMIN_USERS`): all edit/create/delete buttons visible, all API calls succeed
 - [ ] **Check In user** (profile has matching `User` field): admin buttons hidden, check-in controls visible
 - [ ] Check In: check-in checkbox on session detail works (PATCH `/api/entries/:id`)
 - [ ] Check In: Set Hours button on session detail works (today/future sessions; disabled on past sessions)
@@ -254,7 +254,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
 - [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
-- [ ] Requires `MAIL_SENDER` env var
+- [ ] Arrives from `EMAIL_FROM` (`backend/config.ts`)
 
 ### H23c. Bulk add entries (admin)
 - [ ] Volunteers page → select individual profiles → "Add Entries" enabled (groups excluded)
@@ -451,7 +451,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### M2. Health check
 - [ ] `GET /api/health` — returns `{ success: true }` (no auth required)
-- [ ] If `SHAREPOINT_CLIENT_SECRET` is expired, pages that load list data show **Entra ID secret needs updating, see readme.** (not a raw AADSTS dump or status-only text)
+- [ ] If `ENTRA_CLIENT_SECRET` is expired, pages that load list data show **Entra ID secret needs updating, see readme.** (not a raw AADSTS dump or status-only text)
 
 ### M3. Groups listing
 - [ ] `GET /api/groups` — all groups with regulars counts
@@ -698,7 +698,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### L21. Facebook link preview (production)
 
-Requires `FACEBOOK_APP_ID` in Azure Application settings. Test several public URLs after deploy.
+Uses `FACEBOOK_APP_ID` from `backend/config.ts`. Test several public URLs after deploy.
 
 - [ ] [Sharing Debugger](https://developers.facebook.com/tools/debug/) — **Scrape Again** after deploy; no missing `fb:app_id`
 - [ ] `/` — site title and default description

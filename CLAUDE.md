@@ -2,6 +2,12 @@
 
 Read [AGENTS.md](AGENTS.md) first. It is the single source of truth for the project, the ways of working (four levels of work, branches, planning, tech debt, docs checklist) and the coding guidelines. This file only covers how Claude Code carries those out.
 
+## Working with the maintainer
+
+- **Go ahead** with anything already agreed, and with small fixes inside the current task. Don't ask permission for each step.
+- **Ask "Shall I get started?"** before anything not yet discussed: a new change, file, workflow step or approach, even when it seems a natural follow-on. Describe it in a line or two and wait.
+- **Answer questions first.** "Just a question" or "What do you think?" means discuss, not change anything. If an answer suggests a change, offer it; don't make it.
+
 ## Planning a feature
 
 - Use **plan mode** (the default in `.claude/settings.json`). The output of planning is the PR description: a **Tasks** checklist, any **Manual steps** for the maintainer, and a **What to check** list for the preview. Wait for approval before creating branches or writing code.

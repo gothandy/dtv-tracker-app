@@ -6,12 +6,12 @@ Microsoft sign-in is only granted when the signed-in email matches the **Profile
 
 Role after a successful profile link:
 
-- **Admin**: **`User`** match **and** email listed in **`ADMIN_USERS`**
-- **Check In**: **`User`** match and **not** in **`ADMIN_USERS`**
+- **Admin**: **`User`** match **and** email listed in **`TRACKER_ADMIN_USERS`**
+- **Check In**: **`User`** match and **not** in **`TRACKER_ADMIN_USERS`**
 
 If OAuth succeeds but **no profile** has **`User`** equal to the Microsoft email, the app **destroys the session** and redirects to **`/login?reason=dtv-not-authorised`**. That is a **failed Microsoft sign-in** (access refused), not an intentional “public” session.
 
-Operators can set **`User`** in SharePoint when the in-app profile editor is insufficient. **Admin** accounts need both **`User`** and **`ADMIN_USERS`**.
+Operators can set **`User`** in SharePoint when the in-app profile editor is insufficient. **Admin** accounts need both **`User`** and **`TRACKER_ADMIN_USERS`**.
 
 Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session stored server-side; `dtv-auth` cookie identifies the session.
 
@@ -19,11 +19,11 @@ Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session 
 
 Volunteers sign in by email — no Microsoft account required. Access is controlled by the `Email` field on the volunteer's Profile (comma-separated list supports multiple addresses).
 
-Volunteers receive a verification code by email via Microsoft Graph Mail (MAIL_SENDER env var required):
+Volunteers receive a verification code by email via Microsoft Graph Mail, from `EMAIL_FROM` in `backend/config.ts`:
 
 - **Verification code** ([backend/routes/auth/verify.ts](../../backend/routes/auth/verify.ts)): 4-digit code valid for 15 minutes; volunteer enters it on the login page
 
-Session token: 128-bit random, SHA-256 hash stored in SharePoint Logins list. TTL controlled by `AUTH_BASIC_TTL_HOURS` (default 72h). Global send rate limit: `EMAIL_RATE_LIMIT_PER_HOUR` (default 60).
+Session token: 128-bit random, SHA-256 hash stored in SharePoint Logins list. Lifetime: `SELF_SERVICE_LOGIN_HOURS` (72h). Global send rate limit: `SIGN_IN_EMAILS_PER_HOUR` (60). Both in `backend/config.ts`.
 
 ## Role-Based Permissions
 
@@ -34,7 +34,7 @@ App levels (see also capability stack in [AGENTS.md](../../AGENTS.md)):
 | **Public** | Unauthenticated | Limited non-privacy view |
 | **Self-Service** | Profile email match (verification code) | Own profile, own entries, future session sign-up, own photo upload |
 | **Check In** | Microsoft + Profile **`User`** match (not admin list) | Field-day ops: check-in, hours, entries, edit sessions/profiles |
-| **Admin** | Microsoft + **`User`** match **and** **`ADMIN_USERS`** | Full access (includes everything Check In can do) |
+| **Admin** | Microsoft + **`User`** match **and** **`TRACKER_ADMIN_USERS`** | Full access (includes everything Check In can do) |
 
 **Trusted (Microsoft)** = Admin ∪ Check In. Self-Service is explicitly not trusted for other volunteers’ data.
 

@@ -2,13 +2,13 @@
 
 The app is hosted on **Azure App Service** (Node.js 24 LTS, UK South). GitHub Actions builds with Node 24 (`.nvmrc`); each deploy sets the App Service stack to `NODE|24-lts`.
 
-All `.env` variables must be configured in Azure App Service → Configuration → Application settings.
+Settings are under *DTVTrackerApp → Environment variables*, separately for production and each slot. The deploy checks they all exist first; see [configuration.md](configuration.md).
 
 ## Custom domains
 
 | Host | Purpose |
 |------|---------|
-| `tracker.dtv.org.uk` | Primary app URL (`FRONTEND_URL`) |
+| `tracker.dtv.org.uk` | Primary app URL (`PRODUCTION_URL` in `backend/config.ts`) |
 | `docs.dtv.org.uk` | Legacy docs hostname — 301 redirect to `/docs` on the canonical host (see `server.js`) |
 
 **Azure setup for `docs.dtv.org.uk`:**
@@ -16,7 +16,6 @@ All `.env` variables must be configured in Azure App Service → Configuration �
 1. DNS: CNAME `docs` → `<app-name>.azurewebsites.net`
 2. App Service → **Custom domains** → add `docs.dtv.org.uk`
 3. Bind a free **App Service Managed Certificate** for that hostname
-4. Ensure `FRONTEND_URL=https://tracker.dtv.org.uk` is set in Application settings
 
 Redirect examples:
 
@@ -24,11 +23,11 @@ Redirect examples:
 - `https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf` → `https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf` (legacy path mapping in `server.js`)
 - Other paths: prefix preserved — `https://docs.dtv.org.uk/foo.pdf` → `https://tracker.dtv.org.uk/docs/foo.pdf`
 
-Optional override for non-production: `DOCS_REDIRECT_HOST` (hostname that triggers the redirect).
+The hostnames are `PRODUCTION_URL` and `DOCS_HOST` in `backend/config.ts`.
 
 ### Facebook link previews (session pages)
 
-Public SPA routes inject Open Graph tags server-side in production (`backend/services/og-meta.ts`): home, groups, projects, sessions (list + detail), docs, privacy, terms, login. Set **`FACEBOOK_APP_ID`** (e.g. `1973664160696548`) in Application settings. **`FRONTEND_URL`** should be `https://tracker.dtv.org.uk` so `og:url` and `og:image` use the canonical host. After deploy, use [Sharing Debugger](https://developers.facebook.com/tools/debug/) → **Scrape Again**. Cover images require a **public** session cover photo.
+Public SPA routes inject Open Graph tags server-side in production (`backend/services/og-meta.ts`): home, groups, projects, sessions (list + detail), docs, privacy, terms, login. The Meta app ID is `FACEBOOK_APP_ID` in `backend/config.ts`; `og:url` and `og:image` use the address the page was requested on. After deploy, use [Sharing Debugger](https://developers.facebook.com/tools/debug/) → **Scrape Again**. Cover images require a **public** session cover photo.
 
 ## CI/CD — GitHub Actions
 
@@ -89,7 +88,7 @@ These are the steps used to create `preview` on 10 Oct 2026. Use them for any fu
    ```
 
    `AADSTS700213: No matching federated identity record` in the deploy job means the subject doesn't match exactly.
-6. **Sign-in redirect.** Entra ID → the tracker's app registration (`SHAREPOINT_CLIENT_ID`) → *Authentication → Web → Redirect URIs* → add `https://<slot>.tracker.dtv.org.uk/auth/callback`.
+6. **Sign-in redirect.** Entra ID → the tracker's app registration (`ENTRA_CLIENT_ID`) → *Authentication → Web → Redirect URIs* → add `https://<slot>.tracker.dtv.org.uk/auth/callback`.
 7. **Point a workflow at it.** `pr-preview.yml` deploys to the slot named `preview` in the GitHub environment `preview`. A new slot needs its own environment name and slot name in a workflow (see *Per-developer slots* below).
 8. **Test.** Run the workflow, check the health step passes and the PR comment appears, then open the custom domain and sign in.
 
@@ -106,10 +105,10 @@ An earlier credential created through the portal form with an ID-based subject n
 
 A slot's settings were **copied** from production when it was created. They don't follow later changes.
 
-- **When a secret is renewed** (e.g. `SHAREPOINT_CLIENT_SECRET`) or any setting changes, update it on production **and every slot**.
+- **When a secret is renewed** (e.g. `ENTRA_CLIENT_SECRET`) or any setting changes, update it on production **and every slot**.
 - **One shared `preview` slot.** Deploys are only checked for staleness within a PR, not across PRs, so if two PRs are open the slot shows whichever deployed last. Check the About modal shows the PR you're testing (*PR #N · sha*); if not, re-run that PR's deploy job. Accepted while there's one developer; use per-developer slots (below) if parallel PRs become normal.
 - **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh (no double runs against live data). To test a job change on a slot, run it on demand from the Tools page.
-- `FRONTEND_URL` stays `https://tracker.dtv.org.uk` on slots, so emails sent from a slot link to production. Magic-link sign-in uses the host the request came from, so signing in on a slot works.
+- Links in emails and link previews use the address the request came in on, so emails sent from a slot link to that slot.
 
 ### Per-developer slots (possible later)
 
@@ -124,6 +123,6 @@ With two or three volunteer developers and PRs that may stay open between sessio
 An **Azure Logic App** (Consumption plan) runs a daily sync:
 
 1. **Trigger**: Recurrence — daily at 05:30 UTC
-2. **Action**: `POST /api/eventbrite/nightly-update` with header `X-Api-Key: <API_SYNC_KEY>`
+2. **Action**: `POST /api/eventbrite/nightly-update` with header `X-Api-Key: <TRACKER_JOBS_API_KEY>`
 
 Response includes a human-readable `summary` field for email notifications.
