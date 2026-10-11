@@ -23,6 +23,7 @@
     ],
     "watch": [
       "app.js",
+      "server.js",
       "dist/",
       "templates/"
     ],

@@ -4,6 +4,7 @@ import { validateAuthToken } from '../services/auth-store';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { profileSlug, parseEmails } from '../services/data-layer';
 import { PROFILE_STATS } from '../services/field-names';
+import { isAdminEmail } from '../config';
 
 // Populates req.session.user from the dtv-auth cookie for self-service volunteers.
 // DTV account (MSAL) users already have req.session.user set by their own auth flow — skip them.
@@ -22,13 +23,12 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     const profile = profiles.find(p => p.ID === record.profileId);
     if (!profile) { next(); return; }
 
-    const adminUsers = parseEmails(process.env.ADMIN_USERS);
     const emails = parseEmails(profile.Email);
     const primaryEmail = emails[0] || '';
 
     let trustedRole: 'admin' | 'checkin' | undefined;
     const linkedDTVEmail = profile.User?.toLowerCase();
-    if (emails.some(e => adminUsers.includes(e)) || (linkedDTVEmail && adminUsers.includes(linkedDTVEmail))) {
+    if (emails.some(isAdminEmail) || isAdminEmail(linkedDTVEmail)) {
       trustedRole = 'admin';
     } else if (profile.User) {
       trustedRole = 'checkin';

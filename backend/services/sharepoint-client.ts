@@ -10,6 +10,7 @@ import NodeCache from 'node-cache';
 import { DateTime } from 'luxon';
 import { FILE_PROXY_CACHE_TTL_SEC } from './file-proxy-cache-ttl';
 import { isClientCredentialsAuthError, mapClientCredentialsAuthError } from './entra-auth-errors';
+import { entra, sharePoint } from '../config';
 
 // ---------------------------------------------------------------------------
 // Regional date helpers
@@ -19,7 +20,7 @@ import { isClientCredentialsAuthError, mapClientCredentialsAuthError } from './e
 // the site's configured timezone.
 // ---------------------------------------------------------------------------
 
-const SHAREPOINT_TIMEZONE = process.env.SHAREPOINT_TIMEZONE || 'Europe/London';
+const SHAREPOINT_TIMEZONE = sharePoint.timezone;
 
 /** UTC ISO datetime → YYYY-MM-DD in the site timezone (READ path) */
 function utcToLocalDate(utcIso: string): string {
@@ -78,10 +79,6 @@ export const CACHE_TTL = {
 } as const;
 
 export class SharePointClient {
-  private siteUrl: string;
-  private clientId: string;
-  private clientSecret: string;
-  private tenantId: string;
   private accessToken: string | undefined;
   private tokenExpiry: number | undefined;
   private siteId: string | undefined;
@@ -92,11 +89,6 @@ export class SharePointClient {
   private readonly COLUMN_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
   constructor() {
-    this.siteUrl = process.env.SHAREPOINT_SITE_URL!;
-    this.clientId = process.env.SHAREPOINT_CLIENT_ID!;
-    this.clientSecret = process.env.SHAREPOINT_CLIENT_SECRET!;
-    this.tenantId = process.env.SHAREPOINT_TENANT_ID!;
-
     // Data cache — stdTTL is the fallback; most keys set their own TTL via CACHE_TTL constants.
     this.cache = new NodeCache({
       stdTTL: 300,           // Default fallback: 5 minutes
@@ -114,10 +106,10 @@ export class SharePointClient {
   }
 
   private async fetchClientCredentialsToken(scope: string): Promise<{ accessToken: string; expiresIn: number }> {
-    const tokenEndpoint = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0/token`;
+    const tokenEndpoint = `https://login.microsoftonline.com/${entra.tenantId}/oauth2/v2.0/token`;
     const params = new URLSearchParams({
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
+      client_id: entra.clientId,
+      client_secret: entra.clientSecret,
       scope,
       grant_type: 'client_credentials',
     });
@@ -165,7 +157,7 @@ export class SharePointClient {
       const token = await this.getAccessToken();
 
       // Parse site URL: https://dtvolunteers.sharepoint.com/sites/members
-      const url = new URL(this.siteUrl);
+      const url = new URL(sharePoint.siteUrl);
       const hostname = url.hostname;  // dtvolunteers.sharepoint.com
       const sitePath = url.pathname;  // /sites/members
 
@@ -195,7 +187,7 @@ export class SharePointClient {
         });
 
         this.siteId = rootResponse.data.id;
-        console.warn(`Warning: Using root site instead of ${this.siteUrl}. List queries may not work as expected.`);
+        console.warn(`Warning: Using root site instead of ${sharePoint.siteUrl}. List queries may not work as expected.`);
         return rootResponse.data.id;
       }
     } catch (error: any) {
@@ -502,7 +494,7 @@ export class SharePointClient {
   async projectItemDispFormUrl(listGuid: string, itemId: number): Promise<string> {
     const siteId = await this.getSiteId();
     const list = await this.get(`sites/${siteId}/lists/${listGuid}?$select=webUrl`);
-    const listWebUrl = String(list.webUrl || this.siteUrl).replace(/\/$/, '');
+    const listWebUrl = String(list.webUrl || sharePoint.siteUrl).replace(/\/$/, '');
     return `${listWebUrl}/DispForm.aspx?ID=${itemId}`;
   }
 
@@ -760,7 +752,7 @@ export class SharePointClient {
       console.error(`Error uploading file to ${filePath}:`, error.response?.data || error.message);
       if (status === 403) throw new Error('Access denied — check Files.ReadWrite permission on the app registration');
       if (status === 401) throw new Error('Unauthorized — token may be invalid or expired');
-      if (status === 404) throw new Error('Media library or folder not found — check MEDIA_LIBRARY_DRIVE_ID');
+      if (status === 404) throw new Error('Media library or folder not found — check sharePoint.libraries.media in backend/config.ts');
       throw error;
     }
   }

@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "Node16",
-    "lib": ["ES2020"],
+    "lib": [
+      "ES2020"
+    ],
     "outDir": "./dist",
     "rootDir": "./",
     "strict": true,
@@ -20,7 +22,9 @@
     "backend/services/**/*",
     "backend/routes/**/*",
     "backend/middleware/**/*",
-    "backend/shared/**/*"
+    "backend/shared/**/*",
+    "backend/config.ts",
+    "backend/required-settings.json"
   ],
   "exclude": [
     "node_modules",

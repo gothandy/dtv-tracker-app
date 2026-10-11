@@ -37,7 +37,7 @@ import type {
 } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
-import { documentsDriveId, tryDocumentsDriveId } from '../services/documents-drive';
+import { sharePoint } from '../config';
 import { clearProjectDocsCache } from '../services/project-docs-cache';
 import {
   getProjectDocsTree,
@@ -61,9 +61,7 @@ function normalizeProjectKey(raw: string): string {
 async function migrateProjectDocsFolder(oldKey: string, newKey: string): Promise<void> {
   if (oldKey === newKey) return;
 
-  const driveId = tryDocumentsDriveId();
-  if (!driveId) return;
-
+  const driveId = sharePoint.libraries.documents;
   const oldPath = projectDocsFolderPath(oldKey);
   const oldFolder = await sharePointClient.getDriveItemByPath(driveId, oldPath);
   if (!oldFolder?.folder) return;
@@ -221,12 +219,8 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
 
     const stats = aggregateSessionStatsForScope(projectSessions, { projectId }, { fyScope: 'all' });
     const sessions = mapSessionsToResponses(projectSessions, key, rawGroups, rawRegulars);
-    const listGuid = process.env.PROJECTS_LIST_GUID!;
-    const sharePointItemUrl = await sharePointClient.projectItemDispFormUrl(listGuid, spProject.ID);
-    const driveId = tryDocumentsDriveId();
-    const sharePointFolderUrl = driveId
-      ? await sharePointClient.getDriveFolderWebUrl(driveId, projectDocsFolderPath(key))
-      : undefined;
+    const sharePointItemUrl = await sharePointClient.projectItemDispFormUrl(sharePoint.lists.projects, spProject.ID);
+    const sharePointFolderUrl = await sharePointClient.getDriveFolderWebUrl(sharePoint.libraries.documents, projectDocsFolderPath(key));
 
     const data: ProjectDetailResponse = {
       id: project.sharePointId,
@@ -258,13 +252,6 @@ router.get('/projects/:key/attachments', async (req: Request, res: Response) => 
     const rawProjects = await projectsRepository.getAll();
     if (!findProjectByKey(rawProjects, key)) {
       res.status(404).json({ success: false, error: 'Project not found' });
-      return;
-    }
-
-    const driveId = tryDocumentsDriveId();
-    if (!driveId) {
-      console.warn('[projects] DOCUMENTS_DRIVE_ID not set — returning empty project documents');
-      res.json({ success: true, data: [] } as ApiResponse<DocsTreeNode[]>);
       return;
     }
 
@@ -314,7 +301,7 @@ async function handleProjectDocUpload(req: Request, res: Response) {
       return;
     }
 
-    const driveId = documentsDriveId();
+    const driveId = sharePoint.libraries.documents;
     const folderPath = projectDocsFolderPath(key);
     const uploaded: ProjectAttachmentResponse[] = [];
 
@@ -369,7 +356,7 @@ router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Re
       return;
     }
 
-    const driveId = documentsDriveId();
+    const driveId = sharePoint.libraries.documents;
     await sharePointClient.deleteMediaItem(driveId, itemId);
     sharePointClient.clearDocsFolderCache(projectDocsFolderPath(key));
     sharePointClient.clearProjectDocsFolderCache(key);
@@ -519,7 +506,7 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       await projectsRepository.updateFields(spProject.ID, fields as Record<string, string>);
     }
     if (metadataTags !== null) {
-      await updateListItemMetadata(process.env.PROJECTS_LIST_GUID!, spProject.ID, PROJECT_METADATA, metadataTags);
+      await updateListItemMetadata(sharePoint.lists.projects, spProject.ID, PROJECT_METADATA, metadataTags);
     }
 
     res.json({ success: true, data: { key: resultKey } } as ApiResponse<{ key: string }>);

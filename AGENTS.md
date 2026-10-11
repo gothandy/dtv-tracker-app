@@ -75,7 +75,7 @@ History lives in pull requests, issues and `git log`; there is no separate progr
 ## Current State
 
 Feature-complete volunteer tracking application with:
-- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes; in dev integrates Vite as middleware (HMR at `:3000`); in production serves `frontend/dist/` as static
+- Entry point [app.js](app.js) checks settings, then starts the Express server [server.js](server.js), which loads compiled TypeScript routes; in dev integrates Vite as middleware (HMR at `:3000`); in production serves `frontend/dist/` as static
 - Microsoft Entra ID authentication with session management ([backend/routes/auth/dtv.ts](backend/routes/auth/dtv.ts))
 - TypeScript API routes split by domain ([backend/routes/](backend/routes/))
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
@@ -238,7 +238,7 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 
 ### Code Style
 
-- TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
+- TypeScript for services, types, and routes; CommonJS for `app.js` and `server.js`
 - Lowercase-hyphen naming for files (e.g. `data-layer.ts`, `test-auth.js`)
 - Keep code simple and maintainable; follow existing patterns
 
@@ -301,8 +301,13 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ### Error Handling
 
+**Surface problems, don't hide them.** A fallback that keeps things running also hides the fault, and a hidden fault grows. Fail early, loudly, and as close to the cause as possible.
+
+- **Best: fail the deploy** — CI build, tests and the *Check required settings exist* step stop a bad release with a red failed deploy, and the running app is left in place.
+- **Next: tell the person, plainly** — when a problem is only found while running, show it: what went wrong, and to contact the tracker admin, with the error to pass on. Never a crash, a blank page, or carrying on as if nothing happened. If settings are missing at start-up, `app.js` serves a page saying so instead of starting the tracker.
+- **No fallbacks for configuration** — a setting is required or it isn't a setting. No default values, no "not configured" branches, no feature quietly switched off. Fixed values live in `backend/config.ts`.
 - **Propagate errors by default** — do not catch exceptions in service methods and return empty results.
-- **No silent empty returns** — `[]` or `null` from a catch is only acceptable when the feature is genuinely optional and the empty state is indistinguishable from "not configured".
+- **No silent empty returns** — `[]` or `null` from a catch is only acceptable for a specific, expected case (e.g. a 404 for a folder that doesn't exist yet), never for every error.
 - **API endpoints must return non-2xx on failure** — never `{ success: true, data: [] }` on error.
 - **Frontend fetch handlers must log on failure** — at minimum `console.error`; for user-facing features call `showError()`.
 - **No UI fallbacks for required data** — if required fields are missing, surface the issue early (dev/test) instead of silently substituting alternate text.
@@ -320,7 +325,8 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ```
 dtv-tracker-app/
-├── app.js                          # Express entry point (CommonJS); Vite middleware in dev, serves frontend/dist in prod
+├── app.js                          # Entry point: checks settings, then starts server.js (or the setup problem page)
+├── server.js                       # Express server (CommonJS); Vite middleware in dev, serves frontend/dist in prod
 ├── AGENTS.md                       # This file
 ├── CLAUDE.md                       # Claude Code-specific notes
 ├── .github/workflows/

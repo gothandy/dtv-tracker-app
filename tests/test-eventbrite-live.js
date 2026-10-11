@@ -4,7 +4,6 @@
  * Verifies that EVENTBRITE_API_KEY is valid and the org events endpoint responds.
  * Run against the live Eventbrite API — no mocks.
  *
- * Skips gracefully if EVENTBRITE_API_KEY or EVENTBRITE_ORGANIZATION_ID are not set.
  *
  * Run: node tests/test-eventbrite-live.js
  */
@@ -27,15 +26,6 @@ function assert(label, condition, detail = '') {
 
 async function main() {
     console.log('Eventbrite API connectivity tests\n');
-
-    const apiKey = process.env.EVENTBRITE_API_KEY;
-    const orgId = process.env.EVENTBRITE_ORGANIZATION_ID;
-
-    if (!apiKey || !orgId) {
-        console.log('  (skipped — EVENTBRITE_API_KEY or EVENTBRITE_ORGANIZATION_ID not set)');
-        console.log('\n0 passed, 0 failed');
-        return;
-    }
 
     console.log('Org events (getOrgEvents):');
 

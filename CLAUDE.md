@@ -12,6 +12,7 @@ Read [AGENTS.md](AGENTS.md) first. It is the single source of truth for the proj
 - Commit to `task/<name>` in small, reversible steps and push every 2–3 commits; CI builds and tests each push.
 - Before every push: `git fetch` and rebase onto `origin/task/<name>`, so commits made by the maintainer (locally or in GitHub) are kept.
 - Never commit directly to `preview/<name>` or `main`. Never force-push them.
+- **Never merge a PR, push to `main`, or use a ruleset bypass.** Claude acts with the maintainer's full GitHub permissions, and merging deploys to production. Merging is always the maintainer's action; Claude's job ends at "ready to merge" with the checks listed.
 
 ## Promoting a task (only when the maintainer agrees)
 

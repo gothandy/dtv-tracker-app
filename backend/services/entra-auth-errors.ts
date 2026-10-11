@@ -1,4 +1,4 @@
-/** Shown in the UI when SHAREPOINT_CLIENT_SECRET is expired or invalid. */
+/** Shown in the UI when ENTRA_CLIENT_SECRET is expired or invalid. */
 export const ENTRA_SECRET_UPDATE_MESSAGE = 'Entra ID secret needs updating, see readme.';
 
 const AUTH_FALLBACK_MESSAGE = 'Failed to authenticate with SharePoint';

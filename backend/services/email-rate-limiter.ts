@@ -1,4 +1,6 @@
-const LIMIT = parseInt(process.env.EMAIL_RATE_LIMIT_PER_HOUR || '60', 10);
+import { SIGN_IN_EMAILS_PER_HOUR } from '../config';
+
+const LIMIT = SIGN_IN_EMAILS_PER_HOUR;
 let windowStart = Date.now();
 let count = 0;
 

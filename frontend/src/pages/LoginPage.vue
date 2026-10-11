@@ -13,7 +13,6 @@
       <template v-if="!sent">
 
         <FormCard
-          v-if="selfServiceEnabled"
           :title="ACCESS_LABEL_SELF_SERVICE"
           subtitle="Sign in with email to view your volunteer profile, manage your sessions, and upload photos."
         >
@@ -103,7 +102,6 @@ const email = ref('')
 const sending = ref(false)
 const loginError = ref('')
 const sent = ref(false)
-const selfServiceEnabled = ref(false)
 const reasonMessage = ref('')
 const countdownSeconds = ref(0)
 const verifyInput = ref('')
@@ -218,10 +216,6 @@ function backToLogin() {
 }
 
 onMounted(async () => {
-  fetch('/auth/providers').then(r => r.json()).then(p => {
-    selfServiceEnabled.value = !!p.selfService
-  }).catch(() => {})
-
   const reason = route.query.reason as string | undefined
   if (reason && reasons[reason]) {
     const reasonEmail = route.query.email as string | undefined

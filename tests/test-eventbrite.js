@@ -3,7 +3,9 @@ require('dotenv').config();
 const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
 const { groupsRepository } = require('../dist/backend/services/repositories/groups-repository');
 
-const API_KEY = process.env.EVENTBRITE_API_KEY;
+const { eventbrite } = require('../dist/backend/config');
+
+const API_KEY = eventbrite.apiKey;
 const BASE_URL = 'https://www.eventbriteapi.com/v3';
 
 async function fetchEventbrite(path) {

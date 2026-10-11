@@ -7,13 +7,11 @@
 import { SharePointProfile } from '../../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROFILE_STATS } from '../field-names';
+import { sharePoint } from '../../config';
 
 class ProfilesRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.profiles; }
 
-  constructor() {
-    this.listGuid = process.env.PROFILES_LIST_GUID!;
-  }
 
   async getAll(): Promise<SharePointProfile[]> {
     const cacheKey = 'profiles';

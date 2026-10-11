@@ -20,6 +20,7 @@ import {
 } from '../services/data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_LOOKUP, SESSION_METADATA, SESSION_STATS } from '../services/field-names';
 import type { TagHoursResponse } from '../../types/api-responses';
+import { sharePoint } from '../config';
 
 const router: Router = express.Router();
 
@@ -37,8 +38,6 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
       return;
     }
 
-    const termSetId = process.env.TAXONOMY_TERM_SET_ID || null;
-
     // Profile-scoped queries need entries + profiles to resolve the volunteer's hours per session.
     // All other queries (homepage, group detail) can read hours directly from session.Stats.
     const needsEntries = !!profileParam;
@@ -48,7 +47,7 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
       needsEntries ? entriesRepository.getAll() : Promise.resolve([]),
       groupsRepository.getAll(),
       needsEntries ? profilesRepository.getAll() : Promise.resolve([]),
-      termSetId ? taxonomyClient.getTermSetTree(termSetId).catch(() => null) : Promise.resolve(null),
+      taxonomyClient.getTermSetTree(sharePoint.site.tagsTermSetId),
     ]);
 
     const sessions = validateArray(sessionsRaw, validateSession, 'Session');
@@ -161,7 +160,7 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
       }
       return map;
     }
-    const termGuidMap = taxonomyTree ? buildTermGuidMap(taxonomyTree, '') : new Map<string, string>();
+    const termGuidMap = buildTermGuidMap(taxonomyTree, '');
 
     // Build response
     const result: TagHoursResponse = [];
@@ -183,14 +182,7 @@ router.get('/tags/hours-by-taxonomy', async (req: Request, res: Response) => {
 
 router.get('/tags/taxonomy', async (req: Request, res: Response) => {
   try {
-    const termSetId = process.env.TAXONOMY_TERM_SET_ID || null;
-    if (!termSetId) {
-      console.log('[Tags] TAXONOMY_TERM_SET_ID is not set');
-      res.json({ success: true, data: [] });
-      return;
-    }
-
-    const tree = await taxonomyClient.getTermSetTree(termSetId);
+    const tree = await taxonomyClient.getTermSetTree(sharePoint.site.tagsTermSetId);
     res.json({ success: true, data: tree });
   } catch (error: any) {
     console.error('Error fetching tag taxonomy:', error);

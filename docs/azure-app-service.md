@@ -9,7 +9,7 @@ All `.env` variables must be configured in Azure App Service → Configuration �
 | Host | Purpose |
 |------|---------|
 | `tracker.dtv.org.uk` | Primary app URL (`FRONTEND_URL`) |
-| `docs.dtv.org.uk` | Legacy docs hostname — 301 redirect to `/docs` on the canonical host (see `app.js`) |
+| `docs.dtv.org.uk` | Legacy docs hostname — 301 redirect to `/docs` on the canonical host (see `server.js`) |
 
 **Azure setup for `docs.dtv.org.uk`:**
 
@@ -21,7 +21,7 @@ All `.env` variables must be configured in Azure App Service → Configuration �
 Redirect examples:
 
 - `https://docs.dtv.org.uk/` → `https://tracker.dtv.org.uk/docs`
-- `https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf` → `https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf` (legacy path mapping in `app.js`)
+- `https://docs.dtv.org.uk/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf` → `https://tracker.dtv.org.uk/docs/data-protection/dtv-privacy-notice.pdf` (legacy path mapping in `server.js`)
 - Other paths: prefix preserved — `https://docs.dtv.org.uk/foo.pdf` → `https://tracker.dtv.org.uk/docs/foo.pdf`
 
 Optional override for non-production: `DOCS_REDIRECT_HOST` (hostname that triggers the redirect).
@@ -40,7 +40,7 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 3. Compiles TypeScript
 4. Installs frontend dependencies and builds — output to `frontend/dist/`
 5. Prunes dev dependencies
-6. Zips `app.js`, `package.json`, `dist/`, `node_modules/`, and `frontend/dist/`
+6. Zips `app.js`, `server.js`, `package.json`, `dist/`, `node_modules/`, and `frontend/dist/`
 
 **Deploy job:**
 1. Authenticates with Azure via OIDC (no stored secrets — uses federated identity)

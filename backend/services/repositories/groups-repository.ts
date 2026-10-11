@@ -6,13 +6,11 @@
 
 import { SharePointGroup } from '../../../types/group';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
+import { sharePoint } from '../../config';
 
 class GroupsRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.groups; }
 
-  constructor() {
-    this.listGuid = process.env.GROUPS_LIST_GUID!;
-  }
 
   async create(fields: { Title: string; Name?: string; Description?: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);

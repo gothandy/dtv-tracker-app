@@ -97,8 +97,8 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | GET | `/api/tags/*` | Tag metadata only; `?profile=` param requires auth |
 | GET | `/api/media/*` | `isPublic` items only; `name` and `webUrl` fields stripped (contain uploader's name in filename) |
 | GET | `/api/docs` | Governance folder tree from SharePoint `Docs/`; file nodes return stable tracker `url` only |
-| GET | `/docs/*.pdf` | Governance PDF byte proxy (app.js); server-side from Documents library |
-| GET | `/projects/:key/docs/*` | Project document byte proxy (app.js); slug-resolved from `Projects/{key}/` tree |
+| GET | `/docs/*.pdf` | Governance PDF byte proxy (server.js); server-side from Documents library |
+| GET | `/projects/:key/docs/*` | Project document byte proxy (server.js); slug-resolved from `Projects/{key}/` tree |
 
 All other endpoints require authentication (return 401 from `require-auth.ts`).
 

@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { entra, sharePoint } = require('../dist/backend/config');
 const { sharePointClient } = require('../dist/backend/services/sharepoint-client');
 const { groupsRepository } = require('../dist/backend/services/repositories/groups-repository');
 const { sessionsRepository } = require('../dist/backend/services/repositories/sessions-repository');
@@ -7,10 +8,10 @@ async function test() {
     console.log('Testing Microsoft Graph API authentication...\n');
 
     console.log('Configuration:');
-    console.log('- Site URL:', process.env.SHAREPOINT_SITE_URL);
-    console.log('- Tenant ID:', process.env.SHAREPOINT_TENANT_ID);
-    console.log('- Client ID:', process.env.SHAREPOINT_CLIENT_ID);
-    console.log('- Client Secret:', process.env.SHAREPOINT_CLIENT_SECRET ? '***' + process.env.SHAREPOINT_CLIENT_SECRET.slice(-4) : 'Not set');
+    console.log('- Site URL:', sharePoint.siteUrl);
+    console.log('- Tenant ID:', entra.tenantId);
+    console.log('- Client ID:', entra.clientId);
+    console.log('- Client Secret:', '***' + entra.clientSecret.slice(-4));
     console.log();
 
     try {

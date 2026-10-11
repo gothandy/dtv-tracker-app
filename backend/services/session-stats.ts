@@ -16,6 +16,7 @@ import { sharePointClient } from './sharepoint-client';
 import { calculateSessionStats, safeParseLookupId, mediaStatsFromFolderItems } from './data-layer';
 import { GROUP_LOOKUP, SESSION_LOOKUP, SESSION_STATS, SESSION_COVER_MEDIA, ENTRY_CANCELLED } from './field-names';
 import type { MediaStatus } from '../../types/api-responses';
+import { sharePoint } from '../config';
 
 export interface SessionStatsRefreshResult {
   total: number;
@@ -63,16 +64,13 @@ export async function refreshSessionMediaStats(
   groupKey: string,
   date: string,
 ): Promise<void> {
-  const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
-  if (!mediaDriveId) return;
-
   const spSession = await sessionsRepository.getById(sessionId);
   if (!spSession) return;
 
   sharePointClient.clearMediaFolderCache(`${groupKey}/${date}`);
 
   const coverMediaId = safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null;
-  const { media, mediaStatus } = await liveMediaStats(mediaDriveId, groupKey, date, coverMediaId);
+  const { media, mediaStatus } = await liveMediaStats(sharePoint.libraries.media, groupKey, date, coverMediaId);
 
   let existingStats: Record<string, unknown> = {};
   try {
@@ -115,7 +113,6 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
     if (sid) cancelledRegularMap.set(sid, (cancelledRegularMap.get(sid) ?? 0) + 1);
   }
 
-  const mediaDriveId = process.env.MEDIA_LIBRARY_DRIVE_ID;
   const total = sessionsRaw.length;
   let updated = 0;
   const updatedIds: number[] = [];
@@ -132,9 +129,9 @@ export async function runSessionStatsRefresh(): Promise<SessionStatsRefreshResul
 
         let media = 0;
         let mediaStatus: MediaStatus = 'none';
-        if (mediaDriveId && groupKey && date) {
+        if (groupKey && date) {
           const coverMediaId = safeParseLookupId(spSession[SESSION_COVER_MEDIA] as unknown as string) ?? null;
-          const computed = await liveMediaStats(mediaDriveId, groupKey, date, coverMediaId);
+          const computed = await liveMediaStats(sharePoint.libraries.media, groupKey, date, coverMediaId);
           media = computed.media;
           mediaStatus = computed.mediaStatus;
         }

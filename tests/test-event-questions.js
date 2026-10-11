@@ -1,6 +1,7 @@
 require('dotenv').config();
+const { eventbrite } = require('../dist/backend/config');
 
-const API_KEY = process.env.EVENTBRITE_API_KEY;
+const API_KEY = eventbrite.apiKey;
 const EVENT_ID = process.argv[2] || '1977369159385';
 
 async function fetchEB(path) {

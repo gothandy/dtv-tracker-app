@@ -11,9 +11,10 @@
 require('dotenv').config();
 const { DateTime } = require('luxon');
 const { sharePointClient } = require('../../dist/backend/services/sharepoint-client');
+const { sharePoint } = require('../../dist/backend/config');
 
-const SHAREPOINT_TIMEZONE = process.env.SHAREPOINT_TIMEZONE || 'Europe/London';
-const LIST_GUID = process.env.SESSIONS_LIST_GUID;
+const SHAREPOINT_TIMEZONE = sharePoint.timezone;
+const LIST_GUID = sharePoint.lists.sessions;
 
 const CHECKPOINTS = [484, 470]; // known manually-entered sessions (winter, summer)
 

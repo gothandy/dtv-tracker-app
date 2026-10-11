@@ -46,6 +46,7 @@ import { trackerAccessForProfileUser } from '../services/tracker-access';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/session-stats';
 import { mediaDriveId } from '../services/media-upload';
+import { sharePoint } from '../config';
 
 const router: Router = express.Router();
 
@@ -399,11 +400,7 @@ router.post('/sessions/bulk-tag', async (req: Request, res: Response) => {
       return;
     }
 
-    const listGuid = process.env.SESSIONS_LIST_GUID;
-    if (!listGuid) {
-      res.status(400).json({ success: false, error: 'Sessions list not configured' });
-      return;
-    }
+    const listGuid = sharePoint.lists.sessions;
 
     const newTags: Array<{ label: string; termGuid: string }> = tags
       .map((t: any) => ({ label: t.label ?? '', termGuid: t.termGuid ?? '' }))
@@ -495,13 +492,7 @@ router.post('/sessions/bulk-media-public', async (req: Request, res: Response) =
       return;
     }
 
-    let driveId: string;
-    try {
-      driveId = mediaDriveId();
-    } catch {
-      res.status(400).json({ success: false, error: 'Media library not configured' });
-      return;
-    }
+    const driveId = mediaDriveId();
 
     const [rawSessions, rawGroups] = await Promise.all([
       sessionsRepository.getAll(),
@@ -885,7 +876,7 @@ router.patch('/sessions/:group/:date', async (req: Request, res: Response) => {
     }
     if (metadataTags !== null) {
       await taxonomyClient.updateManagedMetadataField(
-        process.env.SESSIONS_LIST_GUID!, spSession.ID, SESSION_METADATA, metadataTags
+        sharePoint.lists.sessions, spSession.ID, SESSION_METADATA, metadataTags
       );
     }
     // Cover image changed — recompute media stats before responding so list filters stay in sync

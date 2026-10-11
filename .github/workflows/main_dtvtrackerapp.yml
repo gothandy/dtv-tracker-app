@@ -39,7 +39,7 @@ jobs:
         run: npm prune --production
 
       - name: Create deployment zip
-        run: zip -r release.zip app.js package.json dist/ node_modules/ frontend/dist/ templates/
+        run: zip -r release.zip app.js server.js package.json dist/ node_modules/ frontend/dist/ templates/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v6
@@ -55,6 +55,15 @@ jobs:
       contents: read
 
     steps:
+      - name: Get the settings check
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            backend/required-settings.json
+            .github/scripts/check-app-settings.sh
+          sparse-checkout-cone-mode: false
+          path: repo
+
       - name: Download artifact from build job
         uses: actions/download-artifact@v7
         with:
@@ -72,6 +81,10 @@ jobs:
         run: |
           RG=$(az webapp list --query "[?name=='DTVTrackerApp'].resourceGroup" -o tsv)
           echo "resource_group=$RG" >> $GITHUB_OUTPUT
+
+      - name: Check required settings exist
+        working-directory: repo
+        run: .github/scripts/check-app-settings.sh "${{ steps.get-rg.outputs.resource_group }}" DTVTrackerApp
 
       - name: Deploy to Azure Web App
         run: |

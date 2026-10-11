@@ -13,7 +13,7 @@ All settings are environment variables: in `.env` locally, and under *Environmen
 | `MAIL_SENDER` | For email | Mailbox (UPN) that sends verification codes and session emails; needs Graph `Mail.Send` |
 | `EMAIL_RATE_LIMIT_PER_HOUR` | No (default `60`) | Global cap on sign-in emails |
 | `AUTH_BASIC_TTL_HOURS` | No (default `72`) | Self-service session lifetime; token hashes stored in the Logins list |
-| `MEDIA_LIBRARY_DRIVE_ID` | For photo uploads | Media library drive (find via Tools → Discover Drives) |
+| `MEDIA_LIBRARY_DRIVE_ID` | For photo uploads | Media library drive on the tracker site (Graph: `GET /sites/{site-id}/drives`) |
 | `DOCUMENTS_DRIVE_ID` | For backups and project docs | Documents library drive: `Backups/` and `Projects/{slug}/` |
 | `TAXONOMY_TERM_SET_ID` | For session tags | SharePoint Term Store term set |
 | `SHAREPOINT_TIMEZONE` | No (default `Europe/London`) | IANA timezone for date conversion |

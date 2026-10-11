@@ -7,13 +7,11 @@
 import { SharePointRecord } from '../../../types/sharepoint';
 import { safeParseLookupId } from '../data-layer';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
+import { sharePoint } from '../../config';
 
 class RecordsRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.records; }
 
-  constructor() {
-    this.listGuid = process.env.RECORDS_LIST_GUID!;
-  }
 
   private get selectFields(): string {
     return 'ID,Title,Profile,ProfileLookupId,Type,Status,Date,Created,Modified';
