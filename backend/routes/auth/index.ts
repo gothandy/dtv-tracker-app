@@ -22,7 +22,7 @@ function homeWithSignedOutBanner(name?: string): string {
 // After a Microsoft sign-in, also sign out of Microsoft in this browser, so the next
 // person on a shared device can't get straight back in. If the browser has more than
 // one Microsoft account, Microsoft asks which one to sign out of.
-router.get('/sign-out', async (req: Request, res: Response) => {
+async function signOut(req: Request, res: Response): Promise<void> {
   const signedInWithMicrosoft =
     req.session.user?.role === 'admin' || req.session.user?.role === 'checkin' || !!req.cookies?.[LOGIN_HINT_COOKIE];
 
@@ -48,6 +48,16 @@ router.get('/sign-out', async (req: Request, res: Response) => {
     }
     res.redirect(homeWithSignedOutBanner(name));
   });
+}
+
+router.get('/sign-out', signOut);
+// Old address: pages opened before the rename still link here. Remove with #283.
+router.get('/logout', signOut);
+
+// Old address for starting a Microsoft sign-in, kept for pages opened before the rename. Remove with #283.
+router.get('/login', (req: Request, res: Response) => {
+  const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(`/auth/sign-in${query}`);
 });
 
 // GET /auth/signed-out — Microsoft returns here after signing out; show the usual banner.

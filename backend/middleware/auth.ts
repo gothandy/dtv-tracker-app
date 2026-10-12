@@ -16,23 +16,23 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 // quietly treating the person as signed out.
 export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (req.session.user) { next(); return; } // session already active
-  if (req.path === '/auth/sign-out') { next(); return; } // signing out must always work
+  if (req.path === '/auth/sign-out' || req.path === '/auth/logout') { next(); return; } // signing out must always work
 
   const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
   if (!rawToken) { next(); return; }
 
   try {
     const login = await validateAuthToken(rawToken);
-    if (!login) { next(); return; }
-
-    if (login.method === 'Microsoft') {
+    if (login?.method === 'Microsoft') {
       const profiles = await profilesRepository.getAll();
       const profile = profiles.find(p => p.User?.toLowerCase() === login.email);
       if (profile) req.session.user = staffSessionUser(profile, login.email, login.createdAt);
-    } else {
+    } else if (login) {
       const result = await resolvePersonalSession(login.email, '', '');
       if (result.ok) req.session.user = { ...result.sessionUser, freshAuthAt: login.createdAt };
     }
+    // Expired, unknown, or no longer linked: drop the cookie so later requests don't look it up again.
+    if (!req.session.user) res.clearCookie(LOGIN_COOKIE);
   } catch (err: any) {
     console.error('[Auth] Could not check sign-in:', err.message);
     const message = "We couldn't check your sign-in just now. Please try again in a minute; if it keeps happening, contact your admin.";
