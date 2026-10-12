@@ -25,9 +25,17 @@ function setting(name: string): string {
   return value;
 }
 
-/** Required settings that are missing or empty. app.js checks this before starting the tracker. */
-export function missingSettings(): string[] {
-  return REQUIRED_SETTINGS.filter((name) => !process.env[name]?.trim());
+/**
+ * What's wrong with the settings, if anything: missing or empty settings, or a site URL
+ * with no IDs in this file. app.js checks this before starting the tracker.
+ */
+export function settingsProblems(): string[] {
+  const missing = REQUIRED_SETTINGS.filter((name) => !process.env[name]?.trim());
+  if (missing.length > 0) return [`Missing settings: ${missing.join(', ')}`];
+  if (!findSite(sharePoint.siteUrl)) {
+    return [`SHAREPOINT_SITE_URL ${sharePoint.siteUrl} has no IDs in backend/config.ts`];
+  }
+  return [];
 }
 
 /** The tracker's Entra app registration (sign-in, SharePoint and email). */
@@ -106,10 +114,16 @@ const SHAREPOINT_SITES: Record<string, SharePointSite> = {
   },
 };
 
+/** SharePoint URLs aren't case-sensitive, so match the site regardless of case. */
+function findSite(siteUrl: string): SharePointSite | undefined {
+  const key = Object.keys(SHAREPOINT_SITES).find((url) => url.toLowerCase() === siteUrl.toLowerCase());
+  return key ? SHAREPOINT_SITES[key] : undefined;
+}
+
 export const sharePoint = {
   get siteUrl() { return setting('SHAREPOINT_SITE_URL').replace(/\/$/, ''); },
   get site(): SharePointSite {
-    const site = SHAREPOINT_SITES[sharePoint.siteUrl];
+    const site = findSite(sharePoint.siteUrl);
     if (!site) throw new Error(`No IDs configured for SharePoint site ${sharePoint.siteUrl} in backend/config.ts`);
     return site;
   },

@@ -1,7 +1,7 @@
 /**
  * Entry point. Checks the app's settings, then starts the tracker (server.js).
  *
- * If a setting is missing, the tracker doesn't start. Instead every request gets a
+ * If a setting is missing or wrong, the tracker doesn't start. Instead every request gets a
  * page saying what's wrong and to contact the admin, and /api/health returns 503 so
  * a deploy fails. The deploy also checks settings before deploying, so this should
  * only happen if a setting is removed or renamed in Azure afterwards.
@@ -10,14 +10,14 @@
 
 require('dotenv').config();
 const http = require('http');
-const { missingSettings, platform } = require('./dist/backend/config');
+const { settingsProblems, platform } = require('./dist/backend/config');
 
-const missing = missingSettings();
+const problems = settingsProblems();
 
-if (missing.length === 0) {
+if (problems.length === 0) {
     require('./server');
 } else {
-    const problem = `Missing settings: ${missing.join(', ')}`;
+    const problem = problems.join('. ');
     console.error(`[Startup] ${problem}. The tracker has not started. See docs/configuration.md`);
 
     http.createServer((req, res) => {

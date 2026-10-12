@@ -24,8 +24,8 @@ All seven are required, listed in [`backend/required-settings.json`](../backend/
 
 Problems are surfaced, not hidden (see *Error Handling* in [AGENTS.md](../AGENTS.md)):
 
-- **Deploy:** the production and preview deploys check every required setting exists before deploying. If one is missing, the deploy fails and names it, and the running app is left as it was.
-- **Start-up:** if a setting goes missing later (removed or renamed in Azure), the tracker doesn't start. Every page says it isn't set up correctly and names the missing settings, and `/api/health` returns 503.
+- **Deploy:** the production and preview deploys check every required setting exists and isn't empty before deploying. If one is missing or empty, the deploy fails and names it, and the running app is left as it was.
+- **Start-up:** if a setting goes missing later (removed or renamed in Azure), or `SHAREPOINT_SITE_URL` names a site with no IDs in `config.ts`, the tracker doesn't start. Every page says it isn't set up correctly and what's wrong, and `/api/health` returns 503.
 
 ## Adding or changing a setting
 
