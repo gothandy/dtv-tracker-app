@@ -43,6 +43,10 @@
         >
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
+            <p class="sent-contact">
+              Also signed in to a work Microsoft account? If Microsoft picks it, or says your account
+              doesn't exist, use a private browser window and sign in with your @dtv.org.uk address.
+            </p>
           </FormSubmitRow>
         </FormCard>
 
@@ -121,7 +125,7 @@ const microsoftHref = computed(() =>
 )
 
 const loginReasonBannerType = computed<'warning' | 'error'>(() =>
-  route.query.reason === 'dtv-not-authorised' ? 'error' : 'warning'
+  route.query.reason === 'dtv-not-authorised' || route.query.reason === 'microsoft-error' ? 'error' : 'warning'
 )
 
 const expired = computed(() => sent.value && countdownSeconds.value <= 0)
@@ -131,13 +135,17 @@ const countdown = computed(() => {
   return mins === 1 ? '1 minute' : `${mins} minutes`
 })
 
-const reasons: Record<string, (email?: string) => string> = {
+const reasons: Record<string, (email?: string, detail?: string) => string> = {
   'not-approved': (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'not-found':    (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'dtv-not-authorised': () =>
     `Access denied. Your Microsoft account is not set up for ${ACCESS_LABEL_CHECK_IN}. Please contact your admin.`,
   'session-expired': () =>
     'Your sign-in has expired. Sign in again to continue - you will return to this page afterwards.',
+  'microsoft-error': (_e, detail) =>
+    `Microsoft sign-in didn't complete. Try again; if it keeps happening, contact your admin with this message: ${detail ?? 'no details'}`,
+  'microsoft-restart': () =>
+    'Your Microsoft sign-in was interrupted. Please sign in again.',
 }
 
 async function sendLoginEmail() {
@@ -219,7 +227,8 @@ onMounted(async () => {
   const reason = route.query.reason as string | undefined
   if (reason && reasons[reason]) {
     const reasonEmail = route.query.email as string | undefined
-    reasonMessage.value = reasons[reason](reasonEmail)
+    const reasonDetail = route.query.detail as string | undefined
+    reasonMessage.value = reasons[reason](reasonEmail, reasonDetail)
   }
 
   const prefillCode = route.query.code as string | undefined

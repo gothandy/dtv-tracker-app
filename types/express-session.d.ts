@@ -25,5 +25,7 @@ declare module 'express-session' {
       };
     } | undefined;
     returnTo: string | undefined;
+    /** Microsoft sign-in in progress: the `state` sent to Microsoft, checked on the callback. */
+    authState: string | undefined;
   }
 }

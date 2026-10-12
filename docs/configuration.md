@@ -10,7 +10,7 @@ Settings are named `{WHO}_{WHAT}`: WHO is the system the value belongs to or was
 
 | Setting | Where it comes from | Purpose |
 |---|---|---|
-| `ENTRA_CLIENT_ID` | Entra ID → App registrations → *DTV Tracker (Restricted)* → Overview | The tracker's app registration: SharePoint, email and Microsoft sign-in |
+| `ENTRA_CLIENT_ID` | Entra ID → App registrations → *DTV Tracker (Production)* or *(Preview)* → Overview | The environment's app registration: SharePoint, email and Microsoft sign-in |
 | `ENTRA_CLIENT_SECRET` | Same registration → Certificates & secrets | Its secret. Expires; see [Entra ID secret needs updating](../readme.md#entra-id-secret-needs-updating-see-readme) |
 | `SHAREPOINT_SITE_URL` | The tracker site, `https://dtvolunteers.sharepoint.com/sites/tracker` | Picks the site; its list and drive IDs are in `config.ts` |
 | `EVENTBRITE_API_KEY` | Eventbrite → Account settings → API keys | Eventbrite sync |

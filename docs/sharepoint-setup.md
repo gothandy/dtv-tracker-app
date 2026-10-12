@@ -64,7 +64,7 @@ The tracker sends sign-in codes and emails from one mailbox (`EMAIL_FROM` in `ba
    Sign in as an Exchange or Global admin.
 2. Check the test lines: `InScope` **True** for the tracker's mailbox, **False** for the test mailbox.
 3. If the script warns that Entra `Mail.Send` is still there, remove it: *Entra ID → App registrations → the registration → API permissions → Mail.Send → Remove permission*. It overrides the Exchange limit.
-4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take up to an hour to apply a new assignment.
+4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take an hour or two to apply a new assignment, so **run this script well before switching an environment to a new registration**; until it applies, sending fails with `403 ErrorAccessDenied`.
 
 If the tracker's mailbox changes, update `EMAIL_FROM` and run the script again with `-Mailbox`.
 
@@ -83,10 +83,6 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 ## 6. Switching the preview registration off and on
 
 Outside testing, switch **DTV Tracker (Preview)** off so its key can't be used at all: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → No → Save*. This stops it getting any tokens, including the app's own. The preview slot then shows errors, and local development can't reach SharePoint, until it's switched back on (same setting, **Yes**). Only switch production's off in an emergency: the tracker stops.
-
-## 7. Azure built-in authentication
-
-App Service also has its own built-in sign-in (*Authentication* blade), using a separate registration, **DTVTracker (Auth)** (`806fc039…`), set to allow unauthenticated requests. The tracker doesn't use it: Microsoft sign-in is handled by the app through the registration above. It is due to be switched off; until then, leave `MICROSOFT_PROVIDER_AUTHENTICATION_SECRET` and `WEBSITE_AUTH_AAD_ALLOWED_TENANTS` in place.
 
 ## Troubleshooting
 

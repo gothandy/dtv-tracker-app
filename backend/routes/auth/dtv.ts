@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import express, { Request, Response, Router } from 'express';
 import axios from 'axios';
 /// <reference path="../../types/express-session.d.ts" />
@@ -5,9 +6,24 @@ import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-con
 import { profilesRepository } from '../../services/repositories/profiles-repository';
 import { profileSlug } from '../../services/data-layer';
 import { PROFILE_STATS } from '../../services/field-names';
-import { isAdminEmail } from '../../config';
+import { isAdminEmail, platform } from '../../config';
 
 const router: Router = express.Router();
+
+/**
+ * Remembers the DTV account used last time on this device, so the next sign-in goes
+ * straight to it (login_hint) even if the browser is also signed in to a work account.
+ */
+const LOGIN_HINT_COOKIE = 'dtv-login-hint';
+const LOGIN_HINT_DAYS = 365;
+
+/** Back to the login page with a reason (and Microsoft's message, if any) to show. */
+function loginPageWithReason(reason: string, detail?: string, returnTo?: string): string {
+  const params = new URLSearchParams({ reason });
+  if (detail) params.set('detail', detail.slice(0, 300));
+  if (returnTo && returnTo.startsWith('/')) params.set('returnTo', returnTo);
+  return `/login?${params}`;
+}
 
 // GET /auth/login — redirect to DTV Account (Entra ID) login
 router.get('/login', async (req: Request, res: Response) => {
@@ -16,25 +32,45 @@ router.get('/login', async (req: Request, res: Response) => {
     if (returnTo && returnTo.startsWith('/')) {
       req.session.returnTo = returnTo;
     }
+    // Checked on the callback, so a callback we didn't start is rejected.
+    const state = randomBytes(16).toString('hex');
+    req.session.authState = state;
+
+    // domain_hint sends Microsoft to DTV's sign-in; login_hint picks the DTV account
+    // used last time. No account picker, so a work account signed in to the same
+    // browser isn't offered.
     const authCodeUrl = await msalClient().getAuthCodeUrl({
       scopes: AUTH_SCOPES,
       redirectUri: getRedirectUri(req),
-      prompt: 'select_account',
       domainHint: 'dtv.org.uk',
+      loginHint: req.cookies?.[LOGIN_HINT_COOKIE] || undefined,
+      state,
     });
     res.redirect(authCodeUrl);
   } catch (error: any) {
     console.error('Error generating auth URL:', error.message);
-    res.status(500).send('Authentication error');
+    res.redirect(loginPageWithReason('microsoft-error', error.message));
   }
 });
 
 // GET /auth/callback — handle redirect from DTV Account (Entra ID)
 router.get('/callback', async (req: Request, res: Response) => {
   try {
+    const savedReturnTo = req.session.returnTo;
+
+    // Microsoft sent the person back with an error (e.g. they cancelled). Say so; don't loop.
     if (req.query.error) {
-      console.error('Auth error:', req.query.error, req.query.error_description);
-      res.redirect('/auth/login');
+      const description = String(req.query.error_description || req.query.error);
+      console.error('Auth error:', req.query.error, description);
+      res.redirect(loginPageWithReason('microsoft-error', description, savedReturnTo));
+      return;
+    }
+
+    const expectedState = req.session.authState;
+    delete req.session.authState;
+    if (!expectedState || req.query.state !== expectedState) {
+      console.error('Auth callback: state missing or does not match');
+      res.redirect(loginPageWithReason('microsoft-restart', undefined, savedReturnTo));
       return;
     }
 
@@ -58,9 +94,16 @@ router.get('/callback', async (req: Request, res: Response) => {
     const graphProfile = graphResponse.data;
     const email = graphProfile.mail || graphProfile.userPrincipalName;
 
+    // Remember this DTV account for next time on this device.
+    res.cookie(LOGIN_HINT_COOKIE, email, {
+      httpOnly: true,
+      secure: !platform.isDevelopment,
+      sameSite: 'lax',
+      maxAge: LOGIN_HINT_DAYS * 24 * 60 * 60 * 1000,
+    });
+
     const profiles = await profilesRepository.getAll();
     const matchedProfile = profiles.find(p => p.User?.toLowerCase() === email.toLowerCase());
-    const savedReturnTo = req.session.returnTo;
 
     if (!matchedProfile) {
       req.session.destroy((destroyErr) => {
@@ -102,7 +145,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     res.redirect(returnToWithNotice);
   } catch (error: any) {
     console.error('Error in auth callback:', error.message);
-    res.status(500).send('Authentication failed');
+    res.redirect(loginPageWithReason('microsoft-error', error.message));
   }
 });
 

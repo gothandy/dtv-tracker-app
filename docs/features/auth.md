@@ -13,7 +13,11 @@ If OAuth succeeds but **no profile** has **`User`** equal to the Microsoft email
 
 Operators can set **`User`** in SharePoint when the in-app profile editor is insufficient. **Admin** accounts need both **`User`** and **`TRACKER_ADMIN_USERS`**.
 
-Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session stored server-side; `dtv-auth` cookie identifies the session.
+Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session stored server-side.
+
+**Getting the right account.** Many staff are also signed in to a work Microsoft 365 account in the same browser. The sign-in request sends `domain_hint=dtv.org.uk` and, after the first successful sign-in on a device, `login_hint` with the DTV address (remembered in the `dtv-login-hint` cookie), and **no** account picker. If someone does end up in their work account, Microsoft shows its own error (typically AADSTS50020) and never returns to the tracker, so the login page tells people to use a private window with their @dtv.org.uk address.
+
+**Errors are shown, not looped.** If Microsoft returns an error (e.g. the person cancelled), the callback sends them to `/login?reason=microsoft-error` with Microsoft's message to pass to an admin. The callback also checks the `state` it sent; a mismatch (e.g. the server restarted mid sign-in) goes to `/login?reason=microsoft-restart`.
 
 ## Self-Service Login (Verification Code)
 
