@@ -44,8 +44,15 @@
           <FormSubmitRow>
             <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
             <p class="sent-contact">
-              Also signed in to a work Microsoft account? If Microsoft picks it, or says your account
-              doesn't exist, use a private browser window and sign in with your @dtv.org.uk address.
+              Also signed in to a work Microsoft account? Try using a private browser window.
+              <button v-if="!showWorkAccountHelp" class="form-btn--link" @click="showWorkAccountHelp = true">Read more</button>
+            </p>
+            <p v-if="showWorkAccountHelp" class="sent-contact">
+              If your browser or computer is signed in to a work Microsoft account, Microsoft may pick it
+              instead of your DTV one, or say your account doesn't exist in Dean Trail Volunteers.
+              A private window (InPrivate in Edge, Incognito in Chrome) starts without your work account,
+              so you can sign in with your @dtv.org.uk address. After that, the tracker remembers your DTV
+              account on this device.
             </p>
           </FormSubmitRow>
         </FormCard>
@@ -107,6 +114,7 @@ const sending = ref(false)
 const loginError = ref('')
 const sent = ref(false)
 const reasonMessage = ref('')
+const showWorkAccountHelp = ref(false)
 const countdownSeconds = ref(0)
 const verifyInput = ref('')
 const verifyError = ref('')
