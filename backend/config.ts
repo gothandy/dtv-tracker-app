@@ -141,8 +141,8 @@ export const EMAIL_FROM = 'admin@deantrailvolunteers.org.uk';
 /** Global cap on sign-in code emails per hour. */
 export const SIGN_IN_EMAILS_PER_HOUR = 60;
 
-/** How long a self-service (email code) login lasts. */
-export const SELF_SERVICE_LOGIN_HOURS = 72;
+/** How long a sign-in lasts, for volunteers and staff alike: covers a dig's prep, the day and the follow-up. */
+export const LOGIN_HOURS = 72;
 
 /** Production address; docs.dtv.org.uk redirects here. */
 export const PRODUCTION_URL = 'https://tracker.dtv.org.uk';

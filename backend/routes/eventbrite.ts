@@ -13,6 +13,7 @@ import { runSessionStatsRefresh } from '../services/session-stats';
 import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runBackupExport } from '../services/backup-export';
 import { sharePointClient } from '../services/sharepoint-client';
+import { deleteExpiredLogins } from '../services/auth-store';
 
 const router: Router = express.Router();
 
@@ -170,6 +171,7 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
     const profileStatsResult = await runProfileStatsRefresh();
     const sessionStatsResult = await runSessionStatsRefresh();
     const backupResult = await runBackupExport();
+    const expiredLogins = await deleteExpiredLogins();
 
     const cacheBeforeWarmup = snapshotCacheState();
     try {
@@ -190,6 +192,7 @@ async function handleNightlyUpdate(req: Request, res: Response): Promise<void> {
       `Profile stats: ${profileStatsResult.updated}/${profileStatsResult.total} updated${profileStatsResult.errors.length ? `, ${profileStatsResult.errors.length} error(s)` : ''}${profileIdsStr}`,
       `Session stats: ${sessionStatsResult.updated}/${sessionStatsResult.total} updated${sessionStatsResult.errors.length ? `, ${sessionStatsResult.errors.length} error(s)` : ''}${sessionIdsStr}`,
       backupResult.updated.length ? `Backup: ${backupResult.updated.join(', ')} updated` : 'Backup: no changes',
+      `Expired sign-ins deleted: ${expiredLogins}`,
       `Cache at start: ${cacheStateLine}`
     ];
     const summary = parts.join('<br>\n');

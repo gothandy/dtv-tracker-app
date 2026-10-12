@@ -13,7 +13,9 @@ If OAuth succeeds but **no profile** has **`User`** equal to the Microsoft email
 
 Operators can set **`User`** in SharePoint when the in-app profile editor is insufficient. **Admin** accounts need both **`User`** and **`TRACKER_ADMIN_USERS`**.
 
-Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts). Session stored server-side.
+Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts).
+
+**Sign-ins that survive restarts.** Both kinds of sign-in write a row to the **Logins** list (hashed token, profile, `Method`) and set the `dtv-auth` cookie for `LOGIN_HOURS` (72h). The in-memory session is just a cache: after a restart or deploy, [`middleware/auth.ts`](../../backend/middleware/auth.ts) rebuilds it from the cookie. A *Microsoft* row gives back the staff role, worked out afresh from the profile's `User` and `TRACKER_ADMIN_USERS`; an *Email Code* row gives a self-service session. If SharePoint can't be reached, the request fails with a message rather than quietly signing the person out. Sign-out deletes the row.
 
 **Getting the right account.** Many staff are also signed in to a work Microsoft 365 account in the same browser. The sign-in request sends `domain_hint=dtv.org.uk` and, after the first successful sign-in on a device, `login_hint` with the DTV address (remembered in the `dtv-login-hint` cookie), and **no** account picker. If someone does end up in their work account, Microsoft shows its own error (typically AADSTS50020) and never returns to the tracker, so the login page tells people to use a private window with their @dtv.org.uk address.
 
@@ -27,7 +29,7 @@ Volunteers receive a verification code by email via Microsoft Graph Mail, from `
 
 - **Verification code** ([backend/routes/auth/verify.ts](../../backend/routes/auth/verify.ts)): 4-digit code valid for 15 minutes; volunteer enters it on the login page
 
-Session token: 128-bit random, SHA-256 hash stored in SharePoint Logins list. Lifetime: `SELF_SERVICE_LOGIN_HOURS` (72h). Global send rate limit: `SIGN_IN_EMAILS_PER_HOUR` (60). Both in `backend/config.ts`.
+Session token: 128-bit random, SHA-256 hash stored in SharePoint Logins list. Lifetime: `LOGIN_HOURS` (72h). Global send rate limit: `SIGN_IN_EMAILS_PER_HOUR` (60). Both in `backend/config.ts`.
 
 ## Role-Based Permissions
 

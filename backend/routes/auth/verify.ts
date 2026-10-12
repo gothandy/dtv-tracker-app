@@ -3,9 +3,8 @@ import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import { sendEmail } from '../../services/graph-mail';
 import { resolvePersonalSession } from '../../services/personal-auth';
-import { createAuthToken } from '../../services/auth-store';
+import { createAuthToken, setLoginCookie } from '../../services/auth-store';
 import { isEmailRateLimited, recordEmailSent } from '../../services/email-rate-limiter';
-import { SELF_SERVICE_LOGIN_HOURS, platform } from '../../config';
 
 const router: Router = express.Router();
 
@@ -13,16 +12,6 @@ interface CodeEntry { code: string; expires: number; attempts: number }
 const codeStore = new Map<string, CodeEntry>();
 const MAX_ATTEMPTS = 5;
 const CODE_TTL_MS = 15 * 60 * 1000;
-const AUTH_TTL_MS = SELF_SERVICE_LOGIN_HOURS * 60 * 60 * 1000;
-
-function setAuthCookie(res: Response, rawToken: string): void {
-  res.cookie('dtv-auth', rawToken, {
-    httpOnly: true,
-    secure: !platform.isDevelopment,
-    sameSite: 'lax',
-    maxAge: AUTH_TTL_MS,
-  });
-}
 
 type CodeCheckResult =
   | { ok: true; displayName: string }
@@ -54,14 +43,14 @@ async function resolveVerifyCode(email: string, code: string, userAgent?: string
 
   let rawToken: string;
   try {
-    rawToken = await createAuthToken(result.sessionUser.profileId!, userAgent);
+    rawToken = await createAuthToken(result.sessionUser.profileId!, 'Email Code', userAgent);
   } catch (err: any) {
     console.error('[Verify] createAuthToken error:', err.message);
     return { ok: false, status: 500, error: 'Login failed. Please try again.' };
   }
 
   if (res) {
-    setAuthCookie(res, rawToken);
+    setLoginCookie(res, rawToken);
     res.setHeader('Cache-Control', 'no-store');
   }
   return { ok: true, displayName: result.sessionUser.displayName };

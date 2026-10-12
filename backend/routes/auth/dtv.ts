@@ -4,9 +4,9 @@ import axios from 'axios';
 /// <reference path="../../types/express-session.d.ts" />
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-config';
 import { profilesRepository } from '../../services/repositories/profiles-repository';
-import { profileSlug } from '../../services/data-layer';
-import { PROFILE_STATS } from '../../services/field-names';
-import { isAdminEmail, platform } from '../../config';
+import { staffSessionUser } from '../../services/personal-auth';
+import { createAuthToken, setLoginCookie } from '../../services/auth-store';
+import { platform } from '../../config';
 
 const router: Router = express.Router();
 
@@ -118,25 +118,12 @@ router.get('/callback', async (req: Request, res: Response) => {
       return;
     }
 
-    const role: 'admin' | 'checkin' = isAdminEmail(email) ? 'admin' : 'checkin';
-
-    let profileStats: NonNullable<typeof req.session.user>['profileStats'] | undefined;
-    if (matchedProfile[PROFILE_STATS]) {
-      try { profileStats = JSON.parse(matchedProfile[PROFILE_STATS]); } catch { /* ignore */ }
-    }
+    // Record the sign-in in the Logins list, so it survives restarts and deploys.
+    const rawToken = await createAuthToken(matchedProfile.ID, 'Microsoft', req.get('user-agent'));
+    setLoginCookie(res, rawToken);
 
     delete req.session.returnTo;
-
-    req.session.user = {
-      id: String(matchedProfile.ID),
-      displayName: matchedProfile.Title || email,
-      email,
-      role,
-      profileSlug: profileSlug(matchedProfile.Title, matchedProfile.ID),
-      profileId: matchedProfile.ID,
-      freshAuthAt: new Date().toISOString(),
-      profileStats,
-    };
+    req.session.user = staffSessionUser(matchedProfile, email, new Date().toISOString());
 
     const returnToPath = savedReturnTo && savedReturnTo.startsWith('/') ? savedReturnTo : '/';
     const returnToWithNotice = returnToPath.includes('?')

@@ -223,7 +223,9 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 ## 7. Logins List
 
-**Purpose**: Persistent auth token store for self-service sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `SELF_SERVICE_LOGIN_HOURS` (72h, `backend/config.ts`). Emergency revocation: delete all items.
+**Purpose**: One row per sign-in, for volunteers (email code) and staff (Microsoft), so sign-ins survive restarts and deploys. Each row matches a `dtv-auth` cookie. Rows expire after `LOGIN_HOURS` (72h, `backend/config.ts`) and are deleted by the nightly job. Sign-out deletes the row. Emergency revocation: delete all items (everyone signs in again); one person: delete their rows.
+
+**Permissions**: restricted to site **Owners** (inheritance stopped). Anyone who could add rows could forge a sign-in. The tracker isn't affected: its access is the site grant.
 
 **List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` (`sharePoint.lists.logins` in `backend/config.ts`)
 
@@ -233,13 +235,15 @@ This is a **many-to-many junction table** that creates the relationship between:
 |-------------|---------------|------|----------|-------------|
 | Title | Title | Single line of text | Yes | SHA-256 hex hash of the raw 128-bit token; built-in, indexed by default |
 | Profile | Profile | Lookup (→ Profiles) | Yes | Profile the token was issued for |
-| Created | Created | Date (auto) | — | Token issue date; used for 72h TTL query (`Created ge '<since>'`); auto-managed by SharePoint |
+| Method | Method | Choice: `Email Code`, `Microsoft` | No | How the person signed in. Microsoft rows rebuild a staff session (role from the current admin list); empty = row from before the column existed (email code) |
+| Agent | Agent | Single line of text | No | Browser user agent at sign-in |
+| Created | Created | Date (auto) | — | Sign-in time; used for the 72h expiry query (`Created ge '<since>'`); auto-managed by SharePoint |
 
 ### Notes
 - `Title` stores only the SHA-256 hash — the raw token is never persisted
 - Multiple rows per profile are normal (multiple devices / multiple logins)
 - `validateAuthToken` queries: `fields/Title eq '<hash>' and fields/Created ge '<now-minus-TTL>'`
-- Rows are not automatically pruned; clear the list for emergency revocation
+- Expired rows are deleted by the nightly job (`deleteExpiredLogins`); never backed up, never copied to a test site
 
 ---
 

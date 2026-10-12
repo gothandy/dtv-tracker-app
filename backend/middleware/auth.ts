@@ -1,27 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
-import { validateAuthToken } from '../services/auth-store';
+import { validateAuthToken, LOGIN_COOKIE } from '../services/auth-store';
+import { staffSessionUser } from '../services/personal-auth';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { profileSlug, parseEmails } from '../services/data-layer';
 import { PROFILE_STATS } from '../services/field-names';
 import { isAdminEmail } from '../config';
 
-// Populates req.session.user from the dtv-auth cookie for self-service volunteers.
-// DTV account (MSAL) users already have req.session.user set by their own auth flow — skip them.
-// On SharePoint error, degrades gracefully to unauthenticated rather than 500ing the page.
-export async function authMiddleware(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  if (req.session.user) { next(); return; } // DTV session already active
+// Rebuilds req.session.user from the dtv-auth cookie when there's no session yet,
+// e.g. after a restart or deploy, or when the 8-hour session cookie has run out.
+// The Logins row says how the person signed in: Microsoft sign-ins get their staff
+// role back (worked out afresh from the current admin list); email-code sign-ins
+// get a self-service session.
+// If SharePoint can't be reached, the request fails with a message rather than
+// quietly treating the person as signed out.
+export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (req.session.user) { next(); return; } // session already active
 
-  const rawToken: string | undefined = req.cookies?.['dtv-auth'];
+  const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
   if (!rawToken) { next(); return; }
 
-  const record = await validateAuthToken(rawToken); // returns null on error
-  if (!record) { next(); return; }
-
   try {
+    const record = await validateAuthToken(rawToken);
+    if (!record) { next(); return; }
+
     const profiles = await profilesRepository.getAll();
     const profile = profiles.find(p => p.ID === record.profileId);
     if (!profile) { next(); return; }
+
+    if (record.method === 'Microsoft') {
+      // Only while the profile is still linked to a DTV account.
+      if (!profile.User) { next(); return; }
+      req.session.user = staffSessionUser(profile, profile.User, record.createdAt);
+      next();
+      return;
+    }
 
     const emails = parseEmails(profile.Email);
     const primaryEmail = emails[0] || '';
@@ -57,8 +70,14 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
       freshAuthAt: record.createdAt,
     };
   } catch (err: any) {
-    console.error('[Auth] authMiddleware error building session user:', err.message);
-    // Degrade gracefully — leave req.session.user undefined
+    console.error('[Auth] Could not check sign-in:', err.message);
+    const message = "We couldn't check your sign-in just now. Please try again in a minute; if it keeps happening, contact your admin.";
+    if (req.path.startsWith('/api/')) {
+      res.status(503).json({ success: false, error: message });
+    } else {
+      res.status(503).type('text').send(message);
+    }
+    return;
   }
 
   next();
