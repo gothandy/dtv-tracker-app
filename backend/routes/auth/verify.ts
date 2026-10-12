@@ -5,6 +5,7 @@ import { sendEmail } from '../../services/graph-mail';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken } from '../../services/auth-store';
 import { isEmailRateLimited, recordEmailSent } from '../../services/email-rate-limiter';
+import { SELF_SERVICE_LOGIN_HOURS, platform } from '../../config';
 
 const router: Router = express.Router();
 
@@ -12,12 +13,12 @@ interface CodeEntry { code: string; expires: number; attempts: number }
 const codeStore = new Map<string, CodeEntry>();
 const MAX_ATTEMPTS = 5;
 const CODE_TTL_MS = 15 * 60 * 1000;
-const AUTH_TTL_MS = parseInt(process.env.AUTH_BASIC_TTL_HOURS || '72', 10) * 60 * 60 * 1000;
+const AUTH_TTL_MS = SELF_SERVICE_LOGIN_HOURS * 60 * 60 * 1000;
 
 function setAuthCookie(res: Response, rawToken: string): void {
   res.cookie('dtv-auth', rawToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: !platform.isDevelopment,
     sameSite: 'lax',
     maxAge: AUTH_TTL_MS,
   });
@@ -72,11 +73,6 @@ router.post('/verify/send', async (req: Request, res: Response) => {
   const email = (req.body?.destination as string || '').trim().toLowerCase();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     res.status(400).json({ error: 'A valid email address is required' });
-    return;
-  }
-
-  if (!process.env.MAIL_SENDER) {
-    res.status(503).json({ error: 'Verification code login is not configured on this server' });
     return;
   }
 

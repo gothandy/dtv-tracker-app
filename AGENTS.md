@@ -22,6 +22,8 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 ## How we work
 
+**Goal in sight, small steps forward.** Keep the end goal visible, but make each step as small as practically possible and leave things working after it. Judge a step against where we are now, not against the ideal: if it's a working improvement, take it. The ideal is where the steps lead.
+
 ### Four levels of work
 
 | Level | What it is | Where it lives | Done means | Who decides |
@@ -36,7 +38,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 | Branch | On push | Environment |
 |---|---|---|
 | `task/<name>` | Build and unit tests only (about 2 minutes) | None. Pull it to run locally if needed. |
-| `preview/<name>` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
+| `preview/<name>` with a PR into `main` | Build, tests, then deploy **after the maintainer approves it** | **Preview**: https://preview.tracker.dtv.org.uk |
 | `main` | Build, tests, deploy | **Production**: https://tracker.dtv.org.uk |
 
 - **All work happens on the task branch.** Pull before starting, push when done, and fetch and rebase before pushing so nobody else's commits are lost.
@@ -45,7 +47,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 - **Merging to `main` redeploys production.** Keep merges to about one a day at most, group related changes into one PR, and always squash-merge. After merging, delete both `preview/<name>` and `task/<name>`.
 - **Unfinished work merged to production must be hidden** (admin-only or behind a setting), never half-visible to volunteers.
 - **Reversal:** commits can be undone freely; a promoted task is reverted on the `preview/` branch before merge; a merged PR is reversed by a new PR, never by rewriting `main`.
-- **Write access means trusted maintainer.** Any PR from this repository deploys to a slot with production credentials and live data, and anyone with write access could also change the workflows or push to `main`. Keep write access to a small, known group with two-factor authentication, and remove it when someone stops volunteering. The coding-agent apps (Claude, Codex) count as maintainers too: only the maintainer prompts them. Longer-term hardening: [#278](https://github.com/gothandy/dtv-tracker-app/issues/278).
+- **Write access means trusted maintainer.** Any PR from this repository deploys to a slot with production credentials and live data, and anyone with write access could also change the workflows or push to `main`. Keep write access to a small, known group with two-factor authentication, and remove it when someone stops volunteering. The coding-agent apps (Claude, Codex) count as maintainers too: only the maintainer prompts them. Two gates stand between code and live data: **preview deploys wait for the maintainer's approval** (review the diff before approving), and **merging to `main`** is the maintainer's action. The preview has its own app registration, switched off when nobody is testing.
 - **Preview is pre-production, not a test environment.** It is cloned from production: live SharePoint data and real emails. Local development uses the same live data. Treat both as production. Details: [docs/azure-app-service.md](docs/azure-app-service.md).
 
 ### Planning a feature
@@ -75,7 +77,7 @@ History lives in pull requests, issues and `git log`; there is no separate progr
 ## Current State
 
 Feature-complete volunteer tracking application with:
-- Express server entry point ([app.js](app.js)) loading compiled TypeScript routes; in dev integrates Vite as middleware (HMR at `:3000`); in production serves `frontend/dist/` as static
+- Entry point [app.js](app.js) checks settings, then starts the Express server [server.js](server.js), which loads compiled TypeScript routes; in dev integrates Vite as middleware (HMR at `:3000`); in production serves `frontend/dist/` as static
 - Microsoft Entra ID authentication with session management ([backend/routes/auth/dtv.ts](backend/routes/auth/dtv.ts))
 - TypeScript API routes split by domain ([backend/routes/](backend/routes/))
 - API response types defining the HTTP contract ([types/api-responses.ts](types/api-responses.ts))
@@ -115,6 +117,8 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 The application uses 8 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
 
 ### Lists (GUIDs)
+
+The code reads these from `sharePoint.lists` in `backend/config.ts`.
 
 | List | GUID | Purpose |
 |------|------|---------|
@@ -177,7 +181,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 ### Scheduled Sync
 
 - **Azure Logic App** calls `POST /api/eventbrite/nightly-update` daily at 05:30 UTC
-- Auth: `X-Api-Key` header; env var: `API_SYNC_KEY`
+- Auth: `X-Api-Key` header; setting: `TRACKER_JOBS_API_KEY`
 
 ### SharePoint
 
@@ -238,13 +242,15 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 
 ### Code Style
 
-- TypeScript for services, types, and routes; CommonJS for entry point (`app.js`)
+- TypeScript for services, types, and routes; CommonJS for `app.js` and `server.js`
 - Lowercase-hyphen naming for files (e.g. `data-layer.ts`, `test-auth.js`)
 - Keep code simple and maintainable; follow existing patterns
 
 ### Clean code and maintainability
 
 This codebase is maintained by a small team (often volunteers). **Prefer linear, single paths** over “clever” optimisations that duplicate logic.
+
+**The code is the primary guard for volunteer data.** The app holds a key that can read and write the tracker's lists (self-service and scheduled jobs need it), so what protects volunteer data is code that is simple enough to review properly: every route checks who is asking and what they may see, and every change is reviewed before it reaches the preview or production. Permissions limit what the key can reach beyond that (one SharePoint site, one mailbox).
 
 - **One source of truth**: If aggregates are stored (e.g. session `Stats` JSON), compute them in the existing stats pipeline (`calculateSessionStats` → `computeAndSaveSessionStats` / bulk refresh). **Do not** recompute the same numbers again in a route handler for some roles only — that doubles behaviour to test and risks drift between public and trusted views.
 - **Same behaviour for every login** where possible: API consumers should see the same rules; differences should be driven by **data the caller is allowed to see** (e.g. no entry list for public), not by a second formula.
@@ -290,10 +296,10 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ### Permissions / Authorization
 
-- Four app permission levels (+ Microsoft auth rules): **Admin** (`ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
+- Four app permission levels (+ Microsoft auth rules): **Admin** (`TRACKER_ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
 - Capability stack (additive): **Public** ⊆ **Check In tier** ⊆ **Admin tier** (`admin = public + check-in + admin-only`). UI should be additive (admin sees check-in surface plus extra controls), not unrelated “modes”.
 - **"Trusted"** (Microsoft-linked) = Admin ∪ Check In. Self-Service is not trusted for other volunteers’ PII.
-- **Microsoft sign-in**: requires a Profiles list **`User`** value matching the signed-in work email. If not linked, sign-in is **rejected** (session cleared, `/login?reason=dtv-not-authorised`) — not the same as choosing public browsing. **Admin** still needs **`ADMIN_USERS`** in addition to **`User`**.
+- **Microsoft sign-in**: requires a Profiles list **`User`** value matching the signed-in work email. If not linked, sign-in is **rejected** (session cleared, `/login?reason=dtv-not-authorised`) — not the same as choosing public browsing. **Admin** still needs **`TRACKER_ADMIN_USERS`** in addition to **`User`**.
 - Backend: `requireAuth` gates all API routes; `requireAdmin` enforces role rules; handlers enforce ownership for self-service.
 - Frontend: CSS classes control visibility — `.admin-only`, `.checkin-only`, `.trusted-only`, `.auth-only`, `.unauth-only`, `.selfservice-only`.
 - All login redirects go to `/login` — never `/auth/login`.
@@ -301,8 +307,13 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ### Error Handling
 
+**Surface problems, don't hide them.** A fallback that keeps things running also hides the fault, and a hidden fault grows. Fail early, loudly, and as close to the cause as possible.
+
+- **Best: fail the deploy** — CI build, tests and the *Check required settings exist* step stop a bad release with a red failed deploy, and the running app is left in place.
+- **Next: tell the person, plainly** — when a problem is only found while running, show it: what went wrong, and to contact the tracker admin, with the error to pass on. Never a crash, a blank page, or carrying on as if nothing happened. If settings are missing at start-up, `app.js` serves a page saying so instead of starting the tracker.
+- **No fallbacks for configuration** — a setting is required or it isn't a setting. No default values, no "not configured" branches, no feature quietly switched off. Fixed values live in `backend/config.ts`.
 - **Propagate errors by default** — do not catch exceptions in service methods and return empty results.
-- **No silent empty returns** — `[]` or `null` from a catch is only acceptable when the feature is genuinely optional and the empty state is indistinguishable from "not configured".
+- **No silent empty returns** — `[]` or `null` from a catch is only acceptable for a specific, expected case (e.g. a 404 for a folder that doesn't exist yet), never for every error.
 - **API endpoints must return non-2xx on failure** — never `{ success: true, data: [] }` on error.
 - **Frontend fetch handlers must log on failure** — at minimum `console.error`; for user-facing features call `showError()`.
 - **No UI fallbacks for required data** — if required fields are missing, surface the issue early (dev/test) instead of silently substituting alternate text.
@@ -320,7 +331,8 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 
 ```
 dtv-tracker-app/
-├── app.js                          # Express entry point (CommonJS); Vite middleware in dev, serves frontend/dist in prod
+├── app.js                          # Entry point: checks settings, then starts server.js (or the setup problem page)
+├── server.js                       # Express server (CommonJS); Vite middleware in dev, serves frontend/dist in prod
 ├── AGENTS.md                       # This file
 ├── CLAUDE.md                       # Claude Code-specific notes
 ├── .github/workflows/
@@ -403,7 +415,7 @@ CI runs the backend and frontend unit tests on every task-branch push and pull r
 ## Important Notes
 
 - Financial year runs April 1 to March 31
-- All configuration is environment variables; the full list with descriptions is in [docs/configuration.md](docs/configuration.md). Production and preview use the same values (preview settings are cloned).
+- All configuration is in `backend/config.ts`. Only secrets and values that differ between environments are settings (seven, named `{WHO}_{WHAT}`); see [docs/configuration.md](docs/configuration.md). Production and each slot keep their own copy of the settings.
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

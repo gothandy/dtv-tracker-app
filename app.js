@@ -1,324 +1,42 @@
+/**
+ * Entry point. Checks the app's settings, then starts the tracker (server.js).
+ *
+ * If a setting is missing or wrong, the tracker doesn't start. Instead every request gets a
+ * page saying what's wrong and to contact the admin, and /api/health returns 503 so
+ * a deploy fails. The deploy also checks settings before deploying, so this should
+ * only happen if a setting is removed or renamed in Azure afterwards.
+ * See docs/configuration.md.
+ */
+
 require('dotenv').config();
-const express = require('express');
-const session = require('express-session');
-const cookieParser = require('cookie-parser');
-const path = require('path');
-const fs = require('fs').promises;
 const http = require('http');
-const { pathToFileURL } = require('url');
-const apiRoutes = require('./dist/backend/routes/api');
-const authRoutes = require('./dist/backend/routes/auth');
-const { requireAuth } = require('./dist/backend/middleware/require-auth');
-const { authMiddleware } = require('./dist/backend/middleware/auth');
-const { mediaDriveId } = require('./dist/backend/services/media-upload');
-const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
-const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
-const { getProjectDocCache, setProjectDocCache } = require('./dist/backend/services/project-docs-cache');
-const { getGovernanceDocCache, setGovernanceDocCache } = require('./dist/backend/services/governance-docs-cache');
-const { fetchGovernanceDocPdf } = require('./dist/backend/services/governance-docs-service');
-const { fetchProjectDoc } = require('./dist/backend/services/project-docs-service');
-const { projectsRepository } = require('./dist/backend/services/repositories/projects-repository');
-const { findProjectByKey } = require('./dist/backend/services/data-layer');
-const { resolveOgMeta, buildOgHeadTags } = require('./dist/backend/services/og-meta');
-const axios = require('axios');
+const { settingsProblems, platform } = require('./dist/backend/config');
 
-const isDev = process.env.NODE_ENV === 'development';
+const problems = settingsProblems();
 
-let _v2IndexHtml = null;
-async function getV2IndexTemplate() {
-    if (!_v2IndexHtml) {
-        _v2IndexHtml = await fs.readFile(path.join(__dirname, 'frontend', 'dist', 'index.html'), 'utf8');
-    }
-    return _v2IndexHtml;
-}
+if (problems.length === 0) {
+    require('./server');
+} else {
+    const problem = problems.join('. ');
+    console.error(`[Startup] ${problem}. The tracker has not started. See docs/configuration.md`);
 
-const facebookAppId = (process.env.FACEBOOK_APP_ID || '').trim();
-
-function publicBaseUrl(req) {
-    const configured = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-    return configured || `${req.protocol}://${req.get('host')}`;
-}
-
-/** Browser document navigations only — not Vite assets, API, or proxied media/docs. */
-function isSpaHtmlNavigation(req) {
-    if (req.method !== 'GET' && req.method !== 'HEAD') return false;
-    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) return false;
-    if (req.path.startsWith('/media/')) return false;
-    if (req.path.startsWith('/@') || req.path.startsWith('/node_modules/') || req.path.startsWith('/src/')) {
-        return false;
-    }
-    if (/\.[a-z0-9]+$/i.test(req.path)) return false;
-    const accept = req.headers.accept || '';
-    return accept.includes('text/html');
-}
-
-async function buildSpaHtml(req, loadHtml) {
-    const meta = await resolveOgMeta(req.path, publicBaseUrl(req));
-    let html = await loadHtml();
-    if (meta) {
-        html = html.replace('</head>', buildOgHeadTags(meta, facebookAppId) + `</head>`);
-    }
-    return html;
-}
-
-async function serveSpaHtml(req, res) {
-    const indexPath = path.join(__dirname, 'frontend', 'dist', 'index.html');
-    try {
-        const html = await buildSpaHtml(req, getV2IndexTemplate);
-        res.set('Content-Type', 'text/html').send(html);
-    } catch (err) {
-        console.error(`Error rendering OG meta for ${req.path}:`, err);
-        res.sendFile(indexPath);
-    }
-}
-
-const app = express();
-
-// Trust Azure App Service reverse proxy (for correct req.protocol)
-app.set('trust proxy', 1);
-
-// docs.dtv.org.uk is bound to the same App Service; send visitors to governance Docs on the canonical host.
-const DOCS_REDIRECT_HOST = (process.env.DOCS_REDIRECT_HOST || 'docs.dtv.org.uk').toLowerCase();
-const TRACKER_CANONICAL_ORIGIN = (process.env.FRONTEND_URL || 'https://tracker.dtv.org.uk').replace(/\/$/, '');
-const DOCS_LEGACY_PATH_REDIRECTS = {
-    '/it-and-data/data-protection/2025-08-01-dtv-privacy-notice.pdf': '/docs/data-protection/dtv-privacy-notice.pdf',
-};
-
-app.use((req, res, next) => {
-    if ((req.hostname || '').toLowerCase() !== DOCS_REDIRECT_HOST) return next();
-    const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
-    const legacyTarget = DOCS_LEGACY_PATH_REDIRECTS[req.path.toLowerCase()];
-    if (legacyTarget) {
-        return res.redirect(301, `${TRACKER_CANONICAL_ORIGIN}${legacyTarget}${query}`);
-    }
-    const suffix = req.path === '/' ? '/docs' : `/docs${req.path}`;
-    res.redirect(301, `${TRACKER_CANONICAL_ORIGIN}${suffix}${query}`);
-});
-
-app.use(express.json());
-app.use(cookieParser());
-
-// Session management (used for DTV account auth and returnTo during login flows)
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000, // 8 hours — DTV account sessions only
-        sameSite: 'lax',
-    },
-}));
-
-// Auth middleware — populates req.session.user from dtv-auth cookie for self-service volunteers.
-// Must run after session() so DTV account sessions are already present.
-app.use(authMiddleware);
-
-// Health check (unprotected — Azure health probes)
-app.get('/api/health', (req, res) => {
-    res.json({ success: true, message: 'Server is running', timestamp: new Date().toISOString() });
-});
-
-// Auth routes (unprotected — login/callback/logout/me)
-app.use('/auth', authRoutes);
-
-// index: false — / must reach serveSpaHtml for Open Graph injection, not raw dist/index.html
-const staticOptions = { maxAge: '1h', index: false };
-
-if (!isDev) {
-    // Production: serve built static assets (includes frontend/public/ files verbatim)
-    app.use(express.static(path.join(__dirname, 'frontend', 'dist'), staticOptions));
-}
-
-// Stable media proxy — serves SharePoint images via stable app-domain URLs.
-// Trusted Microsoft users (admin/check-in) always served; self-service and public only see isPublic === true items.
-// Public items cached 12h in memory and 24h in browser. Retries once on 401/403 with fresh folder metadata.
-app.get('/media/:group/:date/:id', async (req, res) => {
-    const groupKey = req.params.group.toLowerCase();
-    const dateParam = req.params.date;
-    const listItemId = parseInt(req.params.id, 10);
-    if (isNaN(listItemId)) return res.status(400).end();
-
-    const role = req.session?.user?.role;
-    const isTrusted = !!role && role !== 'selfservice';
-
-    // Serve from memory cache for public items (only cache public bytes)
-    if (!isTrusted) {
-        const cached = getMediaCache(listItemId);
-        if (cached) {
-            res.set('Content-Type', cached.contentType);
-            res.set('Cache-Control', 'public, max-age=86400');
-            return res.send(cached.data);
+    http.createServer((req, res) => {
+        if (req.url.startsWith('/api/')) {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: `The tracker isn't set up correctly. ${problem}` }));
+            return;
         }
-    }
-
-    const driveId = mediaDriveId();
-    const folderPath = `${groupKey}/${dateParam}`;
-
-    async function fetchAndServe(allowRetry) {
-        const photos = await sharePointClient.listFolderPhotos(driveId, folderPath);
-        const photo = photos.find(p => p.listItemId === listItemId);
-        if (!photo) return res.status(404).end();
-        if (!isTrusted && photo.isPublic !== true) return res.status(403).end();
-
-        const imageUrl = photo.largeUrl || photo.thumbnailUrl;
-        if (!imageUrl) return res.status(404).end();
-
-        try {
-            const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-            const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
-            const imageData = Buffer.from(imageResponse.data);
-
-            if (!isTrusted) {
-                setMediaCache(listItemId, imageData, contentType);
-                res.set('Cache-Control', 'public, max-age=86400');
-            } else {
-                res.set('Cache-Control', 'private, no-store');
-            }
-            res.set('Content-Type', contentType);
-            res.send(imageData);
-        } catch (err) {
-            if (allowRetry && (err.response?.status === 401 || err.response?.status === 403)) {
-                // Pre-auth URL expired — refresh folder metadata and retry once
-                sharePointClient.clearMediaFolderCache(folderPath);
-                return fetchAndServe(false);
-            }
-            throw err;
-        }
-    }
-
-    try {
-        await fetchAndServe(true);
-    } catch (err) {
-        console.error(`Error serving media ${groupKey}/${dateParam}/${listItemId}:`, err);
-        res.status(502).end();
-    }
-});
-
-// Public project documents proxy — slug paths under /projects/:key/docs/ (recursive Projects/{key}/ tree).
-app.get(/^\/projects\/([a-z0-9-]+)\/docs\/(.+)$/i, async (req, res) => {
-    const key = String(req.params[0]).toLowerCase();
-    const slugPath = String(req.params[1]);
-    if (!key || !slugPath) return res.status(400).end();
-
-    const cacheKey = `${key}/${slugPath}`;
-    const cached = getProjectDocCache(cacheKey);
-    if (cached) {
-        res.set('Content-Type', cached.contentType);
-        res.set('Cache-Control', 'public, max-age=86400');
-        return res.send(cached.data);
-    }
-
-    try {
-        const rawProjects = await projectsRepository.getAll();
-        if (!findProjectByKey(rawProjects, key)) return res.status(404).end();
-
-        const result = await fetchProjectDoc(key, slugPath);
-        if (!result) return res.status(404).end();
-
-        setProjectDocCache(cacheKey, result.data, result.contentType);
-        const safeName = String(result.name).replace(/[^\w.\-]/g, '_');
-        res.set('Content-Type', result.contentType);
-        res.set('Cache-Control', 'public, max-age=86400');
-        res.set('Content-Disposition', `inline; filename="${safeName}"`);
-        res.send(result.data);
-    } catch (err) {
-        console.error(`Error serving project doc ${key}/${slugPath}:`, err);
-        res.status(502).end();
-    }
-});
-
-// Public governance docs proxy — PDFs under Docs/ on the Documents library drive.
-app.get(/^\/docs\/.+\.pdf$/i, async (req, res) => {
-    const slugPath = req.path.replace(/^\/docs\//, '');
-    if (!slugPath) return res.status(400).end();
-
-    const cached = getGovernanceDocCache(slugPath);
-    if (cached) {
-        res.set('Content-Type', cached.contentType);
-        res.set('Cache-Control', 'public, max-age=86400');
-        return res.send(cached.data);
-    }
-
-    try {
-        const data = await fetchGovernanceDocPdf(slugPath);
-        if (!data) return res.status(404).end();
-        setGovernanceDocCache(slugPath, data, 'application/pdf');
-        const safeName = slugPath.split('/').pop().replace(/[^\w.\-]/g, '_');
-        res.set('Content-Type', 'application/pdf');
-        res.set('Content-Disposition', `inline; filename="${safeName}"`);
-        res.set('Cache-Control', 'public, max-age=86400');
-        res.send(data);
-    } catch (err) {
-        console.error(`Error serving governance doc ${slugPath}:`, err);
-        res.status(502).end();
-    }
-});
-
-// Mount API routes.
-// requireAuth checks req.path for its whitelist (/api/stats, /api/sessions etc.) and for
-// its 401-vs-redirect logic (/api/ → JSON, other → redirect to login). Both break if
-// requireAuth is mounted inline at /api, because req.path loses its /api prefix inside a
-// sub-path mount. Always apply requireAuth as a global (un-prefixed) middleware so req.path
-// stays intact.
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api/') || req.path === '/api') return requireAuth(req, res, next);
-    next();
-});
-app.use('/api', apiRoutes);
-
-// Catch unmatched /api/* before the SPA fallback to avoid returning HTML for API 404s
-app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
-
-if (!isDev) {
-    // Server-side Open Graph injection for public SPA routes (social crawlers do not run Vue).
-    app.get('/', (req, res) => serveSpaHtml(req, res));
-    app.get('/*path', (req, res) => serveSpaHtml(req, res));
+        res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(`<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DTV Tracker unavailable</title></head>
+<body style="font-family: system-ui, sans-serif; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5">
+  <h1>The tracker isn't available</h1>
+  <p>It isn't set up correctly, so it hasn't started. Please let the tracker admin know, including the message below.</p>
+  <pre style="background: #f3f3f3; padding: 0.75rem; white-space: pre-wrap">${problem}</pre>
+</body>
+</html>`);
+    }).listen(platform.port, () => {
+        console.log(`Setup problem page running at http://localhost:${platform.port}`);
+    });
 }
-
-// Start server — async to support Vite middleware in dev mode
-const port = process.env.PORT || 3000;
-(async () => {
-    if (isDev) {
-        // Load Vite from frontend/node_modules (it's installed there, not at root)
-        const viteDir = pathToFileURL(path.join(__dirname, 'frontend', 'node_modules', 'vite', 'dist', 'node', 'index.js')).href;
-        const { createServer: createViteServer } = await import(viteDir);
-
-        // Create the HTTP server explicitly so Vite can attach its HMR WebSocket to it
-        const httpServer = http.createServer(app);
-
-        const vite = await createViteServer({
-            configFile: path.join(__dirname, 'frontend', 'vite.config.ts'),
-            root: path.join(__dirname, 'frontend'),
-            server: { middlewareMode: true, hmr: { server: httpServer } },
-            appType: 'spa',
-        });
-
-        // Same OG injection as production, on HTML navigations only — Vite still handles assets/HMR.
-        app.use(async (req, res, next) => {
-            if (!isSpaHtmlNavigation(req)) return next();
-            try {
-                const html = await buildSpaHtml(req, async () => {
-                    const raw = await fs.readFile(path.join(__dirname, 'frontend', 'index.html'), 'utf8');
-                    return vite.transformIndexHtml(req.originalUrl, raw);
-                });
-                res.set('Content-Type', 'text/html').send(html);
-            } catch (err) {
-                console.error(`Error rendering OG meta for ${req.path}:`, err);
-                next();
-            }
-        });
-
-        // Vite middleware handles asset serving, HMR, and SPA routing (catch-all index.html)
-        app.use(vite.middlewares);
-
-        httpServer.listen(port, () => {
-            console.log(`Running at http://localhost:${port} [dev, Vite HMR active]`);
-        });
-    } else {
-        app.listen(port, () => {
-            console.log(`Running at http://localhost:${port}`);
-        });
-    }
-})();

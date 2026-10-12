@@ -62,7 +62,7 @@ jobs:
         run: npm prune --production
 
       - name: Create deployment zip
-        run: zip -r release.zip app.js package.json dist/ node_modules/ frontend/dist/ templates/
+        run: zip -r release.zip app.js server.js package.json dist/ node_modules/ frontend/dist/ templates/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v6
@@ -89,6 +89,15 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: Get the settings check
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            backend/required-settings.json
+            .github/scripts/check-app-settings.sh
+          sparse-checkout-cone-mode: false
+          path: repo
+
       - name: Download artifact from build job
         uses: actions/download-artifact@v7
         with:
@@ -130,6 +139,11 @@ jobs:
             echo "ok=false" >> $GITHUB_OUTPUT
             echo "::notice::Skipping deploy: PR has moved on to ${LATEST:0:7}; that run will deploy instead."
           fi
+
+      - name: Check required settings exist
+        if: steps.fresh.outputs.ok == 'true'
+        working-directory: repo
+        run: .github/scripts/check-app-settings.sh "${{ steps.slot.outputs.resource_group }}" DTVTrackerApp preview
 
       - name: Deploy to preview slot
         if: steps.fresh.outputs.ok == 'true'

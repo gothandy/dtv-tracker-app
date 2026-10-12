@@ -2,8 +2,10 @@
  * Eventbrite API Client
  *
  * Thin wrapper around the Eventbrite v3 API.
- * Requires EVENTBRITE_API_KEY environment variable.
+ * Settings: eventbrite in backend/config.ts.
  */
+
+import { eventbrite } from '../config';
 
 const BASE_URL = 'https://www.eventbriteapi.com/v3';
 
@@ -127,8 +129,7 @@ export function formatEventbriteError(status: number, body: string): string {
 }
 
 async function fetchEventbrite<T>(path: string): Promise<T> {
-  const apiKey = process.env.EVENTBRITE_API_KEY;
-  if (!apiKey) throw new Error('EVENTBRITE_API_KEY not configured');
+  const apiKey = eventbrite.apiKey;
 
   const url = `${BASE_URL}${path}`;
   console.log(`[Eventbrite] GET ${url}`);
@@ -162,8 +163,7 @@ export interface EventbriteEvent {
 }
 
 export async function getOrgEvents(): Promise<EventbriteEvent[]> {
-  const orgId = process.env.EVENTBRITE_ORGANIZATION_ID;
-  if (!orgId) throw new Error('EVENTBRITE_ORGANIZATION_ID not configured');
+  const orgId = eventbrite.organizationId;
 
   const all: EventbriteEvent[] = [];
   let page = 1;

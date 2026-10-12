@@ -5,6 +5,7 @@ import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-con
 import { profilesRepository } from '../../services/repositories/profiles-repository';
 import { profileSlug } from '../../services/data-layer';
 import { PROFILE_STATS } from '../../services/field-names';
+import { isAdminEmail } from '../../config';
 
 const router: Router = express.Router();
 
@@ -15,7 +16,7 @@ router.get('/login', async (req: Request, res: Response) => {
     if (returnTo && returnTo.startsWith('/')) {
       req.session.returnTo = returnTo;
     }
-    const authCodeUrl = await msalClient.getAuthCodeUrl({
+    const authCodeUrl = await msalClient().getAuthCodeUrl({
       scopes: AUTH_SCOPES,
       redirectUri: getRedirectUri(req),
       prompt: 'select_account',
@@ -43,7 +44,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       return;
     }
 
-    const tokenResponse = await msalClient.acquireTokenByCode({
+    const tokenResponse = await msalClient().acquireTokenByCode({
       code,
       scopes: AUTH_SCOPES,
       redirectUri: getRedirectUri(req),
@@ -57,7 +58,6 @@ router.get('/callback', async (req: Request, res: Response) => {
     const graphProfile = graphResponse.data;
     const email = graphProfile.mail || graphProfile.userPrincipalName;
 
-    const adminUsers = (process.env.ADMIN_USERS || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
     const profiles = await profilesRepository.getAll();
     const matchedProfile = profiles.find(p => p.User?.toLowerCase() === email.toLowerCase());
     const savedReturnTo = req.session.returnTo;
@@ -75,7 +75,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       return;
     }
 
-    const role: 'admin' | 'checkin' = adminUsers.includes(email.toLowerCase()) ? 'admin' : 'checkin';
+    const role: 'admin' | 'checkin' = isAdminEmail(email) ? 'admin' : 'checkin';
 
     let profileStats: NonNullable<typeof req.session.user>['profileStats'] | undefined;
     if (matchedProfile[PROFILE_STATS]) {

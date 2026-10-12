@@ -30,7 +30,7 @@ Sync routes in [routes/eventbrite.ts](../../routes/eventbrite.ts):
 
 ## Session Taxonomy
 
-Terms stored as managed metadata on the Sessions list via SharePoint Term Store (Graph beta). Term set configured via `TAXONOMY_TERM_SET_ID` env var. Hierarchical — hours aggregate up to ancestor terms. Bulk application supported via `POST /api/sessions/bulk-tag`. See [docs/features/tagging.md](tagging.md) for write mechanism detail (hidden companion field workaround).
+Terms stored as managed metadata on the Sessions list via SharePoint Term Store (Graph beta). Term set: `tagsTermSetId` in `backend/config.ts`. Hierarchical — hours aggregate up to ancestor terms. Bulk application supported via `POST /api/sessions/bulk-tag`. See [docs/features/tagging.md](tagging.md) for write mechanism detail (hidden companion field workaround).
 
 ## Media
 
@@ -42,13 +42,13 @@ Four independent caches (NodeCache, column schema, taxonomy tree, cover image). 
 
 ## Session Email Notifications
 
-Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail using app credentials (`MAIL_SENDER` env var). Sandbox preview at `POST /api/email/render`.
+Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail from `EMAIL_FROM` in `backend/config.ts`. Sandbox preview at `POST /api/email/render`.
 
 ## Nightly Backup Export
 
 `POST /api/backup/export-all` exports all lists + taxonomy + schema to `Backups/` in the Shared Documents library as JSON. SHA-256 diff check skips unchanged files. Also runs as the final step of the nightly Eventbrite sync.
 
-Project documents live in `Projects/{slug}/` on the Documents library drive (`DOCUMENTS_DRIVE_ID`, same as `Backups/`). Subfolders are supported. `GET /api/projects/:key/attachments` returns a `DocsTreeNode[]` tree (folders + files with slug URLs). Files are served to the public at `GET /projects/:key/docs/{slug-path}` (recursive mirror of `Projects/{key}/`; no SharePoint login; 6h server / 24h browser cache). Governance PDFs use `/docs/*.pdf` only. Renaming a project key (`PATCH`) moves the drive folder to `Projects/{newKey}/` before updating the list item (409 if the destination folder already exists).
+Project documents live in `Projects/{slug}/` on the Documents library drive (`sharePoint.libraries.documents`, same as `Backups/`). Subfolders are supported. `GET /api/projects/:key/attachments` returns a `DocsTreeNode[]` tree (folders + files with slug URLs). Files are served to the public at `GET /projects/:key/docs/{slug-path}` (recursive mirror of `Projects/{key}/`; no SharePoint login; 6h server / 24h browser cache). Governance PDFs use `/docs/*.pdf` only. Renaming a project key (`PATCH`) moves the drive folder to `Projects/{newKey}/` before updating the list item (409 if the destination folder already exists).
 
 ## Stats Pipeline
 
@@ -56,7 +56,7 @@ Pre-computed `Stats` field on Sessions list stores aggregate JSON (count, hours,
 
 ## Auth / Graph client credentials
 
-Expired or invalid `SHAREPOINT_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
+Expired or invalid `ENTRA_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
 
 ## Planned
 

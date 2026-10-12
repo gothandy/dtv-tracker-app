@@ -116,12 +116,7 @@ async function resolvePublicCoverUrl(
   baseUrl: string,
   candidates: CoverCandidate[],
 ): Promise<string> {
-  let driveId: string;
-  try {
-    driveId = mediaDriveId();
-  } catch {
-    return defaultImageUrl(baseUrl);
-  }
+  const driveId = mediaDriveId();
 
   const sorted = [...candidates]
     .filter(c => c.coverMediaId != null)
@@ -129,14 +124,11 @@ async function resolvePublicCoverUrl(
 
   for (const { groupKey, date, coverMediaId } of sorted) {
     if (coverMediaId == null) continue;
-    try {
-      const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${date}`);
-      const coverPhoto = photos.find(p => p.listItemId === coverMediaId && p.isPublic === true);
-      if (coverPhoto) {
-        return `${baseUrl}/media/${groupKey}/${date}/${coverPhoto.listItemId}`;
-      }
-    } catch {
-      /* folder missing or drive unavailable — try next session */
+    // A missing folder returns no photos; any other error (e.g. access denied) propagates.
+    const photos = await sharePointClient.listFolderPhotos(driveId, `${groupKey}/${date}`);
+    const coverPhoto = photos.find(p => p.listItemId === coverMediaId && p.isPublic === true);
+    if (coverPhoto) {
+      return `${baseUrl}/media/${groupKey}/${date}/${coverPhoto.listItemId}`;
     }
   }
 

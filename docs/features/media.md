@@ -20,7 +20,7 @@ Path derived from the session's group key and date — browsable directly in Sha
 
 `{HHMMSS}-{4-char-random}.{ext}` — server-assigned at upload time (not the phone's original filename). Time-sortable within the day folder; collision-safe via random suffix.
 
-`MEDIA_LIBRARY_DRIVE_ID` env var required (Graph API Drive ID of the Media library).
+Media library drive ID: `sharePoint.libraries.media` in `backend/config.ts`.
 
 ## Upload
 

@@ -46,6 +46,7 @@ import { mediaDriveId, exifDate, mediaFilename } from '../services/media-upload'
 import type { MediaStatus, EntryDetailResponse, EntryListItemResponse, RecentSignupResponse, EntryUploadContextResponse } from '../../types/api-responses';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
+import { requestOrigin } from '../services/request-origin';
 
 const router: Router = express.Router();
 
@@ -1293,7 +1294,7 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       ? await recordsRepository.getByProfile(profileId)
       : [];
 
-    const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const base = requestOrigin(req);
     const templateName = (req.body?.template as string) || 'pre-dig';
     const vars = templateName === 'post-session'
       ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base, profileRecords)

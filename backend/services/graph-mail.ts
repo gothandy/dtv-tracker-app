@@ -1,4 +1,5 @@
 import { sharePointClient } from './sharepoint-client';
+import { EMAIL_FROM } from '../config';
 
 const REPLY_TO = 'admin@deantrailvolunteers.org.uk';
 const BOUNDARY = 'dtv-email-boundary';
@@ -35,11 +36,10 @@ function buildMime({ to, subject, html, text }: SendEmailOptions): string {
 /**
  * Send an email via Microsoft Graph API using the existing app credentials.
  * Requires Mail.Send application permission on the Azure app registration.
- * MAIL_SENDER env var must be the UPN/address of the mailbox to send from.
+ * Sends from EMAIL_FROM (backend/config.ts).
  */
 export async function sendEmail(options: SendEmailOptions): Promise<void> {
-  const sender = process.env.MAIL_SENDER;
-  if (!sender) throw new Error('MAIL_SENDER env var is not set');
+  const sender = EMAIL_FROM;
 
   const token = await sharePointClient.getAccessToken();
   const mime = buildMime(options);

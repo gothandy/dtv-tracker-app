@@ -165,7 +165,6 @@ Auth routes are not under `/api/` and are not subject to `requireAuth` or `requi
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/auth/providers` | GET | Public | Available auth providers |
 | `/auth/me` | GET | Public | Current session user |
 | `/auth/logout` | GET | Public | Clear session and cookie |
 | `/auth/login` | GET | Public | Initiate Microsoft Entra ID login |

@@ -7,13 +7,11 @@
 import { SharePointRegular } from '../../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROFILE_LOOKUP, PROFILE_DISPLAY, GROUP_LOOKUP, GROUP_DISPLAY } from '../field-names';
+import { sharePoint } from '../../config';
 
 class RegularsRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.regulars; }
 
-  constructor() {
-    this.listGuid = process.env.REGULARS_LIST_GUID!;
-  }
 
   private get selectFields(): string {
     return `ID,Title,${PROFILE_DISPLAY},${PROFILE_LOOKUP},${GROUP_DISPLAY},${GROUP_LOOKUP},AccompanyingAdultLookupId,AccompanyingAdult,Created,Modified`;

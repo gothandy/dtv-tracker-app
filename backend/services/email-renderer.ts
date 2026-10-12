@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
 import { BRAND } from '../shared/brand';
+import { platform } from '../config';
 
 // Named style presets for the section helper — maps style="name" to bg/color/padding
 const DEFAULT_PADDING = '24px 32px';
@@ -56,7 +57,7 @@ const templateCache = new Map<string, HandlebarsTemplateDelegate>();
 const TEMPLATES_DIR = path.join(process.cwd(), 'templates', 'email');
 
 async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
-  if (process.env.NODE_ENV !== 'development' && templateCache.has(filePath)) return templateCache.get(filePath)!;
+  if (!platform.isDevelopment && templateCache.has(filePath)) return templateCache.get(filePath)!;
   const src = await fs.readFile(filePath, 'utf-8');
   const compiled = Handlebars.compile(src);
   templateCache.set(filePath, compiled);
@@ -64,7 +65,7 @@ async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegat
 }
 
 async function loadSubjectTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
-  if (process.env.NODE_ENV !== 'development' && templateCache.has(filePath)) return templateCache.get(filePath)!;
+  if (!platform.isDevelopment && templateCache.has(filePath)) return templateCache.get(filePath)!;
   const src = await fs.readFile(filePath, 'utf-8');
   const compiled = Handlebars.compile(src, { noEscape: true });
   templateCache.set(filePath, compiled);

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId } from './data-layer';
+import { sharePoint, SELF_SERVICE_LOGIN_HOURS } from '../config';
 
 // SharePoint Logins list — stores hashed auth tokens for self-service volunteer auth.
 // Title = SHA-256 hash of the raw token (indexed by default).
@@ -8,7 +9,7 @@ import { safeParseLookupId } from './data-layer';
 // Created = auth issue date (auto-managed by SharePoint) — used as freshAuthAt.
 
 function loginsListGuid(): string {
-  return process.env.LOGINS_LIST_GUID!;
+  return sharePoint.lists.logins;
 }
 
 function hashToken(rawToken: string): string {
@@ -33,7 +34,7 @@ export async function createAuthToken(profileId: number, userAgent?: string): Pr
 export async function validateAuthToken(rawToken: string): Promise<{ profileId: number; createdAt: string } | null> {
   try {
     const hash = hashToken(rawToken);
-    const ttlHours = parseInt(process.env.AUTH_BASIC_TTL_HOURS || '72', 10);
+    const ttlHours = SELF_SERVICE_LOGIN_HOURS;
     const since = new Date(Date.now() - ttlHours * 60 * 60 * 1000).toISOString();
 
     const items = await sharePointClient.getListItems(

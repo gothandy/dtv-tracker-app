@@ -5,13 +5,11 @@
 import { SharePointProject } from '../../../types/project';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { PROJECT_DESCRIPTION, PROJECT_METADATA } from '../field-names';
+import { sharePoint } from '../../config';
 
 class ProjectsRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.projects; }
 
-  constructor() {
-    this.listGuid = process.env.PROJECTS_LIST_GUID!;
-  }
 
   private get selectFields(): string {
     return `ID,Title,Name,${PROJECT_DESCRIPTION},${PROJECT_METADATA},Created,Modified`;

@@ -28,7 +28,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 **Purpose**: Stores cross-group volunteer projects (funded work, trails, etc.)
 
-**List GUID**: `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` (`PROJECTS_LIST_GUID`)
+**List GUID**: `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` (`sharePoint.lists.projects` in `backend/config.ts`)
 
 ### Columns
 
@@ -39,7 +39,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Name** | Name | Single line of text | No | Display name |
 | **Description** | Description | Multiple lines of text | No | Project description |
 | **Metadata** | Metadata | Managed metadata | No | Taxonomy tags (same term set as Sessions) |
-| *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`; `DOCUMENTS_DRIVE_ID`) |
+| *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`) |
 
 ---
 
@@ -223,9 +223,9 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 ## 7. Logins List
 
-**Purpose**: Persistent auth token store for self-service sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `AUTH_BASIC_TTL_HOURS` (default 72h). Emergency revocation: delete all items.
+**Purpose**: Persistent auth token store for self-service sessions. Each row represents a valid `dtv-auth` cookie issued to a volunteer. Tokens expire after `SELF_SERVICE_LOGIN_HOURS` (72h, `backend/config.ts`). Emergency revocation: delete all items.
 
-**List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` (`LOGINS_LIST_GUID`)
+**List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` (`sharePoint.lists.logins` in `backend/config.ts`)
 
 ### Columns
 

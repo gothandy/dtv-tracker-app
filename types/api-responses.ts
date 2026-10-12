@@ -90,7 +90,7 @@ export interface SessionResponse {
   projectTitle?: string;
 }
 
-/** Microsoft Tracker role implied by Profile User + ADMIN_USERS — only on trusted responses. */
+/** Microsoft Tracker role implied by Profile User + TRACKER_ADMIN_USERS — only on trusted responses. */
 export type TrackerAccess = 'none' | 'checkin' | 'admin';
 
 export interface ProfileResponse {

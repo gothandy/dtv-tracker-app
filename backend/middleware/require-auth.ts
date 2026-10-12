@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
 import { isPublicApiGet } from './public-api-get-paths';
+import { tracker } from '../config';
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   if (isPublicApiGet(req)) {
@@ -14,9 +15,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 
   // API key auth for scheduled sync calls (Eventbrite sync + stats refresh)
-  const apiKey = process.env.API_SYNC_KEY;
+  const apiKey = tracker.jobsApiKey;
   const API_KEY_PATHS = ['/api/eventbrite/', '/api/sessions/refresh-stats', '/api/profiles/refresh-stats', '/api/backup/'];
-  if (apiKey && req.headers['x-api-key'] === apiKey && API_KEY_PATHS.some(p => req.path.startsWith(p))) {
+  if (req.headers['x-api-key'] === apiKey && API_KEY_PATHS.some(p => req.path.startsWith(p))) {
     next();
     return;
   }

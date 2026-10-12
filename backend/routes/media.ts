@@ -26,8 +26,7 @@ router.get('/media/counts', async (req: Request, res: Response) => {
   const pathsParam = (req.query.paths as string || '').trim();
   if (!pathsParam) { res.json({ success: true, data: {} }); return; }
 
-  let driveId: string;
-  try { driveId = mediaDriveId(); } catch { res.json({ success: true, data: {} }); return; }
+  const driveId = mediaDriveId();
 
   const paths = pathsParam.split(',').map(p => p.trim()).filter(Boolean);
   const byGroup = new Map<string, string[]>();

@@ -1,14 +1,14 @@
 import { profilesRepository } from './repositories/profiles-repository';
 import { profileSlug, parseEmails } from './data-layer';
 import { PROFILE_STATS } from './field-names';
+import { isAdminEmail } from '../config';
 
-// Resolves a personal account (Google/Facebook) OAuth login by matching the
-// OAuth email against Profile.Email. Used by all personal account providers.
+// Resolves a self-service (email verification code) login by matching the
+// verified email against Profile.Email.
 export async function resolvePersonalSession(email: string, displayName: string, oauthId: string): Promise<{
   ok: true;
   sessionUser: NonNullable<import('express-session').SessionData['user']>;
 } | { ok: false }> {
-  const adminUsers = parseEmails(process.env.ADMIN_USERS);
   const profiles = await profilesRepository.getAll();
   const target = email.toLowerCase();
   const matchedProfiles = profiles.filter(p => parseEmails(p.Email).includes(target));
@@ -20,7 +20,7 @@ export async function resolvePersonalSession(email: string, displayName: string,
   // Check the profile's linked User field (DTV username) as well as the OAuth email itself.
   let trustedRole: 'admin' | 'checkin' | undefined;
   const linkedDTVEmail = primary.User?.toLowerCase();
-  if (adminUsers.includes(email.toLowerCase()) || (linkedDTVEmail && adminUsers.includes(linkedDTVEmail))) {
+  if (isAdminEmail(email) || isAdminEmail(linkedDTVEmail)) {
     trustedRole = 'admin';
   } else if (primary.User) {
     trustedRole = 'checkin';

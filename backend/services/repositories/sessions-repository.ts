@@ -7,14 +7,12 @@
 import { SharePointSession } from '../../../types/session';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { GROUP_LOOKUP, GROUP_DISPLAY, PROJECT_LOOKUP, PROJECT_DISPLAY, SESSION_NOTES, SESSION_METADATA, SESSION_COVER_MEDIA, SESSION_STATS, SESSION_LIMITS, SESSION_TIME, SESSION_LENGTH } from '../field-names';
+import { sharePoint } from '../../config';
 
 
 class SessionsRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.sessions; }
 
-  constructor() {
-    this.listGuid = process.env.SESSIONS_LIST_GUID!;
-  }
 
   private get selectFields(): string {
     return `ID,Title,Name,Date,${SESSION_TIME},${SESSION_LENGTH},${SESSION_NOTES},${SESSION_METADATA},EventbriteEventID,${GROUP_DISPLAY},${GROUP_LOOKUP},${PROJECT_DISPLAY},${PROJECT_LOOKUP},${SESSION_COVER_MEDIA},${SESSION_STATS},${SESSION_LIMITS},Created,Modified`;

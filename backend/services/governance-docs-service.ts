@@ -1,10 +1,10 @@
 /**
- * Governance docs — reads the Docs/ folder from the Documents library (DOCUMENTS_DRIVE_ID).
- * Listing returns stable tracker URLs; PDF bytes are served via app.js proxy (project docs pattern).
+ * Governance docs — reads the Docs/ folder from the Documents library (sharePoint.libraries.documents).
+ * Listing returns stable tracker URLs; PDF bytes are served via server.js proxy (project docs pattern).
  */
 
 import { sharePointClient } from './sharepoint-client';
-import { tryDocumentsDriveId } from './documents-drive';
+import { sharePoint } from '../config';
 import { nameToSlug } from './data-layer';
 import { isFileProxyCacheValid } from './file-proxy-cache-ttl';
 import type { DocsTreeNode } from '../../types/api-responses';
@@ -98,9 +98,7 @@ async function getInternalTree(): Promise<InternalDocsNode[]> {
   if (cachedInternalTree && isFileProxyCacheValid(cachedInternalTree.fetchedAt)) {
     return cachedInternalTree.tree;
   }
-  const driveId = tryDocumentsDriveId();
-  if (!driveId) return [];
-  const tree = await buildInternalTree(driveId, GOVERNANCE_DOCS_ROOT, []);
+  const tree = await buildInternalTree(sharePoint.libraries.documents, GOVERNANCE_DOCS_ROOT, []);
   cachedInternalTree = { tree, fetchedAt: Date.now() };
   return tree;
 }
@@ -135,8 +133,7 @@ export async function resolveGovernanceDocSlugPath(slugPath: string): Promise<st
 }
 
 export async function fetchGovernanceDocPdf(slugPath: string): Promise<Buffer | null> {
-  const driveId = tryDocumentsDriveId();
-  if (!driveId) return null;
+  const driveId = sharePoint.libraries.documents;
   const spPath = await resolveGovernanceDocSlugPath(slugPath);
   if (!spPath) return null;
   return sharePointClient.downloadFile(driveId, spPath);

@@ -61,11 +61,6 @@ function getParkingStatus(value) {
 async function importBenefits() {
   console.log(EXECUTE ? '*** EXECUTE MODE — will create records ***\n' : '*** DRY RUN — pass --execute to create records ***\n');
 
-  if (!process.env.RECORDS_LIST_GUID) {
-    console.error('RECORDS_LIST_GUID is not set');
-    process.exit(1);
-  }
-
   const [allProfiles, allRecords] = await Promise.all([
     profilesRepository.getAll(),
     recordsRepository.getAll()

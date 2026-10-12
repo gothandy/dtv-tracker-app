@@ -7,13 +7,11 @@
 import { SharePointEntry } from '../../../types/sharepoint';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { SESSION_LOOKUP, SESSION_DISPLAY, PROFILE_LOOKUP, PROFILE_DISPLAY, ACCOMPANYING_ADULT_LOOKUP, ACCOMPANYING_ADULT_DISPLAY, ENTRY_CANCELLED, ENTRY_LABELS, ENTRY_EVENTBRITE_ATTENDEE_ID } from '../field-names';
+import { sharePoint } from '../../config';
 
 class EntriesRepository {
-  private listGuid: string;
+  private get listGuid(): string { return sharePoint.lists.entries; }
 
-  constructor() {
-    this.listGuid = process.env.ENTRIES_LIST_GUID!;
-  }
 
   private get selectFields(): string {
     return `ID,Title,${SESSION_DISPLAY},${SESSION_LOOKUP},${PROFILE_DISPLAY},${PROFILE_LOOKUP},Count,Checked,Hours,Notes,BookedBy,${ACCOMPANYING_ADULT_DISPLAY},${ACCOMPANYING_ADULT_LOOKUP},${ENTRY_CANCELLED},${ENTRY_LABELS},${ENTRY_EVENTBRITE_ATTENDEE_ID},Created,Modified`;

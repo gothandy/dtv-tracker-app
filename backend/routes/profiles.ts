@@ -40,6 +40,8 @@ import {
 import type { ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse, SharePointProfile } from '../../types/sharepoint';
+import { sharePoint } from '../config';
+import { requestOrigin } from '../services/request-origin';
 
 const router: Router = express.Router();
 
@@ -351,7 +353,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
 
 router.get('/profiles/records/options', async (req: Request, res: Response) => {
   try {
-    const listGuid = process.env.RECORDS_LIST_GUID!;
+    const listGuid = sharePoint.lists.records;
     const [types, statuses] = await Promise.all([
       sharePointClient.getColumnChoices(listGuid, 'Type'),
       sharePointClient.getColumnChoices(listGuid, 'Status')
@@ -505,11 +507,6 @@ router.post('/records/bulk', async (req: Request, res: Response) => {
 
 router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
   try {
-    if (!process.env.MAIL_SENDER) {
-      res.status(503).json({ success: false, error: 'MAIL_SENDER env var is not set' });
-      return;
-    }
-
     const { profileIds, template, preview } = req.body as {
       profileIds?: unknown;
       template?: string;
@@ -528,7 +525,7 @@ router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
 
     const allProfiles = await profilesRepository.getAll();
     const allRecords = await recordsRepository.getAll();
-    const base = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const base = requestOrigin(req);
 
     const recordsForProfile = (profileId: number) =>
       allRecords.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId);
@@ -999,7 +996,7 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
 
     const entries = validateArray(rawEntries, validateEntry, 'Entry');
     const sourceEntries = entries.filter(e => safeParseLookupId(e[PROFILE_LOOKUP]) === sourceProfile.ID);
-    const entriesListGuid = process.env.ENTRIES_LIST_GUID!;
+    const entriesListGuid = sharePoint.lists.entries;
 
     // Transfer entries
     let entriesTransferred = 0;
@@ -1018,7 +1015,7 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
         .map(r => safeParseLookupId(r[GROUP_LOOKUP]))
         .filter((id): id is number => id !== undefined)
     );
-    const regularsListGuid = process.env.REGULARS_LIST_GUID!;
+    const regularsListGuid = sharePoint.lists.regulars;
 
     let regularsTransferred = 0;
     for (const regular of sourceRegulars) {
@@ -1043,7 +1040,7 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
         .filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === targetProfile.ID)
         .map(r => r.Type)
     );
-    const recordsListGuid = process.env.RECORDS_LIST_GUID!;
+    const recordsListGuid = sharePoint.lists.records;
 
     for (const record of sourceRecords) {
       if (!targetRecordTypes.has(record.Type)) {

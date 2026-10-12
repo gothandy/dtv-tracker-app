@@ -1,10 +1,10 @@
 /**
- * Project documents — reads Projects/{key}/ on the Documents library (DOCUMENTS_DRIVE_ID).
- * Listing returns a folder tree with stable tracker URLs; bytes are served via app.js proxy.
+ * Project documents — reads Projects/{key}/ on the Documents library (sharePoint.libraries.documents).
+ * Listing returns a folder tree with stable tracker URLs; bytes are served via server.js proxy.
  */
 
 import { sharePointClient } from './sharepoint-client';
-import { tryDocumentsDriveId } from './documents-drive';
+import { sharePoint } from '../config';
 import { nameToSlug } from './data-layer';
 import { isFileProxyCacheValid } from './file-proxy-cache-ttl';
 import type { DocsTreeNode } from '../../types/api-responses';
@@ -102,10 +102,8 @@ async function getInternalTree(projectKey: string): Promise<InternalProjectDocNo
   if (cached && isFileProxyCacheValid(cached.fetchedAt)) {
     return cached.tree;
   }
-  const driveId = tryDocumentsDriveId();
-  if (!driveId) return [];
   const root = projectDocsRoot(projectKey);
-  const tree = await buildInternalTree(driveId, root, []);
+  const tree = await buildInternalTree(sharePoint.libraries.documents, root, []);
   treeCache.set(projectKey, { tree, fetchedAt: Date.now() });
   return tree;
 }
@@ -172,8 +170,7 @@ export async function fetchProjectDoc(
   projectKey: string,
   slugPath: string,
 ): Promise<{ data: Buffer; contentType: string; name: string } | null> {
-  const driveId = tryDocumentsDriveId();
-  if (!driveId) return null;
+  const driveId = sharePoint.libraries.documents;
   const spPath = await resolveProjectDocSlugPath(projectKey, slugPath);
   if (!spPath) return null;
   const data = await sharePointClient.downloadFile(driveId, spPath);

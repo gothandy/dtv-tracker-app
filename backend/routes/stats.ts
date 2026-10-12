@@ -13,6 +13,7 @@ import { calculateCurrentFY, calculateFinancialYear, safeParseLookupId } from '.
 import { SESSION_STATS, PROFILE_STATS, GROUP_LOOKUP } from '../services/field-names';
 import type { StatsResponse, FYStatsResponse } from '../../types/api-responses';
 import type { ApiResponse } from '../../types/sharepoint';
+import { sharePoint } from '../config';
 
 // Reads pre-computed Stats JSON from session items — falls back to 0 on missing/malformed data
 function parseStatsHours(statsRaw: string | undefined | null): number {
@@ -252,7 +253,7 @@ router.get('/config', (req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
-      sharepointSiteUrl: process.env.SHAREPOINT_SITE_URL || null
+      sharepointSiteUrl: sharePoint.siteUrl
     }
   });
 });

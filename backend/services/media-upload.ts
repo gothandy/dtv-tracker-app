@@ -1,10 +1,9 @@
 import path from 'path';
 import ExifReader from 'exifreader';
+import { sharePoint } from '../config';
 
 export function mediaDriveId(): string {
-  const id = process.env.MEDIA_LIBRARY_DRIVE_ID;
-  if (!id) throw new Error('MEDIA_LIBRARY_DRIVE_ID is not configured');
-  return id;
+  return sharePoint.libraries.media;
 }
 
 // Extract capture/creation date from media file metadata.

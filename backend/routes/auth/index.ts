@@ -18,11 +18,6 @@ router.get('/logout', (req: Request, res: Response) => {
   });
 });
 
-// GET /auth/providers — whether self-service email login is configured
-router.get('/providers', (_req: Request, res: Response) => {
-  res.json({ selfService: !!process.env.MAIL_SENDER });
-});
-
 // GET /auth/me — return current user info (no auth required)
 router.get('/me', (req: Request, res: Response) => {
   if (req.session.user) {

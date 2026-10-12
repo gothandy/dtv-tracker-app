@@ -1,22 +1,27 @@
-import { ConfidentialClientApplication, Configuration, LogLevel } from '@azure/msal-node';
+import { ConfidentialClientApplication, LogLevel } from '@azure/msal-node';
+import { entra } from '../config';
 
-const msalConfig: Configuration = {
-  auth: {
-    clientId: process.env.SHAREPOINT_CLIENT_ID!,
-    authority: `https://login.microsoftonline.com/${process.env.SHAREPOINT_TENANT_ID!}`,
-    clientSecret: process.env.SHAREPOINT_CLIENT_SECRET!,
-  },
-  system: {
-    loggerOptions: {
-      loggerCallback: (level: LogLevel, message: string) => {
-        if (level === LogLevel.Error) console.error('[MSAL]', message);
-      },
-      logLevel: LogLevel.Error,
+let client: ConfidentialClientApplication | undefined;
+
+/** MSAL client for staff Microsoft sign-in. Created on first use, so settings are read lazily. */
+export function msalClient(): ConfidentialClientApplication {
+  client ??= new ConfidentialClientApplication({
+    auth: {
+      clientId: entra.clientId,
+      authority: `https://login.microsoftonline.com/${entra.tenantId}`,
+      clientSecret: entra.clientSecret,
     },
-  },
-};
-
-export const msalClient = new ConfidentialClientApplication(msalConfig);
+    system: {
+      loggerOptions: {
+        loggerCallback: (level: LogLevel, message: string) => {
+          if (level === LogLevel.Error) console.error('[MSAL]', message);
+        },
+        logLevel: LogLevel.Error,
+      },
+    },
+  });
+  return client;
+}
 
 export const AUTH_SCOPES = ['User.Read'];
 

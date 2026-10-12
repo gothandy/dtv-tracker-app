@@ -1,391 +1,101 @@
-# SharePoint Configuration Guide
+# App registration and permissions
 
-**Audience**: Organization admin / SharePoint administrator
+**Audience:** the maintainer, or an Entra/SharePoint admin. Developers only need the client ID and secret (see [local-development.md](local-development.md)).
 
-This is a **one-time setup** guide for configuring SharePoint and Microsoft Entra ID for the DTV Tracker App. New developers joining the project won't need to repeat these steps - they just need the credentials (see [local-development.md](local-development.md)).
+Each environment has its own Entra app registration, used for everything there: reading and writing the tracker's SharePoint lists and libraries, reading the tags term set, sending email, and Microsoft sign-in.
 
----
+| Registration | Used by | Redirect URIs | Secret held in |
+|---|---|---|---|
+| **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/callback` | Production's settings only. Nobody else needs it |
+| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/callback`, `http://localhost:3000/auth/callback` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
 
-## Overview
+Both are set up the same way and limited to what the tracker needs:
 
-The app uses OAuth 2.0 client credentials flow to authenticate with SharePoint via Microsoft Entra ID. This requires:
-1. Entra ID app registration
-2. API permissions with admin consent
-3. SharePoint site-level permissions
+| Permission | Type | Limited to |
+|---|---|---|
+| `Sites.Selected` | Application (Microsoft Graph) | The tracker site only, by a site grant (section 3) |
+| `TermStore.Read.All` | Application | Read-only. The term store is organisation-wide, so it can't be limited to one site |
+| Send mail | Exchange Online, *Application Mail.Send* | One mailbox, `EMAIL_FROM` in `backend/config.ts` (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
+| `User.Read` | Delegated | Microsoft sign-in |
 
----
-
-## 1. Create Microsoft Entra ID App Registration
-
-### A. Register the Application
-
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Microsoft Entra ID** → **App registrations**
-3. Click **+ New registration**
-4. Configure:
-   - **Name**: `DTV Volunteer Tracker` (or your preferred name)
-   - **Supported account types**: Single tenant (this directory only)
-   - **Redirect URI**: Leave blank (not needed for client credentials flow)
-5. Click **Register**
-
-### B. Note the Application Details
-
-After registration, copy these values (you'll need them for the `.env` file):
-
-- **Application (client) ID** - Found on the Overview page
-- **Directory (tenant) ID** - Found on the Overview page
-
-**Example values**:
-```
-Application (client) ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-Directory (tenant) ID: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
-```
-
-### C. Create Client Secret
-
-1. In your app registration, go to **Certificates & secrets**
-2. Click **+ New client secret**
-3. Configure:
-   - **Description**: `Production Secret` or `Dev Secret`
-   - **Expires**: Choose appropriate expiration (recommended: 24 months)
-4. Click **Add**
-5. **⚠️ CRITICAL**: Copy the secret **Value** immediately
-   - This is shown only once and cannot be retrieved later
-   - Store securely in password manager or key vault
-   - This becomes `SHAREPOINT_CLIENT_SECRET` in `.env`
-
-**Security notes**:
-- Never commit the client secret to version control
-- Rotate secrets before expiration
-- Use different secrets for dev/staging/production if possible
-- Limit secret sharing to authorized personnel only
+The tracker's own code decides what each signed-in person may see and do (see *Clean code and maintainability* in [AGENTS.md](../AGENTS.md)); these permissions limit what its key can reach beyond that.
 
 ---
 
-## 1b. Azure App Service Authentication (Login App)
+## 1. Create the registration
 
-The deployed App Service uses a **separate** Entra ID app registration for user login (built-in authentication). This is distinct from the SharePoint API app above.
+1. **Entra ID → App registrations → New registration.**
+2. **Name:** `DTV Tracker (Production)` or `DTV Tracker (Preview)`. **Supported account types:** this organisational directory only. **Redirect URI:** Web, the environment's address from the table above.
+3. **Authentication:** for Preview, add the local development redirect URI too. Production has only its own.
+4. Copy the **Application (client) ID** from Overview: this is `ENTRA_CLIENT_ID`.
+5. **Certificates & secrets → New client secret**, expiry 24 months. Copy the **Value** (not the Secret ID) straight into Azure: this is `ENTRA_CLIENT_SECRET`. Put a reminder in the calendar a month before it expires.
 
-### Current App Registrations
+## 2. Permissions
 
-| Purpose | App Name | Client ID | Used By |
-|---------|----------|-----------|---------|
-| SharePoint API access | DTV Volunteer Tracker | `267fb092-69c0-48ea-b197-67b79dd4bc92` | Express app (client credentials flow) |
-| User login (Azure built-in auth) | DTVTrackerApp (Login) | `806fc039-165d-40ff-b005-9122c26fb605` | Azure App Service authentication blade |
+1. **API permissions:** keep the delegated `User.Read`. **Add a permission → Microsoft Graph → Application permissions:** `Sites.Selected` and `TermStore.Read.All`.
+2. **Grant admin consent for Dean Trail Volunteers.** Each row should show a green tick.
+3. Don't add Graph `Mail.Send`: email is granted in Exchange instead (section 4). If it's ever been granted, removing it from the list isn't enough; under *Other permissions granted*, choose **⋯ → Revoke admin consent**.
 
-### Setup
+## 3. Give it the tracker site
 
-1. In **Azure Portal** → **App registrations**, the login app (`806fc039...`) must be **enabled** (not disabled)
-2. The App Service authentication blade references this app for the OAuth login flow
-3. Redirect URI: `https://dtvtrackerapp-bhgjefb0acdwgqfx.uksouth-01.azurewebsites.net/.auth/login/aad/callback`
+The tracker's app registration uses the Graph permission **`Sites.Selected`**, so it can only reach SharePoint sites it has been given explicitly: the tracker site and nothing else. Microsoft has no portal button for this step, so it's done with a script in this repo.
 
-### Troubleshooting
+Run it when you create a new app registration for the tracker, or move the tracker to a different site. Running it again is safe.
 
-**AADSTS7000112: Application is disabled**
-- Go to **Entra ID** → **Enterprise applications** → find DTVTrackerApp (Login)
-- Under **Properties**, ensure **Enabled for users to sign-in** is set to **Yes**
-
----
-
-## 2. Grant SharePoint API Permissions
-
-### A. Add API Permission
-
-1. In your app registration, go to **API permissions**
-2. Click **+ Add a permission**
-3. Select **SharePoint** (not Microsoft Graph)
-4. Select **Application permissions** (NOT Delegated permissions)
-5. Find and check: **Sites.ReadWrite.All**
-   - Description: "Have full control of all site collections"
-   - Use `Sites.Read.All` if read-only access is sufficient
-6. Click **Add permissions**
-
-### B. Grant Admin Consent
-
-**⚠️ Requires Global Administrator or Application Administrator role**
-
-1. Still in the **API permissions** page
-2. Click the button: **✓ Grant admin consent for [your organization]**
-3. Confirm when prompted
-4. Verify the **Status** column shows:
-   - ✓ **Granted for [your organization]** (with green checkmark)
-   - NOT "Not granted"
-
-**If you don't have admin rights**:
-- Contact your IT/Azure administrator
-- Provide them with the Application (client) ID
-- They can grant consent via PowerShell or Azure Portal
-
-### C. Verify Permissions
-
-Your API permissions table should look like this:
-
-| API / Permission name | Type | Status |
-|----------------------|------|--------|
-| SharePoint / Sites.ReadWrite.All | Application | ✓ Granted for [your org] |
-
----
-
-## 3. Grant SharePoint Site-Level Permissions (legacy — not required for DTV Tracker)
-
-**DTV Tracker uses Microsoft Graph with Entra ID application permissions (`Sites.ReadWrite.All`).** List CRUD, media library, nightly backups (`Backups/`), and project documents (`Projects/{slug}/` in the Documents library) all use Graph — no `appinv.aspx` step is needed.
-
-The section below is the **Azure ACS** site-trust model. ACS is [retired for SharePoint Online on 2026-04-02](https://learn.microsoft.com/en-us/sharepoint/dev/sp-add-ins/retirement-announcement-for-azure-acs). Do not set up new ACS principals for this app.
-
-<details>
-<summary>Legacy ACS appinv instructions (reference only)</summary>
-
-Even with API-level permissions, SharePoint historically required explicit site-level access for ACS app-only authentication.
-
-### A. Navigate to App Permissions Page
-
-1. Open your browser
-2. Navigate to (replace with your site URL):
+1. Open **Azure Cloud Shell** in **PowerShell** mode (the Microsoft Graph module is already installed), or use PowerShell 7 on your own machine after `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
+2. Get the script: upload [`scripts/grant-site-access.ps1`](../scripts/grant-site-access.ps1) to Cloud Shell, or run it from your clone.
+3. Run it with the registration's Application (client) ID:
+   ```powershell
+   ./grant-site-access.ps1 -ClientId <ENTRA_CLIENT_ID>
    ```
-   https://dtvolunteers.sharepoint.com/sites/tracker/_layouts/15/appinv.aspx
+4. Sign in as a SharePoint or Global admin. The first time, accept the consent for *Microsoft Graph Command Line Tools*: it acts as you, and only an admin can change site permissions.
+5. Check the list it prints at the end: the registration should appear with `write`.
+
+`AADSTS` or `Authorization_RequestDenied` errors mean you're not signed in as an admin. If the tracker shows access denied (403) after switching registration, the grant is missing or went to a different client ID.
+
+## 4. Limit which mailbox it can send from
+
+The tracker sends sign-in codes and emails from one mailbox (`EMAIL_FROM` in `backend/config.ts`). In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox.
+
+1. In Azure Cloud Shell (PowerShell), or PowerShell 7 with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
+   ```powershell
+   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -TestMailbox <any other real mailbox; nothing is sent>
    ```
+   Sign in as an Exchange or Global admin.
+2. Check the test lines: `InScope` **True** for the tracker's mailbox, **False** for the test mailbox.
+3. If the script warns that Entra `Mail.Send` is still there, remove it: *Entra ID → App registrations → the registration → API permissions → Mail.Send → Remove permission*. It overrides the Exchange limit.
+4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take up to an hour to apply a new assignment.
 
-**URL breakdown**:
-- `dtvolunteers.sharepoint.com` - Your SharePoint tenant
-- `/sites/members` - Your site collection path
-- `/_layouts/15/appinv.aspx` - SharePoint app permissions page
-
-### B. Grant Site Access
-
-1. **App Id**: Paste your Application (client) ID from Entra ID
-   ```
-   xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-   ```
-
-2. Click **Lookup**
-   - App details should populate automatically
-   - App Title, App Domain, and Redirect URL will auto-fill
-
-3. **Permission Request XML**: Paste the following:
-   ```xml
-   <AppPermissionRequests AllowAppOnlyPolicy="true">
-     <AppPermissionRequest Scope="http://sharepoint/content/sitecollection" Right="FullControl" />
-   </AppPermissionRequests>
-   ```
-
-4. Click **Create**
-
-5. Review the permission request dialog:
-   - **App Title**: DTV Volunteer Tracker
-   - **Permission**: Full Control
-   - **Scope**: Site Collection
-
-6. Click **Trust It**
-
-### C. Verify Site Permissions
-
-To verify the app has access:
-
-1. Go to your SharePoint site
-2. Click **Settings (⚙️)** → **Site permissions** → **Advanced permissions settings**
-3. In the ribbon, click **App Permissions**
-4. You should see your app listed with Full Control
-
-**Alternative verification**:
-```
-https://dtvolunteers.sharepoint.com/sites/tracker/_layouts/15/appprincipals.aspx
-```
-
-### D. Permission Scopes Explained
-
-| Scope | Description | Use Case |
-|-------|-------------|----------|
-| `http://sharepoint/content/sitecollection` | Current site collection only | Recommended - limits access to one site |
-| `http://sharepoint/content/sitecollection/web` | Current web only | More restrictive - single subsite |
-| `http://sharepoint/content/tenant` | All site collections in tenant | Avoid unless necessary |
-
-| Right | Description |
-|-------|-------------|
-| `FullControl` | Read, write, delete all content |
-| `Write` | Read and write content |
-| `Read` | Read-only access |
-
-**Recommendation**: Use the narrowest scope and rights needed. Start with site collection scope and FullControl, reduce if possible later.
-
-</details>
+If the tracker's mailbox changes, update `EMAIL_FROM` and run the script again with `-Mailbox`.
 
 ---
 
-## 4. Store Credentials Securely
+## 5. Renewing the secret
 
-### For Development
+Secrets expire (24 months at most). Before expiry:
 
-Create a `.env` file (git-ignored) with:
+1. Create a new secret on the registration (section 1, step 5).
+2. Update `ENTRA_CLIENT_SECRET` on production **and** every slot (each slot keeps its own copy), and in any local `.env`.
+3. Check the tracker loads, then delete the old secret.
 
-```bash
-SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
-SHAREPOINT_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-SHAREPOINT_CLIENT_SECRET=your_client_secret_value_here
-SHAREPOINT_TENANT_ID=yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
-```
+If it has already expired, pages show **Entra ID secret needs updating, see readme**; see the [readme](../readme.md#entra-id-secret-needs-updating-see-readme).
 
-**Share credentials with developers via**:
-- Secure password manager (1Password, LastPass, BitWarden)
-- Encrypted communication channel
-- Azure Key Vault references
-- **Never via email, Slack, or version control**
+## 6. Switching the preview registration off and on
 
-### For Production
+Outside testing, switch **DTV Tracker (Preview)** off so its key can't be used at all: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → No → Save*. This stops it getting any tokens, including the app's own. The preview slot then shows errors, and local development can't reach SharePoint, until it's switched back on (same setting, **Yes**). Only switch production's off in an emergency: the tracker stops.
 
-Use proper secret management:
-- **Azure Key Vault** - Reference secrets via environment
-- **GitHub Secrets** - For CI/CD pipelines
-- **Environment variables** - Set on hosting platform (Azure App Service, etc.)
+## 7. Azure built-in authentication
 
----
-
-## 5. Verify Configuration
-
-Test that everything works:
-
-```bash
-# In the project directory
-node test-auth.js
-```
-
-**Expected output**:
-```
-Testing SharePoint authentication...
-
-Configuration:
-- Site URL: https://dtvolunteers.sharepoint.com/sites/tracker
-- Tenant ID: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
-- Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-- Client Secret: ***LcX8
-
-Step 1: Getting access token...
-✓ Access token obtained successfully
-  Token preview: eyJ0eXAiOiJKV1QiLCJub25jZSI6...
-
-Step 2: Fetching Groups from SharePoint...
-✓ Success! Retrieved 3 group(s)
-
-Sample group:
-{
-  "ID": 1,
-  "Title": "Tree Planting Crew",
-  "Name": "tree-crew",
-  ...
-}
-```
-
-**If you see errors**, see Troubleshooting section below.
-
----
-
-## 6. Ongoing Maintenance
-
-### Client Secret Expiration
-
-**Before secrets expire**:
-1. Create a new client secret in Entra ID (step 1C above)
-2. Update `.env` files or secret management system
-3. Test with new secret
-4. Delete old secret after confirming new one works
-
-**Set calendar reminder** for 1 month before expiration.
-
-### Permission Changes
-
-If you need to modify permissions:
-1. Update in Entra ID API permissions
-2. Re-grant admin consent
-3. May need to re-grant site-level permissions in SharePoint
-
-### Adding Additional Sites
-
-To grant access to more SharePoint sites:
-1. Navigate to the new site's `/_layouts/15/appinv.aspx`
-2. Repeat step 3 (Grant SharePoint Site-Level Permissions)
-
----
+App Service also has its own built-in sign-in (*Authentication* blade), using a separate registration, **DTVTracker (Auth)** (`806fc039…`), set to allow unauthenticated requests. The tracker doesn't use it: Microsoft sign-in is handled by the app through the registration above. It is due to be switched off; until then, leave `MICROSOFT_PROVIDER_AUTHENTICATION_SECRET` and `WEBSITE_AUTH_AAD_ALLOWED_TENANTS` in place.
 
 ## Troubleshooting
 
-### "401 Unauthorized" after granting permissions
-
-**Cause**: Permissions not yet propagated
-
-**Solution**: Wait 5-10 minutes and try again. Azure/SharePoint permissions can take time to propagate.
-
-### "Unsupported app only token"
-
-**Cause**: Site-level permissions not granted (Step 3)
-
-**Solution**: Complete step 3 above using `/_layouts/15/appinv.aspx`
-
-### "Invalid client secret"
-
-**Causes**:
-- Secret copied incorrectly (copied Secret ID instead of Value)
-- Secret expired
-- Extra spaces when copying
-
-**Solution**:
-- Create new client secret
-- Copy the **Value** field carefully
-- Update `SHAREPOINT_CLIENT_SECRET` in `.env` and Azure App Service settings
-- Use password manager to avoid copy/paste issues
-- The app UI shows **Entra ID secret needs updating, see readme.** for AADSTS7000222 / 7000215
-
-### "AADSTS7000215: Invalid client secret provided"
-
-**Cause**: Client secret is wrong or expired
-
-**Solution**: Generate a new client secret in Entra ID
-
-### Cannot access appinv.aspx page
-
-**Cause**: Insufficient SharePoint permissions
-
-**Solution**: Must be Site Collection Administrator or SharePoint Administrator
-
-### App not appearing in appprincipals.aspx
-
-**Cause**: Site-level permissions not granted or not propagated yet
-
-**Solution**:
-1. Complete step 3B again
-2. Wait 5 minutes
-3. Refresh appprincipals.aspx page
-
----
-
-## Security Best Practices
-
-1. ✅ **Use separate apps for dev/staging/prod** - Different client IDs and secrets per environment
-2. ✅ **Rotate secrets regularly** - Every 6-12 months or per your security policy
-3. ✅ **Limit permission scope** - Use site collection scope, not tenant-wide
-4. ✅ **Monitor usage** - Review Entra ID sign-in logs periodically
-5. ✅ **Principle of least privilege** - Start with read-only, add write permissions only when needed
-6. ✅ **Document who has access** - Maintain list of developers with credentials
-7. ✅ **Revoke on departure** - Rotate secrets when team members leave
-8. ✅ **Enable audit logging** - Track SharePoint API calls if compliance requires it
-
----
-
-## Reference Links
-
-- [Microsoft Entra ID App Registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
-- [SharePoint App-Only Authentication](https://learn.microsoft.com/en-us/sharepoint/dev/solution-guidance/security-apponly-azuread)
-- [Grant Access Using AppInv](https://learn.microsoft.com/en-us/sharepoint/dev/solution-guidance/security-apponly-azureacs)
-
----
-
-## Support
-
-For issues with this setup:
-1. Check troubleshooting section above
-2. Search [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues) for known problems
-3. Verify all steps were completed in order
-4. Contact your Azure/SharePoint administrator
-
----
-
-*Last Updated: 2026-02-15*
-*Maintained by: [Add admin contact]*
+| Symptom | Likely cause |
+|---|---|
+| Setup problem page naming `ENTRA_…` settings | Settings missing on this slot; see [configuration.md](configuration.md) |
+| `invalid_client` / AADSTS7000215 / 7000222 | Secret wrong, expired, or from a different registration than `ENTRA_CLIENT_ID` |
+| Access denied (403) loading lists or photos | No site grant for this client ID: run section 3 |
+| Tags page fails | `TermStore.Read.All` missing or not consented |
+| Sign-in codes don't arrive | Exchange assignment missing or not applied yet (up to an hour): run section 4 |
+| AADSTS50011 on Microsoft sign-in | This address isn't a redirect URI on the registration (section 1, step 3) |
+| AADSTS7000112 (application is disabled) on preview or locally | The Preview registration is switched off (section 6) |

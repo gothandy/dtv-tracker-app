@@ -9,17 +9,10 @@
 import crypto from 'crypto';
 import { sharePointClient } from './sharepoint-client';
 import { taxonomyClient } from './taxonomy-client';
-import { documentsDriveId } from './documents-drive';
+import { sharePoint } from '../config';
 
-const LISTS = [
-  { name: 'groups',   guid: process.env.GROUPS_LIST_GUID! },
-  { name: 'projects', guid: process.env.PROJECTS_LIST_GUID! },
-  { name: 'sessions', guid: process.env.SESSIONS_LIST_GUID! },
-  { name: 'entries',  guid: process.env.ENTRIES_LIST_GUID! },
-  { name: 'profiles', guid: process.env.PROFILES_LIST_GUID! },
-  { name: 'regulars', guid: process.env.REGULARS_LIST_GUID! },
-  { name: 'records',  guid: process.env.RECORDS_LIST_GUID! },
-];
+/** Lists exported to Backups/{name}.json. Logins (token hashes) are deliberately excluded. */
+const BACKED_UP_LISTS = ['groups', 'projects', 'sessions', 'entries', 'profiles', 'regulars', 'records'] as const;
 
 export interface BackupResult {
   updated: string[];
@@ -37,29 +30,30 @@ async function hasChanged(driveId: string, filePath: string, newContent: string)
 }
 
 export async function runBackupExport(): Promise<BackupResult> {
-  const driveId = documentsDriveId();
+  const driveId = sharePoint.libraries.documents;
 
   const updated: string[] = [];
   const skipped: string[] = [];
 
   // Data files — sorted by ID for stable ordering across runs
-  for (const list of LISTS) {
-    const items = await sharePointClient.getListItems(list.guid);
+  for (const name of BACKED_UP_LISTS) {
+    const items = await sharePointClient.getListItems(sharePoint.lists[name]);
     const sorted = [...items].sort((a: any, b: any) => a.ID - b.ID);
     const json = JSON.stringify(sorted, null, 2);
-    const path = `Backups/${list.name}.json`;
+    const path = `Backups/${name}.json`;
     if (await hasChanged(driveId, path, json)) {
       await sharePointClient.uploadFile(driveId, path, Buffer.from(json), 'application/json');
-      updated.push(list.name);
+      updated.push(name);
     } else {
-      skipped.push(list.name);
+      skipped.push(name);
     }
   }
 
   // Taxonomy term tree
-  if (process.env.TAXONOMY_TERM_SET_ID) {
-    const tree = await taxonomyClient.getTermSetTree(process.env.TAXONOMY_TERM_SET_ID);
-    const json = JSON.stringify({ termSetId: process.env.TAXONOMY_TERM_SET_ID, tree }, null, 2);
+  {
+    const termSetId = sharePoint.site.tagsTermSetId;
+    const tree = await taxonomyClient.getTermSetTree(termSetId);
+    const json = JSON.stringify({ termSetId, tree }, null, 2);
     const path = 'Backups/taxonomy.json';
     if (await hasChanged(driveId, path, json)) {
       await sharePointClient.uploadFile(driveId, path, Buffer.from(json), 'application/json');
