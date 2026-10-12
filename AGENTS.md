@@ -22,6 +22,8 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 ## How we work
 
+**Goal in sight, small steps forward.** Keep the end goal visible, but make each step as small as practically possible and leave things working after it. Judge a step against where we are now, not against the ideal: if it's a working improvement, take it. The ideal is where the steps lead.
+
 ### Four levels of work
 
 | Level | What it is | Where it lives | Done means | Who decides |
@@ -36,7 +38,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 | Branch | On push | Environment |
 |---|---|---|
 | `task/<name>` | Build and unit tests only (about 2 minutes) | None. Pull it to run locally if needed. |
-| `preview/<name>` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
+| `preview/<name>` with a PR into `main` | Build, tests, then deploy **after the maintainer approves it** | **Preview**: https://preview.tracker.dtv.org.uk |
 | `main` | Build, tests, deploy | **Production**: https://tracker.dtv.org.uk |
 
 - **All work happens on the task branch.** Pull before starting, push when done, and fetch and rebase before pushing so nobody else's commits are lost.
@@ -45,7 +47,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 - **Merging to `main` redeploys production.** Keep merges to about one a day at most, group related changes into one PR, and always squash-merge. After merging, delete both `preview/<name>` and `task/<name>`.
 - **Unfinished work merged to production must be hidden** (admin-only or behind a setting), never half-visible to volunteers.
 - **Reversal:** commits can be undone freely; a promoted task is reverted on the `preview/` branch before merge; a merged PR is reversed by a new PR, never by rewriting `main`.
-- **Write access means trusted maintainer.** Any PR from this repository deploys to a slot with production credentials and live data, and anyone with write access could also change the workflows or push to `main`. Keep write access to a small, known group with two-factor authentication, and remove it when someone stops volunteering. The coding-agent apps (Claude, Codex) count as maintainers too: only the maintainer prompts them. Longer-term hardening: [#278](https://github.com/gothandy/dtv-tracker-app/issues/278).
+- **Write access means trusted maintainer.** Any PR from this repository deploys to a slot with production credentials and live data, and anyone with write access could also change the workflows or push to `main`. Keep write access to a small, known group with two-factor authentication, and remove it when someone stops volunteering. The coding-agent apps (Claude, Codex) count as maintainers too: only the maintainer prompts them. Two gates stand between code and live data: **preview deploys wait for the maintainer's approval** (review the diff before approving), and **merging to `main`** is the maintainer's action. The preview has its own app registration, switched off when nobody is testing.
 - **Preview is pre-production, not a test environment.** It is cloned from production: live SharePoint data and real emails. Local development uses the same live data. Treat both as production. Details: [docs/azure-app-service.md](docs/azure-app-service.md).
 
 ### Planning a feature

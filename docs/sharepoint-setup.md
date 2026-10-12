@@ -2,7 +2,14 @@
 
 **Audience:** the maintainer, or an Entra/SharePoint admin. Developers only need the client ID and secret (see [local-development.md](local-development.md)).
 
-The tracker uses one Entra app registration, **DTV Tracker (Restricted)**, for everything: reading and writing the tracker's SharePoint lists and libraries, reading the tags term set, sending email, and Microsoft sign-in. It is limited to what the tracker needs:
+Each environment has its own Entra app registration, used for everything there: reading and writing the tracker's SharePoint lists and libraries, reading the tags term set, sending email, and Microsoft sign-in.
+
+| Registration | Used by | Redirect URIs | Secret held in |
+|---|---|---|---|
+| **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/callback` | Production's settings only. Nobody else needs it |
+| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/callback`, `http://localhost:3000/auth/callback` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
+
+Both are set up the same way and limited to what the tracker needs:
 
 | Permission | Type | Limited to |
 |---|---|---|
@@ -18,8 +25,8 @@ The tracker's own code decides what each signed-in person may see and do (see *C
 ## 1. Create the registration
 
 1. **Entra ID → App registrations → New registration.**
-2. **Name:** `DTV Tracker (Restricted)`. **Supported account types:** this organisational directory only. **Redirect URI:** Web, `https://tracker.dtv.org.uk/auth/callback`.
-3. **Authentication:** add Web redirect URIs for each slot (`https://preview.tracker.dtv.org.uk/auth/callback`) and for local development (`http://localhost:3000/auth/callback`).
+2. **Name:** `DTV Tracker (Production)` or `DTV Tracker (Preview)`. **Supported account types:** this organisational directory only. **Redirect URI:** Web, the environment's address from the table above.
+3. **Authentication:** for Preview, add the local development redirect URI too. Production has only its own.
 4. Copy the **Application (client) ID** from Overview: this is `ENTRA_CLIENT_ID`.
 5. **Certificates & secrets → New client secret**, expiry 24 months. Copy the **Value** (not the Secret ID) straight into Azure: this is `ENTRA_CLIENT_SECRET`. Put a reminder in the calendar a month before it expires.
 
@@ -73,7 +80,11 @@ Secrets expire (24 months at most). Before expiry:
 
 If it has already expired, pages show **Entra ID secret needs updating, see readme**; see the [readme](../readme.md#entra-id-secret-needs-updating-see-readme).
 
-## 6. Azure built-in authentication
+## 6. Switching the preview registration off and on
+
+Outside testing, switch **DTV Tracker (Preview)** off so its key can't be used at all: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → No → Save*. This stops it getting any tokens, including the app's own. The preview slot then shows errors, and local development can't reach SharePoint, until it's switched back on (same setting, **Yes**). Only switch production's off in an emergency: the tracker stops.
+
+## 7. Azure built-in authentication
 
 App Service also has its own built-in sign-in (*Authentication* blade), using a separate registration, **DTVTracker (Auth)** (`806fc039…`), set to allow unauthenticated requests. The tracker doesn't use it: Microsoft sign-in is handled by the app through the registration above. It is due to be switched off; until then, leave `MICROSOFT_PROVIDER_AUTHENTICATION_SECRET` and `WEBSITE_AUTH_AAD_ALLOWED_TENANTS` in place.
 
@@ -87,3 +98,4 @@ App Service also has its own built-in sign-in (*Authentication* blade), using a 
 | Tags page fails | `TermStore.Read.All` missing or not consented |
 | Sign-in codes don't arrive | Exchange assignment missing or not applied yet (up to an hour): run section 4 |
 | AADSTS50011 on Microsoft sign-in | This address isn't a redirect URI on the registration (section 1, step 3) |
+| AADSTS7000112 (application is disabled) on preview or locally | The Preview registration is switched off (section 6) |
