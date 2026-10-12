@@ -46,7 +46,7 @@ async function resolveVerifyCode(email: string, code: string, userAgent?: string
     rawToken = await createAuthToken(result.sessionUser.profileId!, 'Email Code', email, userAgent);
   } catch (err: any) {
     console.error('[Verify] createAuthToken error:', err.message);
-    return { ok: false, status: 500, error: 'Login failed. Please try again.' };
+    return { ok: false, status: 500, error: 'Sign-in failed. Please try again.' };
   }
 
   if (res) {
@@ -92,7 +92,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     const html = `<p style="font-size:2em;font-weight:700;letter-spacing:0.1em">${code}</p>
                   <p>Your verification code expires in 15 minutes.</p>
                   <p>Return to DTV Tracker and enter your code, or click the button below.</p>
-                  <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Log in with ${code}</a></p>
+                  <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Sign in with ${code}</a></p>
                   <p style="color:#888;font-size:0.85em">If you did not request this, you can safely ignore this email.</p>`;
     const text = `Your verification code is ${code}\n\nThis code expires in 15 minutes. Return to DTV Tracker and enter your code, or use this link:\n\n${callbackUrl}\n\nIf you did not request this, you can safely ignore this email.`;
     await sendEmail({ to: email, subject: `DTV Tracker verification code ${code}`, html, text });

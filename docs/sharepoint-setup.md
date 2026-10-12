@@ -6,8 +6,8 @@ Each environment has its own Entra app registration, used for everything there: 
 
 | Registration | Used by | Redirect URIs | Secret held in |
 |---|---|---|---|
-| **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/callback` | Production's settings only. Nobody else needs it |
-| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/callback`, `http://localhost:3000/auth/callback` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
+| **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/signed-in`, `https://tracker.dtv.org.uk/auth/signed-out` | Production's settings only. Nobody else needs it |
+| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out`; `http://localhost:3000/auth/signed-in` and `/auth/signed-out` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
 
 Both are set up the same way and limited to what the tracker needs:
 

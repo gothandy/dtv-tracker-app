@@ -75,8 +75,8 @@
 
       <h2>Task — With icon</h2>
       <div class="col">
-        <AppButton usage="task" label="Send log-in email" icon="tick" />
-        <AppButton usage="task" variant="secondary" label="Log-in with Microsoft" icon="brands/microsoft" />
+        <AppButton usage="task" label="Send sign-in email" icon="tick" />
+        <AppButton usage="task" variant="secondary" label="Sign in with Microsoft" icon="brands/microsoft" />
       </div>
 
       <h2>Task — States</h2>

@@ -5,7 +5,7 @@
       <SandboxBackLink />
       <h1>Action Bars</h1>
 
-      <div class="sandbox-warning">Login to view some components</div>
+      <div class="sandbox-warning">Sign in to view some components</div>
 
       <h2>SessionDetailActions</h2>
       <h3>Tracker Assist / Tracker Admin</h3>

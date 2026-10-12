@@ -5,28 +5,23 @@ import axios from 'axios';
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-config';
 import { profilesRepository } from '../../services/repositories/profiles-repository';
 import { staffSessionUser } from '../../services/personal-auth';
-import { createAuthToken, setLoginCookie } from '../../services/auth-store';
+import { createAuthToken, setLoginCookie, LOGIN_HINT_COOKIE } from '../../services/auth-store';
 import { platform } from '../../config';
 
 const router: Router = express.Router();
 
-/**
- * Remembers the DTV account used last time on this device, so the next sign-in goes
- * straight to it (login_hint) even if the browser is also signed in to a work account.
- */
-const LOGIN_HINT_COOKIE = 'dtv-login-hint';
 const LOGIN_HINT_DAYS = 365;
 
 /** Back to the login page with a reason (and Microsoft's message, if any) to show. */
-function loginPageWithReason(reason: string, detail?: string, returnTo?: string): string {
+function signInPageWithReason(reason: string, detail?: string, returnTo?: string): string {
   const params = new URLSearchParams({ reason });
   if (detail) params.set('detail', detail.slice(0, 300));
   if (returnTo && returnTo.startsWith('/')) params.set('returnTo', returnTo);
   return `/login?${params}`;
 }
 
-// GET /auth/login — redirect to DTV Account (Entra ID) login
-router.get('/login', async (req: Request, res: Response) => {
+// GET /auth/sign-in — start a Microsoft (DTV account) sign-in
+router.get('/sign-in', async (req: Request, res: Response) => {
   try {
     const returnTo = req.query.returnTo as string | undefined;
     if (returnTo && returnTo.startsWith('/')) {
@@ -49,12 +44,12 @@ router.get('/login', async (req: Request, res: Response) => {
     res.redirect(authCodeUrl);
   } catch (error: any) {
     console.error('Error generating auth URL:', error.message);
-    res.redirect(loginPageWithReason('microsoft-error', error.message));
+    res.redirect(signInPageWithReason('microsoft-error', error.message));
   }
 });
 
-// GET /auth/callback — handle redirect from DTV Account (Entra ID)
-router.get('/callback', async (req: Request, res: Response) => {
+// GET /auth/signed-in — Microsoft returns here after sign-in (a registered redirect URI)
+router.get('/signed-in', async (req: Request, res: Response) => {
   try {
     const savedReturnTo = req.session.returnTo;
 
@@ -62,7 +57,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     if (req.query.error) {
       const description = String(req.query.error_description || req.query.error);
       console.error('Auth error:', req.query.error, description);
-      res.redirect(loginPageWithReason('microsoft-error', description, savedReturnTo));
+      res.redirect(signInPageWithReason('microsoft-error', description, savedReturnTo));
       return;
     }
 
@@ -70,7 +65,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     delete req.session.authState;
     if (!expectedState || req.query.state !== expectedState) {
       console.error('Auth callback: state missing or does not match');
-      res.redirect(loginPageWithReason('microsoft-restart', undefined, savedReturnTo));
+      res.redirect(signInPageWithReason('microsoft-restart', undefined, savedReturnTo));
       return;
     }
 
@@ -134,7 +129,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     res.redirect(returnToWithNotice);
   } catch (error: any) {
     console.error('Error in auth callback:', error.message);
-    res.redirect(loginPageWithReason('microsoft-error', error.message));
+    res.redirect(signInPageWithReason('microsoft-error', error.message));
   }
 });
 

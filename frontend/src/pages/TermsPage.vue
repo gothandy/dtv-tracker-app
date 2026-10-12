@@ -19,7 +19,7 @@
         <ul class="list-disc pl-6 space-y-1">
           <li>Attempt to access data belonging to other volunteers without authorisation.</li>
           <li>Use the application to store or share content that is unlawful, offensive, or unrelated to DTV volunteer activity.</li>
-          <li>Attempt to circumvent security controls or access the application by means other than the provided login options.</li>
+          <li>Attempt to circumvent security controls or access the application by means other than the provided sign-in options.</li>
           <li>Use automated tools to scrape or bulk-download data without permission.</li>
         </ul>
       </section>

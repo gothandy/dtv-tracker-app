@@ -18,6 +18,13 @@ export type LoginMethod = 'Email Code' | 'Microsoft';
 
 export const LOGIN_COOKIE = 'dtv-auth';
 
+/**
+ * Remembers the DTV account used last time on this device, so the next Microsoft sign-in
+ * goes straight to it (login_hint) even if the browser is also signed in to a work account.
+ * Forgotten on sign-out.
+ */
+export const LOGIN_HINT_COOKIE = 'dtv-login-hint';
+
 function loginsListGuid(): string {
   return sharePoint.lists.logins;
 }

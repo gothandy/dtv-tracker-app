@@ -64,7 +64,7 @@
 
       <section>
         <h2 class="text-xl font-bold mb-2">Cookies and sessions</h2>
-        <p>DTV Tracker uses a session cookie to keep you logged in. This cookie is essential for the application to function and is deleted when you log out or close your browser session. We do not use tracking or advertising cookies.</p>
+        <p>DTV Tracker uses cookies only to keep you signed in: a sign-in cookie that lasts up to 72 hours and is removed when you sign out, and, for DTV staff, a cookie that remembers which DTV account you used on this device. These are essential for the application to work. We do not use tracking or advertising cookies.</p>
       </section>
 
       <section>

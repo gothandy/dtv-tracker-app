@@ -28,7 +28,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Unauthenticated visit to `/profiles/:slug` redirects to `/login`
 - [ ] Unauthenticated `GET /api/entries/recent` returns 401
 - [ ] Unauthenticated visit to `/` does not trigger a `GET /api/entries/recent` request (check Network tab — recent sign-ups section should not be fetched)
-- [ ] Unauthenticated API 401 from the SPA fetch layer redirects to `/login?returnTo=...` (not `/auth/login`)
+- [ ] Unauthenticated API 401 from the SPA fetch layer redirects to `/login?returnTo=...` (not `/auth/sign-in`)
 - [ ] `/login` shows self-service (verification code) and Microsoft cards; email card only when mail sending is configured
 - [ ] Enter email, click "Send verification code" → both cards hide, sent-confirmation section appears with 15:00 countdown
 - [ ] Countdown ticks down to 00:00 then stops

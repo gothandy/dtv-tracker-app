@@ -1,6 +1,6 @@
 ﻿<template>
   <TaskLayout>
-    <h1 class="sr-only">Login</h1>
+    <h1 class="sr-only">Sign in</h1>
 
     <div class="login-stack">
 
@@ -42,7 +42,7 @@
           subtitle="Sign in with your Microsoft account, using an address ending @dtv.org.uk"
         >
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Sign in with Microsoft" :href="microsoftHref" />
             <p class="sent-contact">
               Also signed in to a work Microsoft account? Try using a private browser window.
               <button v-if="!showWorkAccountHelp" class="form-btn--link" @click="showWorkAccountHelp = true">Read more</button>
@@ -84,7 +84,7 @@
         </FormSubmitRow>
         <FormSubmitRow>
           <button class="form-btn--link" @click="backToLogin">
-            Didn't receive the email? Back to log-in
+            Didn't receive the email? Back to sign in
           </button>
           <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
         </FormSubmitRow>
@@ -106,7 +106,7 @@ import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
 import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../utils/accessLabels'
 
-usePageTitle('Login')
+usePageTitle('Sign in')
 
 const route = useRoute()
 const email = ref('')
@@ -129,7 +129,7 @@ const returnTo = computed(() => {
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()))
 
 const microsoftHref = computed(() =>
-  returnTo.value ? `/auth/login?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/login'
+  returnTo.value ? `/auth/sign-in?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/sign-in'
 )
 
 const loginReasonBannerType = computed<'warning' | 'error'>(() =>

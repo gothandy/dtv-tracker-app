@@ -26,5 +26,5 @@ export function msalClient(): ConfidentialClientApplication {
 export const AUTH_SCOPES = ['User.Read'];
 
 export function getRedirectUri(req: { protocol: string; get(name: string): string | undefined }): string {
-  return `${req.protocol}://${req.get('host')}/auth/callback`;
+  return `${req.protocol}://${req.get('host')}/auth/signed-in`;
 }

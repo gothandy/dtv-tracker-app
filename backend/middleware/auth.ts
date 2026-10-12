@@ -16,7 +16,7 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 // quietly treating the person as signed out.
 export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (req.session.user) { next(); return; } // session already active
-  if (req.path === '/auth/logout') { next(); return; } // signing out must always work
+  if (req.path === '/auth/sign-out') { next(); return; } // signing out must always work
 
   const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
   if (!rawToken) { next(); return; }

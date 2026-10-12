@@ -1,7 +1,7 @@
 <template>
   <div class="sna-wrap">
     <p class="sna-label">Have photos from the session?</p>
-    <AppButton usage="task" label="Log in to upload" icon="tick" :href="loginHref" />
+    <AppButton usage="task" label="Sign in to upload" icon="tick" :href="loginHref" />
   </div>
 </template>
 

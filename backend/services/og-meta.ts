@@ -275,7 +275,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string }> = {
     description: 'Terms of use for the DTV Tracker volunteer application.',
   },
   '/login': {
-    title: pageTitle('Login'),
+    title: pageTitle('Sign in'),
     description: 'Sign in to manage your volunteer profile and session bookings.',
   },
 };

@@ -90,7 +90,7 @@ These are the steps used to create `preview` on 10 Oct 2026. Use them for any fu
    ```
 
    `AADSTS700213: No matching federated identity record` in the deploy job means the subject doesn't match exactly.
-6. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/callback` to its redirect URIs, and set the slot's `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
+6. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
 7. **Require approval.** *GitHub → Settings → Environments → <environment> → Required reviewers*: add the maintainer, so nothing deploys to the slot without approval.
 8. **Point a workflow at it.** `pr-preview.yml` deploys to the slot named `preview` in the GitHub environment `preview`. A new slot needs its own environment name and slot name in a workflow (see *Per-developer slots* below).
 9. **Test.** Run the workflow, check the health step passes and the PR comment appears, then open the custom domain and sign in.
