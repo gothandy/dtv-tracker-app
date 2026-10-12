@@ -94,18 +94,12 @@ router.get('/callback', async (req: Request, res: Response) => {
     const graphProfile = graphResponse.data;
     const email = graphProfile.mail || graphProfile.userPrincipalName;
 
-    // Remember this DTV account for next time on this device.
-    res.cookie(LOGIN_HINT_COOKIE, email, {
-      httpOnly: true,
-      secure: !platform.isDevelopment,
-      sameSite: 'lax',
-      maxAge: LOGIN_HINT_DAYS * 24 * 60 * 60 * 1000,
-    });
-
     const profiles = await profilesRepository.getAll();
     const matchedProfile = profiles.find(p => p.User?.toLowerCase() === email.toLowerCase());
 
     if (!matchedProfile) {
+      // Don't steer the next attempt back to an account that isn't linked to a profile.
+      res.clearCookie(LOGIN_HINT_COOKIE);
       req.session.destroy((destroyErr) => {
         if (destroyErr) console.error('Session destroy:', destroyErr.message);
         const q = 'reason=dtv-not-authorised';
@@ -118,8 +112,16 @@ router.get('/callback', async (req: Request, res: Response) => {
       return;
     }
 
+    // Remember this DTV account for next time on this device (only once it's allowed in).
+    res.cookie(LOGIN_HINT_COOKIE, email, {
+      httpOnly: true,
+      secure: !platform.isDevelopment,
+      sameSite: 'lax',
+      maxAge: LOGIN_HINT_DAYS * 24 * 60 * 60 * 1000,
+    });
+
     // Record the sign-in in the Logins list, so it survives restarts and deploys.
-    const rawToken = await createAuthToken(matchedProfile.ID, 'Microsoft', req.get('user-agent'));
+    const rawToken = await createAuthToken(matchedProfile.ID, 'Microsoft', email, req.get('user-agent'));
     setLoginCookie(res, rawToken);
 
     delete req.session.returnTo;

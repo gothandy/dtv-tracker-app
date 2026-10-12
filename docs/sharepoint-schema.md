@@ -234,8 +234,9 @@ This is a **many-to-many junction table** that creates the relationship between:
 | Column Name | Internal Name | Type | Required | Description |
 |-------------|---------------|------|----------|-------------|
 | Title | Title | Single line of text | Yes | SHA-256 hex hash of the raw 128-bit token; built-in, indexed by default |
-| Profile | Profile | Lookup (→ Profiles) | Yes | Profile the token was issued for |
-| Method | Method | Choice: `Email Code`, `Microsoft` | No | How the person signed in. Microsoft rows rebuild a staff session (role from the current admin list); empty = row from before the column existed (email code) |
+| Profile | Profile | Lookup (→ Profiles) | Yes | Profile at sign-in, for people reading the list; not used for access |
+| Email | Email | Single line of text | No | The address the person proved: the `@dtv.org.uk` account Microsoft confirmed, or the address the code was sent to. **Access is worked out from this**, with the same check as sign-in; rows without it are ignored (sign in again) |
+| Method | Method | Choice: `Email Code`, `Microsoft` | No | How the person signed in. Microsoft: the Email must be a profile's `User`, role from `TRACKER_ADMIN_USERS`. Email Code: profiles whose `Email` includes it |
 | Agent | Agent | Single line of text | No | Browser user agent at sign-in |
 | Created | Created | Date (auto) | — | Sign-in time; used for the 72h expiry query (`Created ge '<since>'`); auto-managed by SharePoint |
 

@@ -43,7 +43,7 @@ async function resolveVerifyCode(email: string, code: string, userAgent?: string
 
   let rawToken: string;
   try {
-    rawToken = await createAuthToken(result.sessionUser.profileId!, 'Email Code', userAgent);
+    rawToken = await createAuthToken(result.sessionUser.profileId!, 'Email Code', email, userAgent);
   } catch (err: any) {
     console.error('[Verify] createAuthToken error:', err.message);
     return { ok: false, status: 500, error: 'Login failed. Please try again.' };
