@@ -133,4 +133,10 @@ router.get('/signed-in', async (req: Request, res: Response) => {
   }
 });
 
+// Old return address. A sign-in started just before a deploy comes back here: ask the
+// person to sign in again rather than show "not found". Remove with #283.
+router.get('/callback', (_req: Request, res: Response) => {
+  res.redirect(signInPageWithReason('microsoft-restart'));
+});
+
 export = router;

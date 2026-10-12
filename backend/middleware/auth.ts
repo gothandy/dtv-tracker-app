@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { validateAuthToken, LOGIN_COOKIE } from '../services/auth-store';
 import { resolvePersonalSession, staffSessionUser } from '../services/personal-auth';
 import { profilesRepository } from '../services/repositories/profiles-repository';
+import { LOGIN_HOURS } from '../config';
 
 // Rebuilds req.session.user from the dtv-auth cookie when there's no session yet,
 // e.g. after a restart or deploy, or when the 8-hour session cookie has run out.
@@ -15,7 +16,13 @@ import { profilesRepository } from '../services/repositories/profiles-repository
 // If SharePoint can't be reached, the request fails with a message rather than
 // quietly treating the person as signed out.
 export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
-  if (req.session.user) { next(); return; } // session already active
+  if (req.session.user) {
+    // A session never outlives its sign-in: after LOGIN_HOURS it's dropped, and the
+    // cookie check below finds the Logins row expired too.
+    const signedInAt = Date.parse(req.session.user.freshAuthAt ?? '');
+    if (Date.now() - signedInAt < LOGIN_HOURS * 60 * 60 * 1000) { next(); return; }
+    delete req.session.user;
+  }
   if (req.path === '/auth/sign-out' || req.path === '/auth/logout') { next(); return; } // signing out must always work
 
   const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
