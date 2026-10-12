@@ -5,7 +5,7 @@ import axios from 'axios';
 import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-config';
 import { profilesRepository } from '../../services/repositories/profiles-repository';
 import { staffSessionUser } from '../../services/personal-auth';
-import { createAuthToken, setLoginCookie, LOGIN_HINT_COOKIE } from '../../services/auth-store';
+import { createAuthToken, setLoginCookie, revokeAuthToken, LOGIN_COOKIE, LOGIN_HINT_COOKIE } from '../../services/auth-store';
 import { platform } from '../../config';
 
 const router: Router = express.Router();
@@ -93,7 +93,11 @@ router.get('/signed-in', async (req: Request, res: Response) => {
     const matchedProfile = profiles.find(p => p.User?.toLowerCase() === email.toLowerCase());
 
     if (!matchedProfile) {
-      // Don't steer the next attempt back to an account that isn't linked to a profile.
+      // Access refused: end any earlier sign-in in this browser too, and don't steer the
+      // next attempt back to an account that isn't linked to a profile.
+      const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
+      if (rawToken) await revokeAuthToken(rawToken);
+      res.clearCookie(LOGIN_COOKIE);
       res.clearCookie(LOGIN_HINT_COOKIE);
       req.session.destroy((destroyErr) => {
         if (destroyErr) console.error('Session destroy:', destroyErr.message);
