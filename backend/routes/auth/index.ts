@@ -2,7 +2,7 @@
 /// <reference path="../../types/express-session.d.ts" />
 import dtvRouter from './dtv';
 import verifyRouter from './verify';
-import { revokeAuthToken, LOGIN_COOKIE, LOGIN_HINT_COOKIE } from '../../services/auth-store';
+import { endSignInOnThisBrowser, LOGIN_HINT_COOKIE } from '../../services/auth-store';
 import { requestOrigin } from '../../services/request-origin';
 import { entra } from '../../config';
 
@@ -26,17 +26,7 @@ async function signOut(req: Request, res: Response): Promise<void> {
   const signedInWithMicrosoft =
     req.session.user?.role === 'admin' || req.session.user?.role === 'checkin' || !!req.cookies?.[LOGIN_HINT_COOKIE];
 
-  const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
-  if (rawToken) {
-    try {
-      await revokeAuthToken(rawToken);
-    } catch (err: any) {
-      // The person is still signed out on this device; the row expires on its own.
-      console.error('[Auth] Could not delete Logins row at sign-out:', err.message);
-    }
-  }
-  res.clearCookie(LOGIN_COOKIE);
-  res.clearCookie(LOGIN_HINT_COOKIE);
+  await endSignInOnThisBrowser(req, res);
   const name = req.session.user?.displayName;
   req.session.destroy(() => {
     if (signedInWithMicrosoft) {

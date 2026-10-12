@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { sharePointClient } from './sharepoint-client';
 import { sharePoint, platform, LOGIN_HOURS } from '../config';
 
@@ -103,4 +103,19 @@ export async function deleteExpiredLogins(): Promise<number> {
     await sharePointClient.deleteListItem(loginsListGuid(), Number(item.ID));
   }
   return items.length;
+}
+
+// End this browser's sign-in: delete its Logins row and clear the sign-in and hint
+// cookies. The cookies are always cleared, even if SharePoint can't be reached;
+// the row then expires on its own.
+export async function endSignInOnThisBrowser(req: Request, res: Response): Promise<void> {
+  const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
+  res.clearCookie(LOGIN_COOKIE);
+  res.clearCookie(LOGIN_HINT_COOKIE);
+  if (!rawToken) return;
+  try {
+    await revokeAuthToken(rawToken);
+  } catch (err: any) {
+    console.error('[Auth] Could not delete Logins row:', err.message);
+  }
 }
