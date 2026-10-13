@@ -10,7 +10,8 @@
 
     Lists and libraries are found by name. Anything not found is shown as MISSING,
     with every list and library on the site printed underneath so you can see why.
-    Tags come from the organisation-wide term store, so the term set is the live one.
+    Tags come from one term set, in a site-level group on the production site; a restore
+    doesn't copy the group, so every environment uses that same term set.
 
     Uses the Microsoft Graph module, like ../grant-site-access.ps1.
 
@@ -30,7 +31,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $SiteUrl = "https://dtvolunteers.sharepoint.com/sites/tracker-$($Slot.ToLower())"
-$TagsTermSetId = '14c7dfc2-ee1e-4c30-80f3-0d9149045311'   # organisation-wide, same as live
+$TagsTermSetId = '14c7dfc2-ee1e-4c30-80f3-0d9149045311'   # on the production site, same for every environment
 
 # config.ts key -> list or library name on the site
 $ListNames = [ordered]@{

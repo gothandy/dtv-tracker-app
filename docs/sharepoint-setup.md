@@ -92,6 +92,8 @@ The preview slot and local development use `https://dtvolunteers.sharepoint.com/
 
 To make or refresh it, follow [`scripts/preview-site-from-backup/README.md`](../scripts/preview-site-from-backup/README.md): restore, unlock, rename, show IDs (for `config.ts`), set app access. Its last step leaves *DTV Tracker (Preview)* with the preview site only, and no other app on it.
 
+**Tags** come from one term set (`tagsTermSetId` in `config.ts`) in the site-level term group *Site Collection – DTV Tracker* on the production site. A restore doesn't copy term groups, so the preview reads and sets tags from production's term set (tested: this works). Edit tags on production: Tracker site → Site settings → Term store, or the tools page's **Term Store** button.
+
 Non-production sites are named after their slot: `tracker-{slot}`, matching `{slot}.tracker.dtv.org.uk`.
 
 ## Troubleshooting
