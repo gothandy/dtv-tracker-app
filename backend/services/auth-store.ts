@@ -25,6 +25,12 @@ export const LOGIN_COOKIE = 'dtv-auth';
  */
 export const LOGIN_HINT_COOKIE = 'dtv-login-hint';
 
+/**
+ * Microsoft's login_hint claim from the last sign-in: sent as logout_hint on sign-out so
+ * Microsoft signs out that account without asking which. Cleared on sign-out.
+ */
+export const LOGOUT_HINT_COOKIE = 'dtv-logout-hint';
+
 function loginsListGuid(): string {
   return sharePoint.lists.logins;
 }
@@ -112,6 +118,7 @@ export async function endSignInOnThisBrowser(req: Request, res: Response): Promi
   const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
   res.clearCookie(LOGIN_COOKIE);
   res.clearCookie(LOGIN_HINT_COOKIE);
+  res.clearCookie(LOGOUT_HINT_COOKIE);
   if (!rawToken) return;
   try {
     await revokeAuthToken(rawToken);

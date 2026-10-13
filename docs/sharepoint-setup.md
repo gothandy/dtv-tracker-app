@@ -34,7 +34,9 @@ The tracker's own code decides what each signed-in person may see and do (see *C
 
 1. **API permissions:** keep the delegated `User.Read`. **Add a permission → Microsoft Graph → Application permissions:** `Sites.Selected` and `TermStore.Read.All`.
 2. **Grant admin consent for Dean Trail Volunteers.** Each row should show a green tick.
-3. Don't add Graph `Mail.Send`: email is granted in Exchange instead (section 4). If it's ever been granted, removing it from the list isn't enough; under *Other permissions granted*, choose **⋯ → Revoke admin consent**.
+3. **Token configuration → Add optional claim → ID:** tick **`email`** and **`login_hint`**. The tracker reads who signed in from the sign-in token (`email`), and uses `login_hint` so sign-out can name the account instead of Microsoft asking which. When asked, tick *Turn on the Microsoft Graph email permission*.
+   Then back on **API permissions**, choose **Grant admin consent for Dean Trail Volunteers** again: adding a permission doesn't grant it. Every row should show a green tick. Without this, staff get a Microsoft *"wants to view your email address"* prompt at sign-in, and anyone who declines can't sign in. **Always grant admin consent after any permission change**, so the tracker never asks staff to approve anything.
+4. Don't add Graph `Mail.Send`: email is granted in Exchange instead (section 4). If it's ever been granted, removing it from the list isn't enough; under *Other permissions granted*, choose **⋯ → Revoke admin consent**.
 
 ## 3. Give it the tracker site
 

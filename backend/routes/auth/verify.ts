@@ -4,6 +4,7 @@ import express, { Request, Response, Router } from 'express';
 import { sendEmail } from '../../services/graph-mail';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken, setLoginCookie } from '../../services/auth-store';
+import { safeReturnPath } from '../../services/safe-return';
 import { isEmailRateLimited, recordEmailSent } from '../../services/email-rate-limiter';
 
 const router: Router = express.Router();
@@ -78,8 +79,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
   codeStore.set(email, { code, expires: Date.now() + CODE_TTL_MS, attempts: 0 });
 
   const returnTo = req.body?.returnTo;
-  const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/') && returnTo.length <= 200
-    ? returnTo : null;
+  const safeReturnTo = safeReturnPath(returnTo);
 
   // Link in the email opens the login page with code pre-filled â€” user reviews and hits enter.
   const base = `${req.protocol}://${req.get('host')}`;

@@ -19,6 +19,8 @@ Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts).
 
 **Getting the right account.** Many staff are also signed in to a work Microsoft 365 account in the same browser. The sign-in request sends `domain_hint=dtv.org.uk` and, after the first successful sign-in on a device, `login_hint` with the DTV address (remembered in the `dtv-login-hint` cookie), and **no** account picker. If someone does end up in their work account, Microsoft shows its own error (typically AADSTS50020) and never returns to the tracker, so the login page tells people to use a private window with their @dtv.org.uk address.
 
+**Who signed in** comes from the sign-in token (`email`, `preferred_username` or `upn` claim), matched against Profile `User`. The sign-in uses **PKCE** and a `state` check, and starts a **new session** (new session ID) once the person is let in. Return addresses (`returnTo`) must be paths on this site (`safeReturnPath`: no `//…`).
+
 **Errors are shown, not looped.** If Microsoft returns an error (e.g. the person cancelled), the callback sends them to `/login?reason=microsoft-error` with Microsoft's message to pass to an admin. The callback also checks the `state` it sent; a mismatch (e.g. the server restarted mid sign-in) goes to `/login?reason=microsoft-restart`.
 
 ## Self-Service Login (Verification Code)

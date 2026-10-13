@@ -105,6 +105,7 @@ import FormInput from '../components/forms/FormInput.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
 import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../utils/accessLabels'
+import { safeReturnPath } from '../utils/safeReturnPath'
 
 usePageTitle('Sign in')
 
@@ -121,10 +122,7 @@ const verifyError = ref('')
 const verifying = ref(false)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-const returnTo = computed(() => {
-  const r = route.query.returnTo as string | undefined
-  return r?.startsWith('/') ? r : undefined
-})
+const returnTo = computed(() => safeReturnPath(route.query.returnTo))
 
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()))
 

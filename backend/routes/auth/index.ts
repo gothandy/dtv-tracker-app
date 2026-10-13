@@ -2,7 +2,7 @@
 /// <reference path="../../types/express-session.d.ts" />
 import dtvRouter from './dtv';
 import verifyRouter from './verify';
-import { endSignInOnThisBrowser, LOGIN_HINT_COOKIE } from '../../services/auth-store';
+import { endSignInOnThisBrowser, LOGIN_HINT_COOKIE, LOGOUT_HINT_COOKIE } from '../../services/auth-store';
 import { requestOrigin } from '../../services/request-origin';
 import { entra } from '../../config';
 
@@ -26,14 +26,17 @@ async function signOut(req: Request, res: Response): Promise<void> {
   const signedInWithMicrosoft =
     req.session.user?.role === 'admin' || req.session.user?.role === 'checkin' || !!req.cookies?.[LOGIN_HINT_COOKIE];
 
+  const logoutHint: string | undefined = req.cookies?.[LOGOUT_HINT_COOKIE];
   await endSignInOnThisBrowser(req, res);
   const name = req.session.user?.displayName;
   req.session.destroy(() => {
     if (signedInWithMicrosoft) {
       if (name) res.cookie(SIGNED_OUT_NAME_COOKIE, name, { httpOnly: true, sameSite: 'lax', maxAge: 10 * 60 * 1000 });
       // Microsoft returns to /auth/signed-out, which must be a registered redirect URI.
-      const back = encodeURIComponent(`${requestOrigin(req)}/auth/signed-out`);
-      res.redirect(`https://login.microsoftonline.com/${entra.tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=${back}`);
+      const params = new URLSearchParams({ post_logout_redirect_uri: `${requestOrigin(req)}/auth/signed-out` });
+      // Names the account, so Microsoft doesn't ask which one to sign out of.
+      if (logoutHint) params.set('logout_hint', logoutHint);
+      res.redirect(`https://login.microsoftonline.com/${entra.tenantId}/oauth2/v2.0/logout?${params}`);
       return;
     }
     res.redirect(homeWithSignedOutBanner(name));
