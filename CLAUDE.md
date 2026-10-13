@@ -19,13 +19,13 @@ Read [AGENTS.md](AGENTS.md) first. It is the single source of truth for the proj
 - Before every push: `git fetch` and rebase onto `origin/task/<name>`, so commits made by the maintainer (locally or in GitHub) are kept.
 - Never commit directly to `preview/<name>` or `main`. Never force-push them.
 - **Never merge a PR, push to `main`, or use a ruleset bypass.** Claude acts with the maintainer's full GitHub permissions, and merging deploys to production. Merging is always the maintainer's action; Claude's job ends at "ready to merge" with the checks listed.
-- **Never approve a deployment or a PR review.** Preview deploys wait for the maintainer's approval (the `preview` environment's required reviewer); that gate only works if the maintainer is the one who reviews and approves. Claude says when a deploy is waiting and stops.
+- **Never approve a PR review.** Preview deploys don't wait for approval: promoting deploys straight away, so only promote when the maintainer agrees. If a change touches the preview's guards (the email safe list, settings, workflows, scripts), say so before promoting.
 
 ## Promoting a task (only when the maintainer agrees)
 
 1. Squash `task/<name>` into `preview/<name>` as one commit, with a message that says what the task delivers:
    `git checkout preview/<name> && git pull && git merge --squash task/<name> && git commit`
-2. Push `preview/<name>`. The deploy then waits for the maintainer's approval; once approved it deploys to the preview slot and comments the preview URL on the PR. Tell the maintainer it's waiting.
+2. Push `preview/<name>`. It deploys to the preview slot and comments the preview URL on the PR. Check the deploy through the Actions API and tell the maintainer when it's up, or why it failed.
 3. Reset `task/<name>` to `preview/<name>` and carry on:
    `git checkout task/<name> && git reset --hard preview/<name> && git push --force-with-lease`
 4. Tick the task in the PR description.
