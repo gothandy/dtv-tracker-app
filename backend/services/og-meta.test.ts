@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   buildOgHeadTags,
   escapeHtmlAttr,
@@ -7,6 +7,7 @@ import {
   pageTitle,
   resolveOgMeta,
   SITE_NAME,
+  siteName,
   truncateDescription,
 } from './og-meta';
 
@@ -23,6 +24,21 @@ describe('og-meta', () => {
 
   it('pageTitle appends site name', () => {
     expect(pageTitle('Groups')).toBe(`Groups | ${SITE_NAME}`);
+  });
+
+  describe('siteName', () => {
+    afterEach(() => { vi.unstubAllEnvs(); });
+
+    it('is plain on the live site', () => {
+      vi.stubEnv('SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker');
+      expect(siteName()).toBe('DTV Tracker');
+    });
+
+    it("adds the slot on a slot's site", () => {
+      vi.stubEnv('SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker-preview/');
+      expect(siteName()).toBe('DTV Tracker (Preview)');
+      expect(pageTitle('Home')).toBe('Home | DTV Tracker (Preview)');
+    });
   });
 
   it('buildOgHeadTags includes fb:app_id when provided', () => {

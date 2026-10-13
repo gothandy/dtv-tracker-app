@@ -140,6 +140,19 @@ function findSite(siteUrl: string): SharePointSite | undefined {
   return key ? SHAREPOINT_SITES[key] : undefined;
 }
 
+/**
+ * The slot whose copy of the data this tracker is using, from SHAREPOINT_SITE_URL:
+ * "Preview" for …/sites/tracker-preview (sites are named tracker-{slot}), null for the
+ * live site. Shown after the app's name, e.g. "DTV Tracker (Preview)", so it's always
+ * clear whose data a page shows.
+ */
+export function siteSlotName(): string | null {
+  const siteUrl = process.env.SHAREPOINT_SITE_URL?.trim() ?? '';
+  const slot = /\/sites\/tracker-([a-z0-9-]+)\/?$/i.exec(siteUrl)?.[1];
+  if (!slot) return null;
+  return slot.charAt(0).toUpperCase() + slot.slice(1).toLowerCase();
+}
+
 export const sharePoint = {
   get siteUrl() { return setting('SHAREPOINT_SITE_URL').replace(/\/$/, ''); },
   get site(): SharePointSite {
