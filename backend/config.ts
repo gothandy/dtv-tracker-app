@@ -84,7 +84,7 @@ interface SharePointSite {
     logins: string;
   };
   libraries: {
-    /** "Media Library": session photos and videos. */
+    /** "Media": session photos and videos. */
     media: string;
     /** "Documents": Docs/ (governance), Projects/{slug}/, Backups/. */
     documents: string;
@@ -109,6 +109,26 @@ const SHAREPOINT_SITES: Record<string, SharePointSite> = {
     libraries: {
       media: 'b!OPS_fbLuHk2mHGHzJcqh0RwYB9nXW2ZBsZQsUeDoQwE4LIH0a_-PTL-iWIE4VOcg',
       documents: 'b!OPS_fbLuHk2mHGHzJcqh0RwYB9nXW2ZBsZQsUeDoQwGG-VCHeyPyQZMJyvZXUxTW',
+    },
+    tagsTermSetId: '14c7dfc2-ee1e-4c30-80f3-0d9149045311',
+  },
+  // Copy of the live site, restored from Microsoft 365 Backup, for the preview slot and
+  // local development. A restore keeps the list IDs; library IDs include the site's ID,
+  // so they change with each restore. See scripts/preview-site-from-backup/README.md.
+  'https://dtvolunteers.sharepoint.com/sites/tracker-preview': {
+    lists: {
+      groups: '6e86cef7-a855-41a4-93e8-6e01a80434a2',
+      projects: '669e479d-7b48-41dc-a0df-1ee7bc0fc2c7',
+      sessions: '583867bd-e032-4940-89b5-aa2d5158c5d0',
+      entries: '7146b950-94e3-4c94-a0d7-310cf2fbd325',
+      profiles: '84649143-9e10-42eb-b6ee-2e1f57033073',
+      regulars: '925c96fd-9b3a-4f55-b179-ed51fc279d39',
+      records: '2666a819-1275-4fce-83a3-5bb67b4da83a',
+      logins: 'e3b5c7fb-313a-44b4-9363-a4e4d2b65a57',
+    },
+    libraries: {
+      media: 'b!nQv8OHI3Mk2aud7o2-hSXRwYB9nXW2ZBsZQsUeDoQwE4LIH0a_-PTL-iWIE4VOcg',
+      documents: 'b!nQv8OHI3Mk2aud7o2-hSXRwYB9nXW2ZBsZQsUeDoQwGG-VCHeyPyQZMJyvZXUxTW',
     },
     tagsTermSetId: '14c7dfc2-ee1e-4c30-80f3-0d9149045311',
   },
