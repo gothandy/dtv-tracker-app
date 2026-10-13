@@ -6,8 +6,8 @@ Each environment has its own Entra app registration, used for everything there: 
 
 | Registration | Used by | Redirect URIs | Secret held in |
 |---|---|---|---|
-| **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/callback` | Production's settings only. Nobody else needs it |
-| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/callback`, `http://localhost:3000/auth/callback` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
+| **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/signed-in`, `https://tracker.dtv.org.uk/auth/signed-out` | Production's settings only. Nobody else needs it |
+| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out`; `http://localhost:3000/auth/signed-in` and `/auth/signed-out` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
 
 Both are set up the same way and limited to what the tracker needs:
 
@@ -34,7 +34,9 @@ The tracker's own code decides what each signed-in person may see and do (see *C
 
 1. **API permissions:** keep the delegated `User.Read`. **Add a permission → Microsoft Graph → Application permissions:** `Sites.Selected` and `TermStore.Read.All`.
 2. **Grant admin consent for Dean Trail Volunteers.** Each row should show a green tick.
-3. Don't add Graph `Mail.Send`: email is granted in Exchange instead (section 4). If it's ever been granted, removing it from the list isn't enough; under *Other permissions granted*, choose **⋯ → Revoke admin consent**.
+3. **Token configuration → Add optional claim → ID:** tick **`email`** and **`login_hint`**. The tracker reads who signed in from the sign-in token (`email`), and uses `login_hint` so sign-out can name the account instead of Microsoft asking which. When asked, tick *Turn on the Microsoft Graph email permission*.
+   Then back on **API permissions**, choose **Grant admin consent for Dean Trail Volunteers** again: adding a permission doesn't grant it. Every row should show a green tick. Without this, staff get a Microsoft *"wants to view your email address"* prompt at sign-in, and anyone who declines can't sign in. **Always grant admin consent after any permission change**, so the tracker never asks staff to approve anything.
+4. Don't add Graph `Mail.Send`: email is granted in Exchange instead (section 4). If it's ever been granted, removing it from the list isn't enough; under *Other permissions granted*, choose **⋯ → Revoke admin consent**.
 
 ## 3. Give it the tracker site
 
@@ -64,7 +66,7 @@ The tracker sends sign-in codes and emails from one mailbox (`EMAIL_FROM` in `ba
    Sign in as an Exchange or Global admin.
 2. Check the test lines: `InScope` **True** for the tracker's mailbox, **False** for the test mailbox.
 3. If the script warns that Entra `Mail.Send` is still there, remove it: *Entra ID → App registrations → the registration → API permissions → Mail.Send → Remove permission*. It overrides the Exchange limit.
-4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take up to an hour to apply a new assignment.
+4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take an hour or two to apply a new assignment, so **run this script well before switching an environment to a new registration**; until it applies, sending fails with `403 ErrorAccessDenied`.
 
 If the tracker's mailbox changes, update `EMAIL_FROM` and run the script again with `-Mailbox`.
 
@@ -83,10 +85,6 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 ## 6. Switching the preview registration off and on
 
 Outside testing, switch **DTV Tracker (Preview)** off so its key can't be used at all: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → No → Save*. This stops it getting any tokens, including the app's own. The preview slot then shows errors, and local development can't reach SharePoint, until it's switched back on (same setting, **Yes**). Only switch production's off in an emergency: the tracker stops.
-
-## 7. Azure built-in authentication
-
-App Service also has its own built-in sign-in (*Authentication* blade), using a separate registration, **DTVTracker (Auth)** (`806fc039…`), set to allow unauthenticated requests. The tracker doesn't use it: Microsoft sign-in is handled by the app through the registration above. It is due to be switched off; until then, leave `MICROSOFT_PROVIDER_AUTHENTICATION_SECRET` and `WEBSITE_AUTH_AAD_ALLOWED_TENANTS` in place.
 
 ## Troubleshooting
 

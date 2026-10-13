@@ -23,8 +23,9 @@ export function msalClient(): ConfidentialClientApplication {
   return client;
 }
 
-export const AUTH_SCOPES = ['User.Read'];
+// email: so the sign-in token includes the person's email (optional claim on the registration).
+export const AUTH_SCOPES = ['User.Read', 'email'];
 
 export function getRedirectUri(req: { protocol: string; get(name: string): string | undefined }): string {
-  return `${req.protocol}://${req.get('host')}/auth/callback`;
+  return `${req.protocol}://${req.get('host')}/auth/signed-in`;
 }

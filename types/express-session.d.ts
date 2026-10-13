@@ -25,5 +25,9 @@ declare module 'express-session' {
       };
     } | undefined;
     returnTo: string | undefined;
+    /** Microsoft sign-in in progress: the `state` sent to Microsoft, checked on the callback. */
+    authState: string | undefined;
+    /** Microsoft sign-in in progress: the PKCE verifier, sent with the sign-in code to redeem it. */
+    pkceVerifier: string | undefined;
   }
 }

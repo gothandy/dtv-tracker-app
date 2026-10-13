@@ -6,7 +6,7 @@
         <span>DTV Tracker App</span>
       </div>
       <div class="flex gap-3">
-        <span class="font-bold w-24 shrink-0">Logged in</span>
+        <span class="font-bold w-24 shrink-0">Signed in</span>
         <span>{{ loginTierLabel }}</span>
       </div>
       <div class="flex gap-3">

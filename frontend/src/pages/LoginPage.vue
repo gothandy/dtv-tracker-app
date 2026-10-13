@@ -1,6 +1,6 @@
 ﻿<template>
   <TaskLayout>
-    <h1 class="sr-only">Login</h1>
+    <h1 class="sr-only">Sign in</h1>
 
     <div class="login-stack">
 
@@ -42,7 +42,18 @@
           subtitle="Sign in with your Microsoft account, using an address ending @dtv.org.uk"
         >
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Log-in with Microsoft" :href="microsoftHref" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Sign in with Microsoft" :href="microsoftHref" />
+            <p class="sent-contact">
+              Also signed in to a work Microsoft account? Try using a private browser window.
+              <button v-if="!showWorkAccountHelp" class="form-btn--link" @click="showWorkAccountHelp = true">Read more</button>
+            </p>
+            <p v-if="showWorkAccountHelp" class="sent-contact">
+              If your browser or computer is signed in to a work Microsoft account, Microsoft may pick it
+              instead of your DTV one, or say your account doesn't exist in Dean Trail Volunteers.
+              A private window (InPrivate in Edge, Incognito in Chrome) starts without your work account,
+              so you can sign in with your @dtv.org.uk address. After that, the tracker remembers your DTV
+              account on this device.
+            </p>
           </FormSubmitRow>
         </FormCard>
 
@@ -73,7 +84,7 @@
         </FormSubmitRow>
         <FormSubmitRow>
           <button class="form-btn--link" @click="backToLogin">
-            Didn't receive the email? Back to log-in
+            Didn't receive the email? Back to sign in
           </button>
           <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
         </FormSubmitRow>
@@ -94,8 +105,9 @@ import FormInput from '../components/forms/FormInput.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
 import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../utils/accessLabels'
+import { safeReturnPath } from '../utils/safeReturnPath'
 
-usePageTitle('Login')
+usePageTitle('Sign in')
 
 const route = useRoute()
 const email = ref('')
@@ -103,25 +115,23 @@ const sending = ref(false)
 const loginError = ref('')
 const sent = ref(false)
 const reasonMessage = ref('')
+const showWorkAccountHelp = ref(false)
 const countdownSeconds = ref(0)
 const verifyInput = ref('')
 const verifyError = ref('')
 const verifying = ref(false)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-const returnTo = computed(() => {
-  const r = route.query.returnTo as string | undefined
-  return r?.startsWith('/') ? r : undefined
-})
+const returnTo = computed(() => safeReturnPath(route.query.returnTo))
 
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()))
 
 const microsoftHref = computed(() =>
-  returnTo.value ? `/auth/login?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/login'
+  returnTo.value ? `/auth/sign-in?returnTo=${encodeURIComponent(returnTo.value)}` : '/auth/sign-in'
 )
 
 const loginReasonBannerType = computed<'warning' | 'error'>(() =>
-  route.query.reason === 'dtv-not-authorised' ? 'error' : 'warning'
+  route.query.reason === 'dtv-not-authorised' || route.query.reason === 'microsoft-error' ? 'error' : 'warning'
 )
 
 const expired = computed(() => sent.value && countdownSeconds.value <= 0)
@@ -131,13 +141,17 @@ const countdown = computed(() => {
   return mins === 1 ? '1 minute' : `${mins} minutes`
 })
 
-const reasons: Record<string, (email?: string) => string> = {
+const reasons: Record<string, (email?: string, detail?: string) => string> = {
   'not-approved': (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'not-found':    (e) => `We don't have an account for ${e ?? 'that email address'}. Contact your group organiser to get set up.`,
   'dtv-not-authorised': () =>
     `Access denied. Your Microsoft account is not set up for ${ACCESS_LABEL_CHECK_IN}. Please contact your admin.`,
   'session-expired': () =>
     'Your sign-in has expired. Sign in again to continue - you will return to this page afterwards.',
+  'microsoft-error': (_e, detail) =>
+    `Microsoft sign-in didn't complete. Try again; if it keeps happening, contact your admin with this message: ${detail ?? 'no details'}`,
+  'microsoft-restart': () =>
+    'Your Microsoft sign-in was interrupted. Please sign in again.',
 }
 
 async function sendLoginEmail() {
@@ -219,7 +233,8 @@ onMounted(async () => {
   const reason = route.query.reason as string | undefined
   if (reason && reasons[reason]) {
     const reasonEmail = route.query.email as string | undefined
-    reasonMessage.value = reasons[reason](reasonEmail)
+    const reasonDetail = route.query.detail as string | undefined
+    reasonMessage.value = reasons[reason](reasonEmail, reasonDetail)
   }
 
   const prefillCode = route.query.code as string | undefined

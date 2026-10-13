@@ -3,9 +3,9 @@ import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import { sendEmail } from '../../services/graph-mail';
 import { resolvePersonalSession } from '../../services/personal-auth';
-import { createAuthToken } from '../../services/auth-store';
+import { createAuthToken, setLoginCookie } from '../../services/auth-store';
+import { safeReturnPath } from '../../services/safe-return';
 import { isEmailRateLimited, recordEmailSent } from '../../services/email-rate-limiter';
-import { SELF_SERVICE_LOGIN_HOURS, platform } from '../../config';
 
 const router: Router = express.Router();
 
@@ -13,16 +13,6 @@ interface CodeEntry { code: string; expires: number; attempts: number }
 const codeStore = new Map<string, CodeEntry>();
 const MAX_ATTEMPTS = 5;
 const CODE_TTL_MS = 15 * 60 * 1000;
-const AUTH_TTL_MS = SELF_SERVICE_LOGIN_HOURS * 60 * 60 * 1000;
-
-function setAuthCookie(res: Response, rawToken: string): void {
-  res.cookie('dtv-auth', rawToken, {
-    httpOnly: true,
-    secure: !platform.isDevelopment,
-    sameSite: 'lax',
-    maxAge: AUTH_TTL_MS,
-  });
-}
 
 type CodeCheckResult =
   | { ok: true; displayName: string }
@@ -54,14 +44,14 @@ async function resolveVerifyCode(email: string, code: string, userAgent?: string
 
   let rawToken: string;
   try {
-    rawToken = await createAuthToken(result.sessionUser.profileId!, userAgent);
+    rawToken = await createAuthToken(result.sessionUser.profileId!, 'Email Code', email, userAgent);
   } catch (err: any) {
     console.error('[Verify] createAuthToken error:', err.message);
-    return { ok: false, status: 500, error: 'Login failed. Please try again.' };
+    return { ok: false, status: 500, error: 'Sign-in failed. Please try again.' };
   }
 
   if (res) {
-    setAuthCookie(res, rawToken);
+    setLoginCookie(res, rawToken);
     res.setHeader('Cache-Control', 'no-store');
   }
   return { ok: true, displayName: result.sessionUser.displayName };
@@ -89,8 +79,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
   codeStore.set(email, { code, expires: Date.now() + CODE_TTL_MS, attempts: 0 });
 
   const returnTo = req.body?.returnTo;
-  const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/') && returnTo.length <= 200
-    ? returnTo : null;
+  const safeReturnTo = safeReturnPath(returnTo);
 
   // Link in the email opens the login page with code pre-filled â€” user reviews and hits enter.
   const base = `${req.protocol}://${req.get('host')}`;
@@ -103,7 +92,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     const html = `<p style="font-size:2em;font-weight:700;letter-spacing:0.1em">${code}</p>
                   <p>Your verification code expires in 15 minutes.</p>
                   <p>Return to DTV Tracker and enter your code, or click the button below.</p>
-                  <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Log in with ${code}</a></p>
+                  <p><a href="${callbackUrl}" style="display:inline-block;padding:12px 24px;background:#4FAF4A;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Sign in with ${code}</a></p>
                   <p style="color:#888;font-size:0.85em">If you did not request this, you can safely ignore this email.</p>`;
     const text = `Your verification code is ${code}\n\nThis code expires in 15 minutes. Return to DTV Tracker and enter your code, or use this link:\n\n${callbackUrl}\n\nIf you did not request this, you can safely ignore this email.`;
     await sendEmail({ to: email, subject: `DTV Tracker verification code ${code}`, html, text });

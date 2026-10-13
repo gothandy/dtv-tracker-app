@@ -166,9 +166,10 @@ Auth routes are not under `/api/` and are not subject to `requireAuth` or `requi
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/auth/me` | GET | Public | Current session user |
-| `/auth/logout` | GET | Public | Clear session and cookie |
-| `/auth/login` | GET | Public | Initiate Microsoft Entra ID login |
-| `/auth/callback` | GET | Public | Microsoft OAuth callback |
+| `/auth/sign-out` | GET | Public | End the sign-in (Logins row, cookies, session); after a Microsoft sign-in, also signs out of Microsoft |
+| `/auth/sign-in` | GET | Public | Start a Microsoft (DTV account) sign-in |
+| `/auth/signed-in` | GET | Public | Microsoft returns here after sign-in |
+| `/auth/signed-out` | GET | Public | Microsoft returns here after sign-out; shows the signed-out banner |
 | `/auth/verify/send` | POST | Public | Send verification code email |
 | `/auth/verify/check` | POST | Public | Verify code and set session |
 

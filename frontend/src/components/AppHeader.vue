@@ -35,11 +35,11 @@
               class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
               {{ profile.user.displayName }}
             </RouterLink>
-            <a v-if="profile.user" href="/auth/logout" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
-              Logout
+            <a v-if="profile.user" href="/auth/sign-out" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
+              Sign out
             </a>
             <RouterLink v-else :to="loginPath" @click="open = false" class="text-dtv-green font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-white transition-colors">
-              Login
+              Sign in
             </RouterLink>
           </template>
         </nav>

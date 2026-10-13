@@ -2,6 +2,7 @@ import { profilesRepository } from './repositories/profiles-repository';
 import { profileSlug, parseEmails } from './data-layer';
 import { PROFILE_STATS } from './field-names';
 import { isAdminEmail } from '../config';
+import type { SharePointProfile } from '../../types/sharepoint';
 
 // Resolves a self-service (email verification code) login by matching the
 // verified email against Profile.Email.
@@ -44,5 +45,29 @@ export async function resolvePersonalSession(email: string, displayName: string,
       trustedRole,
       profileStats,
     },
+  };
+}
+
+// A staff (Microsoft) session for a profile whose `User` is the person's DTV account.
+// Used at sign-in and when rebuilding the session from the Logins list after a restart,
+// so the role is always worked out the same way, from the current admin list.
+export function staffSessionUser(
+  profile: SharePointProfile,
+  email: string,
+  freshAuthAt: string
+): NonNullable<import('express-session').SessionData['user']> {
+  let profileStats: NonNullable<import('express-session').SessionData['user']>['profileStats'];
+  if (profile[PROFILE_STATS]) {
+    try { profileStats = JSON.parse(profile[PROFILE_STATS]); } catch { /* ignore */ }
+  }
+  return {
+    id: String(profile.ID),
+    displayName: profile.Title || email,
+    email,
+    role: isAdminEmail(email) ? 'admin' : 'checkin',
+    profileSlug: profileSlug(profile.Title, profile.ID),
+    profileId: profile.ID,
+    freshAuthAt,
+    profileStats,
   };
 }

@@ -1,64 +1,54 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
-import { validateAuthToken } from '../services/auth-store';
+import { validateAuthToken, LOGIN_COOKIE } from '../services/auth-store';
+import { resolvePersonalSession, staffSessionUser } from '../services/personal-auth';
 import { profilesRepository } from '../services/repositories/profiles-repository';
-import { profileSlug, parseEmails } from '../services/data-layer';
-import { PROFILE_STATS } from '../services/field-names';
-import { isAdminEmail } from '../config';
+import { LOGIN_HOURS } from '../config';
 
-// Populates req.session.user from the dtv-auth cookie for self-service volunteers.
-// DTV account (MSAL) users already have req.session.user set by their own auth flow — skip them.
-// On SharePoint error, degrades gracefully to unauthenticated rather than 500ing the page.
-export async function authMiddleware(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  if (req.session.user) { next(); return; } // DTV session already active
+// Rebuilds req.session.user from the dtv-auth cookie when there's no session yet,
+// e.g. after a restart or deploy, or when the 8-hour session cookie has run out.
+//
+// The Logins row holds the email the person proved at sign-in, and how. The rebuild
+// runs the same check as sign-in on that email, against the profiles as they are now:
+//   - Microsoft:  the email must be a profile's `User`; admin comes from the admin list.
+//   - Email Code: the profiles whose `Email` includes it get a self-service session.
+//
+// If SharePoint can't be reached, the request fails with a message rather than
+// quietly treating the person as signed out.
+export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (req.session.user) {
+    // A session never outlives its sign-in: after LOGIN_HOURS it's dropped, and the
+    // cookie check below finds the Logins row expired too.
+    const signedInAt = Date.parse(req.session.user.freshAuthAt ?? '');
+    if (Date.now() - signedInAt < LOGIN_HOURS * 60 * 60 * 1000) { next(); return; }
+    delete req.session.user;
+  }
+  if (req.path === '/auth/sign-out' || req.path === '/auth/logout') { next(); return; } // signing out must always work
 
-  const rawToken: string | undefined = req.cookies?.['dtv-auth'];
+  const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
   if (!rawToken) { next(); return; }
 
-  const record = await validateAuthToken(rawToken); // returns null on error
-  if (!record) { next(); return; }
-
   try {
-    const profiles = await profilesRepository.getAll();
-    const profile = profiles.find(p => p.ID === record.profileId);
-    if (!profile) { next(); return; }
-
-    const emails = parseEmails(profile.Email);
-    const primaryEmail = emails[0] || '';
-
-    let trustedRole: 'admin' | 'checkin' | undefined;
-    const linkedDTVEmail = profile.User?.toLowerCase();
-    if (emails.some(isAdminEmail) || isAdminEmail(linkedDTVEmail)) {
-      trustedRole = 'admin';
-    } else if (profile.User) {
-      trustedRole = 'checkin';
+    const login = await validateAuthToken(rawToken);
+    if (login?.method === 'Microsoft') {
+      const profiles = await profilesRepository.getAll();
+      const profile = profiles.find(p => p.User?.toLowerCase() === login.email);
+      if (profile) req.session.user = staffSessionUser(profile, login.email, login.createdAt);
+    } else if (login) {
+      const result = await resolvePersonalSession(login.email, '', '');
+      if (result.ok) req.session.user = { ...result.sessionUser, freshAuthAt: login.createdAt };
     }
-
-    // Find all profiles sharing any of this volunteer's email addresses
-    const profileIds = profiles
-      .filter(p => parseEmails(p.Email).some(e => emails.includes(e)))
-      .map(p => p.ID);
-
-    let profileStats: NonNullable<import('express-session').SessionData['user']>['profileStats'];
-    if (profile[PROFILE_STATS]) {
-      try { profileStats = JSON.parse(profile[PROFILE_STATS]); } catch {}
-    }
-
-    req.session.user = {
-      id: `auth:${record.profileId}`,
-      displayName: profile.Title || primaryEmail,
-      email: primaryEmail,
-      role: 'selfservice',
-      profileSlug: profileSlug(profile.Title, profile.ID),
-      profileId: profile.ID,
-      profileIds,
-      trustedRole,
-      profileStats,
-      freshAuthAt: record.createdAt,
-    };
+    // Expired, unknown, or no longer linked: drop the cookie so later requests don't look it up again.
+    if (!req.session.user) res.clearCookie(LOGIN_COOKIE);
   } catch (err: any) {
-    console.error('[Auth] authMiddleware error building session user:', err.message);
-    // Degrade gracefully — leave req.session.user undefined
+    console.error('[Auth] Could not check sign-in:', err.message);
+    const message = "We couldn't check your sign-in just now. Please try again in a minute; if it keeps happening, contact your admin.";
+    if (req.path.startsWith('/api/')) {
+      res.status(503).json({ success: false, error: message });
+    } else {
+      res.status(503).type('text').send(message);
+    }
+    return;
   }
 
   next();

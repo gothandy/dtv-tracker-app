@@ -15,7 +15,7 @@
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/sign-in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -25,7 +25,7 @@
       <div class="task-body">
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/sign-in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -42,7 +42,7 @@
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/sign-in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -59,7 +59,7 @@
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/sign-in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -75,7 +75,7 @@
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/sign-in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -92,7 +92,7 @@
         </FormCard>
         <FormCard :title="cardTitleMs" :subtitle="cardSubtitleMs">
           <FormSubmitRow>
-            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/login" />
+            <AppButton usage="task" variant="secondary" icon="brands/microsoft" label="Continue with Microsoft" href="/auth/sign-in" />
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -105,7 +105,7 @@
           <div class="sent-countdown">14:35</div>
           <p class="sent-body">Already clicked the link? If you're signed in you can close this tab.</p>
           <FormSubmitRow>
-            <button class="form-btn--link">Didn't receive the link? Back to Login</button>
+            <button class="form-btn--link">Didn't receive the link? Back to sign in</button>
             <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
           </FormSubmitRow>
         </FormCard>
