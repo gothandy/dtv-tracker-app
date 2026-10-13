@@ -153,6 +153,11 @@ export function siteSlotName(): string | null {
   return slot.charAt(0).toUpperCase() + slot.slice(1).toLowerCase();
 }
 
+/** Whose data this is, for people to read: the slot ("Preview"), or "Production" on the live site. */
+export function environmentName(): string {
+  return siteSlotName() ?? 'Production';
+}
+
 export const sharePoint = {
   get siteUrl() { return setting('SHAREPOINT_SITE_URL').replace(/\/$/, ''); },
   get site(): SharePointSite {
