@@ -21,7 +21,8 @@ export const LOGIN_COOKIE = 'dtv-auth';
 /**
  * Remembers the DTV account used last time on this device, so the next Microsoft sign-in
  * goes straight to it (login_hint) even if the browser is also signed in to a work account.
- * Forgotten on sign-out.
+ * Kept on sign-out: it only suggests an account (Microsoft still needs that person's
+ * password or passkey). Cleared when Microsoft returns an account that isn't let in.
  */
 export const LOGIN_HINT_COOKIE = 'dtv-login-hint';
 
@@ -111,13 +112,12 @@ export async function deleteExpiredLogins(): Promise<number> {
   return items.length;
 }
 
-// End this browser's sign-in: delete its Logins row and clear the sign-in and hint
-// cookies. The cookies are always cleared, even if SharePoint can't be reached;
-// the row then expires on its own.
+// End this browser's sign-in: delete its Logins row and clear the sign-in and
+// logout-hint cookies. The cookies are always cleared, even if SharePoint can't be
+// reached; the row then expires on its own. The login hint is kept (see above).
 export async function endSignInOnThisBrowser(req: Request, res: Response): Promise<void> {
   const rawToken: string | undefined = req.cookies?.[LOGIN_COOKIE];
   res.clearCookie(LOGIN_COOKIE);
-  res.clearCookie(LOGIN_HINT_COOKIE);
   res.clearCookie(LOGOUT_HINT_COOKIE);
   if (!rawToken) return;
   try {

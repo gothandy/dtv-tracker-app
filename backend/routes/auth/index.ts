@@ -2,7 +2,7 @@
 /// <reference path="../../types/express-session.d.ts" />
 import dtvRouter from './dtv';
 import verifyRouter from './verify';
-import { endSignInOnThisBrowser, LOGIN_HINT_COOKIE, LOGOUT_HINT_COOKIE } from '../../services/auth-store';
+import { endSignInOnThisBrowser, LOGOUT_HINT_COOKIE } from '../../services/auth-store';
 import { requestOrigin } from '../../services/request-origin';
 import { entra } from '../../config';
 
@@ -23,10 +23,10 @@ function homeWithSignedOutBanner(name?: string): string {
 // person on a shared device can't get straight back in. If the browser has more than
 // one Microsoft account, Microsoft asks which one to sign out of.
 async function signOut(req: Request, res: Response): Promise<void> {
-  const signedInWithMicrosoft =
-    req.session.user?.role === 'admin' || req.session.user?.role === 'checkin' || !!req.cookies?.[LOGIN_HINT_COOKIE];
-
   const logoutHint: string | undefined = req.cookies?.[LOGOUT_HINT_COOKIE];
+  const signedInWithMicrosoft =
+    req.session.user?.role === 'admin' || req.session.user?.role === 'checkin' || !!logoutHint;
+
   await endSignInOnThisBrowser(req, res);
   const name = req.session.user?.displayName;
   req.session.destroy(() => {

@@ -113,6 +113,7 @@ router.get('/signed-in', async (req: Request, res: Response) => {
       // Access refused: end any earlier sign-in in this browser too, and don't steer the
       // next attempt back to an account that isn't linked to a profile.
       await endSignInOnThisBrowser(req, res);
+      res.clearCookie(LOGIN_HINT_COOKIE);
       req.session.destroy((destroyErr) => {
         if (destroyErr) console.error('Session destroy:', destroyErr.message);
         res.redirect(signInPageWithReason('dtv-not-authorised', undefined, savedReturnTo));
