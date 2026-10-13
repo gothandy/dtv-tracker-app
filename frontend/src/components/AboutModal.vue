@@ -3,7 +3,7 @@
     <div class="space-y-3 text-black">
       <div class="flex gap-3">
         <span class="font-bold w-24 shrink-0">App</span>
-        <span>DTV Tracker App</span>
+        <span>{{ appName }}</span>
       </div>
       <div class="flex gap-3">
         <span class="font-bold w-24 shrink-0">Signed in</span>
@@ -36,6 +36,7 @@
 
 <script setup lang="ts">
 import { buildLink } from '../utils/buildInfo'
+import { environmentName } from '../utils/siteInfo'
 import ModalLayout from './ModalLayout.vue'
 
 withDefaults(
@@ -57,4 +58,8 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const build = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 
 const github = buildLink(__GIT_COMMIT__, __PR_NUMBER__)
+
+/** Always says which environment, Production included: "DTV Tracker (Preview)". */
+const environment = environmentName()
+const appName = environment ? `DTV Tracker (${environment})` : 'DTV Tracker'
 </script>

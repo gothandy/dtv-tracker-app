@@ -58,11 +58,11 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 
 Merging the PR into `main` deploys to production via `main_dtvtrackerapp.yml` as before.
 
-The `preview` slot is **pre-production**: **live SharePoint data and real emails**, with its own app registration (*DTV Tracker (Preview)*). Treat anything done on the preview as done in production. There is one slot, so the most recent PR push replaces the previous preview.
+The `preview` slot is **pre-production**, with its own app registration (*DTV Tracker (Preview)*) and its own SharePoint site, `tracker-preview`: a copy of live restored from backup ([sharepoint-setup.md](sharepoint-setup.md) section 7). Changes there don't reach live, but the copy holds **real people's data and email addresses** and the preview **sends real emails**, so take the same care as in production. There is one slot, so the most recent PR push replaces the previous preview.
 
 PRs from forks run the build job only; they don't get secrets, so they aren't deployed.
 
-**Approving a preview deploy.** The deploy job runs in the GitHub environment `preview`, which has the maintainer as required reviewer. The PR's Checks show *Waiting for review*; open the run, **review the PR's changes first**, then *Review deployments → Approve*. This is the same care as merging: approved code runs against live data with the preview's credentials. The gate can't be skipped by editing the workflow in a PR: Azure only accepts the deploy's login (federated credential) from the `preview` environment. If the Preview registration is switched off ([sharepoint-setup.md](sharepoint-setup.md) section 6), switch it on before testing.
+**Approving a preview deploy.** The deploy job runs in the GitHub environment `preview`, which has the maintainer as required reviewer. The PR's Checks show *Waiting for review*; open the run, **review the PR's changes first**, then *Review deployments → Approve*. Approved code runs with the preview's credentials, against the preview site's copy of real data. The gate can't be skipped by editing the workflow in a PR: Azure only accepts the deploy's login (federated credential) from the `preview` environment. If the Preview registration is switched off ([sharepoint-setup.md](sharepoint-setup.md) section 6), switch it on before testing.
 
 ### Adding a deployment slot
 
@@ -90,10 +90,11 @@ These are the steps used to create `preview` on 10 Oct 2026. Use them for any fu
    ```
 
    `AADSTS700213: No matching federated identity record` in the deploy job means the subject doesn't match exactly.
-6. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
-7. **Require approval.** *GitHub → Settings → Environments → <environment> → Required reviewers*: add the maintainer, so nothing deploys to the slot without approval.
-8. **Point a workflow at it.** `pr-preview.yml` deploys to the slot named `preview` in the GitHub environment `preview`. A new slot needs its own environment name and slot name in a workflow (see *Per-developer slots* below).
-9. **Test.** Run the workflow, check the health step passes and the PR comment appears, then open the custom domain and sign in.
+6. **SharePoint site.** Restore a copy of live as `tracker-<slot>` with [`scripts/preview-site-from-backup`](../scripts/preview-site-from-backup/README.md), add its IDs to `config.ts`, and set the slot's `SHAREPOINT_SITE_URL` to it.
+7. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
+8. **Require approval.** *GitHub → Settings → Environments → <environment> → Required reviewers*: add the maintainer, so nothing deploys to the slot without approval.
+9. **Point a workflow at it.** `pr-preview.yml` deploys to the slot named `preview` in the GitHub environment `preview`. A new slot needs its own environment name and slot name in a workflow (see *Per-developer slots* below).
+10. **Test.** Run the workflow, check the health step passes and the PR comment appears, then open the custom domain and sign in.
 
 **Current slots and identities:**
 
@@ -110,7 +111,7 @@ A slot's settings were **copied** from production when it was created. They don'
 
 - **Each environment has its own registration**, so `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` differ between production and the slot. Other settings are the same; when one changes, update it on production **and every slot**.
 - **One shared `preview` slot.** Deploys are only checked for staleness within a PR, not across PRs, so if two PRs are open the slot shows whichever deployed last. Check the About modal shows the PR you're testing (*PR #N · sha*); if not, re-run that PR's deploy job. Accepted while there's one developer; use per-developer slots (below) if parallel PRs become normal.
-- **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh (no double runs against live data). To test a job change on a slot, run it on demand from the Tools page.
+- **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh. To test a job change on a slot, run it on demand from the Tools page.
 - Links in emails and link previews use the address the request came in on, so emails sent from a slot link to that slot.
 
 ### Per-developer slots (possible later)
@@ -119,7 +120,8 @@ With two or three volunteer developers and PRs that may stay open between sessio
 
 - One slot per developer, created with the steps above (custom domain, credential, redirect URI)
 - The workflow to choose the slot and GitHub environment from the PR author, or from a label on the PR
-- Remembering that every slot still shares live data and the plan's CPU and memory
+- A site per slot (`tracker-<slot>`), restored from backup
+- Remembering that every slot shares the plan's CPU and memory
 
 ## Scheduled Eventbrite Sync
 

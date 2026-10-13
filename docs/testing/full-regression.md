@@ -1,6 +1,6 @@
 # DTV Tracker — Manual Test Script
 
-Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID. Both use live data.
+Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run dev` at http://localhost:3000. Log in via Microsoft Entra ID. Both use the preview site, a copy of live data.
 
 **Priority key:**
 - **HIGH** — Writes to SharePoint (creates, updates, deletes data)

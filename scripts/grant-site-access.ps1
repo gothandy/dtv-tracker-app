@@ -1,12 +1,13 @@
 <#
 .SYNOPSIS
-    Gives an app registration access to the tracker's SharePoint site.
+    Gives an app registration access to one of the tracker's SharePoint sites.
 
 .DESCRIPTION
     The tracker's app registration has the Graph permission Sites.Selected, which on
     its own gives access to no sites at all. This script grants it access to one
-    site (the tracker site by default), then lists every app with access to that
-    site so you can check the result.
+    site, then lists every app with access to that site so you can check the result.
+    The site is required, so the live site is never granted by default; for a slot's
+    site, use preview-site-from-backup/set-app-access.ps1 instead.
 
     Run it when you create a new app registration for the tracker, or move the
     tracker to a different site. Running it again is safe: an existing grant is
@@ -28,20 +29,22 @@
     The app registration's Application (client) ID, as in ENTRA_CLIENT_ID.
 
 .PARAMETER SiteUrl
-    The SharePoint site, as in SHAREPOINT_SITE_URL.
+    The SharePoint site, as in SHAREPOINT_SITE_URL, e.g. the live site
+    https://dtvolunteers.sharepoint.com/sites/tracker
 
 .PARAMETER Role
     'write' (default): what the tracker needs. 'read' for read-only access.
 
 .EXAMPLE
-    ./scripts/grant-site-access.ps1 -ClientId 00000000-0000-0000-0000-000000000000
+    ./grant-site-access.ps1 -ClientId 00000000-0000-0000-0000-000000000000 -SiteUrl https://dtvolunteers.sharepoint.com/sites/tracker
 #>
 
 param(
     [Parameter(Mandatory)]
     [string] $ClientId,
 
-    [string] $SiteUrl = 'https://dtvolunteers.sharepoint.com/sites/tracker',
+    [Parameter(Mandatory)]
+    [string] $SiteUrl,
 
     [ValidateSet('read', 'write')]
     [string] $Role = 'write'

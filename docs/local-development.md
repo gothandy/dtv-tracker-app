@@ -2,7 +2,7 @@
 
 Most changes are made prompt-driven (see the [readme](../readme.md) and [AGENTS.md → How we work](../AGENTS.md#how-we-work)). Run the app locally when you need constant feedback, for example on a UI problem: pull the current `task/…` branch, run it, and push your commits back to the same branch.
 
-**Local runs against live SharePoint data**, the same as production. Treat it as production.
+**Local runs against the preview site**, `tracker-preview`: a copy of live restored from backup. Changes don't reach live, but it's real people's data and it sends real emails, so treat it with production care.
 
 ```bash
 git fetch && git checkout task/<name> && git pull
@@ -27,7 +27,7 @@ ENTRA_CLIENT_ID=your_client_id_here
 ENTRA_CLIENT_SECRET=your_client_secret_here
 
 # SharePoint
-SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker
+SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker-preview
 
 # Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here
@@ -40,7 +40,7 @@ TRACKER_ADMIN_USERS=you@dtv.org.uk
 
 List IDs, drive IDs, the term set and the mail sender are fixed values in `backend/config.ts`, so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.
 
-Build, verify your credentials hit live SharePoint, then run:
+Build, verify your credentials reach the preview site, then run:
 
 ```bash
 npm run build       # compile TypeScript (required before test:live and dev)

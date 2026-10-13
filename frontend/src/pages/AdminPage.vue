@@ -70,16 +70,18 @@
 
         <!-- SharePoint: shortcuts + full cache clear -->
         <div class="ap-section">
-          <h2 class="ap-title">
-            <a v-if="siteUrl" :href="siteUrl" target="_blank" rel="noopener">{{ siteLabel }}</a>
+          <h2 class="ap-title ap-title-with-sub">
+            <a v-if="siteUrl" :href="siteUrl" target="_blank" rel="noopener">SharePoint</a>
             <template v-else>SharePoint</template>
           </h2>
+          <div v-if="siteUrl" class="ap-subtitle">{{ siteUrl }}</div>
           <div class="ap-actions">
             <AppButton label="Clear all server caches" :working="cacheClearLoading" @click="clearAllServerCaches" />
-            <AppButton label="Site Contents" :href="siteContentsUrl" target="_blank" />
+            <AppButton v-if="siteUrl" label="Site Contents" :href="siteContentsUrl" target="_blank" />
             <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
+          <div class="ap-result">Tags have one term set, on the production site, used by every environment. Term Store opens it there.</div>
           <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
           <div v-if="backupResult" :class="['ap-result', backupError && 'ap-error']">{{ backupResult }}</div>
         </div>
@@ -284,9 +286,11 @@ async function refreshProfileStats() {
 // ── Site / Backup ──────────────────────────────────────────────────────────
 
 const siteUrl      = ref<string | null>(null)
-const siteLabel    = computed(() => siteUrl.value?.includes('/tracker') ? 'Tracker Site' : 'Members Site')
-const siteContentsUrl = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/viewlsts.aspx?view=14'
-const termStoreUrl    = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/SiteAdmin.aspx#/termStoreAdminCenter'
+// The site this tracker is using (live or a slot's copy), shown under the heading so it's clear which.
+const siteContentsUrl = computed(() => siteUrl.value ? `${siteUrl.value}/_layouts/15/viewlsts.aspx?view=14` : '')
+// Tags come from one term set, in a site-level term group on the production site, for every
+// environment. A copied site (e.g. the preview) doesn't have the group, so always open production's.
+const termStoreUrl    = 'https://dtvolunteers.sharepoint.com/sites/tracker/_layouts/15/SiteAdmin.aspx#/termStoreAdminCenter'
 const backupLoading   = ref(false)
 const backupResult    = ref('')
 const backupError     = ref(false)
@@ -372,6 +376,13 @@ onMounted(loadSiteConfig)
   text-decoration: none;
 }
 .ap-title a:hover { text-decoration: underline; }
+.ap-title-with-sub { margin-bottom: 0.25rem; }
+.ap-subtitle {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
 
 .ap-actions {
   display: flex;

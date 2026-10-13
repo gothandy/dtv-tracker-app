@@ -161,41 +161,26 @@ export class SharePointClient {
       const hostname = url.hostname;  // dtvolunteers.sharepoint.com
       const sitePath = url.pathname;  // /sites/members
 
-      // Try to get site ID using the full site path
-      try {
-        const formattedPath = sitePath.startsWith('/') ? sitePath.substring(1) : sitePath;
-        const graphUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/${formattedPath}`;
+      // Only the configured site: if it can't be reached (missing, deleted, or no grant
+      // for this registration), say so rather than use another site.
+      const formattedPath = sitePath.startsWith('/') ? sitePath.substring(1) : sitePath;
+      const graphUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}:/${formattedPath}`;
 
-        const response = await axios.get(graphUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
+      const response = await axios.get(graphUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
 
-        this.siteId = response.data.id;
-        return response.data.id;
-      } catch (primaryError) {
-        // Fallback: try root site if subsite path fails
-        const rootSiteUrl = `https://graph.microsoft.com/v1.0/sites/${hostname}`;
-
-        const rootResponse = await axios.get(rootSiteUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
-
-        this.siteId = rootResponse.data.id;
-        console.warn(`Warning: Using root site instead of ${sharePoint.siteUrl}. List queries may not work as expected.`);
-        return rootResponse.data.id;
-      }
+      this.siteId = response.data.id;
+      return response.data.id;
     } catch (error: any) {
       console.error('Error getting site ID:', error.response?.data || error.message);
       if (isClientCredentialsAuthError(error)) {
         throw error instanceof Error ? error : new Error(mapClientCredentialsAuthError(error));
       }
-      throw new Error('Failed to retrieve SharePoint site ID from Microsoft Graph');
+      throw new Error(`Couldn't reach SharePoint site ${sharePoint.siteUrl}: it may not exist, or this app registration has no access to it`);
     }
   }
 

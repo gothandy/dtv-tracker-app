@@ -2,7 +2,7 @@
 
 **Audience:** the maintainer, or an Entra/SharePoint admin. Developers only need the client ID and secret (see [local-development.md](local-development.md)).
 
-Each environment has its own Entra app registration, used for everything there: reading and writing the tracker's SharePoint lists and libraries, reading the tags term set, sending email, and Microsoft sign-in.
+Each environment has its own Entra app registration and its own SharePoint site: production uses `/sites/tracker`; the preview slot and local development use `/sites/tracker-preview`, a copy restored from backup (section 7). The registration is used for everything there: reading and writing that site's lists and libraries, reading the tags term set, sending email, and Microsoft sign-in.
 
 | Registration | Used by | Redirect URIs | Secret held in |
 |---|---|---|---|
@@ -13,7 +13,7 @@ Both are set up the same way and limited to what the tracker needs:
 
 | Permission | Type | Limited to |
 |---|---|---|
-| `Sites.Selected` | Application (Microsoft Graph) | The tracker site only, by a site grant (section 3) |
+| `Sites.Selected` | Application (Microsoft Graph) | The environment's own site only, by a site grant (section 3). Preview can't reach the live site |
 | `TermStore.Read.All` | Application | Read-only. The term store is organisation-wide, so it can't be limited to one site |
 | Send mail | Exchange Online, *Application Mail.Send* | One mailbox, `EMAIL_FROM` in `backend/config.ts` (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
 | `User.Read` | Delegated | Microsoft sign-in |
@@ -48,7 +48,7 @@ Run it when you create a new app registration for the tracker, or move the track
 2. Get the script: upload [`scripts/grant-site-access.ps1`](../scripts/grant-site-access.ps1) to Cloud Shell, or run it from your clone.
 3. Run it with the registration's Application (client) ID:
    ```powershell
-   ./grant-site-access.ps1 -ClientId <ENTRA_CLIENT_ID>
+   ./grant-site-access.ps1 -ClientId <ENTRA_CLIENT_ID> -SiteUrl https://dtvolunteers.sharepoint.com/sites/tracker
    ```
 4. Sign in as a SharePoint or Global admin. The first time, accept the consent for *Microsoft Graph Command Line Tools*: it acts as you, and only an admin can change site permissions.
 5. Check the list it prints at the end: the registration should appear with `write`.
@@ -86,13 +86,23 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 
 Outside testing, switch **DTV Tracker (Preview)** off so its key can't be used at all: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → No → Save*. This stops it getting any tokens, including the app's own. The preview slot then shows errors, and local development can't reach SharePoint, until it's switched back on (same setting, **Yes**). Only switch production's off in an emergency: the tracker stops.
 
+## 7. The preview's own site
+
+The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's still real people's data and email addresses until it's cleaned up ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)), so avoid sending emails or running an Eventbrite sync on it.
+
+To make or refresh it, follow [`scripts/preview-site-from-backup/README.md`](../scripts/preview-site-from-backup/README.md): restore, unlock, rename, show IDs (for `config.ts`), set app access. Its last step leaves *DTV Tracker (Preview)* with the preview site only, and no other app on it.
+
+**Tags** come from one term set (`tagsTermSetId` in `config.ts`) in the site-level term group *Site Collection – DTV Tracker* on the production site. A restore doesn't copy term groups, so the preview reads and sets tags from production's term set (tested: this works). Edit tags on production: Tracker site → Site settings → Term store, or the tools page's **Term Store** button.
+
+Non-production sites are named after their slot: `tracker-{slot}`, matching `{slot}.tracker.dtv.org.uk`.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
 | Setup problem page naming `ENTRA_…` settings | Settings missing on this slot; see [configuration.md](configuration.md) |
 | `invalid_client` / AADSTS7000215 / 7000222 | Secret wrong, expired, or from a different registration than `ENTRA_CLIENT_ID` |
-| Access denied (403) loading lists or photos | No site grant for this client ID: run section 3 |
+| Access denied (403) loading lists or photos | No site grant for this client ID on this environment's site: run section 3 (or, for the preview site, `set-app-access.ps1` in section 7) |
 | Tags page fails | `TermStore.Read.All` missing or not consented |
 | Sign-in codes don't arrive | Exchange assignment missing or not applied yet (up to an hour): run section 4 |
 | AADSTS50011 on Microsoft sign-in | This address isn't a redirect URI on the registration (section 1, step 3) |

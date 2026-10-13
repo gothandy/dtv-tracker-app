@@ -204,4 +204,4 @@ jobs:
             --repo ${{ github.repository }} \
             --body "🚀 Deployed PR at \`${SHA:0:7}\` (merged with main as \`${MERGE_SHA:0:7}\`) to the **preview** slot: $URL
 
-          ⚠️ Pre-production: live SharePoint data and real emails. Another PR deploying will replace this."
+          ⚠️ Pre-production: a copy of live data (real people, real emails sent). Another PR deploying will replace this."

@@ -13,8 +13,15 @@ import { SESSION_NOTES, SESSION_COVER_MEDIA, GROUP_LOOKUP, PROJECT_LOOKUP } from
 import { mediaDriveId } from './media-upload';
 import { sharePointClient } from './sharepoint-client';
 import type { SharePointSession } from '../../types/session';
+import { siteSlotName } from '../config';
 
 export const SITE_NAME = 'DTV Tracker';
+
+/** The app's name, with the slot when this isn't live data: "DTV Tracker (Preview)". */
+export function siteName(): string {
+  const slot = siteSlotName();
+  return slot ? `${SITE_NAME} (${slot})` : SITE_NAME;
+}
 export const DEFAULT_DESCRIPTION =
   'Volunteer hours tracking and session registration for Dean Trail Volunteers.';
 
@@ -40,7 +47,7 @@ export function truncateDescription(text: string, max = 300): string {
 }
 
 export function pageTitle(label: string): string {
-  return `${label} | ${SITE_NAME}`;
+  return `${label} | ${siteName()}`;
 }
 
 export function buildOgHeadTags(meta: OgMeta, facebookAppId: string): string {
@@ -51,7 +58,7 @@ export function buildOgHeadTags(meta: OgMeta, facebookAppId: string): string {
     `<meta property="og:url" content="${meta.canonicalUrl}">` +
     `<meta property="og:image" content="${escapeHtmlAttr(meta.imageUrl)}">` +
     `<meta property="og:type" content="website">` +
-    `<meta property="og:site_name" content="${escapeHtmlAttr(SITE_NAME)}">`;
+    `<meta property="og:site_name" content="${escapeHtmlAttr(siteName())}">`;
   if (facebookAppId) {
     tags += `<meta property="fb:app_id" content="${escapeHtmlAttr(facebookAppId)}">`;
   }
@@ -64,7 +71,7 @@ function defaultImageUrl(baseUrl: string): string {
 
 function siteDefaultMeta(canonicalUrl: string, baseUrl: string, label?: string): OgMeta {
   return {
-    title: label ? pageTitle(label) : SITE_NAME,
+    title: label ? pageTitle(label) : siteName(),
     description: DEFAULT_DESCRIPTION,
     canonicalUrl,
     imageUrl: defaultImageUrl(baseUrl),
@@ -190,7 +197,7 @@ async function resolveSessionOg(
   const formattedDate = new Date(dateParam).toLocaleDateString('en-GB', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
   });
-  const title = `${sessionName} — ${formattedDate} | ${SITE_NAME}`;
+  const title = `${sessionName} — ${formattedDate} | ${siteName()}`;
   const description = truncateDescription(
     spSession[SESSION_NOTES] || `${group.displayName} volunteer session on ${formattedDate}`,
   );
