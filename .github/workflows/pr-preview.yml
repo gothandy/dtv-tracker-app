@@ -6,7 +6,7 @@
 # deploys to the preview slot.
 #
 # The preview slot is a clone of production: same settings, live SharePoint
-# data, real emails. Treat it as production. One slot is shared by all PRs;
+# data; email only to the testers. Treat it as production. One slot is shared by all PRs;
 # the most recent push wins.
 #
 # Azure setup (one-off): the deploy job runs in the GitHub environment
@@ -204,4 +204,4 @@ jobs:
             --repo ${{ github.repository }} \
             --body "🚀 Deployed PR at \`${SHA:0:7}\` (merged with main as \`${MERGE_SHA:0:7}\`) to the **preview** slot: $URL
 
-          ⚠️ Pre-production: a copy of live data (real people, real emails sent). Another PR deploying will replace this."
+          ⚠️ Pre-production: a copy of live data (real people; email only to the testers). Another PR deploying will replace this."

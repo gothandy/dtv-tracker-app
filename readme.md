@@ -39,7 +39,7 @@ The detail, including the rules agents follow, is in [AGENTS.md → How we work]
 |-----|-------------|
 | [AGENTS.md](AGENTS.md) | **Start here**: ways of working, project context, coding guidelines |
 | [docs/local-development.md](docs/local-development.md) | Running the app on your own machine |
-| [docs/configuration.md](docs/configuration.md) | The seven settings, naming, and what to do when one is missing |
+| [docs/configuration.md](docs/configuration.md) | The eight settings, naming, and what to do when one is missing |
 | [docs/api.md](docs/api.md) | All API endpoints and pages |
 | [docs/permissions.md](docs/permissions.md) | Roles and what each can do |
 | [docs/sharepoint-schema.md](docs/sharepoint-schema.md) | Data model — list structure and field names |

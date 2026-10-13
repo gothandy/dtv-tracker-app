@@ -34,6 +34,7 @@ import {
 } from '../services/field-names';
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
+import { UnsafeRecipientError } from '../services/email-safe-list';
 import { renderEmail } from '../services/email-renderer';
 import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
 
@@ -1309,6 +1310,10 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
     res.json({ success: true, data: { sent: 1 } } as ApiResponse<{ sent: number }>);
   } catch (error: any) {
     console.error('Error sending entry notify email:', error);
+    if (error instanceof UnsafeRecipientError) {
+      res.status(403).json({ success: false, error: error.message });
+      return;
+    }
     res.status(500).json({ success: false, error: 'Failed to send email', message: error.message });
   }
 });

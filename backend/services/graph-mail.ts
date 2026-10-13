@@ -1,5 +1,6 @@
 import { sharePointClient } from './sharepoint-client';
-import { EMAIL_FROM } from '../config';
+import { exchange } from '../config';
+import { assertSafeRecipient } from './email-safe-list';
 
 const REPLY_TO = 'admin@deantrailvolunteers.org.uk';
 const BOUNDARY = 'dtv-email-boundary';
@@ -36,10 +37,12 @@ function buildMime({ to, subject, html, text }: SendEmailOptions): string {
 /**
  * Send an email via Microsoft Graph API using the existing app credentials.
  * Requires Mail.Send application permission on the Azure app registration.
- * Sends from EMAIL_FROM (backend/config.ts).
+ * Sends from the EXCHANGE_SEND_MAILBOX setting. Outside production, only to the safe list
+ * (see email-safe-list.ts); anything else throws UnsafeRecipientError and nothing is sent.
  */
 export async function sendEmail(options: SendEmailOptions): Promise<void> {
-  const sender = EMAIL_FROM;
+  await assertSafeRecipient(options.to);
+  const sender = exchange.sendMailbox;
 
   const token = await sharePointClient.getAccessToken();
   const mime = buildMime(options);

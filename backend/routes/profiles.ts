@@ -28,6 +28,7 @@ import {
 import { renderEmail } from '../services/email-renderer';
 import { buildProfileTemplateVars, PROFILE_EMAIL_TEMPLATES, type ProfileEmailTemplate } from '../services/email-vars';
 import { sendEmail } from '../services/graph-mail';
+import { assertSafeRecipient, UnsafeRecipientError } from '../services/email-safe-list';
 import {
   GROUP_LOOKUP,
   SESSION_LOOKUP,
@@ -579,6 +580,9 @@ router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
       return;
     }
 
+    // Check every recipient first, so a slot refuses the whole send rather than part of it.
+    for (const { email } of targets) await assertSafeRecipient(email);
+
     let sent = 0;
     for (const { profile, email } of targets) {
       await renderAndSend(profile, email);
@@ -588,6 +592,10 @@ router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
     res.json({ success: true, data: { sent, skipped } } as ApiResponse<{ sent: number; skipped: number }>);
   } catch (error: any) {
     console.error('Error sending bulk profile email:', error);
+    if (error instanceof UnsafeRecipientError) {
+      res.status(403).json({ success: false, error: error.message });
+      return;
+    }
     res.status(500).json({ success: false, error: 'Failed to send email', message: error.message });
   }
 });

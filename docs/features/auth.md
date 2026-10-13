@@ -27,7 +27,7 @@ Routes: [backend/routes/auth/dtv.ts](../../backend/routes/auth/dtv.ts).
 
 Volunteers sign in by email — no Microsoft account required. Access is controlled by the `Email` field on the volunteer's Profile (comma-separated list supports multiple addresses).
 
-Volunteers receive a verification code by email via Microsoft Graph Mail, from `EMAIL_FROM` in `backend/config.ts`:
+Volunteers receive a verification code by email via Microsoft Graph Mail, from the `EXCHANGE_SEND_MAILBOX` setting:
 
 - **Verification code** ([backend/routes/auth/verify.ts](../../backend/routes/auth/verify.ts)): 4-digit code valid for 15 minutes; volunteer enters it on the login page
 

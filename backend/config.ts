@@ -45,6 +45,11 @@ export const entra = {
   get clientSecret() { return setting('ENTRA_CLIENT_SECRET'); },
 };
 
+/** The Exchange mailbox the tracker sends sign-in codes and emails from. Needs Mail.Send for it (docs/sharepoint-setup.md section 4). */
+export const exchange = {
+  get sendMailbox() { return setting('EXCHANGE_SEND_MAILBOX'); },
+};
+
 export const eventbrite = {
   organizationId: '484655313163',
   get apiKey() { return setting('EVENTBRITE_API_KEY'); },
@@ -172,9 +177,6 @@ export const sharePoint = {
 };
 
 // ── Fixed values ────────────────────────────────────────────────────────────
-
-/** Sends sign-in codes and session emails. Needs Graph Mail.Send for this mailbox. */
-export const EMAIL_FROM = 'admin@deantrailvolunteers.org.uk';
 
 /** Global cap on sign-in code emails per hour. */
 export const SIGN_IN_EMAILS_PER_HOUR = 60;

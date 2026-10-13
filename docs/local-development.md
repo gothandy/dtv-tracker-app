@@ -2,7 +2,7 @@
 
 Most changes are made prompt-driven (see the [readme](../readme.md) and [AGENTS.md → How we work](../AGENTS.md#how-we-work)). Run the app locally when you need constant feedback, for example on a UI problem: pull the current `task/…` branch, run it, and push your commits back to the same branch.
 
-**Local runs against the preview site**, `tracker-preview`: a copy of live restored from backup. Changes don't reach live, but it's real people's data and it sends real emails, so treat it with production care.
+**Local runs against the preview site**, `tracker-preview`: a copy of live restored from backup. Changes don't reach live, but it's real people's data, so treat it with production care. Email only goes to the addresses in your `TRACKER_ADMIN_USERS` and on their profiles, and the Preview registration is switched off every night at 2am: switch it on before you start ([sharepoint-setup.md](sharepoint-setup.md) section 6).
 
 ```bash
 git fetch && git checkout task/<name> && git pull
@@ -29,16 +29,20 @@ ENTRA_CLIENT_SECRET=your_client_secret_here
 # SharePoint
 SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker-preview
 
+# Exchange (the mailbox email is sent from)
+EXCHANGE_SEND_MAILBOX=admin@deantrailvolunteers.org.uk
+
 # Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here
 
 # Tracker
 TRACKER_COOKIE_SECRET=any_long_random_value
 TRACKER_JOBS_API_KEY=any_long_random_value
+# Admin access, and locally the email safe list (see configuration.md)
 TRACKER_ADMIN_USERS=you@dtv.org.uk
 ```
 
-List IDs, drive IDs, the term set and the mail sender are fixed values in `backend/config.ts`, so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.
+List IDs, drive IDs and the term set are fixed values in `backend/config.ts`, so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.
 
 Build, verify your credentials reach the preview site, then run:
 
@@ -55,7 +59,7 @@ Everything runs on a single server. In dev mode, Express integrates Vite as midd
 
 ### Cannot connect to SharePoint
 
-- `.env` file exists with all seven settings (the app names any that are missing)
+- `.env` file exists with all eight settings (the app names any that are missing)
 - `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` are correct and from the same registration
 - No extra spaces in `.env` values
 - Correct SharePoint site URL

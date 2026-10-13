@@ -2,6 +2,7 @@
 import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import { sendEmail } from '../../services/graph-mail';
+import { UnsafeRecipientError } from '../../services/email-safe-list';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken, setLoginCookie } from '../../services/auth-store';
 import { safeReturnPath } from '../../services/safe-return';
@@ -100,6 +101,10 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     res.json({ ok: true });
   } catch (err: any) {
     console.error('[Verify] sendEmail error:', err.message);
+    if (err instanceof UnsafeRecipientError) {
+      res.status(403).json({ error: err.message });
+      return;
+    }
     res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
   }
 });

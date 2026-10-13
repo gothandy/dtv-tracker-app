@@ -29,7 +29,7 @@
     The app registration's Application (client) ID, as in ENTRA_CLIENT_ID.
 
 .PARAMETER Mailbox
-    The mailbox the tracker sends from. Must match EMAIL_FROM in backend/config.ts.
+    The mailbox the tracker sends from. Must match the environment's EXCHANGE_SEND_MAILBOX setting.
 
 .PARAMETER TestMailbox
     Any other real mailbox, used only to check the app is refused there. Nothing is sent.

@@ -58,11 +58,11 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 
 Merging the PR into `main` deploys to production via `main_dtvtrackerapp.yml` as before.
 
-The `preview` slot is **pre-production**, with its own app registration (*DTV Tracker (Preview)*) and its own SharePoint site, `tracker-preview`: a copy of live restored from backup ([sharepoint-setup.md](sharepoint-setup.md) section 7). Changes there don't reach live, but the copy holds **real people's data and email addresses** and the preview **sends real emails**, so take the same care as in production. There is one slot, so the most recent PR push replaces the previous preview.
+The `preview` slot is **pre-production**, with its own app registration (*DTV Tracker (Preview)*) and its own SharePoint site, `tracker-preview`: a copy of live restored from backup ([sharepoint-setup.md](sharepoint-setup.md) section 7). Changes there don't reach live, but the copy holds **real people's data and email addresses**, so take the same care as in production. Email only goes to the testers ([configuration.md](configuration.md#email-outside-production)), and the Preview registration is switched off every night at 2am ([sharepoint-setup.md](sharepoint-setup.md) section 6). There is one slot, so the most recent PR push replaces the previous preview.
 
 PRs from forks run the build job only; they don't get secrets, so they aren't deployed.
 
-**Approving a preview deploy.** The deploy job runs in the GitHub environment `preview`, which has the maintainer as required reviewer. The PR's Checks show *Waiting for review*; open the run, **review the PR's changes first**, then *Review deployments → Approve*. Approved code runs with the preview's credentials, against the preview site's copy of real data. The gate can't be skipped by editing the workflow in a PR: Azure only accepts the deploy's login (federated credential) from the `preview` environment. If the Preview registration is switched off ([sharepoint-setup.md](sharepoint-setup.md) section 6), switch it on before testing.
+**Approving a preview deploy.** The deploy job runs in the GitHub environment `preview`, which has the maintainer as required reviewer. The PR's Checks show *Waiting for review*; open the run, **review the PR's changes first**, then *Review deployments → Approve*. Approved code runs with the preview's credentials, against the preview site's copy of real data. The gate can't be skipped by editing the workflow in a PR: Azure only accepts the deploy's login (federated credential) from the `preview` environment. The Preview registration is switched off every night at 2am ([sharepoint-setup.md](sharepoint-setup.md) section 6), so switch it on before testing.
 
 ### Adding a deployment slot
 
