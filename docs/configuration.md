@@ -12,7 +12,7 @@ Settings are named `{WHO}_{WHAT}`: WHO is the system the value belongs to or was
 |---|---|---|
 | `ENTRA_CLIENT_ID` | Entra ID → App registrations → *DTV Tracker (Production)* or *(Preview)* → Overview | The environment's app registration: SharePoint, email and Microsoft sign-in |
 | `ENTRA_CLIENT_SECRET` | Same registration → Certificates & secrets | Its secret. Expires; see [Entra ID secret needs updating](../readme.md#entra-id-secret-needs-updating-see-readme) |
-| `SHAREPOINT_SITE_URL` | The tracker site, `https://dtvolunteers.sharepoint.com/sites/tracker` | Picks the site; its list and drive IDs are in `config.ts` |
+| `SHAREPOINT_SITE_URL` | Production: `https://dtvolunteers.sharepoint.com/sites/tracker`. Preview slot and local development: `…/sites/tracker-preview` | Picks the site; its list and drive IDs are in `config.ts` |
 | `EVENTBRITE_API_KEY` | Eventbrite → Account settings → API keys | Eventbrite sync |
 | `TRACKER_COOKIE_SECRET` | Any long random value, e.g. `openssl rand -base64 32` | Signs the login cookie. Changing it signs everyone out |
 | `TRACKER_JOBS_API_KEY` | Any long random value; the same value is in the Azure Logic App | `X-Api-Key` header for the scheduled jobs (sync, stats refresh, backup) |

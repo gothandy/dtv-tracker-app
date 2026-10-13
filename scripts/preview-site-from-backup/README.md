@@ -32,7 +32,7 @@ If it warns that a version is already installed under `C:\Program Files\SharePoi
    ./show-site-ids.ps1 -Slot Preview
    ```
    The first time a slot's site is made, its entry goes into `SHAREPOINT_SITES` in a PR. A restore keeps the list IDs, but the two library IDs change with every restore, so they need updating each time.
-5. **Set app access.** The slot's registration gets the new site, every other app (e.g. Production) is removed from it, and the slot's registration is removed from the live site. It shows the changes and asks first.
+5. **Set app access.** A restore copies the live site's app access too, so Production can reach the copy until this step. The slot's registration gets the new site, every other app (e.g. Production) is removed from it, and the slot's registration is removed from the live site. It shows the changes and asks first.
    ```powershell
    ./set-app-access.ps1 -Slot Preview -ClientId <DTV Tracker (Preview) client ID>
    ```

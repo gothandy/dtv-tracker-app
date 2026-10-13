@@ -3,7 +3,7 @@
 A volunteer hours tracking and registration system for Dean Trail Volunteers: volunteer crews, sessions, profiles, check-in and hours. Data lives in SharePoint; bookings sync from Eventbrite.
 
 - **Production:** https://tracker.dtv.org.uk
-- **Preview** (pre-production, live data): https://preview.tracker.dtv.org.uk
+- **Preview** (pre-production, a copy of live data): https://preview.tracker.dtv.org.uk
 
 ## Getting started
 

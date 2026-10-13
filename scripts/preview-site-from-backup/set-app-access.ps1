@@ -105,7 +105,7 @@ Show-Apps $liveSite
 
 Write-Host 'Changes:'
 if ($ownOnSlot) {
-    Write-Host "  - set $($app.DisplayName) to 'write' on $($slotSite.WebUrl)"
+    Write-Host "  - replace $($app.DisplayName)'s access to $($slotSite.WebUrl) with 'write' under its current name"
 } else {
     Write-Host "  - give $($app.DisplayName) 'write' on $($slotSite.WebUrl)"
 }
@@ -124,15 +124,16 @@ if ($answer -ne 'y') {
     return
 }
 
-# 1. The slot's registration gets its own site.
-if ($ownOnSlot) {
-    Update-MgSitePermission -SiteId $slotSite.Id -PermissionId $ownOnSlot.Permission.Id -Roles @('write') | Out-Null
-} else {
-    New-MgSitePermission -SiteId $slotSite.Id -BodyParameter @{
-        roles               = @('write')
-        grantedToIdentities = @(@{ application = @{ id = $ClientId; displayName = $app.DisplayName } })
-    } | Out-Null
+# 1. The slot's registration gets its own site. An existing grant is replaced rather
+#    than updated: a grant keeps the app's name from when it was made (a restored site
+#    has the live site's grants), so recreating it shows the registration's current name.
+foreach ($entry in $ownOnSlot) {
+    Remove-MgSitePermission -SiteId $slotSite.Id -PermissionId $entry.Permission.Id
 }
+New-MgSitePermission -SiteId $slotSite.Id -BodyParameter @{
+    roles               = @('write')
+    grantedToIdentities = @(@{ application = @{ id = $ClientId; displayName = $app.DisplayName } })
+} | Out-Null
 
 # 2. No other app on the slot's site.
 foreach ($entry in $othersOnSlot) {

@@ -76,8 +76,8 @@
           </h2>
           <div class="ap-actions">
             <AppButton label="Clear all server caches" :working="cacheClearLoading" @click="clearAllServerCaches" />
-            <AppButton label="Site Contents" :href="siteContentsUrl" target="_blank" />
-            <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
+            <AppButton v-if="siteUrl" label="Site Contents" :href="siteContentsUrl" target="_blank" />
+            <AppButton v-if="siteUrl" label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
           <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
@@ -284,9 +284,10 @@ async function refreshProfileStats() {
 // ── Site / Backup ──────────────────────────────────────────────────────────
 
 const siteUrl      = ref<string | null>(null)
-const siteLabel    = computed(() => siteUrl.value?.includes('/tracker') ? 'Tracker Site' : 'Members Site')
-const siteContentsUrl = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/viewlsts.aspx?view=14'
-const termStoreUrl    = 'https://dtvolunteers.sharepoint.com/sites/Tracker/_layouts/15/SiteAdmin.aspx#/termStoreAdminCenter'
+// The site this tracker is using (live or a slot's copy), shown by its path so it's clear which.
+const siteLabel       = computed(() => siteUrl.value ? new URL(siteUrl.value).pathname : '')
+const siteContentsUrl = computed(() => siteUrl.value ? `${siteUrl.value}/_layouts/15/viewlsts.aspx?view=14` : '')
+const termStoreUrl    = computed(() => siteUrl.value ? `${siteUrl.value}/_layouts/15/SiteAdmin.aspx#/termStoreAdminCenter` : '')
 const backupLoading   = ref(false)
 const backupResult    = ref('')
 const backupError     = ref(false)
