@@ -29,7 +29,7 @@
     See docs/sharepoint-setup.md, section 6.
 
 .PARAMETER ClientId
-    The Preview registration's Application (client) ID, as in the preview slot's ENTRA_CLIENT_ID.
+    The Preview registration's Application (client) ID, as in the preview slot's TRACKER_ENTRA_CLIENT_ID.
 
 .PARAMETER ResourceGroup
     The resource group for the Logic App, e.g. the one holding the nightly sync Logic App.
@@ -62,7 +62,7 @@ Connect-MgGraph -Scopes 'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrit
 # 1. The Preview registration's enterprise application (service principal).
 $preview = Get-MgServicePrincipal -Filter "appId eq '$ClientId'"
 if (-not $preview) {
-    throw "No app registration with client ID $ClientId in this tenant. Check the preview slot's ENTRA_CLIENT_ID."
+    throw "No app registration with client ID $ClientId in this tenant. Check the preview slot's TRACKER_ENTRA_CLIENT_ID."
 }
 if ($preview.DisplayName -ne $PreviewDisplayName) {
     throw "Client ID $ClientId is '$($preview.DisplayName)', not '$PreviewDisplayName'. This script only switches off the Preview registration."

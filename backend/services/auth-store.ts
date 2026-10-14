@@ -62,7 +62,7 @@ export async function createAuthToken(profileId: number, method: LoginMethod, em
 export function setLoginCookie(res: Response, rawToken: string): void {
   res.cookie(LOGIN_COOKIE, rawToken, {
     httpOnly: true,
-    secure: !platform.isDevelopment,
+    secure: !platform.isLocal,
     sameSite: 'lax',
     maxAge: LOGIN_HOURS * 60 * 60 * 1000,
   });

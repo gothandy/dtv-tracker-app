@@ -57,7 +57,7 @@ const templateCache = new Map<string, HandlebarsTemplateDelegate>();
 const TEMPLATES_DIR = path.join(process.cwd(), 'templates', 'email');
 
 async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
-  if (!platform.isDevelopment && templateCache.has(filePath)) return templateCache.get(filePath)!;
+  if (!platform.isLocal && templateCache.has(filePath)) return templateCache.get(filePath)!;
   const src = await fs.readFile(filePath, 'utf-8');
   const compiled = Handlebars.compile(src);
   templateCache.set(filePath, compiled);
@@ -65,7 +65,7 @@ async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegat
 }
 
 async function loadSubjectTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
-  if (!platform.isDevelopment && templateCache.has(filePath)) return templateCache.get(filePath)!;
+  if (!platform.isLocal && templateCache.has(filePath)) return templateCache.get(filePath)!;
   const src = await fs.readFile(filePath, 'utf-8');
   const compiled = Handlebars.compile(src, { noEscape: true });
   templateCache.set(filePath, compiled);

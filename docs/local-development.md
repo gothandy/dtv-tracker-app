@@ -23,14 +23,14 @@ Create a `.env` file in the project root (never commit it — already in `.gitig
 
 ```bash
 # Entra app registration (SharePoint, email, Microsoft sign-in)
-ENTRA_CLIENT_ID=your_client_id_here
-ENTRA_CLIENT_SECRET=your_client_secret_here
+TRACKER_ENTRA_CLIENT_ID=your_client_id_here
+TRACKER_ENTRA_CLIENT_SECRET=your_client_secret_here
 
 # SharePoint
-SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker-preview
+TRACKER_SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker-preview
 
 # Eventbrite
-EVENTBRITE_API_KEY=your_eventbrite_api_key_here
+TRACKER_EVENTBRITE_API_KEY=your_eventbrite_api_key_here
 
 # Tracker
 TRACKER_COOKIE_SECRET=any_long_random_value
@@ -51,14 +51,14 @@ cd frontend && npm test && cd ..   # Vitest store unit tests (no live calls)
 npm run dev         # Express + Vite HMR at http://localhost:3000
 ```
 
-Everything runs on a single server. In dev mode, Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, run `npm run build:dev` while `npm run dev` is running (incremental compile; nodemon restarts after a short delay). Use `npm run build` for a clean compile (wipes `dist/` first) — stop the dev server first on Windows/OneDrive if you see `EBUSY` on files under `dist/`.
+Everything runs on a single server. `npm run dev` starts it with `--local`, which tells the tracker it's on your machine: Express integrates Vite as middleware — HMR for frontend changes and the API on the same port. After a backend change, run `npm run build:dev` while `npm run dev` is running (incremental compile; nodemon restarts after a short delay). Use `npm run build` for a clean compile (wipes `dist/` first) — stop the dev server first on Windows/OneDrive if you see `EBUSY` on files under `dist/`.
 
 ## Troubleshooting
 
 ### Cannot connect to SharePoint
 
 - `.env` file exists with all eight settings (the app names any that are missing)
-- `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` are correct and from the same registration
+- `TRACKER_ENTRA_CLIENT_ID` and `TRACKER_ENTRA_CLIENT_SECRET` are correct and from the same registration
 - No extra spaces in `.env` values
 - Correct SharePoint site URL
 

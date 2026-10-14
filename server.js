@@ -28,7 +28,7 @@ const { requestOrigin } = require('./dist/backend/services/request-origin');
 const { tracker, platform, FACEBOOK_APP_ID, PRODUCTION_URL, DOCS_HOST } = require('./dist/backend/config');
 const axios = require('axios');
 
-const isDev = platform.isDevelopment;
+const isDev = platform.isLocal;
 
 let _v2IndexHtml = null;
 async function getV2IndexTemplate() {
@@ -110,7 +110,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: !platform.isDevelopment,
+        secure: !platform.isLocal,
         httpOnly: true,
         maxAge: 8 * 60 * 60 * 1000, // 8 hours — DTV account sessions only
         sameSite: 'lax',

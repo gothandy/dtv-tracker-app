@@ -56,7 +56,7 @@ Pre-computed `Stats` field on Sessions list stores aggregate JSON (count, hours,
 
 ## Auth / Graph client credentials
 
-Expired or invalid `ENTRA_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
+Expired or invalid `TRACKER_ENTRA_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
 
 ## Planned
 

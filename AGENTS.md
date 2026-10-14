@@ -416,7 +416,7 @@ CI runs the backend and frontend unit tests on every task-branch push and pull r
 ## Important Notes
 
 - Financial year runs April 1 to March 31
-- All configuration is in `backend/config.ts`. Only secrets and values that differ between environments are settings (eight, named `{WHO}_{WHAT}`); see [docs/configuration.md](docs/configuration.md). Production and each slot keep their own copy of the settings.
+- All configuration is in `backend/config.ts`. Only secrets and values that differ between environments are settings (eight, named `TRACKER_{WHO}_{WHAT}`); see [docs/configuration.md](docs/configuration.md). Production and each slot keep their own copy of the settings.
 - Term Store requires `TermStore.ReadWrite.All` application permission (Graph beta endpoint)
 - The `Code` field on the Entries list is no longer used (legacy — do not read or write)
 

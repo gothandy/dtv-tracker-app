@@ -41,7 +41,7 @@
     See docs/sharepoint-setup.md, section 4.
 
 .PARAMETER ClientId
-    The app registration's Application (client) ID, as in ENTRA_CLIENT_ID.
+    The app registration's Application (client) ID, as in TRACKER_ENTRA_CLIENT_ID.
 
 .PARAMETER Mailbox
     The mailbox to grant or remove, as in the environment's TRACKER_SHARED_MAILBOX
@@ -108,7 +108,7 @@ function Get-SendAssignments {
 Connect-MgGraph -Scopes 'Application.Read.All' -NoWelcome
 $app = Get-MgServicePrincipal -Filter "appId eq '$ClientId'"
 if (-not $app) {
-    throw "No app registration with client ID $ClientId in this tenant. Check ENTRA_CLIENT_ID."
+    throw "No app registration with client ID $ClientId in this tenant. Check TRACKER_ENTRA_CLIENT_ID."
 }
 Write-Host "App:     $($app.DisplayName) ($ClientId)"
 if ($Mailbox) { Write-Host "Mailbox: $Mailbox" }

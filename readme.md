@@ -60,11 +60,11 @@ Local setup problems: see [docs/local-development.md](docs/local-development.md#
 
 ### "Entra ID secret needs updating, see readme."
 
-The app registration client secret (`ENTRA_CLIENT_SECRET`) has expired or is invalid.
+The app registration client secret (`TRACKER_ENTRA_CLIENT_SECRET`) has expired or is invalid.
 
 1. In [Entra ID → App registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps), open **DTV Volunteer Tracker**
 2. **Certificates & secrets** → create a new client secret (copy the **Value** immediately)
-3. Update `ENTRA_CLIENT_SECRET` in Azure on **both** DTVTrackerApp and its `preview` slot (*Environment variables*; the slot keeps its own copy), and in any local `.env`
+3. Update `TRACKER_ENTRA_CLIENT_SECRET` in Azure on **both** DTVTrackerApp and its `preview` slot (*Environment variables*; the slot keeps its own copy), and in any local `.env`
 4. Save; the app restarts. Reload the page
 
 Full steps: [docs/sharepoint-setup.md](docs/sharepoint-setup.md) (Create Client Secret / Ongoing Maintenance).

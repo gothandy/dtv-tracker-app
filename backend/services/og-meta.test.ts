@@ -30,12 +30,12 @@ describe('og-meta', () => {
     afterEach(() => { vi.unstubAllEnvs(); });
 
     it('is plain on the live site', () => {
-      vi.stubEnv('SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker');
+      vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker');
       expect(siteName()).toBe('DTV Tracker');
     });
 
     it("adds the slot on a slot's site", () => {
-      vi.stubEnv('SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker-preview/');
+      vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker-preview/');
       expect(siteName()).toBe('DTV Tracker (Preview)');
       expect(pageTitle('Home')).toBe('Home | DTV Tracker (Preview)');
     });

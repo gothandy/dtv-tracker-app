@@ -36,7 +36,7 @@ If it warns that a version is already installed under `C:\Program Files\SharePoi
    ```powershell
    ./set-app-access.ps1 -Slot Preview -ClientId <DTV Tracker (Preview) client ID>
    ```
-6. **Point the slot at it:** set the slot's `SHAREPOINT_SITE_URL` to `https://dtvolunteers.sharepoint.com/sites/tracker-preview` (Azure: DTVTrackerApp → preview slot → Environment variables), and the same in your local `.env`.
+6. **Point the slot at it:** set the slot's `TRACKER_SHAREPOINT_SITE_URL` to `https://dtvolunteers.sharepoint.com/sites/tracker-preview` (Azure: DTVTrackerApp → preview slot → Environment variables), and the same in your local `.env`.
 
 The Graph scripts (steps 4 and 5) need the Microsoft Graph module, as `../grant-site-access.ps1` does: `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
 

@@ -97,8 +97,8 @@ These are the steps used to create `preview` on 10 Oct 2026. Use them for any fu
    ```
 
    `AADSTS700213: No matching federated identity record` in the deploy job means the subject doesn't match exactly.
-6. **SharePoint site.** Restore a copy of live as `tracker-<slot>` with [`scripts/preview-site-from-backup`](../scripts/preview-site-from-backup/README.md), add its IDs to `config.ts`, and set the slot's `SHAREPOINT_SITE_URL` to it.
-7. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
+6. **SharePoint site.** Restore a copy of live as `tracker-<slot>` with [`scripts/preview-site-from-backup`](../scripts/preview-site-from-backup/README.md), add its IDs to `config.ts`, and set the slot's `TRACKER_SHAREPOINT_SITE_URL` to it.
+7. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `TRACKER_ENTRA_CLIENT_ID` and `TRACKER_ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
 8. **GitHub environment.** *GitHub → Settings → Environments → New environment* `<slot>`, with no required reviewers (see *No approval step* above). Its name must match the federated credential's subject in step 5.
 9. **Point a workflow at it.** `pr-preview.yml` deploys to the slot named `preview` in the GitHub environment `preview`. A new slot needs its own environment name and slot name in a workflow (see *Per-developer slots* below).
 10. **Test.** Run the workflow, check the health step passes and the PR comment appears, then open the custom domain and sign in.
@@ -116,7 +116,7 @@ An earlier credential created through the portal form with an ID-based subject n
 
 A slot's settings were **copied** from production when it was created. They don't follow later changes.
 
-- **Each environment has its own registration**, so `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` differ between production and the slot. Other settings are the same; when one changes, update it on production **and every slot**.
+- **Each environment has its own registration**, so `TRACKER_ENTRA_CLIENT_ID` and `TRACKER_ENTRA_CLIENT_SECRET` differ between production and the slot. Other settings are the same; when one changes, update it on production **and every slot**.
 - **One shared `preview` slot.** Deploys are only checked for staleness within a PR, not across PRs, so if two PRs are open the slot shows whichever deployed last. Check the About modal shows the PR you're testing (*PR #N · sha*); if not, re-run that PR's deploy job. Accepted while there's one developer; use per-developer slots (below) if parallel PRs become normal.
 - **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh. To test a job change on a slot, run it on demand from the Tools page.
 - Links in emails and link previews use the address the request came in on, so emails sent from a slot link to that slot.

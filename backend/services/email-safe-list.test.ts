@@ -47,18 +47,18 @@ describe('assertSafeRecipient', () => {
   afterEach(() => { vi.unstubAllEnvs(); });
 
   it('allows anyone in production', async () => {
-    vi.stubEnv('SHAREPOINT_SITE_URL', LIVE);
+    vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', LIVE);
     await expect(assertSafeRecipient('volunteer@example.com')).resolves.toBeUndefined();
   });
 
   it('allows safe-list addresses on a slot, ignoring case and spaces', async () => {
-    vi.stubEnv('SHAREPOINT_SITE_URL', PREVIEW);
+    vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', PREVIEW);
     await expect(assertSafeRecipient(' Andy.Test@Example.com ')).resolves.toBeUndefined();
     await expect(assertSafeRecipient('andrew.davies@dtv.org.uk')).resolves.toBeUndefined();
   });
 
   it('refuses everyone else on a slot, naming the environment and address', async () => {
-    vi.stubEnv('SHAREPOINT_SITE_URL', PREVIEW);
+    vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', PREVIEW);
     await expect(assertSafeRecipient('volunteer@example.com')).rejects.toThrow(UnsafeRecipientError);
     await expect(assertSafeRecipient('staff.personal@example.com')).rejects.toThrow(
       /^Preview only sends email .* not to staff\.personal@example\.com/

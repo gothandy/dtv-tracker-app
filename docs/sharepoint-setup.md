@@ -27,8 +27,8 @@ The tracker's own code decides what each signed-in person may see and do (see *C
 1. **Entra ID → App registrations → New registration.**
 2. **Name:** `DTV Tracker (Production)` or `DTV Tracker (Preview)`. **Supported account types:** this organisational directory only. **Redirect URI:** Web, the environment's address from the table above.
 3. **Authentication:** for Preview, add the local development redirect URI too. Production has only its own.
-4. Copy the **Application (client) ID** from Overview: this is `ENTRA_CLIENT_ID`.
-5. **Certificates & secrets → New client secret**, expiry 24 months. Copy the **Value** (not the Secret ID) straight into Azure: this is `ENTRA_CLIENT_SECRET`. Put a reminder in the calendar a month before it expires.
+4. Copy the **Application (client) ID** from Overview: this is `TRACKER_ENTRA_CLIENT_ID`.
+5. **Certificates & secrets → New client secret**, expiry 24 months. Copy the **Value** (not the Secret ID) straight into Azure: this is `TRACKER_ENTRA_CLIENT_SECRET`. Put a reminder in the calendar a month before it expires.
 
 ## 2. Permissions
 
@@ -48,7 +48,7 @@ Run it when you create a new app registration for the tracker, or move the track
 2. Get the script: upload [`scripts/grant-site-access.ps1`](../scripts/grant-site-access.ps1) to Cloud Shell, or run it from your clone.
 3. Run it with the registration's Application (client) ID:
    ```powershell
-   ./grant-site-access.ps1 -ClientId <ENTRA_CLIENT_ID> -SiteUrl https://dtvolunteers.sharepoint.com/sites/tracker
+   ./grant-site-access.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -SiteUrl https://dtvolunteers.sharepoint.com/sites/tracker
    ```
 4. Sign in as a SharePoint or Global admin. The first time, accept the consent for *Microsoft Graph Command Line Tools*: it acts as you, and only an admin can change site permissions.
 5. Check the list it prints at the end: the registration should appear with `write`.
@@ -74,11 +74,11 @@ Shared mailboxes need no licence and are created with sign-in blocked (*Microsof
 
 ### Giving a registration its mailbox
 
-To see what a registration can send as, without changing anything: `./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID>`.
+To see what a registration can send as, without changing anything: `./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID>`.
 
 1. In Azure Cloud Shell (PowerShell), or your own PowerShell with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
    ```powershell
-   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <TRACKER_SHARED_MAILBOX> -TestMailbox <any other real mailbox; nothing is sent>
+   ./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -Mailbox <TRACKER_SHARED_MAILBOX> -TestMailbox <any other real mailbox; nothing is sent>
    ```
    Sign in as an Exchange or Global admin.
 2. Check the test lines: one row per mailbox the app can send as; the mailbox needs **one row True**, the test mailbox **False on every row**. Then check the closing list of mailboxes the app can send as.
@@ -91,7 +91,7 @@ To see what a registration can send as, without changing anything: `./limit-mail
 2. Change the environment's `TRACKER_SHARED_MAILBOX` and send yourself a sign-in code.
 3. Take the old mailbox away:
    ```powershell
-   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove
+   ./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove
    ```
    The scope is deleted only once no registration uses it, so removing `admin@` from Preview leaves production's permission alone.
 
@@ -116,7 +116,7 @@ To let someone receive slot email, add them (or a mail contact for their persona
 Secrets expire (24 months at most). Before expiry:
 
 1. Create a new secret on the registration (section 1, step 5).
-2. Update `ENTRA_CLIENT_SECRET` on production **and** every slot (each slot keeps its own copy), and in any local `.env`.
+2. Update `TRACKER_ENTRA_CLIENT_SECRET` on production **and** every slot (each slot keeps its own copy), and in any local `.env`.
 3. Check the tracker loads, then delete the old secret.
 
 If it has already expired, pages show **Entra ID secret needs updating, see readme**; see the [readme](../readme.md#entra-id-secret-needs-updating-see-readme).
@@ -152,7 +152,7 @@ Non-production sites are named after their slot: `tracker-{slot}`, matching `{sl
 | Symptom | Likely cause |
 |---|---|
 | Setup problem page naming `ENTRA_…` settings | Settings missing on this slot; see [configuration.md](configuration.md) |
-| `invalid_client` / AADSTS7000215 / 7000222 | Secret wrong, expired, or from a different registration than `ENTRA_CLIENT_ID` |
+| `invalid_client` / AADSTS7000215 / 7000222 | Secret wrong, expired, or from a different registration than `TRACKER_ENTRA_CLIENT_ID` |
 | Access denied (403) loading lists or photos | No site grant for this client ID on this environment's site: run section 3 (or, for the preview site, `set-app-access.ps1` in section 7) |
 | Tags page fails | `TermStore.Read.All` missing or not consented |
 | Sign-in codes don't arrive | Exchange assignment missing or not applied yet (up to an hour): run section 4 |

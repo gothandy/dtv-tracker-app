@@ -26,10 +26,10 @@
     See docs/sharepoint-setup.md, section 3.
 
 .PARAMETER ClientId
-    The app registration's Application (client) ID, as in ENTRA_CLIENT_ID.
+    The app registration's Application (client) ID, as in TRACKER_ENTRA_CLIENT_ID.
 
 .PARAMETER SiteUrl
-    The SharePoint site, as in SHAREPOINT_SITE_URL, e.g. the live site
+    The SharePoint site, as in TRACKER_SHAREPOINT_SITE_URL, e.g. the live site
     https://dtvolunteers.sharepoint.com/sites/tracker
 
 .PARAMETER Role
@@ -57,7 +57,7 @@ Connect-MgGraph -Scopes 'Sites.FullControl.All', 'Application.Read.All' -NoWelco
 # Look the app up first, so a mistyped ID stops here instead of granting nothing useful.
 $app = Get-MgServicePrincipal -Filter "appId eq '$ClientId'"
 if (-not $app) {
-    throw "No app registration with client ID $ClientId in this tenant. Check ENTRA_CLIENT_ID, and that admin consent has been granted."
+    throw "No app registration with client ID $ClientId in this tenant. Check TRACKER_ENTRA_CLIENT_ID, and that admin consent has been granted."
 }
 
 $uri = [uri]$SiteUrl
