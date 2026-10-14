@@ -7,7 +7,7 @@ Each environment has its own Entra app registration and its own SharePoint site:
 | Registration | Used by | Redirect URIs | Secret held in |
 |---|---|---|---|
 | **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/signed-in`, `https://tracker.dtv.org.uk/auth/signed-out` | Production's settings only. Nobody else needs it |
-| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out`; `http://localhost:3000/auth/signed-in` and `/auth/signed-out` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
+| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out`; `http://localhost:3000/auth/signed-in` and `/auth/signed-out` | The preview slot and developers' `.env`. **Switched off every night at 2am** (section 6) |
 
 Both are set up the same way and limited to what the tracker needs:
 
@@ -18,7 +18,7 @@ Both are set up the same way and limited to what the tracker needs:
 | Send mail | Exchange Online, *Application Mail.Send* | One mailbox, the `EXCHANGE_SEND_MAILBOX` setting (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
 | `User.Read` | Delegated | Microsoft sign-in |
 
-The tracker's own code decides what each signed-in person may see and do (see *Clean code and maintainability* in [AGENTS.md](../AGENTS.md)); these permissions limit what its key can reach beyond that.
+The tracker's own code decides what each signed-in person may see and do (see *Clean code and maintainability* in [AGENTS.md](../AGENTS.md)); these permissions limit what its key can reach beyond that. Every identity's access is recorded in [access.md](access.md) and checked with `scripts/access-report.ps1`.
 
 ---
 
@@ -65,7 +65,7 @@ The tracker sends sign-in codes and emails from one mailbox per environment: the
 |---|---|
 | `tracker@deantrailvolunteers.org.uk` | Shared mailbox: the tracker's public sender (production) |
 | `{slot}.tracker@deantrailvolunteers.org.uk`, e.g. `preview.tracker@` | Shared mailbox per slot, hidden from the address book and locked to the test list (below) |
-| `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups; only the maintainer may send to it |
+| `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked |
 | `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
 
 Until production moves to `tracker@`, it sends from `admin@deantrailvolunteers.org.uk`. Replies go to `admin@` (`Reply-To`) whichever mailbox sends.
@@ -103,7 +103,7 @@ A slot runs on a copy of live data, so as well as the app's own check ([configur
    ```powershell
    Set-Mailbox <slot>.tracker@deantrailvolunteers.org.uk -RecipientLimits 1
    ```
-2. **Mail flow rule** (*Exchange admin centre → Mail flow → Rules → Add a rule*): if *the sender is* the slot mailbox, *reject the message with the explanation* "Not on Tracker (Test) safe list of recipients.", *except if the recipient is a member of* `test.tracker@`. Mode **Enforce**; after saving, **switch the rule on** (new rules start off). The preview's rule is *Tracker (Preview) Restriction*.
+2. **Mail flow rule** (*Exchange admin centre → Mail flow → Rules → Add a rule*): if *the sender is* the slot mailbox, *reject the message with the explanation* "Not on Tracker (Test) safe list of recipients.", *except if the recipient is a member of* `test.tracker@`. Mode **Enforce**; leave *Activate/Deactivate this rule on* blank. After saving, **switch the rule on**: new rules start off, and the switch is found by selecting **Disabled** in the rule's *Status* column (or `Enable-TransportRule -Identity '<rule name>'`). `scripts/access-report.ps1` flags a rule left off. The preview's rule is *Tracker (Preview) Restriction*.
 3. **Hide it** from the global address list, so nobody emails it by mistake.
 4. **Test** (allow 30 minutes), sending as the slot mailbox from Outlook on the web (you need *Send As* on it): to a member of `test.tracker@` → arrives; to an address not on the list → rejected; to a member with a non-member in Cc → rejected outright, nothing delivered.
 
@@ -127,10 +127,10 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 
 **Switching on** when you start testing: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → Yes → Save*. It takes a few minutes. There's no need to switch it off at the end of the day; you can, with the same setting (**No**).
 
-**The nightly switch-off** is an Azure Logic App, `dtv-preview-nightly-off`, with its own managed identity. That identity has Graph `Application.ReadWrite.OwnedBy` and is an owner of the Preview enterprise application only, so it can't change production's registration or any other app. Set it up, or check it, with [`scripts/preview-nightly-off.ps1`](../scripts/preview-nightly-off.ps1) in Azure Cloud Shell (PowerShell), as a Global admin:
+**The nightly switch-off** is an Azure Logic App, `TrackerPreviewDeactivate`, with its own managed identity. That identity has Graph `Application.ReadWrite.OwnedBy` and is an owner of the Preview enterprise application only, so it can't change production's registration or any other app. Set it up, or check it, with [`scripts/preview-nightly-off.ps1`](../scripts/preview-nightly-off.ps1) in Azure Cloud Shell (PowerShell), as a Global admin:
 
 ```powershell
-./preview-nightly-off.ps1 -ClientId <DTV Tracker (Preview) client ID> -ResourceGroup <resource group>
+./preview-nightly-off.ps1 -ClientId <DTV Tracker (Preview) client ID> -ResourceGroup DTV
 ```
 
 It refuses any registration not named *DTV Tracker (Preview)*. Test it with *Logic App → Run → Run trigger* and check the setting above reads **No**. If a run fails, it shows in the Logic App's run history; the preview then simply stays on until it's switched off by hand.

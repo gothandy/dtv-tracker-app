@@ -1,0 +1,74 @@
+# Access: what each identity can reach
+
+Every key, app and automation that can reach the tracker's data or send its email, what it can do, and why. **If something can reach the tracker and isn't on this page, it's a door to close.**
+
+Check the real tenant against this page with [`scripts/access-report.ps1`](../scripts/access-report.ps1) (read-only; see *Checking* below). When an identity's access changes, update this page **and** the expectations at the top of that script in the same PR.
+
+For what each *person* may do inside the tracker (Admin, Check In, Self-Service), see [permissions.md](permissions.md).
+
+## Identities
+
+| Identity | Kind | Can reach | Why |
+|---|---|---|---|
+| **DTV Tracker (Production)** | App registration. Secret in production's settings only | Graph `Sites.Selected`: **write on `/sites/tracker` only** (site grant). Graph `TermStore.Read.All` (read-only, organisation-wide). Exchange: **send as `admin@`** (moving to `tracker@`). Delegated `User.Read`, `email` for Microsoft sign-in | The live tracker: its data, tags, sign-in codes and session emails |
+| **DTV Tracker (Preview)** | App registration. Secret in the preview slot and developers' `.env` | Same as Production, but **write on `/sites/tracker-preview` only**, and **send as `preview.tracker@` only**, which Exchange limits to the `test.tracker@` list. **Switched off every night at 2am** | The preview slot and local development, on a copy of live data |
+| **TrackerPreviewDeactivate** | Logic App's system-assigned managed identity | Graph `Application.ReadWrite.OwnedBy`, and **owner of the Preview enterprise app only**. Nothing else | Switches the Preview registration off every night |
+| **oidc-msi-ad79** | User-assigned managed identity | Azure *Website Contributor* on `DTVTrackerApp` (all slots). Federated logins from GitHub: `main` branch (production) and the `preview` environment | GitHub Actions deploys, with no stored secret |
+| **TrackerEventbriteUpdate** | Logic App | Nothing in Entra. Holds `TRACKER_JOBS_API_KEY` and calls production's nightly job | The 05:30 Eventbrite sync, stats refresh and backup |
+
+### Worth knowing
+
+- **`TermStore.Read.All` is organisation-wide.** Microsoft can't limit term store access to one site. It's read-only, and the term store holds tags, not personal data.
+- **TrackerPreviewDeactivate can do anything to the Preview app**, not just switch it off: `OwnedBy` lets it change apps it owns, including adding a key. So anyone who can edit the Logic App (Contributor on the `DTV` resource group) could in effect act as Preview. That's accepted because Preview only reaches the preview copy and a mailbox locked to the test list; keep edit access to `DTV` with the tracker's admins. It can't touch Production.
+- **oidc-msi-ad79 can deploy any code to production and the slots.** Its federated logins only accept GitHub's `main` branch and `preview` environment from this repository, so the guard is who can push to `main` or run that environment: write access to the repository ([AGENTS.md](../AGENTS.md#branches-and-environments)).
+
+## Mailboxes
+
+| Address | Kind | Who can send as it | Limits |
+|---|---|---|---|
+| `admin@deantrailvolunteers.org.uk` | User mailbox | Production (until it moves to `tracker@`) | None: it's a real mailbox |
+| `tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked | Production (once switched) | The public sender |
+| `preview.tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked, hidden | Preview | One recipient per message; mail flow rule *Tracker (Preview) Restriction* rejects anyone not in `test.tracker@` |
+| `test.tracker@deantrailvolunteers.org.uk` | Distribution list, hidden | Anyone in the organisation (accepted: members' addresses, personal ones included, are in the address book by consent anyway); nobody outside | Members: people and mail contacts, never groups |
+
+Set-up: [sharepoint-setup.md](sharepoint-setup.md) section 4.
+
+## Doors that should stay shut
+
+The report lists anything in the tenant holding these, tracker or not. One of this organisation's own apps holding one is **UNEXPECTED** until it's removed or recorded here (and in `$KnownBroad` in the script) with a reason; one of Microsoft's or another publisher's apps is **CHECK**: confirm it's still used. A switched-off app (either the enterprise app's *Enabled for users to sign in?* set to No, or the app registration's **Deactivate**) can't use what it holds, so it's **CHECK**, not a problem, until it's deleted. Known and justified: *none yet*.
+
+**Found by the first report** (14 Oct 2026): *Power Automate Graph API*, an old registration of DTV's own with Graph `Directory.ReadWrite.All` and `User.ReadWrite.All`. It was already switched off, so it couldn't use them; delete it to clear the CHECK.
+
+- **Application permissions that reach everything:** Graph `Mail.Send`, `Mail.Read`, `Mail.ReadWrite`, `Sites.Read.All`, `Sites.ReadWrite.All`, `Sites.Manage.All`, `Sites.FullControl.All`, `Files.Read.All`, `Files.ReadWrite.All`, `Application.ReadWrite.All`, `AppRoleAssignment.ReadWrite.All`, `Directory.ReadWrite.All`, `Group.ReadWrite.All`, `User.ReadWrite.All`, `RoleManagement.ReadWrite.Directory`; and the same `Sites.*` permissions on the older *SharePoint* API.
+- **Any other app on the tracker sites.** Each site should have exactly one app grant: its own registration.
+- **Exchange application roles** (`Application Mail.*` and the like) for anything other than the tracker's registrations.
+- **Keys on enterprise apps** (service principals). Keys belong on the app registration, where they're visible; one on an enterprise app is unusual and worth explaining.
+- **Old or extra secrets** on the tracker's registrations: one current secret each, deleted when replaced ([sharepoint-setup.md](sharepoint-setup.md) section 5).
+
+## People
+
+Not checked by the report, but part of the same picture:
+
+| Who | Where it's set | Check |
+|---|---|---|
+| Tracker admins | `TRACKER_ADMIN_USERS` per environment ([configuration.md](configuration.md)) | Production and each slot's settings |
+| People who can open the tracker sites directly in SharePoint | Each site's permissions | *Site → Settings → Site permissions*. A restored preview copies live's members; trim to the testers ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)) |
+| Who receives slot email | `test.tracker@` members | Exchange admin centre → Recipients → Groups |
+| Who can change code or deploy | GitHub write access | *Repository → Settings → Collaborators* ([AGENTS.md](../AGENTS.md#branches-and-environments)) |
+| Who can change Azure resources | Role assignments on `DTV` and the subscription | *Resource group DTV → Access control (IAM)*. The report (`-Azure`) expects only the person running it and GitHub's deploy identity: anyone else is UNEXPECTED |
+
+## Checking
+
+Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) after any change to an identity, before renewing a secret, and every few months. It changes nothing.
+
+```powershell
+./scripts/access-report.ps1                                         # Entra, SharePoint and Exchange
+./scripts/access-report.ps1 -Azure                                  # also Azure roles and GitHub's federated logins (needs the Az module; Cloud Shell has it)
+./scripts/access-report.ps1 -Azure -OutFile docs/access-report.json # and write the public summary
+```
+
+**[`access-report.json`](access-report.json)** is the last clean run, committed so any change in access shows up as a diff in a PR. The repository is public, so it holds only what this page already says: statuses, counts, and items that match the record. IDs, people's and other apps' names, list members, secret names, and the details of anything MISSING or UNEXPECTED stay on screen. Commit it only when the run has no MISSING or UNEXPECTED, so it never advertises an open door.
+
+Sign in as a Global admin (it reads site permissions, which needs SharePoint admin rights). Each line is marked **OK**, **MISSING** (expected but not there), **UNEXPECTED** (there but not expected) or **CHECK** (not wrong in itself, but look at it). It ends with a count of MISSING and UNEXPECTED; the aim is zero.
+
+On your own machine it needs `Install-Module Microsoft.Graph.Applications, Microsoft.Graph.Sites, Microsoft.Graph.Users, Microsoft.Graph.Identity.SignIns, ExchangeOnlineManagement -Scope CurrentUser`. On Windows PowerShell, run it in a fresh window: the Microsoft Graph and Exchange modules clash if Exchange was connected first.

@@ -35,7 +35,7 @@
     The resource group for the Logic App, e.g. the one holding the nightly sync Logic App.
 
 .PARAMETER Name
-    The Logic App's name. Default: dtv-preview-nightly-off
+    The Logic App's name, Tracker{Slot}Deactivate. Default: TrackerPreviewDeactivate
 
 .EXAMPLE
     ./preview-nightly-off.ps1 -ClientId 00000000-0000-0000-0000-000000000000 -ResourceGroup DTV
@@ -48,7 +48,7 @@ param(
     [Parameter(Mandatory)]
     [string] $ResourceGroup,
 
-    [string] $Name = 'dtv-preview-nightly-off'
+    [string] $Name = 'TrackerPreviewDeactivate'
 )
 
 $ErrorActionPreference = 'Stop'

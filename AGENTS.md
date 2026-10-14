@@ -65,6 +65,7 @@ Update whichever of these the change affects, in the same task:
 - [docs/permissions.md](docs/permissions.md): if roles or endpoint access change
 - [docs/sharepoint-schema.md](docs/sharepoint-schema.md): if SharePoint fields change
 - [docs/azure-app-service.md](docs/azure-app-service.md): if hosting, deployment or Azure setup changes
+- [docs/access.md](docs/access.md) and the expectations in `scripts/access-report.ps1`: if any identity's permissions, site grants, mailboxes or keys change
 - [readme.md](readme.md), [docs/configuration.md](docs/configuration.md), [docs/local-development.md](docs/local-development.md): if dependencies, configuration or setup change
 - [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues): new bugs, follow-ups, tech debt found along the way
 

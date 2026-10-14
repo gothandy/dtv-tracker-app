@@ -45,6 +45,7 @@ The detail, including the rules agents follow, is in [AGENTS.md → How we work]
 | [docs/sharepoint-schema.md](docs/sharepoint-schema.md) | Data model — list structure and field names |
 | [docs/sharepoint-setup.md](docs/sharepoint-setup.md) | First-time SharePoint/Entra ID setup (admin only) |
 | [docs/azure-app-service.md](docs/azure-app-service.md) | Hosting: production, preview slot, CI/CD, scheduled sync |
+| [docs/access.md](docs/access.md) | Every identity that can reach the tracker, what it can do and why; checked with `scripts/access-report.ps1` |
 | [docs/features/](docs/features/) | Feature inventory by area (auth, frontend, backend, media, taxonomy) |
 | [docs/app-dev-guidelines.md](docs/app-dev-guidelines.md) | Building Vue features — layering, components, stats pattern |
 | [docs/testing/test-strategy.md](docs/testing/test-strategy.md) | Testing approach and layers |
