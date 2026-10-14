@@ -123,7 +123,7 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 
 ## 6. Switching the preview registration off and on
 
-**DTV Tracker (Preview)** is switched off **automatically every night at 2am** (UK time), so the copy of live data is only reachable on days someone switches it on. Switched off, its key can't get any tokens, including the app's own: the preview slot shows errors (AADSTS7000112) and local development can't reach SharePoint or send email. Tokens already issued keep working for up to an hour.
+**DTV Tracker (Preview)** is switched off **automatically every night at 2am** (UK time), so the copy of live data is only reachable on days someone switches it on. Switched off, its key can't get any tokens, including the app's own: the preview slot says *DTV Tracker (Preview) is not enabled for users to sign-in. This happens each night as an extra security precaution. Ask your admin to activate the Entra ID Enterprise Application via properties.* (Entra's AADSTS7000112), and local development can't reach SharePoint or send email. Tokens already issued keep working for up to an hour.
 
 **Switching on** when you start testing: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → Yes → Save*. It takes a few minutes. There's no need to switch it off at the end of the day; you can, with the same setting (**No**).
 

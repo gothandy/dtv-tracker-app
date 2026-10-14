@@ -267,6 +267,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Bulk send with any non-safe recipient selected → refused as a whole (403), nothing sent
 - [ ] **Exchange backstop:** add an address of yours that is **not** in `test.tracker@` to your own profile's emails, so the app lets it through. Send yourself a sign-in code to it → nothing arrives, and `preview.tracker@`'s inbox gets a rejection quoting the *Tracker (Preview) Restriction* rule. Remove the address again afterwards
 - [ ] Production unchanged: emails to volunteers still sent
+- [ ] Preview registration switched off (2am run, or *TrackerPreviewDeactivate → Run trigger*), signed in: the preview says *DTV Tracker (Preview) is not enabled for users to sign-in. This happens each night as an extra security precaution. Ask your admin to activate the Entra ID Enterprise Application via properties.*, not "try again in a minute"
 
 ### H23c. Bulk add entries (admin)
 - [ ] Volunteers page → select individual profiles → "Add Entries" enabled (groups excluded)

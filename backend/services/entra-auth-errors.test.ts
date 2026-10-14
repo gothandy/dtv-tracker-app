@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
+  appDisabledMessage,
   ENTRA_SECRET_UPDATE_MESSAGE,
   isClientCredentialsAuthError,
   mapClientCredentialsAuthError,
@@ -28,6 +29,25 @@ describe('mapClientCredentialsAuthError', () => {
       },
     }
     expect(mapClientCredentialsAuthError(error)).toBe(ENTRA_SECRET_UPDATE_MESSAGE)
+  })
+
+  it('maps a switched-off app (AADSTS7000112), naming the environment', () => {
+    vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker-preview')
+    const error = {
+      response: {
+        data: {
+          error: 'unauthorized_client',
+          error_description: "AADSTS7000112: Application 'f5e30f0a' (DTV Tracker (Preview)) is disabled.",
+        },
+      },
+    }
+    expect(mapClientCredentialsAuthError(error)).toBe(appDisabledMessage())
+    expect(appDisabledMessage()).toBe(
+      'DTV Tracker (Preview) is not enabled for users to sign-in. This happens each night as an extra security precaution. ' +
+      'Ask your admin to activate the Entra ID Enterprise Application via properties.',
+    )
+    expect(isClientCredentialsAuthError(new Error(appDisabledMessage()))).toBe(true)
+    vi.unstubAllEnvs()
   })
 
   it('falls back for other auth failures', () => {
