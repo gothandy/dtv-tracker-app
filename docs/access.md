@@ -59,7 +59,7 @@ Not checked by the report, but part of the same picture:
 
 ## Checking
 
-Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) after any change to an identity, before renewing a secret, and every few months. It changes nothing.
+Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) after any change to an identity, before renewing a secret, and every few months. It changes nothing. The easiest place to run it is Azure Cloud Shell (below).
 
 ```powershell
 ./scripts/access-report.ps1                                         # Entra, SharePoint and Exchange
@@ -71,4 +71,24 @@ Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) after any change
 
 Sign in as a Global admin (it reads site permissions, which needs SharePoint admin rights). Each line is marked **OK**, **MISSING** (expected but not there), **UNEXPECTED** (there but not expected) or **CHECK** (not wrong in itself, but look at it). It ends with a count of MISSING and UNEXPECTED; the aim is zero.
 
-On your own machine it needs `Install-Module Microsoft.Graph.Applications, Microsoft.Graph.Sites, Microsoft.Graph.Users, Microsoft.Graph.Identity.SignIns, ExchangeOnlineManagement -Scope CurrentUser`. On Windows PowerShell, run it in a fresh window: the Microsoft Graph and Exchange modules clash if Exchange was connected first.
+### Running scripts in Azure Cloud Shell
+
+Cloud Shell is a PowerShell window in the browser, on a machine Microsoft provides. The Az, Microsoft Graph and Exchange modules are already installed, and nothing is kept on your computer. The same steps work for the other scripts in `scripts/`.
+
+1. Open **[shell.azure.com](https://shell.azure.com)** (or the `>_` icon in the Azure portal) and choose **PowerShell**. The first time, choose **No storage account required**: each session starts clean and disappears when closed, so there are no local files to keep in step.
+2. Get the code, on `main` (or a PR's branch to test it before merging):
+   ```powershell
+   git clone https://github.com/gothandy/dtv-tracker-app
+   cd dtv-tracker-app
+   ```
+   In a session that's still open, update with `git fetch origin; git reset --hard origin/main` rather than `git pull`: branches are rewritten when a task is promoted, and a pull then tries to merge.
+3. Run it:
+   ```powershell
+   ./scripts/access-report.ps1 -Azure -OutFile docs/access-report.json
+   ```
+   The first run asks you to sign in to Microsoft Graph and to Exchange (Azure is already signed in). It stays signed in, so **running it again in the same session doesn't ask again**: fix something, re-run, repeat. To sign out sooner: `Disconnect-ExchangeOnline -Confirm:$false; Disconnect-MgGraph`.
+4. When it's clean, `cat docs/access-report.json` and paste it into the file on GitHub (or hand it to the coding agent) to commit it.
+
+A session closes after about 20 minutes idle; start again from step 1.
+
+On your own machine instead, it needs `Install-Module Microsoft.Graph.Applications, Microsoft.Graph.Sites, Microsoft.Graph.Users, Microsoft.Graph.Identity.SignIns, ExchangeOnlineManagement -Scope CurrentUser`. On Windows PowerShell, run it in a fresh window: the Microsoft Graph and Exchange modules clash if Exchange was connected first.

@@ -44,7 +44,7 @@ The tracker's app registration uses the Graph permission **`Sites.Selected`**, s
 
 Run it when you create a new app registration for the tracker, or move the tracker to a different site. Running it again is safe.
 
-1. Open **Azure Cloud Shell** in **PowerShell** mode (the Microsoft Graph module is already installed), or use PowerShell 7 on your own machine after `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
+1. Open **Azure Cloud Shell** in **PowerShell** mode (the Microsoft Graph module is already installed; how to get the scripts there: [access.md](access.md#running-scripts-in-azure-cloud-shell)), or use PowerShell 7 on your own machine after `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
 2. Get the script: upload [`scripts/grant-site-access.ps1`](../scripts/grant-site-access.ps1) to Cloud Shell, or run it from your clone.
 3. Run it with the registration's Application (client) ID:
    ```powershell
