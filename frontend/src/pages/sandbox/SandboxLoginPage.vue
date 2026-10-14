@@ -106,7 +106,7 @@
           <p class="sent-body">Already clicked the link? If you're signed in you can close this tab.</p>
           <FormSubmitRow>
             <button class="form-btn--link">Didn't receive the link? Back to sign in</button>
-            <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
+            <p class="sent-contact">Continuing problems? <a :href="`mailto:${contact}`">Contact us</a></p>
           </FormSubmitRow>
         </FormCard>
       </div>
@@ -119,6 +119,7 @@
 import '../../styles/sandbox.css'
 import { ref, computed } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'
+import { contactEmail } from '../../utils/siteInfo'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormCard from '../../components/forms/FormCard.vue'
 import FormInput from '../../components/forms/FormInput.vue'
@@ -126,6 +127,8 @@ import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
 import AppButton from '../../components/AppButton.vue'
 import AlertBanner from '../../components/forms/AlertBanner.vue'
 import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../../utils/accessLabels'
+
+const contact = contactEmail()
 
 usePageTitle('Sandbox — LoginPage')
 

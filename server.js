@@ -23,7 +23,7 @@ const { fetchProjectDoc } = require('./dist/backend/services/project-docs-servic
 const { projectsRepository } = require('./dist/backend/services/repositories/projects-repository');
 const { findProjectByKey } = require('./dist/backend/services/data-layer');
 const { resolveOgMeta, buildOgHeadTags, siteName, escapeHtmlAttr } = require('./dist/backend/services/og-meta');
-const { environmentName } = require('./dist/backend/config');
+const { environmentName, CONTACT_EMAIL } = require('./dist/backend/config');
 const { requestOrigin } = require('./dist/backend/services/request-origin');
 const { tracker, platform, FACEBOOK_APP_ID, PRODUCTION_URL, DOCS_HOST } = require('./dist/backend/config');
 const axios = require('axios');
@@ -55,13 +55,14 @@ async function buildSpaHtml(req, loadHtml) {
     const meta = await resolveOgMeta(req.path, requestOrigin(req));
     let html = await loadHtml();
     // The app's name, with the slot off live data ("DTV Tracker (Preview)"), for page titles;
-    // and the environment ("Preview" or "Production") for the About box.
+    // the environment ("Preview" or "Production") for the About box; and the contact address.
     const name = escapeHtmlAttr(siteName());
     html = html
         .replace('<title>DTV Tracker</title>', `<title>${name}</title>`)
         .replace('</head>',
             `<meta name="dtv-site-name" content="${name}">` +
-            `<meta name="dtv-environment" content="${escapeHtmlAttr(environmentName())}"></head>`);
+            `<meta name="dtv-environment" content="${escapeHtmlAttr(environmentName())}">` +
+            `<meta name="dtv-contact-email" content="${escapeHtmlAttr(CONTACT_EMAIL)}"></head>`);
     if (meta) {
         html = html.replace('</head>', buildOgHeadTags(meta, FACEBOOK_APP_ID) + `</head>`);
     }

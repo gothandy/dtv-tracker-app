@@ -27,7 +27,7 @@ For what each *person* may do inside the tracker (Admin, Check In, Self-Service)
 | Address | Kind | Who can send as it | Limits |
 |---|---|---|---|
 | `admin@deantrailvolunteers.org.uk` | User mailbox | Production (until it moves to `tracker@`) | None: it's a real mailbox |
-| `tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked | Production (once switched) | The public sender |
+| `tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked | Production (once switched) | The public sender, and the contact address: *Contact us* links, the About box, and Reply-To on every email (`CONTACT_EMAIL`). Read by whoever has Full Access |
 | `preview.tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked, hidden | Preview | One recipient per message; mail flow rule *Tracker (Preview) Restriction* rejects anyone not in `test.tracker@` |
 | `test.tracker@deantrailvolunteers.org.uk` | Distribution list, hidden | Anyone in the organisation (accepted: members' addresses, personal ones included, are in the address book by consent anyway); nobody outside | Members: people and mail contacts, never groups |
 

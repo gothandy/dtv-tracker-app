@@ -184,6 +184,12 @@ export const SIGN_IN_EMAILS_PER_HOUR = 60;
 /** How long a sign-in lasts, for volunteers and staff alike: covers a dig's prep, the day and the follow-up. */
 export const LOGIN_HOURS = 72;
 
+/**
+ * Where people contact the tracker team: "Contact us" links, the About box, and Reply-To on
+ * every email. A shared mailbox; someone needs Full Access to it to read what arrives.
+ */
+export const CONTACT_EMAIL = 'tracker@deantrailvolunteers.org.uk';
+
 /** Production address; docs.dtv.org.uk redirects here. */
 export const PRODUCTION_URL = 'https://tracker.dtv.org.uk';
 export const DOCS_HOST = 'docs.dtv.org.uk';

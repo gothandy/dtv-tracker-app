@@ -1,8 +1,7 @@
 import { sharePointClient } from './sharepoint-client';
-import { exchange } from '../config';
+import { exchange, CONTACT_EMAIL } from '../config';
 import { assertSafeRecipient } from './email-safe-list';
 
-const REPLY_TO = 'admin@deantrailvolunteers.org.uk';
 const BOUNDARY = 'dtv-email-boundary';
 
 export interface SendEmailOptions {
@@ -16,7 +15,7 @@ function buildMime({ to, subject, html, text }: SendEmailOptions): string {
   return [
     'MIME-Version: 1.0',
     `To: ${to}`,
-    `Reply-To: ${REPLY_TO}`,
+    `Reply-To: ${CONTACT_EMAIL}`,
     `Subject: ${subject}`,
     `Content-Type: multipart/alternative; boundary="${BOUNDARY}"`,
     '',

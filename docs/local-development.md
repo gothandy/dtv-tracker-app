@@ -30,7 +30,7 @@ ENTRA_CLIENT_SECRET=your_client_secret_here
 SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker-preview
 
 # Exchange (the mailbox email is sent from)
-EXCHANGE_SEND_MAILBOX=admin@deantrailvolunteers.org.uk
+EXCHANGE_SEND_MAILBOX=preview.tracker@deantrailvolunteers.org.uk
 
 # Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here

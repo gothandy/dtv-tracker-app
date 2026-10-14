@@ -256,6 +256,10 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
 - [ ] Arrives from the `EXCHANGE_SEND_MAILBOX` setting
 
+### H23e. Contact address
+- [ ] About box, *Contact us* on the sign-in page, access-denied page and profile tasks all show/open `tracker@deantrailvolunteers.org.uk`
+- [ ] Reply to any tracker email (sign-in code, session email) → addressed to `tracker@`
+
 ### H23d. Email safe list (preview and local only)
 - [ ] Sign-in code to your own `TRACKER_ADMIN_USERS` account, or an address on your own profile → arrives
 - [ ] Sign-in code to any other volunteer's address → login page shows "Preview only sends email to its admin users…" naming the address; nothing sent

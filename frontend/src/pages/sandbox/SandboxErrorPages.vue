@@ -33,7 +33,7 @@
         <FormCard title="Access denied">
           <p class="ep-message">
             You don't have permission to view this page.
-            <a href="mailto:admin@deantrailvolunteers.org.uk" class="ep-link">Contact us</a>
+            <a :href="`mailto:${contact}`" class="ep-link">Contact us</a>
             if you think this is a mistake.
           </p>
           <FormSubmitRow>
@@ -49,10 +49,13 @@
 <script setup lang="ts">
 import '../../styles/sandbox.css'
 import { usePageTitle } from '../../composables/usePageTitle'
+import { contactEmail } from '../../utils/siteInfo'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import FormCard from '../../components/forms/FormCard.vue'
 import AppButton from '../../components/AppButton.vue'
 import FormSubmitRow from '../../components/forms/FormSubmitRow.vue'
+
+const contact = contactEmail()
 
 usePageTitle('Error Pages — Sandbox')
 </script>

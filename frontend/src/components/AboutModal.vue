@@ -22,7 +22,7 @@
       </div>
       <div class="flex gap-3">
         <span class="font-bold w-24 shrink-0">Contact</span>
-        <a href="mailto:admin@deantrailvolunteers.org.uk" class="text-dtv-green hover:underline truncate min-w-0">admin@deantrailvolunteers.org.uk</a>
+        <a :href="`mailto:${contact}`" class="text-dtv-green hover:underline truncate min-w-0">{{ contact }}</a>
       </div>
       <div class="flex gap-3">
         <span class="font-bold w-24 shrink-0">Licence</span>
@@ -36,8 +36,10 @@
 
 <script setup lang="ts">
 import { buildLink } from '../utils/buildInfo'
-import { environmentName } from '../utils/siteInfo'
+import { contactEmail, environmentName } from '../utils/siteInfo'
 import ModalLayout from './ModalLayout.vue'
+
+const contact = contactEmail()
 
 withDefaults(
   defineProps<{

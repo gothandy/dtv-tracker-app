@@ -3,7 +3,7 @@
     <FormCard title="Access denied">
       <p class="fb-message">
         You don't have permission to view this page.
-        <a href="mailto:admin@deantrailvolunteers.org.uk" class="fb-link">Contact us</a>
+        <a :href="`mailto:${contact}`" class="fb-link">Contact us</a>
         if you think this is a mistake.
       </p>
       <FormSubmitRow>
@@ -15,11 +15,14 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { contactEmail } from '../utils/siteInfo'
 import TaskLayout from '../layouts/TaskLayout.vue'
 import FormCard from '../components/forms/FormCard.vue'
 import AppButton from '../components/AppButton.vue'
 import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import { usePageTitle } from '../composables/usePageTitle'
+
+const contact = contactEmail()
 
 usePageTitle('Access denied')
 const router = useRouter()

@@ -68,7 +68,7 @@ The tracker sends sign-in codes and emails from one mailbox per environment: the
 | `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked |
 | `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
 
-Until production moves to `tracker@`, it sends from `admin@deantrailvolunteers.org.uk`. Replies go to `admin@` (`Reply-To`) whichever mailbox sends.
+Until production moves to `tracker@`, it sends from `admin@deantrailvolunteers.org.uk`. Whichever mailbox sends, replies go to `tracker@` (`Reply-To`), which is also the *Contact us* address in the app (`CONTACT_EMAIL` in `backend/config.ts`). Give the people who answer it **Full Access** to `tracker@`, or what arrives there goes unread.
 
 Shared mailboxes need no licence and are created with sign-in blocked (*Microsoft 365 admin centre → Users → Active users* shows **Sign-in blocked**); check it, don't unblock it.
 
