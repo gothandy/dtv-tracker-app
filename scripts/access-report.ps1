@@ -20,8 +20,9 @@
       4. Exchange: which mailboxes each identity can send as, any other app with
          an Exchange application role, and the slot mailbox lockdown (recipient
          limit, mail flow rule, test list).
-      5. With -Azure: Azure roles on the tracker's resources, and GitHub's
-         federated logins.
+      5. With -Azure: who has Azure roles on the web app, the Logic Apps, their
+         resource group and subscription; and GitHub's federated logins (issuer,
+         subject and audience).
 
     It changes nothing. When access changes on purpose, update docs/access.md
     and the expectations below in the same PR.
@@ -81,6 +82,7 @@ $Identities = @(
         # Both allowed while production moves from admin@ to tracker@; drop admin@ once it has.
         Mailboxes   = @("admin@$Domain", "tracker@$Domain")
         SpOwners    = $null   # not checked
+        Owns        = @()
     },
     @{
         Name        = 'DTV Tracker (Preview)'
@@ -89,6 +91,7 @@ $Identities = @(
         Delegated   = @('User.Read', 'email')
         Mailboxes   = @("preview.tracker@$Domain")
         SpOwners    = @('TrackerPreviewDeactivate')
+        Owns        = @()
     },
     @{
         Name        = 'TrackerPreviewDeactivate'
@@ -97,6 +100,8 @@ $Identities = @(
         Delegated   = @()
         Mailboxes   = @()
         SpOwners    = $null
+        # Application.ReadWrite.OwnedBy reaches whatever it owns, so it must own only Preview.
+        Owns        = @('DTV Tracker (Preview)')
     },
     @{
         Name        = 'oidc-msi-ad79'
@@ -105,6 +110,7 @@ $Identities = @(
         Delegated   = @()
         Mailboxes   = @()
         SpOwners    = $null
+        Owns        = @()
     }
 )
 
@@ -132,12 +138,16 @@ $BroadPermissions = @(
 # Broad permissions that are known and justified, as 'App name|API/Permission'. Record why in docs/access.md.
 $KnownBroad = @()
 
-# Azure (-Azure): the web app, its resource group, and GitHub's deploy identity.
+# Azure (-Azure): the web app, the Logic Apps (one holds the jobs key, one can change
+# Preview), their resource group, and GitHub's deploy identity.
 $AzureResourceGroup = 'DTV'
 $AzureWebApp = 'DTVTrackerApp'
-$GitHubSubjects = @(
-    'repo:gothandy/dtv-tracker-app:ref:refs/heads/main',
-    'repo:gothandy/dtv-tracker-app:environment:preview'
+$AzureLogicApps = @('TrackerEventbriteUpdate', 'TrackerPreviewDeactivate')
+# Federated logins as 'issuer | subject | audience': trust depends on all three.
+$GitHubIssuer = 'https://token.actions.githubusercontent.com'
+$GitHubLogins = @(
+    "$GitHubIssuer | repo:gothandy/dtv-tracker-app:ref:refs/heads/main | api://AzureADTokenExchange",
+    "$GitHubIssuer | repo:gothandy/dtv-tracker-app:environment:preview | api://AzureADTokenExchange"
 )
 
 $SignInScopes = @('openid', 'profile', 'offline_access')
@@ -252,6 +262,11 @@ foreach ($identity in $Identities) {
     } else {
         foreach ($owner in $spOwners) { Write-Result 'CHECK' "enterprise app owner $owner" }
     }
+
+    # What it owns: an owner can change the object (with OwnedBy, completely).
+    $owned = @(Get-MgServicePrincipalOwnedObject -ServicePrincipalId $sp.Id -All |
+        ForEach-Object { $_.AdditionalProperties.displayName })
+    Compare-Sets 'owns' $owned $identity.Owns
 
     # App registration: owners can add secrets, so list them; secrets and federated logins.
     if ($identity.Kind -eq 'App registration') {
@@ -381,7 +396,10 @@ foreach ($mailbox in $SharedMailboxes) {
 
 function Get-ScopeMailbox([string] $ScopeName) {
     $scope = Get-ManagementScope -Identity $ScopeName -ErrorAction SilentlyContinue
-    if ($scope -and $scope.RecipientFilter -match "'([^']+)'") { $Matches[1].ToLower() } else { "(scope $ScopeName)" }
+    # Exactly one mailbox, or it's reported whole (and won't match an expected mailbox).
+    if ($scope -and $scope.RecipientFilter -match "^\s*PrimarySmtpAddress -eq '([^']+)'\s*$") { $Matches[1].ToLower() }
+    elseif ($scope) { "(scope $ScopeName covers: $($scope.RecipientFilter))" }
+    else { "(scope $ScopeName not found)" }
 }
 
 foreach ($identity in $Identities) {
@@ -409,11 +427,16 @@ $appAssignments = @(Get-ManagementRoleAssignment | Where-Object {
 foreach ($assignment in $appAssignments) {
     $mailbox = if ($assignment.CustomResourceScope) { Get-ScopeMailbox $assignment.CustomResourceScope } else { 'the whole organisation' }
     $assignee = $assignment.RoleAssigneeName
-    $named = $found.Values | Where-Object { $_.Id -eq $assignee -or $_.AppId -eq $assignee }
+    $named = @($found.Values | Where-Object { $_.Id -eq $assignee -or $_.AppId -eq $assignee -or $_.DisplayName -eq $assignee })
     if ($named) { $assignee = $named[0].DisplayName }
     $text = "${assignee}: $($assignment.Role) for $mailbox"
     if ($trackerNames -contains $assignment.RoleAssigneeName) {
-        if ($assignment.CustomResourceScope) { Write-Result 'OK' $text "tracker: $($assignment.Role) for $mailbox" } else { Write-Result 'UNEXPECTED' $text }
+        $owner = $Identities | Where-Object { $_.Name -eq $named[0].DisplayName }
+        if ($assignment.Role -eq 'Application Mail.Send' -and $assignment.CustomResourceScope -and $owner.Mailboxes -contains $mailbox) {
+            Write-Result 'OK' $text "tracker: $($assignment.Role) for $mailbox"
+        } else {
+            Write-Result 'UNEXPECTED' "${text}: a tracker identity should only have Application Mail.Send for its own mailbox"
+        }
     } else {
         Write-Result 'CHECK' $text
     }
@@ -444,6 +467,20 @@ foreach ($mailbox in $SlotMailboxes.Keys) {
     } else {
         Write-Result 'UNEXPECTED' "let through: $($exceptions -join ', ')"
     }
+    # Any other exception lets mail round the rule; any other condition narrows when it applies.
+    $otherExceptions = @($rule.PSObject.Properties | Where-Object {
+        $_.Name -like 'ExceptIf*' -and $_.Name -ne 'ExceptIfSentToMemberOf' -and $null -ne $_.Value -and
+        $_.Value -ne $false -and "$($_.Value)" -ne '' -and @($_.Value).Count -gt 0
+    } | ForEach-Object { $_.Name })
+    if ($otherExceptions) { Write-Result 'UNEXPECTED' "other exceptions let mail round the rule: $($otherExceptions -join ', ')" }
+    else { Write-Result 'OK' 'no other exceptions' 'no other exceptions' }
+    if ($null -ne $rule.Conditions) {
+        $conditions = @($rule.Conditions)
+        if ($conditions.Count -eq 1) { Write-Result 'OK' 'only condition: the sender' 'only condition: the sender' }
+        else { Write-Result 'UNEXPECTED' "$($conditions.Count) conditions; extra ones narrow when the rule applies: $($conditions -join ', ')" }
+    }
+    if ($rule.Priority -eq 0) { Write-Result 'OK' 'rule runs first' 'rule runs first' }
+    else { Write-Result 'CHECK' "rule priority is $($rule.Priority): a rule before it could stop it running" 'rule does not run first' }
 }
 
 Set-Subject "Test list $TestList"
@@ -471,15 +508,32 @@ if ($Azure) {
     } else {
         if (-not (Get-AzContext)) { Connect-AzAccount | Out-Null }
         $webApp = Get-AzWebApp -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp
-        Set-Subject "Who can change $AzureWebApp (including from its resource group and subscription)"
+        $resources = @($webApp | Select-Object @{ n = 'Id'; e = { $_.Id } }, @{ n = 'Name'; e = { $_.Name } })
+        foreach ($logicAppName in $AzureLogicApps) {
+            $logicApp = Get-AzResource -ResourceGroupName $AzureResourceGroup -Name $logicAppName -ResourceType 'Microsoft.Logic/workflows' -ErrorAction SilentlyContinue
+            if ($logicApp) { $resources += [pscustomobject]@{ Id = $logicApp.ResourceId; Name = $logicApp.Name } }
+            else { Write-Result 'MISSING' "Logic App $logicAppName not found" "Logic App $logicAppName" }
+        }
+        Set-Subject "Who can change the tracker's Azure resources ($AzureWebApp, $($AzureLogicApps -join ', '), their resource group and subscription)"
         # The person running the report is expected to be an admin; anyone else with a role is the risk.
         # Matched by account ID from the Graph sign-in: Cloud Shell's Azure sign-in may name you differently.
         $me = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/me?$select=id,userPrincipalName'
         Write-Result 'INFO' "running as $($me.userPrincipalName)"
-        foreach ($assignment in Get-AzRoleAssignment -Scope $webApp.Id) {
-            $where = if ($assignment.Scope -eq $webApp.Id) { 'the app' } elseif ($assignment.Scope -like '*/resourceGroups/*') { 'the resource group' } else { 'the subscription' }
+        $seen = @{}
+        $assignments = foreach ($resource in $resources) {
+            foreach ($assignment in Get-AzRoleAssignment -Scope $resource.Id) {
+                if ($seen.ContainsKey($assignment.RoleAssignmentId)) { continue }
+                $seen[$assignment.RoleAssignmentId] = $true
+                $where = if ($assignment.Scope -eq $resource.Id) { $resource.Name }
+                    elseif ($assignment.Scope -like '*/resourceGroups/*') { 'the resource group' } else { 'the subscription' }
+                [pscustomobject]@{ Assignment = $assignment; Where = $where }
+            }
+        }
+        foreach ($entry in $assignments) {
+            $assignment = $entry.Assignment
+            $where = $entry.Where
             $text = "$($assignment.DisplayName) [$($assignment.ObjectType)]: $($assignment.RoleDefinitionName) on $where"
-            if ($assignment.DisplayName -eq 'oidc-msi-ad79' -and $assignment.RoleDefinitionName -eq 'Website Contributor' -and $where -eq 'the app') {
+            if ($assignment.DisplayName -eq 'oidc-msi-ad79' -and $assignment.RoleDefinitionName -eq 'Website Contributor' -and $where -eq $AzureWebApp) {
                 Write-Result 'OK' $text "oidc-msi-ad79: Website Contributor on $AzureWebApp"
             } elseif ($assignment.ObjectType -eq 'User' -and $assignment.ObjectId -eq $me.id) {
                 Write-Result 'OK' "$text (you)" "the person running the report: $($assignment.RoleDefinitionName) on $where"
@@ -496,9 +550,9 @@ if ($Azure) {
             else { Write-Result 'UNEXPECTED' $text }
         }
         Set-Subject 'GitHub logins oidc-msi-ad79 accepts'
-        $subjects = @(Get-AzFederatedIdentityCredential -ResourceGroupName $deploy.ResourceGroupName -IdentityName $deploy.Name |
-            ForEach-Object { $_.Subject })
-        Compare-Sets 'federated login' $subjects $GitHubSubjects
+        $logins = @(Get-AzFederatedIdentityCredential -ResourceGroupName $deploy.ResourceGroupName -IdentityName $deploy.Name |
+            ForEach-Object { "$($_.Issuer) | $($_.Subject) | $(@($_.Audience) -join ', ')" })
+        Compare-Sets 'federated login' $logins $GitHubLogins
 
         $deactivate = $found['TrackerPreviewDeactivate']
         if ($deactivate) {

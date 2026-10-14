@@ -265,6 +265,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Sign-in code to any other volunteer's address → login page shows "Preview only sends email to its admin users…" naming the address; nothing sent
 - [ ] Session email (`POST /api/entries/:id/notify`) to a volunteer, preview unticked → 403 with the same message; with preview ticked → arrives at your address
 - [ ] Bulk send with any non-safe recipient selected → refused as a whole (403), nothing sent
+- [ ] **Exchange backstop:** add an address of yours that is **not** in `test.tracker@` to your own profile's emails, so the app lets it through. Send yourself a sign-in code to it → nothing arrives, and `preview.tracker@`'s inbox gets a rejection quoting the *Tracker (Preview) Restriction* rule. Remove the address again afterwards
 - [ ] Production unchanged: emails to volunteers still sent
 
 ### H23c. Bulk add entries (admin)

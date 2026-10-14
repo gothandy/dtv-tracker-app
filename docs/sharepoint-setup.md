@@ -127,13 +127,13 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 
 **Switching on** when you start testing: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → Yes → Save*. It takes a few minutes. There's no need to switch it off at the end of the day; you can, with the same setting (**No**).
 
-**The nightly switch-off** is an Azure Logic App, `TrackerPreviewDeactivate`, with its own managed identity. That identity has Graph `Application.ReadWrite.OwnedBy` and is an owner of the Preview enterprise application only, so it can't change production's registration or any other app. Set it up, or check it, with [`scripts/preview-nightly-off.ps1`](../scripts/preview-nightly-off.ps1) in Azure Cloud Shell (PowerShell), as a Global admin:
+**The nightly switch-off** is an Azure Logic App, `TrackerPreviewDeactivate`, with its own managed identity. That identity has Graph `Application.ReadWrite.OwnedBy` and is an owner of the Preview enterprise application only, so it can't change production's registration or any other app. Set it up, or check it, with [`scripts/preview-nightly-off.ps1`](../scripts/preview-nightly-off.ps1) in Azure Cloud Shell (PowerShell), as a Global admin who also has Contributor (or Owner) on the `DTV` resource group (Entra admin roles give no Azure access by themselves):
 
 ```powershell
 ./preview-nightly-off.ps1 -ClientId <DTV Tracker (Preview) client ID> -ResourceGroup DTV
 ```
 
-It refuses any registration not named *DTV Tracker (Preview)*. Test it with *Logic App → Run → Run trigger* and check the setting above reads **No**. If a run fails, it shows in the Logic App's run history; the preview then simply stays on until it's switched off by hand.
+It refuses any registration not named *DTV Tracker (Preview)*. If you build it by hand in the portal instead, give the recurrence a **start time** (tomorrow, 02:00): without one it runs as soon as it's saved. Test it with *Logic App → Run → Run trigger* and check the setting above reads **No**. If a run fails, it shows in the Logic App's run history; the preview then simply stays on until it's switched off by hand.
 
 Only switch production's registration off in an emergency: the tracker stops.
 

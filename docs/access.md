@@ -55,7 +55,7 @@ Not checked by the report, but part of the same picture:
 | People who can open the tracker sites directly in SharePoint | Each site's permissions | *Site → Settings → Site permissions*. A restored preview copies live's members; trim to the testers ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)) |
 | Who receives slot email | `test.tracker@` members | Exchange admin centre → Recipients → Groups |
 | Who can change code or deploy | GitHub write access | *Repository → Settings → Collaborators* ([AGENTS.md](../AGENTS.md#branches-and-environments)) |
-| Who can change Azure resources | Role assignments on `DTV` and the subscription | *Resource group DTV → Access control (IAM)*. The report (`-Azure`) expects only the person running it and GitHub's deploy identity: anyone else is UNEXPECTED |
+| Who can change Azure resources | Role assignments on the web app, the two Logic Apps, `DTV` and the subscription | *Resource group DTV → Access control (IAM)*. The report (`-Azure`) expects only the person running it and GitHub's deploy identity (on the web app): anyone else is UNEXPECTED. Edit access to *TrackerEventbriteUpdate* reveals the jobs key; to *TrackerPreviewDeactivate*, control of Preview |
 
 ## Checking
 

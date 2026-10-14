@@ -111,11 +111,11 @@ function goUpload(entryId: number) {
   window.location.href = `/upload?entryId=${entryId}`
 }
 
-async function sendOne(entryId: number, preview: boolean, template: string): Promise<boolean> {
+async function sendOne(entryId: number, preview: boolean, template: string, check = false): Promise<boolean> {
   const res = await fetch(`/api/entries/${entryId}/notify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ preview, template }),
+    body: JSON.stringify({ preview, template, check }),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
@@ -134,6 +134,11 @@ async function onEmailSend({ recipient, preview, template }: { recipient: number
       if (!emailable.length) {
         emailError.value = 'No recipients have an email address'
         return
+      }
+      // Check every recipient before sending any, so a refusal never leaves a half-sent batch.
+      for (const adult of emailable) {
+        const ok = await sendOne(adult.entryId, false, template, true)
+        if (!ok) return
       }
       for (const adult of emailable) {
         const ok = await sendOne(adult.entryId, false, template)

@@ -22,8 +22,10 @@
 
     Running it again is safe: anything already in place is left as it is.
 
-    You need to be a Global admin (or Privileged Role admin plus Contributor on the
-    resource group). Run it in Azure Cloud Shell (PowerShell), where the Az and
+    You need both: Global admin (or Privileged Role admin) in Entra, to grant the
+    permission and ownership; and Contributor (or Owner) on the resource group in
+    Azure, to create the Logic App. They're separate: an Entra admin role gives no
+    Azure access by itself. Run it in Azure Cloud Shell (PowerShell), where the Az and
     Microsoft Graph modules are already installed and you're signed in to Azure.
 
     See docs/sharepoint-setup.md, section 6.
@@ -72,6 +74,9 @@ Write-Host "Registration: $($preview.DisplayName) ($ClientId), currently enabled
 # 2. The Logic App: daily at 02:00 UK time, PATCH accountEnabled=false on the Preview
 #    service principal, signed in as its own managed identity.
 $rg = Get-AzResourceGroup -Name $ResourceGroup
+# A recurrence without a start time fires as soon as it's saved, which would switch Preview
+# off mid-test (or fail, before the permission below exists). Start from tomorrow's 02:00.
+$startTime = (Get-Date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-dd') + 'T02:00:00'
 $template = @{
     '$schema'      = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
     contentVersion = '1.0.0.0'
@@ -93,6 +98,7 @@ $template = @{
                             frequency = 'Day'
                             interval  = 1
                             timeZone  = 'GMT Standard Time'
+                            startTime = $startTime
                             schedule  = @{ hours = @(2); minutes = @(0) }
                         }
                     }
@@ -124,7 +130,8 @@ $principalId = $deployment.Outputs.principalId.Value
 Write-Host "Logic App:    $Name in $ResourceGroup, identity $principalId"
 
 # 3a. Graph Application.ReadWrite.OwnedBy for the Logic App's identity.
-$graph = Get-MgServicePrincipal -Filter "appId eq '$GraphAppId'"
+# appRoles is only returned when asked for.
+$graph = Get-MgServicePrincipal -Filter "appId eq '$GraphAppId'" -Property 'id,appRoles'
 $role = $graph.AppRoles | Where-Object { $_.Value -eq $OwnedByPermission -and $_.AllowedMemberTypes -contains 'Application' }
 $existing = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId |
     Where-Object { $_.AppRoleId -eq $role.Id -and $_.ResourceId -eq $graph.Id }

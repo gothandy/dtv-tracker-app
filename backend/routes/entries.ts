@@ -34,7 +34,7 @@ import {
 } from '../services/field-names';
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
-import { UnsafeRecipientError } from '../services/email-safe-list';
+import { assertSafeRecipient, UnsafeRecipientError } from '../services/email-safe-list';
 import { renderEmail } from '../services/email-renderer';
 import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
 
@@ -1290,6 +1290,17 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       return;
     }
 
+    const preview = req.body?.preview === true;
+    const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
+
+    // check: true only checks the recipient may be emailed, sending nothing. "Send all" checks
+    // every recipient first, so a slot refuses the whole send rather than part of it.
+    if (req.body?.check === true) {
+      await assertSafeRecipient(toEmail);
+      res.json({ success: true, data: { sent: 0 } } as ApiResponse<{ sent: number }>);
+      return;
+    }
+
     const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
     const profileRecords = profileId !== undefined
       ? await recordsRepository.getByProfile(profileId)
@@ -1301,9 +1312,6 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base, profileRecords)
       : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords);
     const { subject, html, text } = await renderEmail(templateName, vars);
-
-    const preview = req.body?.preview === true;
-    const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
 
     await sendEmail({ to: toEmail, subject, html, text });
 

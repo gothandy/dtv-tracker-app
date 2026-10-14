@@ -99,8 +99,10 @@ function Get-ShortName([string] $Name) {
 function Get-SendAssignments {
     Get-ManagementRoleAssignment -RoleAssignee $app.Id -Role $Role -ErrorAction SilentlyContinue |
         ForEach-Object {
-            $scope = Get-ManagementScope -Identity $_.CustomResourceScope -ErrorAction SilentlyContinue
-            [pscustomobject]@{ Assignment = $_.Name; Scope = $_.CustomResourceScope; Covers = $scope.RecipientFilter }
+            # No scope means the role's own scope: every mailbox in the organisation.
+            $covers = if (-not $_.CustomResourceScope) { 'EVERY MAILBOX (no scope)' }
+                else { (Get-ManagementScope -Identity $_.CustomResourceScope -ErrorAction SilentlyContinue).RecipientFilter }
+            [pscustomobject]@{ Assignment = $_.Name; Scope = $_.CustomResourceScope; Covers = $covers }
         }
 }
 
@@ -203,6 +205,14 @@ if ($entraMailSend) {
     Write-Warning "The registration still has Microsoft Graph Mail.Send (application) in Entra, which lets it send as anyone. Remove it: Entra ID > App registrations > $($app.DisplayName) > API permissions > Mail.Send > Remove permission."
 } else {
     Write-Host 'Entra Mail.Send is not on the registration. Sending is limited to the mailboxes below.'
+}
+
+# An assignment with no scope lets the app send as anyone: say so loudly, whatever the action.
+$unscoped = if ($exchangeApp) {
+    @(Get-ManagementRoleAssignment -RoleAssignee $app.Id -Role $Role -ErrorAction SilentlyContinue | Where-Object { -not $_.CustomResourceScope })
+}
+foreach ($assignment in $unscoped) {
+    Write-Warning "'$($assignment.Name)' gives the app $Role with no scope: it can send as EVERY mailbox. Once its scoped mailbox works, remove it: Remove-ManagementRoleAssignment -Identity '$($assignment.Name)'"
 }
 
 Write-Host ''

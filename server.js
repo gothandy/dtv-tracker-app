@@ -52,7 +52,14 @@ function isSpaHtmlNavigation(req) {
 }
 
 async function buildSpaHtml(req, loadHtml) {
-    const meta = await resolveOgMeta(req.path, requestOrigin(req));
+    // Link-preview tags are optional; the site name and contact address aren't, so a failure
+    // here leaves out the preview tags rather than the whole page's metadata.
+    let meta = null;
+    try {
+        meta = await resolveOgMeta(req.path, requestOrigin(req));
+    } catch (err) {
+        console.error(`Error rendering OG meta for ${req.path}:`, err);
+    }
     let html = await loadHtml();
     // The app's name, with the slot off live data ("DTV Tracker (Preview)"), for page titles;
     // the environment ("Preview" or "Production") for the About box; and its mailbox, for contact links.
@@ -75,7 +82,8 @@ async function serveSpaHtml(req, res) {
         const html = await buildSpaHtml(req, getV2IndexTemplate);
         res.set('Content-Type', 'text/html').send(html);
     } catch (err) {
-        console.error(`Error rendering OG meta for ${req.path}:`, err);
+        // Only reading the page template can fail here now; serve it unmodified.
+        console.error(`Error building the page for ${req.path}:`, err);
         res.sendFile(indexPath);
     }
 }
@@ -311,7 +319,7 @@ const port = platform.port;
                 });
                 res.set('Content-Type', 'text/html').send(html);
             } catch (err) {
-                console.error(`Error rendering OG meta for ${req.path}:`, err);
+                console.error(`Error building the page for ${req.path}:`, err);
                 next();
             }
         });
