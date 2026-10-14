@@ -45,11 +45,6 @@ export const entra = {
   get clientSecret() { return setting('ENTRA_CLIENT_SECRET'); },
 };
 
-/** The Exchange mailbox the tracker sends sign-in codes and emails from. Needs Mail.Send for it (docs/sharepoint-setup.md section 4). */
-export const exchange = {
-  get sendMailbox() { return setting('EXCHANGE_SEND_MAILBOX'); },
-};
-
 export const eventbrite = {
   organizationId: '484655313163',
   get apiKey() { return setting('EVENTBRITE_API_KEY'); },
@@ -60,6 +55,13 @@ export const tracker = {
   get cookieSecret() { return setting('TRACKER_COOKIE_SECRET'); },
   /** Presented by the scheduled jobs (Azure Logic App) in the X-Api-Key header. */
   get jobsApiKey() { return setting('TRACKER_JOBS_API_KEY'); },
+  /**
+   * This environment's own mailbox, {slot}.tracker@ (tracker@ for production): the public
+   * address for the app. Emails are sent from it with Reply-To it, and the About box and
+   * every "Contact us" link show it. The environment's registration needs Mail.Send for it
+   * (docs/sharepoint-setup.md section 4); whoever answers it needs Full Access.
+   */
+  get sharedMailbox() { return setting('TRACKER_SHARED_MAILBOX'); },
   /** Emails with Admin access (they also need a Profile `User`). To be replaced by Entra app roles. */
   get adminUsers(): Set<string> {
     return new Set(
@@ -183,12 +185,6 @@ export const SIGN_IN_EMAILS_PER_HOUR = 60;
 
 /** How long a sign-in lasts, for volunteers and staff alike: covers a dig's prep, the day and the follow-up. */
 export const LOGIN_HOURS = 72;
-
-/**
- * Where people contact the tracker team: "Contact us" links, the About box, and Reply-To on
- * every email. A shared mailbox; someone needs Full Access to it to read what arrives.
- */
-export const CONTACT_EMAIL = 'tracker@deantrailvolunteers.org.uk';
 
 /** Production address; docs.dtv.org.uk redirects here. */
 export const PRODUCTION_URL = 'https://tracker.dtv.org.uk';

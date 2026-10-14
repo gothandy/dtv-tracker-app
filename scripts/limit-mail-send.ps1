@@ -28,7 +28,7 @@
     Changing which mailbox an environment sends from:
       1. grant the new mailbox,
       2. wait for it to apply (up to an hour or two),
-      3. change the environment's EXCHANGE_SEND_MAILBOX and send yourself a code,
+      3. change the environment's TRACKER_SHARED_MAILBOX and send yourself a code,
       4. remove the old mailbox with -Remove.
 
     Running it again is safe: anything already in place is left as it is.
@@ -44,7 +44,7 @@
     The app registration's Application (client) ID, as in ENTRA_CLIENT_ID.
 
 .PARAMETER Mailbox
-    The mailbox to grant or remove, as in the environment's EXCHANGE_SEND_MAILBOX
+    The mailbox to grant or remove, as in the environment's TRACKER_SHARED_MAILBOX
     setting. Leave it out to just see the app's current mailboxes.
 
 .PARAMETER TestMailbox

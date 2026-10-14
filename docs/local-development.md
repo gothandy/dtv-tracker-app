@@ -29,9 +29,6 @@ ENTRA_CLIENT_SECRET=your_client_secret_here
 # SharePoint
 SHAREPOINT_SITE_URL=https://dtvolunteers.sharepoint.com/sites/tracker-preview
 
-# Exchange (the mailbox email is sent from)
-EXCHANGE_SEND_MAILBOX=preview.tracker@deantrailvolunteers.org.uk
-
 # Eventbrite
 EVENTBRITE_API_KEY=your_eventbrite_api_key_here
 
@@ -40,6 +37,7 @@ TRACKER_COOKIE_SECRET=any_long_random_value
 TRACKER_JOBS_API_KEY=any_long_random_value
 # Admin access, and locally the email safe list (see configuration.md)
 TRACKER_ADMIN_USERS=you@dtv.org.uk
+TRACKER_SHARED_MAILBOX=preview.tracker@deantrailvolunteers.org.uk
 ```
 
 List IDs, drive IDs and the term set are fixed values in `backend/config.ts`, so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.

@@ -254,11 +254,11 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
 - [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
-- [ ] Arrives from the `EXCHANGE_SEND_MAILBOX` setting
+- [ ] Arrives from the `TRACKER_SHARED_MAILBOX` setting
 
 ### H23e. Contact address
-- [ ] About box, *Contact us* on the sign-in page, access-denied page and profile tasks all show/open `tracker@deantrailvolunteers.org.uk`
-- [ ] Reply to any tracker email (sign-in code, session email) → addressed to `tracker@`
+- [ ] About box, *Contact us* on the sign-in page, access-denied page and profile tasks all show/open this environment's mailbox (`TRACKER_SHARED_MAILBOX`: `preview.tracker@` on the preview, `tracker@` on production)
+- [ ] Emails arrive from that mailbox, and replying addresses it
 
 ### H23d. Email safe list (preview and local only)
 - [ ] Sign-in code to your own `TRACKER_ADMIN_USERS` account, or an address on your own profile → arrives

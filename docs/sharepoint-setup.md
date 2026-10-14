@@ -15,7 +15,7 @@ Both are set up the same way and limited to what the tracker needs:
 |---|---|---|
 | `Sites.Selected` | Application (Microsoft Graph) | The environment's own site only, by a site grant (section 3). Preview can't reach the live site |
 | `TermStore.Read.All` | Application | Read-only. The term store is organisation-wide, so it can't be limited to one site |
-| Send mail | Exchange Online, *Application Mail.Send* | One mailbox, the `EXCHANGE_SEND_MAILBOX` setting (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
+| Send mail | Exchange Online, *Application Mail.Send* | One mailbox, the `TRACKER_SHARED_MAILBOX` setting (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
 | `User.Read` | Delegated | Microsoft sign-in |
 
 The tracker's own code decides what each signed-in person may see and do (see *Clean code and maintainability* in [AGENTS.md](../AGENTS.md)); these permissions limit what its key can reach beyond that. Every identity's access is recorded in [access.md](access.md) and checked with `scripts/access-report.ps1`.
@@ -57,7 +57,7 @@ Run it when you create a new app registration for the tracker, or move the track
 
 ## 4. Limit which mailbox it can send from
 
-The tracker sends sign-in codes and emails from one mailbox per environment: the `EXCHANGE_SEND_MAILBOX` setting. In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox. Each mailbox has its own Exchange scope, so granting or removing one never changes what another registration can send as.
+The tracker sends sign-in codes and emails from one mailbox per environment: the `TRACKER_SHARED_MAILBOX` setting. In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox. Each mailbox has its own Exchange scope, so granting or removing one never changes what another registration can send as.
 
 ### Mailboxes
 
@@ -68,7 +68,7 @@ The tracker sends sign-in codes and emails from one mailbox per environment: the
 | `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked |
 | `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
 
-Until production moves to `tracker@`, it sends from `admin@deantrailvolunteers.org.uk`. Whichever mailbox sends, replies go to `tracker@` (`Reply-To`), which is also the *Contact us* address in the app (`CONTACT_EMAIL` in `backend/config.ts`). Give the people who answer it **Full Access** to `tracker@`, or what arrives there goes unread.
+Until production moves to `tracker@`, it uses `admin@deantrailvolunteers.org.uk`. Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
 
 Shared mailboxes need no licence and are created with sign-in blocked (*Microsoft 365 admin centre → Users → Active users* shows **Sign-in blocked**); check it, don't unblock it.
 
@@ -78,7 +78,7 @@ To see what a registration can send as, without changing anything: `./limit-mail
 
 1. In Azure Cloud Shell (PowerShell), or your own PowerShell with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
    ```powershell
-   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <EXCHANGE_SEND_MAILBOX> -TestMailbox <any other real mailbox; nothing is sent>
+   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <TRACKER_SHARED_MAILBOX> -TestMailbox <any other real mailbox; nothing is sent>
    ```
    Sign in as an Exchange or Global admin.
 2. Check the test lines: one row per mailbox the app can send as; the mailbox needs **one row True**, the test mailbox **False on every row**. Then check the closing list of mailboxes the app can send as.
@@ -88,7 +88,7 @@ To see what a registration can send as, without changing anything: `./limit-mail
 ### Changing an environment's mailbox
 
 1. Grant the new mailbox (above), and wait for it to apply.
-2. Change the environment's `EXCHANGE_SEND_MAILBOX` and send yourself a sign-in code.
+2. Change the environment's `TRACKER_SHARED_MAILBOX` and send yourself a sign-in code.
 3. Take the old mailbox away:
    ```powershell
    ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove

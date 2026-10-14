@@ -42,7 +42,7 @@ Four independent caches (NodeCache, column schema, taxonomy tree, cover image). 
 
 ## Session Email Notifications
 
-Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail from the `EXCHANGE_SEND_MAILBOX` setting. Outside production, only to the email safe list (`email-safe-list.ts`; see [configuration.md](../configuration.md#email-outside-production)). Sandbox preview at `POST /api/email/render`.
+Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail from the `TRACKER_SHARED_MAILBOX` setting. Outside production, only to the email safe list (`email-safe-list.ts`; see [configuration.md](../configuration.md#email-outside-production)). Sandbox preview at `POST /api/email/render`.
 
 ## Nightly Backup Export
 
