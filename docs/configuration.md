@@ -13,7 +13,7 @@ Settings are named `{WHO}_{WHAT}`: WHO is the system the value belongs to or was
 | `ENTRA_CLIENT_ID` | Entra ID → App registrations → *DTV Tracker (Production)* or *(Preview)* → Overview | The environment's app registration: SharePoint, email and Microsoft sign-in |
 | `ENTRA_CLIENT_SECRET` | Same registration → Certificates & secrets | Its secret. Expires; see [Entra ID secret needs updating](../readme.md#entra-id-secret-needs-updating-see-readme) |
 | `SHAREPOINT_SITE_URL` | Production: `https://dtvolunteers.sharepoint.com/sites/tracker`. Preview slot and local development: `…/sites/tracker-preview` | Picks the site; its list and drive IDs are in `config.ts` |
-| `EXCHANGE_SEND_MAILBOX` | Exchange admin centre → Mailboxes. Today `admin@deantrailvolunteers.org.uk` everywhere | The mailbox the tracker sends from. The environment's registration needs Mail.Send for it ([sharepoint-setup.md](sharepoint-setup.md) section 4) |
+| `EXCHANGE_SEND_MAILBOX` | Production: `tracker@deantrailvolunteers.org.uk`. A slot: `{slot}.tracker@…` (e.g. `preview.tracker@`). Locally: the preview's. Until each has been switched over, `admin@deantrailvolunteers.org.uk` | The mailbox the tracker sends from. The environment's registration must be allowed to send as it **before** this changes ([sharepoint-setup.md](sharepoint-setup.md) section 4) |
 | `EVENTBRITE_API_KEY` | Eventbrite → Account settings → API keys | Eventbrite sync |
 | `TRACKER_COOKIE_SECRET` | Any long random value, e.g. `openssl rand -base64 32` | Signs the login cookie. Changing it signs everyone out |
 | `TRACKER_JOBS_API_KEY` | Any long random value; the same value is in the Azure Logic App | `X-Api-Key` header for the scheduled jobs (sync, stats refresh, backup) |
@@ -37,7 +37,7 @@ On a slot or in local development (any site other than the live one), the tracke
 
 Exact addresses only: no other domains, no plus-addresses. Anything else is refused with an error naming the address, and nothing is sent (`backend/services/email-safe-list.ts`). A bulk send checks every recipient first, so it's refused as a whole rather than half sent. To let someone receive test email, add them to the slot's `TRACKER_ADMIN_USERS` and link their profile's `User`. Production sends as before.
 
-This catches accidents; it doesn't stop someone deliberately changing their own profile's `Email`.
+This catches accidents; it doesn't stop someone deliberately changing their own profile's `Email`. Code that gets around it is caught by Exchange instead: a slot's mailbox can only send to the `test.tracker@` list, one recipient at a time ([sharepoint-setup.md](sharepoint-setup.md#locking-a-slots-mailbox)). Everyone on the app's list should also be on `test.tracker@`, or their test emails bounce.
 
 ## Adding or changing a setting
 

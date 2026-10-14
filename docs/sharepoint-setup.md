@@ -57,18 +57,57 @@ Run it when you create a new app registration for the tracker, or move the track
 
 ## 4. Limit which mailbox it can send from
 
-The tracker sends sign-in codes and emails from one mailbox (the `EXCHANGE_SEND_MAILBOX` setting). In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox.
+The tracker sends sign-in codes and emails from one mailbox per environment: the `EXCHANGE_SEND_MAILBOX` setting. In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox. Each mailbox has its own Exchange scope, so granting or removing one never changes what another registration can send as.
 
-1. In Azure Cloud Shell (PowerShell), or PowerShell 7 with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
+### Mailboxes
+
+| Address | What it is |
+|---|---|
+| `tracker@deantrailvolunteers.org.uk` | Shared mailbox: the tracker's public sender (production) |
+| `{slot}.tracker@deantrailvolunteers.org.uk`, e.g. `preview.tracker@` | Shared mailbox per slot, hidden from the address book and locked to the test list (below) |
+| `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups; only the maintainer may send to it |
+| `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
+
+Until production moves to `tracker@`, it sends from `admin@deantrailvolunteers.org.uk`. Replies go to `admin@` (`Reply-To`) whichever mailbox sends.
+
+Shared mailboxes need no licence and are created with sign-in blocked (*Microsoft 365 admin centre → Users → Active users* shows **Sign-in blocked**); check it, don't unblock it.
+
+### Giving a registration its mailbox
+
+To see what a registration can send as, without changing anything: `./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID>`.
+
+1. In Azure Cloud Shell (PowerShell), or your own PowerShell with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
    ```powershell
-   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -TestMailbox <any other real mailbox; nothing is sent>
+   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <EXCHANGE_SEND_MAILBOX> -TestMailbox <any other real mailbox; nothing is sent>
    ```
    Sign in as an Exchange or Global admin.
-2. Check the test lines: `InScope` **True** for the tracker's mailbox, **False** for the test mailbox.
+2. Check the test lines: one row per mailbox the app can send as; the mailbox needs **one row True**, the test mailbox **False on every row**. Then check the closing list of mailboxes the app can send as.
 3. If the script warns that Entra `Mail.Send` is still there, remove it: *Entra ID → App registrations → the registration → API permissions → Mail.Send → Remove permission*. It overrides the Exchange limit.
-4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take an hour or two to apply a new assignment, so **run this script well before switching an environment to a new registration**; until it applies, sending fails with `403 ErrorAccessDenied`.
+4. Exchange can take an hour or two to apply a new assignment; until then sending fails with `403 ErrorAccessDenied`. So grant **well before** an environment starts using a mailbox.
 
-If an environment's mailbox changes, run the script again with `-Mailbox` **first**, wait for it to apply, then change that environment's `EXCHANGE_SEND_MAILBOX`.
+### Changing an environment's mailbox
+
+1. Grant the new mailbox (above), and wait for it to apply.
+2. Change the environment's `EXCHANGE_SEND_MAILBOX` and send yourself a sign-in code.
+3. Take the old mailbox away:
+   ```powershell
+   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove
+   ```
+   The scope is deleted only once no registration uses it, so removing `admin@` from Preview leaves production's permission alone.
+
+### Locking a slot's mailbox
+
+A slot runs on a copy of live data, so as well as the app's own check ([configuration.md](configuration.md#email-outside-production)), Exchange makes sure its mailbox can only reach the test list, whatever the code does:
+
+1. **One recipient per message**, so a message can't slip through by copying in someone on the list (Exchange PowerShell: `Connect-ExchangeOnline`, then):
+   ```powershell
+   Set-Mailbox <slot>.tracker@deantrailvolunteers.org.uk -RecipientLimits 1
+   ```
+2. **Mail flow rule** (*Exchange admin centre → Mail flow → Rules → Add a rule*): if *the sender is* the slot mailbox, *reject the message with the explanation* "Not on Tracker (Test) safe list of recipients.", *except if the recipient is a member of* `test.tracker@`. Mode **Enforce**; after saving, **switch the rule on** (new rules start off). The preview's rule is *Tracker (Preview) Restriction*.
+3. **Hide it** from the global address list, so nobody emails it by mistake.
+4. **Test** (allow 30 minutes), sending as the slot mailbox from Outlook on the web (you need *Send As* on it): to a member of `test.tracker@` → arrives; to an address not on the list → rejected; to a member with a non-member in Cc → rejected outright, nothing delivered.
+
+To let someone receive slot email, add them (or a mail contact for their personal address) to `test.tracker@`, and to the slot's `TRACKER_ADMIN_USERS` for the app's own check.
 
 ---
 
