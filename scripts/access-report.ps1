@@ -13,23 +13,30 @@
 
     It covers:
       1. Each tracker identity: application and delegated permissions, owners,
-         keys and secrets, and whether it's switched on.
+         what it owns, admin roles over it, keys and secrets, and whether it's
+         switched on.
       2. The tracker sites: which apps have a grant on each.
       3. The whole tenant: anything holding broad permissions (mail, all sites,
-         all files, directory or app management).
+         all files, directory or app management, on Graph, SharePoint or
+         Exchange's own API), apps that can be given single lists or files, and
+         apps holding an Entra admin role.
       4. Exchange: which mailboxes each identity can send as, any other app with
-         an Exchange application role, and the slot mailbox lockdown (recipient
-         limit, mail flow rule, test list).
+         an Exchange role, and the slot mailbox lockdown (recipient limit, mail
+         flow rule, test list).
       5. With -Azure: who has Azure roles on the web app, the Logic Apps, their
-         resource group and subscription; and GitHub's federated logins (issuer,
-         subject and audience).
+         resource group and subscription; GitHub's federated logins (issuer,
+         subject and audience); and that the nightly switch-off is on, daily,
+         does nothing else, and last ran successfully.
+
+    Apps are matched by object and client ID throughout, never by name alone:
+    names needn't be unique.
 
     It changes nothing. When access changes on purpose, update docs/access.md
     and the expectations below in the same PR.
 
     Sign in as a Global admin. Reading site permissions needs SharePoint admin
-    rights, so the Graph sign-in asks for Sites.FullControl.All; the script only
-    reads. Needs the Microsoft Graph and ExchangeOnlineManagement modules (Cloud
+    rights, so the Graph sign-in asks for Sites.FullControl.All, and reading admin
+    roles RoleManagement.Read.Directory; the script only reads. Needs the Microsoft Graph and ExchangeOnlineManagement modules (Cloud
     Shell has both, plus Az for -Azure). On your own machine:
         Install-Module Microsoft.Graph.Applications, Microsoft.Graph.Sites, Microsoft.Graph.Users,
             Microsoft.Graph.Identity.SignIns, ExchangeOnlineManagement -Scope CurrentUser
@@ -125,18 +132,26 @@ $SharedMailboxes = @("tracker@$Domain", "preview.tracker@$Domain")
 $SlotMailboxes = [ordered]@{ "preview.tracker@$Domain" = 'Tracker (Preview) Restriction' }
 $TestList = "test.tracker@$Domain"
 
-# Broad application permissions: anything holding these is listed.
+# Broad application permissions, on Microsoft Graph, SharePoint or Exchange's own API:
+# anything holding these is listed.
 $BroadPermissions = @(
-    'Mail.Send', 'Mail.Read', 'Mail.ReadWrite', 'MailboxSettings.ReadWrite',
+    'Mail.Send', 'Mail.Read', 'Mail.ReadBasic.All', 'Mail.ReadWrite', 'MailboxSettings.ReadWrite',
+    'full_access_as_app', 'Exchange.ManageAsApp',
     'Sites.Read.All', 'Sites.ReadWrite.All', 'Sites.Manage.All', 'Sites.FullControl.All',
     'Files.Read.All', 'Files.ReadWrite.All',
-    'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All',
+    'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All', 'DelegatedPermissionGrant.ReadWrite.All',
     'Directory.ReadWrite.All', 'Group.ReadWrite.All', 'User.ReadWrite.All',
     'RoleManagement.ReadWrite.Directory', 'TermStore.ReadWrite.All'
 )
+# Permissions that are granted list by list or file by file, which the site check can't see.
+$SelectedPermissions = @('Lists.SelectedOperations.Selected', 'ListItems.SelectedOperations.Selected', 'Files.SelectedOperations.Selected')
 
-# Broad permissions that are known and justified, as 'App name|API/Permission'. Record why in docs/access.md.
+# Known and justified, as 'Client ID|API/Permission' (broad permissions) or 'Client ID|Role'
+# (Entra admin roles held by apps). Record why in docs/access.md.
 $KnownBroad = @()
+# Exchange application roles held by apps other than the tracker's, as 'Client ID|Role'.
+# Record why in docs/access.md.
+$KnownExchange = @()
 
 # Azure (-Azure): the web app, the Logic Apps (one holds the jobs key, one can change
 # Preview), their resource group, and GitHub's deploy identity.
@@ -153,6 +168,7 @@ $GitHubLogins = @(
 $SignInScopes = @('openid', 'profile', 'offline_access')
 $GraphAppId = '00000003-0000-0000-c000-000000000000'
 $SharePointAppId = '00000003-0000-0ff1-ce00-000000000000'
+$ExchangeAppId = '00000002-0000-0ff1-ce00-000000000000'
 
 # ── Output ──────────────────────────────────────────────────────────────────
 
@@ -206,7 +222,7 @@ function Compare-Sets([string] $What, [string[]] $Actual, [string[]] $Expected, 
 # ── Graph ───────────────────────────────────────────────────────────────────
 
 # Stay signed in between runs: reuse an existing connection rather than asking again.
-$GraphScopes = @('Application.Read.All', 'Directory.Read.All', 'Sites.FullControl.All')
+$GraphScopes = @('Application.Read.All', 'Directory.Read.All', 'RoleManagement.Read.Directory', 'Sites.FullControl.All')
 $context = Get-MgContext
 if (-not $context -or @($GraphScopes | Where-Object { $context.Scopes -notcontains $_ }).Count -gt 0) {
     Connect-MgGraph -Scopes $GraphScopes -NoWelcome
@@ -231,6 +247,45 @@ foreach ($identity in $Identities) {
     $sp = @(Get-MgServicePrincipal -Filter "displayName eq '$($identity.Name)'" -All -Property 'id,appId,displayName,accountEnabled,servicePrincipalType,passwordCredentials,keyCredentials')
     $nameCount[$identity.Name] = $sp.Count
     if ($sp.Count -gt 0) { $found[$identity.Name] = $sp[0] }
+}
+
+# Every Entra admin role assignment, read once: section 1 looks for roles over the
+# tracker's apps (which can change an app like an owner can), section 3 for apps
+# holding any admin role (Application Administrator can add a key to any app).
+function Get-AllPages([string] $Uri) {
+    while ($Uri) {
+        $page = Invoke-MgGraphRequest -Method GET -Uri $Uri
+        $page.value
+        $Uri = $page.'@odata.nextLink'
+    }
+}
+$roleNames = @{}      # role definition ID -> name
+$principals = @{}     # principal ID -> type and name
+$roleAssignments = $null
+try {
+    foreach ($definition in Get-AllPages 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName') {
+        $roleNames[$definition.id] = $definition.displayName
+    }
+    $roleAssignments = @(Get-AllPages 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?$select=id,principalId,roleDefinitionId,directoryScopeId')
+    $ids = @($roleAssignments | ForEach-Object { $_.principalId } | Sort-Object -Unique)
+    for ($i = 0; $i -lt $ids.Count; $i += 1000) {
+        $batch = @($ids[$i..([Math]::Min($i + 999, $ids.Count - 1))])
+        $result = Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/directoryObjects/getByIds' `
+            -Body (@{ ids = $batch } | ConvertTo-Json) -ContentType 'application/json'
+        foreach ($object in $result.value) {
+            $principals[$object.id] = [pscustomobject]@{
+                Type = "$($object.'@odata.type')" -replace '^#microsoft\.graph\.', ''
+                Name = $object.displayName
+            }
+        }
+    }
+} catch {
+    $roleError = $_.Exception.Message
+}
+function Get-RoleText($Assignment) {
+    $who = $principals[$Assignment.principalId]
+    $name = if ($who) { "$($who.Type) '$($who.Name)'" } else { "unknown principal $($Assignment.principalId)" }
+    "$($roleNames[$Assignment.roleDefinitionId]) for $name"
 }
 
 # Compares a list of directory objects (owners, or owned objects) with the expected
@@ -294,9 +349,23 @@ foreach ($identity in $Identities) {
     $owned = @(Get-MgServicePrincipalOwnedObject -ServicePrincipalId $sp.Id -All)
     Compare-DirectoryObjects 'owns' $owned $identity.Owns
 
+    $app = if ($identity.Kind -eq 'App registration') {
+        Get-MgApplication -Filter "appId eq '$($sp.AppId)'" -Property 'id,passwordCredentials,keyCredentials' | Select-Object -First 1
+    }
+
+    # Admin roles over this app alone (e.g. Application Administrator scoped to it).
+    if ($null -eq $roleAssignments) {
+        Write-Result 'CHECK' "couldn't read admin roles: $roleError" "couldn't read admin roles"
+    } else {
+        $appScopes = @("/$($sp.Id)") + @(if ($app) { "/$($app.Id)" })
+        $scoped = @($roleAssignments | Where-Object { $appScopes -contains $_.directoryScopeId })
+        foreach ($assignment in $scoped) { Write-Result 'UNEXPECTED' "admin role over this app: $(Get-RoleText $assignment)" }
+        if (-not $scoped) { Write-Result 'OK' 'admin roles over this app (none)' 'admin roles over this app (none)' }
+    }
+
     # App registration: owners can add secrets, so list them; secrets and federated logins.
-    if ($identity.Kind -eq 'App registration') {
-        $app = Get-MgApplication -Filter "appId eq '$($sp.AppId)'" -Property 'id,passwordCredentials,keyCredentials'
+    if ($identity.Kind -eq 'App registration' -and -not $app) { Write-Result 'MISSING' 'app registration not found' 'app registration' }
+    if ($app) {
         foreach ($owner in @(Get-MgApplicationOwner -ApplicationId $app.Id -All)) {
             Write-Result 'CHECK' "app registration owner $($owner.AdditionalProperties.displayName) (owners can add secrets)"
         }
@@ -352,9 +421,10 @@ Write-Section '3. Broad permissions anywhere in the tenant'
 $trackerIds = @($found.Values | ForEach-Object { $_.Id })
 $tenantId = (Get-MgContext).TenantId
 $MicrosoftTenants = @('f8cdef31-a31e-4b4a-93e4-5f571e91255a', '72f988bf-86f1-41af-91ab-2d7cd011db47')
-$ownerCache = @{}
-function Get-AppOwnerKind([string] $ServicePrincipalId) {
-    if (-not $ownerCache.ContainsKey($ServicePrincipalId)) {
+$appCache = @{}
+# Whose app it is (own, Microsoft, another organisation, or switched off), and its client ID.
+function Get-AppInfo([string] $ServicePrincipalId) {
+    if (-not $appCache.ContainsKey($ServicePrincipalId)) {
         $principal = Get-MgServicePrincipal -ServicePrincipalId $ServicePrincipalId -Property 'appId,appOwnerOrganizationId,servicePrincipalType,accountEnabled'
         # Two switches: the enterprise app's "Enabled for users to sign in?" (accountEnabled),
         # and the app registration's "Deactivate" (isDisabled, beta API only).
@@ -368,31 +438,53 @@ function Get-AppOwnerKind([string] $ServicePrincipalId) {
             elseif ($principal.AppOwnerOrganizationId -eq $tenantId) { 'own' }
             elseif ($MicrosoftTenants -contains $principal.AppOwnerOrganizationId) { 'Microsoft' }
             else { 'another organisation' }
-        $ownerCache[$ServicePrincipalId] = $kind
+        $appCache[$ServicePrincipalId] = [pscustomobject]@{ Kind = $kind; AppId = $principal.AppId }
     }
-    $ownerCache[$ServicePrincipalId]
+    $appCache[$ServicePrincipalId]
+}
+# One rule for anything broad an app holds: a tracker identity or this organisation's own
+# app is UNEXPECTED, a switched-off app or someone else's is CHECK, a recorded one is OK.
+function Write-Broad([string] $PrincipalId, [string] $Text, [string] $What, [string] $Known) {
+    $info = Get-AppInfo $PrincipalId
+    $line = "$Text ($($info.Kind) app)"
+    if ($trackerIds -contains $PrincipalId) { Write-Result 'UNEXPECTED' "${line}: a tracker identity" }
+    elseif ($KnownBroad -contains "$($info.AppId)|$Known") { Write-Result 'OK' "${line}: recorded in docs/access.md" }
+    elseif ($info.Kind -eq 'switched-off') { Write-Result 'CHECK' "${line}: switched off, so it can't use it; delete the app, or remove it" "a switched-off app still holds $What" }
+    elseif ($info.Kind -eq 'own') { Write-Result 'UNEXPECTED' "${line}: this organisation's own app; remove it, or record why in docs/access.md and `$KnownBroad (client ID $($info.AppId))" }
+    else { Write-Result 'CHECK' "${line}: is it still used?" }
 }
 $broadFound = $false
-foreach ($apiAppId in @($GraphAppId, $SharePointAppId)) {
+foreach ($apiAppId in @($GraphAppId, $SharePointAppId, $ExchangeAppId)) {
     $api = Get-MgServicePrincipal -Filter "appId eq '$apiAppId'" -Property 'id,displayName,appRoles'
     if (-not $api) { continue }
     $resourceCache[$api.Id] = $api
     Get-MgServicePrincipalAppRoleAssignedTo -ServicePrincipalId $api.Id -All | ForEach-Object {
         $role = $api.AppRoles | Where-Object Id -eq $_.AppRoleId
-        if ($role -and $BroadPermissions -contains $role.Value) {
+        if (-not $role) { return }
+        $permissionName = "$($api.DisplayName)/$($role.Value)"
+        if ($BroadPermissions -contains $role.Value) {
             $broadFound = $true
-            $kind = Get-AppOwnerKind $_.PrincipalId
-            $permissionName = "$($api.DisplayName)/$($role.Value)"
-            $text = "$($_.PrincipalDisplayName) ($kind app) has $permissionName"
-            if ($trackerIds -contains $_.PrincipalId) { Write-Result 'UNEXPECTED' $text }
-            elseif ($KnownBroad -contains "$($_.PrincipalDisplayName)|$permissionName") { Write-Result 'OK' $text }
-            elseif ($kind -eq 'switched-off') { Write-Result 'CHECK' "${text}: switched off, so it can't use it; delete the app, or remove the permission" 'a switched-off app still holds a broad permission' }
-            elseif ($kind -eq 'own') { Write-Result 'UNEXPECTED' "${text}: this organisation's own app; remove it, or record why in docs/access.md and `$KnownBroad" }
-            else { Write-Result 'CHECK' "${text}: is it still used?" }
+            Write-Broad $_.PrincipalId "$($_.PrincipalDisplayName) has $permissionName" 'a broad permission' $permissionName
+        } elseif ($SelectedPermissions -contains $role.Value -and $trackerIds -notcontains $_.PrincipalId) {
+            # A tracker identity holding one is already UNEXPECTED in section 1.
+            Write-Result 'CHECK' "$($_.PrincipalDisplayName) has ${permissionName}: it can be given single lists or files, which section 2 can't see; make sure it has none on the tracker sites" 'an app can be given single lists or files'
         }
     }
 }
 if (-not $broadFound) { Write-Result 'OK' 'nothing holds a broad application permission' 'nothing holds a broad application permission' }
+
+Set-Subject 'Entra admin roles held by apps'
+if ($null -eq $roleAssignments) {
+    Write-Result 'CHECK' "couldn't read admin roles: $roleError" "couldn't read admin roles"
+} else {
+    $appRoles = @($roleAssignments | Where-Object { $principals[$_.principalId].Type -eq 'servicePrincipal' })
+    foreach ($assignment in $appRoles) {
+        $roleName = $roleNames[$assignment.roleDefinitionId]
+        $where = if ($assignment.directoryScopeId -eq '/') { 'across the organisation' } else { 'over one object' }
+        Write-Broad $assignment.principalId "$($principals[$assignment.principalId].Name) is $roleName $where" 'an admin role' $roleName
+    }
+    if (-not $appRoles) { Write-Result 'OK' 'no app holds an admin role' 'no app holds an admin role' }
+}
 
 # ── Exchange ────────────────────────────────────────────────────────────────
 
@@ -446,25 +538,46 @@ foreach ($identity in $Identities) {
 }
 
 Set-Subject 'Every Exchange application role in the tenant'
-$trackerNames = @($found.Values | ForEach-Object { $_.Id; $_.AppId; $_.DisplayName })
+# Only the tracker's identities should hold one, each Application Mail.Send for its own
+# mailbox. Each role is matched to an app through Exchange's record of that app (made by
+# limit-mail-send.ps1 with the app's client ID and object ID), never by name; a role that
+# can't be matched is UNEXPECTED too.
 $appAssignments = @(Get-ManagementRoleAssignment | Where-Object {
-    $_.Role -like 'Application *' -and $_.RoleAssignmentDelegationType -eq 'Regular' -and $_.RoleAssigneeType -ne 'RoleGroup'
+    ($_.Role -like 'Application *' -or $_.RoleAssigneeType -eq 'ServicePrincipal') -and
+    $_.RoleAssignmentDelegationType -eq 'Regular' -and $_.RoleAssigneeType -ne 'RoleGroup'
 })
+$attributed = @{}   # assignment identity -> Exchange's record of the app
+foreach ($exchangeApp in @(Get-ServicePrincipal)) {
+    $assignee = if ($exchangeApp.ObjectId) { "$($exchangeApp.ObjectId)" } else { "$($exchangeApp.Identity)" }
+    foreach ($assignment in @(Get-ManagementRoleAssignment -RoleAssignee $assignee -ErrorAction SilentlyContinue)) {
+        $attributed["$($assignment.Identity)"] = $exchangeApp
+    }
+}
 foreach ($assignment in $appAssignments) {
     $mailbox = if ($assignment.CustomResourceScope) { Get-ScopeMailbox $assignment.CustomResourceScope } else { 'the whole organisation' }
-    $assignee = $assignment.RoleAssigneeName
-    $named = @($found.Values | Where-Object { $_.Id -eq $assignee -or $_.AppId -eq $assignee -or $_.DisplayName -eq $assignee })
-    if ($named) { $assignee = $named[0].DisplayName }
+    $exchangeApp = $attributed["$($assignment.Identity)"]
+    # A tracker identity: Exchange's record has its client ID and object ID.
+    $tracker = if ($exchangeApp) {
+        $Identities | Where-Object {
+            $candidate = $found[$_.Name]
+            $candidate -and $candidate.AppId -eq "$($exchangeApp.AppId)" -and
+                (-not $exchangeApp.ObjectId -or $candidate.Id -eq "$($exchangeApp.ObjectId)")
+        } | Select-Object -First 1
+    }
+    $assignee = if ($tracker) { $tracker.Name }
+        elseif ($exchangeApp) { "$($exchangeApp.DisplayName) (client ID $($exchangeApp.AppId))" }
+        else { "$($assignment.RoleAssigneeName) (not matched to an app)" }
     $text = "${assignee}: $($assignment.Role) for $mailbox"
-    if ($trackerNames -contains $assignment.RoleAssigneeName) {
-        $owner = $Identities | Where-Object { $_.Name -eq $named[0].DisplayName }
-        if ($assignment.Role -eq 'Application Mail.Send' -and $assignment.CustomResourceScope -and $owner.Mailboxes -contains $mailbox) {
+    if ($tracker) {
+        if ($assignment.Role -eq 'Application Mail.Send' -and $assignment.CustomResourceScope -and $tracker.Mailboxes -contains $mailbox) {
             Write-Result 'OK' $text "tracker: $($assignment.Role) for $mailbox"
         } else {
             Write-Result 'UNEXPECTED' "${text}: a tracker identity should only have Application Mail.Send for its own mailbox"
         }
+    } elseif ($exchangeApp -and $KnownExchange -contains "$($exchangeApp.AppId)|$($assignment.Role)") {
+        Write-Result 'OK' "${text}: recorded in docs/access.md"
     } else {
-        Write-Result 'CHECK' $text
+        Write-Result 'UNEXPECTED' "${text}: only the tracker's identities should have an Exchange role; remove it, or record why in docs/access.md and `$KnownExchange"
     }
 }
 if (-not $appAssignments) { Write-Result 'MISSING' 'none: no app can send email' 'a tracker send role' }
@@ -483,6 +596,11 @@ foreach ($mailbox in $SlotMailboxes.Keys) {
     if (-not $rule) { Write-Result 'MISSING' "mail flow rule '$ruleName'" "mail flow rule '$ruleName'"; continue }
     if ($rule.State -eq 'Enabled' -and $rule.Mode -eq 'Enforce') { Write-Result 'OK' "rule '$ruleName' is on and enforced" "rule '$ruleName' is on and enforced" }
     else { Write-Result 'UNEXPECTED' "rule '$ruleName' is $($rule.State), mode $($rule.Mode)" }
+    # A rule with dates only applies between them.
+    $now = Get-Date
+    if ($rule.ExpiryDate) { Write-Result 'UNEXPECTED' "rule stops applying on $($rule.ExpiryDate): clear its end date" }
+    elseif ($rule.ActivationDate -and $rule.ActivationDate -gt $now) { Write-Result 'UNEXPECTED' "rule doesn't apply until $($rule.ActivationDate): clear its start date" }
+    else { Write-Result 'OK' 'rule applies at all times' 'rule applies at all times' }
     # Resolve each sender and compare exact addresses, not text.
     $senders = @(@($rule.From) | ForEach-Object {
         $recipient = Get-Recipient -Identity $_ -ErrorAction SilentlyContinue
@@ -528,6 +646,9 @@ if (-not $list) {
     else { Write-Result 'CHECK' 'shown in the address book' 'shown in the address book' }
     if ($list.RequireSenderAuthenticationEnabled) { Write-Result 'OK' 'outside senders blocked' 'outside senders blocked' }
     else { Write-Result 'UNEXPECTED' 'anyone outside can email it' }
+    # Joining the list means receiving slot email, so it's for its owners to decide.
+    if ($list.MemberJoinRestriction -eq 'Open') { Write-Result 'UNEXPECTED' 'anyone in the organisation can add themselves: set joining to closed' }
+    else { Write-Result 'OK' "people can't add themselves ($($list.MemberJoinRestriction))" "people can't add themselves" }
     $members = @(Get-DistributionGroupMember -Identity $TestList -ResultSize Unlimited)
     $groups = @($members | Where-Object { $_.RecipientType -like '*Group*' })
     foreach ($group in $groups) { Write-Result 'UNEXPECTED' "group inside the list: $($group.Name) (reaches all its members)" }
@@ -549,9 +670,10 @@ if ($Azure) {
         foreach ($slot in @(Get-AzWebAppSlot -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp)) {
             $resources += [pscustomobject]@{ Id = $slot.Id; Name = $slot.Name }
         }
-        # GitHub's deploy identity, matched by its ID: display names needn't be unique.
-        $deploy = Get-AzUserAssignedIdentity | Where-Object Name -eq 'oidc-msi-ad79' | Select-Object -First 1
-        $deployId = if ($deploy) { $deploy.PrincipalId } else { $null }
+        # GitHub's deploy identity: the one section 1 checked, matched by its ID, since
+        # names needn't be unique (a managed identity's principal ID is its object ID).
+        $deployId = if ($found['oidc-msi-ad79']) { $found['oidc-msi-ad79'].Id } else { $null }
+        $deploy = if ($deployId) { Get-AzUserAssignedIdentity | Where-Object PrincipalId -eq $deployId | Select-Object -First 1 }
         foreach ($logicAppName in $AzureLogicApps) {
             $logicApp = Get-AzResource -ResourceGroupName $AzureResourceGroup -Name $logicAppName -ResourceType 'Microsoft.Logic/workflows' -ErrorAction SilentlyContinue
             if ($logicApp) { $resources += [pscustomobject]@{ Id = $logicApp.ResourceId; Name = $logicApp.Name } }
@@ -568,7 +690,10 @@ if ($Azure) {
                 if ($seen.ContainsKey($assignment.RoleAssignmentId)) { continue }
                 $seen[$assignment.RoleAssignmentId] = $true
                 $where = if ($assignment.Scope -eq $resource.Id) { $resource.Name }
-                    elseif ($assignment.Scope -like '*/resourceGroups/*') { 'the resource group' } else { 'the subscription' }
+                    elseif ($assignment.Scope -like '*/resourceGroups/*') { 'the resource group' }
+                    elseif ($assignment.Scope -like '/providers/Microsoft.Management/managementGroups/*') { 'a management group' }
+                    elseif ($assignment.Scope -eq '/') { 'all of Azure (root)' }
+                    else { 'the subscription' }
                 [pscustomobject]@{ Assignment = $assignment; Where = $where }
             }
         }
@@ -589,20 +714,20 @@ if ($Azure) {
         if (-not $deploy) {
             Write-Result 'MISSING' 'managed identity oidc-msi-ad79 not found: GitHub cannot deploy' 'managed identity oidc-msi-ad79'
         } else {
-        $deployRoleFound = $false
-        foreach ($assignment in Get-AzRoleAssignment -ObjectId $deploy.PrincipalId) {
-            $text = "$($assignment.RoleDefinitionName) on $($assignment.Scope)"
-            if ($assignment.RoleDefinitionName -eq 'Website Contributor' -and $assignment.Scope -eq $webApp.Id) {
-                $deployRoleFound = $true
-                Write-Result 'OK' $text "Website Contributor on $AzureWebApp"
-            } else { Write-Result 'UNEXPECTED' $text }
-        }
-        # Without it, neither deploy workflow can deploy.
-        if (-not $deployRoleFound) { Write-Result 'MISSING' "Website Contributor on $AzureWebApp" "Website Contributor on $AzureWebApp" }
-        Set-Subject 'GitHub logins oidc-msi-ad79 accepts'
-        $logins = @(Get-AzFederatedIdentityCredential -ResourceGroupName $deploy.ResourceGroupName -IdentityName $deploy.Name |
-            ForEach-Object { "$($_.Issuer) | $($_.Subject) | $(@($_.Audience) -join ', ')" })
-        Compare-Sets 'federated login' $logins $GitHubLogins
+            $deployRoleFound = $false
+            foreach ($assignment in Get-AzRoleAssignment -ObjectId $deploy.PrincipalId) {
+                $text = "$($assignment.RoleDefinitionName) on $($assignment.Scope)"
+                if ($assignment.RoleDefinitionName -eq 'Website Contributor' -and $assignment.Scope -eq $webApp.Id) {
+                    $deployRoleFound = $true
+                    Write-Result 'OK' $text "Website Contributor on $AzureWebApp"
+                } else { Write-Result 'UNEXPECTED' $text }
+            }
+            # Without it, neither deploy workflow can deploy.
+            if (-not $deployRoleFound) { Write-Result 'MISSING' "Website Contributor on $AzureWebApp" "Website Contributor on $AzureWebApp" }
+            Set-Subject 'GitHub logins oidc-msi-ad79 accepts'
+            $logins = @(Get-AzFederatedIdentityCredential -ResourceGroupName $deploy.ResourceGroupName -IdentityName $deploy.Name |
+                ForEach-Object { "$($_.Issuer) | $($_.Subject) | $(@($_.Audience) -join ', ')" })
+            Compare-Sets 'federated login' $logins $GitHubLogins
         }
 
         $deactivate = $found['TrackerPreviewDeactivate']
@@ -610,6 +735,60 @@ if ($Azure) {
             Set-Subject 'TrackerPreviewDeactivate Azure roles'
             $roles = @(Get-AzRoleAssignment -ObjectId $deactivate.Id | ForEach-Object { "$($_.RoleDefinitionName) on $($_.Scope)" })
             Compare-Sets 'role' $roles @()
+        }
+
+        # The nightly switch-off is a guard in itself: check it's on, runs daily, does only
+        # that, and runs as the identity section 1 checked.
+        $nightly = Get-AzResource -ResourceGroupName $AzureResourceGroup -Name 'TrackerPreviewDeactivate' -ResourceType 'Microsoft.Logic/workflows' -ExpandProperties -ErrorAction SilentlyContinue
+        if ($nightly) {
+            Set-Subject 'Nightly switch-off (TrackerPreviewDeactivate)'
+            $preview = $found['DTV Tracker (Preview)']
+            $definition = $nightly.Properties.definition
+            if ($nightly.Properties.state -eq 'Enabled') { Write-Result 'OK' 'Logic App is on' 'Logic App is on' }
+            else { Write-Result 'UNEXPECTED' "Logic App is $($nightly.Properties.state): Preview isn't being switched off" }
+            if ($deactivate -and $nightly.Identity.PrincipalId -eq $deactivate.Id) {
+                Write-Result 'OK' 'runs as the identity checked in section 1' 'runs as the identity checked in section 1'
+            } else {
+                Write-Result 'UNEXPECTED' "runs as $($nightly.Identity.Type) $($nightly.Identity.PrincipalId), not the TrackerPreviewDeactivate identity checked in section 1"
+            }
+            $triggers = @($definition.triggers.PSObject.Properties | ForEach-Object { $_.Value })
+            $daily = @($triggers | Where-Object { $_.type -eq 'Recurrence' -and $_.recurrence.frequency -eq 'Day' -and $_.recurrence.interval -eq 1 })
+            if ($triggers.Count -eq 1 -and $daily.Count -eq 1) {
+                $recurrence = $daily[0].recurrence
+                $at = '{0:00}:{1:00} {2}' -f @($recurrence.schedule.hours)[0], @($recurrence.schedule.minutes)[0], $recurrence.timeZone
+                Write-Result 'OK' "runs daily at $at" 'runs daily'
+            } else {
+                Write-Result 'UNEXPECTED' "$($triggers.Count) triggers, $($daily.Count) of them daily: expected one daily schedule"
+            }
+            # Its identity can change Preview in any way, so the only action should be the switch-off.
+            $actions = @($definition.actions.PSObject.Properties | ForEach-Object { $_.Value })
+            $switchOff = @($actions | Where-Object {
+                $_.type -eq 'Http' -and $_.inputs.method -eq 'PATCH' -and $preview -and
+                $_.inputs.uri -eq "https://graph.microsoft.com/v1.0/servicePrincipals/$($preview.Id)" -and
+                $_.inputs.body.accountEnabled -eq $false -and $_.inputs.authentication.type -eq 'ManagedServiceIdentity'
+            })
+            if ($actions.Count -eq 1 -and $switchOff.Count -eq 1) {
+                Write-Result 'OK' 'only switches off the Preview enterprise app' 'only switches off the Preview enterprise app'
+            } else {
+                Write-Result 'UNEXPECTED' "$($actions.Count) actions, $($switchOff.Count) of them the switch-off: re-run preview-nightly-off.ps1"
+            }
+            try {
+                $runs = (Invoke-AzRestMethod -Method GET -Path "$($nightly.ResourceId)/runs?api-version=2016-06-01&`$top=1").Content | ConvertFrom-Json
+                $last = @($runs.value)[0]
+                if (-not $last) {
+                    Write-Result 'CHECK' 'no runs yet' 'no runs yet'
+                } else {
+                    $started = ([datetime] $last.properties.startTime).ToUniversalTime()
+                    $hours = [int] ((Get-Date).ToUniversalTime() - $started).TotalHours
+                    if ($last.properties.status -eq 'Succeeded' -and $hours -lt 26) {
+                        Write-Result 'OK' "last run succeeded, $hours hours ago" 'last run succeeded within a day'
+                    } else {
+                        Write-Result 'CHECK' "last run: $($last.properties.status), $hours hours ago" 'last run failed, or was more than a day ago'
+                    }
+                }
+            } catch {
+                Write-Result 'CHECK' "couldn't read its run history: $($_.Exception.Message)" "couldn't read its run history"
+            }
         }
     }
 }

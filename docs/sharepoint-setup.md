@@ -65,7 +65,7 @@ The tracker sends sign-in codes and emails from one mailbox per environment: the
 |---|---|
 | `tracker@deantrailvolunteers.org.uk` | Shared mailbox: the tracker's public sender (production) |
 | `{slot}.tracker@deantrailvolunteers.org.uk`, e.g. `preview.tracker@` | Shared mailbox per slot, hidden from the address book and locked to the test list (below) |
-| `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked |
+| `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked; joining **Closed** (the default), so only its owners add people |
 | `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
 
 Until production moves to `tracker@`, it uses `admin@deantrailvolunteers.org.uk`. Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
@@ -103,7 +103,7 @@ A slot runs on a copy of live data, so as well as the app's own check ([configur
    ```powershell
    Set-Mailbox <slot>.tracker@deantrailvolunteers.org.uk -RecipientLimits 1
    ```
-2. **Mail flow rule** (*Exchange admin centre → Mail flow → Rules → Add a rule*): if *the sender is* the slot mailbox, *reject the message with the explanation* "Not on Tracker (Test) safe list of recipients.", *except if the recipient is a member of* `test.tracker@`. Mode **Enforce**; leave *Activate/Deactivate this rule on* blank. After saving, **switch the rule on**: new rules start off, and the switch is found by selecting **Disabled** in the rule's *Status* column (or `Enable-TransportRule -Identity '<rule name>'`). `scripts/access-report.ps1` flags a rule left off. The preview's rule is *Tracker (Preview) Restriction*.
+2. **Mail flow rule** (*Exchange admin centre → Mail flow → Rules → Add a rule*): if *the sender is* the slot mailbox, *reject the message with the explanation* "Not on Tracker (Test) safe list of recipients.", *except if the recipient is a member of* `test.tracker@`. Mode **Enforce**; leave *Activate/Deactivate this rule on* blank (the report flags dates). After saving, **switch the rule on**: new rules start off, and the switch is found by selecting **Disabled** in the rule's *Status* column (or `Enable-TransportRule -Identity '<rule name>'`). `scripts/access-report.ps1` flags a rule left off. The preview's rule is *Tracker (Preview) Restriction*.
 3. **Hide it** from the global address list, so nobody emails it by mistake.
 4. **Test** (allow 30 minutes), sending as the slot mailbox from Outlook on the web (you need *Send As* on it): to a member of `test.tracker@` → arrives; to an address not on the list → rejected; to a member with a non-member in Cc → rejected outright, nothing delivered.
 

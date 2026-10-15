@@ -120,19 +120,26 @@ Write-Host ''
 Connect-ExchangeOnline -ShowBanner:$false
 
 # Scopes are matched by what they cover, not by name, so a scope made by an
-# earlier version of this script is found and reused, never changed.
-$scope = if ($Mailbox) { Get-ManagementScope | Where-Object { $_.RecipientFilter -eq $Filter } | Select-Object -First 1 }
+# earlier version of this script is found and reused, never changed. There may be
+# more than one for the same mailbox: granting reuses the first, removing covers all.
+$scopes = @(if ($Mailbox) { Get-ManagementScope | Where-Object { $_.RecipientFilter -eq $Filter } })
+$scope = $scopes | Select-Object -First 1
+
+if ($Action -eq 'grant' -and -not (Get-Mailbox -Identity $Mailbox -ErrorAction SilentlyContinue)) {
+    throw "No mailbox $Mailbox in this organisation. Create it first (docs/sharepoint-setup.md, section 4)."
+}
 
 if ($Action -eq 'status') {
     $exchangeApp = Get-ServicePrincipal -Identity $ClientId -ErrorAction SilentlyContinue
     if (-not $exchangeApp) { Write-Host 'App is not registered with Exchange.' }
 } elseif ($Action -eq 'remove') {
     $exchangeApp = Get-ServicePrincipal -Identity $ClientId -ErrorAction SilentlyContinue
-    if (-not $exchangeApp -or -not $scope) {
+    $scopeNames = @($scopes | ForEach-Object { $_.Name })
+    if (-not $exchangeApp -or -not $scopes) {
         Write-Host "The app has no permission to send as $Mailbox. Nothing to remove."
     } else {
         $assignments = Get-ManagementRoleAssignment -RoleAssignee $app.Id -Role $Role -ErrorAction SilentlyContinue |
-            Where-Object { $_.CustomResourceScope -eq $scope.Name }
+            Where-Object { $scopeNames -contains $_.CustomResourceScope }
         if (-not $assignments) {
             Write-Host "The app has no permission to send as $Mailbox. Nothing to remove."
         } else {
@@ -142,14 +149,16 @@ if ($Action -eq 'status') {
             }
         }
 
-        # Delete the scope only if no other app still uses it.
-        $stillUsed = Get-ManagementRoleAssignment -Role $Role -ErrorAction SilentlyContinue |
-            Where-Object { $_.CustomResourceScope -eq $scope.Name }
-        if ($stillUsed) {
-            Write-Host "Kept scope '$($scope.Name)': another app still uses it."
-        } else {
-            Remove-ManagementScope -Identity $scope.Name -Confirm:$false
-            Write-Host "Deleted scope '$($scope.Name)'."
+        # Delete each scope only if nothing else (any app, any role) still uses it.
+        foreach ($name in $scopeNames) {
+            $stillUsed = Get-ManagementRoleAssignment -ErrorAction SilentlyContinue |
+                Where-Object { $_.CustomResourceScope -eq $name }
+            if ($stillUsed) {
+                Write-Host "Kept scope '$name': something else still uses it."
+            } else {
+                Remove-ManagementScope -Identity $name -Confirm:$false
+                Write-Host "Deleted scope '$name'."
+            }
         }
 
         Write-Host ''
