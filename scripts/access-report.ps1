@@ -263,10 +263,27 @@ foreach ($identity in $Identities) {
         foreach ($owner in $spOwners) { Write-Result 'CHECK' "enterprise app owner $owner" }
     }
 
-    # What it owns: an owner can change the object (with OwnedBy, completely).
-    $owned = @(Get-MgServicePrincipalOwnedObject -ServicePrincipalId $sp.Id -All |
-        ForEach-Object { $_.AdditionalProperties.displayName })
-    Compare-Sets 'owns' $owned $identity.Owns
+    # What it owns: an owner can change the object (with OwnedBy, completely). Compared by
+    # object type and ID, since display names needn't be unique and an app registration and
+    # its enterprise app share one. Expected: the named identities' enterprise apps.
+    $expectedOwned = @($identity.Owns | ForEach-Object { if ($found[$_]) { [pscustomobject]@{ Name = $_; Id = $found[$_].Id } } })
+    $owned = @(Get-MgServicePrincipalOwnedObject -ServicePrincipalId $sp.Id -All)
+    foreach ($object in $owned) {
+        $type = "$($object.AdditionalProperties['@odata.type'])" -replace '^#microsoft\.graph\.', ''
+        $name = $object.AdditionalProperties.displayName
+        $match = $expectedOwned | Where-Object { $_.Id -eq $object.Id }
+        if ($match -and $type -eq 'servicePrincipal') { Write-Result 'OK' "owns the $name enterprise app" "owns the $name enterprise app" }
+        else { Write-Result 'UNEXPECTED' "owns $type '$name' ($($object.Id))" }
+    }
+    foreach ($expected in $expectedOwned) {
+        if (-not ($owned | Where-Object { $_.Id -eq $expected.Id })) {
+            Write-Result 'MISSING' "owns the $($expected.Name) enterprise app" "owns the $($expected.Name) enterprise app"
+        }
+    }
+    foreach ($name in @($identity.Owns | Where-Object { -not $found[$_] })) {
+        Write-Result 'MISSING' "owns the $name enterprise app (not found)" "owns the $name enterprise app"
+    }
+    if (-not $owned -and -not $identity.Owns) { Write-Result 'OK' 'owns (none)' 'owns (none)' }
 
     # App registration: owners can add secrets, so list them; secrets and federated logins.
     if ($identity.Kind -eq 'App registration') {
