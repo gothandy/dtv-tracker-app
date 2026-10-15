@@ -35,6 +35,7 @@ import {
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
 import { assertSafeRecipient, UnsafeRecipientError } from '../services/email-safe-list';
+import { appKeyProblemMessage } from '../services/entra-auth-errors';
 import { renderEmail } from '../services/email-renderer';
 import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
 
@@ -1320,6 +1321,12 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
     console.error('Error sending entry notify email:', error);
     if (error instanceof UnsafeRecipientError) {
       res.status(403).json({ success: false, error: error.message });
+      return;
+    }
+    // The app's own key switched off (e.g. a slot overnight) or its secret expired: say so.
+    const keyProblem = appKeyProblemMessage(error);
+    if (keyProblem) {
+      res.status(503).json({ success: false, error: keyProblem });
       return;
     }
     res.status(500).json({ success: false, error: 'Failed to send email', message: error.message });
