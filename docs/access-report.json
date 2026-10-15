@@ -202,7 +202,7 @@
           "Logic App is on",
           "only switches off the Preview enterprise app",
           "runs as the identity checked in section 1",
-          "runs daily"
+          "runs daily at 02:00 UK time"
         ]
       }
     },
