@@ -45,3 +45,14 @@ export function isClientCredentialsAuthError(error: unknown): boolean {
   const mapped = mapClientCredentialsAuthError(error);
   return mapped === ENTRA_SECRET_UPDATE_MESSAGE || mapped === appDisabledMessage();
 }
+
+/**
+ * The message to show people when the app's own key is the problem (switched off, or its
+ * secret expired), or null when it's something else and a retry may help.
+ */
+export function appKeyProblemMessage(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : '';
+  if (message === ENTRA_SECRET_UPDATE_MESSAGE || message === appDisabledMessage()) return message;
+  const mapped = mapClientCredentialsAuthError(error);
+  return mapped === ENTRA_SECRET_UPDATE_MESSAGE || mapped === appDisabledMessage() ? mapped : null;
+}

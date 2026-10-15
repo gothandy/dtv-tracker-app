@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
   appDisabledMessage,
+  appKeyProblemMessage,
   ENTRA_SECRET_UPDATE_MESSAGE,
   isClientCredentialsAuthError,
   mapClientCredentialsAuthError,
@@ -85,5 +86,17 @@ describe('isClientCredentialsAuthError', () => {
     expect(isClientCredentialsAuthError(new Error('Failed to retrieve SharePoint site ID from Microsoft Graph'))).toBe(
       false,
     )
+  })
+})
+
+describe('appKeyProblemMessage', () => {
+  afterEach(() => { vi.unstubAllEnvs() })
+
+  it('returns the switched-off and expired-secret messages, and null otherwise', () => {
+    vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', 'https://dtvolunteers.sharepoint.com/sites/tracker-preview')
+    expect(appKeyProblemMessage(new Error(appDisabledMessage()))).toBe(appDisabledMessage())
+    expect(appKeyProblemMessage(new Error(ENTRA_SECRET_UPDATE_MESSAGE))).toBe(ENTRA_SECRET_UPDATE_MESSAGE)
+    expect(appKeyProblemMessage(new Error('Failed to authenticate with SharePoint'))).toBeNull()
+    expect(appKeyProblemMessage(new Error('network down'))).toBeNull()
   })
 })

@@ -3,6 +3,7 @@ import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import { sendEmail } from '../../services/graph-mail';
 import { UnsafeRecipientError } from '../../services/email-safe-list';
+import { appKeyProblemMessage } from '../../services/entra-auth-errors';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken, setLoginCookie } from '../../services/auth-store';
 import { safeReturnPath } from '../../services/safe-return';
@@ -103,6 +104,12 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     console.error('[Verify] sendEmail error:', err.message);
     if (err instanceof UnsafeRecipientError) {
       res.status(403).json({ error: err.message });
+      return;
+    }
+    // The app's own key switched off (e.g. a slot overnight) or its secret expired: say so.
+    const keyProblem = appKeyProblemMessage(err);
+    if (keyProblem) {
+      res.status(503).json({ error: keyProblem });
       return;
     }
     res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
