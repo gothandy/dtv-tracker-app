@@ -282,10 +282,21 @@ try {
 } catch {
     $roleError = $_.Exception.Message
 }
+# A role's name. Some built-in roles held by Microsoft's own apps aren't in the list of
+# role definitions, so look those up one by one, and fall back to the ID.
+function Get-DirectoryRoleName([string] $RoleDefinitionId) {
+    if (-not $roleNames.ContainsKey($RoleDefinitionId)) {
+        $roleNames[$RoleDefinitionId] = try {
+            (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/roleManagement/directory/roleDefinitions/$RoleDefinitionId`?`$select=displayName").displayName
+        } catch { $null }
+        if (-not $roleNames[$RoleDefinitionId]) { $roleNames[$RoleDefinitionId] = "role $RoleDefinitionId" }
+    }
+    $roleNames[$RoleDefinitionId]
+}
 function Get-RoleText($Assignment) {
     $who = $principals[$Assignment.principalId]
     $name = if ($who) { "$($who.Type) '$($who.Name)'" } else { "unknown principal $($Assignment.principalId)" }
-    "$($roleNames[$Assignment.roleDefinitionId]) for $name"
+    "$(Get-DirectoryRoleName $Assignment.roleDefinitionId) for $name"
 }
 
 # Compares a list of directory objects (owners, or owned objects) with the expected
@@ -479,7 +490,7 @@ if ($null -eq $roleAssignments) {
 } else {
     $appRoles = @($roleAssignments | Where-Object { $principals[$_.principalId].Type -eq 'servicePrincipal' })
     foreach ($assignment in $appRoles) {
-        $roleName = $roleNames[$assignment.roleDefinitionId]
+        $roleName = Get-DirectoryRoleName $assignment.roleDefinitionId
         $where = if ($assignment.directoryScopeId -eq '/') { 'across the organisation' } else { 'over one object' }
         Write-Broad $assignment.principalId "$($principals[$assignment.principalId].Name) is $roleName $where" 'an admin role' $roleName
     }
@@ -754,9 +765,16 @@ if ($Azure) {
             $triggers = @($definition.triggers.PSObject.Properties | ForEach-Object { $_.Value })
             $daily = @($triggers | Where-Object { $_.type -eq 'Recurrence' -and $_.recurrence.frequency -eq 'Day' -and $_.recurrence.interval -eq 1 })
             if ($triggers.Count -eq 1 -and $daily.Count -eq 1) {
+                # Daily is what matters; 02:00 UK time is what's recorded (docs/access.md).
                 $recurrence = $daily[0].recurrence
-                $at = '{0:00}:{1:00} {2}' -f @($recurrence.schedule.hours)[0], @($recurrence.schedule.minutes)[0], $recurrence.timeZone
-                Write-Result 'OK' "runs daily at $at" 'runs daily'
+                $hours = @($recurrence.schedule.hours); $minutes = @($recurrence.schedule.minutes)
+                $at = "hours $($hours -join ',') minutes $($minutes -join ',') $($recurrence.timeZone)"
+                if ($hours.Count -eq 1 -and $hours[0] -eq 2 -and $minutes.Count -eq 1 -and $minutes[0] -eq 0 -and
+                    $recurrence.timeZone -eq 'GMT Standard Time') {
+                    Write-Result 'OK' 'runs daily at 02:00 UK time' 'runs daily at 02:00 UK time'
+                } else {
+                    Write-Result 'CHECK' "runs daily, but at $at, not the recorded 02:00 UK time: re-run preview-nightly-off.ps1, or update docs/access.md" 'runs daily, not at the recorded time'
+                }
             } else {
                 Write-Result 'UNEXPECTED' "$($triggers.Count) triggers, $($daily.Count) of them daily: expected one daily schedule"
             }

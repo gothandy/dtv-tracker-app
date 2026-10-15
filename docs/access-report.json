@@ -3,8 +3,8 @@
   "date": "2026-10-15",
   "azure": true,
   "summary": {
-    "ok": 46,
-    "check": 2,
+    "ok": 59,
+    "check": 4,
     "missing": 0,
     "unexpected": 0
   },
@@ -13,8 +13,9 @@
       "section": "1. Tracker identities",
       "subject": "DTV Tracker (Preview)",
       "ok": {
-        "count": 7,
+        "count": 8,
         "items": [
+          "admin roles over this app (none)",
           "application permission Microsoft Graph/Sites.Selected",
           "application permission Microsoft Graph/TermStore.Read.All",
           "current secret",
@@ -29,8 +30,9 @@
       "section": "1. Tracker identities",
       "subject": "DTV Tracker (Production)",
       "ok": {
-        "count": 6,
+        "count": 7,
         "items": [
+          "admin roles over this app (none)",
           "application permission Microsoft Graph/Sites.Selected",
           "application permission Microsoft Graph/TermStore.Read.All",
           "current secret",
@@ -44,8 +46,9 @@
       "section": "1. Tracker identities",
       "subject": "oidc-msi-ad79",
       "ok": {
-        "count": 3,
+        "count": 4,
         "items": [
+          "admin roles over this app (none)",
           "application permission (none)",
           "delegated permission (none)",
           "owns (none)"
@@ -56,8 +59,9 @@
       "section": "1. Tracker identities",
       "subject": "TrackerPreviewDeactivate",
       "ok": {
-        "count": 3,
+        "count": 4,
         "items": [
+          "admin roles over this app (none)",
           "application permission Microsoft Graph/Application.ReadWrite.OwnedBy",
           "delegated permission (none)",
           "owns DTV Tracker (Preview)"
@@ -94,6 +98,14 @@
       }
     },
     {
+      "section": "3. Broad permissions anywhere in the tenant",
+      "subject": "Entra admin roles held by apps",
+      "check": {
+        "count": 2,
+        "items": []
+      }
+    },
+    {
       "section": "4. Exchange",
       "subject": "DTV Tracker (Preview) can send as",
       "ok": {
@@ -107,9 +119,10 @@
       "section": "4. Exchange",
       "subject": "DTV Tracker (Production) can send as",
       "ok": {
-        "count": 1,
+        "count": 2,
         "items": [
-          "mailbox admin@deantrailvolunteers.org.uk"
+          "mailbox admin@deantrailvolunteers.org.uk",
+          "mailbox tracker@deantrailvolunteers.org.uk"
         ]
       }
     },
@@ -117,10 +130,11 @@
       "section": "4. Exchange",
       "subject": "Every Exchange application role in the tenant",
       "ok": {
-        "count": 2,
+        "count": 3,
         "items": [
           "tracker: Application Mail.Send for admin@deantrailvolunteers.org.uk",
-          "tracker: Application Mail.Send for preview.tracker@deantrailvolunteers.org.uk"
+          "tracker: Application Mail.Send for preview.tracker@deantrailvolunteers.org.uk",
+          "tracker: Application Mail.Send for tracker@deantrailvolunteers.org.uk"
         ]
       }
     },
@@ -139,7 +153,7 @@
       "section": "4. Exchange",
       "subject": "Slot mailbox preview.tracker@deantrailvolunteers.org.uk",
       "ok": {
-        "count": 9,
+        "count": 10,
         "items": [
           "hidden from the address book",
           "no other exceptions",
@@ -147,6 +161,7 @@
           "only condition: the sender",
           "only test.tracker@deantrailvolunteers.org.uk is let through",
           "rule 'Tracker (Preview) Restriction' is on and enforced",
+          "rule applies at all times",
           "rule applies to this mailbox",
           "rule rejects the message",
           "rule runs first"
@@ -157,11 +172,12 @@
       "section": "4. Exchange",
       "subject": "Test list test.tracker@deantrailvolunteers.org.uk",
       "ok": {
-        "count": 3,
+        "count": 4,
         "items": [
           "hidden from the address book",
           "no groups inside the list",
-          "outside senders blocked"
+          "outside senders blocked",
+          "people can't add themselves"
         ]
       }
     },
@@ -173,6 +189,20 @@
         "items": [
           "federated login https://token.actions.githubusercontent.com | repo:gothandy/dtv-tracker-app:environment:preview | api://AzureADTokenExchange",
           "federated login https://token.actions.githubusercontent.com | repo:gothandy/dtv-tracker-app:ref:refs/heads/main | api://AzureADTokenExchange"
+        ]
+      }
+    },
+    {
+      "section": "5. Azure",
+      "subject": "Nightly switch-off (TrackerPreviewDeactivate)",
+      "ok": {
+        "count": 5,
+        "items": [
+          "last run succeeded within a day",
+          "Logic App is on",
+          "only switches off the Preview enterprise app",
+          "runs as the identity checked in section 1",
+          "runs daily"
         ]
       }
     },
@@ -204,7 +234,7 @@
         "items": [
           "oidc-msi-ad79: Website Contributor on DTVTrackerApp",
           "the person running the report: Owner on the subscription",
-          "the person running the report: User Access Administrator on the subscription"
+          "the person running the report: User Access Administrator on all of Azure (root)"
         ]
       }
     }
