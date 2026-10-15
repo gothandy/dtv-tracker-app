@@ -223,17 +223,44 @@ function Get-RoleName([string] $ResourceId, [string] $AppRoleId) {
     "$($resource.DisplayName)/$value"
 }
 
-$found = @{}   # identity name -> service principal
+# Look every identity up first, so owners and owned objects can be compared by ID
+# whichever order the identities come in.
+$found = @{}     # identity name -> service principal
+$nameCount = @{}  # identity name -> how many enterprise apps have that name
+foreach ($identity in $Identities) {
+    $sp = @(Get-MgServicePrincipal -Filter "displayName eq '$($identity.Name)'" -All -Property 'id,appId,displayName,accountEnabled,servicePrincipalType,passwordCredentials,keyCredentials')
+    $nameCount[$identity.Name] = $sp.Count
+    if ($sp.Count -gt 0) { $found[$identity.Name] = $sp[0] }
+}
+
+# Compares a list of directory objects (owners, or owned objects) with the expected
+# identities' enterprise apps, by object type and ID: display names needn't be unique.
+function Compare-DirectoryObjects([string] $What, [object[]] $Actual, [string[]] $ExpectedNames) {
+    $expected = @($ExpectedNames | Where-Object { $found[$_] } |
+        ForEach-Object { [pscustomobject]@{ Name = $_; Id = $found[$_].Id } })
+    foreach ($object in $Actual) {
+        $type = "$($object.AdditionalProperties['@odata.type'])" -replace '^#microsoft\.graph\.', ''
+        $name = $object.AdditionalProperties.displayName
+        $match = $expected | Where-Object { $_.Id -eq $object.Id }
+        if ($match -and $type -eq 'servicePrincipal') { Write-Result 'OK' "$What $name" "$What $name" }
+        else { Write-Result 'UNEXPECTED' "$What $type '$name' ($($object.Id))" }
+    }
+    foreach ($item in $expected) {
+        if (-not ($Actual | Where-Object { $_.Id -eq $item.Id })) { Write-Result 'MISSING' "$What $($item.Name)" "$What $($item.Name)" }
+    }
+    foreach ($name in @($ExpectedNames | Where-Object { -not $found[$_] })) {
+        Write-Result 'MISSING' "$What $name (not found)" "$What $name"
+    }
+    if (-not $Actual -and -not $ExpectedNames) { Write-Result 'OK' "$What (none)" "$What (none)" }
+}
 
 Write-Section '1. Tracker identities'
 foreach ($identity in $Identities) {
     Set-Subject $identity.Name
 
-    $sp = @(Get-MgServicePrincipal -Filter "displayName eq '$($identity.Name)'" -All -Property 'id,appId,displayName,accountEnabled,servicePrincipalType,passwordCredentials,keyCredentials')
-    if ($sp.Count -eq 0) { Write-Result 'MISSING' 'not found in Entra' 'not found in Entra'; continue }
-    if ($sp.Count -gt 1) { Write-Result 'UNEXPECTED' "$($sp.Count) apps share this name: only the first is checked" }
-    $sp = $sp[0]
-    $found[$identity.Name] = $sp
+    if ($nameCount[$identity.Name] -eq 0) { Write-Result 'MISSING' 'not found in Entra' 'not found in Entra'; continue }
+    if ($nameCount[$identity.Name] -gt 1) { Write-Result 'UNEXPECTED' "$($nameCount[$identity.Name]) apps share this name: only the first is checked" }
+    $sp = $found[$identity.Name]
     Write-Result 'INFO' "client ID $($sp.AppId), object ID $($sp.Id), switched $(if ($sp.AccountEnabled) { 'on' } else { 'off' })"
 
     # Application permissions.
@@ -254,36 +281,18 @@ foreach ($identity in $Identities) {
         }
     }
 
-    # Owners of the enterprise app.
-    $spOwners = @(Get-MgServicePrincipalOwner -ServicePrincipalId $sp.Id -All |
-        ForEach-Object { $_.AdditionalProperties.displayName })
+    # Owners of the enterprise app: expected ones are the named identities, by type and ID.
+    $spOwners = @(Get-MgServicePrincipalOwner -ServicePrincipalId $sp.Id -All)
     if ($null -ne $identity.SpOwners) {
-        Compare-Sets 'enterprise app owner' $spOwners $identity.SpOwners
+        Compare-DirectoryObjects 'enterprise app owner' $spOwners $identity.SpOwners
     } else {
-        foreach ($owner in $spOwners) { Write-Result 'CHECK' "enterprise app owner $owner" }
+        foreach ($owner in $spOwners) { Write-Result 'CHECK' "enterprise app owner $($owner.AdditionalProperties.displayName)" }
     }
 
-    # What it owns: an owner can change the object (with OwnedBy, completely). Compared by
-    # object type and ID, since display names needn't be unique and an app registration and
-    # its enterprise app share one. Expected: the named identities' enterprise apps.
-    $expectedOwned = @($identity.Owns | ForEach-Object { if ($found[$_]) { [pscustomobject]@{ Name = $_; Id = $found[$_].Id } } })
+    # What it owns: an owner can change the object (with OwnedBy, completely).
+    # Expected: the named identities' enterprise apps.
     $owned = @(Get-MgServicePrincipalOwnedObject -ServicePrincipalId $sp.Id -All)
-    foreach ($object in $owned) {
-        $type = "$($object.AdditionalProperties['@odata.type'])" -replace '^#microsoft\.graph\.', ''
-        $name = $object.AdditionalProperties.displayName
-        $match = $expectedOwned | Where-Object { $_.Id -eq $object.Id }
-        if ($match -and $type -eq 'servicePrincipal') { Write-Result 'OK' "owns the $name enterprise app" "owns the $name enterprise app" }
-        else { Write-Result 'UNEXPECTED' "owns $type '$name' ($($object.Id))" }
-    }
-    foreach ($expected in $expectedOwned) {
-        if (-not ($owned | Where-Object { $_.Id -eq $expected.Id })) {
-            Write-Result 'MISSING' "owns the $($expected.Name) enterprise app" "owns the $($expected.Name) enterprise app"
-        }
-    }
-    foreach ($name in @($identity.Owns | Where-Object { -not $found[$_] })) {
-        Write-Result 'MISSING' "owns the $name enterprise app (not found)" "owns the $name enterprise app"
-    }
-    if (-not $owned -and -not $identity.Owns) { Write-Result 'OK' 'owns (none)' 'owns (none)' }
+    Compare-DirectoryObjects 'owns' $owned $identity.Owns
 
     # App registration: owners can add secrets, so list them; secrets and federated logins.
     if ($identity.Kind -eq 'App registration') {
