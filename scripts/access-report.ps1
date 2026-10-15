@@ -524,7 +524,8 @@ if ($Azure) {
             $resources += [pscustomobject]@{ Id = $slot.Id; Name = $slot.Name }
         }
         # GitHub's deploy identity, matched by its ID: display names needn't be unique.
-        $deploy = Get-AzUserAssignedIdentity -ResourceGroupName (Get-AzUserAssignedIdentity | Where-Object Name -eq 'oidc-msi-ad79').ResourceGroupName -Name 'oidc-msi-ad79'
+        $deploy = Get-AzUserAssignedIdentity | Where-Object Name -eq 'oidc-msi-ad79' | Select-Object -First 1
+        $deployId = if ($deploy) { $deploy.PrincipalId } else { $null }
         foreach ($logicAppName in $AzureLogicApps) {
             $logicApp = Get-AzResource -ResourceGroupName $AzureResourceGroup -Name $logicAppName -ResourceType 'Microsoft.Logic/workflows' -ErrorAction SilentlyContinue
             if ($logicApp) { $resources += [pscustomobject]@{ Id = $logicApp.ResourceId; Name = $logicApp.Name } }
@@ -549,7 +550,7 @@ if ($Azure) {
             $assignment = $entry.Assignment
             $where = $entry.Where
             $text = "$($assignment.DisplayName) [$($assignment.ObjectType)]: $($assignment.RoleDefinitionName) on $where"
-            if ($assignment.ObjectId -eq $deploy.PrincipalId -and $assignment.RoleDefinitionName -eq 'Website Contributor' -and $where -eq $AzureWebApp) {
+            if ($deployId -and $assignment.ObjectId -eq $deployId -and $assignment.RoleDefinitionName -eq 'Website Contributor' -and $where -eq $AzureWebApp) {
                 Write-Result 'OK' $text "oidc-msi-ad79: Website Contributor on $AzureWebApp"
             } elseif ($assignment.ObjectType -eq 'User' -and $assignment.ObjectId -eq $me.id) {
                 Write-Result 'OK' "$text (you)" "the person running the report: $($assignment.RoleDefinitionName) on $where"
@@ -559,6 +560,9 @@ if ($Azure) {
         }
 
         Set-Subject 'oidc-msi-ad79 roles'
+        if (-not $deploy) {
+            Write-Result 'MISSING' 'managed identity oidc-msi-ad79 not found: GitHub cannot deploy' 'managed identity oidc-msi-ad79'
+        } else {
         $deployRoleFound = $false
         foreach ($assignment in Get-AzRoleAssignment -ObjectId $deploy.PrincipalId) {
             $text = "$($assignment.RoleDefinitionName) on $($assignment.Scope)"
@@ -573,6 +577,7 @@ if ($Azure) {
         $logins = @(Get-AzFederatedIdentityCredential -ResourceGroupName $deploy.ResourceGroupName -IdentityName $deploy.Name |
             ForEach-Object { "$($_.Issuer) | $($_.Subject) | $(@($_.Audience) -join ', ')" })
         Compare-Sets 'federated login' $logins $GitHubLogins
+        }
 
         $deactivate = $found['TrackerPreviewDeactivate']
         if ($deactivate) {

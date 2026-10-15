@@ -2,7 +2,7 @@
 import express, { Request, Response, Router } from 'express';
 /// <reference path="../../types/express-session.d.ts" />
 import { sendEmail } from '../../services/graph-mail';
-import { UnsafeRecipientError } from '../../services/email-safe-list';
+import { assertSafeRecipient, UnsafeRecipientError } from '../../services/email-safe-list';
 import { appKeyProblemMessage } from '../../services/entra-auth-errors';
 import { resolvePersonalSession } from '../../services/personal-auth';
 import { createAuthToken, setLoginCookie } from '../../services/auth-store';
@@ -73,6 +73,20 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     return;
   }
 
+  // Outside production, refuse an address off the safe list before storing anything for it.
+  try {
+    await assertSafeRecipient(email);
+  } catch (err: any) {
+    if (err instanceof UnsafeRecipientError) {
+      res.status(403).json({ error: err.message });
+      return;
+    }
+    const keyProblem = appKeyProblemMessage(err);
+    console.error('[Verify] safe-list check error:', err.message);
+    res.status(keyProblem ? 503 : 500).json({ error: keyProblem ?? 'Failed to send verification email. Please try again.' });
+    return;
+  }
+
   const code = String(randomInt(1000, 10000));
   // One code per email â€” delete any previous entry (expired or not) before storing the new one.
   // Expired entries for abandoned requests stay in the map until the same email sends again or
@@ -102,6 +116,7 @@ router.post('/verify/send', async (req: Request, res: Response) => {
     res.json({ ok: true });
   } catch (err: any) {
     console.error('[Verify] sendEmail error:', err.message);
+    codeStore.delete(email);   // nothing was sent, so nothing to check against
     if (err instanceof UnsafeRecipientError) {
       res.status(403).json({ error: err.message });
       return;
