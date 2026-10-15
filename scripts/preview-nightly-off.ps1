@@ -78,7 +78,16 @@ $rg = Get-AzResourceGroup -Name $ResourceGroup
 # off mid-test (or fail, before the permission below exists). A daily recurrence also needs
 # its start time at least 24 hours ahead, or Azure may skip the first run; so start at 02:00
 # the day after tomorrow, which is always more than 24 hours away.
-$startTime = (Get-Date).ToUniversalTime().AddDays(2).ToString('yyyy-MM-dd') + 'T02:00:00'
+# On a re-run, keep the existing start time: a new one would postpone the next switch-off.
+$existing = Get-AzResource -ResourceGroupName $ResourceGroup -Name $Name -ResourceType 'Microsoft.Logic/workflows' -ExpandProperties -ErrorAction SilentlyContinue
+$existingStart = if ($existing) {
+    $existing.Properties.definition.triggers.PSObject.Properties |
+        Where-Object { $_.Value.type -eq 'Recurrence' -and $_.Value.recurrence.startTime } |
+        ForEach-Object { $_.Value.recurrence.startTime } | Select-Object -First 1
+}
+$startTime = if ($existingStart) { $existingStart }
+    else { (Get-Date).ToUniversalTime().AddDays(2).ToString('yyyy-MM-dd') + 'T02:00:00' }
+Write-Host "Schedule:     daily at 02:00 UK time, starting $startTime$(if ($existingStart) { ' (kept from the existing Logic App)' })"
 $template = @{
     '$schema'      = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
     contentVersion = '1.0.0.0'

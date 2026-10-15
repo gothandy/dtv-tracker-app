@@ -457,8 +457,13 @@ foreach ($mailbox in $SlotMailboxes.Keys) {
     if (-not $rule) { Write-Result 'MISSING' "mail flow rule '$ruleName'" "mail flow rule '$ruleName'"; continue }
     if ($rule.State -eq 'Enabled' -and $rule.Mode -eq 'Enforce') { Write-Result 'OK' "rule '$ruleName' is on and enforced" "rule '$ruleName' is on and enforced" }
     else { Write-Result 'UNEXPECTED' "rule '$ruleName' is $($rule.State), mode $($rule.Mode)" }
-    if (($rule.From -join ' ') -match [regex]::Escape($mailbox.Split('@')[0])) { Write-Result 'OK' 'rule applies to this mailbox' 'rule applies to this mailbox' }
-    else { Write-Result 'UNEXPECTED' "rule applies to: $($rule.From -join ', ')" }
+    # Resolve each sender and compare exact addresses, not text.
+    $senders = @(@($rule.From) | ForEach-Object {
+        $recipient = Get-Recipient -Identity $_ -ErrorAction SilentlyContinue
+        if ($recipient) { "$($recipient.PrimarySmtpAddress)".ToLower() } else { "(unresolved: $_)" }
+    })
+    if ($senders.Count -eq 1 -and $senders[0] -eq $mailbox.ToLower()) { Write-Result 'OK' 'rule applies to this mailbox' 'rule applies to this mailbox' }
+    else { Write-Result 'UNEXPECTED' "rule applies to: $($senders -join ', ')" }
     if ($rule.RejectMessageReasonText) { Write-Result 'OK' 'rule rejects the message' 'rule rejects the message' }
     else { Write-Result 'UNEXPECTED' 'rule does not reject the message' }
     # Resolve each exception to the group it names, and compare exact addresses, not text.
