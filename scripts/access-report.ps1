@@ -461,11 +461,16 @@ foreach ($mailbox in $SlotMailboxes.Keys) {
     else { Write-Result 'UNEXPECTED' "rule applies to: $($rule.From -join ', ')" }
     if ($rule.RejectMessageReasonText) { Write-Result 'OK' 'rule rejects the message' 'rule rejects the message' }
     else { Write-Result 'UNEXPECTED' 'rule does not reject the message' }
+    # Resolve each exception to the group it names, and compare exact addresses, not text.
     $exceptions = @($rule.ExceptIfSentToMemberOf)
-    if ($exceptions.Count -eq 1 -and ($exceptions[0] -match 'test\.tracker' -or $exceptions[0] -match [regex]::Escape($TestList))) {
+    $exceptionAddresses = @($exceptions | ForEach-Object {
+        $recipient = Get-Recipient -Identity $_ -ErrorAction SilentlyContinue
+        if ($recipient) { "$($recipient.PrimarySmtpAddress)".ToLower() } else { "(unresolved: $_)" }
+    })
+    if ($exceptionAddresses.Count -eq 1 -and $exceptionAddresses[0] -eq $TestList.ToLower()) {
         Write-Result 'OK' "only $TestList is let through" "only $TestList is let through"
     } else {
-        Write-Result 'UNEXPECTED' "let through: $($exceptions -join ', ')"
+        Write-Result 'UNEXPECTED' "let through: $($exceptionAddresses -join ', ')"
     }
     # Any other exception lets mail round the rule; any other condition narrows when it applies.
     $otherExceptions = @($rule.PSObject.Properties | Where-Object {
@@ -509,12 +514,18 @@ if ($Azure) {
         if (-not (Get-AzContext)) { Connect-AzAccount | Out-Null }
         $webApp = Get-AzWebApp -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp
         $resources = @($webApp | Select-Object @{ n = 'Id'; e = { $_.Id } }, @{ n = 'Name'; e = { $_.Name } })
+        # Slots are resources of their own: a role on one reaches that slot's settings and data.
+        foreach ($slot in @(Get-AzWebAppSlot -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp)) {
+            $resources += [pscustomobject]@{ Id = $slot.Id; Name = $slot.Name }
+        }
+        # GitHub's deploy identity, matched by its ID: display names needn't be unique.
+        $deploy = Get-AzUserAssignedIdentity -ResourceGroupName (Get-AzUserAssignedIdentity | Where-Object Name -eq 'oidc-msi-ad79').ResourceGroupName -Name 'oidc-msi-ad79'
         foreach ($logicAppName in $AzureLogicApps) {
             $logicApp = Get-AzResource -ResourceGroupName $AzureResourceGroup -Name $logicAppName -ResourceType 'Microsoft.Logic/workflows' -ErrorAction SilentlyContinue
             if ($logicApp) { $resources += [pscustomobject]@{ Id = $logicApp.ResourceId; Name = $logicApp.Name } }
             else { Write-Result 'MISSING' "Logic App $logicAppName not found" "Logic App $logicAppName" }
         }
-        Set-Subject "Who can change the tracker's Azure resources ($AzureWebApp, $($AzureLogicApps -join ', '), their resource group and subscription)"
+        Set-Subject "Who can change the tracker's Azure resources ($AzureWebApp and its slots, $($AzureLogicApps -join ', '), their resource group and subscription)"
         # The person running the report is expected to be an admin; anyone else with a role is the risk.
         # Matched by account ID from the Graph sign-in: Cloud Shell's Azure sign-in may name you differently.
         $me = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/me?$select=id,userPrincipalName'
@@ -533,7 +544,7 @@ if ($Azure) {
             $assignment = $entry.Assignment
             $where = $entry.Where
             $text = "$($assignment.DisplayName) [$($assignment.ObjectType)]: $($assignment.RoleDefinitionName) on $where"
-            if ($assignment.DisplayName -eq 'oidc-msi-ad79' -and $assignment.RoleDefinitionName -eq 'Website Contributor' -and $where -eq $AzureWebApp) {
+            if ($assignment.ObjectId -eq $deploy.PrincipalId -and $assignment.RoleDefinitionName -eq 'Website Contributor' -and $where -eq $AzureWebApp) {
                 Write-Result 'OK' $text "oidc-msi-ad79: Website Contributor on $AzureWebApp"
             } elseif ($assignment.ObjectType -eq 'User' -and $assignment.ObjectId -eq $me.id) {
                 Write-Result 'OK' "$text (you)" "the person running the report: $($assignment.RoleDefinitionName) on $where"
@@ -542,13 +553,17 @@ if ($Azure) {
             }
         }
 
-        $deploy = Get-AzUserAssignedIdentity -ResourceGroupName (Get-AzUserAssignedIdentity | Where-Object Name -eq 'oidc-msi-ad79').ResourceGroupName -Name 'oidc-msi-ad79'
         Set-Subject 'oidc-msi-ad79 roles'
+        $deployRoleFound = $false
         foreach ($assignment in Get-AzRoleAssignment -ObjectId $deploy.PrincipalId) {
             $text = "$($assignment.RoleDefinitionName) on $($assignment.Scope)"
-            if ($assignment.RoleDefinitionName -eq 'Website Contributor' -and $assignment.Scope -eq $webApp.Id) { Write-Result 'OK' $text "Website Contributor on $AzureWebApp" }
-            else { Write-Result 'UNEXPECTED' $text }
+            if ($assignment.RoleDefinitionName -eq 'Website Contributor' -and $assignment.Scope -eq $webApp.Id) {
+                $deployRoleFound = $true
+                Write-Result 'OK' $text "Website Contributor on $AzureWebApp"
+            } else { Write-Result 'UNEXPECTED' $text }
         }
+        # Without it, neither deploy workflow can deploy.
+        if (-not $deployRoleFound) { Write-Result 'MISSING' "Website Contributor on $AzureWebApp" "Website Contributor on $AzureWebApp" }
         Set-Subject 'GitHub logins oidc-msi-ad79 accepts'
         $logins = @(Get-AzFederatedIdentityCredential -ResourceGroupName $deploy.ResourceGroupName -IdentityName $deploy.Name |
             ForEach-Object { "$($_.Issuer) | $($_.Subject) | $(@($_.Audience) -join ', ')" })

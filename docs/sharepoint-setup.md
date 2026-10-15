@@ -133,7 +133,7 @@ If it has already expired, pages show **Entra ID secret needs updating, see read
 ./preview-nightly-off.ps1 -ClientId <DTV Tracker (Preview) client ID> -ResourceGroup DTV
 ```
 
-It refuses any registration not named *DTV Tracker (Preview)*. If you build it by hand in the portal instead, give the recurrence a **start time** (tomorrow, 02:00): without one it runs as soon as it's saved. Test it with *Logic App → Run → Run trigger* and check the setting above reads **No**. If a run fails, it shows in the Logic App's run history; the preview then simply stays on until it's switched off by hand.
+It refuses any registration not named *DTV Tracker (Preview)*. If you build it by hand in the portal instead, give the recurrence a **start time** at 02:00 **at least 24 hours ahead** (the day after tomorrow): without one it runs as soon as it's saved, and with one less than 24 hours ahead Azure may skip the first night. Check it ran in *Overview → Trigger history*. Test it with *Logic App → Run → Run trigger* and check the setting above reads **No**. If a run fails, it shows in the Logic App's run history; the preview then simply stays on until it's switched off by hand.
 
 Only switch production's registration off in an emergency: the tracker stops.
 

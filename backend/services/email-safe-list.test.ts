@@ -11,6 +11,7 @@ vi.mock('./repositories/profiles-repository', () => ({
 }));
 
 import { assertSafeRecipient, safeRecipients, UnsafeRecipientError } from './email-safe-list';
+import { platform } from '../config';
 
 const LIVE = 'https://dtvolunteers.sharepoint.com/sites/tracker';
 const PREVIEW = 'https://dtvolunteers.sharepoint.com/sites/tracker-preview';
@@ -44,11 +45,18 @@ describe('assertSafeRecipient', () => {
   beforeEach(() => {
     vi.stubEnv('TRACKER_ADMIN_USERS', 'andrew.davies@dtv.org.uk');
   });
-  afterEach(() => { vi.unstubAllEnvs(); });
+  afterEach(() => { vi.unstubAllEnvs(); platform.isLocal = false; });
 
   it('allows anyone in production', async () => {
     vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', LIVE);
     await expect(assertSafeRecipient('volunteer@example.com')).resolves.toBeUndefined();
+  });
+
+  it('treats a local run as not production, even pointed at the live site', async () => {
+    vi.stubEnv('TRACKER_SHAREPOINT_SITE_URL', LIVE);
+    platform.isLocal = true;
+    await expect(assertSafeRecipient('volunteer@example.com')).rejects.toThrow(/^Local development only sends email/);
+    await expect(assertSafeRecipient('andrew.davies@dtv.org.uk')).resolves.toBeUndefined();
   });
 
   it('allows safe-list addresses on a slot, ignoring case and spaces', async () => {

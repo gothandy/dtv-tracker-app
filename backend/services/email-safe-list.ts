@@ -11,7 +11,7 @@
  */
 
 import { SharePointProfile } from '../../types/sharepoint';
-import { environmentName, tracker } from '../config';
+import { environmentName, platform, tracker } from '../config';
 import { parseEmails } from './data-layer';
 import { profilesRepository } from './repositories/profiles-repository';
 
@@ -42,10 +42,11 @@ export function safeRecipients(
 /** Throws UnsafeRecipientError if this environment isn't production and the address isn't safe. */
 export async function assertSafeRecipient(recipient: string): Promise<void> {
   const environment = environmentName();
-  if (environment === 'Production') return;
+  // A local run is never production, even if its .env points at the live site by mistake.
+  if (environment === 'Production' && !platform.isLocal) return;
 
   const safe = safeRecipients(tracker.adminUsers, await profilesRepository.getAll());
   if (!safe.has(recipient.trim().toLowerCase())) {
-    throw new UnsafeRecipientError(environment, recipient);
+    throw new UnsafeRecipientError(environment === 'Production' ? 'Local development' : environment, recipient);
   }
 }

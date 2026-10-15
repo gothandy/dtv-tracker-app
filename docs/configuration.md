@@ -32,7 +32,7 @@ Problems are surfaced, not hidden (see *Error Handling* in [AGENTS.md](../AGENTS
 
 ## Email outside production
 
-On a slot or in local development (any site other than the live one), the tracker only sends email to the people testing it, so a test can't email the real volunteers in the copied data by accident. The safe list is:
+On a slot (any site other than the live one), and always in local development (`npm run dev`, even if `.env` points at the live site), the tracker only sends email to the people testing it, so a test can't email the real volunteers in the copied data by accident. The safe list is:
 
 - each account in that environment's `TRACKER_ADMIN_USERS`, and
 - the addresses in `Email` on the profile whose `User` is that account.

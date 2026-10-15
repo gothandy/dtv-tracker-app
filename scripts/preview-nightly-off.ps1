@@ -75,8 +75,10 @@ Write-Host "Registration: $($preview.DisplayName) ($ClientId), currently enabled
 #    service principal, signed in as its own managed identity.
 $rg = Get-AzResourceGroup -Name $ResourceGroup
 # A recurrence without a start time fires as soon as it's saved, which would switch Preview
-# off mid-test (or fail, before the permission below exists). Start from tomorrow's 02:00.
-$startTime = (Get-Date).ToUniversalTime().AddDays(1).ToString('yyyy-MM-dd') + 'T02:00:00'
+# off mid-test (or fail, before the permission below exists). A daily recurrence also needs
+# its start time at least 24 hours ahead, or Azure may skip the first run; so start at 02:00
+# the day after tomorrow, which is always more than 24 hours away.
+$startTime = (Get-Date).ToUniversalTime().AddDays(2).ToString('yyyy-MM-dd') + 'T02:00:00'
 $template = @{
     '$schema'      = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
     contentVersion = '1.0.0.0'
