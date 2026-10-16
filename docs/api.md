@@ -73,7 +73,7 @@ Volunteer attendance records are personal data. The list endpoint is Admin-only.
 | `/api/entries/:id` | DELETE | SS (own) / Admin | Delete entry |
 | `/api/entries/:id/upload-context` | GET | SS (own) / Trusted | Volunteer name and session context for upload page |
 | `/api/entries/:id/photos` | POST | SS (own) / Check In+ | Upload photos to entry |
-| `/api/entries/:id/notify` | POST | Check In+ | Send session notification email to volunteer |
+| `/api/entries/:id/notify` | POST | Check In+ | Send session notification email to volunteer. `{ check: true }` only checks the recipient may be emailed (403 if not), sending nothing |
 
 ## Profiles
 

@@ -54,15 +54,22 @@ Deployments are automated via `.github/workflows/main_dtvtrackerapp.yml` on ever
 | Branch | On push | Purpose |
 | --- | --- | --- |
 | `task/<name>` | **Build job** only: same build as production, plus backend and frontend unit tests (`vitest run`). About 2 minutes. | Day-to-day work; commit as often as needed. |
-| `preview/<name>` (PR into `main`) | **Build job**, then **deploy job**, which **waits for the maintainer's approval**, then deploys to the `preview` slot, waits for `/api/health` (up to 10 minutes), and comments the preview URL on the PR. | Squash the task branch into it when ready to test. |
+| `preview/<name>` (PR into `main`) | **Build job**, then **deploy job**, which deploys to the `preview` slot, waits for `/api/health` (up to 10 minutes), and comments the preview URL on the PR. | Squash the task branch into it when ready to test. |
 
 Merging the PR into `main` deploys to production via `main_dtvtrackerapp.yml` as before.
 
-The `preview` slot is **pre-production**, with its own app registration (*DTV Tracker (Preview)*) and its own SharePoint site, `tracker-preview`: a copy of live restored from backup ([sharepoint-setup.md](sharepoint-setup.md) section 7). Changes there don't reach live, but the copy holds **real people's data and email addresses** and the preview **sends real emails**, so take the same care as in production. There is one slot, so the most recent PR push replaces the previous preview.
+The `preview` slot is **pre-production**, with its own app registration (*DTV Tracker (Preview)*) and its own SharePoint site, `tracker-preview`: a copy of live restored from backup ([sharepoint-setup.md](sharepoint-setup.md) section 7). Changes there don't reach live, but the copy holds **real people's data and email addresses**, so take the same care as in production. Email only goes to the testers ([configuration.md](configuration.md#email-outside-production)), and the Preview registration is switched off every night at 2am ([sharepoint-setup.md](sharepoint-setup.md) section 6). There is one slot, so the most recent PR push replaces the previous preview.
 
 PRs from forks run the build job only; they don't get secrets, so they aren't deployed.
 
-**Approving a preview deploy.** The deploy job runs in the GitHub environment `preview`, which has the maintainer as required reviewer. The PR's Checks show *Waiting for review*; open the run, **review the PR's changes first**, then *Review deployments → Approve*. Approved code runs with the preview's credentials, against the preview site's copy of real data. The gate can't be skipped by editing the workflow in a PR: Azure only accepts the deploy's login (federated credential) from the `preview` environment. If the Preview registration is switched off ([sharepoint-setup.md](sharepoint-setup.md) section 6), switch it on before testing.
+**No approval step.** Preview deploys go straight out when a task is promoted, so prompt-driven work reaches the preview quickly. Instead of a reviewer, the preview is guarded:
+
+- **Its own registration**, reaching only the preview's copy of the data, never live ([sharepoint-setup.md](sharepoint-setup.md) section 7).
+- **Switched off every night at 2am** ([sharepoint-setup.md](sharepoint-setup.md) section 6), so the copy is only reachable on days someone switches it on. Switch it on before testing.
+- **Email only to the testers** ([configuration.md](configuration.md#email-outside-production)).
+- **Write access only for trusted maintainers** ([AGENTS.md](../AGENTS.md#branches-and-environments)); merging to production is always the maintainer's action.
+
+The deploy logs in as the GitHub environment `preview` (federated credential), so only workflows running in that environment can deploy to the slot. The guards live in code and settings, so review any PR that changes them before promoting it.
 
 ### Adding a deployment slot
 
@@ -90,9 +97,9 @@ These are the steps used to create `preview` on 10 Oct 2026. Use them for any fu
    ```
 
    `AADSTS700213: No matching federated identity record` in the deploy job means the subject doesn't match exactly.
-6. **SharePoint site.** Restore a copy of live as `tracker-<slot>` with [`scripts/preview-site-from-backup`](../scripts/preview-site-from-backup/README.md), add its IDs to `config.ts`, and set the slot's `SHAREPOINT_SITE_URL` to it.
-7. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
-8. **Require approval.** *GitHub → Settings → Environments → <environment> → Required reviewers*: add the maintainer, so nothing deploys to the slot without approval.
+6. **SharePoint site.** Restore a copy of live as `tracker-<slot>` with [`scripts/preview-site-from-backup`](../scripts/preview-site-from-backup/README.md), add its IDs to `config.ts`, and set the slot's `TRACKER_SHAREPOINT_SITE_URL` to it.
+7. **App registration.** Use the Preview registration (or create one per slot; see [sharepoint-setup.md](sharepoint-setup.md)): add `https://<slot>.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out` to its redirect URIs, and set the slot's `TRACKER_ENTRA_CLIENT_ID` and `TRACKER_ENTRA_CLIENT_SECRET` to it. Never give a slot production's registration.
+8. **GitHub environment.** *GitHub → Settings → Environments → New environment* `<slot>`, with no required reviewers (see *No approval step* above). Its name must match the federated credential's subject in step 5.
 9. **Point a workflow at it.** `pr-preview.yml` deploys to the slot named `preview` in the GitHub environment `preview`. A new slot needs its own environment name and slot name in a workflow (see *Per-developer slots* below).
 10. **Test.** Run the workflow, check the health step passes and the PR comment appears, then open the custom domain and sign in.
 
@@ -109,7 +116,7 @@ An earlier credential created through the portal form with an ID-based subject n
 
 A slot's settings were **copied** from production when it was created. They don't follow later changes.
 
-- **Each environment has its own registration**, so `ENTRA_CLIENT_ID` and `ENTRA_CLIENT_SECRET` differ between production and the slot. Other settings are the same; when one changes, update it on production **and every slot**.
+- **Each environment has its own registration**, so `TRACKER_ENTRA_CLIENT_ID` and `TRACKER_ENTRA_CLIENT_SECRET` differ between production and the slot. Other settings are the same; when one changes, update it on production **and every slot**.
 - **One shared `preview` slot.** Deploys are only checked for staleness within a PR, not across PRs, so if two PRs are open the slot shows whichever deployed last. Check the About modal shows the PR you're testing (*PR #N · sha*); if not, re-run that PR's deploy job. Accepted while there's one developer; use per-developer slots (below) if parallel PRs become normal.
 - **Scheduled jobs run on production only.** The Logic App calls the production URL, so slots never run the nightly sync, backup or stats refresh. To test a job change on a slot, run it on demand from the Tools page.
 - Links in emails and link previews use the address the request came in on, so emails sent from a slot link to that slot.

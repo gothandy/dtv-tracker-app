@@ -4,6 +4,7 @@ import { validateAuthToken, LOGIN_COOKIE } from '../services/auth-store';
 import { resolvePersonalSession, staffSessionUser } from '../services/personal-auth';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { LOGIN_HOURS } from '../config';
+import { appKeyProblemMessage } from '../services/entra-auth-errors';
 
 // Rebuilds req.session.user from the dtv-auth cookie when there's no session yet,
 // e.g. after a restart or deploy, or when the 8-hour session cookie has run out.
@@ -42,7 +43,9 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     if (!req.session.user) res.clearCookie(LOGIN_COOKIE);
   } catch (err: any) {
     console.error('[Auth] Could not check sign-in:', err.message);
-    const message = "We couldn't check your sign-in just now. Please try again in a minute; if it keeps happening, contact your admin.";
+    // Say what's wrong when it's the app's own key (switched off, or its secret expired); otherwise a retry may help.
+    const message = appKeyProblemMessage(err)
+      ?? "We couldn't check your sign-in just now. Please try again in a minute; if it keeps happening, contact your admin.";
     if (req.path.startsWith('/api/')) {
       res.status(503).json({ success: false, error: message });
     } else {

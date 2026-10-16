@@ -25,7 +25,7 @@ async function test() {
   console.log('=== Eventbrite Custom Questions Test ===\n');
 
   if (!API_KEY) {
-    console.error('EVENTBRITE_API_KEY not set in .env');
+    console.error('TRACKER_EVENTBRITE_API_KEY not set in .env');
     process.exit(1);
   }
 

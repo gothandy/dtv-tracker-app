@@ -26,7 +26,7 @@
     The slot, as named, e.g. Preview. The site is tracker-{slot in lower case}.
 
 .PARAMETER ClientId
-    The slot's app registration's Application (client) ID, as in that slot's ENTRA_CLIENT_ID.
+    The slot's app registration's Application (client) ID, as in that slot's TRACKER_ENTRA_CLIENT_ID.
 
 .EXAMPLE
     ./set-app-access.ps1 -Slot Preview -ClientId 00000000-0000-0000-0000-000000000000

@@ -86,7 +86,7 @@
           <button class="form-btn--link" @click="backToLogin">
             Didn't receive the email? Back to sign in
           </button>
-          <p class="sent-contact">Continuing problems? <a href="mailto:admin@deantrailvolunteers.org.uk">Contact us</a></p>
+          <p class="sent-contact">Continuing problems? <a :href="`mailto:${contact}`">Contact us</a></p>
         </FormSubmitRow>
       </FormCard>
 
@@ -106,6 +106,9 @@ import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import AppButton from '../components/AppButton.vue'
 import { ACCESS_LABEL_CHECK_IN, ACCESS_LABEL_SELF_SERVICE } from '../utils/accessLabels'
 import { safeReturnPath } from '../utils/safeReturnPath'
+import { contactEmail } from '../utils/siteInfo'
+
+const contact = contactEmail()
 
 usePageTitle('Sign in')
 

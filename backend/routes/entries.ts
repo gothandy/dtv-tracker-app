@@ -34,6 +34,8 @@ import {
 } from '../services/field-names';
 import { getAttendees, getCancelledAttendees } from '../services/eventbrite-client';
 import { sendEmail } from '../services/graph-mail';
+import { assertSafeRecipient, UnsafeRecipientError } from '../services/email-safe-list';
+import { appKeyProblemMessage } from '../services/entra-auth-errors';
 import { renderEmail } from '../services/email-renderer';
 import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
 
@@ -1289,6 +1291,17 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       return;
     }
 
+    const preview = req.body?.preview === true;
+    const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
+
+    // check: true only checks the recipient may be emailed, sending nothing. "Send all" checks
+    // every recipient first, so a slot refuses the whole send rather than part of it.
+    if (req.body?.check === true) {
+      await assertSafeRecipient(toEmail);
+      res.json({ success: true, data: { sent: 0 } } as ApiResponse<{ sent: number }>);
+      return;
+    }
+
     const sessionEntries = await entriesRepository.getBySessionIds([spSession.ID]);
     const profileRecords = profileId !== undefined
       ? await recordsRepository.getByProfile(profileId)
@@ -1301,14 +1314,21 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords);
     const { subject, html, text } = await renderEmail(templateName, vars);
 
-    const preview = req.body?.preview === true;
-    const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
-
     await sendEmail({ to: toEmail, subject, html, text });
 
     res.json({ success: true, data: { sent: 1 } } as ApiResponse<{ sent: number }>);
   } catch (error: any) {
     console.error('Error sending entry notify email:', error);
+    if (error instanceof UnsafeRecipientError) {
+      res.status(403).json({ success: false, error: error.message });
+      return;
+    }
+    // The app's own key switched off (e.g. a slot overnight) or its secret expired: say so.
+    const keyProblem = appKeyProblemMessage(error);
+    if (keyProblem) {
+      res.status(503).json({ success: false, error: keyProblem });
+      return;
+    }
     res.status(500).json({ success: false, error: 'Failed to send email', message: error.message });
   }
 });

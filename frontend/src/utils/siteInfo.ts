@@ -9,6 +9,13 @@ export function siteName(): string {
   return meta('dtv-site-name') ?? 'DTV Tracker'
 }
 
+/** Where people contact the tracker team: this environment's mailbox (TRACKER_SHARED_MAILBOX). */
+export function contactEmail(): string {
+  const email = meta('dtv-contact-email')
+  if (!email) console.error('[siteInfo] dtv-contact-email missing from the page')
+  return email ?? ''
+}
+
 /** Whose data this is: "Production", or the slot, e.g. "Preview". */
 export function environmentName(): string | undefined {
   return meta('dtv-environment')

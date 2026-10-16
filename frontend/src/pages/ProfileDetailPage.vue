@@ -3,7 +3,7 @@
     <FormCard title="Access denied">
       <p class="pd-task-message">
         You don't have permission to view this profile.
-        <a href="mailto:admin@deantrailvolunteers.org.uk" class="pd-task-link">Contact us</a>
+        <a :href="`mailto:${contact}`" class="pd-task-link">Contact us</a>
         if you think this is a mistake.
       </p>
       <FormSubmitRow>
@@ -190,6 +190,7 @@ import type { RegularListItem } from '../components/RegularList.vue'
 import type { RegularEditItem } from './modals/RegularEditModal.vue'
 import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
+import { contactEmail } from '../utils/siteInfo'
 import { useProfileDetailStore } from '../stores/profileDetail'
 import { groupPath, profilePath, profilesPath, sessionPath } from '../router/index'
 import type { ProfileEntryResponse, EntryListItemResponse } from '../../../types/api-responses'
@@ -203,6 +204,8 @@ import { ACCESS_LABEL_ADMIN, ACCESS_LABEL_CHECK_IN } from '../utils/accessLabels
 import type { PickerProfile } from '../components/ProfilePicker.vue'
 import LayoutColumns from '../components/LayoutColumns.vue'
 import SectionHeader from '../components/SectionHeader.vue'
+
+const contact = contactEmail()
 
 const route = useRoute()
 const router = useRouter()

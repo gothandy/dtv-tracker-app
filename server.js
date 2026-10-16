@@ -28,7 +28,7 @@ const { requestOrigin } = require('./dist/backend/services/request-origin');
 const { tracker, platform, FACEBOOK_APP_ID, PRODUCTION_URL, DOCS_HOST } = require('./dist/backend/config');
 const axios = require('axios');
 
-const isDev = platform.isDevelopment;
+const isDev = platform.isLocal;
 
 let _v2IndexHtml = null;
 async function getV2IndexTemplate() {
@@ -52,16 +52,24 @@ function isSpaHtmlNavigation(req) {
 }
 
 async function buildSpaHtml(req, loadHtml) {
-    const meta = await resolveOgMeta(req.path, requestOrigin(req));
+    // Link-preview tags are optional; the site name and contact address aren't, so a failure
+    // here leaves out the preview tags rather than the whole page's metadata.
+    let meta = null;
+    try {
+        meta = await resolveOgMeta(req.path, requestOrigin(req));
+    } catch (err) {
+        console.error(`Error rendering OG meta for ${req.path}:`, err);
+    }
     let html = await loadHtml();
     // The app's name, with the slot off live data ("DTV Tracker (Preview)"), for page titles;
-    // and the environment ("Preview" or "Production") for the About box.
+    // the environment ("Preview" or "Production") for the About box; and its mailbox, for contact links.
     const name = escapeHtmlAttr(siteName());
     html = html
         .replace('<title>DTV Tracker</title>', `<title>${name}</title>`)
         .replace('</head>',
             `<meta name="dtv-site-name" content="${name}">` +
-            `<meta name="dtv-environment" content="${escapeHtmlAttr(environmentName())}"></head>`);
+            `<meta name="dtv-environment" content="${escapeHtmlAttr(environmentName())}">` +
+            `<meta name="dtv-contact-email" content="${escapeHtmlAttr(tracker.sharedMailbox)}"></head>`);
     if (meta) {
         html = html.replace('</head>', buildOgHeadTags(meta, FACEBOOK_APP_ID) + `</head>`);
     }
@@ -74,7 +82,8 @@ async function serveSpaHtml(req, res) {
         const html = await buildSpaHtml(req, getV2IndexTemplate);
         res.set('Content-Type', 'text/html').send(html);
     } catch (err) {
-        console.error(`Error rendering OG meta for ${req.path}:`, err);
+        // Only reading the page template can fail here now; serve it unmodified.
+        console.error(`Error building the page for ${req.path}:`, err);
         res.sendFile(indexPath);
     }
 }
@@ -109,7 +118,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: !platform.isDevelopment,
+        secure: !platform.isLocal,
         httpOnly: true,
         maxAge: 8 * 60 * 60 * 1000, // 8 hours — DTV account sessions only
         sameSite: 'lax',
@@ -310,7 +319,7 @@ const port = platform.port;
                 });
                 res.set('Content-Type', 'text/html').send(html);
             } catch (err) {
-                console.error(`Error rendering OG meta for ${req.path}:`, err);
+                console.error(`Error building the page for ${req.path}:`, err);
                 next();
             }
         });

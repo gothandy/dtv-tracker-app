@@ -1,7 +1,7 @@
 /**
  * Integration test: Eventbrite API connectivity
  *
- * Verifies that EVENTBRITE_API_KEY is valid and the org events endpoint responds.
+ * Verifies that TRACKER_EVENTBRITE_API_KEY is valid and the org events endpoint responds.
  * Run against the live Eventbrite API — no mocks.
  *
  *

@@ -42,7 +42,7 @@ Four independent caches (NodeCache, column schema, taxonomy tree, cover image). 
 
 ## Session Email Notifications
 
-Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail from `EMAIL_FROM` in `backend/config.ts`. Sandbox preview at `POST /api/email/render`.
+Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail from the `TRACKER_SHARED_MAILBOX` setting. Outside production, only to the email safe list (`email-safe-list.ts`; see [configuration.md](../configuration.md#email-outside-production)). Sandbox preview at `POST /api/email/render`.
 
 ## Nightly Backup Export
 
@@ -56,7 +56,7 @@ Pre-computed `Stats` field on Sessions list stores aggregate JSON (count, hours,
 
 ## Auth / Graph client credentials
 
-Expired or invalid `ENTRA_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
+Expired or invalid `TRACKER_ENTRA_CLIENT_SECRET` (AADSTS7000222 / 7000215) is mapped to a short UI message: **Entra ID secret needs updating, see readme.** See [readme.md](../../readme.md) troubleshooting and [sharepoint-setup.md](../sharepoint-setup.md).
 
 ## Planned
 

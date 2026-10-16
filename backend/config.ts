@@ -6,8 +6,10 @@
  *   - values that differ between environments (production, preview, local).
  * Everything else is a fixed value in this file, so it's reviewed and versioned like code.
  *
- * Setting names follow {WHO}_{WHAT}: WHO is the system the value belongs to or was
- * issued by, so the name says where to find or renew it.
+ * Setting names follow TRACKER_{WHO}_{WHAT}. Every name we choose starts with TRACKER_, so
+ * ours stand out among the host's own (NODE_ENV, PORT, WEBSITE_…), which we don't rename
+ * (of those, the tracker only reads PORT). WHO is the system that issued the value (ENTRA, SHAREPOINT, EVENTBRITE), so
+ * the name says where to find or renew it; it's left out for the tracker's own values.
  *
  * Reference: docs/configuration.md
  */
@@ -33,7 +35,7 @@ export function settingsProblems(): string[] {
   const missing = REQUIRED_SETTINGS.filter((name) => !process.env[name]?.trim());
   if (missing.length > 0) return [`Missing settings: ${missing.join(', ')}`];
   if (!findSite(sharePoint.siteUrl)) {
-    return [`SHAREPOINT_SITE_URL ${sharePoint.siteUrl} has no IDs in backend/config.ts`];
+    return [`TRACKER_SHAREPOINT_SITE_URL ${sharePoint.siteUrl} has no IDs in backend/config.ts`];
   }
   return [];
 }
@@ -41,13 +43,13 @@ export function settingsProblems(): string[] {
 /** The tracker's Entra app registration (sign-in, SharePoint and email). */
 export const entra = {
   tenantId: '0799305d-07e3-47b2-a19a-62d9931217f6', // Dean Trail Volunteers
-  get clientId() { return setting('ENTRA_CLIENT_ID'); },
-  get clientSecret() { return setting('ENTRA_CLIENT_SECRET'); },
+  get clientId() { return setting('TRACKER_ENTRA_CLIENT_ID'); },
+  get clientSecret() { return setting('TRACKER_ENTRA_CLIENT_SECRET'); },
 };
 
 export const eventbrite = {
   organizationId: '484655313163',
-  get apiKey() { return setting('EVENTBRITE_API_KEY'); },
+  get apiKey() { return setting('TRACKER_EVENTBRITE_API_KEY'); },
 };
 
 export const tracker = {
@@ -55,6 +57,13 @@ export const tracker = {
   get cookieSecret() { return setting('TRACKER_COOKIE_SECRET'); },
   /** Presented by the scheduled jobs (Azure Logic App) in the X-Api-Key header. */
   get jobsApiKey() { return setting('TRACKER_JOBS_API_KEY'); },
+  /**
+   * This environment's own mailbox, {slot}.tracker@ (tracker@ for production): the public
+   * address for the app. Emails are sent from it with Reply-To it, and the About box and
+   * every "Contact us" link show it. The environment's registration needs Mail.Send for it
+   * (docs/sharepoint-setup.md section 4); whoever answers it needs Full Access.
+   */
+  get sharedMailbox() { return setting('TRACKER_SHARED_MAILBOX'); },
   /** Emails with Admin access (they also need a Profile `User`). To be replaced by Entra app roles. */
   get adminUsers(): Set<string> {
     return new Set(
@@ -93,7 +102,7 @@ interface SharePointSite {
   tagsTermSetId: string;
 }
 
-/** IDs for each SharePoint site the app can use. SHAREPOINT_SITE_URL picks one. */
+/** IDs for each SharePoint site the app can use. TRACKER_SHAREPOINT_SITE_URL picks one. */
 const SHAREPOINT_SITES: Record<string, SharePointSite> = {
   'https://dtvolunteers.sharepoint.com/sites/tracker': {
     lists: {
@@ -141,13 +150,13 @@ function findSite(siteUrl: string): SharePointSite | undefined {
 }
 
 /**
- * The slot whose copy of the data this tracker is using, from SHAREPOINT_SITE_URL:
+ * The slot whose copy of the data this tracker is using, from TRACKER_SHAREPOINT_SITE_URL:
  * "Preview" for …/sites/tracker-preview (sites are named tracker-{slot}), null for the
  * live site. Shown after the app's name, e.g. "DTV Tracker (Preview)", so it's always
  * clear whose data a page shows.
  */
 export function siteSlotName(): string | null {
-  const siteUrl = process.env.SHAREPOINT_SITE_URL?.trim() ?? '';
+  const siteUrl = process.env.TRACKER_SHAREPOINT_SITE_URL?.trim() ?? '';
   const slot = /\/sites\/tracker-([a-z0-9-]+)\/?$/i.exec(siteUrl)?.[1];
   if (!slot) return null;
   return slot.charAt(0).toUpperCase() + slot.slice(1).toLowerCase();
@@ -159,7 +168,7 @@ export function environmentName(): string {
 }
 
 export const sharePoint = {
-  get siteUrl() { return setting('SHAREPOINT_SITE_URL').replace(/\/$/, ''); },
+  get siteUrl() { return setting('TRACKER_SHAREPOINT_SITE_URL').replace(/\/$/, ''); },
   get site(): SharePointSite {
     const site = findSite(sharePoint.siteUrl);
     if (!site) throw new Error(`No IDs configured for SharePoint site ${sharePoint.siteUrl} in backend/config.ts`);
@@ -172,9 +181,6 @@ export const sharePoint = {
 };
 
 // ── Fixed values ────────────────────────────────────────────────────────────
-
-/** Sends sign-in codes and session emails. Needs Graph Mail.Send for this mailbox. */
-export const EMAIL_FROM = 'admin@deantrailvolunteers.org.uk';
 
 /** Global cap on sign-in code emails per hour. */
 export const SIGN_IN_EMAILS_PER_HOUR = 60;
@@ -189,11 +195,16 @@ export const DOCS_HOST = 'docs.dtv.org.uk';
 /** Meta app ID for Facebook link previews (fb:app_id). Public. */
 export const FACEBOOK_APP_ID = '1973664160696548';
 
-// ── Platform (set by the host, not by us) ───────────────────────────────────
+// ── Platform ────────────────────────────────────────────────────────────────
 
 export const platform = {
-  /** Only `npm run dev` sets this. Anything else is treated as production (secure cookies, built frontend). */
-  isDevelopment: process.env.NODE_ENV === 'development',
+  /**
+   * Running on your own machine: `npm run dev` passes --local (Vite middleware with live
+   * reload, cookies allowed over http://localhost). Anything else runs as deployed (secure
+   * cookies, built frontend), production and slots alike. Deliberately not NODE_ENV: that
+   * belongs to Node and Express, and stays `production` on Azure.
+   */
+  isLocal: process.argv.includes('--local'),
   /** Azure sets PORT; 3000 is the local default. */
   port: Number(process.env.PORT) || 3000,
 };

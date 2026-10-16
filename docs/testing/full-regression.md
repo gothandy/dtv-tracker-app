@@ -254,7 +254,20 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
 - [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
-- [ ] Arrives from `EMAIL_FROM` (`backend/config.ts`)
+- [ ] Arrives from the `TRACKER_SHARED_MAILBOX` setting
+
+### H23e. Contact address
+- [ ] About box, *Contact us* on the sign-in page, access-denied page and profile tasks all show/open this environment's mailbox (`TRACKER_SHARED_MAILBOX`: `preview.tracker@` on the preview, `tracker@` on production)
+- [ ] Emails arrive from that mailbox, and replying addresses it
+
+### H23d. Email safe list (preview and local only)
+- [ ] Sign-in code to your own `TRACKER_ADMIN_USERS` account, or an address on your own profile → arrives
+- [ ] Sign-in code to any other volunteer's address → login page shows "Preview only sends email to its admin users…" naming the address; nothing sent
+- [ ] Session email (`POST /api/entries/:id/notify`) to a volunteer, preview unticked → 403 with the same message; with preview ticked → arrives at your address
+- [ ] Bulk send with any non-safe recipient selected → refused as a whole (403), nothing sent
+- [ ] **Exchange backstop:** add an address of yours that is **not** in `test.tracker@` to your own profile's emails, so the app lets it through. Send yourself a sign-in code to it → nothing arrives, and `preview.tracker@`'s inbox gets a rejection quoting the *Tracker (Preview) Restriction* rule. Remove the address again afterwards
+- [ ] Production unchanged: emails to volunteers still sent
+- [ ] Preview registration switched off (2am run, or *TrackerPreviewDeactivate → Run trigger*), signed in: the preview says *DTV Tracker (Preview) is not enabled for users to sign-in. This happens each night as an extra security precaution. Ask your admin to activate the Entra ID Enterprise Application via properties.*, not "try again in a minute"
 
 ### H23c. Bulk add entries (admin)
 - [ ] Volunteers page → select individual profiles → "Add Entries" enabled (groups excluded)
@@ -451,7 +464,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### M2. Health check
 - [ ] `GET /api/health` — returns `{ success: true }` (no auth required)
-- [ ] If `ENTRA_CLIENT_SECRET` is expired, pages that load list data show **Entra ID secret needs updating, see readme.** (not a raw AADSTS dump or status-only text)
+- [ ] If `TRACKER_ENTRA_CLIENT_SECRET` is expired, pages that load list data show **Entra ID secret needs updating, see readme.** (not a raw AADSTS dump or status-only text)
 
 ### M3. Groups listing
 - [ ] `GET /api/groups` — all groups with regulars counts

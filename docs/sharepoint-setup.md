@@ -7,7 +7,7 @@ Each environment has its own Entra app registration and its own SharePoint site:
 | Registration | Used by | Redirect URIs | Secret held in |
 |---|---|---|---|
 | **DTV Tracker (Production)** | Production | `https://tracker.dtv.org.uk/auth/signed-in`, `https://tracker.dtv.org.uk/auth/signed-out` | Production's settings only. Nobody else needs it |
-| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out`; `http://localhost:3000/auth/signed-in` and `/auth/signed-out` | The preview slot and developers' `.env`. **Switched off when nobody is testing** (section 6) |
+| **DTV Tracker (Preview)** | The `preview` slot and local development | `https://preview.tracker.dtv.org.uk/auth/signed-in` and `/auth/signed-out`; `http://localhost:3000/auth/signed-in` and `/auth/signed-out` | The preview slot and developers' `.env`. **Switched off every night at 2am** (section 6) |
 
 Both are set up the same way and limited to what the tracker needs:
 
@@ -15,10 +15,10 @@ Both are set up the same way and limited to what the tracker needs:
 |---|---|---|
 | `Sites.Selected` | Application (Microsoft Graph) | The environment's own site only, by a site grant (section 3). Preview can't reach the live site |
 | `TermStore.Read.All` | Application | Read-only. The term store is organisation-wide, so it can't be limited to one site |
-| Send mail | Exchange Online, *Application Mail.Send* | One mailbox, `EMAIL_FROM` in `backend/config.ts` (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
+| Send mail | Exchange Online, *Application Mail.Send* | One mailbox, the `TRACKER_SHARED_MAILBOX` setting (section 4). **Not** Graph `Mail.Send`, which means "send as anyone" |
 | `User.Read` | Delegated | Microsoft sign-in |
 
-The tracker's own code decides what each signed-in person may see and do (see *Clean code and maintainability* in [AGENTS.md](../AGENTS.md)); these permissions limit what its key can reach beyond that.
+The tracker's own code decides what each signed-in person may see and do (see *Clean code and maintainability* in [AGENTS.md](../AGENTS.md)); these permissions limit what its key can reach beyond that. Every identity's access is recorded in [access.md](access.md) and checked with `scripts/access-report.ps1`.
 
 ---
 
@@ -27,8 +27,8 @@ The tracker's own code decides what each signed-in person may see and do (see *C
 1. **Entra ID → App registrations → New registration.**
 2. **Name:** `DTV Tracker (Production)` or `DTV Tracker (Preview)`. **Supported account types:** this organisational directory only. **Redirect URI:** Web, the environment's address from the table above.
 3. **Authentication:** for Preview, add the local development redirect URI too. Production has only its own.
-4. Copy the **Application (client) ID** from Overview: this is `ENTRA_CLIENT_ID`.
-5. **Certificates & secrets → New client secret**, expiry 24 months. Copy the **Value** (not the Secret ID) straight into Azure: this is `ENTRA_CLIENT_SECRET`. Put a reminder in the calendar a month before it expires.
+4. Copy the **Application (client) ID** from Overview: this is `TRACKER_ENTRA_CLIENT_ID`.
+5. **Certificates & secrets → New client secret**, expiry 24 months. Copy the **Value** (not the Secret ID) straight into Azure: this is `TRACKER_ENTRA_CLIENT_SECRET`. Put a reminder in the calendar a month before it expires.
 
 ## 2. Permissions
 
@@ -44,11 +44,11 @@ The tracker's app registration uses the Graph permission **`Sites.Selected`**, s
 
 Run it when you create a new app registration for the tracker, or move the tracker to a different site. Running it again is safe.
 
-1. Open **Azure Cloud Shell** in **PowerShell** mode (the Microsoft Graph module is already installed), or use PowerShell 7 on your own machine after `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
+1. Open **Azure Cloud Shell** in **PowerShell** mode (the Microsoft Graph module is already installed; how to get the scripts there: [access.md](access.md#running-scripts-in-azure-cloud-shell)), or use PowerShell 7 on your own machine after `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
 2. Get the script: upload [`scripts/grant-site-access.ps1`](../scripts/grant-site-access.ps1) to Cloud Shell, or run it from your clone.
 3. Run it with the registration's Application (client) ID:
    ```powershell
-   ./grant-site-access.ps1 -ClientId <ENTRA_CLIENT_ID> -SiteUrl https://dtvolunteers.sharepoint.com/sites/tracker
+   ./grant-site-access.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -SiteUrl https://dtvolunteers.sharepoint.com/sites/tracker
    ```
 4. Sign in as a SharePoint or Global admin. The first time, accept the consent for *Microsoft Graph Command Line Tools*: it acts as you, and only an admin can change site permissions.
 5. Check the list it prints at the end: the registration should appear with `write`.
@@ -57,18 +57,57 @@ Run it when you create a new app registration for the tracker, or move the track
 
 ## 4. Limit which mailbox it can send from
 
-The tracker sends sign-in codes and emails from one mailbox (`EMAIL_FROM` in `backend/config.ts`). In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox.
+The tracker sends sign-in codes and emails from one mailbox per environment: the `TRACKER_SHARED_MAILBOX` setting. In Entra, the Graph permission `Mail.Send` (application) can only mean "send as anyone in the organisation", so instead the permission is given in **Exchange Online**, limited to that mailbox. Each mailbox has its own Exchange scope, so granting or removing one never changes what another registration can send as.
 
-1. In Azure Cloud Shell (PowerShell), or PowerShell 7 with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
+### Mailboxes
+
+| Address | What it is |
+|---|---|
+| `tracker@deantrailvolunteers.org.uk` | Shared mailbox: the tracker's public sender (production) |
+| `{slot}.tracker@deantrailvolunteers.org.uk`, e.g. `preview.tracker@` | Shared mailbox per slot, hidden from the address book and locked to the test list (below) |
+| `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked; joining **Closed** (the default), so only its owners add people |
+| `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
+
+Until production moves to `tracker@`, it uses `admin@deantrailvolunteers.org.uk`. Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
+
+Shared mailboxes need no licence and are created with sign-in blocked (*Microsoft 365 admin centre → Users → Active users* shows **Sign-in blocked**); check it, don't unblock it.
+
+### Giving a registration its mailbox
+
+To see what a registration can send as, without changing anything: `./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID>`.
+
+1. In Azure Cloud Shell (PowerShell), or your own PowerShell with `Install-Module ExchangeOnlineManagement, Microsoft.Graph.Applications -Scope CurrentUser`, run [`scripts/limit-mail-send.ps1`](../scripts/limit-mail-send.ps1):
    ```powershell
-   ./limit-mail-send.ps1 -ClientId <ENTRA_CLIENT_ID> -TestMailbox <any other real mailbox; nothing is sent>
+   ./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -Mailbox <TRACKER_SHARED_MAILBOX> -TestMailbox <any other real mailbox; nothing is sent>
    ```
    Sign in as an Exchange or Global admin.
-2. Check the test lines: `InScope` **True** for the tracker's mailbox, **False** for the test mailbox.
+2. Check the test lines: one row per mailbox the app can send as; the mailbox needs **one row True**, the test mailbox **False on every row**. Then check the closing list of mailboxes the app can send as.
 3. If the script warns that Entra `Mail.Send` is still there, remove it: *Entra ID → App registrations → the registration → API permissions → Mail.Send → Remove permission*. It overrides the Exchange limit.
-4. Send yourself a sign-in code from the tracker to check email still works. Exchange can take an hour or two to apply a new assignment, so **run this script well before switching an environment to a new registration**; until it applies, sending fails with `403 ErrorAccessDenied`.
+4. Exchange can take an hour or two to apply a new assignment; until then sending fails with `403 ErrorAccessDenied`. So grant **well before** an environment starts using a mailbox.
 
-If the tracker's mailbox changes, update `EMAIL_FROM` and run the script again with `-Mailbox`.
+### Changing an environment's mailbox
+
+1. Grant the new mailbox (above), and wait for it to apply.
+2. Change the environment's `TRACKER_SHARED_MAILBOX` and send yourself a sign-in code.
+3. Take the old mailbox away:
+   ```powershell
+   ./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove
+   ```
+   The scope is deleted only once no registration uses it, so removing `admin@` from Preview leaves production's permission alone.
+
+### Locking a slot's mailbox
+
+A slot runs on a copy of live data, so as well as the app's own check ([configuration.md](configuration.md#email-outside-production)), Exchange makes sure its mailbox can only reach the test list, whatever the code does:
+
+1. **One recipient per message**, so a message can't slip through by copying in someone on the list (Exchange PowerShell: `Connect-ExchangeOnline`, then):
+   ```powershell
+   Set-Mailbox <slot>.tracker@deantrailvolunteers.org.uk -RecipientLimits 1
+   ```
+2. **Mail flow rule** (*Exchange admin centre → Mail flow → Rules → Add a rule*): if *the sender is* the slot mailbox, *reject the message with the explanation* "Not on Tracker (Test) safe list of recipients.", *except if the recipient is a member of* `test.tracker@`. Mode **Enforce**; leave *Activate/Deactivate this rule on* blank (the report flags dates). After saving, **switch the rule on**: new rules start off, and the switch is found by selecting **Disabled** in the rule's *Status* column (or `Enable-TransportRule -Identity '<rule name>'`). `scripts/access-report.ps1` flags a rule left off. The preview's rule is *Tracker (Preview) Restriction*.
+3. **Hide it** from the global address list, so nobody emails it by mistake.
+4. **Test** (allow 30 minutes), sending as the slot mailbox from Outlook on the web (you need *Send As* on it): to a member of `test.tracker@` → arrives; to an address not on the list → rejected; to a member with a non-member in Cc → rejected outright, nothing delivered.
+
+To let someone receive slot email, add them (or a mail contact for their personal address) to `test.tracker@`, and to the slot's `TRACKER_ADMIN_USERS` for the app's own check.
 
 ---
 
@@ -77,18 +116,32 @@ If the tracker's mailbox changes, update `EMAIL_FROM` and run the script again w
 Secrets expire (24 months at most). Before expiry:
 
 1. Create a new secret on the registration (section 1, step 5).
-2. Update `ENTRA_CLIENT_SECRET` on production **and** every slot (each slot keeps its own copy), and in any local `.env`.
+2. Update `TRACKER_ENTRA_CLIENT_SECRET` on production **and** every slot (each slot keeps its own copy), and in any local `.env`.
 3. Check the tracker loads, then delete the old secret.
 
 If it has already expired, pages show **Entra ID secret needs updating, see readme**; see the [readme](../readme.md#entra-id-secret-needs-updating-see-readme).
 
 ## 6. Switching the preview registration off and on
 
-Outside testing, switch **DTV Tracker (Preview)** off so its key can't be used at all: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → No → Save*. This stops it getting any tokens, including the app's own. The preview slot then shows errors, and local development can't reach SharePoint, until it's switched back on (same setting, **Yes**). Only switch production's off in an emergency: the tracker stops.
+**DTV Tracker (Preview)** is switched off **automatically every night at 2am** (UK time), so the copy of live data is only reachable on days someone switches it on. Switched off, its key can't get any tokens, including the app's own: the preview slot says *DTV Tracker (Preview) is not enabled for users to sign-in. This happens each night as an extra security precaution. Ask your admin to activate the Entra ID Enterprise Application via properties.* (Entra's AADSTS7000112), and local development can't reach SharePoint or send email.
+
+**What it's for:** limiting what a **leaked Preview secret** could do. From 02:00 the secret can't get a token, so it's useless until someone switches the registration on. It isn't a hard stop for the preview itself: a token the app already holds keeps working until it expires (typically about an hour), data the app has cached stays readable, and people already signed in stay signed in until their cookie expires. Those are the testers themselves, which is accepted.
+
+**Switching on** when you start testing: *Entra ID → Enterprise applications → DTV Tracker (Preview) → Properties → Enabled for users to sign in? → Yes → Save*. It takes a few minutes. There's no need to switch it off at the end of the day; you can, with the same setting (**No**).
+
+**The nightly switch-off** is an Azure Logic App, `TrackerPreviewDeactivate`, with its own managed identity. That identity has Graph `Application.ReadWrite.OwnedBy` and is an owner of the Preview enterprise application only, so it can't change production's registration or any other app. Set it up, or check it, with [`scripts/preview-nightly-off.ps1`](../scripts/preview-nightly-off.ps1) in Azure Cloud Shell (PowerShell), as a Global admin who also has Contributor (or Owner) on the `DTV` resource group (Entra admin roles give no Azure access by themselves):
+
+```powershell
+./preview-nightly-off.ps1 -ClientId <DTV Tracker (Preview) client ID> -ResourceGroup DTV
+```
+
+It refuses any registration not named *DTV Tracker (Preview)*. If you build it by hand in the portal instead, give the recurrence a **start time** at 02:00 **at least 24 hours ahead** (the day after tomorrow): without one it runs as soon as it's saved, and with one less than 24 hours ahead Azure may skip the first night. Check it ran in *Overview → Trigger history*. Test it with *Logic App → Run → Run trigger* and check the setting above reads **No**. If a run fails, it shows in the Logic App's run history; the preview then simply stays on until it's switched off by hand.
+
+Only switch production's registration off in an emergency: the tracker stops.
 
 ## 7. The preview's own site
 
-The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's still real people's data and email addresses until it's cleaned up ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)), so avoid sending emails or running an Eventbrite sync on it.
+The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's still real people's data and email addresses until it's cleaned up ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)), so avoid running an Eventbrite sync on it. Emails from it only go to the testers ([configuration.md](configuration.md#email-outside-production)).
 
 To make or refresh it, follow [`scripts/preview-site-from-backup/README.md`](../scripts/preview-site-from-backup/README.md): restore, unlock, rename, show IDs (for `config.ts`), set app access. Its last step leaves *DTV Tracker (Preview)* with the preview site only, and no other app on it.
 
@@ -101,9 +154,9 @@ Non-production sites are named after their slot: `tracker-{slot}`, matching `{sl
 | Symptom | Likely cause |
 |---|---|
 | Setup problem page naming `ENTRA_…` settings | Settings missing on this slot; see [configuration.md](configuration.md) |
-| `invalid_client` / AADSTS7000215 / 7000222 | Secret wrong, expired, or from a different registration than `ENTRA_CLIENT_ID` |
+| `invalid_client` / AADSTS7000215 / 7000222 | Secret wrong, expired, or from a different registration than `TRACKER_ENTRA_CLIENT_ID` |
 | Access denied (403) loading lists or photos | No site grant for this client ID on this environment's site: run section 3 (or, for the preview site, `set-app-access.ps1` in section 7) |
 | Tags page fails | `TermStore.Read.All` missing or not consented |
 | Sign-in codes don't arrive | Exchange assignment missing or not applied yet (up to an hour): run section 4 |
 | AADSTS50011 on Microsoft sign-in | This address isn't a redirect URI on the registration (section 1, step 3) |
-| AADSTS7000112 (application is disabled) on preview or locally | The Preview registration is switched off (section 6) |
+| AADSTS7000112 (application is disabled) on preview or locally | The Preview registration is switched off, normally by the 2am switch-off: switch it on (section 6) |

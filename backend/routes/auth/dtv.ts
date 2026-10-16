@@ -122,7 +122,7 @@ router.get('/signed-in', async (req: Request, res: Response) => {
     }
     const email = matchedProfile.User!.toLowerCase();
 
-    const cookieOptions = { httpOnly: true, secure: !platform.isDevelopment, sameSite: 'lax' as const };
+    const cookieOptions = { httpOnly: true, secure: !platform.isLocal, sameSite: 'lax' as const };
     // Remember this DTV account for next time on this device (only once it's allowed in).
     res.cookie(LOGIN_HINT_COOKIE, email, { ...cookieOptions, maxAge: LOGIN_HINT_DAYS * 24 * 60 * 60 * 1000 });
     // Lets sign-out tell Microsoft exactly which account to sign out (needs the
