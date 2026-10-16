@@ -11,6 +11,10 @@
       UNEXPECTED  there but not expected: a door to close, or a change to record
       CHECK       not wrong in itself, but look at it
 
+    It's a permissions audit, not a health check: it reads settings (who and
+    what can reach the tracker, and how the guards are set up), never whether
+    things are working. Run it every few months, and before and after a change.
+
     It covers:
       1. Each tracker identity: application and delegated permissions, owners,
          what it owns, admin roles over it, keys and secrets, and whether it's
@@ -25,8 +29,8 @@
          flow rule, test list).
       5. With -Azure: who has Azure roles on the web app, the Logic Apps, their
          resource group and subscription; GitHub's federated logins (issuer,
-         subject and audience); and that the nightly switch-off is on, daily,
-         does nothing else, and last ran successfully.
+         subject and audience); and how the nightly switch-off is set up: on,
+         daily at 02:00, as its own identity, doing nothing else.
 
     Apps are matched by object and client ID throughout, never by name alone:
     names needn't be unique.
@@ -747,8 +751,9 @@ if ($Azure) {
             Compare-Sets 'role' $roles @()
         }
 
-        # The nightly switch-off is a guard in itself: check it's on, runs daily, does only
-        # that, and runs as the identity section 1 checked.
+        # The nightly switch-off is a guard in itself: check how it's set up (on, daily, only
+        # the switch-off, as the identity section 1 checked). Whether its runs succeed is for
+        # its own run history, not this audit.
         $nightly = Get-AzResource -ResourceGroupName $AzureResourceGroup -Name 'TrackerPreviewDeactivate' -ResourceType 'Microsoft.Logic/workflows' -ExpandProperties -ErrorAction SilentlyContinue
         if ($nightly) {
             Set-Subject 'Nightly switch-off (TrackerPreviewDeactivate)'
@@ -803,23 +808,6 @@ if ($Azure) {
                 Write-Result 'OK' 'only switches off the Preview enterprise app' 'only switches off the Preview enterprise app'
             } else {
                 Write-Result 'UNEXPECTED' "$($actions.Count) actions, $($switchOff.Count) of them the switch-off: re-run preview-nightly-off.ps1"
-            }
-            try {
-                $runs = (Invoke-AzRestMethod -Method GET -Path "$($nightly.ResourceId)/runs?api-version=2016-06-01&`$top=1").Content | ConvertFrom-Json
-                $last = @($runs.value)[0]
-                if (-not $last) {
-                    Write-Result 'CHECK' 'no runs yet' 'no runs yet'
-                } else {
-                    $started = ([datetime] $last.properties.startTime).ToUniversalTime()
-                    $hours = [int] ((Get-Date).ToUniversalTime() - $started).TotalHours
-                    if ($last.properties.status -eq 'Succeeded' -and $hours -lt 26) {
-                        Write-Result 'OK' "last run succeeded, $hours hours ago" 'last run succeeded within a day'
-                    } else {
-                        Write-Result 'CHECK' "last run: $($last.properties.status), $hours hours ago" 'last run failed, or was more than a day ago'
-                    }
-                }
-            } catch {
-                Write-Result 'CHECK' "couldn't read its run history: $($_.Exception.Message)" "couldn't read its run history"
             }
         }
     }

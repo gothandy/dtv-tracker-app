@@ -12,7 +12,7 @@ For what each *person* may do inside the tracker (Admin, Check In, Self-Service)
 |---|---|---|---|
 | **DTV Tracker (Production)** | App registration. Secret in production's settings only | Graph `Sites.Selected`: **write on `/sites/tracker` only** (site grant). Graph `TermStore.Read.All` (read-only, organisation-wide). Exchange: **send as `admin@`** (moving to `tracker@`). Delegated `User.Read`, `email` for Microsoft sign-in | The live tracker: its data, tags, sign-in codes and session emails |
 | **DTV Tracker (Preview)** | App registration. Secret in the preview slot and developers' `.env` | Same as Production, but **write on `/sites/tracker-preview` only**, and **send as `preview.tracker@` only**, which Exchange limits to the `test.tracker@` list. **Switched off every night at 2am**, so a leaked secret is useless until someone switches it on (it doesn't end testers' existing sessions) | The preview slot and local development, on a copy of live data |
-| **TrackerPreviewDeactivate** | Logic App's system-assigned managed identity | Graph `Application.ReadWrite.OwnedBy`, and **owner of the Preview enterprise app only**. Nothing else | Switches the Preview registration off every night. The report (`-Azure`) also checks the Logic App is on, runs daily, does nothing else, runs as this identity, and last ran successfully |
+| **TrackerPreviewDeactivate** | Logic App's system-assigned managed identity | Graph `Application.ReadWrite.OwnedBy`, and **owner of the Preview enterprise app only**. Nothing else | Switches the Preview registration off every night. The report (`-Azure`) also checks how the Logic App is set up: on, daily at 02:00, doing nothing else, as this identity |
 | **oidc-msi-ad79** | User-assigned managed identity | Azure *Website Contributor* on `DTVTrackerApp` (all slots). Federated logins from GitHub: `main` branch (production) and the `preview` environment | GitHub Actions deploys, with no stored secret |
 | **TrackerEventbriteUpdate** | Logic App | Nothing in Entra. Holds `TRACKER_JOBS_API_KEY` and calls production's nightly job | The 05:30 Eventbrite sync, stats refresh and backup |
 
@@ -61,7 +61,9 @@ Not checked by the report, but part of the same picture:
 
 ## Checking
 
-Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) after any change to an identity, before renewing a secret, and every few months. It changes nothing. The easiest place to run it is Azure Cloud Shell (below).
+Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) every few months, and before and after any change to an identity, a permission or a secret. It changes nothing. The easiest place to run it is Azure Cloud Shell (below).
+
+**It's a permissions audit, not a health check.** It brings the permissions that are otherwise spread across Entra, SharePoint, Exchange and Azure into one place and compares them with this page: who and what can reach the tracker, and how the guards that limit that are set up. It doesn't check whether things are working (sign-in, email, the nightly switch-off's runs); those show up in use, or in each service's own history.
 
 ```powershell
 ./scripts/access-report.ps1                                         # Entra, SharePoint and Exchange

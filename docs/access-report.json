@@ -3,7 +3,7 @@
   "date": "2026-10-16",
   "azure": true,
   "summary": {
-    "ok": 60,
+    "ok": 59,
     "check": 4,
     "missing": 0,
     "unexpected": 0
@@ -196,10 +196,9 @@
       "section": "5. Azure",
       "subject": "Nightly switch-off (TrackerPreviewDeactivate)",
       "ok": {
-        "count": 6,
+        "count": 5,
         "items": [
           "already started, or starts within three days",
-          "last run succeeded within a day",
           "Logic App is on",
           "only switches off the Preview enterprise app",
           "runs as the identity checked in section 1",
