@@ -1,16 +1,16 @@
 <template>
   <ModalLayout
     title="Add from Eventbrite"
-    action="Next"
-    :action-disabled="!selected || eventsLoading"
+    :action="noEvents ? 'Add manually' : 'Next'"
+    :action-disabled="!noEvents && !selected"
+    :error="eventsError"
     @close="emit('close')"
     @action="next"
   >
-    <FormLayout>
+    <p v-if="noEvents">No upcoming Eventbrite events to add.</p>
+    <FormLayout v-else>
       <FormRow title="Event" :full-width="true">
         <LoadingSpinner v-if="eventsLoading" />
-        <p v-else-if="eventsError" class="modal-form-hint">{{ eventsError }}</p>
-        <p v-else-if="!sortedEvents.length" class="modal-form-hint">No upcoming Eventbrite events to add.</p>
         <ModalFormSelect v-else v-model="eventId" :placeholder="!selected">
           <option value="" disabled>Select event…</option>
           <option v-for="e in sortedEvents" :key="e.id" :value="e.id">{{ eventLabel(e) }}</option>
@@ -48,8 +48,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  /** The picked event, to pre-fill Add Session with. */
-  next: [event: EventbriteEventOption]
+  /** The picked event, to pre-fill Add Session with; null to add manually. */
+  next: [event: EventbriteEventOption | null]
 }>()
 
 const eventId = ref('')
@@ -58,6 +58,7 @@ const sortedEvents = computed(() =>
   [...props.events].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
 )
 const selected = computed(() => props.events.find(e => e.id === eventId.value) ?? null)
+const noEvents = computed(() => !props.eventsLoading && !props.eventsError && !props.events.length)
 
 function eventLabel(e: EventbriteEventOption): string {
   const date = new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -65,6 +66,7 @@ function eventLabel(e: EventbriteEventOption): string {
 }
 
 function next() {
-  if (selected.value) emit('next', selected.value)
+  if (noEvents.value) emit('next', null)
+  else if (selected.value) emit('next', selected.value)
 }
 </script>

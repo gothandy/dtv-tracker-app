@@ -40,19 +40,7 @@
         </div>
         <div>
           <h2>Add from Eventbrite</h2>
-          <AppButton label="Open" @click="eventbriteState = 'ready'; open = 'group-add-eventbrite'" />
-        </div>
-        <div>
-          <h2>Add from Eventbrite (loading)</h2>
-          <AppButton label="Open" @click="eventbriteState = 'loading'; open = 'group-add-eventbrite'" />
-        </div>
-        <div>
-          <h2>Add from Eventbrite (none)</h2>
-          <AppButton label="Open" @click="eventbriteState = 'empty'; open = 'group-add-eventbrite'" />
-        </div>
-        <div>
-          <h2>Add from Eventbrite (failed)</h2>
-          <AppButton label="Open" @click="eventbriteState = 'failed'; open = 'group-add-eventbrite'" />
+          <AppButton label="Open" @click="openEventbritePicker" />
         </div>
         <div>
           <h2>Media Edit</h2>
@@ -224,18 +212,17 @@
 
       <GroupAddFromEventbriteModal
         v-if="open === 'group-add-eventbrite'"
-        :events="eventbriteState === 'ready' ? mockEventbriteEvents : []"
-        :events-loading="eventbriteState === 'loading'"
-        :events-error="eventbriteState === 'failed' ? 'Could not load events from Eventbrite. Please try again.' : ''"
+        :events="eventbriteLoading ? [] : mockEventbriteEvents"
+        :events-loading="eventbriteLoading"
         @close="closeModal('close')"
         @next="onEventbritePicked"
       />
 
       <GroupAddSessionModal
-        v-if="open === 'group-add-session-eventbrite' && pickedEvent"
+        v-if="open === 'group-add-session-eventbrite'"
         :group="mockGroup"
         :projects="mockProjects"
-        :eventbrite="pickedEvent"
+        :eventbrite="pickedEvent ?? undefined"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -417,8 +404,6 @@ function onGroupAddSession(payload: unknown) {
   simulate(`group-add-session: add → ${JSON.stringify(payload)}`)
 }
 
-const eventbriteState = ref<'ready' | 'loading' | 'empty' | 'failed'>('ready')
-
 // Deliberately out of date order: the modal sorts them.
 const mockEventbriteEvents: EventbriteEventOption[] = [
   { id: '2002802047839', name: 'DTV Christmas Party', date: '2026-12-04', time: '18:30', length: 4 },
@@ -427,9 +412,17 @@ const mockEventbriteEvents: EventbriteEventOption[] = [
 ]
 
 const pickedEvent = ref<EventbriteEventOption | null>(null)
+const eventbriteLoading = ref(false)
 
-function onEventbritePicked(event: EventbriteEventOption) {
-  log(`group-add-eventbrite: next → ${event.id}`)
+// Shows the loading spinner for 3 seconds, as if fetching from Eventbrite.
+function openEventbritePicker() {
+  open.value = 'group-add-eventbrite'
+  eventbriteLoading.value = true
+  setTimeout(() => { eventbriteLoading.value = false }, 3000)
+}
+
+function onEventbritePicked(event: EventbriteEventOption | null) {
+  log(`group-add-eventbrite: next → ${event?.id ?? 'add manually'}`)
   pickedEvent.value = event
   open.value = 'group-add-session-eventbrite'
 }

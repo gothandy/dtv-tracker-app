@@ -119,7 +119,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Pick one → Next → Add Session opens pre-filled: Date, Start time, Length, Display Name and Eventbrite Event ID from the event; all editable
 - [ ] Create → session detail; its Eventbrite link opens the event; Refresh brings in attendees
 - [ ] Open "Add from Eventbrite" again: that event is no longer listed
-- [ ] No events to add → "No upcoming Eventbrite events to add."; Eventbrite unreachable → "Could not load events from Eventbrite"
+- [ ] No events to add → "No upcoming Eventbrite events to add." and **Add manually**, which opens a blank Add Session; Eventbrite unreachable → the modal's error line "Could not load events from Eventbrite"
 
 ### H6. Edit session
 - [ ] Session detail → pencil icon → modal with Display Name, Description; admin also sees Date, Start time, Length, Group, Project, Limits, Eventbrite Event ID
