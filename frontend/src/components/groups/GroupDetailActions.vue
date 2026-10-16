@@ -1,7 +1,8 @@
 <template>
   <div class="gab-wrap">
     <AppButton label="Add session" icon="add" mode="icon-responsive" @click="openAdd(null)" />
-    <AppButton label="Add from Eventbrite" icon="brands/eventbrite" mode="icon-responsive" @click="openPicker" />
+    <!-- A group linked to an Eventbrite series gets its sessions from the nightly sync. -->
+    <AppButton v-if="!group.eventbriteSeriesId" label="Add" icon="brands/eventbrite" mode="icon-responsive" @click="openPicker" />
     <AppButton v-if="canEdit" label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
     <AppButton
       v-if="group.eventbriteSeriesId"
@@ -150,6 +151,7 @@ defineExpose({
 <style scoped>
 .gab-wrap {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
