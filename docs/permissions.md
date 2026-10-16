@@ -69,7 +69,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 |------|------------|----------------------|-------------------|
 | **Dashboard** | Stats, word cloud | — | — |
 | **Groups list** | Full view, regulars count | — | — |
-| **Group detail** | Group info, stats, sessions, regulars list | Add session, Add (from Eventbrite) | Edit button |
+| **Group detail** | Group info, stats, sessions, regulars list | Add session, Eventbrite button (adds a one-off event; opens the series on a series group) | Edit button |
 | **Sessions list** | Full view | CSV download, checkboxes (Advanced) | Add Tags, Update Project buttons |
 | **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |

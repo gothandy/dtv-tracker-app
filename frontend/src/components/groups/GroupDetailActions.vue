@@ -1,9 +1,9 @@
 <template>
   <div class="gab-wrap">
     <AppButton label="Add session" icon="add" mode="icon-responsive" @click="openAdd(null)" />
-    <!-- A group linked to an Eventbrite series gets its sessions from the nightly sync. -->
-    <AppButton v-if="!group.eventbriteSeriesId" label="Add" icon="brands/eventbrite" mode="icon-responsive" @click="openPicker" />
     <AppButton v-if="canEdit" label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
+    <!-- One Eventbrite button: a group linked to a series gets its sessions from the nightly
+         sync, so it opens the series; any other group can add a one-off event. -->
     <AppButton
       v-if="group.eventbriteSeriesId"
       label="View on Eventbrite"
@@ -11,6 +11,13 @@
       mode="icon-only"
       :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`"
       target="_blank"
+    />
+    <AppButton
+      v-else
+      label="Add from Eventbrite"
+      icon="brands/eventbrite"
+      mode="icon-only"
+      @click="openPicker"
     />
 
     <GroupEditModal
