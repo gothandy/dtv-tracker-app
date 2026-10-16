@@ -414,8 +414,7 @@ foreach ($siteUrl in $Sites.Keys) {
         Write-Result 'MISSING' "site not found: $($_.Exception.Message)" 'site'
         continue
     }
-    $list = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/sites/$($site.id)/permissions"
-    $grants = @(foreach ($item in $list.value) {
+    $grants = @(foreach ($item in @(Get-AllPages "https://graph.microsoft.com/v1.0/sites/$($site.id)/permissions")) {
         $permission = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/sites/$($site.id)/permissions/$($item.id)"
         foreach ($grantedApp in Get-GrantedApps $permission) {
             [pscustomobject]@{ Id = $grantedApp.id; Name = $grantedApp.displayName; Roles = (@($permission.roles) -join ', ') }
@@ -794,7 +793,9 @@ if ($Azure) {
             $switchOff = @($actions | Where-Object {
                 $_.type -eq 'Http' -and $_.inputs.method -eq 'PATCH' -and $preview -and
                 $_.inputs.uri -eq "https://graph.microsoft.com/v1.0/servicePrincipals/$($preview.Id)" -and
-                $_.inputs.body.accountEnabled -eq $false -and $_.inputs.authentication.type -eq 'ManagedServiceIdentity' -and
+                # Only accountEnabled: Graph updates whatever else the body holds, keys included.
+                $_.inputs.body.accountEnabled -eq $false -and @($_.inputs.body.PSObject.Properties).Count -eq 1 -and
+                $_.inputs.authentication.type -eq 'ManagedServiceIdentity' -and
                 # Without Graph as the audience, the token is for Azure and the PATCH fails.
                 "$($_.inputs.authentication.audience)".TrimEnd('/') -eq 'https://graph.microsoft.com'
             })
