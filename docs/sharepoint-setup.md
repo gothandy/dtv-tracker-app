@@ -68,7 +68,7 @@ The tracker sends sign-in codes and emails from one mailbox per environment: the
 | `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked; joining **Closed** (the default), so only its owners add people |
 | `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
 
-Until production moves to `tracker@`, it uses `admin@deantrailvolunteers.org.uk`. Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
+Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
 
 Shared mailboxes need no licence and are created with sign-in blocked (*Microsoft 365 admin centre → Users → Active users* shows **Sign-in blocked**); check it, don't unblock it.
 
@@ -93,7 +93,7 @@ To see what a registration can send as, without changing anything: `./limit-mail
    ```powershell
    ./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove
    ```
-   The scope is deleted only once no registration uses it, so removing `admin@` from Preview leaves production's permission alone.
+   The scope is deleted only once no registration uses it, so removing a mailbox from one registration leaves any other's permission alone.
 
 ### Locking a slot's mailbox
 
@@ -141,7 +141,7 @@ Only switch production's registration off in an emergency: the tracker stops.
 
 ## 7. The preview's own site
 
-The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's still real people's data and email addresses until it's cleaned up ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)), so avoid running an Eventbrite sync on it. Emails from it only go to the testers ([configuration.md](configuration.md#email-outside-production)).
+The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's a straight copy of live data, real people and email addresses included, by choice: rather than cleaning or replacing the data, the preview is guarded. Emails from it only go to the testers ([configuration.md](configuration.md#email-outside-production)), and its registration reaches only this site and is switched off every night (section 6). An Eventbrite sync on it is fine: it reads the same attendees as production's nightly sync (so at most it's a day ahead of live, e.g. someone who booked since), and sends nothing back.
 
 To make or refresh it, follow [`scripts/preview-site-from-backup/README.md`](../scripts/preview-site-from-backup/README.md): restore, unlock, rename, show IDs (for `config.ts`), set app access. Its last step leaves *DTV Tracker (Preview)* with the preview site only, and no other app on it.
 

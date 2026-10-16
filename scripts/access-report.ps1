@@ -93,8 +93,7 @@ $Identities = @(
         Kind        = 'App registration'
         Application = @('Microsoft Graph/Sites.Selected', 'Microsoft Graph/TermStore.Read.All')
         Delegated   = @('User.Read', 'email')
-        # Both allowed while production moves from admin@ to tracker@; drop admin@ once it has.
-        Mailboxes   = @("admin@$Domain", "tracker@$Domain")
+        Mailboxes   = @("tracker@$Domain")
         SpOwners    = $null   # not checked
         Owns        = @()
     },
@@ -546,13 +545,7 @@ foreach ($identity in $Identities) {
         ForEach-Object { Get-ScopeMailbox $_.CustomResourceScope })
     if ($mailboxes -or $identity.Mailboxes) {
         Set-Subject "$($identity.Name) can send as"
-        # For Production, each allowed mailbox is fine but at least one must be there.
-        if ($identity.Name -eq 'DTV Tracker (Production)') {
-            Compare-Sets 'mailbox' $mailboxes @() $identity.Mailboxes
-            if (-not $mailboxes) { Write-Result 'MISSING' 'no mailbox: production cannot send email' 'a mailbox to send as' }
-        } else {
-            Compare-Sets 'mailbox' $mailboxes $identity.Mailboxes
-        }
+        Compare-Sets 'mailbox' $mailboxes $identity.Mailboxes
     }
 }
 
