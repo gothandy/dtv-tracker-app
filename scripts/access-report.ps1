@@ -775,6 +775,17 @@ if ($Azure) {
                 } else {
                     Write-Result 'CHECK' "runs daily, but at $at, not the recorded 02:00 UK time: re-run preview-nightly-off.ps1, or update docs/access.md" 'runs daily, not at the recorded time'
                 }
+                # A schedule doesn't fire before its start time. preview-nightly-off.ps1 sets 02:00 the
+                # day after tomorrow, so one more than three days ahead leaves the switch-off dormant.
+                # (No start time is fine: it runs daily from when it was saved.)
+                if ($recurrence.startTime) {
+                    $start = $recurrence.startTime -as [datetime]
+                    if (-not $start) { Write-Result 'UNEXPECTED' "start time '$($recurrence.startTime)' can't be read" }
+                    elseif ($start -gt (Get-Date).AddDays(3)) { Write-Result 'UNEXPECTED' "doesn't start until $($start.ToString('yyyy-MM-dd HH:mm')): re-run preview-nightly-off.ps1, or set a start time already past" }
+                    else { Write-Result 'OK' 'already started, or starts within three days' 'already started, or starts within three days' }
+                } else {
+                    Write-Result 'OK' 'already started, or starts within three days' 'already started, or starts within three days'
+                }
             } else {
                 Write-Result 'UNEXPECTED' "$($triggers.Count) triggers, $($daily.Count) of them daily: expected one daily schedule"
             }
@@ -783,7 +794,9 @@ if ($Azure) {
             $switchOff = @($actions | Where-Object {
                 $_.type -eq 'Http' -and $_.inputs.method -eq 'PATCH' -and $preview -and
                 $_.inputs.uri -eq "https://graph.microsoft.com/v1.0/servicePrincipals/$($preview.Id)" -and
-                $_.inputs.body.accountEnabled -eq $false -and $_.inputs.authentication.type -eq 'ManagedServiceIdentity'
+                $_.inputs.body.accountEnabled -eq $false -and $_.inputs.authentication.type -eq 'ManagedServiceIdentity' -and
+                # Without Graph as the audience, the token is for Azure and the PATCH fails.
+                "$($_.inputs.authentication.audience)".TrimEnd('/') -eq 'https://graph.microsoft.com'
             })
             if ($actions.Count -eq 1 -and $switchOff.Count -eq 1) {
                 Write-Result 'OK' 'only switches off the Preview enterprise app' 'only switches off the Preview enterprise app'
