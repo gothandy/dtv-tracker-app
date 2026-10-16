@@ -63,7 +63,10 @@ Not checked by the report, but part of the same picture:
 
 Run [`scripts/access-report.ps1`](../scripts/access-report.ps1) every few months, and before and after any change to an identity, a permission or a secret. It changes nothing. The easiest place to run it is Azure Cloud Shell (below).
 
-**It's a permissions audit, not a health check.** It brings the permissions that are otherwise spread across Entra, SharePoint, Exchange and Azure into one place and compares them with this page: who and what can reach the tracker, and how the guards that limit that are set up. It doesn't check whether things are working (sign-in, email, the nightly switch-off's runs); those show up in use, or in each service's own history.
+**What it covers, and what it doesn't.** It's a permissions audit of the tracker's own setup: it reads back the permissions that the setup scripts in `scripts/` and the manual steps in [sharepoint-setup.md](sharepoint-setup.md) set to lock the tracker down, spread across Entra, SharePoint, Exchange and Azure, and compares them with this page in one place. That's all. It isn't:
+
+- **a health check**: it doesn't test whether things are working (sign-in, email, the nightly switch-off's runs); those show up in use, or in each service's own history;
+- **an exhaustive "what if" audit** of every way Microsoft 365 or Azure could grant access. Mechanisms the setup never uses (PIM eligible roles, conditional access, administrative units, and the like) are out of scope; if the setup starts using one, add it to the setup docs, this page and the script together.
 
 ```powershell
 ./scripts/access-report.ps1                                         # Entra, SharePoint and Exchange

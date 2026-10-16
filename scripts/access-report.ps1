@@ -11,9 +11,12 @@
       UNEXPECTED  there but not expected: a door to close, or a change to record
       CHECK       not wrong in itself, but look at it
 
-    It's a permissions audit, not a health check: it reads settings (who and
-    what can reach the tracker, and how the guards are set up), never whether
-    things are working. Run it every few months, and before and after a change.
+    It's a permissions audit of the tracker's own setup: it reads back what the
+    setup scripts and manual steps (docs/sharepoint-setup.md) set. It isn't a
+    health check (never whether things are working), nor an exhaustive audit of
+    every way access could be granted: mechanisms the setup doesn't use, such as
+    PIM eligible roles, are out of scope. Run it every few months, and before and
+    after a change. Scope: docs/access.md, Checking.
 
     It covers:
       1. Each tracker identity: application and delegated permissions, owners,
