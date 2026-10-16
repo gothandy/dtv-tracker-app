@@ -38,6 +38,10 @@
       <FormRow title="Display Name" :full-width="true">
         <ModalFormInput v-model="form.name" :placeholder="group?.displayName || group?.key || ''" />
       </FormRow>
+
+      <FormRow title="Eventbrite Event ID" :full-width="true">
+        <ModalFormInput v-model="form.eventbrite" />
+      </FormRow>
     </FormLayout>
 
     <p v-if="validationError" class="modal-form-error">{{ validationError }}</p>
@@ -48,6 +52,7 @@
 import { ref, reactive, computed } from 'vue'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 import type { ProjectItem } from './SessionEditModal.vue'
+import type { EventbriteEventOption } from './GroupAddFromEventbriteModal.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
@@ -69,6 +74,8 @@ export type AddSessionPayload = {
   length?: number
   name?: string
   projectId?: number | null
+  /** Set when adding from Eventbrite: the session is linked to this event. */
+  eventbriteEventId?: string
 }
 
 type GroupOption = { id: number; key: string; displayName?: string | null }
@@ -77,6 +84,8 @@ const props = defineProps<{
   group?: GroupDetailResponse
   groups?: GroupOption[]
   projects: ProjectItem[]
+  /** Adding from Eventbrite: pre-fills the form from this event and links the session to it. */
+  eventbrite?: EventbriteEventOption
   working: boolean
   error?: string
 }>()
@@ -89,11 +98,12 @@ const emit = defineEmits<{
 const validationError = ref('')
 
 const form = reactive({
-  date: '',
-  time: DEFAULT_SESSION_TIME,
+  date: props.eventbrite?.date ?? '',
+  time: props.eventbrite?.time ?? DEFAULT_SESSION_TIME,
   // Named hours (not length) — reactive objects with a numeric `length` break v-model updates
-  hours: String(DEFAULT_SESSION_LENGTH),
-  name: '',
+  hours: String(props.eventbrite?.length ?? DEFAULT_SESSION_LENGTH),
+  name: props.eventbrite?.name ?? '',
+  eventbrite: props.eventbrite?.id ?? '',
   groupId: '' as number | '',
   projectId: null as number | null,
 })
@@ -117,6 +127,7 @@ function add() {
     length,
     name: form.name || undefined,
     projectId: form.projectId,
+    eventbriteEventId: form.eventbrite.trim() || undefined,
   })
 }
 </script>

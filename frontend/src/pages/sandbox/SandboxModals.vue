@@ -39,6 +39,13 @@
           <AppButton label="Open" @click="open = 'group-add-session'" />
         </div>
         <div>
+          <h2>Group Add from Eventbrite</h2>
+          <AppButton label="Add from Eventbrite" icon="brands/eventbrite" mode="icon-responsive" @click="eventbriteState = 'ready'; open = 'group-add-eventbrite'" />
+          <AppButton label="Loading" @click="eventbriteState = 'loading'; open = 'group-add-eventbrite'" />
+          <AppButton label="None to add" @click="eventbriteState = 'empty'; open = 'group-add-eventbrite'" />
+          <AppButton label="Load failed" @click="eventbriteState = 'failed'; open = 'group-add-eventbrite'" />
+        </div>
+        <div>
           <h2>Media Edit</h2>
           <AppButton label="Open" @click="open = 'media-edit'" />
         </div>
@@ -206,6 +213,26 @@
         @add="onGroupAddSession"
       />
 
+      <GroupAddFromEventbriteModal
+        v-if="open === 'group-add-eventbrite'"
+        :events="eventbriteState === 'ready' ? mockEventbriteEvents : []"
+        :events-loading="eventbriteState === 'loading'"
+        :events-error="eventbriteState === 'failed' ? 'Could not load events from Eventbrite. Please try again.' : ''"
+        @close="closeModal('close')"
+        @next="onEventbritePicked"
+      />
+
+      <GroupAddSessionModal
+        v-if="open === 'group-add-session-eventbrite' && pickedEvent"
+        :group="mockGroup"
+        :projects="mockProjects"
+        :eventbrite="pickedEvent"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @add="onGroupAddSession"
+      />
+
       <SessionAddTagsModal
         v-if="open === 'session-add-tags'"
         :count="3"
@@ -283,6 +310,7 @@ import ProfileTransferModal from '../modals/ProfileTransferModal.vue'
 import RecordAddModal from '../modals/RecordAddModal.vue'
 import RecordEditModal from '../modals/RecordEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
+import GroupAddFromEventbriteModal, { type EventbriteEventOption } from '../modals/GroupAddFromEventbriteModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import AboutModal from '../../components/AboutModal.vue'
 import RegularEditModal from '../modals/RegularEditModal.vue'
@@ -378,6 +406,23 @@ function onGroupEditSave(payload: unknown) {
 
 function onGroupAddSession(payload: unknown) {
   simulate(`group-add-session: add → ${JSON.stringify(payload)}`)
+}
+
+const eventbriteState = ref<'ready' | 'loading' | 'empty' | 'failed'>('ready')
+
+// Deliberately out of date order: the modal sorts them.
+const mockEventbriteEvents: EventbriteEventOption[] = [
+  { id: '2002802047839', name: 'DTV Christmas Party', date: '2026-12-04', time: '18:30', length: 4 },
+  { id: '2002800000001', name: 'Tree Planting at Cannop Ponds', date: '2026-11-21', time: '09:30', length: 3 },
+  { id: '2002800000002', name: 'New Year Litter Pick', date: '2027-01-02', time: '10:00', length: 2.5 },
+]
+
+const pickedEvent = ref<EventbriteEventOption | null>(null)
+
+function onEventbritePicked(event: EventbriteEventOption) {
+  log(`group-add-eventbrite: next → ${event.id}`)
+  pickedEvent.value = event
+  open.value = 'group-add-session-eventbrite'
 }
 
 function onAddTags(label: string) {
