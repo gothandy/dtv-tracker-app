@@ -32,7 +32,7 @@ Read [AGENTS.md](AGENTS.md) first. It is the single source of truth for the proj
 
 ## Cloud sessions (claude.ai/code) vs local
 
-- **Cloud sessions** can't reach `tracker.dtv.org.uk`, the preview URL or Actions log downloads (network allowlist). Check deploys through the Actions API (run, job and step status) and ask the maintainer for anything only visible in a browser or the Azure portal.
+- **Cloud sessions** can't reach `tracker.dtv.org.uk`, the preview URL or Actions log downloads (network allowlist). Check deploys through the Actions API (run, job and step status) and ask the maintainer for anything only visible in a browser or the Azure portal. When a job fails, read its error messages (compile and test errors) from the job's check-run annotations: `gh api repos/gothandy/dtv-tracker-app/check-runs/<job id>/annotations`; ask the maintainer only if the full log is needed.
 - GitHub GraphQL isn't available in cloud sessions; use the REST API (`gh api repos/gothandy/dtv-tracker-app/...`). Branch deletion isn't permitted; ask the maintainer.
 - **Local Claude Code** can run `npm run dev` against the preview site (a copy of live). Same branch rules apply; the maintainer may work on the same task branch locally.
 

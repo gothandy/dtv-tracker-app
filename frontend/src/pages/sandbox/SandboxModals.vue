@@ -39,11 +39,20 @@
           <AppButton label="Open" @click="open = 'group-add-session'" />
         </div>
         <div>
-          <h2>Group Add from Eventbrite</h2>
-          <AppButton label="Add from Eventbrite" icon="brands/eventbrite" mode="icon-responsive" @click="eventbriteState = 'ready'; open = 'group-add-eventbrite'" />
-          <AppButton label="Loading" @click="eventbriteState = 'loading'; open = 'group-add-eventbrite'" />
-          <AppButton label="None to add" @click="eventbriteState = 'empty'; open = 'group-add-eventbrite'" />
-          <AppButton label="Load failed" @click="eventbriteState = 'failed'; open = 'group-add-eventbrite'" />
+          <h2>Add from Eventbrite</h2>
+          <AppButton label="Open" @click="eventbriteState = 'ready'; open = 'group-add-eventbrite'" />
+        </div>
+        <div>
+          <h2>Add from Eventbrite (loading)</h2>
+          <AppButton label="Open" @click="eventbriteState = 'loading'; open = 'group-add-eventbrite'" />
+        </div>
+        <div>
+          <h2>Add from Eventbrite (none)</h2>
+          <AppButton label="Open" @click="eventbriteState = 'empty'; open = 'group-add-eventbrite'" />
+        </div>
+        <div>
+          <h2>Add from Eventbrite (failed)</h2>
+          <AppButton label="Open" @click="eventbriteState = 'failed'; open = 'group-add-eventbrite'" />
         </div>
         <div>
           <h2>Media Edit</h2>

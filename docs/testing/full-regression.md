@@ -106,11 +106,20 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Redirects to groups listing
 
 ### H5. Create session
-- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time, Length, Name
+- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time, Length, Name, Eventbrite Event ID
+- [ ] Group detail: Admin and Check In see "Add session" and "Add from Eventbrite"; only Admin sees Edit. Sessions page "Add session" is Admin only
 - [ ] Start time and Length prefill defaults (`09:30`, `3`); blank on submit still stores those defaults
 - [ ] Invalid Length (0, negative) shows an error and does not create the session
-- [ ] `POST /api/sessions` — `{ groupId, date, time?, length?, name?, description?, projectId? }`
+- [ ] `POST /api/sessions` — `{ groupId, date, time?, length?, name?, description?, projectId?, eventbriteEventId? }`; Check In allowed
 - [ ] Redirects to session detail / appears in list
+- [ ] A session already on that date for the group: the modal shows "A session for this group already exists on …"
+
+### H5a. Add from Eventbrite
+- [ ] Group detail → "Add from Eventbrite" (Eventbrite logo) → dropdown of upcoming one-off Eventbrite events not yet in the tracker, soonest first; events with several dates are not listed
+- [ ] Pick one → Next → Add Session opens pre-filled: Date, Start time, Length, Display Name and Eventbrite Event ID from the event; all editable
+- [ ] Create → session detail; its Eventbrite link opens the event; Refresh brings in attendees
+- [ ] Open "Add from Eventbrite" again: that event is no longer listed
+- [ ] No events to add → "No upcoming Eventbrite events to add."; Eventbrite unreachable → "Could not load events from Eventbrite"
 
 ### H6. Edit session
 - [ ] Session detail → pencil icon → modal with Display Name, Description; admin also sees Date, Start time, Length, Group, Project, Limits, Eventbrite Event ID
@@ -542,7 +551,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Profile with no warnings — warnings section not rendered
 
 ### M10. Unmatched Eventbrite events
-- [ ] `GET /api/eventbrite/unmatched-events` — events with no matching group
+- [ ] `GET /api/eventbrite/unmatched-events` — events not linked to a session, with `time`, `length` and `seriesId`
 
 ### M11. App config
 - [ ] `GET /api/config` — SharePoint site URL for admin page link
