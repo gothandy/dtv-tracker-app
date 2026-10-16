@@ -292,6 +292,7 @@ const eventbriteError = ref('')
 async function loadEventbriteEvents() {
   eventbriteLoading.value = true
   eventbriteError.value = ''
+  eventbriteEvents.value = []
   try {
     const res = await fetch('/api/eventbrite/unmatched-events')
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
