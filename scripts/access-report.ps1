@@ -683,11 +683,15 @@ if ($Azure) {
         Write-Result 'CHECK' 'Az module not available: run in Azure Cloud Shell' 'Az module not available'
     } else {
         if (-not (Get-AzContext)) { Connect-AzAccount | Out-Null }
-        $webApp = Get-AzWebApp -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp
+        $webApp = Get-AzWebApp -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp -ErrorAction SilentlyContinue
         $resources = @($webApp | Select-Object @{ n = 'Id'; e = { $_.Id } }, @{ n = 'Name'; e = { $_.Name } })
-        # Slots are resources of their own: a role on one reaches that slot's settings and data.
-        foreach ($slot in @(Get-AzWebAppSlot -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp)) {
-            $resources += [pscustomobject]@{ Id = $slot.Id; Name = $slot.Name }
+        if (-not $webApp) {
+            Write-Result 'MISSING' "web app $AzureWebApp not found in $AzureResourceGroup" "web app $AzureWebApp"
+        } else {
+            # Slots are resources of their own: a role on one reaches that slot's settings and data.
+            foreach ($slot in @(Get-AzWebAppSlot -ResourceGroupName $AzureResourceGroup -Name $AzureWebApp)) {
+                $resources += [pscustomobject]@{ Id = $slot.Id; Name = $slot.Name }
+            }
         }
         # GitHub's deploy identity: the one section 1 checked, matched by its ID, since
         # names needn't be unique (a managed identity's principal ID is its object ID).
