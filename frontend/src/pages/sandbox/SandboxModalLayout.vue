@@ -27,6 +27,10 @@
           <AppButton label="Open" @click="open = 'modal-rows'" />
         </div>
         <div>
+          <h2>Loading state</h2>
+          <AppButton label="Open" @click="open = 'loading'" />
+        </div>
+        <div>
           <h2>Working state</h2>
           <AppButton label="Open" @click="open = 'working'" />
         </div>
@@ -94,6 +98,18 @@
         This will permanently delete the session and all its entries.
       </ModalLayout>
 
+      <ModalLayout v-if="open === 'loading'"
+        title="Loading state demo"
+        action="Save"
+        :action-disabled="true"
+        @close="open = null"
+      >
+        <FormRow title="Session" :full-width="true">
+          <LoadingSpinner />
+        </FormRow>
+        <p>A field whose options are still loading shows the spinner in its row, and the action waits.</p>
+      </ModalLayout>
+
       <ModalLayout v-if="open === 'working'"
         title="Working state demo"
         action="Save"
@@ -137,6 +153,7 @@ import SandboxBackLink from './SandboxBackLink.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
 import FormRow from '../../components/FormRow.vue'
+import LoadingSpinner from '../../components/LoadingSpinner.vue'
 
 const open = ref<string | null>(null)
 const workingDemo = ref(false)

@@ -4,6 +4,7 @@ import { isPublicApiGet } from './public-api-get-paths';
 
 const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/entries\/\d+$/ },           // check-in + set hours
+  { method: 'POST',  pattern: /^\/sessions$/ },               // add session (incl. from Eventbrite)
   { method: 'PATCH', pattern: /^\/sessions\/[^/]+\/[^/]+$/ }, // edit session title/description
   { method: 'PATCH', pattern: /^\/projects\/[^/]+$/ },       // edit project metadata / fields
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular

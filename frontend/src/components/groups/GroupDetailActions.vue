@@ -1,7 +1,9 @@
 <template>
   <div class="gab-wrap">
-    <AppButton label="Add session" icon="add" mode="icon-responsive" @click="showAdd = true" />
-    <AppButton label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
+    <AppButton label="Add session" icon="add" mode="icon-responsive" @click="openAdd(null)" />
+    <AppButton v-if="canEdit" label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
+    <!-- One Eventbrite button: a group linked to a series gets its sessions from the nightly
+         sync, so it opens the series; any other group can add a one-off event. -->
     <AppButton
       v-if="group.eventbriteSeriesId"
       label="View on Eventbrite"
@@ -9,6 +11,13 @@
       mode="icon-only"
       :href="`https://www.eventbrite.co.uk/e/${group.eventbriteSeriesId}`"
       target="_blank"
+    />
+    <AppButton
+      v-else
+      label="Add from Eventbrite"
+      icon="brands/eventbrite"
+      mode="icon-only"
+      @click="openPicker"
     />
 
     <GroupEditModal
@@ -21,10 +30,20 @@
       @delete="showEdit = false; showDelete = true"
     />
 
+    <GroupAddFromEventbriteModal
+      v-if="showPicker"
+      :events="eventbriteEvents"
+      :events-loading="eventbriteLoading"
+      :events-error="eventbriteError"
+      @close="showPicker = false"
+      @next="openAdd"
+    />
+
     <GroupAddSessionModal
       v-if="showAdd"
       :group="group"
       :projects="projects"
+      :eventbrite="pickedEvent ?? undefined"
       :working="workingAdd"
       :error="addError"
       @close="showAdd = false"
@@ -48,22 +67,44 @@ import type { GroupDetailResponse } from '../../../../types/api-responses'
 import AppButton from '../AppButton.vue'
 import GroupEditModal, { type EditGroupPayload } from '../../pages/modals/GroupEditModal.vue'
 import GroupAddSessionModal, { type AddSessionPayload } from '../../pages/modals/GroupAddSessionModal.vue'
+import GroupAddFromEventbriteModal, { type EventbriteEventOption } from '../../pages/modals/GroupAddFromEventbriteModal.vue'
 import type { ProjectItem } from '../../pages/modals/SessionEditModal.vue'
 import DeleteModal from '../../pages/modals/DeleteModal.vue'
 
 const props = defineProps<{
   group: GroupDetailResponse
   projects: ProjectItem[]
+  /** Edit (and delete) the group: Admin only. Adding sessions is Check In and Admin. */
+  canEdit: boolean
+  /** One-off DTV Eventbrite events not yet in the tracker, loaded by the page on loadEventbrite. */
+  eventbriteEvents: EventbriteEventOption[]
+  eventbriteLoading?: boolean
+  eventbriteError?: string
 }>()
 const emit = defineEmits<{
   editGroup: [data: EditGroupPayload]
   addSession: [data: AddSessionPayload]
   deleteGroup: []
+  loadEventbrite: []
 }>()
 
 const showEdit = ref(false)
 const showDelete = ref(false)
 const showAdd = ref(false)
+const showPicker = ref(false)
+const pickedEvent = ref<EventbriteEventOption | null>(null)
+
+function openPicker() {
+  showPicker.value = true
+  emit('loadEventbrite')
+}
+
+/** Add Session, blank or pre-filled from the picked Eventbrite event. */
+function openAdd(event: EventbriteEventOption | null) {
+  pickedEvent.value = event
+  showPicker.value = false
+  showAdd.value = true
+}
 
 const workingEdit = ref(false)
 const workingAdd = ref(false)
@@ -117,6 +158,7 @@ defineExpose({
 <style scoped>
 .gab-wrap {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.5rem;

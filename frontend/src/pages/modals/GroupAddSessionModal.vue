@@ -9,18 +9,13 @@
     @action="add"
   >
     <FormLayout :disabled="working">
-      <FormRow v-if="groups" title="Group" :full-width="true">
-        <ModalFormSelect v-model="form.groupId" :placeholder="form.groupId === ''">
-          <option value="">Select a group…</option>
-          <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.displayName || g.key }}</option>
-        </ModalFormSelect>
+      <!-- Same fields and order as Edit Session. -->
+      <FormRow title="Display Name" :full-width="true">
+        <ModalFormInput v-model="form.name" :placeholder="group?.displayName || group?.key || ''" />
       </FormRow>
 
-      <FormRow title="Project" :full-width="true">
-        <ModalFormSelect v-model="form.projectId" :placeholder="form.projectId === null">
-          <option :value="null">No project</option>
-          <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-        </ModalFormSelect>
+      <FormRow title="Description" :full-width="true">
+        <ModalFormTextarea v-model="form.description" />
       </FormRow>
 
       <FormRow title="Date" :full-width="true">
@@ -35,8 +30,22 @@
         <ModalFormInput v-model="form.hours" type="number" min="0.25" step="0.25" />
       </FormRow>
 
-      <FormRow title="Display Name" :full-width="true">
-        <ModalFormInput v-model="form.name" :placeholder="group?.displayName || group?.key || ''" />
+      <FormRow v-if="groups" title="Group" :full-width="true">
+        <ModalFormSelect v-model="form.groupId" :placeholder="form.groupId === ''">
+          <option value="">Select a group…</option>
+          <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.displayName || g.key }}</option>
+        </ModalFormSelect>
+      </FormRow>
+
+      <FormRow title="Project" :full-width="true">
+        <ModalFormSelect v-model="form.projectId" :placeholder="form.projectId === null">
+          <option :value="null">No project</option>
+          <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </ModalFormSelect>
+      </FormRow>
+
+      <FormRow title="Eventbrite Event ID" :full-width="true">
+        <ModalFormInput v-model="form.eventbrite" />
       </FormRow>
     </FormLayout>
 
@@ -48,11 +57,13 @@
 import { ref, reactive, computed } from 'vue'
 import type { GroupDetailResponse } from '../../../../types/api-responses'
 import type { ProjectItem } from './SessionEditModal.vue'
+import type { EventbriteEventOption } from './GroupAddFromEventbriteModal.vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
+import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 import {
   DEFAULT_SESSION_LENGTH,
   DEFAULT_SESSION_TIME,
@@ -68,7 +79,10 @@ export type AddSessionPayload = {
   /** Hours; blank / omitted → 3 */
   length?: number
   name?: string
+  description?: string
   projectId?: number | null
+  /** Set when adding from Eventbrite: the session is linked to this event. */
+  eventbriteEventId?: string
 }
 
 type GroupOption = { id: number; key: string; displayName?: string | null }
@@ -77,6 +91,8 @@ const props = defineProps<{
   group?: GroupDetailResponse
   groups?: GroupOption[]
   projects: ProjectItem[]
+  /** Adding from Eventbrite: pre-fills the form from this event and links the session to it. */
+  eventbrite?: EventbriteEventOption
   working: boolean
   error?: string
 }>()
@@ -89,11 +105,13 @@ const emit = defineEmits<{
 const validationError = ref('')
 
 const form = reactive({
-  date: '',
-  time: DEFAULT_SESSION_TIME,
+  date: props.eventbrite?.date ?? '',
+  time: props.eventbrite?.time ?? DEFAULT_SESSION_TIME,
   // Named hours (not length) — reactive objects with a numeric `length` break v-model updates
-  hours: String(DEFAULT_SESSION_LENGTH),
-  name: '',
+  hours: String(props.eventbrite?.length ?? DEFAULT_SESSION_LENGTH),
+  name: props.eventbrite?.name ?? '',
+  description: props.eventbrite?.summary ?? '',
+  eventbrite: props.eventbrite?.id ?? '',
   groupId: '' as number | '',
   projectId: null as number | null,
 })
@@ -116,7 +134,9 @@ function add() {
     time: resolveSessionTime(form.time),
     length,
     name: form.name || undefined,
+    description: form.description.trim() || undefined,
     projectId: form.projectId,
+    eventbriteEventId: form.eventbrite.trim() || undefined,
   })
 }
 </script>

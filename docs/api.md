@@ -43,7 +43,7 @@ Self-service users get the **Public** GET allowlist plus their own profile (`/pr
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/api/sessions` | GET | Public | All sessions with calculated hours and registrations |
-| `/api/sessions` | POST | Admin | Create new session |
+| `/api/sessions` | POST | Check In+ | Create new session; optional `eventbriteEventId` links it to an Eventbrite event |
 | `/api/sessions/export` | GET | Admin | Export this FY sessions as CSV |
 | `/api/sessions/refresh-stats` | POST | Admin / API key | Bulk refresh pre-computed stats for all sessions |
 | `/api/sessions/bulk-tag` | POST | Admin | Apply taxonomy terms to multiple sessions |
@@ -144,7 +144,7 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 | `/api/eventbrite/nightly-update` | POST | Admin / API key | Full nightly run: sync, stats refresh, backup, cache warmup |
 | `/api/eventbrite/sync-sessions` | POST | Admin / API key | Sync Eventbrite events → sessions |
 | `/api/eventbrite/sync-attendees` | POST | Admin / API key | Sync Eventbrite attendees → profiles/entries |
-| `/api/eventbrite/unmatched-events` | GET | Trusted | List Eventbrite events with no matching group |
+| `/api/eventbrite/unmatched-events` | GET | Trusted | Live Eventbrite events not linked to a session (and not in a series linked to a group): `eventId`, `name`, `date`, `time`, `length`, `summary`, `seriesId` (set for events with several dates). Used by the Admin page and *Add from Eventbrite* |
 | `/api/eventbrite/event-config-check` | GET | Trusted | Check event config (child ticket, consent questions) |
 
 ## Backup

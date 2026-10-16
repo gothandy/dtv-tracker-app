@@ -39,6 +39,10 @@
           <AppButton label="Open" @click="open = 'group-add-session'" />
         </div>
         <div>
+          <h2>Add from Eventbrite</h2>
+          <AppButton label="Open" @click="openEventbritePicker" />
+        </div>
+        <div>
           <h2>Media Edit</h2>
           <AppButton label="Open" @click="open = 'media-edit'" />
         </div>
@@ -206,6 +210,25 @@
         @add="onGroupAddSession"
       />
 
+      <GroupAddFromEventbriteModal
+        v-if="open === 'group-add-eventbrite'"
+        :events="eventbriteLoading ? [] : mockEventbriteEvents"
+        :events-loading="eventbriteLoading"
+        @close="closeModal('close')"
+        @next="onEventbritePicked"
+      />
+
+      <GroupAddSessionModal
+        v-if="open === 'group-add-session-eventbrite'"
+        :group="mockGroup"
+        :projects="mockProjects"
+        :eventbrite="pickedEvent ?? undefined"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @add="onGroupAddSession"
+      />
+
       <SessionAddTagsModal
         v-if="open === 'session-add-tags'"
         :count="3"
@@ -283,6 +306,7 @@ import ProfileTransferModal from '../modals/ProfileTransferModal.vue'
 import RecordAddModal from '../modals/RecordAddModal.vue'
 import RecordEditModal from '../modals/RecordEditModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
+import GroupAddFromEventbriteModal, { type EventbriteEventOption } from '../modals/GroupAddFromEventbriteModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
 import AboutModal from '../../components/AboutModal.vue'
 import RegularEditModal from '../modals/RegularEditModal.vue'
@@ -378,6 +402,29 @@ function onGroupEditSave(payload: unknown) {
 
 function onGroupAddSession(payload: unknown) {
   simulate(`group-add-session: add → ${JSON.stringify(payload)}`)
+}
+
+// Deliberately out of date order: the modal sorts them.
+const mockEventbriteEvents: EventbriteEventOption[] = [
+  { id: '2002802047839', name: 'DTV Christmas Party', date: '2026-12-04', time: '18:30', length: 4, summary: 'Celebrate another year of trail building with food, drink and festive cheer.' },
+  { id: '2002800000001', name: 'Tree Planting at Cannop Ponds', date: '2026-11-21', time: '09:30', length: 3 },
+  { id: '2002800000002', name: 'New Year Litter Pick', date: '2027-01-02', time: '10:00', length: 2.5 },
+]
+
+const pickedEvent = ref<EventbriteEventOption | null>(null)
+const eventbriteLoading = ref(false)
+
+// Shows the loading spinner for 3 seconds, as if fetching from Eventbrite.
+function openEventbritePicker() {
+  open.value = 'group-add-eventbrite'
+  eventbriteLoading.value = true
+  setTimeout(() => { eventbriteLoading.value = false }, 3000)
+}
+
+function onEventbritePicked(event: EventbriteEventOption | null) {
+  log(`group-add-eventbrite: next → ${event?.id ?? 'add manually'}`)
+  pickedEvent.value = event
+  open.value = 'group-add-session-eventbrite'
 }
 
 function onAddTags(label: string) {

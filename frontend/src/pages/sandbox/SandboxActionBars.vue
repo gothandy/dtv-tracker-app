@@ -64,16 +64,20 @@
         ref="actionsWithEbRef"
         :group="mockGroupWithEb"
         :projects="mockProjects"
+        :can-edit="true"
+        :eventbrite-events="mockEventbriteEvents"
         @edit-group="data => onGroupAction(actionsWithEbRef, 'edit-group', data)"
         @add-session="data => onGroupAction(actionsWithEbRef, 'add-session', data)"
         @delete-group="onGroupAction(actionsWithEbRef, 'delete-group')"
       />
 
-      <h2>GroupDetailActions (without Eventbrite)</h2>
+      <h2>GroupDetailActions (without Eventbrite, as Check In: no Edit)</h2>
       <GroupDetailActions
         ref="actionsWithoutEbRef"
         :group="mockGroup"
         :projects="mockProjects"
+        :can-edit="false"
+        :eventbrite-events="[]"
         @edit-group="data => onGroupAction(actionsWithoutEbRef, 'edit-group', data)"
         @add-session="data => onGroupAction(actionsWithoutEbRef, 'add-session', data)"
         @delete-group="onGroupAction(actionsWithoutEbRef, 'delete-group')"
@@ -103,6 +107,12 @@
 </template>
 
 <script setup lang="ts">
+import type { EventbriteEventOption } from '../modals/GroupAddFromEventbriteModal.vue'
+
+const mockEventbriteEvents: EventbriteEventOption[] = [
+  { id: '2002802047839', name: 'DTV Christmas Party', date: '2026-12-04', time: '18:30', length: 4 },
+  { id: '2002800000001', name: 'Tree Planting at Cannop Ponds', date: '2026-11-21', time: '09:30', length: 3 },
+]
 import '../../styles/sandbox.css'
 import { ref } from 'vue'
 import { usePageTitle } from '../../composables/usePageTitle'

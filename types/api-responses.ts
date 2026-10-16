@@ -379,3 +379,19 @@ export interface EntryUploadContextResponse {
   /** True when this uploader's files are saved as public (admin/check-in). */
   uploadsPublicDefault: boolean;
 }
+
+/** GET /api/eventbrite/unmatched-events: a live DTV Eventbrite event not linked to a session. */
+export interface UnmatchedEventResponse {
+  eventId: string
+  name: string
+  /** YYYY-MM-DD, UK time */
+  date: string
+  /** HH:MM, UK time */
+  time: string
+  /** Hours; null if Eventbrite gave no end time */
+  length: number | null
+  /** Eventbrite's short summary */
+  summary: string | null
+  /** Set for events with several dates (an Eventbrite series) */
+  seriesId: string | null
+}
