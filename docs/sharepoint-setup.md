@@ -141,7 +141,7 @@ Only switch production's registration off in an emergency: the tracker stops.
 
 ## 7. The preview's own site
 
-The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's still real people's data and email addresses until it's cleaned up ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)), so avoid running an Eventbrite sync on it. Emails from it only go to the testers ([configuration.md](configuration.md#email-outside-production)).
+The preview slot and local development use `https://dtvolunteers.sharepoint.com/sites/tracker-preview`: a copy of the live site restored from **Microsoft 365 Backup** (SharePoint admin centre → Backup), so preview testing never touches live data. It's a straight copy of live data, real people and email addresses included, by choice: rather than cleaning or replacing the data, the preview is guarded. Emails from it only go to the testers ([configuration.md](configuration.md#email-outside-production)), and its registration reaches only this site and is switched off every night (section 6). An Eventbrite sync on it is fine: it only brings in what live already holds, and sends nothing back.
 
 To make or refresh it, follow [`scripts/preview-site-from-backup/README.md`](../scripts/preview-site-from-backup/README.md): restore, unlock, rename, show IDs (for `config.ts`), set app access. Its last step leaves *DTV Tracker (Preview)* with the preview site only, and no other app on it.
 

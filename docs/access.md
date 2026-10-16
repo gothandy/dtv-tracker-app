@@ -52,7 +52,7 @@ Not checked by the report, but part of the same picture:
 | Who | Where it's set | Check |
 |---|---|---|
 | Tracker admins | `TRACKER_ADMIN_USERS` per environment ([configuration.md](configuration.md)) | Production and each slot's settings |
-| People who can open the tracker sites directly in SharePoint | Each site's permissions | *Site → Settings → Site permissions*. A restored preview copies live's members; trim to the testers ([#281](https://github.com/gothandy/dtv-tracker-app/issues/281)) |
+| People who can open the tracker sites directly in SharePoint | Each site's permissions | *Site → Settings → Site permissions*. A restored preview copies live's members; trim to the testers ([restore step 6](../scripts/preview-site-from-backup/README.md)) |
 | Who receives slot email | `test.tracker@` members | Exchange admin centre → Recipients → Groups |
 | Who can change code or deploy | GitHub write access | *Repository → Settings → Collaborators* ([AGENTS.md](../AGENTS.md#branches-and-environments)) |
 | Who can change the tracker's registrations | Entra admin roles (*Global*, *Application* and *Cloud Application Administrator*), plus each registration's owners | *Entra ID → Roles and administrators*. The report lists registration owners as CHECK, and any admin role limited to a tracker app as UNEXPECTED, but not people with organisation-wide roles: keep those to the admins |
