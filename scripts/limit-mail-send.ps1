@@ -60,7 +60,7 @@
     ./scripts/limit-mail-send.ps1 -ClientId 00000000-0000-0000-0000-000000000000 -Mailbox preview.tracker@deantrailvolunteers.org.uk -TestMailbox andrew.davies@dtv.org.uk
 
 .EXAMPLE
-    ./scripts/limit-mail-send.ps1 -ClientId 00000000-0000-0000-0000-000000000000 -Mailbox admin@deantrailvolunteers.org.uk -Remove
+    ./scripts/limit-mail-send.ps1 -ClientId 00000000-0000-0000-0000-000000000000 -Mailbox old.mailbox@deantrailvolunteers.org.uk -Remove
 #>
 
 param(

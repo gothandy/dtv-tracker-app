@@ -10,7 +10,7 @@ For what each *person* may do inside the tracker (Admin, Check In, Self-Service)
 
 | Identity | Kind | Can reach | Why |
 |---|---|---|---|
-| **DTV Tracker (Production)** | App registration. Secret in production's settings only | Graph `Sites.Selected`: **write on `/sites/tracker` only** (site grant). Graph `TermStore.Read.All` (read-only, organisation-wide). Exchange: **send as `admin@`** (moving to `tracker@`). Delegated `User.Read`, `email` for Microsoft sign-in | The live tracker: its data, tags, sign-in codes and session emails |
+| **DTV Tracker (Production)** | App registration. Secret in production's settings only | Graph `Sites.Selected`: **write on `/sites/tracker` only** (site grant). Graph `TermStore.Read.All` (read-only, organisation-wide). Exchange: **send as `tracker@` only**. Delegated `User.Read`, `email` for Microsoft sign-in | The live tracker: its data, tags, sign-in codes and session emails |
 | **DTV Tracker (Preview)** | App registration. Secret in the preview slot and developers' `.env` | Same as Production, but **write on `/sites/tracker-preview` only**, and **send as `preview.tracker@` only**, which Exchange limits to the `test.tracker@` list. **Switched off every night at 2am**, so a leaked secret is useless until someone switches it on (it doesn't end testers' existing sessions) | The preview slot and local development, on a copy of live data |
 | **TrackerPreviewDeactivate** | Logic App's system-assigned managed identity | Graph `Application.ReadWrite.OwnedBy`, and **owner of the Preview enterprise app only**. Nothing else | Switches the Preview registration off every night. The report (`-Azure`) also checks how the Logic App is set up: on, daily at 02:00, doing nothing else, as this identity |
 | **oidc-msi-ad79** | User-assigned managed identity | Azure *Website Contributor* on `DTVTrackerApp` (all slots). Federated logins from GitHub: `main` branch (production) and the `preview` environment | GitHub Actions deploys, with no stored secret |
@@ -26,8 +26,7 @@ For what each *person* may do inside the tracker (Admin, Check In, Self-Service)
 
 | Address | Kind | Who can send as it | Limits |
 |---|---|---|---|
-| `admin@deantrailvolunteers.org.uk` | User mailbox | Production (until it moves to `tracker@`) | None: it's a real mailbox |
-| `tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked | Production (once switched) | Production's public address (`TRACKER_SHARED_MAILBOX`): sender, Reply-To, About box and *Contact us* links. Read by whoever has Full Access |
+| `tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked | Production | Production's public address (`TRACKER_SHARED_MAILBOX`): sender, Reply-To, About box and *Contact us* links. Read by whoever has Full Access |
 | `preview.tracker@deantrailvolunteers.org.uk` | Shared mailbox, sign-in blocked, hidden | Preview | One recipient per message; mail flow rule *Tracker (Preview) Restriction* rejects anyone not in `test.tracker@` |
 | `test.tracker@deantrailvolunteers.org.uk` | Distribution list, hidden | Anyone in the organisation (accepted: members' addresses, personal ones included, are in the address book by consent anyway); nobody outside | Members: people and mail contacts, never groups. Joining closed: being on it means receiving slot email, so only its owners add people |
 

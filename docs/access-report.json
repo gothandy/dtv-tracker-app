@@ -3,7 +3,7 @@
   "date": "2026-10-16",
   "azure": true,
   "summary": {
-    "ok": 59,
+    "ok": 57,
     "check": 4,
     "missing": 0,
     "unexpected": 0
@@ -119,9 +119,8 @@
       "section": "4. Exchange",
       "subject": "DTV Tracker (Production) can send as",
       "ok": {
-        "count": 2,
+        "count": 1,
         "items": [
-          "mailbox admin@deantrailvolunteers.org.uk",
           "mailbox tracker@deantrailvolunteers.org.uk"
         ]
       }
@@ -130,9 +129,8 @@
       "section": "4. Exchange",
       "subject": "Every Exchange application role in the tenant",
       "ok": {
-        "count": 3,
+        "count": 2,
         "items": [
-          "tracker: Application Mail.Send for admin@deantrailvolunteers.org.uk",
           "tracker: Application Mail.Send for preview.tracker@deantrailvolunteers.org.uk",
           "tracker: Application Mail.Send for tracker@deantrailvolunteers.org.uk"
         ]

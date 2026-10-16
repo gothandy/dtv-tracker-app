@@ -68,7 +68,7 @@ The tracker sends sign-in codes and emails from one mailbox per environment: the
 | `test.tracker@deantrailvolunteers.org.uk` | Hidden distribution list: who may receive email from a slot. People and mail contacts only, never other groups. Outside senders blocked; joining **Closed** (the default), so only its owners add people |
 | `team.tracker@deantrailvolunteers.org.uk` | The Microsoft 365 group behind the Tracker site and team. Not used for email by the tracker |
 
-Until production moves to `tracker@`, it uses `admin@deantrailvolunteers.org.uk`. Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
+Each environment's mailbox (`TRACKER_SHARED_MAILBOX`) is its public address: emails are sent from it with Reply-To it, and the app's About box and *Contact us* links show it. Give the people who answer production's **Full Access** to `tracker@`, or what arrives there goes unread.
 
 Shared mailboxes need no licence and are created with sign-in blocked (*Microsoft 365 admin centre → Users → Active users* shows **Sign-in blocked**); check it, don't unblock it.
 
@@ -93,7 +93,7 @@ To see what a registration can send as, without changing anything: `./limit-mail
    ```powershell
    ./limit-mail-send.ps1 -ClientId <TRACKER_ENTRA_CLIENT_ID> -Mailbox <old mailbox> -Remove
    ```
-   The scope is deleted only once no registration uses it, so removing `admin@` from Preview leaves production's permission alone.
+   The scope is deleted only once no registration uses it, so removing a mailbox from one registration leaves any other's permission alone.
 
 ### Locking a slot's mailbox
 
