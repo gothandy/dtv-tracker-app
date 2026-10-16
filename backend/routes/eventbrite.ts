@@ -14,6 +14,7 @@ import { runProfileStatsRefresh } from '../services/profile-stats';
 import { runBackupExport } from '../services/backup-export';
 import { sharePointClient } from '../services/sharepoint-client';
 import { deleteExpiredLogins } from '../services/auth-store';
+import type { UnmatchedEventResponse } from '../../types/api-responses';
 
 const router: Router = express.Router();
 
@@ -256,6 +257,13 @@ router.post('/eventbrite/sync-sessions', async (req: Request, res: Response) => 
   }
 });
 
+/** Hours from start to end, to the nearest quarter hour; null if either is missing. */
+function eventLengthHours(start: string, end?: string): number | null {
+  if (!start || !end) return null;
+  const hours = (new Date(end).getTime() - new Date(start).getTime()) / 3_600_000;
+  return hours > 0 ? Math.round(hours * 4) / 4 : null;
+}
+
 router.get('/eventbrite/unmatched-events', async (req: Request, res: Response) => {
   try {
     const [orgEvents, rawGroups, rawSessions] = await Promise.all([
@@ -276,13 +284,17 @@ router.get('/eventbrite/unmatched-events', async (req: Request, res: Response) =
       sessions.filter(s => s.EventbriteEventID).map(s => s.EventbriteEventID!)
     );
 
-    const unmatched = orgEvents
+    const unmatched: UnmatchedEventResponse[] = orgEvents
       .filter(e => !e.seriesId || !seriesMap.has(e.seriesId))
       .filter(e => !existingEventIds.has(e.id))
       .map(e => ({
         eventId: e.id,
         name: e.name,
-        date: e.startDate ? e.startDate.substring(0, 10) : ''
+        date: e.startDate ? e.startDate.substring(0, 10) : '',
+        time: e.startDate ? e.startDate.substring(11, 16) : '',
+        length: eventLengthHours(e.startDate, e.endDate),
+        // Set for events with several dates (an Eventbrite series)
+        seriesId: e.seriesId ?? null
       }));
 
     res.json({ success: true, data: unmatched });

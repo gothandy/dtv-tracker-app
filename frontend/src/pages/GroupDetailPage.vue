@@ -22,10 +22,15 @@
         </template>
         <template #right>
           <GroupDetailActions
-            v-if="profile.isAdmin"
+            v-if="profile.hasCheckInAccess"
             ref="actionsRef"
             :group="store.group"
             :projects="editProjects"
+            :can-edit="profile.isAdmin"
+            :eventbrite-events="eventbriteEvents"
+            :eventbrite-loading="eventbriteLoading"
+            :eventbrite-error="eventbriteError"
+            @load-eventbrite="loadEventbriteEvents"
             @edit-group="onEditGroup"
             @add-session="onAddSession"
             @delete-group="onDeleteGroup"
@@ -128,11 +133,13 @@ import CardTitle from '../components/CardTitle.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import { sessionPath, groupPath, groupsPath, profilePath } from '../router/index'
 import { mapSession } from '../utils/mapSession'
-import type { SessionResponse, TagHoursItem } from '../../../types/api-responses'
+import type { SessionResponse, TagHoursItem, UnmatchedEventResponse } from '../../../types/api-responses'
 import type { Session } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditGroupPayload } from './modals/GroupEditModal.vue'
 import type { AddSessionPayload } from './modals/GroupAddSessionModal.vue'
+import type { EventbriteEventOption } from './modals/GroupAddFromEventbriteModal.vue'
+import { DEFAULT_SESSION_LENGTH } from '../utils/sessionTime'
 import type { ProjectItem } from './modals/SessionEditModal.vue'
 import { useProjectListStore } from '../stores/projectList'
 
@@ -276,6 +283,30 @@ async function onEditGroup(data: EditGroupPayload) {
   }
 }
 
+// One-off DTV Eventbrite events not yet in the tracker, for Add from Eventbrite.
+// Events with several dates (a series) are left out.
+const eventbriteEvents = ref<EventbriteEventOption[]>([])
+const eventbriteLoading = ref(false)
+const eventbriteError = ref('')
+
+async function loadEventbriteEvents() {
+  eventbriteLoading.value = true
+  eventbriteError.value = ''
+  try {
+    const res = await fetch('/api/eventbrite/unmatched-events')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json() as { data: UnmatchedEventResponse[] }
+    eventbriteEvents.value = json.data
+      .filter(e => !e.seriesId && e.date)
+      .map(e => ({ id: e.eventId, name: e.name, date: e.date, time: e.time, length: e.length ?? DEFAULT_SESSION_LENGTH }))
+  } catch (e) {
+    console.error('[GroupDetailPage] load Eventbrite events', e)
+    eventbriteError.value = 'Could not load events from Eventbrite. Please try again.'
+  } finally {
+    eventbriteLoading.value = false
+  }
+}
+
 async function onAddSession(data: AddSessionPayload) {
   try {
     const res = await fetch('/api/sessions', {
@@ -283,8 +314,12 @@ async function onAddSession(data: AddSessionPayload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error('Failed to create session')
-    const json = await res.json()
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      // e.g. "A session for this group already exists on 2026-12-04"
+      actionsRef.value?.onAddError(json.error || 'Failed to create session')
+      return
+    }
     actionsRef.value?.onAddSuccess()
     router.push(sessionPath(store.group!.key, json.data?.date ?? data.date))
   } catch (e) {
@@ -386,7 +421,7 @@ async function onRegularDelete() {
 
 onMounted(() => {
   reload()
-  if (profile.isAdmin) projectsStore.fetch()
+  if (profile.hasCheckInAccess) projectsStore.fetch()
 })
 
 watch(() => route.params.key, key => {

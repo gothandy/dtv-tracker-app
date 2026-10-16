@@ -161,7 +161,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
 router.post('/sessions', async (req: Request, res: Response) => {
   try {
-    const { groupId, date, name, description, projectId, time, length } = req.body;
+    const { groupId, date, name, description, projectId, time, length, eventbriteEventId } = req.body;
 
     if (!groupId || !date) {
       res.status(400).json({ success: false, error: 'groupId and date are required' });
@@ -223,6 +223,9 @@ router.post('/sessions', async (req: Request, res: Response) => {
     }
     if (projectId !== undefined) {
       fields[PROJECT_LOOKUP] = projectLookupFromBody(projectId, projectsRaw);
+    }
+    if (typeof eventbriteEventId === 'string' && eventbriteEventId.trim()) {
+      fields.EventbriteEventID = eventbriteEventId.trim();
     }
 
     const id = await sessionsRepository.create(fields);
