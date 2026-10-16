@@ -38,6 +38,8 @@ export interface EventbriteEventOption {
   time: string
   /** Hours */
   length: number
+  /** Eventbrite's short summary, for the session's description */
+  summary?: string
 }
 
 const props = defineProps<{

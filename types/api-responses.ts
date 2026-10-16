@@ -390,6 +390,8 @@ export interface UnmatchedEventResponse {
   time: string
   /** Hours; null if Eventbrite gave no end time */
   length: number | null
+  /** Eventbrite's short summary */
+  summary: string | null
   /** Set for events with several dates (an Eventbrite series) */
   seriesId: string | null
 }

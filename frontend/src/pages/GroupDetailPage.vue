@@ -299,7 +299,7 @@ async function loadEventbriteEvents() {
     const json = await res.json() as { data: UnmatchedEventResponse[] }
     eventbriteEvents.value = json.data
       .filter(e => !e.seriesId && e.date)
-      .map(e => ({ id: e.eventId, name: e.name, date: e.date, time: e.time, length: e.length ?? DEFAULT_SESSION_LENGTH }))
+      .map(e => ({ id: e.eventId, name: e.name, date: e.date, time: e.time, length: e.length ?? DEFAULT_SESSION_LENGTH, summary: e.summary ?? undefined }))
   } catch (e) {
     console.error('[GroupDetailPage] load Eventbrite events', e)
     eventbriteError.value = 'Could not load events from Eventbrite. Please try again.'

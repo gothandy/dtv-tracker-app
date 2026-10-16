@@ -406,7 +406,7 @@ function onGroupAddSession(payload: unknown) {
 
 // Deliberately out of date order: the modal sorts them.
 const mockEventbriteEvents: EventbriteEventOption[] = [
-  { id: '2002802047839', name: 'DTV Christmas Party', date: '2026-12-04', time: '18:30', length: 4 },
+  { id: '2002802047839', name: 'DTV Christmas Party', date: '2026-12-04', time: '18:30', length: 4, summary: 'Celebrate another year of trail building with food, drink and festive cheer.' },
   { id: '2002800000001', name: 'Tree Planting at Cannop Ponds', date: '2026-11-21', time: '09:30', length: 3 },
   { id: '2002800000002', name: 'New Year Litter Pick', date: '2027-01-02', time: '10:00', length: 2.5 },
 ]

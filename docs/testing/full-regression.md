@@ -106,7 +106,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Redirects to groups listing
 
 ### H5. Create session
-- [ ] Group detail or sessions page → "New Session" button → modal with Group, Project, Date, Start time, Length, Name, Eventbrite Event ID
+- [ ] Group detail or sessions page → "New Session" button → modal with the same fields and order as Edit Session: Display Name, Description, Date, Start time, Length, Group (sessions page only), Project, Eventbrite Event ID
 - [ ] Group detail: Admin and Check In see "Add session" and the Eventbrite button; only Admin sees Edit. Sessions page "Add session" is Admin only
 - [ ] A group with an Eventbrite Series ID: the Eventbrite button opens the series on Eventbrite instead (its sessions come from the nightly sync); the actions bar wraps rather than overflowing
 - [ ] Start time and Length prefill defaults (`09:30`, `3`); blank on submit still stores those defaults
@@ -117,7 +117,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### H5a. Add from Eventbrite
 - [ ] Group detail (not linked to a series) → Eventbrite button → *Add from Eventbrite* modal with a dropdown of upcoming one-off Eventbrite events not yet in the tracker, soonest first; events with several dates are not listed
-- [ ] Pick one → Next → Add Session opens pre-filled: Date, Start time, Length, Display Name and Eventbrite Event ID from the event; all editable
+- [ ] Pick one → Next → Add Session opens pre-filled: Date, Start time, Length, Display Name, Description (Eventbrite's summary) and Eventbrite Event ID from the event; all editable; the description shows on the new session
 - [ ] Create → session detail; its Eventbrite link opens the event; Refresh brings in attendees
 - [ ] Open the Eventbrite button again: that event is no longer listed
 - [ ] No events to add → "No upcoming Eventbrite events to add." and **Add manually**, which opens a blank Add Session; Eventbrite unreachable → the modal's error line "Could not load events from Eventbrite"

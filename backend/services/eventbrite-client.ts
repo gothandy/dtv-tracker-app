@@ -162,6 +162,8 @@ export interface EventbriteEvent {
   startDate: string;
   /** Local (UK) time */
   endDate?: string;
+  /** Eventbrite's short summary (the line under the title) */
+  summary?: string;
   description?: string;
 }
 
@@ -180,6 +182,7 @@ export async function getOrgEvents(): Promise<EventbriteEvent[]> {
         name?: { text?: string };
         start?: { utc?: string; local?: string };
         end?: { utc?: string; local?: string };
+        summary?: string;
         description?: { text?: string };
       }>;
       pagination: { has_more_items: boolean };
@@ -192,6 +195,7 @@ export async function getOrgEvents(): Promise<EventbriteEvent[]> {
         name: e.name?.text || '',
         startDate: e.start?.local || e.start?.utc || '',
         endDate: e.end?.local || e.end?.utc || undefined,
+        summary: e.summary || undefined,
         description: e.description?.text || undefined
       });
     }

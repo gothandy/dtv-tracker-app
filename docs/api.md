@@ -144,7 +144,7 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 | `/api/eventbrite/nightly-update` | POST | Admin / API key | Full nightly run: sync, stats refresh, backup, cache warmup |
 | `/api/eventbrite/sync-sessions` | POST | Admin / API key | Sync Eventbrite events → sessions |
 | `/api/eventbrite/sync-attendees` | POST | Admin / API key | Sync Eventbrite attendees → profiles/entries |
-| `/api/eventbrite/unmatched-events` | GET | Trusted | Live Eventbrite events not linked to a session (and not in a series linked to a group): `eventId`, `name`, `date`, `time`, `length`, `seriesId` (set for events with several dates). Used by the Admin page and *Add from Eventbrite* |
+| `/api/eventbrite/unmatched-events` | GET | Trusted | Live Eventbrite events not linked to a session (and not in a series linked to a group): `eventId`, `name`, `date`, `time`, `length`, `summary`, `seriesId` (set for events with several dates). Used by the Admin page and *Add from Eventbrite* |
 | `/api/eventbrite/event-config-check` | GET | Trusted | Check event config (child ticket, consent questions) |
 
 ## Backup

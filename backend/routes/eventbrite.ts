@@ -293,6 +293,7 @@ router.get('/eventbrite/unmatched-events', async (req: Request, res: Response) =
         date: e.startDate ? e.startDate.substring(0, 10) : '',
         time: e.startDate ? e.startDate.substring(11, 16) : '',
         length: eventLengthHours(e.startDate, e.endDate),
+        summary: e.summary ?? null,
         // Set for events with several dates (an Eventbrite series)
         seriesId: e.seriesId ?? null
       }));
