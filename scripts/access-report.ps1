@@ -530,6 +530,8 @@ foreach ($mailbox in $SharedMailboxes) {
 }
 
 function Get-ScopeMailbox([string] $ScopeName) {
+    # No scope means every mailbox. (Asked for a blank name, Exchange returns every scope.)
+    if (-not $ScopeName) { return 'the whole organisation (no scope)' }
     $scope = Get-ManagementScope -Identity $ScopeName -ErrorAction SilentlyContinue
     # Exactly one mailbox, or it's reported whole (and won't match an expected mailbox).
     if ($scope -and $scope.RecipientFilter -match "^\s*PrimarySmtpAddress -eq '([^']+)'\s*$") { $Matches[1].ToLower() }
