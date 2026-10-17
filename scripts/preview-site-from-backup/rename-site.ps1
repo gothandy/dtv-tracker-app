@@ -55,6 +55,15 @@ if ($NewSiteUrl -ieq $LiveSiteUrl) {
 
 Connect-SPOService -Url $AdminUrl
 
+# The new address must be free: a slot's old site has to be removed first.
+$taken = $null
+try { $taken = Get-SPOSite -Identity $NewSiteUrl } catch { }
+if (-not $taken) { try { $taken = Get-SPODeletedSite -Identity $NewSiteUrl } catch { } }
+if ($taken) {
+    Disconnect-SPOService
+    throw "$NewSiteUrl is still in use (or in the deleted sites). Run ./remove-site.ps1 -Slot $Slot first."
+}
+
 $site = Get-SPOSite -Identity $SiteUrl
 Write-Host "From: $($site.Title) ($($site.Url))"
 Write-Host "To:   $NewTitle ($NewSiteUrl)"
