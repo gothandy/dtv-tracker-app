@@ -4,8 +4,9 @@
 
 .DESCRIPTION
     Microsoft 365 Backup keeps a restore point of the live tracker site every 10 minutes
-    for the past two weeks. This script finds the latest one, shows its time and asks
-    you to confirm, then restores it to a NEW site (never over the live site) and waits
+    for the past two weeks. Only some are "express" (fast restore) points: those restore
+    in minutes, the others can take hours. This script finds the latest express one,
+    shows its time (and the latest of any kind) and asks you to confirm, then restores it to a NEW site (never over the live site) and waits
     until the restore finishes. It prints the new site's address for the next steps
     (unlock-site.ps1, remove-site.ps1, rename-site.ps1).
 
@@ -54,25 +55,44 @@ if (-not $unit) {
 }
 Write-Host "Backup of: $($unit.siteName) ($($unit.siteWebUrl)), $($unit.status)"
 
-# 2. Its latest restore point in the last two weeks.
-$now = (Get-Date).ToUniversalTime()
-$search = Invoke-MgGraphRequest -Method POST -Uri "$Graph/v1.0/solutions/backupRestore/restorePoints/search" -Body (@{
-    protectionUnitIds      = @($unit.id)
-    protectionTimePeriod   = @{
-        startDateTime = $now.AddDays(-14).ToString('o')
-        endDateTime   = $now.ToString('o')
+# 2. Its latest restore point in the last two weeks. Express ("fast restore") points
+#    restore in minutes; the others can take hours, so prefer the latest express one.
+function Find-LatestRestorePoint([string] $Tags) {
+    $now = (Get-Date).ToUniversalTime()
+    $body = @{
+        protectionUnitIds      = @($unit.id)
+        protectionTimePeriod   = @{
+            startDateTime = $now.AddDays(-14).ToString('o')
+            endDateTime   = $now.ToString('o')
+        }
+        restorePointPreference = 'latest'
     }
-    restorePointPreference = 'latest'
-} | ConvertTo-Json -Depth 5) -ContentType 'application/json'
+    if ($Tags) { $body.tags = $Tags }
+    $search = Invoke-MgGraphRequest -Method POST -Uri "$Graph/v1.0/solutions/backupRestore/restorePoints/search" `
+        -Body ($body | ConvertTo-Json -Depth 5) -ContentType 'application/json'
+    return @($search.searchResults | ForEach-Object { $_.restorePoint }) |
+        Sort-Object { [datetime]$_.protectionDateTime } -Descending | Select-Object -First 1
+}
+function Format-PointTime($p) { ([datetime]$p.protectionDateTime).ToLocalTime().ToString('ddd d MMM yyyy HH:mm') }
 
-$point = @($search.searchResults | ForEach-Object { $_.restorePoint }) |
-    Sort-Object { [datetime]$_.protectionDateTime } -Descending | Select-Object -First 1
-if (-not $point) {
+$point = Find-LatestRestorePoint 'fastRestore'
+$latest = Find-LatestRestorePoint $null
+if ($latest) { Write-Host "Latest restore point:         $(Format-PointTime $latest) (your time)" }
+if ($point) {
+    Write-Host "Latest express restore point: $(Format-PointTime $point) (restores in minutes; this is the one used)"
+} elseif ($latest) {
+    Write-Host 'No express restore point in the last two weeks. The latest one can take hours to restore.'
+    if ((Read-Host 'Use it anyway? (y/n)') -ne 'y') {
+        Write-Host 'Nothing changed.'
+        Disconnect-MgGraph | Out-Null
+        return
+    }
+    $point = $latest
+} else {
     throw 'No restore point found in the last two weeks.'
 }
-$pointTime = ([datetime]$point.protectionDateTime).ToLocalTime()
-Write-Host "Latest restore point: $($pointTime.ToString('ddd d MMM yyyy HH:mm')) (your time)"
 Write-Host ''
+Write-Host 'Changes made on live after the restore point used are not in the copy.'
 Write-Host 'This restores that copy of the live site to a NEW site. The live site is not changed.'
 $answer = Read-Host 'Restore now? (y/n)'
 if ($answer -ne 'y') {

@@ -18,11 +18,11 @@ If it warns that a version is already installed under `C:\Program Files\SharePoi
 
 ## Steps
 
-1. **Restore** the live tracker site's latest backup to a new site. Microsoft 365 Backup keeps a restore point every 10 minutes, so a change made on live shows up within about 15 minutes. The script shows the restore point's time and asks first, then waits (15 minutes or more) and prints the new site's address, something like `/sites/TrackerR1`.
+1. **Restore** the live tracker site's latest **express** restore point to a new site. Microsoft 365 Backup keeps a restore point every 10 minutes, but only the express (fast restore) ones restore in minutes; others took over an hour. So a change made on live is only in the copy once there's an express point after it: the script shows the times of both and asks first, then waits and prints the new site's address, something like `/sites/TrackerR1`.
    ```powershell
    ./restore-site.ps1
    ```
-   By hand instead: SharePoint admin centre → Backup → SharePoint → Restore → the tracker site → a restore point → **Create new sites and restore to them**.
+   By hand instead: SharePoint admin centre → Backup → SharePoint → Restore → the tracker site → a **fast** restore point → **Create new sites and restore to them**.
 2. **Unlock** it. A restored site starts locked (`NoAdditions`: nothing new can be added), so the tracker couldn't take bookings.
    ```powershell
    ./unlock-site.ps1 -SiteUrl https://dtvolunteers.sharepoint.com/sites/TrackerR1
