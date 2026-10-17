@@ -16,7 +16,7 @@
       :fy="fy"
       @add-records="showBulkModal = true"
       @add-entries="onAddEntries"
-      @send-email="showEmailModal = true"
+      @send-email="openEmail"
       @add-profile="showAddProfile = true"
       @update:selected="selected = $event"
     />
@@ -51,6 +51,9 @@
     <ProfileBulkEmailModal
       v-if="showEmailModal"
       :count="emailableSelectedCount"
+      :templates="emailTemplates"
+      :templates-loading="emailTemplatesLoading"
+      :templates-error="emailTemplatesError"
       :working="emailWorking"
       :error="emailError"
       @close="showEmailModal = false"
@@ -94,7 +97,7 @@ import { useSessionListStore } from '../stores/sessionList'
 import { bulkEntrySessionOptions as buildBulkEntrySessionOptions } from '../utils/bulkEntrySessionOptions'
 import { useRouter } from 'vue-router'
 import { profilePath } from '../router'
-import type { ProfileResponse } from '../../../types/api-responses'
+import type { ProfileResponse, TemplateResponse } from '../../../types/api-responses'
 import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 usePageTitle('Profiles')
@@ -113,6 +116,9 @@ const showBulkModal = ref(false)
 const bulkWorking = ref(false)
 const bulkError = ref('')
 const showEmailModal = ref(false)
+const emailTemplates = ref<TemplateResponse[]>([])
+const emailTemplatesLoading = ref(false)
+const emailTemplatesError = ref('')
 const emailWorking = ref(false)
 const emailError = ref('')
 const showEntriesModal = ref(false)
@@ -195,6 +201,28 @@ async function onBulkEntries(payload: BulkEntriesPayload) {
     console.error('[ProfileListPage] onBulkEntries', e)
   } finally {
     entriesWorking.value = false
+  }
+}
+
+function openEmail() {
+  showEmailModal.value = true
+  loadEmailTemplates()
+}
+
+async function loadEmailTemplates() {
+  emailTemplatesLoading.value = true
+  emailTemplatesError.value = ''
+  emailTemplates.value = []
+  try {
+    const res = await fetch('/api/templates?context=Profile')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json() as { data: TemplateResponse[] }
+    emailTemplates.value = json.data
+  } catch (e) {
+    console.error('[ProfileListPage] load email templates', e)
+    emailTemplatesError.value = 'Could not load email templates. Please try again.'
+  } finally {
+    emailTemplatesLoading.value = false
   }
 }
 

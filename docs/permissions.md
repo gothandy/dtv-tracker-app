@@ -41,7 +41,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 |------|--------|
 | Dashboard, Groups list, Group detail, Sessions list | Full view (no volunteer names/emails) |
 | Session detail | Session info, stats, tags, public photos; entries and free parking hidden |
-| Volunteers list | Redirected to `/login` |
+| Profiles page | Redirected to `/login` |
 | Profile detail | Redirected to `/login` |
 | Add entry, Entry detail, Admin | Redirected to `/login` |
 
@@ -53,7 +53,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | Group detail | Group info, stats, sessions; regulars list **hidden** (shows "You are a regular" message if applicable) |
 | Session detail | Session info, entries visible; check-in, set-hours, refresh, edit **hidden** |
 | Sessions list | Advanced search/tag filter available; CSV download and checkboxes **hidden** |
-| Volunteers list | **Blocked** — redirected (API returns 403) |
+| Profiles page | **Blocked** — redirected (API returns 403) |
 | Profile detail (own) | View own stats, entries, groups; edit profile **hidden**; duplicates/linked profiles **hidden** |
 | Profile detail (other) | **403** — page shows "You don't have permission to view this profile" with back link |
 | Entry detail (own) | View own entry; Upload button visible |
@@ -71,10 +71,10 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Groups list** | Full view, regulars count | — | — |
 | **Group detail** | Group info, stats, sessions, regulars list | Add session, Eventbrite button (adds a one-off event; opens the series on a series group) | Edit button |
 | **Sessions list** | Full view | CSV download, checkboxes (Advanced) | Add Tags, Update Project buttons |
-| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
+| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Send Email (Session templates), Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
-| **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email |
+| **Profiles page** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email (Profile templates) |
 | **Profile detail** | Redirected (auth required) | Edit profile (name/email/match name), Regulars checkboxes, inline hours (own profile only), Collect Consent | **`User`** field in edit modal, Add Record, record pill editing, inline hours (all profiles), Transfer, Delete Profile |
 | **Consent page** | Redirected (auth required) | Full access | Full access |
 | **Admin** | Redirected (auth required) | — | Eventbrite sync, Exports, Site link |
@@ -166,7 +166,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | PATCH | `/records/:id` | Edit record |
 | DELETE | `/records/:id` | Delete record |
 | POST | `/records/bulk` | Bulk create/update records |
-| POST | `/profiles/bulk-email` | Bulk send Handlebars email to selected profiles |
+| POST | `/profiles/bulk-email` | Send a Profile email template to selected profiles |
 | POST | `/entries/bulk` | Bulk add entries for profiles to a future session (skips anyone with any existing entry, including cancelled) |
 | POST | `/profiles/:slug/transfer` | Transfer profile |
 | DELETE | `/profiles/:slug` | Delete profile |

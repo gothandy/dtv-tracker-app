@@ -76,6 +76,7 @@ export const CACHE_TTL = {
   stats:    86400,  // 24 hr  — recomputed after every entry/session write anyway
   fileProxy: FILE_PROXY_CACHE_TTL_SEC, //  6 hr — media/doc folder listings; see file-proxy-cache-ttl.ts
   slug:     86400,  // 24 hr  — group+date→ID mappings; cleared on session create/update/delete
+  templates:  300,  //  5 min — email templates are edited directly in SharePoint, so changes show soon
 } as const;
 
 export class SharePointClient {
@@ -737,7 +738,7 @@ export class SharePointClient {
       console.error(`Error uploading file to ${filePath}:`, error.response?.data || error.message);
       if (status === 403) throw new Error('Access denied — check Files.ReadWrite permission on the app registration');
       if (status === 401) throw new Error('Unauthorized — token may be invalid or expired');
-      if (status === 404) throw new Error('Media library or folder not found — check sharePoint.libraries.media in backend/config.ts');
+      if (status === 404) throw new Error('Media library or folder not found — check the Media library address in backend/config.ts');
       throw error;
     }
   }

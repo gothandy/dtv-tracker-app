@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 /// <reference path="../types/express-session.d.ts" />
 import { renderEmail } from '../services/email-renderer';
+import { templatesRepository } from '../services/repositories/templates-repository';
 
 const router: Router = express.Router();
 
@@ -10,8 +11,8 @@ function isLocalhost(req: Request): boolean {
 }
 
 // POST /api/email/render
-// Renders an email template with supplied vars and returns { subject, html, text }.
-// Accessible from localhost (dev convenience) or when logged in as admin.
+// Renders a template from the Templates list with supplied vars and returns { subject, html, text }.
+// For the sandbox's email page. Accessible from localhost (dev convenience) or when logged in as admin.
 router.post('/render', async (req: Request, res: Response) => {
   const role = req.session?.user?.role;
   if (!isLocalhost(req) && role !== 'admin') {
@@ -19,13 +20,14 @@ router.post('/render', async (req: Request, res: Response) => {
     return;
   }
 
-  const { template, vars } = req.body as { template?: string; vars?: Record<string, unknown> };
-  if (!template || typeof template !== 'string') {
-    res.status(400).json({ error: 'template is required' });
-    return;
-  }
+  const { templateId, vars } = req.body as { templateId?: unknown; vars?: Record<string, unknown> };
 
   try {
+    const template = (await templatesRepository.getAll()).find(t => t.ID === Number(templateId));
+    if (!template) {
+      res.status(400).json({ error: 'templateId is required' });
+      return;
+    }
     const result = await renderEmail(template, vars ?? {});
     res.json(result);
   } catch (err: any) {

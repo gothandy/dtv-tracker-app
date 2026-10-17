@@ -73,7 +73,7 @@ Volunteer attendance records are personal data. The list endpoint is Admin-only.
 | `/api/entries/:id` | DELETE | SS (own) / Admin | Delete entry |
 | `/api/entries/:id/upload-context` | GET | SS (own) / Trusted | Volunteer name and session context for upload page |
 | `/api/entries/:id/photos` | POST | SS (own) / Check In+ | Upload photos to entry |
-| `/api/entries/:id/notify` | POST | Check In+ | Send session notification email to volunteer. `{ check: true }` only checks the recipient may be emailed (403 if not), sending nothing |
+| `/api/entries/:id/notify` | POST | Check In+ | Send a Session email template to the entry's volunteer: `{ templateId, preview? }`. `{ check: true }` only checks the recipient may be emailed (403 if not), sending nothing |
 
 ## Profiles
 
@@ -102,7 +102,7 @@ Consent and governance records are personal data. All write access is Admin-only
 |---|---|---|---|
 | `/api/records/export` | GET | Admin | Export records as CSV |
 | `/api/records/bulk` | POST | Admin | Bulk create or update records |
-| `/api/profiles/bulk-email` | POST | Admin | Bulk send profile email (`membership-invite`) |
+| `/api/profiles/bulk-email` | POST | Admin | Send a Profile email template to the selected profiles: `{ profileIds, templateId, preview? }` |
 | `/api/records/:id` | PATCH | Admin | Update record |
 | `/api/records/:id` | DELETE | Admin | Delete record |
 
@@ -157,7 +157,8 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/api/email/render` | POST | Admin | Render email template with provided variables |
+| `/api/templates?context=Session` | GET | Check In+ | Email templates for one context (`Session` or `Profile`), by title: `{ id, title, context }` |
+| `/api/email/render` | POST | Admin | Render a template with provided variables, for the sandbox: `{ templateId, vars }` |
 
 ## Auth
 
