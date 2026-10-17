@@ -17,6 +17,7 @@ import tagsRoutes = require('./tags');
 import backupRoutes = require('./backup');
 import docsRoutes = require('./docs');
 import emailRoutes = require('./email');
+import templatesRoutes = require('./templates');
 
 const router: Router = express.Router();
 
@@ -33,6 +34,7 @@ router.use(mediaRoutes);
 router.use(tagsRoutes);
 router.use(backupRoutes);
 router.use(docsRoutes);
+router.use(templatesRoutes);
 router.use('/email', emailRoutes);
 
 export = router;

@@ -103,7 +103,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
 - Session detail with entries, check-in, set hours, move group, tags, photo gallery ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
-- Volunteers listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
+- Profiles listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
 - Profile detail with FY stats, FY bar chart, group hours, entries, records ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
 - Entries page (admin-only): all entries with notes/adult filters, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
@@ -115,22 +115,25 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 
 ## Data Model
 
-The application uses 8 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
+The application uses 9 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
 
-### Lists (GUIDs)
+### Lists
 
-The code reads these from `sharePoint.lists` in `backend/config.ts`.
+The code finds each list by its address on the site, set in `SHAREPOINT_ADDRESSES` in `backend/config.ts`, and looks up the IDs when it starts (`backend/services/sharepoint-ids.ts`). Addresses can't be edited in SharePoint; titles can.
 
-| List | GUID | Purpose |
-|------|------|---------|
-| Groups | `6e86cef7-a855-41a4-93e8-6e01a80434a2` | Volunteer crews |
-| Projects | `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` | Cross-group funded work / trails |
-| Sessions | `583867bd-e032-4940-89b5-aa2d5158c5d0` | Events/sessions |
-| Entries | `7146b950-94e3-4c94-a0d7-310cf2fbd325` | Volunteer↔session junction |
-| Profiles | `84649143-9e10-42eb-b6ee-2e1f57033073` | Volunteer profiles |
-| Regulars | `925c96fd-9b3a-4f55-b179-ed51fc279d39` | Profile↔group regulars |
-| Records | `2666a819-1275-4fce-83a3-5bb67b4da83a` | Consents/governance |
-| Logins | `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` | Session token hashes |
+| List | Address | Purpose |
+|------|---------|---------|
+| Groups | `Lists/Groups` | Volunteer crews |
+| Projects | `Lists/Projects` | Cross-group funded work / trails |
+| Sessions | `Lists/Sessions` | Events/sessions |
+| Entries | `Lists/Entries` | Volunteer↔session junction |
+| Profiles | `Lists/Profiles` | Volunteer profiles |
+| Regulars | `Lists/Regulars` | Profile↔group regulars |
+| Records | `Lists/Records` | Consents/governance |
+| Logins | `Lists/Logins` | Session token hashes |
+| Templates | `Lists/Templates` | Email templates (Handlebars), edited in SharePoint |
+
+Libraries: `Media` (session photos and videos) and `Shared Documents` (the Documents library).
 
 ### Entity Relationships
 
@@ -255,6 +258,7 @@ This codebase is maintained by a small team (often volunteers). **Prefer linear,
 
 - **One source of truth**: If aggregates are stored (e.g. session `Stats` JSON), compute them in the existing stats pipeline (`calculateSessionStats` → `computeAndSaveSessionStats` / bulk refresh). **Do not** recompute the same numbers again in a route handler for some roles only — that doubles behaviour to test and risks drift between public and trusted views.
 - **Same behaviour for every login** where possible: API consumers should see the same rules; differences should be driven by **data the caller is allowed to see** (e.g. no entry list for public), not by a second formula.
+- **Kinds of things are defined once, in code**: where the app has a fixed set of kinds (e.g. email template contexts in `types/email-template.ts`), one table defines them and what each means, keyed by the SharePoint choice values. Code asks a kind's properties, never its name.
 - **Tests follow the pipeline**: Favour unit tests on shared functions (e.g. `data-layer.ts`) over branching integration tests per route.
 
 For a concise, language-agnostic checklist (naming, SRP, DRY, KISS, comments, YAGNI, etc.), see [Clean code cheat sheet](https://gist.github.com/wojteklu/73c6914cc446146b8b533c0988cf8d29) — general reference only; **project-specific rules in this file take precedence** when they differ.
@@ -359,7 +363,7 @@ dtv-tracker-app/
 │       ├── types/                  # Frontend domain types
 │       └── utils/                  # sessionStats, breakpoints, labelIcons, …
 ├── public/                         # Static assets at fixed URLs (icons)
-├── templates/email/                # Handlebars email templates
+├── templates/email/                # base.hbs: the layout around every email (templates are in the Templates list)
 ├── tests/                          # Live integration tests (test:live)
 └── docs/                           # Reference documentation (features/, testing/, design/, …)
 ```

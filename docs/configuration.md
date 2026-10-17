@@ -4,7 +4,7 @@ All configuration is in [`backend/config.ts`](../backend/config.ts). Nothing els
 
 ## Settings
 
-A value is a **setting** (an environment variable) only if it is a secret or differs between environments. Everything else, such as list IDs, drive IDs and the tenant ID, is a fixed value in `config.ts`, reviewed and versioned like code.
+A value is a **setting** (an environment variable) only if it is a secret or differs between environments. Everything else, such as the SharePoint sites the app may use, list and library addresses and the tenant ID, is a fixed value in `config.ts`, reviewed and versioned like code.
 
 Settings are named **`TRACKER_{WHO}_{WHAT}`**. The test: **if we choose the name, it starts with `TRACKER_`**. In the Azure portal that keeps ours together and apart from the host's own (`NODE_ENV`, `PORT`, `WEBSITE_…`), which aren't ours to rename. WHO is the system that issued the value (`ENTRA`, `SHAREPOINT`, `EVENTBRITE`), so the name tells you where to find or renew it; it's left out for the tracker's own values (`TRACKER_COOKIE_SECRET`).
 

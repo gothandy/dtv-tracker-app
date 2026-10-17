@@ -12,9 +12,9 @@ require('dotenv').config();
 const { DateTime } = require('luxon');
 const { sharePointClient } = require('../../dist/backend/services/sharepoint-client');
 const { sharePoint } = require('../../dist/backend/config');
+const { findSharePointIds } = require('../../dist/backend/services/sharepoint-ids');
 
 const SHAREPOINT_TIMEZONE = sharePoint.timezone;
-const LIST_GUID = sharePoint.lists.sessions;
 
 const CHECKPOINTS = [484, 470]; // known manually-entered sessions (winter, summer)
 
@@ -32,7 +32,7 @@ async function check() {
   console.log(`Site timezone: ${SHAREPOINT_TIMEZONE}\n`);
 
   // Fetch raw sessions — empty dateOnlyFields so Date comes back as the raw UTC ISO string
-  const sessions = await sharePointClient.getListItems(LIST_GUID, 'ID,Title,Date', null, null, []);
+  const sessions = await sharePointClient.getListItems(sharePoint.lists.sessions, 'ID,Title,Date', null, null, []);
   console.log(`Total sessions fetched: ${sessions.length}\n`);
 
   // --- Checkpoints ---
@@ -95,7 +95,7 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 const DAY_KEYWORDS = { 'Sun': 0, 'Mon': 1, 'Wed': 3, 'Fri': 5, 'Sat': 6 };
 
 async function checkDayOfWeek() {
-  const sessions = await sharePointClient.getListItems(LIST_GUID, 'ID,Title', null, null, []);
+  const sessions = await sharePointClient.getListItems(sharePoint.lists.sessions, 'ID,Title', null, null, []);
 
   console.log('\n--- Day-of-week check ---\n');
   const problems = [];
@@ -134,7 +134,8 @@ async function checkDayOfWeek() {
   }
 }
 
-check()
+findSharePointIds()
+  .then(() => check())
   .then(() => checkDayOfWeek())
   .catch(err => {
     console.error('Error:', err.message);

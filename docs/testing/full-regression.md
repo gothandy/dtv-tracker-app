@@ -259,10 +259,11 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
 ### H23b. Bulk send email (admin)
-- [ ] Volunteers page → select profiles with emails → "Send Email" enabled; profiles without email excluded from count
-- [ ] Modal: template dropdown (Membership Invite); preview checkbox defaults on
-- [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
-- [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
+- [ ] Profiles page → select profiles with emails → "Send Email" enabled; profiles without email excluded from count
+- [ ] Modal: template dropdown lists the Profile templates from the Templates list (spinner while loading); Send disabled until one is chosen; preview checkbox defaults on
+- [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, templateId, preview: true }` → one email to signed-in admin
+- [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, templateId, preview? }`; sends to all selected profiles with email
+- [ ] A Session template's ID is refused (400)
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
 - [ ] Arrives from the `TRACKER_SHARED_MAILBOX` setting
 
@@ -444,16 +445,18 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Arrow-key navigation (left/right) scrolls the carousel
 - [ ] Breadcrumb: Home > Media (Home links to `/`, Media links to `/media/`)
 
-### H32. Session email (pre-dig / pre-social / post-session)
-- [ ] Session detail → "Send Email" → template dropdown includes Pre-Dig, Pre-Social, Post-Session
-- [ ] `POST /api/entries/:id/notify` with `template: pre-dig` — email sent to volunteer
+### H32. Session email (templates from the Templates list)
+- [ ] Session detail → "Send Email" → template dropdown lists the Session templates (spinner while loading); Send disabled until one is chosen
+- [ ] `POST /api/entries/:id/notify` with `templateId` of a Session template — email sent to volunteer; a Profile template's ID is refused (400)
+- [ ] Change a row's Subject in SharePoint → the next send uses it within 5 minutes (straight away after Tools → *Clear all server caches*)
+- [ ] Add a new Session row → it appears in Send Email
 - [ ] Pre-Dig includes dig clothing/tools guidance; Pre-Social does not
 - [ ] Send All sends to each entry with an email address
 - [ ] Description block present when session has notes; absent when no notes
 - [ ] Regular block shown for regular volunteers; absent otherwise
 - [ ] Child block shown when entry has accompanying child name; absent otherwise
-- [ ] Sandbox preview: visit `/sandbox/email-pre-dig` and `/sandbox/email-pre-social` (admin or localhost) — rendered email with conditional blocks exercised
-- [ ] `POST /api/email/render` with `template: pre-dig` or `pre-social` returns rendered subject/html/text
+- [ ] Sandbox preview: visit `/sandbox/email` (admin or localhost), choose each template — rendered with made-up data for its context
+- [ ] `POST /api/email/render` with `{ templateId, vars }` returns rendered subject/html/text
 
 ### H31. Backup export
 - [ ] Tools page (`/tools`) → "Export Backup" button → `POST /api/backup/export-all`

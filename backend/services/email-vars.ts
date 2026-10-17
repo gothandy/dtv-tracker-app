@@ -1,11 +1,10 @@
 import { SharePointEntry, SharePointProfile } from '../../types/sharepoint';
 import { SharePointSession } from '../../types/session';
 import { SharePointGroup } from '../../types/group';
-import { extractMetadataTags, safeParseLookupId, parseHours, sessionScheduleFields, formatSessionTimeRangeProse, parseEmails } from './data-layer';
+import { extractMetadataTags, safeParseLookupId, sessionScheduleFields, formatSessionTimeRangeProse, parseEmails } from './data-layer';
 import type { SharePointRecord } from '../../types/sharepoint';
 import {
-  SESSION_NOTES, SESSION_METADATA, SESSION_STATS, SESSION_COVER_MEDIA,
-  GROUP_LOOKUP, PROFILE_DISPLAY, ENTRY_CANCELLED,
+  SESSION_NOTES, SESSION_METADATA, PROFILE_DISPLAY, ENTRY_CANCELLED,
 } from './field-names';
 
 // ============================================================================
@@ -56,10 +55,10 @@ export function profileIsMember(profileRecords: SharePointRecord[]): boolean {
 }
 
 // ============================================================================
-// Pre-dig / Pre-social (shared vars)
+// Session context: every variable a Session template can use
 // ============================================================================
 
-export interface PreSessionVars extends Record<string, unknown> {
+export interface SessionTemplateVars extends Record<string, unknown> {
   baseUrl: string;
   volunteerName: string;
   groupName: string;
@@ -76,7 +75,7 @@ export interface PreSessionVars extends Record<string, unknown> {
   tags: string | null;
 }
 
-export function buildPreSessionVars(
+export function buildSessionTemplateVars(
   entry: SharePointEntry,
   session: SharePointSession,
   profile: SharePointProfile,
@@ -84,7 +83,7 @@ export function buildPreSessionVars(
   sessionEntries: SharePointEntry[],
   baseUrl: string,
   profileRecords: SharePointRecord[] = [],
-): PreSessionVars {
+): SessionTemplateVars {
   const profileId = entry.ProfileLookupId as number | undefined;
   const groupName = group.Name || group.Title || '';
   const groupKey = (group.Title || '').toLowerCase();
@@ -121,110 +120,8 @@ export function buildPreSessionVars(
 }
 
 // ============================================================================
-// Post-session
+// Profile context
 // ============================================================================
-
-interface SessionStats {
-  count: number;
-  hours: number;
-  new: number;
-  child: number;
-  regular: number;
-}
-
-export interface PostSessionVars extends Record<string, unknown> {
-  baseUrl: string;
-  volunteerName: string;
-  groupName: string;
-  groupUrl: string;
-  sessionUrl: string;
-  sessionTitle: string | null;
-  formattedDateShort: string;
-  formattedDateLong: string;
-  description: string;
-  coverPhotoUrl: string | null;
-  userHours: number | null;
-  myChildNames: string | null;
-  myChildHours: number | null;
-  isRegular: boolean;
-  isMember: boolean;
-  stats: SessionStats | null;
-  nextSessionUrl: string | null;
-  nextSessionDate: string | null;
-  uploadUrl: string;
-  loginUrl: string;
-}
-
-export function buildPostSessionVars(
-  entry: SharePointEntry,
-  session: SharePointSession,
-  profile: SharePointProfile,
-  group: SharePointGroup,
-  sessionEntries: SharePointEntry[],
-  allSessions: SharePointSession[],
-  baseUrl: string,
-  profileRecords: SharePointRecord[] = [],
-): PostSessionVars {
-  const profileId = entry.ProfileLookupId as number | undefined;
-  const groupName = group.Name || group.Title || '';
-  const groupKey = (group.Title || '').toLowerCase();
-  const dateParam = session.Date;
-  const { formattedDateShort, formattedDateLong } = formatDate(dateParam);
-
-  const myChildEntries = findChildEntries(sessionEntries, profileId);
-  const myChildNames = myChildEntries
-    .map(e => String(e[PROFILE_DISPLAY] || '').trim())
-    .filter(Boolean)
-    .join(' and ');
-  const myChildHours = myChildEntries.reduce((sum, e) => sum + (parseHours(e.Hours) ?? 0), 0);
-
-  const nextSp = allSessions
-    .filter(s => safeParseLookupId(s[GROUP_LOOKUP] as string) === group.ID && s.Date > dateParam)
-    .sort((a, b) => a.Date.localeCompare(b.Date))[0];
-  const nextSessionUrl = nextSp
-    ? `${baseUrl}/sessions/${groupKey}/${nextSp.Date}`
-    : null;
-  const nextSessionDate = nextSp ? formatDate(nextSp.Date).formattedDateLong : null;
-
-  let stats: SessionStats | null = null;
-  try {
-    const raw = JSON.parse(String(session[SESSION_STATS] || '{}'));
-    if (raw.count !== undefined) stats = raw as SessionStats;
-  } catch { /* stats unavailable */ }
-
-  const coverMediaId = session[SESSION_COVER_MEDIA] as number | undefined;
-  const coverPhotoUrl = coverMediaId ? `${baseUrl}/media/${groupKey}/${dateParam}/${coverMediaId}` : null;
-
-  return {
-    baseUrl,
-    volunteerName: String(entry[PROFILE_DISPLAY] || '').trim(),
-    groupName,
-    groupUrl: `${baseUrl}/groups/${groupKey}`,
-    sessionUrl: `${baseUrl}/sessions/${groupKey}/${dateParam}`,
-    sessionTitle: session.Name || null,
-    formattedDateShort,
-    formattedDateLong,
-    description: (session[SESSION_NOTES] as string | undefined) || '',
-    coverPhotoUrl,
-    userHours: parseHours(entry.Hours) ?? null,
-    myChildNames: myChildNames || null,
-    myChildHours: myChildHours > 0 ? myChildHours : null,
-    isRegular: /#Regular\b/i.test(String(entry.Notes || '')),
-    isMember: profileIsMember(profileRecords),
-    stats,
-    nextSessionUrl,
-    nextSessionDate,
-    uploadUrl: `${baseUrl}/upload?entryId=${entry.ID}`,
-    loginUrl: `${baseUrl}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`,
-  };
-}
-
-// ============================================================================
-// Profile bulk email
-// ============================================================================
-
-export const PROFILE_EMAIL_TEMPLATES = ['membership-invite'] as const;
-export type ProfileEmailTemplate = typeof PROFILE_EMAIL_TEMPLATES[number];
 
 export interface ProfileEmailVars extends Record<string, unknown> {
   baseUrl: string;
@@ -250,7 +147,6 @@ function charityMembershipRecord(records: SharePointRecord[]): SharePointRecord 
 }
 
 export function buildProfileTemplateVars(
-  template: ProfileEmailTemplate,
   profile: SharePointProfile,
   baseUrl: string,
   profileRecords: SharePointRecord[],
@@ -259,12 +155,8 @@ export function buildProfileTemplateVars(
   const email = parseEmails(profile.Email)[0] || '';
   const loginUrl = buildProfileLoginUrl(baseUrl, email);
 
-  const vars: ProfileEmailVars = { baseUrl, name, email, loginUrl };
+  const record = charityMembershipRecord(profileRecords);
+  const charityMembershipDate = record?.Date ? formatRecordDate(record.Date) : null;
 
-  if (template === 'membership-invite') {
-    const record = charityMembershipRecord(profileRecords);
-    vars.charityMembershipDate = record?.Date ? formatRecordDate(record.Date) : null;
-  }
-
-  return vars;
+  return { baseUrl, name, email, loginUrl, charityMembershipDate };
 }

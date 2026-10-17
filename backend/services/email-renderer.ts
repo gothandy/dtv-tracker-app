@@ -3,6 +3,7 @@ import path from 'path';
 import Handlebars from 'handlebars';
 import { BRAND } from '../shared/brand';
 import { platform } from '../config';
+import type { SharePointTemplate } from '../../types/email-template';
 
 // Named style presets for the section helper — maps style="name" to bg/color/padding
 const DEFAULT_PADDING = '24px 32px';
@@ -51,43 +52,24 @@ export interface RenderedEmail {
   text: string;
 }
 
-// Compiled template cache — avoids re-reading disk on every send
-const templateCache = new Map<string, HandlebarsTemplateDelegate>();
+/** An email template's Handlebars sources: a row of the Templates list. */
+export type EmailTemplateSource = Pick<SharePointTemplate, 'Subject' | 'HTML' | 'Text'>;
 
-const TEMPLATES_DIR = path.join(process.cwd(), 'templates', 'email');
+const BASE_TEMPLATE = path.join(process.cwd(), 'templates', 'email', 'base.hbs');
+let baseTemplate: HandlebarsTemplateDelegate | undefined;
 
-async function loadTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
-  if (!platform.isLocal && templateCache.has(filePath)) return templateCache.get(filePath)!;
-  const src = await fs.readFile(filePath, 'utf-8');
-  const compiled = Handlebars.compile(src);
-  templateCache.set(filePath, compiled);
-  return compiled;
+async function loadBase(): Promise<HandlebarsTemplateDelegate> {
+  if (baseTemplate && !platform.isLocal) return baseTemplate;
+  baseTemplate = Handlebars.compile(await fs.readFile(BASE_TEMPLATE, 'utf-8'));
+  return baseTemplate;
 }
 
-async function loadSubjectTemplate(filePath: string): Promise<HandlebarsTemplateDelegate> {
-  if (!platform.isLocal && templateCache.has(filePath)) return templateCache.get(filePath)!;
-  const src = await fs.readFile(filePath, 'utf-8');
-  const compiled = Handlebars.compile(src, { noEscape: true });
-  templateCache.set(filePath, compiled);
-  return compiled;
-}
-
-export function clearEmailTemplateCache(): void {
-  templateCache.clear();
-}
-
-export async function renderEmail(template: string, vars: Record<string, unknown>): Promise<RenderedEmail> {
-  const templateDir = path.join(TEMPLATES_DIR, template);
-  const [renderSubject, renderText, renderHtml, renderBase] = await Promise.all([
-    loadSubjectTemplate(path.join(templateDir, 'subject.hbs')),
-    loadTemplate(path.join(templateDir, 'text.hbs')),
-    loadTemplate(path.join(templateDir, 'html.hbs')),
-    loadTemplate(path.join(TEMPLATES_DIR, 'base.hbs')),
-  ]);
-
-  const subject = renderSubject(vars).trim();
-  const text = renderText(vars).trim();
-  const body = renderHtml(vars);
+/** Renders a template's subject, HTML (wrapped in base.hbs) and text with these variables. */
+export async function renderEmail(template: EmailTemplateSource, vars: Record<string, unknown>): Promise<RenderedEmail> {
+  const renderBase = await loadBase();
+  const subject = Handlebars.compile(template.Subject ?? '', { noEscape: true })(vars).trim();
+  const text = Handlebars.compile(template.Text ?? '')(vars).trim();
+  const body = Handlebars.compile(template.HTML ?? '')(vars);
   const html = renderBase({ ...vars, body }).replace(/>\s+</g, '><');
 
   return { subject, html, text };

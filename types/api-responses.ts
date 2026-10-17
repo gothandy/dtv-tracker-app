@@ -6,6 +6,7 @@
  */
 
 import type { SessionLimits } from '../backend/services/data-layer';
+import type { TemplateContext } from './email-template';
 
 export type MediaStatus = 'none' | 'allPrivate' | 'noCover' | 'coverPrivate' | 'public'
 
@@ -394,4 +395,11 @@ export interface UnmatchedEventResponse {
   summary: string | null
   /** Set for events with several dates (an Eventbrite series) */
   seriesId: string | null
+}
+
+/** GET /api/templates: an email template to choose from in Send Email. */
+export interface TemplateResponse {
+  id: number
+  title: string
+  context: TemplateContext
 }

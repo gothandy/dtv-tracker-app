@@ -15,6 +15,7 @@ const { requireAuth } = require('./dist/backend/middleware/require-auth');
 const { authMiddleware } = require('./dist/backend/middleware/auth');
 const { mediaDriveId } = require('./dist/backend/services/media-upload');
 const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
+const { findSharePointIds } = require('./dist/backend/services/sharepoint-ids');
 const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
 const { getProjectDocCache, setProjectDocCache } = require('./dist/backend/services/project-docs-cache');
 const { getGovernanceDocCache, setGovernanceDocCache } = require('./dist/backend/services/governance-docs-cache');
@@ -107,6 +108,18 @@ app.use((req, res, next) => {
     }
     const suffix = req.path === '/' ? '/docs' : `/docs${req.path}`;
     res.redirect(301, `${PRODUCTION_URL}${suffix}${query}`);
+});
+
+// The site's list and library IDs, found by address once (services/sharepoint-ids.ts).
+// If SharePoint can't be reached, carry on: whatever needs it fails as it would anyway,
+// and the next request tries again.
+app.use(async (req, res, next) => {
+    try {
+        await findSharePointIds();
+    } catch (error) {
+        console.error(`[SharePoint] Couldn't find list IDs: ${error.message}`);
+    }
+    next();
 });
 
 app.use(express.json());

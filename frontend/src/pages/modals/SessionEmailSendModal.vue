@@ -5,16 +5,16 @@
     action-icon="email"
     :action-disabled="!canSend"
     :working="working"
-    :error="error"
+    :error="error || templatesError"
     @close="emit('close')"
     @action="onSend"
   >
     <FormLayout>
       <FormRow title="Template">
-        <ModalFormSelect v-model="template">
-          <option value="pre-dig">Pre-Dig</option>
-          <option value="pre-social">Pre-Social</option>
-          <option value="post-session">Post-Session</option>
+        <LoadingSpinner v-if="templatesLoading" />
+        <ModalFormSelect v-else v-model="templateId" :placeholder="!templateId">
+          <option value="" disabled>Select template…</option>
+          <option v-for="t in templates" :key="t.id" :value="String(t.id)">{{ t.title }}</option>
         </ModalFormSelect>
       </FormRow>
 
@@ -44,6 +44,8 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
+import LoadingSpinner from '../../components/LoadingSpinner.vue'
+import type { TemplateResponse } from '../../../../types/api-responses'
 
 export interface EmailAdult {
   entryId: number
@@ -55,14 +57,18 @@ const props = defineProps<{
   adults: EmailAdult[]
   working: boolean
   error?: string
+  /** Session email templates, from the Templates list. */
+  templates: TemplateResponse[]
+  templatesLoading?: boolean
+  templatesError?: string
 }>()
 
 const emit = defineEmits<{
   close: []
-  send: [{ recipient: number | 'send-all', preview: boolean, template: string }]
+  send: [{ recipient: number | 'send-all', preview: boolean, templateId: number }]
 }>()
 
-const template = ref<'pre-dig' | 'pre-social' | 'post-session'>('pre-dig')
+const templateId = ref('')
 const recipient = ref<number | 'send-all'>(props.adults.find(a => a.email)?.entryId ?? 'send-all')
 const preview = ref(true)
 
@@ -71,12 +77,14 @@ watch(recipient, val => {
 })
 
 const canSend = computed(() =>
-  recipient.value === 'send-all'
-    ? props.adults.some(a => a.email)
-    : props.adults.length > 0
+  !!templateId.value && (
+    recipient.value === 'send-all'
+      ? props.adults.some(a => a.email)
+      : props.adults.length > 0
+  )
 )
 
 function onSend() {
-  emit('send', { recipient: recipient.value, preview: preview.value, template: template.value })
+  emit('send', { recipient: recipient.value, preview: preview.value, templateId: Number(templateId.value) })
 }
 </script>

@@ -3,7 +3,7 @@
     <AppButton icon="share" label="Share" mode="icon-only" @click="onShare" />
     <AppButton icon="group" label="Group" mode="icon-only" @click="router.push(groupPath(groupKey))" />
     <AppButton v-if="canUpload" icon="uploadphoto" label="Upload" mode="icon-only" @click="onUpload" />
-    <AppButton v-if="allowEmail" icon="email" label="Email" mode="icon-only" @click="showEmail = true" />
+    <AppButton v-if="allowEmail" icon="email" label="Email" mode="icon-only" @click="openEmail" />
     <AppButton
       v-if="allowEdit"
       icon="edit"
@@ -23,6 +23,9 @@
     <SessionEmailSendModal
       v-if="showEmail"
       :adults="adults"
+      :templates="templates"
+      :templates-loading="templatesLoading"
+      :templates-error="templatesError"
       :working="emailWorking"
       :error="emailError"
       @close="showEmail = false"
@@ -46,7 +49,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { SessionDetailResponse } from '../../../../types/api-responses'
+import type { SessionDetailResponse, TemplateResponse } from '../../../../types/api-responses'
 import type { GroupItem, ProjectItem, SessionSaveData } from '../../pages/modals/SessionEditModal.vue'
 import type { EmailAdult } from '../../pages/modals/SessionEmailSendModal.vue'
 import AppButton from '../AppButton.vue'
@@ -83,6 +86,9 @@ const sessionEditAuthChecking = ref(false)
 const showEmail = ref(false)
 const emailWorking = ref(false)
 const emailError = ref<string | undefined>()
+const templates = ref<TemplateResponse[]>([])
+const templatesLoading = ref(false)
+const templatesError = ref('')
 
 const canUpload = computed(() =>
   (props.isSelfService && !!props.session.userEntryId) || props.allowEdit
@@ -94,6 +100,28 @@ const adults = computed<EmailAdult[]>(() =>
     .filter(e => !e.cancelled && !e.isGroup && !/#Child\b/i.test(e.notes ?? ''))
     .map(e => ({ entryId: e.id, name: e.volunteerName ?? '', email: e.email }))
 )
+
+function openEmail() {
+  showEmail.value = true
+  loadTemplates()
+}
+
+async function loadTemplates() {
+  templatesLoading.value = true
+  templatesError.value = ''
+  templates.value = []
+  try {
+    const res = await fetch('/api/templates?context=Session')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json() as { data: TemplateResponse[] }
+    templates.value = json.data
+  } catch (e) {
+    console.error('[SessionDetailActions] load email templates', e)
+    templatesError.value = 'Could not load email templates. Please try again.'
+  } finally {
+    templatesLoading.value = false
+  }
+}
 
 function onShare() {
   shareCurrentUrl()
@@ -111,11 +139,11 @@ function goUpload(entryId: number) {
   window.location.href = `/upload?entryId=${entryId}`
 }
 
-async function sendOne(entryId: number, preview: boolean, template: string, check = false): Promise<boolean> {
+async function sendOne(entryId: number, preview: boolean, templateId: number, check = false): Promise<boolean> {
   const res = await fetch(`/api/entries/${entryId}/notify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ preview, template, check }),
+    body: JSON.stringify({ preview, templateId, check }),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
@@ -125,7 +153,7 @@ async function sendOne(entryId: number, preview: boolean, template: string, chec
   return true
 }
 
-async function onEmailSend({ recipient, preview, template }: { recipient: number | 'send-all', preview: boolean, template: string }) {
+async function onEmailSend({ recipient, preview, templateId }: { recipient: number | 'send-all', preview: boolean, templateId: number }) {
   emailWorking.value = true
   emailError.value = undefined
   try {
@@ -137,15 +165,15 @@ async function onEmailSend({ recipient, preview, template }: { recipient: number
       }
       // Check every recipient before sending any, so a refusal never leaves a half-sent batch.
       for (const adult of emailable) {
-        const ok = await sendOne(adult.entryId, false, template, true)
+        const ok = await sendOne(adult.entryId, false, templateId, true)
         if (!ok) return
       }
       for (const adult of emailable) {
-        const ok = await sendOne(adult.entryId, false, template)
+        const ok = await sendOne(adult.entryId, false, templateId)
         if (!ok) return
       }
     } else {
-      const ok = await sendOne(recipient, preview, template)
+      const ok = await sendOne(recipient, preview, templateId)
       if (!ok) return
     }
     showEmail.value = false

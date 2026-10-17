@@ -39,9 +39,7 @@
       <section>
         <h2>Emails</h2>
         <nav>
-          <RouterLink to="/sandbox/email-pre-dig">Pre-Dig</RouterLink>
-          <RouterLink to="/sandbox/email-pre-social">Pre-Social</RouterLink>
-          <RouterLink to="/sandbox/email-post-session">Post-session</RouterLink>
+          <RouterLink to="/sandbox/email">Email templates</RouterLink>
         </nav>
       </section>
 

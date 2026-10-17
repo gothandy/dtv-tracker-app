@@ -37,7 +37,8 @@ import { sendEmail } from '../services/graph-mail';
 import { assertSafeRecipient, UnsafeRecipientError } from '../services/email-safe-list';
 import { appKeyProblemMessage } from '../services/entra-auth-errors';
 import { renderEmail } from '../services/email-renderer';
-import { buildPreSessionVars, buildPostSessionVars } from '../services/email-vars';
+import { buildSessionTemplateVars } from '../services/email-vars';
+import { templatesRepository } from '../services/repositories/templates-repository';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { refreshSessionMediaStats } from '../services/session-stats';
@@ -1291,6 +1292,15 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       return;
     }
 
+    const templateId = Number(req.body?.templateId);
+    const template = Number.isInteger(templateId)
+      ? await templatesRepository.getForContext(templateId, 'Session')
+      : undefined;
+    if (!template) {
+      res.status(400).json({ success: false, error: 'Choose a session email template' });
+      return;
+    }
+
     const preview = req.body?.preview === true;
     const toEmail = preview ? (req.session.user?.email || primaryEmail) : primaryEmail;
 
@@ -1308,11 +1318,8 @@ router.post('/entries/:entryId/notify', async (req: Request, res: Response) => {
       : [];
 
     const base = requestOrigin(req);
-    const templateName = (req.body?.template as string) || 'pre-dig';
-    const vars = templateName === 'post-session'
-      ? buildPostSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, allSessions, base, profileRecords)
-      : buildPreSessionVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords);
-    const { subject, html, text } = await renderEmail(templateName, vars);
+    const vars = buildSessionTemplateVars(spEntry, spSession, profile, spGroup, sessionEntries, base, profileRecords);
+    const { subject, html, text } = await renderEmail(template, vars);
 
     await sendEmail({ to: toEmail, subject, html, text });
 
