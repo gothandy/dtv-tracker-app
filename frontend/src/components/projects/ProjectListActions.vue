@@ -2,6 +2,7 @@
   <div v-if="profile.isAdmin || canDownload" class="list-actions">
     <span class="list-actions-stats">
       {{ projects.length }} projects &nbsp;&nbsp; {{ totalHours }} hours
+      <template v-if="canDownload && taxonomyError">&nbsp;&nbsp; {{ taxonomyError }} The location report is unavailable; reload to try again.</template>
     </span>
     <div class="list-actions-buttons">
       <AppButton
@@ -9,7 +10,7 @@
         label="Download projects by location"
         icon="download"
         mode="icon-only"
-        :disabled="taxonomyLoading"
+        :disabled="taxonomyLoading || !!taxonomyError || !tree.length"
         @click="onDownload"
       />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
@@ -40,7 +41,7 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const { tree, loading: taxonomyLoading } = useTaxonomy()
+const { tree, loading: taxonomyLoading, error: taxonomyError } = useTaxonomy()
 
 const emit = defineEmits<{ 'add-project': [] }>()
 

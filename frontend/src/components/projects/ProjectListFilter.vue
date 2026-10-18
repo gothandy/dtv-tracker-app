@@ -1,25 +1,24 @@
 <template>
-  <div class="pf-wrap">
-    <div class="pf-title-row">
-      <div class="pf-actions">
-        <FyFilter v-model="status" :options="statusOptions" />
-        <FyFilter v-model="fy" :options="fyOptions" />
-        <TermPicker
-          v-model="tagLabel"
-          :tree="taxonomyTree"
-          :loading="taxonomyLoading"
-          :show-no-tags="true"
-          :available-labels="availableTagLabels"
-        />
-      </div>
-    </div>
+  <div class="list-filter pf-wrap">
+    <select v-model="status" class="list-filter-select" aria-label="Status filter">
+      <option v-for="o in statusOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+    </select>
+    <select v-model="fy" class="list-filter-select" aria-label="Financial year filter">
+      <option v-for="o in fyOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+    </select>
+    <TermPicker
+      v-model="tagLabel"
+      :tree="taxonomyTree"
+      :loading="taxonomyLoading"
+      :show-no-tags="true"
+      :available-labels="availableTagLabels"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import FyFilter from '../FyFilter.vue'
 import TermPicker from '../TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import { matchesTag } from '../../utils/tagFilter'
@@ -56,46 +55,54 @@ const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 const linkSession = (p: ProjectResponse, s: Session) => s.projectId === p.id
 
+// Each filter narrows the list, and each offers only what the other two leave (as on Sessions).
+const byStatus = (list: ProjectResponse[]) => list.filter(p => matchesStatus(p.status, status.value))
+const byTag = (list: ProjectResponse[]) => list.filter(p => matchesTag(p.metadata, tagLabel.value))
+function byFy(list: ProjectResponse[]): ProjectResponse[] {
+  if (fy.value === FUTURE_OR_NEW) return list.filter(p => isFutureOrNew(p, props.sessions, linkSession))
+  return entitiesWithSessionsInFy(list, props.sessions, linkSession, fy.value)
+}
+
 const fyOptions = computed(() => {
-  const options = fyOptionsForEntities(props.projects, props.sessions, linkSession)
-  if (props.projects.some(p => isFutureOrNew(p, props.sessions, linkSession))) {
+  const others = byStatus(byTag(props.projects))
+  const options = fyOptionsForEntities(others, props.sessions, linkSession)
+  if (others.some(p => isFutureOrNew(p, props.sessions, linkSession))) {
     options.push({ value: FUTURE_OR_NEW, label: 'Future + New' })
   }
   return options
 })
 
-const statusOptions = computed(() => [
-  { value: ALL_STATUSES, label: 'All statuses' },
-  ...props.statuses.map(s => ({ value: s, label: s })),
-  { value: NO_STATUS, label: 'No status' },
-])
+// Status choices in SharePoint's order, but only those on the projects FY and tags leave.
+const statusOptions = computed(() => {
+  const others = byFy(byTag(props.projects))
+  const present = new Set(others.map(p => p.status ?? ''))
+  return [
+    { value: ALL_STATUSES, label: 'All statuses' },
+    ...props.statuses.filter(s => present.has(s)).map(s => ({ value: s, label: s })),
+    ...(present.has('') ? [{ value: NO_STATUS, label: 'No status' }] : []),
+  ]
+})
 
-// Tags offered: those on projects matching the other filters (as on the Sessions list).
 const availableTagLabels = computed(() => {
   const labels = new Set<string>()
-  for (const p of props.projects.filter(p => matchesStatus(p.status, status.value))) {
-    p.metadata?.forEach(t => labels.add(t.label))
-  }
+  for (const p of byStatus(byFy(props.projects))) p.metadata?.forEach(t => labels.add(t.label))
   return labels
 })
 
-const filtered = computed<ProjectWithStats[]>(() => {
-  const byStatus = props.projects.filter(p => matchesStatus(p.status, status.value) && matchesTag(p.metadata, tagLabel.value))
-  if (fy.value === FUTURE_OR_NEW) {
-    const futureOrNew = byStatus.filter(p => isFutureOrNew(p, props.sessions, linkSession))
-    return withSessionTotals(futureOrNew, props.sessions, linkSession, 'future')
-  }
-  const fyProjects = entitiesWithSessionsInFy(byStatus, props.sessions, linkSession, fy.value)
-  return withSessionTotals(fyProjects, props.sessions, linkSession, fy.value)
-})
+const filtered = computed<ProjectWithStats[]>(() =>
+  withSessionTotals(byTag(byFy(byStatus(props.projects))), props.sessions, linkSession,
+    fy.value === FUTURE_OR_NEW ? 'future' : fy.value),
+)
 
 watch(fyOptions, opts => {
   if (opts.length && !opts.some(o => o.value === fy.value)) fy.value = 'all'
 }, { immediate: true })
 
 watch(statusOptions, opts => {
-  // Wait for the choices to load before dropping an unknown ?status=.
-  if (props.statuses.length && !opts.some(o => o.value === status.value)) status.value = ALL_STATUSES
+  // Wait for the choices and projects to load before dropping a status that isn't offered.
+  if (props.statuses.length && props.projects.length && !opts.some(o => o.value === status.value)) {
+    status.value = ALL_STATUSES
+  }
 })
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
@@ -110,22 +117,7 @@ watch([fy, status, tagLabel], ([newFy, newStatus, newTag]) => {
 </script>
 
 <style scoped>
-.pf-wrap {
-  background: var(--color-dtv-sand);
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.pf-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.pf-actions {
-  margin-left: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
+/* Same full-width row as the Sessions filter. */
+.pf-wrap :deep(.tp-wrap) { flex: 1 1 140px; display: flex; flex-direction: column; }
+.pf-wrap :deep(.tp-btn) { flex: 1; width: 100%; justify-content: space-between; }
 </style>

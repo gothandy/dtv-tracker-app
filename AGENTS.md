@@ -228,6 +228,10 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 - **Server-computed enrichment**: `isBookable`, `financialYear`, `regularsCount`, `deriveLimits` computed server-side in the route handler — not re-derived on the client.
 - **Session capacity limits**: stored in the `Limits` field as JSON (e.g. `{"new":4,"total":20}`). `deriveLimits()` in `data-layer.ts` fills missing limits. Limits are config — never stored in Stats.
 
+### Vue Frontend: List Filters
+
+- **Filters cascade.** On every list page with filters (Sessions, Profiles, Projects, …), each filter offers only the options left by the other filters, and resets to *All* when its choice disappears. Choices are kept in the address (`?fy=`, `?tag=`…) so a filtered view can be shared.
+
 ### Vue Frontend: URL / Path Conventions
 
 - **Path builders live in `frontend/src/router/index.ts`** — single source of truth for URL structure.
