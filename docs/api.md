@@ -167,6 +167,7 @@ Auth routes are not under `/api/` and are not subject to `requireAuth` or `requi
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/auth/me` | GET | Public | Current session user |
+| `/auth/access` | POST | On the admin list | `{ role: 'admin' \| 'checkin' }`: switch Admin on or off for this sign-in, remembered on the device (Admins work as Check In by default) |
 | `/auth/sign-out` | GET | Public | End the sign-in (Logins row, cookies, session); after a Microsoft sign-in, also signs out of Microsoft |
 | `/auth/sign-in` | GET | Public | Start a Microsoft (DTV account) sign-in |
 | `/auth/signed-in` | GET | Public | Microsoft returns here after sign-in |

@@ -12,6 +12,9 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ## HIGH PRIORITY — Write Operations
 
 ### H1. Authentication & Permissions
+- [ ] Admin (on `TRACKER_ADMIN_USERS`) signs in with Microsoft → works as **Tracker Assist** (Check In): no Tools, no Admin-only buttons; Admin-only APIs refuse (403)
+- [ ] Own profile page → *Working as Tracker Assist* · *Switch to Tracker Admin* → Admin straight away; remembered after signing out and in again on the same device; *Switch to Tracker Assist* turns it off
+- [ ] The switch shows only on your own profile, and only for people on the admin list; `POST /auth/access` from anyone else → 403
 
 - [ ] Unauthenticated visit to `/` (homepage) loads without redirect — stats, sessions, groups nav cards visible; volunteers nav card hidden; admin button hidden; header shows "Log in" button
 - [ ] Unauthenticated visit to `/sessions` loads without redirect

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 /// <reference path="../types/express-session.d.ts" />
-import { validateAuthToken, LOGIN_COOKIE } from '../services/auth-store';
+import { validateAuthToken, LOGIN_COOKIE, chosenAccess } from '../services/auth-store';
 import { resolvePersonalSession, staffSessionUser } from '../services/personal-auth';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { LOGIN_HOURS } from '../config';
@@ -11,7 +11,8 @@ import { appKeyProblemMessage } from '../services/entra-auth-errors';
 //
 // The Logins row holds the email the person proved at sign-in, and how. The rebuild
 // runs the same check as sign-in on that email, against the profiles as they are now:
-//   - Microsoft:  the email must be a profile's `User`; admin comes from the admin list.
+//   - Microsoft:  the email must be a profile's `User`; admin comes from the admin list,
+//                 and only while they've switched Admin on, on this device (ACCESS_COOKIE).
 //   - Email Code: the profiles whose `Email` includes it get a self-service session.
 //
 // If SharePoint can't be reached, the request fails with a message rather than
@@ -34,7 +35,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     if (login?.method === 'Microsoft') {
       const profiles = await profilesRepository.getAll();
       const profile = profiles.find(p => p.User?.toLowerCase() === login.email);
-      if (profile) req.session.user = staffSessionUser(profile, login.email, login.createdAt);
+      if (profile) req.session.user = staffSessionUser(profile, login.email, login.createdAt, chosenAccess(req));
     } else if (login) {
       const result = await resolvePersonalSession(login.email, '', '');
       if (result.ok) req.session.user = { ...result.sessionUser, freshAuthAt: login.createdAt };

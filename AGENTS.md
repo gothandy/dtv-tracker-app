@@ -87,7 +87,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([backend/services/data-layer.ts](backend/services/data-layer.ts))
 - Repository pattern for each SharePoint list ([backend/services/repositories/](backend/services/repositories/))
 - Auth middleware with session auth + API key bypass ([backend/middleware/require-auth.ts](backend/middleware/require-auth.ts))
-- Role-based authorization: Admin, Check In, Self-Service, and Public ([backend/middleware/require-admin.ts](backend/middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes)
+- Role-based authorization: Admin, Check In, Self-Service, and Public ([backend/middleware/require-admin.ts](backend/middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes); Admins work as Check In by default and switch Admin on from their own profile page
 - Server-side caching with tier-informed per-entity TTLs and targeted per-repository invalidation
 - Hosted on Azure App Service (production + `preview` deployment slot) with an Azure Logic App for scheduled Eventbrite sync
 

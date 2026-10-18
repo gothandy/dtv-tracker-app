@@ -59,6 +59,13 @@
             v-if="viewer.hasCheckInAccess && store.profile.linkedProfiles?.length"
             :linked-profiles="store.profile.linkedProfiles"
           />
+          <ProfileAccessSwitch
+            v-if="isOwnAdminProfile"
+            :is-admin="viewer.isAdmin"
+            :working="accessWorking"
+            :error="accessError"
+            @switch="onSwitchAccess"
+          />
         </template>
         <template #right>
           <ProfileDetailActions
@@ -181,6 +188,7 @@ import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
 import ProfileWarnings from '../components/profiles/ProfileWarnings.vue'
 import ProfileLinkedAccounts from '../components/profiles/ProfileLinkedAccounts.vue'
+import ProfileAccessSwitch from '../components/profiles/ProfileAccessSwitch.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import RegularList from '../components/RegularList.vue'
 import EntryListItem from '../components/entries/EntryListItem.vue'
@@ -210,6 +218,33 @@ const contact = contactEmail()
 const route = useRoute()
 const router = useRouter()
 const viewer = useViewer()
+
+// Someone on the admin list, on their own profile: they can switch Admin on or off here.
+const isOwnAdminProfile = computed(() =>
+  !!viewer.user?.canBeAdmin && viewer.user.profileSlug === String(route.params.slug).toLowerCase()
+)
+const accessWorking = ref(false)
+const accessError = ref('')
+
+async function onSwitchAccess(role: 'admin' | 'checkin') {
+  accessWorking.value = true
+  accessError.value = ''
+  try {
+    const res = await fetch('/auth/access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    })
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Could not switch')
+    await viewer.refreshAuth()
+    store.fetch(route.params.slug as string)
+  } catch (e) {
+    accessError.value = e instanceof Error ? e.message : 'Could not switch'
+    console.error('[ProfileDetailPage] switch access', e)
+  } finally {
+    accessWorking.value = false
+  }
+}
 const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
 const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)

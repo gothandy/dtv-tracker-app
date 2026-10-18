@@ -6,7 +6,7 @@ import { msalClient, AUTH_SCOPES, getRedirectUri } from '../../services/auth-con
 import { profilesRepository } from '../../services/repositories/profiles-repository';
 import { staffSessionUser } from '../../services/personal-auth';
 import {
-  createAuthToken, setLoginCookie, endSignInOnThisBrowser, LOGIN_HINT_COOKIE, LOGOUT_HINT_COOKIE,
+  createAuthToken, setLoginCookie, endSignInOnThisBrowser, LOGIN_HINT_COOKIE, LOGOUT_HINT_COOKIE, chosenAccess,
 } from '../../services/auth-store';
 import { safeReturnPath } from '../../services/safe-return';
 import { platform, LOGIN_HOURS } from '../../config';
@@ -136,7 +136,7 @@ router.get('/signed-in', async (req: Request, res: Response) => {
     setLoginCookie(res, rawToken);
 
     await newSession(req);
-    req.session.user = staffSessionUser(matchedProfile, email, new Date().toISOString());
+    req.session.user = staffSessionUser(matchedProfile, email, new Date().toISOString(), chosenAccess(req));
 
     const returnToPath = savedReturnTo ?? '/';
     const returnToWithNotice = returnToPath.includes('?')

@@ -2,9 +2,12 @@
 /// <reference path="../../types/express-session.d.ts" />
 import dtvRouter from './dtv';
 import verifyRouter from './verify';
-import { endSignInOnThisBrowser, LOGOUT_HINT_COOKIE } from '../../services/auth-store';
+import { endSignInOnThisBrowser, LOGOUT_HINT_COOKIE, ACCESS_COOKIE } from '../../services/auth-store';
 import { requestOrigin } from '../../services/request-origin';
-import { entra } from '../../config';
+import { entra, platform } from '../../config';
+
+/** How long an Admin's choice of access is remembered on a device (as the remembered account). */
+const ACCESS_CHOICE_DAYS = 365;
 
 const router: Router = express.Router();
 
@@ -58,6 +61,31 @@ router.get('/signed-out', (req: Request, res: Response) => {
   const name: string | undefined = req.cookies?.[SIGNED_OUT_NAME_COOKIE];
   res.clearCookie(SIGNED_OUT_NAME_COOKIE);
   res.redirect(homeWithSignedOutBanner(name));
+});
+
+// POST /auth/access { role: 'admin' | 'checkin' } — someone on the admin list switches Admin
+// on or off. Admins work as Check In by default (safer day to day, and a real test of what
+// Check In can do); this takes effect at once and is remembered on this device.
+router.post('/access', (req: Request, res: Response) => {
+  const user = req.session.user;
+  const role = (req.body as { role?: unknown })?.role;
+  if (!user?.canBeAdmin) {
+    res.status(403).json({ success: false, error: 'Not permitted' });
+    return;
+  }
+  if (role !== 'admin' && role !== 'checkin') {
+    res.status(400).json({ success: false, error: "role must be 'admin' or 'checkin'" });
+    return;
+  }
+  user.role = role;
+  if (role === 'admin') {
+    res.cookie(ACCESS_COOKIE, 'admin', {
+      httpOnly: true, secure: !platform.isLocal, sameSite: 'lax', maxAge: ACCESS_CHOICE_DAYS * 24 * 60 * 60 * 1000,
+    });
+  } else {
+    res.clearCookie(ACCESS_COOKIE);
+  }
+  res.json({ success: true, user });
 });
 
 // GET /auth/me — return current user info (no auth required)

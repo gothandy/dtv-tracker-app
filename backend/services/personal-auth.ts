@@ -54,7 +54,9 @@ export async function resolvePersonalSession(email: string, displayName: string,
 export function staffSessionUser(
   profile: SharePointProfile,
   email: string,
-  freshAuthAt: string
+  freshAuthAt: string,
+  /** The access an Admin chose on this device (auth-store ACCESS_COOKIE); Check In unless they chose Admin. */
+  chosenAccess: 'admin' | 'checkin' = 'checkin'
 ): NonNullable<import('express-session').SessionData['user']> {
   let profileStats: NonNullable<import('express-session').SessionData['user']>['profileStats'];
   if (profile[PROFILE_STATS]) {
@@ -64,7 +66,8 @@ export function staffSessionUser(
     id: String(profile.ID),
     displayName: profile.Title || email,
     email,
-    role: isAdminEmail(email) ? 'admin' : 'checkin',
+    role: isAdminEmail(email) && chosenAccess === 'admin' ? 'admin' : 'checkin',
+    canBeAdmin: isAdminEmail(email),
     profileSlug: profileSlug(profile.Title, profile.ID),
     profileId: profile.ID,
     freshAuthAt,
