@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPreSessionVars, buildProfileTemplateVars, buildProfileLoginUrl, profileIsMember } from './email-vars'
+import { buildSessionTemplateVars, buildProfileTemplateVars, buildProfileLoginUrl, profileIsMember } from './email-vars'
 import { SESSION_TIME, SESSION_LENGTH } from './field-names'
 import type { SharePointEntry, SharePointProfile, SharePointRecord } from '../../types/sharepoint'
 import type { SharePointSession } from '../../types/session'
@@ -27,7 +27,7 @@ const baseGroup = {
   Modified: '',
 } as SharePointGroup
 
-describe('buildPreSessionVars', () => {
+describe('buildSessionTemplateVars', () => {
   it('includes formattedTime from session schedule with defaults', () => {
     const session = {
       ID: 100,
@@ -36,7 +36,7 @@ describe('buildPreSessionVars', () => {
       Modified: '',
     } as SharePointSession
 
-    const vars = buildPreSessionVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
+    const vars = buildSessionTemplateVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
 
     expect(vars.formattedTime).toBe('9:30 to 12:30 (about 3 hours)')
   })
@@ -51,7 +51,7 @@ describe('buildPreSessionVars', () => {
       [SESSION_LENGTH]: 2,
     } as SharePointSession
 
-    const vars = buildPreSessionVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
+    const vars = buildSessionTemplateVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com')
 
     expect(vars.formattedTime).toBe('10:00 to 12:00 (about 2 hours)')
   })
@@ -72,7 +72,7 @@ describe('buildPreSessionVars', () => {
       Modified: '',
     }] as SharePointRecord[]
 
-    const vars = buildPreSessionVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com', records)
+    const vars = buildSessionTemplateVars(baseEntry, session, baseProfile, baseGroup, [], 'https://example.com', records)
     expect(vars.isMember).toBe(true)
   })
 })
@@ -109,15 +109,15 @@ describe('buildProfileTemplateVars', () => {
     Modified: '',
   } as SharePointProfile
 
-  it('builds membership-invite vars with loginUrl', () => {
-    const vars = buildProfileTemplateVars('membership-invite', profile, 'https://example.com', [])
+  it('builds profile vars with loginUrl', () => {
+    const vars = buildProfileTemplateVars(profile, 'https://example.com', [])
 
     expect(vars.name).toBe('Alice Smith')
     expect(vars.email).toBe('alice@example.com')
     expect(vars.loginUrl).toBe('https://example.com/login?email=alice%40example.com')
   })
 
-  it('includes charityMembershipDate for membership-invite', () => {
+  it('includes charityMembershipDate', () => {
     const records = [{
       ID: 1,
       Type: 'Charity Membership',
@@ -127,7 +127,7 @@ describe('buildProfileTemplateVars', () => {
       Modified: '',
     }] as SharePointRecord[]
 
-    const vars = buildProfileTemplateVars('membership-invite', profile, 'https://example.com', records)
+    const vars = buildProfileTemplateVars(profile, 'https://example.com', records)
 
     expect(vars.charityMembershipDate).toBe('1 April 2024')
   })

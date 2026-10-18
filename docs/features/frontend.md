@@ -48,7 +48,7 @@ Term picker on session detail (Admin/Check In). Hierarchical picker backed by Sh
 
 ## Email Sandbox
 
-Preview pages at `/sandbox/email-pre-dig` and `/sandbox/email-pre-social` render the Handlebars email templates with fixture data for design review without sending.
+The **Templates** pages (`/templates`, Check In and Admin) list the email templates, filtered by context, and show each one rendered with made-up data for its context; Admins get *Edit in SharePoint*.
 
 ## Planned
 

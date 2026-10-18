@@ -4,7 +4,7 @@
 
 import { SharePointProject } from '../../../types/project';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
-import { PROJECT_DESCRIPTION, PROJECT_METADATA } from '../field-names';
+import { PROJECT_DESCRIPTION, PROJECT_METADATA, PROJECT_STATUS } from '../field-names';
 import { sharePoint } from '../../config';
 
 class ProjectsRepository {
@@ -12,10 +12,10 @@ class ProjectsRepository {
 
 
   private get selectFields(): string {
-    return `ID,Title,Name,${PROJECT_DESCRIPTION},${PROJECT_METADATA},Created,Modified`;
+    return `ID,Title,Name,${PROJECT_DESCRIPTION},${PROJECT_METADATA},${PROJECT_STATUS},Created,Modified`;
   }
 
-  async create(fields: { Title: string; Name?: string; Description?: string }): Promise<number> {
+  async create(fields: { Title: string; Name?: string; Description?: string; Status?: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields);
     sharePointClient.clearCacheKey('projects');
     return id;
@@ -23,10 +23,15 @@ class ProjectsRepository {
 
   async updateFields(
     projectId: number,
-    fields: Partial<Pick<SharePointProject, 'Title' | 'Name' | 'Description'>>
+    fields: Partial<Pick<SharePointProject, 'Title' | 'Name' | 'Description' | 'Status'>>
   ): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, projectId, fields);
     sharePointClient.clearCacheKey('projects');
+  }
+
+  /** The Status column's choices, as set in SharePoint. */
+  async statusChoices(): Promise<string[]> {
+    return sharePointClient.getColumnChoices(this.listGuid, PROJECT_STATUS);
   }
 
   async delete(projectId: number): Promise<void> {

@@ -15,6 +15,7 @@ const { requireAuth } = require('./dist/backend/middleware/require-auth');
 const { authMiddleware } = require('./dist/backend/middleware/auth');
 const { mediaDriveId } = require('./dist/backend/services/media-upload');
 const { sharePointClient } = require('./dist/backend/services/sharepoint-client');
+const { findSharePointIds } = require('./dist/backend/services/sharepoint-ids');
 const { getMediaCache, setMediaCache } = require('./dist/backend/services/media-cache');
 const { getProjectDocCache, setProjectDocCache } = require('./dist/backend/services/project-docs-cache');
 const { getGovernanceDocCache, setGovernanceDocCache } = require('./dist/backend/services/governance-docs-cache');
@@ -109,6 +110,27 @@ app.use((req, res, next) => {
     res.redirect(301, `${PRODUCTION_URL}${suffix}${query}`);
 });
 
+// Health check (unprotected — Azure health probes)
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, message: 'Server is running', timestamp: new Date().toISOString() });
+});
+
+// The site's list and library IDs, found by address once (services/sharepoint-ids.ts).
+// If SharePoint is slow or can't be reached, wait at most a few seconds, then carry on:
+// whatever needs it fails as it would anyway, and the next request tries again.
+const SHAREPOINT_IDS_WAIT_MS = 8000;
+app.use(async (req, res, next) => {
+    try {
+        await Promise.race([
+            findSharePointIds(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error(`no answer within ${SHAREPOINT_IDS_WAIT_MS / 1000}s`)), SHAREPOINT_IDS_WAIT_MS)),
+        ]);
+    } catch (error) {
+        console.error(`[SharePoint] Couldn't find list IDs: ${error.message}`);
+    }
+    next();
+});
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -128,11 +150,6 @@ app.use(session({
 // Auth middleware — populates req.session.user from dtv-auth cookie for self-service volunteers.
 // Must run after session() so DTV account sessions are already present.
 app.use(authMiddleware);
-
-// Health check (unprotected — Azure health probes)
-app.get('/api/health', (req, res) => {
-    res.json({ success: true, message: 'Server is running', timestamp: new Date().toISOString() });
-});
 
 // Auth routes (unprotected — login/callback/logout/me)
 app.use('/auth', authRoutes);

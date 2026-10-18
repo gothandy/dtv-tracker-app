@@ -8,7 +8,7 @@ vi.mock('../composables/useAuth', () => ({
 
 import { authGuard } from './index'
 
-function to(path: string, meta: { requiresTrusted?: boolean; requiresAdmin?: boolean; requiresAuth?: boolean } = {}) {
+function to(path: string, meta: { requiresTrusted?: boolean; requiresAdmin?: boolean; requiresAuth?: boolean; permission?: 'viewTemplates' | 'editTemplates' } = {}) {
   return { path, meta }
 }
 
@@ -94,5 +94,15 @@ describe('authGuard — unprotected routes', () => {
 
   it('/ → allowed', async () => {
     expect(await authGuard(to('/'))).toBeUndefined()
+  })
+
+  it('permission route: follows the permissions table', async () => {
+    expect(await authGuard(to('/templates', { permission: 'viewTemplates' }))).toBe('/not-found')
+    mockUser.value = { role: 'selfservice' }
+    expect(await authGuard(to('/templates', { permission: 'viewTemplates' }))).toBe('/forbidden')
+    mockUser.value = { role: 'checkin' }
+    expect(await authGuard(to('/templates', { permission: 'viewTemplates' }))).toBeUndefined()
+    mockUser.value = { role: 'admin' }
+    expect(await authGuard(to('/templates', { permission: 'viewTemplates' }))).toBeUndefined()
   })
 })

@@ -19,12 +19,8 @@
         <template #left>
           <ProjectDetailHeader
             :project="store.project"
-            :allow-edit="profile.hasCheckInAccess"
-            :tag-working="tagWorking"
-            :tag-error="tagError"
             :tree="taxonomyTree"
             :taxonomy-loading="taxonomyLoading"
-            @save-tags="onSaveTags"
           />
         </template>
         <template #right>
@@ -32,6 +28,9 @@
             ref="actionsRef"
             :project="store.project"
             :profile="profile.context"
+            :can-edit="profile.can('editProjects')"
+            :statuses="projectStatuses"
+            :statuses-error="projectStatusesError"
             @edit-project="onEditProject"
             @delete-project="onDeleteProject"
           />
@@ -119,6 +118,7 @@ import type { SessionResponse } from '../../../types/api-responses'
 import type { Session } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditProjectPayload } from './modals/ProjectEditModal.vue'
+import { fetchProjectStatuses, STATUSES_ERROR } from '../utils/projectStatuses'
 import { buildSessionCoverCarouselItems } from '../utils/sessionCarousel'
 
 const route = useRoute()
@@ -126,10 +126,16 @@ const router = useRouter()
 const store = useProjectDetailStore()
 const profile = useViewer()
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
+const projectStatuses = ref<string[]>([])
+const projectStatusesError = ref('')
+fetchProjectStatuses()
+  .then(list => { projectStatuses.value = list })
+  .catch(e => {
+    console.error('[ProjectDetailPage] load statuses', e)
+    projectStatusesError.value = STATUSES_ERROR
+  })
 
 const actionsRef = ref<InstanceType<typeof ProjectDetailActions> | null>(null)
-const tagWorking = ref(false)
-const tagError = ref('')
 const selectedCoverIndex = ref<number | null>(null)
 
 const titleText = computed(() => store.project?.displayName || store.project?.key || '')
@@ -156,26 +162,6 @@ function onCoverSelect(index: number) {
   if (session?.groupKey) router.push(sessionPath(session.groupKey, session.date))
 }
 
-async function onSaveTags(tags: Array<{ label: string; termGuid: string }>) {
-  if (!store.project) return
-  tagWorking.value = true
-  tagError.value = ''
-  try {
-    const res = await fetch(`/api/projects/${store.project.key}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metadata: tags }),
-    })
-    if (!res.ok) throw new Error(`PATCH failed (${res.status})`)
-    store.project.metadata = tags.length ? tags : undefined
-  } catch (e) {
-    tagError.value = 'Failed to save tags — please try again'
-    console.error('[ProjectDetailPage] onSaveTags failed', e)
-  } finally {
-    tagWorking.value = false
-  }
-}
-
 async function onEditProject(payload: EditProjectPayload) {
   if (!store.project) return
   try {
@@ -186,6 +172,8 @@ async function onEditProject(payload: EditProjectPayload) {
         displayName: payload.displayName,
         key: payload.key,
         description: payload.description,
+        status: payload.status,
+        metadata: payload.metadata,
       }),
     })
     if (!res.ok) {

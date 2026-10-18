@@ -40,3 +40,4 @@ Read [AGENTS.md](AGENTS.md) first. It is the single source of truth for the proj
 
 - End commit messages and PR descriptions with the attribution lines the harness provides.
 - Keep the PR description current: tick tasks as they are promoted and add anything the maintainer needs to do by hand.
+- **Open PRs as drafts** (`draft: true` when creating it through the REST API). A draft keeps Codex's review out until the maintainer says it's ready; they mark it ready for review.

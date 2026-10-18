@@ -35,7 +35,7 @@ export function settingsProblems(): string[] {
   const missing = REQUIRED_SETTINGS.filter((name) => !process.env[name]?.trim());
   if (missing.length > 0) return [`Missing settings: ${missing.join(', ')}`];
   if (!findSite(sharePoint.siteUrl)) {
-    return [`TRACKER_SHAREPOINT_SITE_URL ${sharePoint.siteUrl} has no IDs in backend/config.ts`];
+    return [`TRACKER_SHAREPOINT_SITE_URL ${sharePoint.siteUrl} isn't one of the sites in backend/config.ts`];
   }
   return [];
 }
@@ -81,64 +81,55 @@ export function isAdminEmail(email: string | null | undefined): boolean {
 
 // ── SharePoint ──────────────────────────────────────────────────────────────
 
-interface SharePointSite {
+/**
+ * Each list and library by its address on the site, the part of its URL that can't be
+ * edited (a list's title can be renamed; its address can't). The tracker looks their IDs
+ * up by address when it starts (services/sharepoint-ids.ts), so a restore or a list made
+ * by hand on each site needs no change here. Every site the app uses has the same addresses.
+ */
+export const SHAREPOINT_ADDRESSES = {
   lists: {
-    groups: string;
-    projects: string;
-    sessions: string;
-    entries: string;
-    profiles: string;
-    regulars: string;
-    records: string;
-    logins: string;
-  };
+    groups: 'Lists/Groups',
+    projects: 'Lists/Projects',
+    sessions: 'Lists/Sessions',
+    entries: 'Lists/Entries',
+    profiles: 'Lists/Profiles',
+    regulars: 'Lists/Regulars',
+    records: 'Lists/Records',
+    logins: 'Lists/Logins',
+    /** Email templates (types/email-template.ts). */
+    templates: 'Lists/Templates',
+  },
   libraries: {
-    /** "Media": session photos and videos. */
-    media: string;
-    /** "Documents": Docs/ (governance), Projects/{slug}/, Backups/. */
-    documents: string;
-  };
+    /** Session photos and videos. */
+    media: 'Media',
+    /** Docs/ (governance), Projects/{slug}/, Backups/. */
+    documents: 'Shared Documents',
+  },
+} as const;
+
+export type ListKey = keyof typeof SHAREPOINT_ADDRESSES.lists;
+export type LibraryKey = keyof typeof SHAREPOINT_ADDRESSES.libraries;
+
+/** The IDs found for this site's addresses. */
+export interface SharePointIds {
+  lists: Record<ListKey, string>;
+  libraries: Record<LibraryKey, string>;
+}
+
+interface SharePointSite {
   /** Term Store term set for session and project tags. */
   tagsTermSetId: string;
 }
 
-/** IDs for each SharePoint site the app can use. TRACKER_SHAREPOINT_SITE_URL picks one. */
+/** Each SharePoint site the app can use. TRACKER_SHAREPOINT_SITE_URL picks one. */
 const SHAREPOINT_SITES: Record<string, SharePointSite> = {
   'https://dtvolunteers.sharepoint.com/sites/tracker': {
-    lists: {
-      groups: '6e86cef7-a855-41a4-93e8-6e01a80434a2',
-      projects: '669e479d-7b48-41dc-a0df-1ee7bc0fc2c7',
-      sessions: '583867bd-e032-4940-89b5-aa2d5158c5d0',
-      entries: '7146b950-94e3-4c94-a0d7-310cf2fbd325',
-      profiles: '84649143-9e10-42eb-b6ee-2e1f57033073',
-      regulars: '925c96fd-9b3a-4f55-b179-ed51fc279d39',
-      records: '2666a819-1275-4fce-83a3-5bb67b4da83a',
-      logins: 'e3b5c7fb-313a-44b4-9363-a4e4d2b65a57',
-    },
-    libraries: {
-      media: 'b!OPS_fbLuHk2mHGHzJcqh0RwYB9nXW2ZBsZQsUeDoQwE4LIH0a_-PTL-iWIE4VOcg',
-      documents: 'b!OPS_fbLuHk2mHGHzJcqh0RwYB9nXW2ZBsZQsUeDoQwGG-VCHeyPyQZMJyvZXUxTW',
-    },
     tagsTermSetId: '14c7dfc2-ee1e-4c30-80f3-0d9149045311',
   },
   // Copy of the live site, restored from Microsoft 365 Backup, for the preview slot and
-  // local development. A restore keeps the list IDs; library IDs include the site's ID,
-  // so they change with each restore. See scripts/preview-site-from-backup/README.md.
+  // local development. See scripts/preview-site-from-backup/README.md.
   'https://dtvolunteers.sharepoint.com/sites/tracker-preview': {
-    lists: {
-      groups: '6e86cef7-a855-41a4-93e8-6e01a80434a2',
-      projects: '669e479d-7b48-41dc-a0df-1ee7bc0fc2c7',
-      sessions: '583867bd-e032-4940-89b5-aa2d5158c5d0',
-      entries: '7146b950-94e3-4c94-a0d7-310cf2fbd325',
-      profiles: '84649143-9e10-42eb-b6ee-2e1f57033073',
-      regulars: '925c96fd-9b3a-4f55-b179-ed51fc279d39',
-      records: '2666a819-1275-4fce-83a3-5bb67b4da83a',
-      logins: 'e3b5c7fb-313a-44b4-9363-a4e4d2b65a57',
-    },
-    libraries: {
-      media: 'b!nQv8OHI3Mk2aud7o2-hSXRwYB9nXW2ZBsZQsUeDoQwE4LIH0a_-PTL-iWIE4VOcg',
-      documents: 'b!nQv8OHI3Mk2aud7o2-hSXRwYB9nXW2ZBsZQsUeDoQwGG-VCHeyPyQZMJyvZXUxTW',
-    },
     tagsTermSetId: '14c7dfc2-ee1e-4c30-80f3-0d9149045311',
   },
 };
@@ -147,6 +138,18 @@ const SHAREPOINT_SITES: Record<string, SharePointSite> = {
 function findSite(siteUrl: string): SharePointSite | undefined {
   const key = Object.keys(SHAREPOINT_SITES).find((url) => url.toLowerCase() === siteUrl.toLowerCase());
   return key ? SHAREPOINT_SITES[key] : undefined;
+}
+
+let foundIds: SharePointIds | undefined;
+
+/** Set by services/sharepoint-ids.ts once it has found the IDs on the site. */
+export function setSharePointIds(ids: SharePointIds): void {
+  foundIds = ids;
+}
+
+function ids(): SharePointIds {
+  if (!foundIds) throw new Error('SharePoint list IDs not found yet: see services/sharepoint-ids.ts');
+  return foundIds;
 }
 
 /**
@@ -171,11 +174,14 @@ export const sharePoint = {
   get siteUrl() { return setting('TRACKER_SHAREPOINT_SITE_URL').replace(/\/$/, ''); },
   get site(): SharePointSite {
     const site = findSite(sharePoint.siteUrl);
-    if (!site) throw new Error(`No IDs configured for SharePoint site ${sharePoint.siteUrl} in backend/config.ts`);
+    if (!site) throw new Error(`SharePoint site ${sharePoint.siteUrl} isn't one of the sites in backend/config.ts`);
     return site;
   },
-  get lists() { return sharePoint.site.lists; },
-  get libraries() { return sharePoint.site.libraries; },
+  /** List IDs, found by address. */
+  get lists() { return ids().lists; },
+  /** Library (drive) IDs, found by address. */
+  get libraries() { return ids().libraries; },
+  get idsFound() { return !!foundIds; },
   /** IANA timezone SharePoint dates are converted from. */
   timezone: 'Europe/London',
 };

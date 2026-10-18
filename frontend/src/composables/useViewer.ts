@@ -2,6 +2,7 @@
 // Pages and components import from here only — never from useAuth or useRole directly.
 import { computed, reactive } from 'vue'
 import { useAuth, refreshAuth } from './useAuth'
+import { can as roleCan, type Permission } from '../../../types/permissions'
 
 export interface RoleContext {
   isAdmin: boolean
@@ -38,6 +39,9 @@ export function useViewer() {
     hasCheckInAccess: hasCheckInAccess.value,
   }))
 
+  /** Whether the viewer may do this (types/permissions.ts). Prefer this to checking roles. */
+  const can = (permission: Permission) => roleCan(role.value, permission)
+
   return reactive({
     user,
     ready,
@@ -50,6 +54,7 @@ export function useViewer() {
     isPublic,
     hasCheckInAccess,
     context,
+    can,
     refreshAuth,
   })
 }

@@ -38,15 +38,25 @@ export function buildTermGuidToPathMap(nodes: TaxNode[], prefix = ''): Map<strin
   return map
 }
 
-/** Prefer full tree path when termGuid is known (SharePoint often stores leaf label only). */
+/**
+ * Prefer full tree path when termGuid is known (SharePoint often stores leaf label only).
+ * Without a known termGuid, a bare name that only one term has is taken as that term.
+ */
 export function resolveMetadataTags(tags: MetadataTag[], tree: TaxNode[]): MetadataTag[] {
   const pathByGuid = buildTermGuidToPathMap(tree)
+  const pathsByName = new Map<string, string[]>()
+  for (const path of pathByGuid.values()) {
+    const name = path.slice(path.lastIndexOf(':') + 1)
+    pathsByName.set(name, [...(pathsByName.get(name) ?? []), path])
+  }
   return tags.map(tag => {
     const termGuid = tag.termGuid?.trim() ?? ''
     if (termGuid && pathByGuid.has(termGuid)) {
       return { label: pathByGuid.get(termGuid)!, termGuid }
     }
-    return { label: normalizeTaxonomyPath(tag.label), termGuid }
+    const label = normalizeTaxonomyPath(tag.label)
+    const byName = label.includes(':') ? undefined : pathsByName.get(label)
+    return { label: byName?.length === 1 ? byName[0] : label, termGuid }
   })
 }
 

@@ -68,11 +68,15 @@
             :show-user="viewer.isAdmin"
             :allow-transfer="viewer.isAdmin"
             :profiles="transferProfiles"
+            :switch-access-to="isOwnAdminProfile ? (viewer.isAdmin ? 'checkin' : 'admin') : null"
+            :access-working="accessWorking"
+            @switch-access="onSwitchAccess"
             @edit-profile="onEditProfile"
             @delete-profile="onDeleteProfile"
             @transfer-open="onTransferOpen"
             @transfer-profile="onTransferProfile"
           />
+          <p v-if="accessError" class="pd-access-error">{{ accessError }}</p>
           <ProfileWarnings
             v-if="viewer.hasCheckInAccess && store.profile.warnings?.length"
             :warnings="store.profile.warnings!"
@@ -210,6 +214,33 @@ const contact = contactEmail()
 const route = useRoute()
 const router = useRouter()
 const viewer = useViewer()
+
+// Someone on the admin list, on their own profile: they can switch Admin on or off here.
+const isOwnAdminProfile = computed(() =>
+  !!viewer.user?.canBeAdmin && viewer.user.profileSlug === String(route.params.slug).toLowerCase()
+)
+const accessWorking = ref(false)
+const accessError = ref('')
+
+async function onSwitchAccess(role: 'admin' | 'checkin') {
+  accessWorking.value = true
+  accessError.value = ''
+  try {
+    const res = await fetch('/auth/access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    })
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Could not switch')
+    await viewer.refreshAuth()
+    store.fetch(route.params.slug as string)
+  } catch (e) {
+    accessError.value = e instanceof Error ? e.message : 'Could not switch'
+    console.error('[ProfileDetailPage] switch access', e)
+  } finally {
+    accessWorking.value = false
+  }
+}
 const store = useProfileDetailStore()
 const workingId = ref<number | null>(null)
 const actionsRef = ref<InstanceType<typeof ProfileDetailActions> | null>(null)
@@ -673,6 +704,11 @@ async function onChildDelete() {
 </script>
 
 <style scoped>
+.pd-access-error {
+  margin: 0.5rem 0 0;
+  color: var(--color-dtv-red);
+}
+
 .pd-error { padding: 1.5rem; color: var(--color-dtv-dirt); }
 
 .pd-header {

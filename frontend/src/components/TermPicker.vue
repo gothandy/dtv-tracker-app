@@ -9,7 +9,7 @@
       <ul v-else class="tp-tree">
         <li>
           <div :class="['tp-row', { selected: !modelValue }]" @click="select('', '')">
-            <em>All tags</em>
+            <em>{{ allLabel ?? 'All tags' }}</em>
           </div>
         </li>
         <li v-if="showNoTags">
@@ -41,6 +41,7 @@ const props = defineProps<{
   loading?: boolean
   showNoTags?: boolean      // show "No tags" option (useful for filter contexts)
   placeholder?: string
+  allLabel?: string         // label for the '' option (default "All tags"; "No tag" in a form)
   availableLabels?: Set<string> // if set, only show tags present in this set (or with descendants in it)
   disabled?: boolean
 }>()

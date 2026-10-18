@@ -1,11 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ensureAuth, user } from '../composables/useAuth'
+import { can, type Permission } from '../../../types/permissions'
 
 declare module 'vue-router' {
   interface RouteMeta {
     requiresTrusted?: boolean  // Microsoft trusted: Admin or Check-In
     requiresAdmin?: boolean    // Admin only
     requiresAuth?: boolean     // Any authenticated user (self-service included)
+    permission?: Permission    // Roles with this permission (types/permissions.ts)
   }
 }
 import HomePage from '../pages/HomePage.vue'
@@ -23,12 +25,16 @@ import ProfileDetailPage from '../pages/ProfileDetailPage.vue'
 import ProjectListPage from '../pages/ProjectListPage.vue'
 import ProjectDetailPage from '../pages/ProjectDetailPage.vue'
 import DocsPage from '../pages/DocsPage.vue'
+import TemplateListPage from '../pages/TemplateListPage.vue'
+import TemplateDetailPage from '../pages/TemplateDetailPage.vue'
 
 // Path builders — colocated with route definitions so URL structure has one home.
 // Import these wherever a link to an entity is needed; never construct URLs inline.
 export const sessionPath = (groupKey: string, date: string) => `/sessions/${groupKey}/${date}`
 export const groupsPath = () => '/groups'
 export const groupPath = (key: string) => `/groups/${key}`
+export const templatesPath = () => '/templates'
+export const templatePath = (id: number) => `/templates/${id}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`
 export const projectUploadPath = (key: string) => `/projects/${key}/upload`
@@ -74,6 +80,8 @@ export const router = createRouter({
     { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
     { path: '/forbidden', component: () => import('../pages/ForbiddenPage.vue') },
     { path: '/profiles', component: ProfileListPage, meta: { requiresTrusted: true } },
+    { path: '/templates', component: TemplateListPage, meta: { permission: 'viewTemplates' } },
+    { path: '/templates/:id', component: TemplateDetailPage, meta: { permission: 'viewTemplates' } },
     { path: '/profiles/:slug', component: ProfileDetailPage, meta: { requiresAuth: true } },
     { path: '/profiles/:slug/consent', component: () => import('../pages/ConsentPage.vue'), meta: { requiresAuth: true } },
     { path: '/upload', component: () => import('../pages/UploadPage.vue') },
@@ -117,14 +125,18 @@ export const router = createRouter({
     { path: '/sandbox/consent-page', component: () => import('../pages/sandbox/SandboxConsentPage.vue') },
     { path: '/sandbox/upload-page', component: () => import('../pages/sandbox/SandboxUploadPage.vue') },
     { path: '/sandbox/error-pages', component: () => import('../pages/sandbox/SandboxErrorPages.vue') },
-    { path: '/sandbox/email-pre-dig', component: () => import('../pages/sandbox/SandboxEmailPreDig.vue') },
-    { path: '/sandbox/email-pre-social', component: () => import('../pages/sandbox/SandboxEmailPreSocial.vue') },
-    { path: '/sandbox/email-post-session', component: () => import('../pages/sandbox/SandboxEmailPostSession.vue') },
     { path: '/:pathMatch(.*)*', component: () => import('../pages/NotFoundPage.vue') },
   ]
 })
 
-export async function authGuard(to: { path: string; meta: { requiresTrusted?: boolean; requiresAdmin?: boolean; requiresAuth?: boolean } }) {
+export async function authGuard(to: { path: string; meta: { requiresTrusted?: boolean; requiresAdmin?: boolean; requiresAuth?: boolean; permission?: Permission } }) {
+  if (to.meta.permission) {
+    await ensureAuth()
+    if (!user.value) return '/not-found'
+    if (!can(user.value.role, to.meta.permission)) return '/forbidden'
+    return
+  }
+
   if (to.meta.requiresTrusted || to.meta.requiresAdmin || to.meta.requiresAuth) {
     await ensureAuth()
     if (!user.value) return '/not-found'

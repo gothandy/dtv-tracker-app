@@ -1,15 +1,14 @@
 <template>
   <div class="pdh-header">
     <p v-if="project.description" class="pdh-description">{{ project.description }}</p>
+    <!-- Read-only: the tag is set in the Edit modal, as a project has just one. -->
     <MetadataTagsPanel
-      v-if="(project.metadata?.length ?? 0) > 0 || allowEdit"
+      v-if="(project.metadata?.length ?? 0) > 0"
       :metadata="project.metadata"
-      :allow-edit="allowEdit"
-      :working="tagWorking"
-      :error="tagError"
+      :allow-edit="false"
+      :working="false"
       :tree="tree"
       :taxonomy-loading="taxonomyLoading"
-      @save-tags="emit('saveTags', $event)"
     />
   </div>
 </template>
@@ -21,14 +20,9 @@ import type { ProjectDetailResponse } from '../../../../types/api-responses'
 
 defineProps<{
   project: ProjectDetailResponse
-  allowEdit: boolean
-  tagWorking: boolean
-  tagError?: string
   tree: TaxNode[]
   taxonomyLoading?: boolean
 }>()
-
-const emit = defineEmits<{ saveTags: [tags: Array<{ label: string; termGuid: string }>] }>()
 </script>
 
 <style scoped>

@@ -8,7 +8,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 **Purpose**: Stores volunteer group information
 
-**List GUID**: `6e86cef7-a855-41a4-93e8-6e01a80434a2`
+**Address**: `Lists/Groups` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -28,7 +28,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 **Purpose**: Stores cross-group volunteer projects (funded work, trails, etc.)
 
-**List GUID**: `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` (`sharePoint.lists.projects` in `backend/config.ts`)
+**Address**: `Lists/Projects` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -39,6 +39,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Name** | Name | Single line of text | No | Display name |
 | **Description** | Description | Multiple lines of text | No | Project description |
 | **Metadata** | Metadata | Managed metadata | No | Taxonomy tags (same term set as Sessions) |
+| **Status** | Status | Choice | No | The project's status. The tracker reads the choices from the column (`GET /api/projects/options`), so adding a choice here adds it to the filter and the Add/Edit modals |
 | *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`) |
 
 ---
@@ -47,7 +48,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 
 **Purpose**: Stores volunteer session information with dates and planning notes
 
-**List GUID**: `583867bd-e032-4940-89b5-aa2d5158c5d0`
+**Address**: `Lists/Sessions` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -99,7 +100,7 @@ Fall back to zeros if the field is empty (e.g. before first refresh run).
 
 **Purpose**: Junction table linking volunteers to sessions — tracks registrations, check-ins, and hours per volunteer per session
 
-**List GUID**: `7146b950-94e3-4c94-a0d7-310cf2fbd325`
+**Address**: `Lists/Entries` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -152,7 +153,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 **Purpose**: Stores volunteer profile information including contact details
 
-**List GUID**: `84649143-9e10-42eb-b6ee-2e1f57033073`
+**Address**: `Lists/Profiles` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -195,7 +196,7 @@ Fall back to zeros/false if the field is empty (e.g. before first refresh run).
 
 **Purpose**: Tracks which volunteers are regular members of specific groups
 
-**List GUID**: `925c96fd-9b3a-4f55-b179-ed51fc279d39`
+**Address**: `Lists/Regulars` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -227,7 +228,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 **Permissions**: restricted to site **Owners** (inheritance stopped). Anyone who could add rows could forge a sign-in. The tracker isn't affected: its access is the site grant.
 
-**List GUID**: `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` (`sharePoint.lists.logins` in `backend/config.ts`)
+**Address**: `Lists/Logins` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -252,7 +253,7 @@ This is a **many-to-many junction table** that creates the relationship between:
 
 **Purpose**: Tracks consents, benefits, and governance items per volunteer profile
 
-**List GUID**: `2666a819-1275-4fce-83a3-5bb67b4da83a`
+**Address**: `Lists/Records` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
 ### Columns
 
@@ -280,6 +281,29 @@ This is a **many-to-many junction table** that creates the relationship between:
 One profile can have multiple records of different types. Consent records (Privacy, Photo) are upserted during Eventbrite attendee sync — one per profile+type, latest answer wins.
 
 A volunteer becomes a **member** when they have a "Charity Membership" record with Status "Accepted".
+
+---
+
+## 8. Templates List
+
+**Purpose**: Email templates, shown in the tracker as *Email templates*. Admins edit them here in SharePoint; changes show in the tracker within 5 minutes (or straight away after *Clear all server caches* on the Tools page). Each row is Handlebars, wrapped in `templates/email/base.hbs` with the `{{#section}}` and `{{{nl2br}}}` helpers (`backend/services/email-renderer.ts`).
+
+**Address**: `Lists/Templates` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
+
+### Columns
+
+| Column Name | Internal Name | Type | Required | Description |
+|-------------|---------------|------|----------|-------------|
+| Title | Title | Single line of text | Yes | The name shown in *Send Email*, e.g. *Pre-Dig* |
+| Context | Context | Choice: `Session`, `Profile` | Yes | What the email is about, which decides its variables, recipients and where it's offered. Defined once in `types/email-template.ts` |
+| Subject | Subject | Single line of text | Yes | Handlebars, not HTML-escaped |
+| HTML | HTML | Multiple lines of text (plain text) | No | Handlebars body; must be plain text, as rich text would rewrite it |
+| Text | Text | Multiple lines of text (plain text) | No | Handlebars plain-text version |
+
+### Contexts and their variables
+
+- **Session**: sent from a session's *Send Email* to its entries, one personalised email each. Variables: `buildSessionTemplateVars` in `backend/services/email-vars.ts` (the session's date, time, description and tags, the volunteer's name, Regular and member status, accompanied children, links).
+- **Profile**: sent from the Profiles page's *Send Email* to the ticked profiles. Variables: `buildProfileTemplateVars` (name, email, sign-in link, charity membership date).
 
 ---
 

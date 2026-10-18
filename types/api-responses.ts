@@ -6,6 +6,7 @@
  */
 
 import type { SessionLimits } from '../backend/services/data-layer';
+import type { TemplateContext } from './email-template';
 
 export type MediaStatus = 'none' | 'allPrivate' | 'noCover' | 'coverPrivate' | 'public'
 
@@ -48,6 +49,8 @@ export interface ProjectResponse {
   key: string;
   displayName?: string;
   description?: string;
+  /** One of the Projects list's Status choices; absent when not set */
+  status?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
 }
 
@@ -394,4 +397,22 @@ export interface UnmatchedEventResponse {
   summary: string | null
   /** Set for events with several dates (an Eventbrite series) */
   seriesId: string | null
+}
+
+/** GET /api/templates: an email template, as listed. */
+export interface TemplateResponse {
+  id: number
+  title: string
+  context: TemplateContext
+  /** Handlebars source, as in the Templates list */
+  subject: string
+  /** Handlebars source of the plain-text version */
+  text: string
+}
+
+/** GET /api/templates/:id: a template with a preview rendered from made-up data for its context. */
+export interface TemplateDetailResponse extends TemplateResponse {
+  preview: { subject: string; html: string; text: string }
+  /** The row's edit form in SharePoint; only for those who can edit templates */
+  editUrl?: string
 }

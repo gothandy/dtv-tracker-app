@@ -11,6 +11,7 @@ const axios = require('axios');
 const { sharePointClient } = require('../dist/backend/services/sharepoint-client');
 const { sharePoint } = require('../dist/backend/config');
 const { taxonomyClient } = require('../dist/backend/services/taxonomy-client');
+const { findSharePointIds } = require('../dist/backend/services/sharepoint-ids');
 
 let passed = 0;
 let failed = 0;
@@ -26,6 +27,7 @@ function assert(label, condition, detail = '') {
 }
 
 async function main() {
+  await findSharePointIds();
     console.log('Media library, taxonomy, and backup drive tests\n');
 
     // --- Media library ---

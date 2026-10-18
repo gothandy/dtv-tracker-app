@@ -87,7 +87,7 @@ Feature-complete volunteer tracking application with:
 - Data layer handling SharePoint quirks, enrichment, and FY stats ([backend/services/data-layer.ts](backend/services/data-layer.ts))
 - Repository pattern for each SharePoint list ([backend/services/repositories/](backend/services/repositories/))
 - Auth middleware with session auth + API key bypass ([backend/middleware/require-auth.ts](backend/middleware/require-auth.ts))
-- Role-based authorization: Admin, Check In, Self-Service, and Public ([backend/middleware/require-admin.ts](backend/middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes)
+- Role-based authorization: Admin, Check In, Self-Service, and Public ([backend/middleware/require-admin.ts](backend/middleware/require-admin.ts)); **Admin extends Check In** (same field-day APIs plus admin-only routes); Admins work as Check In by default and switch Admin on from their own profile page
 - Server-side caching with tier-informed per-entity TTLs and targeted per-repository invalidation
 - Hosted on Azure App Service (production + `preview` deployment slot) with an Azure Logic App for scheduled Eventbrite sync
 
@@ -103,34 +103,38 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
 - Session detail with entries, check-in, set hours, move group, tags, photo gallery ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
-- Volunteers listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
+- Profiles listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
 - Profile detail with FY stats, FY bar chart, group hours, entries, records ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
 - Entries page (admin-only): all entries with notes/adult filters, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
+- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with a preview from made-up data ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
 - Governance docs page at `/docs` — public; reads SharePoint `Docs/` folder; PDFs via tracker proxy ([DocsPage.vue](frontend/src/pages/DocsPage.vue))
 
 ---
 
 ## Data Model
 
-The application uses 8 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
+The application uses 9 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
 
-### Lists (GUIDs)
+### Lists
 
-The code reads these from `sharePoint.lists` in `backend/config.ts`.
+The code finds each list by its address on the site, set in `SHAREPOINT_ADDRESSES` in `backend/config.ts`, and looks up the IDs when it starts (`backend/services/sharepoint-ids.ts`). Addresses can't be edited in SharePoint; titles can.
 
-| List | GUID | Purpose |
-|------|------|---------|
-| Groups | `6e86cef7-a855-41a4-93e8-6e01a80434a2` | Volunteer crews |
-| Projects | `669e479d-7b48-41dc-a0df-1ee7bc0fc2c7` | Cross-group funded work / trails |
-| Sessions | `583867bd-e032-4940-89b5-aa2d5158c5d0` | Events/sessions |
-| Entries | `7146b950-94e3-4c94-a0d7-310cf2fbd325` | Volunteer↔session junction |
-| Profiles | `84649143-9e10-42eb-b6ee-2e1f57033073` | Volunteer profiles |
-| Regulars | `925c96fd-9b3a-4f55-b179-ed51fc279d39` | Profile↔group regulars |
-| Records | `2666a819-1275-4fce-83a3-5bb67b4da83a` | Consents/governance |
-| Logins | `e3b5c7fb-313a-44b4-9363-a4e4d2b65a57` | Session token hashes |
+| List | Address | Purpose |
+|------|---------|---------|
+| Groups | `Lists/Groups` | Volunteer crews |
+| Projects | `Lists/Projects` | Cross-group funded work / trails |
+| Sessions | `Lists/Sessions` | Events/sessions |
+| Entries | `Lists/Entries` | Volunteer↔session junction |
+| Profiles | `Lists/Profiles` | Volunteer profiles |
+| Regulars | `Lists/Regulars` | Profile↔group regulars |
+| Records | `Lists/Records` | Consents/governance |
+| Logins | `Lists/Logins` | Session token hashes |
+| Templates | `Lists/Templates` | Email templates (Handlebars), edited in SharePoint |
+
+Libraries: `Media` (session photos and videos) and `Shared Documents` (the Documents library).
 
 ### Entity Relationships
 
@@ -224,6 +228,10 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 - **Server-computed enrichment**: `isBookable`, `financialYear`, `regularsCount`, `deriveLimits` computed server-side in the route handler — not re-derived on the client.
 - **Session capacity limits**: stored in the `Limits` field as JSON (e.g. `{"new":4,"total":20}`). `deriveLimits()` in `data-layer.ts` fills missing limits. Limits are config — never stored in Stats.
 
+### Vue Frontend: List Filters
+
+- **Filters cascade.** On every list page with filters (Sessions, Profiles, Projects, …), each filter offers only the options left by the other filters, and resets to *All* when its choice disappears. Choices are kept in the address (`?fy=`, `?tag=`…) so a filtered view can be shared.
+
 ### Vue Frontend: URL / Path Conventions
 
 - **Path builders live in `frontend/src/router/index.ts`** — single source of truth for URL structure.
@@ -255,6 +263,7 @@ This codebase is maintained by a small team (often volunteers). **Prefer linear,
 
 - **One source of truth**: If aggregates are stored (e.g. session `Stats` JSON), compute them in the existing stats pipeline (`calculateSessionStats` → `computeAndSaveSessionStats` / bulk refresh). **Do not** recompute the same numbers again in a route handler for some roles only — that doubles behaviour to test and risks drift between public and trusted views.
 - **Same behaviour for every login** where possible: API consumers should see the same rules; differences should be driven by **data the caller is allowed to see** (e.g. no entry list for public), not by a second formula.
+- **Kinds of things are defined once, in code**: where the app has a fixed set of kinds (e.g. email template contexts in `types/email-template.ts`), one table defines them and what each means, keyed by the SharePoint choice values. Code asks a kind's properties, never its name.
 - **Tests follow the pipeline**: Favour unit tests on shared functions (e.g. `data-layer.ts`) over branching integration tests per route.
 
 For a concise, language-agnostic checklist (naming, SRP, DRY, KISS, comments, YAGNI, etc.), see [Clean code cheat sheet](https://gist.github.com/wojteklu/73c6914cc446146b8b533c0988cf8d29) — general reference only; **project-specific rules in this file take precedence** when they differ.
@@ -296,6 +305,8 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 - Entries default Count to 1, Checked to false
 
 ### Permissions / Authorization
+
+**Permissions table:** [`types/permissions.ts`](types/permissions.ts) says which roles have each permission. New code asks `can(...)` (`useViewer().can`, route `meta.permission`, `requirePermission` on the server), never "is this an Admin?"; older checks move over as each page is touched (#293).
 
 - Four app permission levels (+ Microsoft auth rules): **Admin** (`TRACKER_ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
 - Capability stack (additive): **Public** ⊆ **Check In tier** ⊆ **Admin tier** (`admin = public + check-in + admin-only`). UI should be additive (admin sees check-in surface plus extra controls), not unrelated “modes”.
@@ -359,7 +370,7 @@ dtv-tracker-app/
 │       ├── types/                  # Frontend domain types
 │       └── utils/                  # sessionStats, breakpoints, labelIcons, …
 ├── public/                         # Static assets at fixed URLs (icons)
-├── templates/email/                # Handlebars email templates
+├── templates/email/                # base.hbs: the layout around every email (templates are in the Templates list)
 ├── tests/                          # Live integration tests (test:live)
 └── docs/                           # Reference documentation (features/, testing/, design/, …)
 ```

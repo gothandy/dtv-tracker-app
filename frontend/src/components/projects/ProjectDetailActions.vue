@@ -1,15 +1,15 @@
 <template>
   <div class="pda-wrap">
     <AppButton icon="share" label="Share" mode="icon-only" @click="onShare" />
-    <template v-if="profile.isAdmin">
-      <AppButton label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
-    </template>
+    <AppButton v-if="canEdit" label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
 
     <ProjectEditModal
       v-if="showEdit"
       :project="project"
+      :statuses="statuses"
+      :can-delete="profile.isAdmin"
       :working="workingEdit"
-      :error="editError"
+      :error="editError || statusesError"
       @close="showEdit = false"
       @save="onSaveEdit"
       @delete="showEdit = false; showDelete = true"
@@ -38,6 +38,12 @@ import { shareCurrentUrl } from '../../utils/shareUrl'
 defineProps<{
   project: ProjectDetailResponse
   profile: RoleContext
+  /** Add and edit projects (permission editProjects) */
+  canEdit: boolean
+  /** The Projects list's Status choices, for Edit */
+  statuses: string[]
+  /** Set when the choices couldn't be loaded */
+  statusesError?: string
 }>()
 
 const emit = defineEmits<{

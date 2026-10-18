@@ -32,6 +32,18 @@ export const LOGIN_HINT_COOKIE = 'dtv-login-hint';
  */
 export const LOGOUT_HINT_COOKIE = 'dtv-logout-hint';
 
+/**
+ * Admins work as Check In by default (safer day to day, and a real test of what Check In
+ * can do), and switch Admin on from their profile page (POST /auth/access), which is
+ * remembered on that device. Read at sign-in and when a sign-in is rebuilt. It can't give
+ * anyone more than the admin list does: ignored for anyone not on it.
+ */
+export const ACCESS_COOKIE = 'dtv-access';
+
+export function chosenAccess(req: Request): 'admin' | 'checkin' {
+  return req.cookies?.[ACCESS_COOKIE] === 'admin' ? 'admin' : 'checkin';
+}
+
 function loginsListGuid(): string {
   return sharePoint.lists.logins;
 }

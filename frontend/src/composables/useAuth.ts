@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue'
 export interface AuthUser {
   displayName: string
   role: 'admin' | 'checkin' | 'selfservice'
+  /** On the admin list: may switch Admin on or off on their own profile (role is the one in use). */
+  canBeAdmin?: boolean
   profileSlug?: string
   profileStats?: {
     sessionsByFY: Record<string, number>

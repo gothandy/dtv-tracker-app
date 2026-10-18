@@ -11,7 +11,20 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 | **Self-Service** | Yes (verification code on email) | View own profile, register for sessions, upload own photos. Cannot view other volunteers' data. Matched via Profile **`Email`**. |
 | **Public** | No | Limited access to non-privacy data (sessions, groups, stats) |
 
+> **Admins work as Check In by default.** Someone on `TRACKER_ADMIN_USERS` signs in with Check In access; *To Admin* in the action bar of their own profile page turns Admin on (and *To Assist* off again), at once and remembered on that device (`dtv-access` cookie, `POST /auth/access`). Safer day to day, and a real test of what Check In can do, since the server applies the role in use everywhere. The choice can't give anyone more than the admin list does. To see the app as Self-Service, sign in with the email code instead of Microsoft.
+
 > **"Trusted" (Microsoft)** = **Admin ∪ Check In** — both require a **Profile `User`** link to the volunteer’s Microsoft sign-in email. There is **no** Microsoft “read-only” fallback: if Entra succeeds but no profile **`User`** matches, sign-in is **rejected** (`/login?reason=dtv-not-authorised`) and no session is opened (this is **not** the same as browsing as Public). **Self-Service** is not trusted for other volunteers’ PII.
+
+## Permissions table
+
+[`types/permissions.ts`](../types/permissions.ts) says which roles have each **permission**; the screens (`useViewer().can(...)`, a route's `meta.permission`) and the API (`requirePermission(...)`) both ask it, so moving a permission is a one-line change there. Today it covers email templates; the rest of this page still describes role checks, which move over to the table as each page is next touched (#293).
+
+| Permission | Roles | Gives |
+|---|---|---|
+| `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
+| `editTemplates` | Admin | *Edit in SharePoint* on a template's page |
+| `editProjects` | Admin | *New project* and *Edit* on a project (name, key, description, status, tag): `POST /api/projects`, `PATCH /api/projects/:key`. Deleting a project stays Admin-only. |
+| `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page |
 
 ## Configuration
 
@@ -41,7 +54,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 |------|--------|
 | Dashboard, Groups list, Group detail, Sessions list | Full view (no volunteer names/emails) |
 | Session detail | Session info, stats, tags, public photos; entries and free parking hidden |
-| Volunteers list | Redirected to `/login` |
+| Profiles page | Redirected to `/login` |
 | Profile detail | Redirected to `/login` |
 | Add entry, Entry detail, Admin | Redirected to `/login` |
 
@@ -53,7 +66,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | Group detail | Group info, stats, sessions; regulars list **hidden** (shows "You are a regular" message if applicable) |
 | Session detail | Session info, entries visible; check-in, set-hours, refresh, edit **hidden** |
 | Sessions list | Advanced search/tag filter available; CSV download and checkboxes **hidden** |
-| Volunteers list | **Blocked** — redirected (API returns 403) |
+| Profiles page | **Blocked** — redirected (API returns 403) |
 | Profile detail (own) | View own stats, entries, groups; edit profile **hidden**; duplicates/linked profiles **hidden** |
 | Profile detail (other) | **403** — page shows "You don't have permission to view this profile" with back link |
 | Entry detail (own) | View own entry; Upload button visible |
@@ -71,10 +84,11 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Groups list** | Full view, regulars count | — | — |
 | **Group detail** | Group info, stats, sessions, regulars list | Add session, Eventbrite button (adds a one-off event; opens the series on a series group) | Edit button |
 | **Sessions list** | Full view | CSV download, checkboxes (Advanced) | Add Tags, Update Project buttons |
-| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
+| **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Send Email (Session templates), Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
-| **Volunteers list** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email |
+| **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | Edit in SharePoint (`editTemplates`) |
+| **Profiles page** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email (Profile templates) |
 | **Profile detail** | Redirected (auth required) | Edit profile (name/email/match name), Regulars checkboxes, inline hours (own profile only), Collect Consent | **`User`** field in edit modal, Add Record, record pill editing, inline hours (all profiles), Transfer, Delete Profile |
 | **Consent page** | Redirected (auth required) | Full access | Full access |
 | **Admin** | Redirected (auth required) | — | Eventbrite sync, Exports, Site link |
@@ -133,7 +147,6 @@ Self-service users **cannot** access:
 | PATCH | `/entries/:id` | Check-in toggle, set hours |
 | POST | `/sessions` | Create session (Add session, Add from Eventbrite) |
 | PATCH | `/sessions/:group/:date` | Edit session title/description |
-| PATCH | `/projects/:key` | Edit project fields and metadata tags |
 | PATCH | `/profiles/:slug` | Edit profile name/email |
 | POST | `/sessions/:group/:date/entries` | Add entry to session |
 | POST | `/profiles` | Create new profile |
@@ -156,7 +169,8 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | POST | `/groups` | Create group |
 | PATCH | `/groups/:key` | Edit group |
 | DELETE | `/groups/:key` | Delete group |
-| POST | `/projects` | Create project |
+| POST | `/projects` | Create project (permission `editProjects`, Admin for now) |
+| PATCH | `/projects/:key` | Edit project fields and its tag (permission `editProjects`, Admin for now) |
 | POST | `/projects/:key/attachments` | Upload project documents to `Projects/{key}/` |
 | DELETE | `/projects/:key/attachments/:itemId` | Delete a project document |
 | DELETE | `/projects/:key` | Delete project |
@@ -166,7 +180,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | PATCH | `/records/:id` | Edit record |
 | DELETE | `/records/:id` | Delete record |
 | POST | `/records/bulk` | Bulk create/update records |
-| POST | `/profiles/bulk-email` | Bulk send Handlebars email to selected profiles |
+| POST | `/profiles/bulk-email` | Send a Profile email template to selected profiles |
 | POST | `/entries/bulk` | Bulk add entries for profiles to a future session (skips anyone with any existing entry, including cancelled) |
 | POST | `/profiles/:slug/transfer` | Transfer profile |
 | DELETE | `/profiles/:slug` | Delete profile |
@@ -197,7 +211,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 
 ### Frontend
 
-1. **`useViewer()`** ([`frontend/src/composables/useViewer.ts`](../frontend/src/composables/useViewer.ts)): Fetches **`/auth/me`**. **`hasCheckInAccess`** = Admin or Check In (check-in tier). **`isTrusted`** = same. **`RoleContext`** is passed into presentational components (e.g. session cards).
+1. **`useViewer()`** ([`frontend/src/composables/useViewer.ts`](../frontend/src/composables/useViewer.ts)): Fetches **`/auth/me`**. **`can(permission)`** asks the permissions table; prefer it to role checks. **`hasCheckInAccess`** = Admin or Check In (check-in tier). **`isTrusted`** = same. **`RoleContext`** is passed into presentational components (e.g. session cards).
 
 2. **CSS classes** (see [`frontend/src/main.css`](../frontend/src/main.css) / layouts): **`admin-only`**, **`checkin-only`**, **`trusted-only`**, **`selfservice-only`**, etc., gate visibility.
 

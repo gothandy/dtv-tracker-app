@@ -13,8 +13,8 @@ require('dotenv').config();
 const { sharePoint } = require('../dist/backend/config');
 const { sharePointClient } = require('../dist/backend/services/sharepoint-client');
 const { recordsRepository } = require('../dist/backend/services/repositories/records-repository');
+const { findSharePointIds } = require('../dist/backend/services/sharepoint-ids');
 
-const RECORDS_LIST_GUID = sharePoint.lists.records;
 
 const EXPECTED_TYPES = ['Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card'];
 const EXPECTED_STATUSES = ['Accepted', 'Declined', 'Invited', 'Expired'];
@@ -33,6 +33,8 @@ function assert(label, condition, detail = '') {
 }
 
 async function main() {
+  await findSharePointIds();
+  const RECORDS_LIST_GUID = sharePoint.lists.records;
     console.log('Records list integration tests\n');
 
     // --- Column choices (used by the volunteers page filter) ---

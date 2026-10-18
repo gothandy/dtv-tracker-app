@@ -10,6 +10,8 @@ declare module 'express-session' {
       profileSlug?: string;
       profileId?: number;       // set for checkin and selfservice; used for ownership enforcement
       profileIds?: number[];    // all profiles for this email (selfservice with multiple linked profiles)
+      /** On the admin list: may switch between admin and checkin on their profile (role is the one in use). */
+      canBeAdmin?: boolean;
       trustedRole?: 'admin' | 'checkin'; // selfservice user whose email also matches a trusted account; indicates which role
       freshAuthAt?: string;             // ISO timestamp of last fresh authentication (Auth list Created date)
       profileStats?: {

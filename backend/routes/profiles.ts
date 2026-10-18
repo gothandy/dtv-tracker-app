@@ -26,7 +26,8 @@ import {
   parseEmails,
 } from '../services/data-layer';
 import { renderEmail } from '../services/email-renderer';
-import { buildProfileTemplateVars, PROFILE_EMAIL_TEMPLATES, type ProfileEmailTemplate } from '../services/email-vars';
+import { buildProfileTemplateVars } from '../services/email-vars';
+import { templatesRepository } from '../services/repositories/templates-repository';
 import { sendEmail } from '../services/graph-mail';
 import { assertSafeRecipient, UnsafeRecipientError } from '../services/email-safe-list';
 import { appKeyProblemMessage } from '../services/entra-auth-errors';
@@ -509,9 +510,9 @@ router.post('/records/bulk', async (req: Request, res: Response) => {
 
 router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
   try {
-    const { profileIds, template, preview } = req.body as {
+    const { profileIds, templateId, preview } = req.body as {
       profileIds?: unknown;
-      template?: string;
+      templateId?: unknown;
       preview?: boolean;
     };
 
@@ -519,9 +520,12 @@ router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: 'profileIds array is required' });
       return;
     }
-    const templateName = (template as ProfileEmailTemplate) || 'membership-invite';
-    if (!PROFILE_EMAIL_TEMPLATES.includes(templateName)) {
-      res.status(400).json({ success: false, error: `Unknown template: ${template}` });
+    const templateNumber = Number(templateId);
+    const template = Number.isInteger(templateNumber)
+      ? await templatesRepository.getForContext(templateNumber, 'Profile')
+      : undefined;
+    if (!template) {
+      res.status(400).json({ success: false, error: 'Choose a profile email template' });
       return;
     }
 
@@ -560,13 +564,8 @@ router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
     }
 
     const renderAndSend = async (profile: SharePointProfile, toEmail: string) => {
-      const vars = buildProfileTemplateVars(
-        templateName,
-        profile,
-        base,
-        recordsForProfile(profile.ID),
-      );
-      const rendered = await renderEmail(templateName, vars);
+      const vars = buildProfileTemplateVars(profile, base, recordsForProfile(profile.ID));
+      const rendered = await renderEmail(template, vars);
       await sendEmail({ to: toEmail, subject: rendered.subject, html: rendered.html, text: rendered.text });
     };
 

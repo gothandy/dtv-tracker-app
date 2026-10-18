@@ -39,6 +39,7 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import TermPicker from '../TermPicker.vue'
+import { matchesTag } from '../../utils/tagFilter'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import type { RoleContext } from '../../composables/useViewer'
 import type { MediaStatus } from '../../types/session'
@@ -123,11 +124,7 @@ function applyProject(list: Session[]): Session[] {
 }
 
 function applyTag(list: Session[]): Session[] {
-  if (!tagLabel.value) return list
-  if (tagLabel.value === '__none__') return list.filter(s => !s.metadata?.length)
-  return list.filter(s =>
-    s.metadata?.some(t => t.label === tagLabel.value || t.label.startsWith(tagLabel.value + ':')) ?? false
-  )
+  return list.filter(s => matchesTag(s.metadata, tagLabel.value))
 }
 
 function applyMedia(list: Session[]): Session[] {

@@ -45,7 +45,8 @@ import {
   projectDocUrlForFilename,
 } from '../services/project-docs-service';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
-import { normalizeMetadataTagsInput, updateListItemMetadata } from '../services/metadata-tags';
+import { requirePermission } from '../middleware/require-permission';
+import { normalizeMetadataTagsInput, updateListItemMetadata, type MetadataTag } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
 
 /** Top-level folder in the Documents library drive (same level as Backups/). */
@@ -164,6 +165,40 @@ function mapSessionsToResponses(
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/**
+ * A status from a request: undefined if not given, null to clear it, or one of the
+ * Status column's choices. Anything else is refused.
+ */
+async function requestedStatus(value: unknown): Promise<{ status?: string | null; error?: string }> {
+  if (value === undefined) return {};
+  if (value === null || value === '') return { status: null };
+  const choices = await projectsRepository.statusChoices();
+  if (typeof value === 'string' && choices.includes(value)) return { status: value };
+  return { error: `Status must be one of: ${choices.join(', ')}` };
+}
+
+// GET /api/projects/options — the Status column's choices, as set in SharePoint.
+router.get('/projects/options', async (_req: Request, res: Response) => {
+  try {
+    const statuses = await projectsRepository.statusChoices();
+    res.json({ success: true, data: { statuses } });
+  } catch (error: any) {
+    console.error('Error fetching project options:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch project options' });
+  }
+});
+
+/**
+ * A project's tag from a request: null if not given, [] to clear it, or one tag. The
+ * Projects list's Metadata column holds a single tag, so more than one is refused rather
+ * than SharePoint silently keeping just one.
+ */
+function requestedProjectTag(metadata: unknown): { tags: MetadataTag[] | null; error?: string } {
+  const tags = normalizeMetadataTagsInput(metadata);
+  if (tags && tags.length > 1) return { tags: null, error: 'A project can have only one tag' };
+  return { tags };
+}
+
 router.get('/projects', async (_req: Request, res: Response) => {
   try {
     const raw = await projectsRepository.getAll();
@@ -177,6 +212,7 @@ router.get('/projects', async (_req: Request, res: Response) => {
         key: (p.lookupKeyName || '').toLowerCase(),
         displayName: p.displayName,
         description: p.description,
+        status: p.status,
         metadata: metadata.length ? metadata : undefined,
       };
     });
@@ -227,6 +263,7 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
       key: (project.lookupKeyName || '').toLowerCase(),
       displayName: project.displayName,
       description: project.description,
+      status: project.status,
       metadata: metadata.length ? metadata : undefined,
       stats,
       sessions,
@@ -373,9 +410,20 @@ router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Re
   }
 });
 
-router.post('/projects', async (req: Request, res: Response) => {
+router.post('/projects', requirePermission('editProjects'), async (req: Request, res: Response) => {
   try {
     const { key, name, description } = req.body;
+    const { status, error: statusError } = await requestedStatus(req.body.status);
+    if (statusError) {
+      res.status(400).json({ success: false, error: statusError });
+      return;
+    }
+
+    const { tags, error: tagError } = requestedProjectTag(req.body.metadata);
+    if (tagError) {
+      res.status(400).json({ success: false, error: tagError });
+      return;
+    }
 
     if (!key || typeof key !== 'string' || !key.trim()) {
       res.status(400).json({ success: false, error: 'Key is required' });
@@ -405,13 +453,15 @@ router.post('/projects', async (req: Request, res: Response) => {
       return;
     }
 
-    const fields: { Title: string; Name: string; Description?: string } = {
+    const fields: { Title: string; Name: string; Description?: string; Status?: string } = {
       Title: key.trim(),
       Name: nameTrimmed,
     };
     if (typeof description === 'string' && description.trim()) fields.Description = description.trim();
+    if (status) fields.Status = status;
 
     const id = await projectsRepository.create(fields);
+    if (tags?.length) await updateListItemMetadata(sharePoint.lists.projects, id, PROJECT_METADATA, tags);
     res.json({
       success: true,
       data: { id, key: fields.Title.toLowerCase(), displayName: fields.Name },
@@ -426,7 +476,7 @@ router.post('/projects', async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/projects/:key', async (req: Request, res: Response) => {
+router.patch('/projects/:key', requirePermission('editProjects'), async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();
     const { displayName, description, key: newKeyRaw, metadata } = req.body;
@@ -440,6 +490,12 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       fields.Name = displayName.trim();
     }
     if (typeof description === 'string') fields.Description = description;
+    const { status, error: statusError } = await requestedStatus(req.body.status);
+    if (statusError) {
+      res.status(400).json({ success: false, error: statusError });
+      return;
+    }
+    if (status !== undefined) fields.Status = status;
     if (typeof newKeyRaw === 'string' && newKeyRaw.trim()) {
       if (/\s/.test(newKeyRaw.trim())) {
         res.status(400).json({ success: false, error: 'Key cannot contain spaces' });
@@ -448,7 +504,11 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       fields.Title = newKeyRaw.trim();
     }
 
-    const metadataTags = normalizeMetadataTagsInput(metadata);
+    const { tags: metadataTags, error: tagError } = requestedProjectTag(metadata);
+    if (tagError) {
+      res.status(400).json({ success: false, error: tagError });
+      return;
+    }
 
     if (Object.keys(fields).length === 0 && metadataTags === null) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -503,7 +563,7 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
     }
 
     if (Object.keys(fields).length > 0) {
-      await projectsRepository.updateFields(spProject.ID, fields as Record<string, string>);
+      await projectsRepository.updateFields(spProject.ID, fields as Parameters<typeof projectsRepository.updateFields>[1]);
     }
     if (metadataTags !== null) {
       await updateListItemMetadata(sharePoint.lists.projects, spProject.ID, PROJECT_METADATA, metadataTags);

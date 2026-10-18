@@ -73,7 +73,7 @@ Volunteer attendance records are personal data. The list endpoint is Admin-only.
 | `/api/entries/:id` | DELETE | SS (own) / Admin | Delete entry |
 | `/api/entries/:id/upload-context` | GET | SS (own) / Trusted | Volunteer name and session context for upload page |
 | `/api/entries/:id/photos` | POST | SS (own) / Check In+ | Upload photos to entry |
-| `/api/entries/:id/notify` | POST | Check In+ | Send session notification email to volunteer. `{ check: true }` only checks the recipient may be emailed (403 if not), sending nothing |
+| `/api/entries/:id/notify` | POST | Check In+ | Send a Session email template to the entry's volunteer: `{ templateId, preview? }`. `{ check: true }` only checks the recipient may be emailed (403 if not), sending nothing |
 
 ## Profiles
 
@@ -102,7 +102,7 @@ Consent and governance records are personal data. All write access is Admin-only
 |---|---|---|---|
 | `/api/records/export` | GET | Admin | Export records as CSV |
 | `/api/records/bulk` | POST | Admin | Bulk create or update records |
-| `/api/profiles/bulk-email` | POST | Admin | Bulk send profile email (`membership-invite`) |
+| `/api/profiles/bulk-email` | POST | Admin | Send a Profile email template to the selected profiles: `{ profileIds, templateId, preview? }` |
 | `/api/records/:id` | PATCH | Admin | Update record |
 | `/api/records/:id` | DELETE | Admin | Delete record |
 
@@ -151,13 +151,22 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/api/backup/export-all` | POST | Admin / API key | Export all 6 lists + taxonomy + schema to SharePoint Backups folder |
+| `/api/backup/export-all` | POST | Admin / API key | Export the lists (groups, projects, sessions, entries, profiles, regulars, records, templates) + taxonomy + schema to SharePoint Backups folder |
+
+## Projects
+
+| Endpoint | Method | Access | Description |
+|---|---|---|---|
+| `/api/projects/options` | GET | Public | The Projects list's Status choices, from the SharePoint column: `{ statuses }` |
+
+Projects (`/api/projects`, `/api/projects/:key`) include `status` when set. `POST /api/projects` and `PATCH /api/projects/:key` take `status`: one of the choices, or `''` / `null` for none; anything else is refused (400). They also take `metadata`: the project's one tag as `[{ label, termGuid }]`, or `[]` for none; the Projects list holds a single tag, so more than one is refused (400).
 
 ## Email
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/api/email/render` | POST | Admin | Render email template with provided variables |
+| `/api/templates[?context=Session]` | GET | `viewTemplates` | Email templates, all or one context's (`Session` or `Profile`), by title: `{ id, title, context, subject, text }` |
+| `/api/templates/:id` | GET | `viewTemplates` | One template, with `preview: { subject, html, text }` rendered from made-up data for its context, and `editUrl` (its SharePoint edit form) for `editTemplates` |
 
 ## Auth
 
@@ -166,6 +175,7 @@ Auth routes are not under `/api/` and are not subject to `requireAuth` or `requi
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/auth/me` | GET | Public | Current session user |
+| `/auth/access` | POST | On the admin list | `{ role: 'admin' \| 'checkin' }`: switch Admin on or off for this sign-in, remembered on the device (Admins work as Check In by default) |
 | `/auth/sign-out` | GET | Public | End the sign-in (Logins row, cookies, session); after a Microsoft sign-in, also signs out of Microsoft |
 | `/auth/sign-in` | GET | Public | Start a Microsoft (DTV account) sign-in |
 | `/auth/signed-in` | GET | Public | Microsoft returns here after sign-in |

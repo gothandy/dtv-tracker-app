@@ -40,7 +40,7 @@ TRACKER_ADMIN_USERS=you@dtv.org.uk
 TRACKER_SHARED_MAILBOX=preview.tracker@deantrailvolunteers.org.uk
 ```
 
-List IDs, drive IDs and the term set are fixed values in `backend/config.ts`, so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.
+List and library addresses and the term set are fixed values in `backend/config.ts` (the tracker looks up their IDs on the site), so they aren't in `.env`. If a setting is missing, the app starts with a page naming it.
 
 Build, verify your credentials reach the preview site, then run:
 

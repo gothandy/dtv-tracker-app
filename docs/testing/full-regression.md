@@ -12,6 +12,9 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ## HIGH PRIORITY — Write Operations
 
 ### H1. Authentication & Permissions
+- [ ] Admin (on `TRACKER_ADMIN_USERS`) signs in with Microsoft → works as **Tracker Assist** (Check In): no Tools, no Admin-only buttons; Admin-only APIs refuse (403)
+- [ ] Own profile page → action bar *To Admin* (up arrow; tooltip *Switch to Tracker Admin*; *To Assist* has a down arrow) → Admin straight away; remembered after signing out and in again on the same device; *To Assist* turns it off
+- [ ] The switch shows only on your own profile, and only for people on the admin list; `POST /auth/access` from anyone else → 403
 
 - [ ] Unauthenticated visit to `/` (homepage) loads without redirect — stats, sessions, groups nav cards visible; volunteers nav card hidden; admin button hidden; header shows "Log in" button
 - [ ] Unauthenticated visit to `/sessions` loads without redirect
@@ -259,10 +262,11 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
 ### H23b. Bulk send email (admin)
-- [ ] Volunteers page → select profiles with emails → "Send Email" enabled; profiles without email excluded from count
-- [ ] Modal: template dropdown (Membership Invite); preview checkbox defaults on
-- [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, template, preview: true }` → one email to signed-in admin
-- [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, template, preview? }`; sends to all selected profiles with email
+- [ ] Profiles page → select profiles with emails → "Send Email" enabled; profiles without email excluded from count
+- [ ] Modal: template dropdown lists the Profile templates from the Templates list (spinner while loading); Send disabled until one is chosen; preview checkbox defaults on
+- [ ] Preview: `POST /api/profiles/bulk-email` with `{ profileIds, templateId, preview: true }` → one email to signed-in admin
+- [ ] Send: `POST /api/profiles/bulk-email` — `{ profileIds, templateId, preview? }`; sends to all selected profiles with email
+- [ ] A Session template's ID is refused (400)
 - [ ] Group profiles and profiles without email skipped (`skipped` count in response)
 - [ ] Arrives from the `TRACKER_SHARED_MAILBOX` setting
 
@@ -444,16 +448,20 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Arrow-key navigation (left/right) scrolls the carousel
 - [ ] Breadcrumb: Home > Media (Home links to `/`, Media links to `/media/`)
 
-### H32. Session email (pre-dig / pre-social / post-session)
-- [ ] Session detail → "Send Email" → template dropdown includes Pre-Dig, Pre-Social, Post-Session
-- [ ] `POST /api/entries/:id/notify` with `template: pre-dig` — email sent to volunteer
+### H32. Session email (templates from the Templates list)
+- [ ] Session detail → "Send Email" → template dropdown lists the Session templates (spinner while loading); Send disabled until one is chosen
+- [ ] `POST /api/entries/:id/notify` with `templateId` of a Session template — email sent to volunteer; a Profile template's ID is refused (400)
+- [ ] Change a row's Subject in SharePoint → the next send uses it within 5 minutes (straight away after Tools → *Clear all server caches*)
+- [ ] Add a new Session row → it appears in Send Email
 - [ ] Pre-Dig includes dig clothing/tools guidance; Pre-Social does not
 - [ ] Send All sends to each entry with an email address
 - [ ] Description block present when session has notes; absent when no notes
 - [ ] Regular block shown for regular volunteers; absent otherwise
 - [ ] Child block shown when entry has accompanying child name; absent otherwise
-- [ ] Sandbox preview: visit `/sandbox/email-pre-dig` and `/sandbox/email-pre-social` (admin or localhost) — rendered email with conditional blocks exercised
-- [ ] `POST /api/email/render` with `template: pre-dig` or `pre-social` returns rendered subject/html/text
+- [ ] Templates page (`/templates`, Check In and Admin; menu *Templates*): every template as a card (name, subject, first lines of its text); filter *Show all* / *Sessions* / *Profiles*, kept in `?context=`
+- [ ] *View* → the template's page: what it's for, Subject, rendered Email and Text version from made-up data; a Handlebars mistake shows the error instead of failing
+- [ ] Admin sees *Edit in SharePoint* (opens the row's edit form); Check In doesn't
+- [ ] Self-Service and Public: `/templates` → forbidden / sign-in; `GET /api/templates` → 403
 
 ### H31. Backup export
 - [ ] Tools page (`/tools`) → "Export Backup" button → `POST /api/backup/export-all`
@@ -486,8 +494,14 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### M3a. Projects listing
 - [ ] `GET /api/projects` — all projects (public)
 - [ ] Projects page: FY filter, session/hours totals from linked sessions
-- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled) → navigates to detail
-- [ ] Cards show display name, description, sessions/hrs for selected FY
+- [ ] FY filter *Future + New*: only projects with a session still to come, or no sessions at all
+- [ ] Status filter: *All statuses* (default), each choice from the SharePoint Status column, *No status*; kept in `?status=`; a choice added in SharePoint appears here
+- [ ] Filters cascade as on Sessions: Status offers only the statuses (and *No status*) on projects the FY and tag filters leave; FY only periods with projects for the Status and tag chosen; tags only those on projects Status and FY leave
+- [ ] Tag filter (as on Sessions): pick a tag → projects with it or a tag beneath it; *No tags* → untagged projects; kept in `?tag=`; only tags on the listed projects are offered
+- [ ] Check In / Admin: *Download projects by location* → CSV: for each leaf tag (the locations; a project tagged only higher up, like just *DH*, isn't at a location) a *Location* row (number of projects or *No projects*, total sessions and hours, link to the Projects page filtered to that tag), then a *Project* row for each (status, sessions, hours, timing None/Future/Past, next and last session, full link to the project); every leaf tag listed, then *(No location)* for projects without one; uses the projects as filtered; a tag filter narrows the locations to those beneath it; *No tags* gives just *(No location)*
+- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled; Status at the bottom, default *No status*) → navigates to detail
+- [ ] Project detail → Edit: Status at the bottom; set, change and clear it
+- [ ] Cards show display name, description, status (if set), sessions/hrs for selected FY
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)

@@ -42,7 +42,7 @@ Four independent caches (NodeCache, column schema, taxonomy tree, cover image). 
 
 ## Session Email Notifications
 
-Handlebars template system (`templates/email/`). `renderEmail(template, vars)` renders templates with MSO-safe table structure via `{{#section}}` block helper. Session entry notify supports `pre-dig`, `pre-social`, and `post-session`. Profile bulk email supports `membership-invite`. Sent via Microsoft Graph Mail from the `TRACKER_SHARED_MAILBOX` setting. Outside production, only to the email safe list (`email-safe-list.ts`; see [configuration.md](../configuration.md#email-outside-production)). Sandbox preview at `POST /api/email/render`.
+Email templates are rows of the SharePoint *Templates* list (Title, Context, Subject, HTML, Text; [sharepoint-schema.md](../sharepoint-schema.md)), in Handlebars. `renderEmail(template, vars)` wraps the HTML in `templates/email/base.hbs`, with MSO-safe table structure via the `{{#section}}` block helper. A template's Context (`types/email-template.ts`) decides its variables and where it's offered: Session templates from a session's *Send Email* (`POST /api/entries/:id/notify`), Profile templates from the Profiles page (`POST /api/profiles/bulk-email`). Sent via Microsoft Graph Mail from the `TRACKER_SHARED_MAILBOX` setting. Outside production, only to the email safe list (`email-safe-list.ts`; see [configuration.md](../configuration.md#email-outside-production)). Preview with made-up data: `GET /api/templates/:id` (`sampleTemplateVars`).
 
 ## Nightly Backup Export
 
