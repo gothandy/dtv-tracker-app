@@ -455,8 +455,10 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Description block present when session has notes; absent when no notes
 - [ ] Regular block shown for regular volunteers; absent otherwise
 - [ ] Child block shown when entry has accompanying child name; absent otherwise
-- [ ] Sandbox preview: visit `/sandbox/email` (admin or localhost), choose each template — rendered with made-up data for its context
-- [ ] `POST /api/email/render` with `{ templateId, vars }` returns rendered subject/html/text
+- [ ] Templates page (`/templates`, Check In and Admin; menu *Templates*): every template as a card (name, subject, first lines of its text); filter *Show all* / *Sessions* / *Profiles*, kept in `?context=`
+- [ ] *View* → the template's page: what it's for, Subject, rendered Email and Text version from made-up data; a Handlebars mistake shows the error instead of failing
+- [ ] Admin sees *Edit in SharePoint* (opens the row's edit form); Check In doesn't
+- [ ] Self-Service and Public: `/templates` → forbidden / sign-in; `GET /api/templates` → 403
 
 ### H31. Backup export
 - [ ] Tools page (`/tools`) → "Export Backup" button → `POST /api/backup/export-all`

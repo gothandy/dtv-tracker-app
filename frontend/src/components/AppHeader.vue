@@ -24,6 +24,7 @@
           <RouterLink to="/projects" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Projects</RouterLink>
           <RouterLink to="/docs" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Docs</RouterLink>
           <RouterLink v-if="profile.isTrusted" to="/profiles" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Profiles</RouterLink>
+          <RouterLink v-if="profile.can('viewTemplates')" :to="templatesPath()" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Templates</RouterLink>
           <RouterLink v-if="profile.isAdmin" to="/entries" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">Entries</RouterLink>
           <RouterLink v-if="profile.isAdmin" :to="toolsPath()" @click="open = false" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors">{{ ACCESS_LABEL_ADMIN_TOOLS_PAGE }}</RouterLink>
           <button @click="openAbout" class="text-white font-bold uppercase tracking-wide text-sm py-3 border-b border-white/10 hover:text-dtv-green transition-colors text-left">About</button>
@@ -52,7 +53,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { toolsPath } from '../router'
+import { toolsPath, templatesPath } from '../router'
 import { useViewer } from '../composables/useViewer'
 import AboutModal from './AboutModal.vue'
 import { ACCESS_LABEL_ADMIN_TOOLS_PAGE, loginTierLabel } from '../utils/accessLabels'

@@ -36,14 +36,7 @@
         </nav>
       </section>
 
-      <section>
-        <h2>Emails</h2>
-        <nav>
-          <RouterLink to="/sandbox/email">Email templates</RouterLink>
-        </nav>
-      </section>
-
-      <section>
+            <section>
         <h2>Widgets</h2>
         <nav>
           <RouterLink to="/sandbox/calendar-widget">CalendarWidget</RouterLink>

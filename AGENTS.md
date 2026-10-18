@@ -109,6 +109,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
+- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with a preview from made-up data ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
 - Governance docs page at `/docs` — public; reads SharePoint `Docs/` folder; PDFs via tracker proxy ([DocsPage.vue](frontend/src/pages/DocsPage.vue))
 
 ---
@@ -300,6 +301,8 @@ The Profiles list also has a `Stats` JSON field storing `hoursByFY`, `sessionsBy
 - Entries default Count to 1, Checked to false
 
 ### Permissions / Authorization
+
+**Permissions table:** [`types/permissions.ts`](types/permissions.ts) says which roles have each permission. New code asks `can(...)` (`useViewer().can`, route `meta.permission`, `requirePermission` on the server), never "is this an Admin?"; older checks move over as each page is touched (#293).
 
 - Four app permission levels (+ Microsoft auth rules): **Admin** (`TRACKER_ADMIN_USERS` + Profile `User` — full system), **Check In** (Profile `User` only — field-day ops), **Self-Service** (Profile `Email` / verification code — own data), **Public** (unauthenticated).
 - Capability stack (additive): **Public** ⊆ **Check In tier** ⊆ **Admin tier** (`admin = public + check-in + admin-only`). UI should be additive (admin sees check-in surface plus extra controls), not unrelated “modes”.

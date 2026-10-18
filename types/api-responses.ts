@@ -397,9 +397,20 @@ export interface UnmatchedEventResponse {
   seriesId: string | null
 }
 
-/** GET /api/templates: an email template to choose from in Send Email. */
+/** GET /api/templates: an email template, as listed. */
 export interface TemplateResponse {
   id: number
   title: string
   context: TemplateContext
+  /** Handlebars source, as in the Templates list */
+  subject: string
+  /** Handlebars source of the plain-text version */
+  text: string
+}
+
+/** GET /api/templates/:id: a template with a preview rendered from made-up data for its context. */
+export interface TemplateDetailResponse extends TemplateResponse {
+  preview: { subject: string; html: string; text: string }
+  /** The row's edit form in SharePoint; only for those who can edit templates */
+  editUrl?: string
 }

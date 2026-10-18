@@ -13,6 +13,15 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 
 > **"Trusted" (Microsoft)** = **Admin ∪ Check In** — both require a **Profile `User`** link to the volunteer’s Microsoft sign-in email. There is **no** Microsoft “read-only” fallback: if Entra succeeds but no profile **`User`** matches, sign-in is **rejected** (`/login?reason=dtv-not-authorised`) and no session is opened (this is **not** the same as browsing as Public). **Self-Service** is not trusted for other volunteers’ PII.
 
+## Permissions table
+
+[`types/permissions.ts`](../types/permissions.ts) says which roles have each **permission**; the screens (`useViewer().can(...)`, a route's `meta.permission`) and the API (`requirePermission(...)`) both ask it, so moving a permission is a one-line change there. Today it covers email templates; the rest of this page still describes role checks, which move over to the table as each page is next touched (#293).
+
+| Permission | Roles | Gives |
+|---|---|---|
+| `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
+| `editTemplates` | Admin | *Edit in SharePoint* on a template's page |
+
 ## Configuration
 
 **Microsoft (Check In / Admin):** A volunteer **Profiles** row must have **`User`** set to the person’s DTV Microsoft email. **Admin** additionally requires that email in **`TRACKER_ADMIN_USERS`** (comma-separated, case-insensitive):
@@ -74,6 +83,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Send Email (Session templates), Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
+| **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | Edit in SharePoint (`editTemplates`) |
 | **Profiles page** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email (Profile templates) |
 | **Profile detail** | Redirected (auth required) | Edit profile (name/email/match name), Regulars checkboxes, inline hours (own profile only), Collect Consent | **`User`** field in edit modal, Add Record, record pill editing, inline hours (all profiles), Transfer, Delete Profile |
 | **Consent page** | Redirected (auth required) | Full access | Full access |
@@ -197,7 +207,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 
 ### Frontend
 
-1. **`useViewer()`** ([`frontend/src/composables/useViewer.ts`](../frontend/src/composables/useViewer.ts)): Fetches **`/auth/me`**. **`hasCheckInAccess`** = Admin or Check In (check-in tier). **`isTrusted`** = same. **`RoleContext`** is passed into presentational components (e.g. session cards).
+1. **`useViewer()`** ([`frontend/src/composables/useViewer.ts`](../frontend/src/composables/useViewer.ts)): Fetches **`/auth/me`**. **`can(permission)`** asks the permissions table; prefer it to role checks. **`hasCheckInAccess`** = Admin or Check In (check-in tier). **`isTrusted`** = same. **`RoleContext`** is passed into presentational components (e.g. session cards).
 
 2. **CSS classes** (see [`frontend/src/main.css`](../frontend/src/main.css) / layouts): **`admin-only`**, **`checkin-only`**, **`trusted-only`**, **`selfservice-only`**, etc., gate visibility.
 

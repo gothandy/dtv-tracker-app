@@ -3,6 +3,7 @@ import { SharePointSession } from '../../types/session';
 import { SharePointGroup } from '../../types/group';
 import { extractMetadataTags, safeParseLookupId, sessionScheduleFields, formatSessionTimeRangeProse, parseEmails } from './data-layer';
 import type { SharePointRecord } from '../../types/sharepoint';
+import type { TemplateContext } from '../../types/email-template';
 import {
   SESSION_NOTES, SESSION_METADATA, PROFILE_DISPLAY, ENTRY_CANCELLED,
 } from './field-names';
@@ -159,4 +160,40 @@ export function buildProfileTemplateVars(
   const charityMembershipDate = record?.Date ? formatRecordDate(record.Date) : null;
 
   return { baseUrl, name, email, loginUrl, charityMembershipDate };
+}
+
+// ============================================================================
+// Made-up variables, for previewing a template
+// ============================================================================
+
+/** Variables for previewing a template of each context: made up, but the same shape as a real send. */
+export function sampleTemplateVars(context: TemplateContext, baseUrl: string): Record<string, unknown> {
+  if (context === 'Profile') {
+    const vars: ProfileEmailVars = {
+      baseUrl,
+      name: 'Alice Example',
+      email: 'alice@example.com',
+      loginUrl: buildProfileLoginUrl(baseUrl, 'alice@example.com'),
+      charityMembershipDate: '1 April 2024',
+    };
+    return vars;
+  }
+  const sessionUrl = `${baseUrl}/sessions/sheepskull/2026-04-23`;
+  const vars: SessionTemplateVars = {
+    baseUrl,
+    volunteerName: 'Alice Example',
+    groupName: 'Sheepskull',
+    sessionTitle: 'Spring Conservation Day',
+    formattedDateShort: '23 April',
+    formattedDateLong: 'Thursday, 23 April 2026',
+    formattedTime: '9:30 to 12:30 (about 3 hours)',
+    description: 'Meet at the usual car park.\nBring waterproofs.',
+    sessionUrl,
+    loginUrl: `${baseUrl}/login?returnTo=${encodeURIComponent('/sessions/sheepskull/2026-04-23')}`,
+    myChildNames: 'Ben Example',
+    isRegular: true,
+    isMember: true,
+    tags: '#DH #Sheepskull #Endo',
+  };
+  return vars;
 }

@@ -157,8 +157,8 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/api/templates?context=Session` | GET | Check In+ | Email templates for one context (`Session` or `Profile`), by title: `{ id, title, context }` |
-| `/api/email/render` | POST | Admin | Render a template with provided variables, for the sandbox: `{ templateId, vars }` |
+| `/api/templates[?context=Session]` | GET | `viewTemplates` | Email templates, all or one context's (`Session` or `Profile`), by title: `{ id, title, context, subject, text }` |
+| `/api/templates/:id` | GET | `viewTemplates` | One template, with `preview: { subject, html, text }` rendered from made-up data for its context, and `editUrl` (its SharePoint edit form) for `editTemplates` |
 
 ## Auth
 
