@@ -45,7 +45,7 @@ import {
   projectDocUrlForFilename,
 } from '../services/project-docs-service';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
-import { normalizeMetadataTagsInput, updateListItemMetadata } from '../services/metadata-tags';
+import { normalizeMetadataTagsInput, updateListItemMetadata, type MetadataTag } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
 
 /** Top-level folder in the Documents library drive (same level as Backups/). */
@@ -186,6 +186,17 @@ router.get('/projects/options', async (_req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Failed to fetch project options' });
   }
 });
+
+/**
+ * A project's tag from a request: null if not given, [] to clear it, or one tag. The
+ * Projects list's Metadata column holds a single tag, so more than one is refused rather
+ * than SharePoint silently keeping just one.
+ */
+function requestedProjectTag(metadata: unknown): { tags: MetadataTag[] | null; error?: string } {
+  const tags = normalizeMetadataTagsInput(metadata);
+  if (tags && tags.length > 1) return { tags: null, error: 'A project can have only one tag' };
+  return { tags };
+}
 
 router.get('/projects', async (_req: Request, res: Response) => {
   try {
@@ -407,6 +418,12 @@ router.post('/projects', async (req: Request, res: Response) => {
       return;
     }
 
+    const { tags, error: tagError } = requestedProjectTag(req.body.metadata);
+    if (tagError) {
+      res.status(400).json({ success: false, error: tagError });
+      return;
+    }
+
     if (!key || typeof key !== 'string' || !key.trim()) {
       res.status(400).json({ success: false, error: 'Key is required' });
       return;
@@ -443,6 +460,7 @@ router.post('/projects', async (req: Request, res: Response) => {
     if (status) fields.Status = status;
 
     const id = await projectsRepository.create(fields);
+    if (tags?.length) await updateListItemMetadata(sharePoint.lists.projects, id, PROJECT_METADATA, tags);
     res.json({
       success: true,
       data: { id, key: fields.Title.toLowerCase(), displayName: fields.Name },
@@ -485,7 +503,11 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       fields.Title = newKeyRaw.trim();
     }
 
-    const metadataTags = normalizeMetadataTagsInput(metadata);
+    const { tags: metadataTags, error: tagError } = requestedProjectTag(metadata);
+    if (tagError) {
+      res.status(400).json({ success: false, error: tagError });
+      return;
+    }
 
     if (Object.keys(fields).length === 0 && metadataTags === null) {
       res.status(400).json({ success: false, error: 'No valid fields to update' });

@@ -42,6 +42,15 @@ describe('resolveMetadataTags', () => {
     const resolved = resolveMetadataTags([{ label: 'Corkscrew', termGuid: 'guid-cork' }], tree)
     expect(resolved[0].label).toBe('DH:Corkscrew')
   })
+
+  it('finds a bare name with no term ID when only one term has it', () => {
+    expect(resolveMetadataTags([{ label: 'Corkscrew', termGuid: '' }], tree)[0].label).toBe('DH:Corkscrew')
+  })
+
+  it('leaves a bare name alone when more than one term has it', () => {
+    const twoCorks: TaxNode[] = [...tree, { id: 'guid-xc', label: 'XC', children: [{ id: 'guid-xc-cork', label: 'Corkscrew' }] }]
+    expect(resolveMetadataTags([{ label: 'Corkscrew', termGuid: '' }], twoCorks)[0].label).toBe('Corkscrew')
+  })
 })
 
 describe('taxonomyPathParts', () => {

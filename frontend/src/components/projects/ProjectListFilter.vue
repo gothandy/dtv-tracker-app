@@ -22,6 +22,7 @@ import { useRoute, useRouter } from 'vue-router'
 import TermPicker from '../TermPicker.vue'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import { matchesTag } from '../../utils/tagFilter'
+import { resolveMetadataTags } from '../../utils/taxonomyPath'
 import type { ProjectResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
 import {
@@ -53,6 +54,12 @@ const tagLabel = ref((route.query.tag as string) || '')
 
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
+// SharePoint often gives a project's tags as the term's own name ("Corkscrew"), not its
+// path ("DH:Corkscrew"); the picker and the filter work in paths, so look each one up.
+const projects = computed<ProjectResponse[]>(() => props.projects.map(p => p.metadata?.length
+  ? { ...p, metadata: resolveMetadataTags(p.metadata, taxonomyTree.value) }
+  : p))
+
 const linkSession = (p: ProjectResponse, s: Session) => s.projectId === p.id
 
 // Each filter narrows the list, and each offers only what the other two leave (as on Sessions).
@@ -64,7 +71,7 @@ function byFy(list: ProjectResponse[]): ProjectResponse[] {
 }
 
 const fyOptions = computed(() => {
-  const others = byStatus(byTag(props.projects))
+  const others = byStatus(byTag(projects.value))
   const options = fyOptionsForEntities(others, props.sessions, linkSession)
   if (others.some(p => isFutureOrNew(p, props.sessions, linkSession))) {
     options.push({ value: FUTURE_OR_NEW, label: 'Future + New' })
@@ -74,7 +81,7 @@ const fyOptions = computed(() => {
 
 // Status choices in SharePoint's order, but only those on the projects FY and tags leave.
 const statusOptions = computed(() => {
-  const others = byFy(byTag(props.projects))
+  const others = byFy(byTag(projects.value))
   const present = new Set(others.map(p => p.status ?? ''))
   return [
     { value: ALL_STATUSES, label: 'All statuses' },
@@ -85,12 +92,12 @@ const statusOptions = computed(() => {
 
 const availableTagLabels = computed(() => {
   const labels = new Set<string>()
-  for (const p of byStatus(byFy(props.projects))) p.metadata?.forEach(t => labels.add(t.label))
+  for (const p of byStatus(byFy(projects.value))) p.metadata?.forEach(t => labels.add(t.label))
   return labels
 })
 
 const filtered = computed<ProjectWithStats[]>(() =>
-  withSessionTotals(byTag(byFy(byStatus(props.projects))), props.sessions, linkSession,
+  withSessionTotals(byTag(byFy(byStatus(projects.value))), props.sessions, linkSession,
     fy.value === FUTURE_OR_NEW ? 'future' : fy.value),
 )
 

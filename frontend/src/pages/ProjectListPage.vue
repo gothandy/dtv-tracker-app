@@ -72,7 +72,7 @@ async function onAddProject(data: AddProjectPayload) {
     const res = await fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: data.key, name: data.name, description: data.description, status: data.status }),
+      body: JSON.stringify({ key: data.key, name: data.name, description: data.description, status: data.status, metadata: data.metadata }),
     })
     if (!res.ok) {
       const json = await res.json().catch(() => ({}))

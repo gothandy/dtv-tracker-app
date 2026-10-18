@@ -6,7 +6,7 @@
     :working="working"
     :error="error"
     @close="emit('close')"
-    @action="emit('add', { key: form.key.trim(), name: form.name.trim(), description: form.description.trim() || undefined, status: form.status })"
+    @action="add"
   >
     <FormLayout :disabled="working">
       <FormRow title="Display Name" :full-width="true">
@@ -24,6 +24,18 @@
           <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
         </ModalFormSelect>
       </FormRow>
+      <FormRow title="Tag" :full-width="true">
+        <TermPicker
+          v-model="form.tag"
+          :tree="tree"
+          :loading="taxonomyLoading"
+          :disabled="!!taxonomyError"
+          all-label="No tag"
+          placeholder="No tag"
+          @select="(_label, termGuid) => form.termGuid = termGuid"
+        />
+        <p v-if="taxonomyError" class="modal-form-error">{{ taxonomyError }}</p>
+      </FormRow>
     </FormLayout>
   </ModalLayout>
 </template>
@@ -36,6 +48,8 @@ import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
+import TermPicker from '../../components/TermPicker.vue'
+import { useTaxonomy } from '../../composables/useTaxonomy'
 
 export type AddProjectPayload = {
   key: string
@@ -43,6 +57,8 @@ export type AddProjectPayload = {
   description?: string
   /** One of the Status choices, or '' for none */
   status: string
+  /** The project's one tag, or [] for none */
+  metadata: Array<{ label: string; termGuid: string }>
 }
 
 defineProps<{
@@ -57,5 +73,17 @@ const emit = defineEmits<{
   add: [payload: AddProjectPayload]
 }>()
 
-const form = reactive({ key: '', name: '', description: '', status: '' })
+const { tree, loading: taxonomyLoading, error: taxonomyError } = useTaxonomy()
+
+const form = reactive({ key: '', name: '', description: '', status: '', tag: '', termGuid: '' })
+
+function add() {
+  emit('add', {
+    key: form.key.trim(),
+    name: form.name.trim(),
+    description: form.description.trim() || undefined,
+    status: form.status,
+    metadata: form.tag ? [{ label: form.tag, termGuid: form.termGuid }] : [],
+  })
+}
 </script>
