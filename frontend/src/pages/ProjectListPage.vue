@@ -6,6 +6,7 @@
       <ProjectListFilter
         :projects="projectsStore.projects"
         :sessions="sessionsStore.sessions"
+        :statuses="statuses"
         @filtered="filtered = $event"
       />
       <ProjectListActions
@@ -23,6 +24,7 @@
 
     <ProjectAddModal
       v-if="showAddProject"
+      :statuses="statuses"
       :working="addProjectWorking"
       :error="addProjectError"
       @close="showAddProject = false; addProjectError = ''"
@@ -47,6 +49,7 @@ import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
 import { projectPath } from '../router'
 import type { ProjectWithStats } from '../components/projects/ProjectListFilter.vue'
+import { fetchProjectStatuses } from '../utils/projectStatuses'
 
 usePageTitle('Projects')
 
@@ -58,6 +61,7 @@ const filtered = ref<ProjectWithStats[]>([])
 const showAddProject = ref(false)
 const addProjectWorking = ref(false)
 const addProjectError = ref('')
+const statuses = ref<string[]>([])
 
 async function onAddProject(data: AddProjectPayload) {
   addProjectWorking.value = true
@@ -66,7 +70,7 @@ async function onAddProject(data: AddProjectPayload) {
     const res = await fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: data.key, name: data.name, description: data.description }),
+      body: JSON.stringify({ key: data.key, name: data.name, description: data.description, status: data.status }),
     })
     if (!res.ok) {
       const json = await res.json().catch(() => ({}))
@@ -87,5 +91,8 @@ async function onAddProject(data: AddProjectPayload) {
 onMounted(() => {
   projectsStore.fetch()
   sessionsStore.fetch()
+  fetchProjectStatuses()
+    .then(list => { statuses.value = list })
+    .catch(e => console.error('[ProjectListPage] load statuses', e))
 })
 </script>

@@ -39,6 +39,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Name** | Name | Single line of text | No | Display name |
 | **Description** | Description | Multiple lines of text | No | Project description |
 | **Metadata** | Metadata | Managed metadata | No | Taxonomy tags (same term set as Sessions) |
+| **Status** | Status | Choice | No | The project's status. The tracker reads the choices from the column (`GET /api/projects/options`), so adding a choice here adds it to the filter and the Add/Edit modals |
 | *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`) |
 
 ---

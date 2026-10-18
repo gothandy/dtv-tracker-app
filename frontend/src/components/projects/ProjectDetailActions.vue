@@ -8,6 +8,7 @@
     <ProjectEditModal
       v-if="showEdit"
       :project="project"
+      :statuses="statuses"
       :working="workingEdit"
       :error="editError"
       @close="showEdit = false"
@@ -38,6 +39,8 @@ import { shareCurrentUrl } from '../../utils/shareUrl'
 defineProps<{
   project: ProjectDetailResponse
   profile: RoleContext
+  /** The Projects list's Status choices, for Edit */
+  statuses: string[]
 }>()
 
 const emit = defineEmits<{

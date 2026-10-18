@@ -21,6 +21,12 @@
       <FormRow title="Description" :full-width="true">
         <ModalFormTextarea v-model="form.description" />
       </FormRow>
+      <FormRow title="Status" :full-width="true">
+        <ModalFormSelect v-model="form.status">
+          <option value="">No status</option>
+          <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+        </ModalFormSelect>
+      </FormRow>
     </FormLayout>
   </ModalLayout>
 </template>
@@ -33,15 +39,20 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormTextarea from '../../components/forms/ModalFormTextarea.vue'
+import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 
 export type EditProjectPayload = {
   displayName: string
   key: string
   description?: string
+  /** One of the Status choices, or '' for none */
+  status: string
 }
 
 const props = defineProps<{
   project: ProjectDetailResponse
+  /** The Projects list's Status choices */
+  statuses: string[]
   working: boolean
   error?: string
 }>()
@@ -56,6 +67,7 @@ const form = reactive({
   name: props.project.displayName ?? '',
   key: props.project.key,
   description: props.project.description ?? '',
+  status: props.project.status ?? '',
 })
 
 function save() {
@@ -63,6 +75,7 @@ function save() {
     displayName: form.name.trim(),
     key: form.key.trim(),
     description: form.description.trim() || undefined,
+    status: form.status,
   })
 }
 </script>

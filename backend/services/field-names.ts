@@ -25,6 +25,7 @@ export const SESSION_NOTES       = 'Notes';
 export const SESSION_METADATA    = 'Metadata';
 export const PROJECT_DESCRIPTION = 'Description';
 export const PROJECT_METADATA    = 'Metadata';
+export const PROJECT_STATUS      = 'Status';   // Choice; options come from the column (GET /api/projects/options)
 export const SESSION_COVER_MEDIA = 'CoverMediaLookupId'; // Lookup to Media library (ID field, consistent with GROUP_LOOKUP pattern)
 export const SESSION_STATS       = 'Stats';  // Pre-computed JSON stats stored on Session items (avoid full entries scan on listing views)
 export const SESSION_LIMITS      = 'Limits'; // Per-session capacity limits JSON: {"new": 4, "total": 16}

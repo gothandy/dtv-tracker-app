@@ -228,6 +228,7 @@ export function convertProject(spProject: SharePointProject): Project {
     lookupKeyName: spProject.Title,
     displayName: spProject.Name,
     description: spProject.Description,
+    status: spProject.Status || undefined,
   };
 }
 

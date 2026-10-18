@@ -9,6 +9,8 @@ export interface SharePointProject extends SharePointBaseItem {
   Name?: string;
   Description?: string;
   Metadata?: string;
+  /** Choice column; empty when not set. */
+  Status?: string | null;
   [key: string]: unknown;
 }
 
@@ -17,4 +19,5 @@ export interface Project {
   lookupKeyName: string;
   displayName?: string;
   description?: string;
+  status?: string;
 }

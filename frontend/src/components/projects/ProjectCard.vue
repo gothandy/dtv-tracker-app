@@ -6,6 +6,7 @@
     </div>
     <div class="list-item-card__footer">
       <div class="list-item-card__stats">
+        <span v-if="project.status"><strong>{{ project.status }}</strong></span>
         <span><strong>{{ project.sessionCount }}</strong> sessions</span>
         <span><strong>{{ Math.round(project.hours) }}</strong> hrs</span>
       </div>

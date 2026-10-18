@@ -494,8 +494,11 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### M3a. Projects listing
 - [ ] `GET /api/projects` — all projects (public)
 - [ ] Projects page: FY filter, session/hours totals from linked sessions
-- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled) → navigates to detail
-- [ ] Cards show display name, description, sessions/hrs for selected FY
+- [ ] FY filter *Future + New*: only projects with a session still to come, or no sessions at all
+- [ ] Status filter: *All statuses* (default), each choice from the SharePoint Status column, *No status*; kept in `?status=`; a choice added in SharePoint appears here
+- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled; Status at the bottom, default *No status*) → navigates to detail
+- [ ] Project detail → Edit: Status at the bottom; set, change and clear it
+- [ ] Cards show display name, description, status (if set), sessions/hrs for selected FY
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)

@@ -164,6 +164,29 @@ function mapSessionsToResponses(
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/**
+ * A status from a request: undefined if not given, null to clear it, or one of the
+ * Status column's choices. Anything else is refused.
+ */
+async function requestedStatus(value: unknown): Promise<{ status?: string | null; error?: string }> {
+  if (value === undefined) return {};
+  if (value === null || value === '') return { status: null };
+  const choices = await projectsRepository.statusChoices();
+  if (typeof value === 'string' && choices.includes(value)) return { status: value };
+  return { error: `Status must be one of: ${choices.join(', ')}` };
+}
+
+// GET /api/projects/options — the Status column's choices, as set in SharePoint.
+router.get('/projects/options', async (_req: Request, res: Response) => {
+  try {
+    const statuses = await projectsRepository.statusChoices();
+    res.json({ success: true, data: { statuses } });
+  } catch (error: any) {
+    console.error('Error fetching project options:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch project options' });
+  }
+});
+
 router.get('/projects', async (_req: Request, res: Response) => {
   try {
     const raw = await projectsRepository.getAll();
@@ -177,6 +200,7 @@ router.get('/projects', async (_req: Request, res: Response) => {
         key: (p.lookupKeyName || '').toLowerCase(),
         displayName: p.displayName,
         description: p.description,
+        status: p.status,
         metadata: metadata.length ? metadata : undefined,
       };
     });
@@ -227,6 +251,7 @@ router.get('/projects/:key', async (req: Request, res: Response) => {
       key: (project.lookupKeyName || '').toLowerCase(),
       displayName: project.displayName,
       description: project.description,
+      status: project.status,
       metadata: metadata.length ? metadata : undefined,
       stats,
       sessions,
@@ -376,6 +401,11 @@ router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Re
 router.post('/projects', async (req: Request, res: Response) => {
   try {
     const { key, name, description } = req.body;
+    const { status, error: statusError } = await requestedStatus(req.body.status);
+    if (statusError) {
+      res.status(400).json({ success: false, error: statusError });
+      return;
+    }
 
     if (!key || typeof key !== 'string' || !key.trim()) {
       res.status(400).json({ success: false, error: 'Key is required' });
@@ -405,11 +435,12 @@ router.post('/projects', async (req: Request, res: Response) => {
       return;
     }
 
-    const fields: { Title: string; Name: string; Description?: string } = {
+    const fields: { Title: string; Name: string; Description?: string; Status?: string } = {
       Title: key.trim(),
       Name: nameTrimmed,
     };
     if (typeof description === 'string' && description.trim()) fields.Description = description.trim();
+    if (status) fields.Status = status;
 
     const id = await projectsRepository.create(fields);
     res.json({
@@ -440,6 +471,12 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
       fields.Name = displayName.trim();
     }
     if (typeof description === 'string') fields.Description = description;
+    const { status, error: statusError } = await requestedStatus(req.body.status);
+    if (statusError) {
+      res.status(400).json({ success: false, error: statusError });
+      return;
+    }
+    if (status !== undefined) fields.Status = status;
     if (typeof newKeyRaw === 'string' && newKeyRaw.trim()) {
       if (/\s/.test(newKeyRaw.trim())) {
         res.status(400).json({ success: false, error: 'Key cannot contain spaces' });
@@ -503,7 +540,7 @@ router.patch('/projects/:key', async (req: Request, res: Response) => {
     }
 
     if (Object.keys(fields).length > 0) {
-      await projectsRepository.updateFields(spProject.ID, fields as Record<string, string>);
+      await projectsRepository.updateFields(spProject.ID, fields as Parameters<typeof projectsRepository.updateFields>[1]);
     }
     if (metadataTags !== null) {
       await updateListItemMetadata(sharePoint.lists.projects, spProject.ID, PROJECT_METADATA, metadataTags);

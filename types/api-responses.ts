@@ -49,6 +49,8 @@ export interface ProjectResponse {
   key: string;
   displayName?: string;
   description?: string;
+  /** One of the Projects list's Status choices; absent when not set */
+  status?: string;
   metadata?: Array<{ label: string; termGuid: string }>;
 }
 
