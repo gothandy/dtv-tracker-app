@@ -2,6 +2,15 @@
   <div class="pda-wrap">
     <AppButton label="Edit" icon="edit" mode="icon-responsive" @click="showEdit = true" />
     <AppButton
+      v-if="switchAccessTo"
+      :label="switchAccessTo === 'admin' ? 'To Admin' : 'To Assist'"
+      :title="`Switch to ${switchAccessTo === 'admin' ? ACCESS_LABEL_ADMIN : ACCESS_LABEL_CHECK_IN}`"
+      :icon="switchAccessTo === 'admin' ? 'arrows/up' : 'arrows/down'"
+      mode="icon-responsive"
+      :working="accessWorking"
+      @click="emit('switchAccess', switchAccessTo)"
+    />
+    <AppButton
       v-if="allowTransfer"
       label="Transfer"
       icon="transfer"
@@ -51,12 +60,16 @@ import AppButton from '../AppButton.vue'
 import ProfileEditModal, { type EditProfilePayload } from '../../pages/modals/ProfileEditModal.vue'
 import ProfileTransferModal, { type TransferProfilePayload } from '../../pages/modals/ProfileTransferModal.vue'
 import DeleteModal from '../../pages/modals/DeleteModal.vue'
+import { ACCESS_LABEL_ADMIN, ACCESS_LABEL_CHECK_IN } from '../../utils/accessLabels'
 
 const props = defineProps<{
   profile: ProfileDetailResponse
   showUser: boolean
   allowTransfer: boolean
   profiles: PickerProfile[]
+  /** On your own profile, if you're on the admin list: the access to switch to. */
+  switchAccessTo?: 'admin' | 'checkin' | null
+  accessWorking?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -64,6 +77,7 @@ const emit = defineEmits<{
   deleteProfile: []
   transferOpen: []
   transferProfile: [data: TransferProfilePayload]
+  switchAccess: [role: 'admin' | 'checkin']
 }>()
 
 const canDelete = computed(() =>

@@ -59,13 +59,6 @@
             v-if="viewer.hasCheckInAccess && store.profile.linkedProfiles?.length"
             :linked-profiles="store.profile.linkedProfiles"
           />
-          <ProfileAccessSwitch
-            v-if="isOwnAdminProfile"
-            :is-admin="viewer.isAdmin"
-            :working="accessWorking"
-            :error="accessError"
-            @switch="onSwitchAccess"
-          />
         </template>
         <template #right>
           <ProfileDetailActions
@@ -75,11 +68,15 @@
             :show-user="viewer.isAdmin"
             :allow-transfer="viewer.isAdmin"
             :profiles="transferProfiles"
+            :switch-access-to="isOwnAdminProfile ? (viewer.isAdmin ? 'checkin' : 'admin') : null"
+            :access-working="accessWorking"
+            @switch-access="onSwitchAccess"
             @edit-profile="onEditProfile"
             @delete-profile="onDeleteProfile"
             @transfer-open="onTransferOpen"
             @transfer-profile="onTransferProfile"
           />
+          <p v-if="accessError" class="pd-access-error">{{ accessError }}</p>
           <ProfileWarnings
             v-if="viewer.hasCheckInAccess && store.profile.warnings?.length"
             :warnings="store.profile.warnings!"
@@ -188,7 +185,6 @@ import ProfileEntryList from '../components/profiles/ProfileEntryList.vue'
 import ProfileDetailActions from '../components/profiles/ProfileDetailActions.vue'
 import ProfileWarnings from '../components/profiles/ProfileWarnings.vue'
 import ProfileLinkedAccounts from '../components/profiles/ProfileLinkedAccounts.vue'
-import ProfileAccessSwitch from '../components/profiles/ProfileAccessSwitch.vue'
 import ProfileRecordList from '../components/profiles/ProfileRecordList.vue'
 import RegularList from '../components/RegularList.vue'
 import EntryListItem from '../components/entries/EntryListItem.vue'
@@ -708,6 +704,11 @@ async function onChildDelete() {
 </script>
 
 <style scoped>
+.pd-access-error {
+  margin: 0.5rem 0 0;
+  color: var(--color-dtv-red);
+}
+
 .pd-error { padding: 1.5rem; color: var(--color-dtv-dirt); }
 
 .pd-header {
