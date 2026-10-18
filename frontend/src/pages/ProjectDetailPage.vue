@@ -33,6 +33,7 @@
             :project="store.project"
             :profile="profile.context"
             :statuses="projectStatuses"
+            :statuses-error="projectStatusesError"
             @edit-project="onEditProject"
             @delete-project="onDeleteProject"
           />
@@ -120,7 +121,7 @@ import type { SessionResponse } from '../../../types/api-responses'
 import type { Session } from '../types/session'
 import type { MediaItem } from '../types/media'
 import type { EditProjectPayload } from './modals/ProjectEditModal.vue'
-import { fetchProjectStatuses } from '../utils/projectStatuses'
+import { fetchProjectStatuses, STATUSES_ERROR } from '../utils/projectStatuses'
 import { buildSessionCoverCarouselItems } from '../utils/sessionCarousel'
 
 const route = useRoute()
@@ -129,9 +130,13 @@ const store = useProjectDetailStore()
 const profile = useViewer()
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 const projectStatuses = ref<string[]>([])
+const projectStatusesError = ref('')
 fetchProjectStatuses()
   .then(list => { projectStatuses.value = list })
-  .catch(e => console.error('[ProjectDetailPage] load statuses', e))
+  .catch(e => {
+    console.error('[ProjectDetailPage] load statuses', e)
+    projectStatusesError.value = STATUSES_ERROR
+  })
 
 const actionsRef = ref<InstanceType<typeof ProjectDetailActions> | null>(null)
 const tagWorking = ref(false)

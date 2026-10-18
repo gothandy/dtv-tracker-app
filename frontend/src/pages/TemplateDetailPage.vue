@@ -24,7 +24,8 @@
 
       <section v-if="template.preview.html" class="td-panel">
         <h2>Email</h2>
-        <div class="td-html" v-html="template.preview.html" />
+        <!-- Sandboxed: the template's markup can't run scripts or reach the tracker, and its styles stay inside. -->
+        <iframe class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
       </section>
 
       <section class="td-panel">
@@ -104,8 +105,10 @@ onMounted(async () => {
 }
 
 .td-html {
+  display: block;
+  width: 100%;
+  height: 70vh;
   border: 1px solid var(--color-border);
-  overflow: hidden;
 }
 
 .td-text {

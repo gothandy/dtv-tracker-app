@@ -10,7 +10,7 @@
       :project="project"
       :statuses="statuses"
       :working="workingEdit"
-      :error="editError"
+      :error="editError || statusesError"
       @close="showEdit = false"
       @save="onSaveEdit"
       @delete="showEdit = false; showDelete = true"
@@ -41,6 +41,8 @@ defineProps<{
   profile: RoleContext
   /** The Projects list's Status choices, for Edit */
   statuses: string[]
+  /** Set when the choices couldn't be loaded */
+  statusesError?: string
 }>()
 
 const emit = defineEmits<{

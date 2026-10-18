@@ -27,7 +27,7 @@
       v-if="showAddProject"
       :statuses="statuses"
       :working="addProjectWorking"
-      :error="addProjectError"
+      :error="addProjectError || statusesError"
       @close="showAddProject = false; addProjectError = ''"
       @add="onAddProject"
     />
@@ -50,7 +50,7 @@ import { useSessionListStore } from '../stores/sessionList'
 import { useViewer } from '../composables/useViewer'
 import { projectPath } from '../router'
 import type { ProjectWithStats } from '../components/projects/ProjectListFilter.vue'
-import { fetchProjectStatuses } from '../utils/projectStatuses'
+import { fetchProjectStatuses, STATUSES_ERROR } from '../utils/projectStatuses'
 
 usePageTitle('Projects')
 
@@ -63,6 +63,7 @@ const showAddProject = ref(false)
 const addProjectWorking = ref(false)
 const addProjectError = ref('')
 const statuses = ref<string[]>([])
+const statusesError = ref('')
 
 async function onAddProject(data: AddProjectPayload) {
   addProjectWorking.value = true
@@ -94,6 +95,9 @@ onMounted(() => {
   sessionsStore.fetch()
   fetchProjectStatuses()
     .then(list => { statuses.value = list })
-    .catch(e => console.error('[ProjectListPage] load statuses', e))
+    .catch(e => {
+      console.error('[ProjectListPage] load statuses', e)
+      statusesError.value = STATUSES_ERROR
+    })
 })
 </script>

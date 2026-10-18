@@ -151,7 +151,7 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/api/backup/export-all` | POST | Admin / API key | Export all 6 lists + taxonomy + schema to SharePoint Backups folder |
+| `/api/backup/export-all` | POST | Admin / API key | Export the lists (groups, projects, sessions, entries, profiles, regulars, records, templates) + taxonomy + schema to SharePoint Backups folder |
 
 ## Projects
 

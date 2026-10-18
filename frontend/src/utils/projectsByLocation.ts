@@ -18,11 +18,14 @@ export const PROJECTS_BY_LOCATION_HEADERS = [
   'Sessions', 'Hours', 'Timing', 'Next session', 'Last session', 'Link',
 ]
 
-/** Every tag in the term set as a colon path, in the term set's order, with its depth (1 = top). */
-function flattenTerms(nodes: TaxNode[], prefix = '', level = 1): Array<{ path: string; level: number }> {
+/** Location label for projects with no leaf (location) tag. */
+export const NO_LOCATION = '(No location)'
+
+/** The term set's leaf tags (the locations) as colon paths, in the term set's order, with their depth (1 = top). */
+function leafTerms(nodes: TaxNode[], prefix = '', level = 1): Array<{ path: string; level: number }> {
   return nodes.flatMap(node => {
     const path = prefix ? `${prefix}:${node.label}` : node.label
-    return [{ path, level }, ...flattenTerms(node.children ?? [], path, level + 1)]
+    return node.children?.length ? leafTerms(node.children, path, level + 1) : [{ path, level }]
   })
 }
 
@@ -30,11 +33,12 @@ const isUnder = (label: string, path: string) => label === path || label.startsW
 const round1 = (n: number) => Math.round(n * 10) / 10
 
 /**
- * Projects by location, for a CSV. For each tag: a Location row with the totals of its
- * projects, then a Project row for each. A project counts for its own tags and every tag
- * above them; a tag with no projects has a Location row saying "No projects". Projects run
- * no sessions first, then future (soonest first), then past (latest first). With a tag
- * filter, only that tag and the tags beneath it. Sessions and hours are for the page's FY.
+ * Projects by location, for a CSV. The locations are the term set's leaf tags; a project
+ * tagged only higher up (e.g. just "DH") isn't at a location. For each location: a Location
+ * row with the totals of its projects ("No projects" if none), then a Project row for each,
+ * no sessions first, then future (soonest first), then past (latest first). Projects with no
+ * location tag go under "(No location)" at the end. With a tag filter, only the locations
+ * beneath it; with "No tags", just "(No location)". Sessions and hours are for the page's FY.
  */
 export function projectsByLocationRows(
   projects: LocationProject[],
@@ -44,7 +48,9 @@ export function projectsByLocationRows(
   origin: string,
   todayIso: string = new Date().toISOString().slice(0, 10),
 ): Array<Array<string | number>> {
-  const terms = flattenTerms(tree).filter(t => !tagFilter || tagFilter === NO_TAGS || isUnder(t.path, tagFilter))
+  const allLeaves = leafTerms(tree)
+  const leaves = tagFilter === NO_TAGS ? [] : allLeaves.filter(t => !tagFilter || isUnder(t.path, tagFilter))
+  const atLocation = (p: LocationProject, path: string) => p.metadata?.some(m => isUnder(m.label, path)) ?? false
 
   const timing = new Map(projects.map(p => {
     const dates = sessions.filter(s => s.projectId === p.id).map(s => s.date.slice(0, 10)).sort()
@@ -63,16 +69,15 @@ export function projectsByLocationRows(
     return 0
   }
 
-  return terms.flatMap(({ path, level }) => {
-    const top = path.split(':')[0]
-    const here = projects.filter(p => p.metadata?.some(m => isUnder(m.label, path))).sort(byTiming)
+  const locationRows = (path: string, top: string, level: number | string, here: LocationProject[]) => {
+    here = [...here].sort(byTiming)
     const sessionTotal = here.reduce((sum, p) => sum + p.sessionCount, 0)
     const hourTotal = round1(here.reduce((sum, p) => sum + p.hours, 0))
-    const locationRow = [
+    const locationRow: Array<string | number> = [
       'Location', path, top, level,
       here.length ? `${here.length} project${here.length === 1 ? '' : 's'}` : 'No projects', '',
       sessionTotal, hourTotal, '', '', '',
-      `${origin}/projects?tag=${encodeURIComponent(path)}`,
+      path === NO_LOCATION ? '' : `${origin}/projects?tag=${encodeURIComponent(path)}`,
     ]
     return [locationRow, ...here.map(p => {
       const t = timing.get(p.id)!
@@ -82,5 +87,12 @@ export function projectsByLocationRows(
         `${origin}/projects/${encodeURIComponent(p.key)}`,
       ]
     })]
-  })
+  }
+
+  const rows = leaves.flatMap(({ path, level }) =>
+    locationRows(path, path.split(':')[0], level, projects.filter(p => atLocation(p, path))))
+
+  const unlocated = projects.filter(p => !allLeaves.some(l => atLocation(p, l.path)))
+  if (unlocated.length) rows.push(...locationRows(NO_LOCATION, '', '', unlocated))
+  return rows
 }

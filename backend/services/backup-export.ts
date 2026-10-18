@@ -12,7 +12,7 @@ import { taxonomyClient } from './taxonomy-client';
 import { sharePoint } from '../config';
 
 /** Lists exported to Backups/{name}.json. Logins (token hashes) are deliberately excluded. */
-const BACKED_UP_LISTS = ['groups', 'projects', 'sessions', 'entries', 'profiles', 'regulars', 'records'] as const;
+const BACKED_UP_LISTS = ['groups', 'projects', 'sessions', 'entries', 'profiles', 'regulars', 'records', 'templates'] as const;
 
 export interface BackupResult {
   updated: string[];
