@@ -14,7 +14,7 @@ export interface LocationProject {
 }
 
 export const PROJECTS_BY_LOCATION_HEADERS = [
-  'Row', 'Location', 'Top level', 'Tag', 'Project', 'Project status',
+  'Location', 'Top level', 'Trail', 'Tag', 'Project', 'Project status',
   'Sessions', 'Hours', 'Timing', 'Next session', 'Last session', 'Link',
 ]
 
@@ -34,13 +34,13 @@ const isUnder = (label: string, path: string) => label === path || label.startsW
 const round1 = (n: number) => Math.round(n * 10) / 10
 
 /**
- * Projects by location, for a CSV. The locations are the term set's second-level tags
- * (locationTerms). For each location: a Location
- * row with the totals of its projects ("No projects" if none), then a Project row for each
- * with its own tag in full (e.g. "XC:Adit:TNT"),
- * no sessions first, then future (soonest first), then past (latest first). Projects with no
- * location tag go under "(No location)" at the end. With a tag filter, only the locations
- * beneath it, or the one it's beneath; with "No tags", just "(No location)". Sessions and hours are for the page's FY.
+ * Projects by location, for a CSV: one row per project, by location (the term set's
+ * second-level tags, locationTerms), with its trail ("Adit") and its own tag in full
+ * ("XC:Adit:TNT"). Within a location: no sessions first, then future (soonest first), then
+ * past (latest first). A location with no projects gets one "No projects" row. Projects with
+ * no location tag go under "(No location)" at the end. With a tag filter, only the locations
+ * beneath it, or the one it's beneath; with "No tags", just "(No location)". Sessions and
+ * hours are for the page's FY.
  */
 export function projectsByLocationRows(
   projects: LocationProject[],
@@ -76,30 +76,24 @@ export function projectsByLocationRows(
     return 0
   }
 
-  const locationRows = (path: string, top: string, here: LocationProject[]) => {
-    here = [...here].sort(byTiming)
-    const sessionTotal = here.reduce((sum, p) => sum + p.sessionCount, 0)
-    const hourTotal = round1(here.reduce((sum, p) => sum + p.hours, 0))
-    const locationRow: Array<string | number> = [
-      'Location', path, top, '',
-      here.length ? `${here.length} project${here.length === 1 ? '' : 's'}` : 'No projects', '',
-      sessionTotal, hourTotal, '', '', '',
-      path === NO_LOCATION ? '' : `${origin}/projects?tag=${encodeURIComponent(path)}`,
-    ]
-    return [locationRow, ...here.map(p => {
+  const locationRows = (path: string, here: LocationProject[]): Array<Array<string | number>> => {
+    const [top, trail] = path === NO_LOCATION ? ['', ''] : path.split(':')
+    if (!here.length) {
+      return [[path, top, trail, '', 'No projects', '', 0, 0, '', '', '', `${origin}/projects?tag=${encodeURIComponent(path)}`]]
+    }
+    return [...here].sort(byTiming).map(p => {
       const t = timing.get(p.id)!
       return [
-        'Project', path, top, tagAt(p, path), p.displayName || p.key, p.status ?? '',
+        path, top, trail, tagAt(p, path), p.displayName || p.key, p.status ?? '',
         p.sessionCount, round1(p.hours), t.state, t.next, t.last,
         `${origin}/projects/${encodeURIComponent(p.key)}`,
       ]
-    })]
+    })
   }
 
-  const rows = locations.flatMap(path =>
-    locationRows(path, path.split(':')[0], projects.filter(p => atLocation(p, path))))
+  const rows = locations.flatMap(path => locationRows(path, projects.filter(p => atLocation(p, path))))
 
   const unlocated = projects.filter(p => !allLocations.some(path => atLocation(p, path)))
-  if (unlocated.length) rows.push(...locationRows(NO_LOCATION, '', unlocated))
+  if (unlocated.length) rows.push(...locationRows(NO_LOCATION, unlocated))
   return rows
 }
