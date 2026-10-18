@@ -39,6 +39,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Also stop on errors from SharePoint's module, however it's loaded.
+$PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
+
+# PowerShell 7 doesn't load SharePoint's module by itself (README.md, "Before you start").
+if ($PSVersionTable.PSEdition -eq 'Core') {
+    Import-Module Microsoft.Online.SharePoint.PowerShell -SkipEditionCheck -WarningAction SilentlyContinue
+}
 
 $AdminUrl = 'https://dtvolunteers-admin.sharepoint.com'
 $LiveSiteUrl = 'https://dtvolunteers.sharepoint.com/sites/tracker'
@@ -53,7 +60,17 @@ if ($NewSiteUrl -ieq $LiveSiteUrl) {
     throw "The new address is the live tracker site's address. Choose another."
 }
 
-Connect-SPOService -Url $AdminUrl
+# Sign in through the browser: Windows' sign-in broker fails on some machines (msalruntime).
+Connect-SPOService -Url $AdminUrl -UseSystemBrowser $true
+
+# The new address must be free: a slot's old site has to be removed first.
+$taken = $null
+try { $taken = Get-SPOSite -Identity $NewSiteUrl } catch { }
+if (-not $taken) { try { $taken = Get-SPODeletedSite -Identity $NewSiteUrl } catch { } }
+if ($taken) {
+    Disconnect-SPOService
+    throw "$NewSiteUrl is still in use (or in the deleted sites). Run ./remove-site.ps1 -Slot $Slot first."
+}
 
 $site = Get-SPOSite -Identity $SiteUrl
 Write-Host "From: $($site.Title) ($($site.Url))"

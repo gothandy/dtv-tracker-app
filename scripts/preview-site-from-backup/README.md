@@ -14,28 +14,38 @@ Install-Module Microsoft.Online.SharePoint.PowerShell -Scope CurrentUser
 
 If PowerShell asks whether to trust the PSGallery repository, answer **Y**. Each script signs you in when it runs.
 
+Run the scripts in **PowerShell 7** (`pwsh`). The SharePoint scripts load the module themselves and sign you in **through your browser** (it opens, signs in, and asks to be closed): Windows' own sign-in broker failed with *Unable to load DLL 'msalruntime'* / *No valid OAuth 2.0 authentication session exists*, in both Windows PowerShell 5.1 and 7. That needs a recent module: if `-UseSystemBrowser` isn't recognised, run `Install-Module Microsoft.Online.SharePoint.PowerShell -Scope CurrentUser -Force`.
+
 If it warns that a version is already installed under `C:\Program Files\SharePoint Online Management Shell`, that's an older copy from Microsoft's Windows installer, which `Install-Module` can't update. Uninstall **SharePoint Online Management Shell** (Windows Settings → Apps → Installed apps), then run `Install-Module` again. After that, `Update-Module Microsoft.Online.SharePoint.PowerShell` keeps it current.
 
 ## Steps
 
-1. **Restore** the live tracker site to a new site. For now, by hand: SharePoint admin centre → Backup → SharePoint → Restore → the tracker site → a restore point → **Create new sites and restore to them**. The new site is called something like `/sites/TrackerR0`; it can take up to 15 minutes to appear after the restore completes.
+1. **Restore** the live tracker site's latest **express** restore point to a new site. Microsoft 365 Backup keeps a restore point every 10 minutes, but only the express (fast restore) ones restore in minutes; others took over an hour. So a change made on live is only in the copy once there's an express point after it: the script shows the times of both and asks first, then waits and prints the new site's address, something like `/sites/TrackerR1`.
+   ```powershell
+   ./restore-site.ps1
+   ```
+   By hand instead: SharePoint admin centre → Backup → SharePoint → Restore → the tracker site → a **fast** restore point → **Create new sites and restore to them**.
 2. **Unlock** it. A restored site starts locked (`NoAdditions`: nothing new can be added), so the tracker couldn't take bookings.
    ```powershell
-   ./unlock-site.ps1 -SiteUrl https://dtvolunteers.sharepoint.com/sites/TrackerR0
+   ./unlock-site.ps1 -SiteUrl https://dtvolunteers.sharepoint.com/sites/TrackerR1
    ```
-3. **Rename** it after its slot: for `Preview`, `/sites/tracker-preview`, named **Tracker (Preview)**. The script checks first, asks before renaming, and waits until it's done.
+3. **Remove the slot's old site**, if there is one: deleted, then removed from the deleted sites, so its address is free. Permanent; it asks you to type the slot's name.
    ```powershell
-   ./rename-site.ps1 -SiteUrl https://dtvolunteers.sharepoint.com/sites/TrackerR0 -Slot Preview
+   ./remove-site.ps1 -Slot Preview
+   ```
+4. **Rename** it after its slot: for `Preview`, `/sites/tracker-preview`, named **Tracker (Preview)**. The script checks first (including that step 3 is done), asks before renaming, and waits until it's done.
+   ```powershell
+   ./rename-site.ps1 -SiteUrl https://dtvolunteers.sharepoint.com/sites/TrackerR1 -Slot Preview
    ```
    The tracker finds its lists and libraries by address, so a restore needs no change to `backend/config.ts`. The first time a slot's site is made, its address goes into `SHAREPOINT_SITES` in a PR.
-4. **Set app access.** A restore copies the live site's app access too, so Production can reach the copy until this step. The slot's registration gets the new site, every other app (e.g. Production) is removed from it, and the slot's registration is removed from the live site. It shows the changes and asks first.
+5. **Set app access.** A restore copies the live site's app access too, so Production can reach the copy until this step. The slot's registration gets the new site, every other app (e.g. Production) is removed from it, and the slot's registration is removed from the live site. It shows the changes and asks first.
    ```powershell
    ./set-app-access.ps1 -Slot Preview -ClientId <DTV Tracker (Preview) client ID>
    ```
-5. **Trim who can open it in SharePoint.** A restore copies the live site's member permissions too, so the live team (`team.tracker`, usually inside *Tracker Members*) and anyone else with access to live can open the copy directly, whatever the app allows. In *Site → Settings → Site permissions*, leave only the testers.
-6. **Point the slot at it:** set the slot's `TRACKER_SHAREPOINT_SITE_URL` to `https://dtvolunteers.sharepoint.com/sites/tracker-preview` (Azure: DTVTrackerApp → preview slot → Environment variables), and the same in your local `.env`.
+6. **Trim who can open it in SharePoint.** A restore copies the live site's member permissions too, so the live team (`team.tracker`, usually inside *Tracker Members*) and anyone else with access to live can open the copy directly, whatever the app allows. In *Site → Settings → Site permissions*, leave only the testers.
+7. **Point the slot at it:** set the slot's `TRACKER_SHAREPOINT_SITE_URL` to `https://dtvolunteers.sharepoint.com/sites/tracker-preview` (Azure: DTVTrackerApp → preview slot → Environment variables), and the same in your local `.env`.
 
-The Graph script (step 4) needs the Microsoft Graph module, as `../grant-site-access.ps1` does: `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`.
+The Graph scripts (steps 1 and 5) need the Microsoft Graph module, as `../grant-site-access.ps1` does: `Install-Module Microsoft.Graph.Sites, Microsoft.Graph.Applications -Scope CurrentUser`. The first `restore-site.ps1` asks you to consent to the Graph command-line tools' BackupRestore permissions, for your own sign-in only.
 
 ## Naming
 

@@ -30,6 +30,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Also stop on errors from SharePoint's module, however it's loaded.
+$PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
+
+# PowerShell 7 doesn't load SharePoint's module by itself (README.md, "Before you start").
+if ($PSVersionTable.PSEdition -eq 'Core') {
+    Import-Module Microsoft.Online.SharePoint.PowerShell -SkipEditionCheck -WarningAction SilentlyContinue
+}
 
 $AdminUrl = 'https://dtvolunteers-admin.sharepoint.com'
 $LiveSiteUrl = 'https://dtvolunteers.sharepoint.com/sites/tracker'
@@ -39,7 +46,8 @@ if ($SiteUrl -ieq $LiveSiteUrl) {
     throw "That's the live tracker site. This script is only for a restored copy."
 }
 
-Connect-SPOService -Url $AdminUrl
+# Sign in through the browser: Windows' sign-in broker fails on some machines (msalruntime).
+Connect-SPOService -Url $AdminUrl -UseSystemBrowser $true
 
 $site = Get-SPOSite -Identity $SiteUrl
 Write-Host "Site: $($site.Title) ($($site.Url))"
