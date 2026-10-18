@@ -10,9 +10,10 @@
         @filtered="filtered = $event"
       />
       <ProjectListActions
-        v-if="profile.isAdmin"
         :projects="filtered"
         :profile="profile.context"
+        :sessions="sessionsStore.sessions"
+        :can-download="profile.can('downloadProjectReport')"
         @add-project="showAddProject = true"
       />
       <ProjectListResults

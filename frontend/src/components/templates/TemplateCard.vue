@@ -1,8 +1,8 @@
 <template>
   <div class="list-item-card">
     <div class="list-item-card__body">
-      <p class="list-item-card__title">{{ template.title }}</p>
-      <p class="list-item-card__subtext">{{ template.subject }}</p>
+      <p class="list-item-card__title template-card__title">{{ template.title }}</p>
+      <p class="list-item-card__subtext template-card__subject">{{ template.subject }}</p>
       <p v-if="template.text" class="list-item-card__description template-card__text">{{ template.text }}</p>
     </div>
     <div class="list-item-card__footer">
@@ -23,8 +23,21 @@ defineProps<{ template: TemplateResponse }>()
 </script>
 
 <style scoped>
+/* Clear order: the name stands out, the subject next, the text quietly last. */
+.template-card__title {
+  font-size: 1.15rem;
+}
+
+.template-card__subject {
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
 /* Keep the text's line breaks, within the card's three-line clamp. */
 .template-card__text {
   white-space: pre-line;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 400;
 }
 </style>

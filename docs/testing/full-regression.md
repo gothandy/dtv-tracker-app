@@ -496,6 +496,8 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Projects page: FY filter, session/hours totals from linked sessions
 - [ ] FY filter *Future + New*: only projects with a session still to come, or no sessions at all
 - [ ] Status filter: *All statuses* (default), each choice from the SharePoint Status column, *No status*; kept in `?status=`; a choice added in SharePoint appears here
+- [ ] Tag filter (as on Sessions): pick a tag → projects with it or a tag beneath it; *No tags* → untagged projects; kept in `?tag=`; only tags on the listed projects are offered
+- [ ] Check In / Admin: *Download projects by location* → CSV: for each tag a *Location* row (number of projects or *No projects*, total sessions and hours, link to the Projects page filtered to that tag), then a *Project* row for each (status, sessions, hours, timing None/Future/Past, next and last session, full link to the project); every tag listed; uses the projects as filtered; a tag filter narrows the locations to that tag and beneath
 - [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled; Status at the bottom, default *No status*) → navigates to detail
 - [ ] Project detail → Edit: Status at the bottom; set, change and clear it
 - [ ] Cards show display name, description, status (if set), sessions/hrs for selected FY

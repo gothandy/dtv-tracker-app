@@ -23,6 +23,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 |---|---|---|
 | `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
 | `editTemplates` | Admin | *Edit in SharePoint* on a template's page |
+| `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page |
 
 ## Configuration
 

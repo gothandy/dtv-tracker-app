@@ -15,6 +15,8 @@ export const PERMISSIONS = {
   viewTemplates: ['checkin', 'admin'],
   /** Edit a template (for now, a link to its row in SharePoint). */
   editTemplates: ['admin'],
+  /** Download the Projects by location report (CSV) from the Projects page. */
+  downloadProjectReport: ['checkin', 'admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

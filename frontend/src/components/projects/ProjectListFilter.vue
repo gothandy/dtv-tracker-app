@@ -4,6 +4,13 @@
       <div class="pf-actions">
         <FyFilter v-model="status" :options="statusOptions" />
         <FyFilter v-model="fy" :options="fyOptions" />
+        <TermPicker
+          v-model="tagLabel"
+          :tree="taxonomyTree"
+          :loading="taxonomyLoading"
+          :show-no-tags="true"
+          :available-labels="availableTagLabels"
+        />
       </div>
     </div>
   </div>
@@ -13,6 +20,9 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
+import TermPicker from '../TermPicker.vue'
+import { useTaxonomy } from '../../composables/useTaxonomy'
+import { matchesTag } from '../../utils/tagFilter'
 import type { ProjectResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
 import {
@@ -40,6 +50,9 @@ const router = useRouter()
 
 const fy = ref((route.query.fy as string) || 'all')
 const status = ref((route.query.status as string) || ALL_STATUSES)
+const tagLabel = ref((route.query.tag as string) || '')
+
+const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
 
 const linkSession = (p: ProjectResponse, s: Session) => s.projectId === p.id
 
@@ -57,8 +70,17 @@ const statusOptions = computed(() => [
   { value: NO_STATUS, label: 'No status' },
 ])
 
+// Tags offered: those on projects matching the other filters (as on the Sessions list).
+const availableTagLabels = computed(() => {
+  const labels = new Set<string>()
+  for (const p of props.projects.filter(p => matchesStatus(p.status, status.value))) {
+    p.metadata?.forEach(t => labels.add(t.label))
+  }
+  return labels
+})
+
 const filtered = computed<ProjectWithStats[]>(() => {
-  const byStatus = props.projects.filter(p => matchesStatus(p.status, status.value))
+  const byStatus = props.projects.filter(p => matchesStatus(p.status, status.value) && matchesTag(p.metadata, tagLabel.value))
   if (fy.value === FUTURE_OR_NEW) {
     const futureOrNew = byStatus.filter(p => isFutureOrNew(p, props.sessions, linkSession))
     return withSessionTotals(futureOrNew, props.sessions, linkSession, 'future')
@@ -78,10 +100,11 @@ watch(statusOptions, opts => {
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
-watch([fy, status], ([newFy, newStatus]) => {
+watch([fy, status, tagLabel], ([newFy, newStatus, newTag]) => {
   const query: Record<string, string> = {}
   if (newFy) query.fy = newFy
   if (newStatus !== ALL_STATUSES) query.status = newStatus
+  if (newTag) query.tag = newTag
   router.replace({ query })
 })
 </script>
