@@ -4,7 +4,9 @@
       <span>{{ displayLabel }}</span>
       <img :src="panelOpen ? '/icons/arrows/up.svg' : '/icons/arrows/down.svg'" width="12" height="12" alt="" class="tp-chevron svg-black" />
     </button>
-    <div v-if="panelOpen" class="tp-panel">
+    <!-- On the page body, under the button, so a scrolling modal can't clip it. -->
+    <Teleport to="body">
+    <div v-if="panelOpen" ref="panelEl" class="tp-panel" :style="panelStyle">
       <div v-if="loading" class="tp-loading">Loading…</div>
       <ul v-else class="tp-tree">
         <li>
@@ -26,11 +28,12 @@
         </li>
       </ul>
     </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, type CSSProperties } from 'vue'
 import type { TaxNode } from '../composables/useTaxonomy'
 
 interface TagOption { label: string; displayLabel: string; depth: number; termGuid: string }
@@ -53,6 +56,16 @@ const emit = defineEmits<{
 
 const panelOpen = ref(false)
 const wrapEl = ref<HTMLElement | null>(null)
+const panelEl = ref<HTMLElement | null>(null)
+const panelStyle = reactive<CSSProperties>({ position: 'fixed', top: '0px', left: '0px', width: '0px', zIndex: 1000 })
+
+function updatePanelPos() {
+  if (!panelOpen.value || !wrapEl.value) return
+  const r = wrapEl.value.getBoundingClientRect()
+  panelStyle.top = `${r.bottom + 4}px`
+  panelStyle.left = `${r.left}px`
+  panelStyle.width = `${r.width}px`
+}
 
 const displayLabel = computed(() => {
   if (!props.modelValue) return props.placeholder ?? 'All tags'
@@ -86,6 +99,7 @@ function togglePanel() {
     wrapEl.value?.dispatchEvent(new CustomEvent('dropdown-opened', { bubbles: true }))
   }
   panelOpen.value = !panelOpen.value
+  updatePanelPos()
 }
 
 function onDropdownOpened(e: Event) {
@@ -100,17 +114,22 @@ function select(label: string, _display: string) {
 }
 
 function onDocClick(e: MouseEvent) {
-  if (wrapEl.value && !wrapEl.value.contains(e.target as Node)) {
+  const target = e.target as Node
+  if (wrapEl.value && !wrapEl.value.contains(target) && !panelEl.value?.contains(target)) {
     panelOpen.value = false
   }
 }
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   document.addEventListener('dropdown-opened', onDropdownOpened)
+  window.addEventListener('resize', updatePanelPos)
+  window.addEventListener('scroll', updatePanelPos, true)
 })
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('dropdown-opened', onDropdownOpened)
+  window.removeEventListener('resize', updatePanelPos)
+  window.removeEventListener('scroll', updatePanelPos, true)
 })
 </script>
 
@@ -145,17 +164,13 @@ onUnmounted(() => {
 .tp-chevron { flex-shrink: 0; margin-left: 0.5rem; }
 
 .tp-panel {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  width: 100%;
+  /* Position, width and z-index are set from the button (panelStyle). */
   min-width: 220px;
   max-height: 280px;
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--color-dtv-light);
   box-shadow: var(--shadow-md);
-  z-index: 50;
 }
 
 .tp-loading { padding: 0.75rem; font-size: 0.9rem; color: var(--color-text-muted); }
