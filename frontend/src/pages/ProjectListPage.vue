@@ -12,6 +12,7 @@
       <ProjectListActions
         :projects="filtered"
         :profile="profile.context"
+        :can-edit="profile.can('editProjects')"
         :sessions="sessionsStore.sessions"
         :can-download="profile.can('downloadProjectReport')"
         @add-project="showAddProject = true"

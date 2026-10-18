@@ -15,6 +15,8 @@ describe('can', () => {
     expect(can('checkin', 'viewTemplates')).toBe(true)
     expect(can('checkin', 'editTemplates')).toBe(false)
     expect(can('admin', 'editTemplates')).toBe(true)
+    expect(can('checkin', 'editProjects')).toBe(false)
+    expect(can('admin', 'editProjects')).toBe(true)
   })
 
   it('gives nothing to Self-Service or the public', () => {

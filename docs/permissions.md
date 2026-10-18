@@ -23,6 +23,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 |---|---|---|
 | `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
 | `editTemplates` | Admin | *Edit in SharePoint* on a template's page |
+| `editProjects` | Admin | *New project* and *Edit* on a project (name, key, description, status, tag): `POST /api/projects`, `PATCH /api/projects/:key`. Deleting a project stays Admin-only. |
 | `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page |
 
 ## Configuration
@@ -146,7 +147,6 @@ Self-service users **cannot** access:
 | PATCH | `/entries/:id` | Check-in toggle, set hours |
 | POST | `/sessions` | Create session (Add session, Add from Eventbrite) |
 | PATCH | `/sessions/:group/:date` | Edit session title/description |
-| PATCH | `/projects/:key` | Edit project fields and metadata tags |
 | PATCH | `/profiles/:slug` | Edit profile name/email |
 | POST | `/sessions/:group/:date/entries` | Add entry to session |
 | POST | `/profiles` | Create new profile |
@@ -169,7 +169,8 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | POST | `/groups` | Create group |
 | PATCH | `/groups/:key` | Edit group |
 | DELETE | `/groups/:key` | Delete group |
-| POST | `/projects` | Create project |
+| POST | `/projects` | Create project (permission `editProjects`, Admin for now) |
+| PATCH | `/projects/:key` | Edit project fields and its tag (permission `editProjects`, Admin for now) |
 | POST | `/projects/:key/attachments` | Upload project documents to `Projects/{key}/` |
 | DELETE | `/projects/:key/attachments/:itemId` | Delete a project document |
 | DELETE | `/projects/:key` | Delete project |

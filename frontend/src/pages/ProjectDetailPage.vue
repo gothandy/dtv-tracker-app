@@ -28,6 +28,7 @@
             ref="actionsRef"
             :project="store.project"
             :profile="profile.context"
+            :can-edit="profile.can('editProjects')"
             :statuses="projectStatuses"
             :statuses-error="projectStatusesError"
             @edit-project="onEditProject"

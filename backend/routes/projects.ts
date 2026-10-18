@@ -45,6 +45,7 @@ import {
   projectDocUrlForFilename,
 } from '../services/project-docs-service';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
+import { requirePermission } from '../middleware/require-permission';
 import { normalizeMetadataTagsInput, updateListItemMetadata, type MetadataTag } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
 
@@ -409,7 +410,7 @@ router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Re
   }
 });
 
-router.post('/projects', async (req: Request, res: Response) => {
+router.post('/projects', requirePermission('editProjects'), async (req: Request, res: Response) => {
   try {
     const { key, name, description } = req.body;
     const { status, error: statusError } = await requestedStatus(req.body.status);
@@ -475,7 +476,7 @@ router.post('/projects', async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/projects/:key', async (req: Request, res: Response) => {
+router.patch('/projects/:key', requirePermission('editProjects'), async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();
     const { displayName, description, key: newKeyRaw, metadata } = req.body;

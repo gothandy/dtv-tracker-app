@@ -3,7 +3,7 @@
     title="Edit Project"
     action="Save"
     action-icon="save"
-    show-delete
+    :show-delete="canDelete"
     :action-disabled="!form.key.trim() || !form.name.trim()"
     :working="working"
     :error="error"
@@ -70,6 +70,8 @@ const props = defineProps<{
   project: ProjectDetailResponse
   /** The Projects list's Status choices */
   statuses: string[]
+  /** Offer Delete (Admin only; editing is the editProjects permission) */
+  canDelete: boolean
   working: boolean
   error?: string
 }>()

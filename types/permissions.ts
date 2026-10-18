@@ -15,6 +15,8 @@ export const PERMISSIONS = {
   viewTemplates: ['checkin', 'admin'],
   /** Edit a template (for now, a link to its row in SharePoint). */
   editTemplates: ['admin'],
+  /** Add and edit projects (name, key, description, status, tag). Deleting stays Admin-only. */
+  editProjects: ['admin'],
   /** Download the Projects by location report (CSV) from the Projects page. */
   downloadProjectReport: ['checkin', 'admin'],
 } as const satisfies Record<string, readonly Role[]>;

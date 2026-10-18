@@ -1,5 +1,5 @@
 <template>
-  <div v-if="profile.isAdmin || canDownload" class="list-actions">
+  <div v-if="canEdit || canDownload" class="list-actions">
     <span class="list-actions-stats">
       {{ projects.length }} projects &nbsp;&nbsp; {{ totalHours }} hours
       <template v-if="canDownload && taxonomyError">&nbsp;&nbsp; {{ taxonomyError }} The location report is unavailable; reload to try again.</template>
@@ -14,7 +14,7 @@
         @click="onDownload"
       />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
-      <AppButton v-if="profile.isAdmin" label="New project" icon="add" mode="icon-only" @click="emit('add-project')" />
+      <AppButton v-if="canEdit" label="New project" icon="add" mode="icon-only" @click="emit('add-project')" />
     </div>
   </div>
 </template>
@@ -34,6 +34,8 @@ import type { RoleContext } from '../../composables/useViewer'
 const props = defineProps<{
   projects: ProjectWithStats[]
   profile: RoleContext
+  /** Add projects (permission editProjects) */
+  canEdit: boolean
   /** All sessions, for each project's next and last session dates. */
   sessions: Session[]
   /** May download the Projects by location report (permission downloadProjectReport). */
