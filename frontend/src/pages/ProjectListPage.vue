@@ -8,25 +8,39 @@
         :sessions="sessionsStore.sessions"
         :statuses="statuses"
         @filtered="filtered = $event"
+        @empty-trails="emptyTrails = $event"
+        @all-trails="allTrails = $event"
       />
       <ProjectListActions
         :projects="filtered"
         :profile="profile.context"
         :can-edit="profile.can('editProjects')"
         :sessions="sessionsStore.sessions"
-        :can-download="profile.can('downloadProjectReport')"
-        @add-project="showAddProject = true"
+        :can-download="profile.can('bulkProjects')"
+        :selected="selected"
+        :selected-trails="selectedTrails"
+        @add-project="onAddProjectAt('')"
       />
       <ProjectListResults
         :projects="filtered"
+        :empty-trails="emptyTrails"
+        :groups="groups"
+        :can-add="profile.can('editProjects')"
+        :selected="profile.can('bulkProjects') ? selected : undefined"
+        :selected-trails="selectedTrails"
+        @update:selected-trails="selectedTrails = $event"
         :loading="projectsStore.loading || sessionsStore.loading"
         :error="projectsStore.error"
+        @update:selected="selected = $event"
+        @add-project="onAddProjectAt"
+        @filter-tag="tag => router.replace({ query: { ...route.query, tag } })"
       />
     </div>
 
     <ProjectAddModal
       v-if="showAddProject"
       :statuses="statuses"
+      :initial-tag="addProjectTag"
       :working="addProjectWorking"
       :error="addProjectError || statusesError"
       @close="showAddProject = false; addProjectError = ''"
@@ -36,8 +50,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted } from 'vue'
+import { pruneSelectionToVisible } from '../utils/listSelection'
+import { useRoute, useRouter } from 'vue-router'
+import { useTaxonomy } from '../composables/useTaxonomy'
+import { projectsByLocation } from '../utils/projectsByLocation'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import PageHeader from '../components/PageHeader.vue'
@@ -59,8 +76,35 @@ const projectsStore = useProjectListStore()
 const sessionsStore = useSessionListStore()
 const profile = useViewer()
 const router = useRouter()
+const route = useRoute()
+const { tree } = useTaxonomy()
 const filtered = ref<ProjectWithStats[]>([])
+const emptyTrails = ref<string[]>([])
+const allTrails = ref(false)
+/** Show all trails: the projects grouped by trail, the same order as the CSV */
+const groups = computed(() => allTrails.value
+  ? projectsByLocation(filtered.value, sessionsStore.sessions, tree.value, emptyTrails.value)
+  : null)
+const selected = ref<number[]>([])
+const selectedTrails = ref<string[]>([])
 const showAddProject = ref(false)
+/** The trail a new project starts at, when added from a No projects card */
+const addProjectTag = ref('')
+
+// Keep the selection to the projects the filters show.
+watch(filtered, list => {
+  const pruned = pruneSelectionToVisible(selected.value, list)
+  if (pruned.length !== selected.value.length) selected.value = pruned
+})
+watch(emptyTrails, trails => {
+  const pruned = selectedTrails.value.filter(t => trails.includes(t))
+  if (pruned.length !== selectedTrails.value.length) selectedTrails.value = pruned
+})
+
+function onAddProjectAt(trail: string) {
+  addProjectTag.value = trail
+  showAddProject.value = true
+}
 const addProjectWorking = ref(false)
 const addProjectError = ref('')
 const statuses = ref<string[]>([])

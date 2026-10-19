@@ -22,9 +22,9 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 | Permission | Roles | Gives |
 |---|---|---|
 | `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
-| `editTemplates` | Admin | *Edit in SharePoint* on a template's page |
+| `editTemplates` | Admin | *New template* on the Templates page, and *Edit* (with Delete) on a template's page: name, subject and context (`POST`, `PATCH`, `DELETE /api/templates…`) |
 | `editProjects` | Admin | *New project* and *Edit* on a project (name, key, description, status, tag): `POST /api/projects`, `PATCH /api/projects/:key`. Deleting a project stays Admin-only. |
-| `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page |
+| `bulkProjects` | Admin | *Bulk actions* on the Projects page: *Select* / *Select all* on projects, and the *Projects by location* CSV of the selected projects (with `GET /api/projects/documents` for its Documents column) |
 
 ## Configuration
 
@@ -87,7 +87,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Send Email (Session templates), Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
-| **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | Edit in SharePoint (`editTemplates`) |
+| **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | New, Edit and Delete (`editTemplates`) |
 | **Profiles page** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email (Profile templates) |
 | **Profile detail** | Redirected (auth required) | Edit profile (name/email/match name), Regulars checkboxes, inline hours (own profile only), Collect Consent | **`User`** field in edit modal, Add Record, record pill editing, inline hours (all profiles), Transfer, Delete Profile |
 | **Consent page** | Redirected (auth required) | Full access | Full access |

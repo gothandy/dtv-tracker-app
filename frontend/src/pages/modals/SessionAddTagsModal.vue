@@ -51,9 +51,4 @@ function save() {
   color: var(--color-text-muted);
   margin: 0 0 0.5rem;
 }
-
-/* Allow the tag picker dropdown to overflow the modal body */
-:deep(.am-body) {
-  overflow: visible;
-}
 </style>

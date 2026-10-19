@@ -30,7 +30,8 @@ import {
   entitiesWithSessionsInFy,
   fyOptionsForEntities,
 } from '../../utils/entitySessionTotals'
-import { FUTURE_OR_NEW, ALL_STATUSES, NO_STATUS, isFutureOrNew, matchesStatus } from '../../utils/projectFilters'
+import { FUTURE_OR_NEW, ALL_TRAILS, ALL_STATUSES, NO_STATUS, isFutureOrNew, matchesStatus } from '../../utils/projectFilters'
+import { trailsWithoutProjects } from '../../utils/projectsByLocation'
 
 export interface ProjectWithStats extends ProjectResponse {
   sessionCount: number
@@ -43,7 +44,13 @@ const props = defineProps<{
   /** The Projects list's Status choices (GET /api/projects/options). */
   statuses: string[]
 }>()
-const emit = defineEmits<{ filtered: [projects: ProjectWithStats[]] }>()
+const emit = defineEmits<{
+  filtered: [projects: ProjectWithStats[]]
+  /** With FY "Show all trails": the trails with none of the filtered projects; otherwise none. */
+  emptyTrails: [trails: string[]]
+  /** Whether FY is "Show all trails" (the list is grouped by trail) */
+  allTrails: [on: boolean]
+}>()
 
 const route = useRoute()
 const router = useRouter()
@@ -65,9 +72,11 @@ const linkSession = (p: ProjectResponse, s: Session) => s.projectId === p.id
 // Each filter narrows the list, and each offers only what the other two leave (as on Sessions).
 const byStatus = (list: ProjectResponse[]) => list.filter(p => matchesStatus(p.status, status.value))
 const byTag = (list: ProjectResponse[]) => list.filter(p => matchesTag(p.metadata, tagLabel.value))
+/** "Show all trails" is all years, plus the trails without projects. */
+const fyValue = computed(() => fy.value === ALL_TRAILS ? 'all' : fy.value)
 function byFy(list: ProjectResponse[]): ProjectResponse[] {
   if (fy.value === FUTURE_OR_NEW) return list.filter(p => isFutureOrNew(p, props.sessions, linkSession))
-  return entitiesWithSessionsInFy(list, props.sessions, linkSession, fy.value)
+  return entitiesWithSessionsInFy(list, props.sessions, linkSession, fyValue.value)
 }
 
 const fyOptions = computed(() => {
@@ -76,6 +85,7 @@ const fyOptions = computed(() => {
   if (others.some(p => isFutureOrNew(p, props.sessions, linkSession))) {
     options.push({ value: FUTURE_OR_NEW, label: 'Future + New' })
   }
+  if (taxonomyTree.value.length) options.push({ value: ALL_TRAILS, label: 'Show all trails' })
   return options
 })
 
@@ -93,15 +103,25 @@ const statusOptions = computed(() => {
 const availableTagLabels = computed(() => {
   const labels = new Set<string>()
   for (const p of byStatus(byFy(projects.value))) p.metadata?.forEach(t => labels.add(t.label))
+  // Showing all trails: the trails without projects can be picked too.
+  if (fy.value === ALL_TRAILS) {
+    trailsWithoutProjects(byStatus(projects.value), taxonomyTree.value, '').forEach(t => labels.add(t))
+  }
   return labels
 })
 
 const filtered = computed<ProjectWithStats[]>(() =>
   withSessionTotals(byTag(byFy(byStatus(projects.value))), props.sessions, linkSession,
-    fy.value === FUTURE_OR_NEW ? 'future' : fy.value),
+    fy.value === FUTURE_OR_NEW ? 'future' : fyValue.value),
 )
 
+const emptyTrails = computed(() => fy.value === ALL_TRAILS
+  ? trailsWithoutProjects(filtered.value, taxonomyTree.value, tagLabel.value)
+  : [])
+
 watch(fyOptions, opts => {
+  // "Show all trails" is offered once the tags have loaded; don't drop it before then.
+  if (fy.value === ALL_TRAILS && !taxonomyTree.value.length) return
   if (opts.length && !opts.some(o => o.value === fy.value)) fy.value = 'all'
 }, { immediate: true })
 
@@ -113,6 +133,13 @@ watch(statusOptions, opts => {
 })
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
+watch(emptyTrails, trails => emit('emptyTrails', trails), { immediate: true })
+watch(() => fy.value === ALL_TRAILS, on => emit('allTrails', on), { immediate: true })
+
+// The tag can also be set from the list (a top-level heading under Show all trails).
+watch(() => route.query.tag, tag => {
+  if ((tag ?? '') !== tagLabel.value) tagLabel.value = (tag as string) ?? ''
+})
 
 watch([fy, status, tagLabel], ([newFy, newStatus, newTag]) => {
   const query: Record<string, string> = {}

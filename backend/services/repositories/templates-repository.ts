@@ -1,5 +1,6 @@
 /**
- * Templates Repository: email templates, edited by Admins directly in SharePoint.
+ * Templates Repository: email templates. Name, subject and context are edited in the
+ * tracker; the HTML and Text in SharePoint.
  */
 
 import { SharePointTemplate, TemplateContext } from '../../../types/email-template';
@@ -21,6 +22,22 @@ class TemplatesRepository {
     const data = await sharePointClient.getListItems(this.listGuid, 'ID,Title,Context,Subject,HTML,Text');
     sharePointClient.cache.set(cacheKey, data, CACHE_TTL.templates);
     return data as SharePointTemplate[];
+  }
+
+  async create(fields: { Title: string; Subject: string; Context: TemplateContext }): Promise<number> {
+    const id = await sharePointClient.createListItem(this.listGuid, fields);
+    sharePointClient.clearCacheKey('templates');
+    return id;
+  }
+
+  async updateFields(id: number, fields: { Title: string; Subject: string; Context: TemplateContext }): Promise<void> {
+    await sharePointClient.updateListItem(this.listGuid, id, fields);
+    sharePointClient.clearCacheKey('templates');
+  }
+
+  async delete(id: number): Promise<void> {
+    await sharePointClient.deleteListItem(this.listGuid, id);
+    sharePointClient.clearCacheKey('templates');
   }
 
   /** The template with this ID, only if it's for this context. */

@@ -15,6 +15,9 @@ export const TEMPLATE_CONTEXTS = {
 
 export type TemplateContext = keyof typeof TEMPLATE_CONTEXTS;
 
+/** The contexts, in order, e.g. for a dropdown. */
+export const TEMPLATE_CONTEXT_NAMES = Object.keys(TEMPLATE_CONTEXTS) as TemplateContext[];
+
 export function isTemplateContext(value: unknown): value is TemplateContext {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(TEMPLATE_CONTEXTS, value);
 }

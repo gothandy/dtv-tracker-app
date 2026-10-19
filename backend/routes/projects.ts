@@ -43,6 +43,7 @@ import {
   getProjectDocsTree,
   clearProjectDocsTreeCache,
   projectDocUrlForFilename,
+  projectKeysWithDocuments,
 } from '../services/project-docs-service';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
 import { requirePermission } from '../middleware/require-permission';
@@ -178,6 +179,17 @@ async function requestedStatus(value: unknown): Promise<{ status?: string | null
 }
 
 // GET /api/projects/options — the Status column's choices, as set in SharePoint.
+// GET /api/projects/documents — the keys of projects with documents (Projects by location report).
+router.get('/projects/documents', requirePermission('bulkProjects'), async (_req: Request, res: Response) => {
+  try {
+    const keys = await projectKeysWithDocuments();
+    res.json({ success: true, data: { keys } } as ApiResponse<{ keys: string[] }>);
+  } catch (error: any) {
+    console.error('Error listing project documents:', error.message || error);
+    res.status(500).json({ success: false, error: 'Failed to list project documents' });
+  }
+});
+
 router.get('/projects/options', async (_req: Request, res: Response) => {
   try {
     const statuses = await projectsRepository.statusChoices();

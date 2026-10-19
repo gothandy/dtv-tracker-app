@@ -1,12 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { projectsByLocationRows, NO_LOCATION } from './projectsByLocation'
+import { projectsByLocation, projectsByLocationRows, trailsWithoutProjects, trailName, NO_LOCATION } from './projectsByLocation'
 import { NO_TAGS } from './tagFilter'
 import type { Session } from '../types/session'
 
 const TODAY = '2026-10-18'
 const ORIGIN = 'https://tracker.dtv.org.uk'
 const tree = [
-  { label: 'XC', id: '1', children: [{ label: 'Freeminers', id: '2' }, { label: 'Verderers', id: '3' }] },
+  { label: 'XC', id: '1', children: [
+    { label: 'Freeminers', id: '2' },
+    { label: 'Verderers', id: '3' },
+    { label: 'Adit', id: '6', children: [{ label: 'TNT', id: '7' }] },
+  ] },
   { label: 'DH', id: '4', children: [{ label: 'Corkscrew', id: '5' }] },
 ]
 const s = (projectId: number, date: string) => ({ projectId, date }) as unknown as Session
@@ -19,49 +23,108 @@ const projects = [
   project(3, 'New', ['XC:Freeminers']),
   project(4, 'Just DH', ['DH']),
   project(5, 'Untagged', []),
+  project(6, 'Adit', ['XC:Adit']),
+  project(7, 'TNT', ['XC:Adit:TNT']),
 ]
 const sessions = [s(1, '2026-01-10'), s(2, '2026-01-01'), s(2, '2026-11-03')]
-const rows = projectsByLocationRows(projects, sessions, tree, '', ORIGIN, TODAY)
-const locations = (r = rows) => r.filter(x => x[0] === 'Location')
-const under = (path: string, r = rows) => r.filter(x => x[0] === 'Project' && x[1] === path).map(x => x[4])
+const rows = projectsByLocationRows(projects, sessions, tree, trailsWithoutProjects(projects, tree, ''), ORIGIN, TODAY)
+const locations = (r = rows) => [...new Set(r.map(x => x[0]))]
+const under = (path: string, r = rows) => r.filter(x => x[0] === path).map(x => x[4])
 
 describe('projectsByLocationRows', () => {
-  it('lists the leaf tags only, in order, then (No location)', () => {
-    expect(locations().map(r => r[1])).toEqual(['XC:Freeminers', 'XC:Verderers', 'DH:Corkscrew', NO_LOCATION])
+  it('goes by the second-level tags (trails), in order, then (No location)', () => {
+    expect(locations()).toEqual(['XC:Freeminers', 'XC:Verderers', 'XC:Adit', 'DH:Corkscrew', NO_LOCATION])
   })
 
-  it('says No projects for a leaf with none', () => {
-    expect(locations().find(r => r[1] === 'XC:Verderers')?.[4]).toBe('No projects')
+  it('has one row per project, and no summary rows', () => {
+    expect(rows.filter(r => r[4] !== 'No projects')).toHaveLength(projects.length)
+  })
+
+  it('gives a trail with no projects one No projects row, with no link', () => {
+    expect(rows.filter(r => r[0] === 'XC:Verderers')).toEqual([
+      ['XC:Verderers', 'XC', 'Verderers', '', 'No projects', '', '', '', '', '', '', '', '', ''],
+    ])
+  })
+
+  it('counts a project tagged deeper at its trail, showing its tag in full', () => {
+    expect(under('XC:Adit')).toEqual(['Adit', 'TNT'])
+    expect(rows.find(r => r[4] === 'TNT')?.slice(0, 4)).toEqual(['XC:Adit', 'XC', 'Adit', 'XC:Adit:TNT'])
   })
 
   it('orders a location: no sessions, then future, then past', () => {
     expect(under('XC:Freeminers')).toEqual(['New', 'Future', 'Past'])
   })
 
-  it('totals sessions and hours, and links to the filtered Projects page', () => {
-    const fm = locations().find(r => r[1] === 'XC:Freeminers')!
-    expect([fm[2], fm[3], fm[4], fm[6], fm[7], fm[11]]).toEqual(['XC', 2, '3 projects', 3, 15.5, `${ORIGIN}/projects?tag=XC%3AFreeminers`])
+  it('gives each project its location, trail, tag, status, totals, documents, timing, dates, link and description', () => {
+    expect(rows.find(r => r[4] === 'Future')).toEqual([
+      'XC:Freeminers', 'XC', 'Freeminers', 'XC:Freeminers', 'Future', 'Active', 2, 5.5, 'No', 'Future', '2026-11-03', '2026-01-01', `${ORIGIN}/projects/future`, '',
+    ])
   })
 
-  it('gives each project its status, totals, timing, dates and link', () => {
-    expect(rows.find(r => r[0] === 'Project' && r[4] === 'Future')).toEqual([
-      'Project', 'XC:Freeminers', 'XC', 2, 'Future', 'Active', 2, 5.5, 'Future', '2026-11-03', '2026-01-01', `${ORIGIN}/projects/future`,
-    ])
+  it('says Yes for a project with documents, and gives its description', () => {
+    const described = projects.map(p => p.id === 1 ? { ...p, description: 'Rebuild the berms' } : p)
+    const withDocs = projectsByLocationRows(described, sessions, tree, [], ORIGIN, TODAY, new Set(['past']))
+    const past = withDocs.find(r => r[4] === 'Past')!
+    expect([past[8], past[13]]).toEqual(['Yes', 'Rebuild the berms'])
   })
 
   it('puts projects tagged only higher up, or not at all, under (No location)', () => {
     expect(under(NO_LOCATION)).toEqual(['Just DH', 'Untagged'])
+    expect(rows.find(r => r[4] === 'Just DH')?.slice(0, 4)).toEqual([NO_LOCATION, '', '', 'DH'])
   })
 
-  it('with a tag filter, only the locations beneath it', () => {
-    const filtered = projectsByLocationRows(projects, sessions, tree, 'XC', ORIGIN, TODAY)
-    expect(locations(filtered).map(r => r[1])).toEqual(['XC:Freeminers', 'XC:Verderers', NO_LOCATION])
+  it('without empty trails (Hide No projects), only locations that have projects', () => {
+    const hidden = projectsByLocationRows(projects, sessions, tree, [], ORIGIN, TODAY)
+    expect(locations(hidden)).toEqual(['XC:Freeminers', 'XC:Adit', NO_LOCATION])
   })
 
-  it('with No tags, just the untagged projects', () => {
-    const untagged = projects.filter(p => !p.metadata.length)
-    const filtered = projectsByLocationRows(untagged, sessions, tree, NO_TAGS, ORIGIN, TODAY)
-    expect(locations(filtered).map(r => r[1])).toEqual([NO_LOCATION])
-    expect(under(NO_LOCATION, filtered)).toEqual(['Untagged'])
+  it('lists only the projects it is given (the selection), with the empty trails it is given', () => {
+    const picked = projects.filter(p => p.displayName === 'TNT')
+    const r = projectsByLocationRows(picked, sessions, tree, ['DH:Corkscrew'], ORIGIN, TODAY)
+    expect(r.map(x => [x[0], x[4]])).toEqual([['XC:Adit', 'TNT'], ['DH:Corkscrew', 'No projects']])
+  })
+})
+
+describe('trailsWithoutProjects', () => {
+  it('gives the trails with none of the projects, in order', () => {
+    expect(trailsWithoutProjects(projects, tree, '')).toEqual(['XC:Verderers', 'DH:Corkscrew'])
+  })
+
+  it('with a tag filter, only the trails beneath it', () => {
+    expect(trailsWithoutProjects(projects, tree, 'DH')).toEqual(['DH:Corkscrew'])
+  })
+
+  it('with a tag filter below a trail, that trail if it has none', () => {
+    expect(trailsWithoutProjects([], tree, 'XC:Adit:TNT')).toEqual(['XC:Adit'])
+    expect(trailsWithoutProjects(projects, tree, 'XC:Adit:TNT')).toEqual([])
+  })
+
+  it('with No tags, none', () => {
+    expect(trailsWithoutProjects([], tree, NO_TAGS)).toEqual([])
+  })
+})
+
+describe('trailName', () => {
+  it('gives the trail from a tag at or below it', () => {
+    expect(trailName([{ label: 'XC:Adit:TNT' }])).toBe('Adit')
+    expect(trailName([{ label: 'DH:Corkscrew' }])).toBe('Corkscrew')
+  })
+
+  it('gives nothing for a top-level tag or none', () => {
+    expect(trailName([{ label: 'DH' }])).toBe('')
+    expect(trailName(undefined)).toBe('')
+  })
+})
+
+describe('projectsByLocation', () => {
+  it('groups by trail in the term set order, empty trails in place, (No location) last', () => {
+    const groups = projectsByLocation(projects, sessions, tree, ['XC:Verderers', 'DH:Corkscrew'], TODAY)
+    expect(groups.map(g => [g.top, g.path, g.projects.map(p => p.displayName)])).toEqual([
+      ['XC', 'XC:Freeminers', ['New', 'Future', 'Past']],
+      ['XC', 'XC:Verderers', []],
+      ['XC', 'XC:Adit', ['Adit', 'TNT']],
+      ['DH', 'DH:Corkscrew', []],
+      ['', NO_LOCATION, ['Just DH', 'Untagged']],
+    ])
   })
 })

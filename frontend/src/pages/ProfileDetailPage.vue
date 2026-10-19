@@ -66,7 +66,7 @@
             ref="actionsRef"
             :profile="store.profile"
             :show-user="viewer.isAdmin"
-            :allow-transfer="viewer.isAdmin"
+            :allow-transfer="viewer.isAdmin && !isOwnAdminProfile"
             :profiles="transferProfiles"
             :switch-access-to="isOwnAdminProfile ? (viewer.isAdmin ? 'checkin' : 'admin') : null"
             :access-working="accessWorking"

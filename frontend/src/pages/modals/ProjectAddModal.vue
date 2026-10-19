@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
+import { buildTermGuidToPathMap } from '../../utils/taxonomyPath'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
@@ -61,9 +62,11 @@ export type AddProjectPayload = {
   metadata: Array<{ label: string; termGuid: string }>
 }
 
-defineProps<{
+const props = defineProps<{
   /** The Projects list's Status choices */
   statuses: string[]
+  /** A tag to start with, e.g. the trail from a No projects card ("XC:Adit") */
+  initialTag?: string
   working: boolean
   error?: string
 }>()
@@ -75,7 +78,15 @@ const emit = defineEmits<{
 
 const { tree, loading: taxonomyLoading, error: taxonomyError } = useTaxonomy()
 
-const form = reactive({ key: '', name: '', description: '', status: '', tag: '', termGuid: '' })
+const form = reactive({ key: '', name: '', description: '', status: '', tag: props.initialTag ?? '', termGuid: '' })
+
+// The starting tag's term ID, once the tree is in (unless another tag has been picked).
+watch(tree, t => {
+  if (!props.initialTag || form.tag !== props.initialTag || form.termGuid) return
+  for (const [guid, path] of buildTermGuidToPathMap(t)) {
+    if (path === props.initialTag) form.termGuid = guid
+  }
+}, { immediate: true })
 
 function add() {
   emit('add', {

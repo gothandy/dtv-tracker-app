@@ -24,6 +24,16 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 **Goal in sight, small steps forward.** Keep the end goal visible, but make each step as small as practically possible and leave things working after it. Judge a step against where we are now, not against the ideal: if it's a working improvement, take it. The ideal is where the steps lead.
 
+### Standards first: use the shared code
+
+**This is the most important rule in this file.** The tracker is an established app with a real user base. Its consistency is a feature: volunteers and staff learn one way of doing things and it works the same everywhere. Every change is built from the app's existing, shared code and patterns. **Anything that strays outside them needs great consideration and the maintainer's agreement before it's built.**
+
+- **Find the pattern first, then copy it.** Before writing anything, find how the app already does the same kind of thing and do it the same way: page layouts (a detail page is 2:1, content left, action area right), action bars, Add / Edit / Delete modals (`ModalLayout`, `DeleteModal`, an *Add* and an *Edit* modal that mirror each other), form fields (`ModalFormInput`, `ModalFormSelect`…), buttons (`AppButton`), list filters, dropdowns (*Vue Frontend: Dropdowns*), permissions (`types/permissions.ts`), routes, repositories, stats. Search the code and the `/sandbox` pages; the nearest existing page or component is the template.
+- **Don't invent UI or code patterns.** No new kinds of button, layout, navigation (e.g. a *Back to…* button), control or one-off styling. If the pattern seems to be missing, it usually exists under another name: look again.
+- **A fix goes into the shared code, not around it.** When shared code falls short (e.g. a dropdown clipped in a modal), improve the shared piece so every use gets the fix, rather than patching one page. A quick local fix is the most common way the app drifts: it is the thing to be most wary of.
+- **When something truly needs to differ,** stop and put it to the maintainer before building: what the existing pattern is, why it doesn't fit, and the options (extend the shared code for everyone vs a one-off), with their pros and cons. Once agreed, record the new pattern here so the next change follows it.
+- **Workarounds for external systems count too:** e.g. sending users off to edit in SharePoint is a poor experience; the tracker should do the job itself, with its own patterns.
+
 ### Four levels of work
 
 | Level | What it is | Where it lives | Done means | Who decides |
@@ -98,7 +108,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Dashboard with FY stats, next session card, personalised calendar ([HomePage.vue](frontend/src/pages/HomePage.vue))
 - Tools page (`/tools`, UI label **Tools**; `/admin` redirects) with Eventbrite sync buttons, exports, backup export, site shortcuts ([AdminPage.vue](frontend/src/pages/AdminPage.vue))
 - Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
-- Projects listing with FY filter ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
+- Projects listing with cascading Status, FY and tag filters; FY *Show all trails* groups the projects by trail with a *No projects* card for each empty trail; Admin *Bulk actions*: select projects (and trails) and download the *Projects by location* CSV ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
 - Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
@@ -109,7 +119,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
-- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with a preview from made-up data ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
+- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with its HTML and Text as a preview from made-up data or as source; Admin adds, edits (name, subject, context) and deletes them; HTML and Text are edited in SharePoint until #308 ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
 - Governance docs page at `/docs` — public; reads SharePoint `Docs/` folder; PDFs via tracker proxy ([DocsPage.vue](frontend/src/pages/DocsPage.vue))
 
 ---
@@ -231,6 +241,11 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 ### Vue Frontend: List Filters
 
 - **Filters cascade.** On every list page with filters (Sessions, Profiles, Projects, …), each filter offers only the options left by the other filters, and resets to *All* when its choice disappears. Choices are kept in the address (`?fy=`, `?tag=`…) so a filtered view can be shared.
+
+### Vue Frontend: Dropdowns
+
+- **Native `<select>` by default** (`ModalFormSelect` in modals, `FyFilter`…): the browser draws it above everything, fits it to the screen and gives phones their own picker.
+- **A custom dropdown uses `useDropdownPanel`** (`frontend/src/composables/useDropdownPanel.ts`), as `TermPicker` and `ProfilePicker` do: the list is drawn on the page body (`<Teleport to="body">`) so a modal can't clip it, placed below its box or above when there isn't room, fitted to the visible screen, and closed on a click outside, Escape or another dropdown opening. Behaviour added for one custom dropdown goes there, so every one gets it.
 
 ### Vue Frontend: URL / Path Conventions
 

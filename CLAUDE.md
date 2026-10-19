@@ -7,6 +7,8 @@ Read [AGENTS.md](AGENTS.md) first. It is the single source of truth for the proj
 - **Go ahead** with anything already agreed, and with small fixes inside the current task. Don't ask permission for each step.
 - **Ask "Shall I get started?"** before anything not yet discussed: a new change, file, workflow step or approach, even when it seems a natural follow-on. Describe it in a line or two and wait.
 - **Answer questions first.** "Just a question" or "What do you think?" means discuss, not change anything. If an answer suggests a change, offer it; don't make it.
+- **Standards first** (AGENTS.md, *Standards first: use the shared code*): build every change from the app's existing shared code and patterns. Anything outside them (a new UI element, a one-off fix, a different layout) is put to the maintainer with the options before it's built.
+- **One PR at a time.** Every merge is a live deploy, so prefer a larger PR holding a set of related changes, merged at most about once a day. When opening a PR, ask what its scope is: whether it's just the change that prompted it or a wider set, such as a bag of feedback fixes. If something turns out to need its own PR, park it as an issue and finish the current PR first. Extra working branches off the PR's `preview/` branch are fine when they help, but keep them few: the maintainer deletes them by hand at the end.
 
 ## Planning a feature
 

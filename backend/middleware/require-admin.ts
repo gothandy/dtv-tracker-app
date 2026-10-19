@@ -8,6 +8,9 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/sessions\/[^/]+\/[^/]+$/ }, // edit session title/description
   { method: 'POST',  pattern: /^\/projects$/ },               // add project; handler checks editProjects
   { method: 'PATCH', pattern: /^\/projects\/[^/]+$/ },       // edit project; handler checks editProjects
+  { method: 'POST',   pattern: /^\/templates$/ },               // add template; handler checks editTemplates
+  { method: 'PATCH',  pattern: /^\/templates\/\d+$/ },          // edit template; handler checks editTemplates
+  { method: 'DELETE', pattern: /^\/templates\/\d+$/ },          // delete template; handler checks editTemplates
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular
   { method: 'PATCH', pattern: /^\/regulars\/\d+$/ },          // update regular (e.g. accompanying adult)
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular

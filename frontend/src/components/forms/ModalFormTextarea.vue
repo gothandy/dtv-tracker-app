@@ -5,6 +5,7 @@
     :rows="rows"
     :placeholder="placeholder"
     :disabled="disabled"
+    :readonly="readonly"
   />
 </template>
 
@@ -15,8 +16,11 @@ withDefaults(defineProps<{
   rows?: number
   placeholder?: string
   disabled?: boolean
+  /** Shown and selectable (to copy) but not editable */
+  readonly?: boolean
 }>(), {
   rows: 3,
   disabled: false,
+  readonly: false,
 })
 </script>
