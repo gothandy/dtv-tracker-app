@@ -71,6 +71,11 @@
   text-overflow: ellipsis;
 }
 
+/* One line shorter, when a subtext line sits above it (e.g. a project's trail). */
+.list-item-card__description--short {
+  -webkit-line-clamp: 2;
+}
+
 .list-item-card__footer {
   display: flex;
   align-items: flex-end;

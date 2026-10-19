@@ -4,6 +4,9 @@ import { sessionMatchesFy } from './sessionFy'
 /** FY filter value: projects with a session still to come, or no sessions at all yet. */
 export const FUTURE_OR_NEW = 'future-new'
 
+/** FY filter value: all years, plus a "No projects" card for each trail without a project. */
+export const ALL_TRAILS = 'trails'
+
 /** Status filter values besides the Status choices themselves. */
 export const ALL_STATUSES = 'all'
 export const NO_STATUS = 'none'

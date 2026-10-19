@@ -1,7 +1,8 @@
 <template>
   <div v-if="canEdit || canDownload" class="list-actions">
     <span class="list-actions-stats">
-      {{ projects.length }} projects &nbsp;&nbsp; {{ totalHours }} hours
+      <template v-if="canDownload">{{ selectedProjects.length }} / </template>{{ projects.length }} projects &nbsp;&nbsp;
+      <template v-if="canDownload">{{ selectedHours }} / </template>{{ totalHours }} hours
       <template v-if="canDownload && taxonomyError">&nbsp;&nbsp; {{ taxonomyError }} The location report is unavailable; reload to try again.</template>
       <template v-else-if="downloadError">&nbsp;&nbsp; {{ downloadError }}</template>
     </span>
@@ -11,7 +12,7 @@
         label="Download projects by location"
         icon="download"
         mode="icon-only"
-        :disabled="taxonomyLoading || !!taxonomyError || !tree.length || downloading"
+        :disabled="!selectedProjects.length || taxonomyLoading || !!taxonomyError || !tree.length || downloading"
         @click="onDownload"
       />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
@@ -22,12 +23,12 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
 import AppButton from '../AppButton.vue'
 import { shareCurrentUrl } from '../../utils/shareUrl'
 import { downloadCsv } from '../../utils/listCsv'
 import { useTaxonomy } from '../../composables/useTaxonomy'
 import { projectsByLocationRows, PROJECTS_BY_LOCATION_HEADERS } from '../../utils/projectsByLocation'
+import { visibleSelected } from '../../utils/listSelection'
 import type { Session } from '../../types/session'
 import type { ProjectWithStats } from './ProjectListFilter.vue'
 import type { RoleContext } from '../../composables/useViewer'
@@ -39,11 +40,14 @@ const props = defineProps<{
   canEdit: boolean
   /** All sessions, for each project's next and last session dates. */
   sessions: Session[]
-  /** May download the Projects by location report (permission downloadProjectReport). */
+  /** Bulk actions on Projects, e.g. the Projects by location CSV (permission bulkProjects). */
   canDownload: boolean
+  /** Selected project IDs (Bulk actions) */
+  selected: number[]
+  /** Trails without projects (FY "Show all trails"), for the CSV's No projects rows */
+  emptyTrails: string[]
 }>()
 
-const route = useRoute()
 const { tree, loading: taxonomyLoading, error: taxonomyError } = useTaxonomy()
 
 const emit = defineEmits<{ 'add-project': [] }>()
@@ -51,10 +55,14 @@ const emit = defineEmits<{ 'add-project': [] }>()
 const totalHours = computed(() =>
   Math.round(props.projects.reduce((sum, p) => sum + p.hours, 0) * 10) / 10)
 
+const selectedProjects = computed(() => visibleSelected(props.selected, props.projects))
+const selectedHours = computed(() =>
+  Math.round(selectedProjects.value.reduce((sum, p) => sum + p.hours, 0) * 10) / 10)
+
 const downloading = ref(false)
 const downloadError = ref('')
 
-// The projects on the page (as filtered) by location tag; the tag filter narrows the locations.
+// The selected projects by location, with a No projects row for each trail card on show.
 // Which projects have documents comes from the server; if it can't say, no report rather
 // than one saying No for every project.
 async function onDownload() {
@@ -65,8 +73,8 @@ async function onDownload() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const keys: string[] = (await res.json()).data?.keys ?? []
     const today = new Date().toISOString().slice(0, 10)
-    const rows = projectsByLocationRows(props.projects, props.sessions, tree.value, String(route.query.tag ?? ''),
-      window.location.origin, today, new Set(keys))
+    const rows = projectsByLocationRows(selectedProjects.value, props.sessions, tree.value,
+      props.emptyTrails, window.location.origin, today, new Set(keys))
     downloadCsv(`${today} Projects by location.csv`, PROJECTS_BY_LOCATION_HEADERS, rows)
   } catch (e) {
     console.error('[ProjectListActions] onDownload', e)

@@ -92,3 +92,6 @@
   font-size: 0.85rem; font-weight: 600; color: var(--color-dtv-green); padding: 0;
 }
 .list-select-all:hover { text-decoration: underline; }
+/* A heading within a list (e.g. a top-level tag on Projects): the same text as Select all. */
+.list-group-heading { margin: 0; }
+.list-group-heading > span { font-size: 0.85rem; font-weight: 600; color: var(--color-dtv-green); }

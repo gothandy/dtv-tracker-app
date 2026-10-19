@@ -17,8 +17,8 @@ export const PERMISSIONS = {
   editTemplates: ['admin'],
   /** Add and edit projects (name, key, description, status, tag). Deleting stays Admin-only. */
   editProjects: ['admin'],
-  /** Download the Projects by location report (CSV) from the Projects page. */
-  downloadProjectReport: ['checkin', 'admin'],
+  /** Bulk actions on Projects: select projects and act on them (the Projects by location CSV). */
+  bulkProjects: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

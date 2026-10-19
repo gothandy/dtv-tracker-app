@@ -180,7 +180,7 @@ async function requestedStatus(value: unknown): Promise<{ status?: string | null
 
 // GET /api/projects/options — the Status column's choices, as set in SharePoint.
 // GET /api/projects/documents — the keys of projects with documents (Projects by location report).
-router.get('/projects/documents', requirePermission('downloadProjectReport'), async (_req: Request, res: Response) => {
+router.get('/projects/documents', requirePermission('bulkProjects'), async (_req: Request, res: Response) => {
   try {
     const keys = await projectKeysWithDocuments();
     res.json({ success: true, data: { keys } } as ApiResponse<{ keys: string[] }>);

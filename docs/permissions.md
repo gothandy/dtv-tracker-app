@@ -24,7 +24,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 | `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
 | `editTemplates` | Admin | *New template* on the Templates page, and *Edit* (with Delete) on a template's page: name, subject and context (`POST`, `PATCH`, `DELETE /api/templates…`) |
 | `editProjects` | Admin | *New project* and *Edit* on a project (name, key, description, status, tag): `POST /api/projects`, `PATCH /api/projects/:key`. Deleting a project stays Admin-only. |
-| `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page, and `GET /api/projects/documents` for its Documents column |
+| `bulkProjects` | Admin | *Bulk actions* on the Projects page: *Select* / *Select all* on projects, and the *Projects by location* CSV of the selected projects (with `GET /api/projects/documents` for its Documents column) |
 
 ## Configuration
 
