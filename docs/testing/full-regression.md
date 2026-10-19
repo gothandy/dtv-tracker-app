@@ -509,6 +509,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
+- [ ] Totals box: Sessions, Hours, and Status when the project has one (left out when not set)
 - [ ] `GET /api/projects/:key/attachments` — `DocsTreeNode[]` tree; file `url` like `/projects/{key}/docs/{slug-path}` (not SharePoint `webUrl`); subfolders shown as nested sections
 - [ ] Project detail Documents card: root files listed **above** folder headings; files and folders alphabetically sorted at each level
 - [ ] Documents section title matches Totals hero font (dark, not gold); folder headings one step smaller

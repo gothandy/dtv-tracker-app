@@ -10,6 +10,10 @@
         <dt class="text-white/60 w-28 shrink-0">Hours</dt>
         <dd>{{ stats.hours }}</dd>
       </div>
+      <div v-if="status" class="flex gap-3">
+        <dt class="text-white/60 w-28 shrink-0">Status</dt>
+        <dd>{{ status }}</dd>
+      </div>
     </dl>
   </div>
 </template>
@@ -17,5 +21,7 @@
 <script setup lang="ts">
 defineProps<{
   stats: { sessions: number; hours: number }
+  /** The project's Status choice; the row is left out when not set */
+  status?: string
 }>()
 </script>

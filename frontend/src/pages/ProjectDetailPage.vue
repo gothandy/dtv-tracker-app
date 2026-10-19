@@ -57,7 +57,7 @@
 
       <LayoutColumns v-if="showDocumentsCard" ratio="1-2" align="start">
         <template #left>
-          <ProjectDetailStats :stats="store.project.stats" />
+          <ProjectDetailStats :stats="store.project.stats" :status="store.project.status" />
         </template>
         <template #right>
           <ProjectDocsCard
@@ -74,7 +74,7 @@
 
       <LayoutColumns v-else ratio="1">
         <template #left>
-          <ProjectDetailStats :stats="store.project.stats" />
+          <ProjectDetailStats :stats="store.project.stats" :status="store.project.status" />
         </template>
       </LayoutColumns>
 
