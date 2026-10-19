@@ -80,6 +80,10 @@
 .list-card-grid .list-item-card {
   background: var(--color-dtv-sand);
 }
+/* Pushed back: a placeholder rather than an item (e.g. a trail with no projects). */
+.list-card-grid .list-item-card--subdued {
+  background: var(--color-dtv-sand-light);
+}
 
 /* Shared select-all row — Groups, Sessions, Entries, Profiles list results */
 .list-select-row {

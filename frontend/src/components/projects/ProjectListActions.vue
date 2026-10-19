@@ -3,6 +3,7 @@
     <span class="list-actions-stats">
       <template v-if="canDownload">{{ selectedProjects.length }} / </template>{{ projects.length }} projects &nbsp;&nbsp;
       <template v-if="canDownload">{{ selectedHours }} / </template>{{ totalHours }} hours
+      <template v-if="selectedTrails.length">&nbsp;&nbsp; {{ selectedTrails.length }} {{ selectedTrails.length === 1 ? 'trail' : 'trails' }} with no projects</template>
       <template v-if="canDownload && taxonomyError">&nbsp;&nbsp; {{ taxonomyError }} The location report is unavailable; reload to try again.</template>
       <template v-else-if="downloadError">&nbsp;&nbsp; {{ downloadError }}</template>
     </span>
@@ -12,7 +13,7 @@
         label="Download projects by location"
         icon="download"
         mode="icon-only"
-        :disabled="!selectedProjects.length || taxonomyLoading || !!taxonomyError || !tree.length || downloading"
+        :disabled="!selectedProjects.length && !selectedTrails.length || taxonomyLoading || !!taxonomyError || !tree.length || downloading"
         @click="onDownload"
       />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
@@ -44,8 +45,8 @@ const props = defineProps<{
   canDownload: boolean
   /** Selected project IDs (Bulk actions) */
   selected: number[]
-  /** Trails without projects (FY "Show all trails"), for the CSV's No projects rows */
-  emptyTrails: string[]
+  /** Selected trail cards (FY "Show all trails"), for the CSV's No projects rows */
+  selectedTrails: string[]
 }>()
 
 const { tree, loading: taxonomyLoading, error: taxonomyError } = useTaxonomy()
@@ -62,7 +63,7 @@ const selectedHours = computed(() =>
 const downloading = ref(false)
 const downloadError = ref('')
 
-// The selected projects by location, with a No projects row for each trail card on show.
+// The selected projects by location, with a No projects row for each selected trail card.
 // Which projects have documents comes from the server; if it can't say, no report rather
 // than one saying No for every project.
 async function onDownload() {
@@ -74,7 +75,7 @@ async function onDownload() {
     const keys: string[] = (await res.json()).data?.keys ?? []
     const today = new Date().toISOString().slice(0, 10)
     const rows = projectsByLocationRows(selectedProjects.value, props.sessions, tree.value,
-      props.emptyTrails, window.location.origin, today, new Set(keys))
+      props.selectedTrails, window.location.origin, today, new Set(keys))
     downloadCsv(`${today} Projects by location.csv`, PROJECTS_BY_LOCATION_HEADERS, rows)
   } catch (e) {
     console.error('[ProjectListActions] onDownload', e)

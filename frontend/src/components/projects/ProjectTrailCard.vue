@@ -9,7 +9,7 @@
       <div class="list-item-card__stats">
         <span><strong>No projects</strong></span>
       </div>
-      <AppButton v-if="canAdd" label="Add New" variant="subtle" @click="emit('add', trail)" />
+      <AppButton v-if="canAdd" label="Add New" @click="emit('add', trail)" />
     </div>
   </div>
 </template>

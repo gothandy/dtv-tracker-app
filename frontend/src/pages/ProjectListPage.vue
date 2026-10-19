@@ -18,7 +18,7 @@
         :sessions="sessionsStore.sessions"
         :can-download="profile.can('bulkProjects')"
         :selected="selected"
-        :empty-trails="emptyTrails"
+        :selected-trails="selectedTrails"
         @add-project="onAddProjectAt('')"
       />
       <ProjectListResults
@@ -27,6 +27,8 @@
         :groups="groups"
         :can-add="profile.can('editProjects')"
         :selected="profile.can('bulkProjects') ? selected : undefined"
+        :selected-trails="selectedTrails"
+        @update:selected-trails="selectedTrails = $event"
         :loading="projectsStore.loading || sessionsStore.loading"
         :error="projectsStore.error"
         @update:selected="selected = $event"
@@ -84,6 +86,7 @@ const groups = computed(() => allTrails.value
   ? projectsByLocation(filtered.value, sessionsStore.sessions, tree.value, emptyTrails.value)
   : null)
 const selected = ref<number[]>([])
+const selectedTrails = ref<string[]>([])
 const showAddProject = ref(false)
 /** The trail a new project starts at, when added from a No projects card */
 const addProjectTag = ref('')
@@ -92,6 +95,10 @@ const addProjectTag = ref('')
 watch(filtered, list => {
   const pruned = pruneSelectionToVisible(selected.value, list)
   if (pruned.length !== selected.value.length) selected.value = pruned
+})
+watch(emptyTrails, trails => {
+  const pruned = selectedTrails.value.filter(t => trails.includes(t))
+  if (pruned.length !== selectedTrails.value.length) selectedTrails.value = pruned
 })
 
 function onAddProjectAt(trail: string) {

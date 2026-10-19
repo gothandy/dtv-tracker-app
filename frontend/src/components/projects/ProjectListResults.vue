@@ -3,8 +3,8 @@
   <div v-else-if="error" class="pr-state pr-state--error">{{ error }}</div>
   <div v-else-if="!projects.length && !emptyTrails.length" class="pr-state">No projects found.</div>
   <template v-else>
-    <!-- Select all: Bulk actions (bulkProjects); projects only, not the trail cards. -->
-    <div v-if="selected && projects.length" class="list-select-row">
+    <!-- Select all: Bulk actions (bulkProjects); projects and, with Show all trails, the trail cards. -->
+    <div v-if="selected" class="list-select-row">
       <button class="list-select-all" @click="toggleSelectAll">
         {{ allSelected ? 'Deselect all' : 'Select all' }}
       </button>
@@ -31,6 +31,13 @@
               <ProjectCard :project="p" />
             </div>
             <div v-if="!g.projects.length" class="list-card-item">
+              <input
+                v-if="selected"
+                type="checkbox"
+                class="list-card-checkbox"
+                :checked="selectedTrails.includes(g.path)"
+                @change="toggleTrail(g.path)"
+              />
               <ProjectTrailCard :trail="g.path" :can-add="canAdd" @add="emit('add-project', $event)" />
             </div>
           </template>
@@ -70,15 +77,19 @@ const props = withDefaults(defineProps<{
   canAdd?: boolean
   /** Selected project IDs; only for Bulk actions (permission bulkProjects) */
   selected?: number[]
+  /** Selected trail cards (their paths), alongside the selected projects */
+  selectedTrails?: string[]
   loading?: boolean
   error?: string | null
 }>(), {
   emptyTrails: () => [],
+  selectedTrails: () => [],
   canAdd: false,
 })
 
 const emit = defineEmits<{
   'update:selected': [ids: number[]]
+  'update:selectedTrails': [trails: string[]]
   /** Add a project at this trail */
   'add-project': [trail: string]
   /** Filter to this tag (a top-level heading) */
@@ -97,11 +108,21 @@ const sections = computed(() => {
 })
 
 const allSelected = computed(() =>
-  props.projects.length > 0 && props.projects.every(p => props.selected?.includes(p.id))
+  props.projects.length + props.emptyTrails.length > 0 &&
+  props.projects.every(p => props.selected?.includes(p.id)) &&
+  props.emptyTrails.every(t => props.selectedTrails.includes(t))
 )
 
 function toggleSelectAll() {
   emit('update:selected', allSelected.value ? [] : props.projects.map(p => p.id))
+  emit('update:selectedTrails', allSelected.value ? [] : [...props.emptyTrails])
+}
+
+function toggleTrail(trail: string) {
+  const next = props.selectedTrails.includes(trail)
+    ? props.selectedTrails.filter(t => t !== trail)
+    : [...props.selectedTrails, trail]
+  emit('update:selectedTrails', next)
 }
 
 function toggle(id: number) {
