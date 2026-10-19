@@ -64,11 +64,15 @@
           <ModalFormTextarea v-if="format === 'Subject'" v-model="subjectSource" :rows="2" :readonly="!canEdit" />
           <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" :readonly="!canEdit" />
           <ModalFormTextarea v-else v-model="textSource" :rows="20" :readonly="!canEdit" />
-          <!-- One Save for the Subject, HTML and Text together. -->
-          <FormSubmitRow v-if="canEdit">
-            <AppButton usage="task" :label="saving ? 'Saving…' : 'Save'" :disabled="!changed" :working="saving" @click="saveSource" />
+          <!-- One Save for the Subject, HTML and Text together; Cancel puts back what was last saved.
+               Right-aligned, as in a modal's footer. -->
+          <template v-if="canEdit">
             <p v-if="saveError" class="modal-form-error">{{ saveError }}</p>
-          </FormSubmitRow>
+            <div class="td-save-row">
+              <AppButton label="Cancel" variant="subtle" :disabled="!changed || saving" @click="cancelEdits" />
+              <AppButton label="Save" icon="save" :disabled="!changed" :working="saving" @click="saveSource" />
+            </div>
+          </template>
         </template>
       </section>
     </template>
@@ -85,7 +89,6 @@ import AppButton from '../components/AppButton.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ModalFormTextarea from '../components/forms/ModalFormTextarea.vue'
 import TemplateDetailActions from '../components/templates/TemplateDetailActions.vue'
-import FormSubmitRow from '../components/forms/FormSubmitRow.vue'
 import { templateHelpText } from '../utils/templateHelp'
 import { useUnsavedChanges } from '../composables/useUnsavedChanges'
 import type { EditTemplatePayload } from './modals/TemplateEditModal.vue'
@@ -169,6 +172,15 @@ async function onEditTemplate(payload: EditTemplatePayload) {
   }
 }
 
+/** Put back the Subject, HTML and Text as last loaded or saved. */
+function cancelEdits() {
+  if (!template.value) return
+  subjectSource.value = template.value.subject
+  htmlSource.value = template.value.html
+  textSource.value = template.value.text
+  saveError.value = ''
+}
+
 // Save the Subject, HTML and Text together; the reload re-renders the preview, showing any
 // Handlebars mistake there, and the saved source stays as typed.
 async function saveSource() {
@@ -238,6 +250,13 @@ async function onDeleteTemplate() {
 
 .td-subject {
   margin: 0;
+}
+
+.td-save-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .td-tabs {
