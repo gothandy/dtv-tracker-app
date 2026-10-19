@@ -61,11 +61,11 @@
         </template>
         <!-- The variables and Handlebars this template can use, to copy from. -->
         <ModalFormTextarea v-else-if="view === 'Help'" v-model="helpText" :rows="24" readonly />
-        <!-- The template's Handlebars source: editable with editTemplates, otherwise to copy. -->
+        <!-- The template's Handlebars source: editable with editTemplates (not while saving), otherwise to copy. -->
         <template v-else>
-          <ModalFormTextarea v-if="format === 'Subject'" v-model="subjectSource" :rows="2" :readonly="!canEdit" />
-          <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" :readonly="!canEdit" />
-          <ModalFormTextarea v-else v-model="textSource" :rows="20" :readonly="!canEdit" />
+          <ModalFormTextarea v-if="format === 'Subject'" v-model="subjectSource" :rows="2" :readonly="!canEdit || saving" />
+          <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" :readonly="!canEdit || saving" />
+          <ModalFormTextarea v-else v-model="textSource" :rows="20" :readonly="!canEdit || saving" />
           <!-- One Save for the Subject, HTML and Text together; Cancel puts back what was last saved.
                Right-aligned, as in a modal's footer. -->
           <template v-if="canEdit">
