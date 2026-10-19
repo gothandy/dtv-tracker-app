@@ -76,13 +76,18 @@ router.get('/templates/:id', requirePermission('viewTemplates'), async (req: Req
   }
 });
 
-/** Name, subject and context from a request, or what's wrong with them. */
-function templateFields(body: any): { fields?: { Title: string; Subject: string; Context: TemplateContext }; error?: string } {
+type TemplateFields = { Title: string; Subject: string; Context: TemplateContext; HTML?: string; Text?: string };
+
+/** Name, subject, context and (optionally) the HTML and Text from a request, or what's wrong with them. */
+function templateFields(body: any): { fields?: TemplateFields; error?: string } {
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const subject = typeof body?.subject === 'string' ? body.subject.trim() : '';
   if (!title) return { error: 'Name is required' };
   if (!isTemplateContext(body?.context)) return { error: 'context must be Session or Profile' };
-  return { fields: { Title: title, Subject: subject, Context: body.context } };
+  const fields: TemplateFields = { Title: title, Subject: subject, Context: body.context };
+  if (typeof body?.html === 'string') fields.HTML = body.html;
+  if (typeof body?.text === 'string') fields.Text = body.text;
+  return { fields };
 }
 
 // POST /api/templates — add a template (name, subject, context; HTML and Text in SharePoint).
@@ -101,7 +106,7 @@ router.post('/templates', requirePermission('editTemplates'), async (req: Reques
   }
 });
 
-// PATCH /api/templates/:id — change a template's name, subject and context.
+// PATCH /api/templates/:id — change a template's name, subject and context, and its HTML and Text if given.
 router.patch('/templates/:id', requirePermission('editTemplates'), async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);

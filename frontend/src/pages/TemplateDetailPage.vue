@@ -20,16 +20,13 @@
             ref="actionsRef"
             :template="template"
             :can-edit="viewer.can('editTemplates')"
+            :unsaved="changed"
+            @discard-edits="cancelEdits"
             @edit-template="onEditTemplate"
             @delete-template="onDeleteTemplate"
           />
         </template>
       </LayoutColumns>
-
-      <section class="td-panel">
-        <h2>Subject</h2>
-        <p class="td-subject">{{ template.preview.subject }}</p>
-      </section>
 
       <section class="td-panel">
         <!-- Which version (left) and how it's shown (right). -->
@@ -57,20 +54,35 @@
         </div>
 
         <template v-if="view === 'Preview'">
+          <p v-if="format === 'Subject'" class="td-subject">{{ template.preview.subject }}</p>
           <!-- Sandboxed: the template's markup can't run scripts or reach the tracker, and its styles stay inside. -->
-          <iframe v-if="format === 'HTML'" class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
+          <iframe v-else-if="format === 'HTML'" class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
           <pre v-else class="td-text">{{ template.preview.text }}</pre>
         </template>
-        <!-- The template's Handlebars source, to copy; read-only for now. -->
-        <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" readonly />
-        <ModalFormTextarea v-else v-model="textSource" :rows="20" readonly />
+        <!-- The variables and Handlebars this template can use, to copy from. -->
+        <ModalFormTextarea v-else-if="view === 'Help'" v-model="helpText" :rows="24" readonly />
+        <!-- The template's Handlebars source: editable with editTemplates (not while saving), otherwise to copy. -->
+        <template v-else>
+          <ModalFormTextarea v-if="format === 'Subject'" v-model="subjectSource" :rows="2" :readonly="!canEdit || saving" />
+          <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" :readonly="!canEdit || saving" />
+          <ModalFormTextarea v-else v-model="textSource" :rows="20" :readonly="!canEdit || saving" />
+          <!-- One Save for the Subject, HTML and Text together; Cancel puts back what was last saved.
+               Right-aligned, as in a modal's footer. -->
+          <template v-if="canEdit">
+            <p v-if="saveError" class="modal-form-error">{{ saveError }}</p>
+            <div class="td-save-row">
+              <AppButton label="Cancel" variant="subtle" :disabled="!changed || saving" @click="cancelEdits" />
+              <AppButton label="Save" icon="save" :disabled="!changed" :working="saving" @click="saveSource" />
+            </div>
+          </template>
+        </template>
       </section>
     </template>
   </DefaultLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
@@ -79,6 +91,8 @@ import AppButton from '../components/AppButton.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ModalFormTextarea from '../components/forms/ModalFormTextarea.vue'
 import TemplateDetailActions from '../components/templates/TemplateDetailActions.vue'
+import { templateHelpText } from '../utils/templateHelp'
+import { useUnsavedChanges } from '../composables/useUnsavedChanges'
 import type { EditTemplatePayload } from './modals/TemplateEditModal.vue'
 import { useViewer } from '../composables/useViewer'
 import { templatesPath } from '../router'
@@ -98,10 +112,21 @@ const viewer = useViewer()
 const template = ref<TemplateDetailResponse | null>(null)
 const actionsRef = ref<InstanceType<typeof TemplateDetailActions> | null>(null)
 
-const FORMATS = ['HTML', 'Text'] as const
-const VIEWS = ['Preview', 'Source'] as const
+const FORMATS = ['Subject', 'HTML', 'Text'] as const
+const VIEWS = ['Preview', 'Source', 'Help'] as const
 const format = ref<typeof FORMATS[number]>('HTML')
 const view = ref<typeof VIEWS[number]>('Preview')
+const canEdit = computed(() => viewer.can('editTemplates'))
+const helpText = ref('')
+const saving = ref(false)
+const saveError = ref('')
+/** Whether the Subject, HTML or Text has been edited since it was loaded or saved */
+const changed = computed(() => !!template.value && (
+  subjectSource.value !== template.value.subject ||
+  htmlSource.value !== template.value.html ||
+  textSource.value !== template.value.text))
+const subjectSource = ref('')
+useUnsavedChanges(changed, 'You have unsaved changes to this template. Leave without saving?')
 const textSource = ref('')
 const htmlSource = ref('')
 const loading = ref(true)
@@ -115,6 +140,8 @@ async function load() {
     if (res.status === 404) throw new Error("This template doesn't exist.")
     if (!res.ok) throw new Error('Could not load the template. Please try again.')
     template.value = (await res.json() as { data: TemplateDetailResponse }).data
+    helpText.value = templateHelpText(template.value.context)
+    subjectSource.value = template.value.subject
     textSource.value = template.value.text
     htmlSource.value = template.value.html
   } catch (e) {
@@ -144,6 +171,46 @@ async function onEditTemplate(payload: EditTemplatePayload) {
   } catch (e) {
     actionsRef.value?.onEditError(e instanceof Error ? e.message : 'Update failed')
     console.error('[TemplateDetailPage] onEditTemplate', e)
+  }
+}
+
+/** Put back the Subject, HTML and Text as last loaded or saved. */
+function cancelEdits() {
+  if (!template.value) return
+  subjectSource.value = template.value.subject
+  htmlSource.value = template.value.html
+  textSource.value = template.value.text
+  saveError.value = ''
+}
+
+// Save the Subject, HTML and Text together; the reload re-renders the preview, showing any
+// Handlebars mistake there, and the saved source stays as typed.
+async function saveSource() {
+  if (!template.value) return
+  saving.value = true
+  saveError.value = ''
+  try {
+    const res = await fetch(`/api/templates/${template.value.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: template.value.title,
+        context: template.value.context,
+        subject: subjectSource.value,
+        html: htmlSource.value,
+        text: textSource.value,
+      }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Failed to save the template')
+    }
+    await load()
+  } catch (e) {
+    saveError.value = e instanceof Error ? e.message : 'Save failed'
+    console.error('[TemplateDetailPage] saveSource', e)
+  } finally {
+    saving.value = false
   }
 }
 
@@ -185,6 +252,13 @@ async function onDeleteTemplate() {
 
 .td-subject {
   margin: 0;
+}
+
+.td-save-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .td-tabs {
