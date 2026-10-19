@@ -250,6 +250,7 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 ### Vue Frontend: Unsaved changes
 
 - A page where something is edited in place (not in a modal) warns before it's left with unsaved edits: call `useUnsavedChanges(changed)` (`frontend/src/composables/useUnsavedChanges.ts`), which uses the browser's own confirm and *Leave site?* dialogs. First used by the template page.
+- **Editing on a page is the exception, not the pattern.** Edits normally happen in a modal; the template page edits its source on the page only because the preview and source need the space. Such a page stops other actions (e.g. *Edit*, and *Delete* inside it) while edits are unsaved: `confirmDiscard(changed)` asks to discard them first, rather than each action trying to keep them. A focused editing mode may replace this (#311).
 
 ### Vue Frontend: URL / Path Conventions
 

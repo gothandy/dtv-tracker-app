@@ -18,3 +18,12 @@ export function useUnsavedChanges(changed: Ref<boolean>, message = 'You have uns
   onMounted(() => window.addEventListener('beforeunload', onBeforeUnload))
   onUnmounted(() => window.removeEventListener('beforeunload', onBeforeUnload))
 }
+
+/**
+ * Before another action on a page with unsaved edits (e.g. Edit or Delete in a modal), ask with
+ * the browser's own confirm whether to discard them. True to go ahead (nothing unsaved, or the
+ * user agreed: call your own discard then); false to stay with the edits.
+ */
+export function confirmDiscard(changed: boolean, message = 'You have unsaved changes. Discard them?'): boolean {
+  return !changed || window.confirm(message)
+}

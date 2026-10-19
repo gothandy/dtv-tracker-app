@@ -20,6 +20,8 @@
             ref="actionsRef"
             :template="template"
             :can-edit="viewer.can('editTemplates')"
+            :unsaved="changed"
+            @discard-edits="cancelEdits"
             @edit-template="onEditTemplate"
             @delete-template="onDeleteTemplate"
           />
