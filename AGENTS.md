@@ -108,7 +108,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Dashboard with FY stats, next session card, personalised calendar ([HomePage.vue](frontend/src/pages/HomePage.vue))
 - Tools page (`/tools`, UI label **Tools**; `/admin` redirects) with Eventbrite sync buttons, exports, backup export, site shortcuts ([AdminPage.vue](frontend/src/pages/AdminPage.vue))
 - Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
-- Projects listing with FY filter ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
+- Projects listing with cascading Status, FY and tag filters; FY *Show all trails* groups the projects by trail with a *No projects* card for each empty trail; Admin *Bulk actions*: select projects (and trails) and download the *Projects by location* CSV ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
 - Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
@@ -119,7 +119,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
-- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with a preview from made-up data ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
+- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with its HTML and Text as a preview from made-up data or as source; Admin adds, edits (name, subject, context) and deletes them; HTML and Text are edited in SharePoint until #308 ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
 - Governance docs page at `/docs` — public; reads SharePoint `Docs/` folder; PDFs via tracker proxy ([DocsPage.vue](frontend/src/pages/DocsPage.vue))
 
 ---

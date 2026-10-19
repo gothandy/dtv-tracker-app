@@ -38,7 +38,7 @@ This document describes the SharePoint list schema for the Tracker site (`/sites
 | **Title** | Title | Single line of text | Yes | Shorthand key (slug, e.g. `bridge`) — used in URLs |
 | **Name** | Name | Single line of text | No | Display name |
 | **Description** | Description | Multiple lines of text | No | Project description |
-| **Metadata** | Metadata | Managed metadata | No | Taxonomy tags (same term set as Sessions) |
+| **Metadata** | Metadata | Managed metadata (single value) | No | The project's one tag (same term set as Sessions); SharePoint returns its label as the term's own name, so the tracker looks it up by term ID. Several tags under one trail: #271 |
 | **Status** | Status | Choice | No | The project's status. The tracker reads the choices from the column (`GET /api/projects/options`), so adding a choice here adds it to the filter and the Add/Edit modals |
 | *(documents)* | — | — | — | Project files in Documents library: `Projects/{Title}/` (top level, beside `Backups/`) |
 
@@ -286,7 +286,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 ## 8. Templates List
 
-**Purpose**: Email templates, shown in the tracker as *Email templates*. Admins edit them here in SharePoint; changes show in the tracker within 5 minutes (or straight away after *Clear all server caches* on the Tools page). Each row is Handlebars, wrapped in `templates/email/base.hbs` with the `{{#section}}` and `{{{nl2br}}}` helpers (`backend/services/email-renderer.ts`).
+**Purpose**: Email templates, shown in the tracker as *Email templates*. Admins add, edit (name, subject, context) and delete them in the tracker; the HTML and Text are edited here in SharePoint until #308. Changes made in SharePoint show in the tracker within 5 minutes (or straight away after *Clear all server caches* on the Tools page). Each row is Handlebars, wrapped in `templates/email/base.hbs` with the `{{#section}}` and `{{{nl2br}}}` helpers (`backend/services/email-renderer.ts`).
 
 **Address**: `Lists/Templates` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
