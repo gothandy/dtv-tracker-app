@@ -232,6 +232,11 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 
 - **Filters cascade.** On every list page with filters (Sessions, Profiles, Projects, …), each filter offers only the options left by the other filters, and resets to *All* when its choice disappears. Choices are kept in the address (`?fy=`, `?tag=`…) so a filtered view can be shared.
 
+### Vue Frontend: Dropdowns
+
+- **Native `<select>` by default** (`ModalFormSelect` in modals, `FyFilter`…): the browser draws it above everything, fits it to the screen and gives phones their own picker.
+- **A custom dropdown uses `useDropdownPanel`** (`frontend/src/composables/useDropdownPanel.ts`), as `TermPicker` and `ProfilePicker` do: the list is drawn on the page body (`<Teleport to="body">`) so a modal can't clip it, placed below its box or above when there isn't room, fitted to the visible screen, and closed on a click outside, Escape or another dropdown opening. Behaviour added for one custom dropdown goes there, so every one gets it.
+
 ### Vue Frontend: URL / Path Conventions
 
 - **Path builders live in `frontend/src/router/index.ts`** — single source of truth for URL structure.

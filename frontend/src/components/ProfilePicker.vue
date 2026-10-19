@@ -13,7 +13,8 @@
       @compositionupdate="onInput"
     />
     <Teleport to="body">
-      <ul v-if="filtered.length" class="pp-results" :style="dropdownStyle">
+      <div v-if="panelOpen" ref="panelEl" class="pp-panel" :style="panelStyle">
+      <ul v-if="filtered.length" class="pp-results">
         <li
           v-for="p in filtered"
           :key="p.id"
@@ -24,15 +25,17 @@
           <span v-if="p.email" class="pp-result-email">{{ p.email }}</span>
         </li>
       </ul>
-      <div v-else-if="!addNew && !isSelected && query.length >= 2" class="pp-no-match" :style="dropdownStyle">
+      <div v-else class="pp-no-match">
         No match — add new?
+      </div>
       </div>
     </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, reactive, type CSSProperties } from 'vue'
+import { ref, computed } from 'vue'
+import { useDropdownPanel } from '../composables/useDropdownPanel'
 
 export interface PickerProfile { id: number; name: string; email?: string }
 
@@ -53,53 +56,35 @@ const query = ref('')
 const isSelected = ref(false)
 const wrapEl = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLInputElement | null>(null)
-const dropdownStyle = reactive<CSSProperties>({ position: 'fixed', top: '0px', left: '0px', width: '0px', zIndex: 1000 })
-
-function updateDropdownPos() {
-  if (!inputEl.value) return
-  const r = inputEl.value.getBoundingClientRect()
-  dropdownStyle.top = `${r.bottom + 2}px`
-  dropdownStyle.left = `${r.left}px`
-  dropdownStyle.width = `${r.width}px`
-}
-
-function onFocus() {
-  isSelected.value = false
-  updateDropdownPos()
-  // recalculate after virtual keyboard opens and shifts the input
-  requestAnimationFrame(updateDropdownPos)
-}
-
-function onInput(e: Event) {
-  query.value = (e.target as HTMLInputElement).value
-  isSelected.value = false
-  updateDropdownPos()
-  emit('select', null)
-}
-
-function onDocClick(e: MouseEvent) {
-  if (wrapEl.value && !wrapEl.value.contains(e.target as Node)) {
-    isSelected.value = true
-  }
-}
-
-onMounted(() => {
-  setTimeout(() => document.addEventListener('click', onDocClick))
-  window.addEventListener('resize', updateDropdownPos)
-  window.addEventListener('scroll', updateDropdownPos, true)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onDocClick)
-  window.removeEventListener('resize', updateDropdownPos)
-  window.removeEventListener('scroll', updateDropdownPos, true)
-})
+const panelEl = ref<HTMLElement | null>(null)
 
 const filtered = computed(() => {
   if (props.addNew || isSelected.value || query.value.length < 2) return []
   const q = query.value.toLowerCase()
   return props.profiles.filter(p => p.name.toLowerCase().includes(q))
 })
+
+/** The list shows the matches, or "No match" once two letters are typed (unless adding new). */
+const panelOpen = computed(() =>
+  filtered.value.length > 0 || (!props.addNew && !isSelected.value && query.value.length >= 2))
+
+// The list is drawn on the page body and placed by the shared dropdown panel, which also
+// follows the phone keyboard as it opens.
+const { style: panelStyle, update: updatePanel } = useDropdownPanel({
+  anchor: inputEl, panel: panelEl, open: panelOpen, close: () => { isSelected.value = true }, maxHeight: 240,
+})
+
+function onFocus() {
+  isSelected.value = false
+  updatePanel()
+}
+
+function onInput(e: Event) {
+  query.value = (e.target as HTMLInputElement).value
+  isSelected.value = false
+  updatePanel()
+  emit('select', null)
+}
 
 function select(p: PickerProfile) {
   query.value = p.name
@@ -130,14 +115,16 @@ defineExpose({ query, reset })
 }
 .pp-input--disabled { opacity: 0.5; cursor: default; }
 
+.pp-panel {
+  /* Position, width, height limit and stacking come from useDropdownPanel. */
+  background: var(--color-dtv-light);
+  box-shadow: var(--shadow-md);
+}
+
 .pp-results {
   list-style: none;
   padding: 0;
   margin: 0;
-  background: var(--color-dtv-light);
-  box-shadow: var(--shadow-md);
-  max-height: 240px;
-  overflow-y: auto;
 }
 
 .pp-result {
@@ -174,7 +161,5 @@ defineExpose({ query, reset })
   font-size: 0.85rem;
   color: var(--color-text-muted);
   font-style: italic;
-  background: var(--color-dtv-light);
-  box-shadow: var(--shadow-md);
 }
 </style>

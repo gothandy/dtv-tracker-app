@@ -4,7 +4,8 @@
       <span>{{ displayLabel }}</span>
       <img :src="panelOpen ? '/icons/arrows/up.svg' : '/icons/arrows/down.svg'" width="12" height="12" alt="" class="tp-chevron svg-black" />
     </button>
-    <div v-if="panelOpen" class="tp-panel">
+    <Teleport to="body">
+    <div v-if="panelOpen" ref="panelEl" class="tp-panel" :style="panelStyle">
       <div v-if="loading" class="tp-loading">Loading…</div>
       <ul v-else class="tp-tree">
         <li>
@@ -26,11 +27,13 @@
         </li>
       </ul>
     </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
+import { useDropdownPanel } from '../composables/useDropdownPanel'
 import type { TaxNode } from '../composables/useTaxonomy'
 
 interface TagOption { label: string; displayLabel: string; depth: number; termGuid: string }
@@ -53,6 +56,12 @@ const emit = defineEmits<{
 
 const panelOpen = ref(false)
 const wrapEl = ref<HTMLElement | null>(null)
+const panelEl = ref<HTMLElement | null>(null)
+
+// The list is drawn on the page body and placed by the shared dropdown panel.
+const { style: panelStyle } = useDropdownPanel({
+  anchor: wrapEl, panel: panelEl, open: panelOpen, close: () => { panelOpen.value = false }, maxHeight: 280,
+})
 
 const displayLabel = computed(() => {
   if (!props.modelValue) return props.placeholder ?? 'All tags'
@@ -82,14 +91,7 @@ const flatOptions = computed(() => {
 })
 
 function togglePanel() {
-  if (!panelOpen.value) {
-    wrapEl.value?.dispatchEvent(new CustomEvent('dropdown-opened', { bubbles: true }))
-  }
   panelOpen.value = !panelOpen.value
-}
-
-function onDropdownOpened(e: Event) {
-  if (wrapEl.value && !wrapEl.value.contains(e.target as Node)) panelOpen.value = false
 }
 
 function select(label: string, _display: string) {
@@ -99,19 +101,6 @@ function select(label: string, _display: string) {
   panelOpen.value = false
 }
 
-function onDocClick(e: MouseEvent) {
-  if (wrapEl.value && !wrapEl.value.contains(e.target as Node)) {
-    panelOpen.value = false
-  }
-}
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-  document.addEventListener('dropdown-opened', onDropdownOpened)
-})
-onUnmounted(() => {
-  document.removeEventListener('click', onDocClick)
-  document.removeEventListener('dropdown-opened', onDropdownOpened)
-})
 </script>
 
 <style scoped>
@@ -145,17 +134,11 @@ onUnmounted(() => {
 .tp-chevron { flex-shrink: 0; margin-left: 0.5rem; }
 
 .tp-panel {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  width: 100%;
+  /* Position, width, height limit and stacking come from useDropdownPanel. */
   min-width: 220px;
-  max-height: 280px;
-  overflow-y: auto;
   overflow-x: hidden;
   background: var(--color-dtv-light);
   box-shadow: var(--shadow-md);
-  z-index: 50;
 }
 
 .tp-loading { padding: 0.75rem; font-size: 0.9rem; color: var(--color-text-muted); }
