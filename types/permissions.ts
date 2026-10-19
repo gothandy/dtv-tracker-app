@@ -13,7 +13,7 @@ export type Role = 'admin' | 'checkin' | 'selfservice';
 export const PERMISSIONS = {
   /** See the Templates pages: each template's subject, text and a preview. */
   viewTemplates: ['checkin', 'admin'],
-  /** Edit a template (for now, a link to its row in SharePoint). */
+  /** Add, edit and delete templates (name, subject, context; HTML and Text in SharePoint for now). */
   editTemplates: ['admin'],
   /** Add and edit projects (name, key, description, status, tag). Deleting stays Admin-only. */
   editProjects: ['admin'],

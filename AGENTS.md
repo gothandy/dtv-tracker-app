@@ -24,6 +24,16 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 **Goal in sight, small steps forward.** Keep the end goal visible, but make each step as small as practically possible and leave things working after it. Judge a step against where we are now, not against the ideal: if it's a working improvement, take it. The ideal is where the steps lead.
 
+### Standards first: use the shared code
+
+**This is the most important rule in this file.** The tracker is an established app with a real user base. Its consistency is a feature: volunteers and staff learn one way of doing things and it works the same everywhere. Every change is built from the app's existing, shared code and patterns. **Anything that strays outside them needs great consideration and the maintainer's agreement before it's built.**
+
+- **Find the pattern first, then copy it.** Before writing anything, find how the app already does the same kind of thing and do it the same way: page layouts (a detail page is 2:1, content left, action area right), action bars, Add / Edit / Delete modals (`ModalLayout`, `DeleteModal`, an *Add* and an *Edit* modal that mirror each other), form fields (`ModalFormInput`, `ModalFormSelect`…), buttons (`AppButton`), list filters, dropdowns (*Vue Frontend: Dropdowns*), permissions (`types/permissions.ts`), routes, repositories, stats. Search the code and the `/sandbox` pages; the nearest existing page or component is the template.
+- **Don't invent UI or code patterns.** No new kinds of button, layout, navigation (e.g. a *Back to…* button), control or one-off styling. If the pattern seems to be missing, it usually exists under another name: look again.
+- **A fix goes into the shared code, not around it.** When shared code falls short (e.g. a dropdown clipped in a modal), improve the shared piece so every use gets the fix, rather than patching one page. A quick local fix is the most common way the app drifts: it is the thing to be most wary of.
+- **When something truly needs to differ,** stop and put it to the maintainer before building: what the existing pattern is, why it doesn't fit, and the options (extend the shared code for everyone vs a one-off), with their pros and cons. Once agreed, record the new pattern here so the next change follows it.
+- **Workarounds for external systems count too:** e.g. sending users off to edit in SharePoint is a poor experience; the tracker should do the job itself, with its own patterns.
+
 ### Four levels of work
 
 | Level | What it is | Where it lives | Done means | Who decides |

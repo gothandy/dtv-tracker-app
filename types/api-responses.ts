@@ -415,6 +415,4 @@ export interface TemplateDetailResponse extends TemplateResponse {
   /** Handlebars source of the HTML version (wrapped in templates/email/base.hbs when sent) */
   html: string
   preview: { subject: string; html: string; text: string }
-  /** The row's edit form in SharePoint; only for those who can edit templates */
-  editUrl?: string
 }

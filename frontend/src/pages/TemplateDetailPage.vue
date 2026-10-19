@@ -6,16 +6,25 @@
     <template v-else-if="template">
       <PageHeader>{{ template.title }}</PageHeader>
 
-      <section class="td-panel">
-        <p class="td-about">
-          <strong>{{ template.context }}</strong> template: {{ ABOUT[template.context] }}
-          The preview below uses made-up data.
-        </p>
-        <div class="td-actions">
-          <AppButton label="Back to templates" variant="subtle" @click="router.push(templatesPath())" />
-          <AppButton v-if="template.editUrl" label="Edit in SharePoint" :href="template.editUrl" target="_blank" />
-        </div>
-      </section>
+      <LayoutColumns ratio="2-1" align="start">
+        <template #left>
+          <div class="td-header">
+            <p class="td-about">
+              <strong>{{ template.context }}</strong> template: {{ ABOUT[template.context] }}
+              The preview below uses made-up data.
+            </p>
+          </div>
+        </template>
+        <template #right>
+          <TemplateDetailActions
+            ref="actionsRef"
+            :template="template"
+            :can-edit="viewer.can('editTemplates')"
+            @edit-template="onEditTemplate"
+            @delete-template="onDeleteTemplate"
+          />
+        </template>
+      </LayoutColumns>
 
       <section class="td-panel">
         <h2>Subject</h2>
@@ -65,11 +74,15 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
+import LayoutColumns from '../components/LayoutColumns.vue'
 import AppButton from '../components/AppButton.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ModalFormTextarea from '../components/forms/ModalFormTextarea.vue'
-import { usePageTitle } from '../composables/usePageTitle'
+import TemplateDetailActions from '../components/templates/TemplateDetailActions.vue'
+import type { EditTemplatePayload } from './modals/TemplateEditModal.vue'
+import { useViewer } from '../composables/useViewer'
 import { templatesPath } from '../router'
+import { usePageTitle } from '../composables/usePageTitle'
 import type { TemplateDetailResponse } from '../../../types/api-responses'
 import type { TemplateContext } from '../../../types/email-template'
 
@@ -81,7 +94,9 @@ const ABOUT: Record<TemplateContext, string> = {
 
 const route = useRoute()
 const router = useRouter()
+const viewer = useViewer()
 const template = ref<TemplateDetailResponse | null>(null)
+const actionsRef = ref<InstanceType<typeof TemplateDetailActions> | null>(null)
 
 const FORMATS = ['HTML', 'Text'] as const
 const VIEWS = ['Preview', 'Source'] as const
@@ -94,7 +109,7 @@ const error = ref('')
 
 usePageTitle(() => template.value?.title ?? 'Template')
 
-onMounted(async () => {
+async function load() {
   try {
     const res = await fetch(`/api/templates/${encodeURIComponent(String(route.params.id))}`)
     if (res.status === 404) throw new Error("This template doesn't exist.")
@@ -108,8 +123,41 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
-</script>
+}
+
+onMounted(load)
+
+async function onEditTemplate(payload: EditTemplatePayload) {
+  if (!template.value) return
+  try {
+    const res = await fetch(`/api/templates/${template.value.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: payload.name, subject: payload.subject, context: payload.context }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Failed to update template')
+    }
+    actionsRef.value?.onEditSuccess()
+    await load()
+  } catch (e) {
+    actionsRef.value?.onEditError(e instanceof Error ? e.message : 'Update failed')
+    console.error('[TemplateDetailPage] onEditTemplate', e)
+  }
+}
+
+async function onDeleteTemplate() {
+  if (!template.value) return
+  try {
+    const res = await fetch(`/api/templates/${template.value.id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Delete failed')
+    actionsRef.value?.onDeleteSuccess()
+    router.push(templatesPath())
+  } catch (e) {
+    console.error('[TemplateDetailPage] onDeleteTemplate', e)
+  }
+}</script>
 
 <style scoped>
 .td-panel {
@@ -124,15 +172,16 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-.td-about {
-  margin: 0 0 1rem;
+/* Same as the project page's header (ProjectDetailHeader). */
+.td-header {
+  background: var(--color-white);
+  padding: 1.25rem 1.5rem;
 }
 
-.td-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.td-about {
+  margin: 0;
 }
+
 
 .td-subject {
   margin: 0;
