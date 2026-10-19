@@ -79,6 +79,9 @@ export const CACHE_TTL = {
   templates:  300,  //  5 min — email templates are edited directly in SharePoint, so changes show soon
 } as const;
 
+/** Cache key for listProjectDocFolders (cleared with the project docs folder cache). */
+const PROJECT_DOC_FOLDERS_CACHE_KEY = 'project_docs_folders';
+
 export class SharePointClient {
   private accessToken: string | undefined;
   private tokenExpiry: number | undefined;
@@ -702,6 +705,36 @@ export class SharePointClient {
     const prefix = projectKey ? `project_docs_folder_Projects/${projectKey}` : 'project_docs_folder_';
     const keys = this.cache.keys().filter(k => typeof k === 'string' && k.startsWith(prefix));
     for (const key of keys) this.cache.del(key);
+    this.cache.del(PROJECT_DOC_FOLDERS_CACHE_KEY);
+  }
+
+  /**
+   * The project folders under Projects/, with how many items each holds (files and
+   * subfolders, not counting deeper down). One request for all projects. [] if none.
+   */
+  async listProjectDocFolders(driveId: string): Promise<Array<{ name: string; childCount: number }>> {
+    const cached = this.cache.get(PROJECT_DOC_FOLDERS_CACHE_KEY);
+    if (cached) return cached as Array<{ name: string; childCount: number }>;
+
+    try {
+      const token = await this.getAccessToken();
+      let url: string | undefined =
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/Projects:/children?$select=name,folder&$top=999`;
+      const folders: Array<{ name: string; childCount: number }> = [];
+      while (url) {
+        const response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        for (const item of response.data.value as any[]) {
+          if (item.folder && item.name) folders.push({ name: item.name, childCount: item.folder.childCount ?? 0 });
+        }
+        url = response.data['@odata.nextLink'] as string | undefined;
+      }
+      this.cache.set(PROJECT_DOC_FOLDERS_CACHE_KEY, folders, CACHE_TTL.fileProxy);
+      return folders;
+    } catch (error: any) {
+      if (error.response?.status === 404) return [];
+      console.error('Error listing project document folders:', error.response?.data || error.message);
+      throw error;
+    }
   }
 
   /**

@@ -3,6 +3,7 @@
     <span class="list-actions-stats">
       {{ projects.length }} projects &nbsp;&nbsp; {{ totalHours }} hours
       <template v-if="canDownload && taxonomyError">&nbsp;&nbsp; {{ taxonomyError }} The location report is unavailable; reload to try again.</template>
+      <template v-else-if="downloadError">&nbsp;&nbsp; {{ downloadError }}</template>
     </span>
     <div class="list-actions-buttons">
       <AppButton
@@ -10,7 +11,7 @@
         label="Download projects by location"
         icon="download"
         mode="icon-only"
-        :disabled="taxonomyLoading || !!taxonomyError || !tree.length"
+        :disabled="taxonomyLoading || !!taxonomyError || !tree.length || downloading"
         @click="onDownload"
       />
       <AppButton label="Share" icon="share" mode="icon-only" @click="onShare" />
@@ -20,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppButton from '../AppButton.vue'
 import { shareCurrentUrl } from '../../utils/shareUrl'
@@ -50,11 +51,29 @@ const emit = defineEmits<{ 'add-project': [] }>()
 const totalHours = computed(() =>
   Math.round(props.projects.reduce((sum, p) => sum + p.hours, 0) * 10) / 10)
 
+const downloading = ref(false)
+const downloadError = ref('')
+
 // The projects on the page (as filtered) by location tag; the tag filter narrows the locations.
-function onDownload() {
-  const today = new Date().toISOString().slice(0, 10)
-  const rows = projectsByLocationRows(props.projects, props.sessions, tree.value, String(route.query.tag ?? ''), window.location.origin)
-  downloadCsv(`${today} Projects by location.csv`, PROJECTS_BY_LOCATION_HEADERS, rows)
+// Which projects have documents comes from the server; if it can't say, no report rather
+// than one saying No for every project.
+async function onDownload() {
+  downloading.value = true
+  downloadError.value = ''
+  try {
+    const res = await fetch('/api/projects/documents')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const keys: string[] = (await res.json()).data?.keys ?? []
+    const today = new Date().toISOString().slice(0, 10)
+    const rows = projectsByLocationRows(props.projects, props.sessions, tree.value, String(route.query.tag ?? ''),
+      window.location.origin, today, new Set(keys))
+    downloadCsv(`${today} Projects by location.csv`, PROJECTS_BY_LOCATION_HEADERS, rows)
+  } catch (e) {
+    console.error('[ProjectListActions] onDownload', e)
+    downloadError.value = "Couldn't check the projects' documents, so the report wasn't downloaded. Try again."
+  } finally {
+    downloading.value = false
+  }
 }
 
 function onShare() {

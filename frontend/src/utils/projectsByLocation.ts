@@ -7,6 +7,7 @@ export interface LocationProject {
   displayName?: string
   key: string
   status?: string
+  description?: string
   metadata?: Array<{ label: string }>
   /** Sessions and hours for the FY chosen on the page */
   sessionCount: number
@@ -15,7 +16,7 @@ export interface LocationProject {
 
 export const PROJECTS_BY_LOCATION_HEADERS = [
   'Location', 'Top level', 'Trail', 'Tag', 'Project', 'Project status',
-  'Sessions', 'Hours', 'Timing', 'Next session', 'Last session', 'Link',
+  'Sessions', 'Hours', 'Documents', 'Timing', 'Next session', 'Last session', 'Link', 'Description',
 ]
 
 /** Location label for projects with no location tag. */
@@ -36,7 +37,7 @@ const round1 = (n: number) => Math.round(n * 10) / 10
 /**
  * Projects by location, for a CSV: one row per project, by location (the term set's
  * second-level tags, locationTerms), with its trail ("Adit") and its own tag in full
- * ("XC:Adit:TNT"). Within a location: no sessions first, then future (soonest first), then
+ * ("XC:Adit:TNT"), whether it has documents, and its description. Within a location: no sessions first, then future (soonest first), then
  * past (latest first). A location with no projects gets one "No projects" row. Projects with
  * no location tag go under "(No location)" at the end. With a tag filter, only the locations
  * beneath it, or the one it's beneath; with "No tags", just "(No location)". Sessions and
@@ -49,6 +50,8 @@ export function projectsByLocationRows(
   tagFilter: string,
   origin: string,
   todayIso: string = new Date().toISOString().slice(0, 10),
+  /** Keys of the projects with documents (GET /api/projects/documents), for the Documents column */
+  withDocuments: Set<string> = new Set(),
 ): Array<Array<string | number>> {
   const allLocations = locationTerms(tree)
   const locations = tagFilter === NO_TAGS ? [] : allLocations.filter(path =>
@@ -79,14 +82,17 @@ export function projectsByLocationRows(
   const locationRows = (path: string, here: LocationProject[]): Array<Array<string | number>> => {
     const [top, trail] = path === NO_LOCATION ? ['', ''] : path.split(':')
     if (!here.length) {
-      return [[path, top, trail, '', 'No projects', '', 0, 0, '', '', '', `${origin}/projects?tag=${encodeURIComponent(path)}`]]
+      // No link: the Projects page would be empty for it.
+      return [[path, top, trail, '', 'No projects', '', 0, 0, '', '', '', '', '', '']]
     }
     return [...here].sort(byTiming).map(p => {
       const t = timing.get(p.id)!
       return [
         path, top, trail, tagAt(p, path), p.displayName || p.key, p.status ?? '',
-        p.sessionCount, round1(p.hours), t.state, t.next, t.last,
+        p.sessionCount, round1(p.hours), withDocuments.has(p.key.toLowerCase()) ? 'Yes' : 'No',
+        t.state, t.next, t.last,
         `${origin}/projects/${encodeURIComponent(p.key)}`,
+        p.description ?? '',
       ]
     })
   }

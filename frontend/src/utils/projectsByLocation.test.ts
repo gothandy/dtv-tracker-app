@@ -40,9 +40,9 @@ describe('projectsByLocationRows', () => {
     expect(rows.filter(r => r[4] !== 'No projects')).toHaveLength(projects.length)
   })
 
-  it('gives a trail with no projects one No projects row, linked to the filtered page', () => {
+  it('gives a trail with no projects one No projects row, with no link', () => {
     expect(rows.filter(r => r[0] === 'XC:Verderers')).toEqual([
-      ['XC:Verderers', 'XC', 'Verderers', '', 'No projects', '', 0, 0, '', '', '', `${ORIGIN}/projects?tag=XC%3AVerderers`],
+      ['XC:Verderers', 'XC', 'Verderers', '', 'No projects', '', 0, 0, '', '', '', '', '', ''],
     ])
   })
 
@@ -55,10 +55,17 @@ describe('projectsByLocationRows', () => {
     expect(under('XC:Freeminers')).toEqual(['New', 'Future', 'Past'])
   })
 
-  it('gives each project its location, trail, tag, status, totals, timing, dates and link', () => {
+  it('gives each project its location, trail, tag, status, totals, documents, timing, dates, link and description', () => {
     expect(rows.find(r => r[4] === 'Future')).toEqual([
-      'XC:Freeminers', 'XC', 'Freeminers', 'XC:Freeminers', 'Future', 'Active', 2, 5.5, 'Future', '2026-11-03', '2026-01-01', `${ORIGIN}/projects/future`,
+      'XC:Freeminers', 'XC', 'Freeminers', 'XC:Freeminers', 'Future', 'Active', 2, 5.5, 'No', 'Future', '2026-11-03', '2026-01-01', `${ORIGIN}/projects/future`, '',
     ])
+  })
+
+  it('says Yes for a project with documents, and gives its description', () => {
+    const described = projects.map(p => p.id === 1 ? { ...p, description: 'Rebuild the berms' } : p)
+    const withDocs = projectsByLocationRows(described, sessions, tree, '', ORIGIN, TODAY, new Set(['past']))
+    const past = withDocs.find(r => r[4] === 'Past')!
+    expect([past[8], past[13]]).toEqual(['Yes', 'Rebuild the berms'])
   })
 
   it('puts projects tagged only higher up, or not at all, under (No location)', () => {

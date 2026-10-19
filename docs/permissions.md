@@ -24,7 +24,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 | `viewTemplates` | Check In, Admin | The Templates pages (`/templates`, `/templates/:id`) and `GET /api/templates…` |
 | `editTemplates` | Admin | *Edit in SharePoint* on a template's page |
 | `editProjects` | Admin | *New project* and *Edit* on a project (name, key, description, status, tag): `POST /api/projects`, `PATCH /api/projects/:key`. Deleting a project stays Admin-only. |
-| `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page |
+| `downloadProjectReport` | Check In, Admin | *Download projects by location* (CSV) on the Projects page, and `GET /api/projects/documents` for its Documents column |
 
 ## Configuration
 

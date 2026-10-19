@@ -183,3 +183,13 @@ export async function fetchProjectDoc(
 export function projectDocUrlForFilename(projectKey: string, filename: string): string {
   return projectDocUrl(projectKey, projectFileSlug(filename));
 }
+
+/**
+ * The keys (lowercase) of the projects whose folder under Projects/ has something in it,
+ * for the Projects by location report's Documents column. One request for all projects;
+ * a count per project waits for a Projects Stats column (#303).
+ */
+export async function projectKeysWithDocuments(): Promise<string[]> {
+  const folders = await sharePointClient.listProjectDocFolders(sharePoint.libraries.documents);
+  return folders.filter(f => f.childCount > 0).map(f => f.name.toLowerCase());
+}

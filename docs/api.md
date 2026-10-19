@@ -157,6 +157,7 @@ All write endpoints also accept `X-Api-Key` authentication for the scheduled Azu
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
+| `/api/projects/documents` | GET | `downloadProjectReport` | The keys of the projects whose folder under `Projects/` in the Documents library has something in it: `{ keys }` (one Graph call, cached; for the *Projects by location* report's Documents column) |
 | `/api/projects/options` | GET | Public | The Projects list's Status choices, from the SharePoint column: `{ statuses }` |
 
 Projects (`/api/projects`, `/api/projects/:key`) include `status` when set. `POST /api/projects` and `PATCH /api/projects/:key` take `status`: one of the choices, or `''` / `null` for none; anything else is refused (400). They also take `metadata`: the project's one tag as `[{ label, termGuid }]`, or `[]` for none; the Projects list holds a single tag, so more than one is refused (400).
