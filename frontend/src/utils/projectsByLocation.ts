@@ -141,8 +141,8 @@ export function projectsByLocationRows(
   return projectsByLocation(projects, sessions, tree, emptyTrails, todayIso).flatMap(({ path, top, projects: here }) => {
     const trail = path === NO_LOCATION ? '' : path.split(':')[1]
     if (!here.length) {
-      // No link: the Projects page would be empty for it.
-      return [[path, top, trail, '', 'No projects', '', 0, 0, '', '', '', '', '', '']]
+      // No link (the Projects page would be empty for it), and no sessions or hours to give.
+      return [[path, top, trail, '', 'No projects', '', '', '', '', '', '', '', '', '']]
     }
     return here.map(p => {
       const t = timing.get(p.id)!

@@ -42,7 +42,7 @@ describe('projectsByLocationRows', () => {
 
   it('gives a trail with no projects one No projects row, with no link', () => {
     expect(rows.filter(r => r[0] === 'XC:Verderers')).toEqual([
-      ['XC:Verderers', 'XC', 'Verderers', '', 'No projects', '', 0, 0, '', '', '', '', '', ''],
+      ['XC:Verderers', 'XC', 'Verderers', '', 'No projects', '', '', '', '', '', '', '', '', ''],
     ])
   })
 

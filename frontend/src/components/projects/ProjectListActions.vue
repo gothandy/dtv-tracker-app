@@ -1,5 +1,6 @@
 <template>
-  <div v-if="canEdit || canDownload" class="list-actions">
+  <!-- Shown to everyone: if you can see the page you can share it. -->
+  <div class="list-actions">
     <span class="list-actions-stats">
       <template v-if="canDownload">{{ selectedProjects.length }} / </template>{{ projects.length }} projects &nbsp;&nbsp;
       <template v-if="canDownload">{{ selectedHours }} / </template>{{ totalHours }} hours
