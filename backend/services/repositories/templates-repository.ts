@@ -1,6 +1,5 @@
 /**
- * Templates Repository: email templates. Name, subject and context are edited in the
- * tracker; the HTML and Text in SharePoint.
+ * Templates Repository: email templates, edited in the tracker.
  */
 
 import { SharePointTemplate, TemplateContext } from '../../../types/email-template';
@@ -30,7 +29,7 @@ class TemplatesRepository {
     return id;
   }
 
-  async updateFields(id: number, fields: { Title: string; Subject: string; Context: TemplateContext }): Promise<void> {
+  async updateFields(id: number, fields: { Title: string; Subject: string; Context: TemplateContext; HTML?: string; Text?: string }): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, id, fields);
     sharePointClient.clearCacheKey('templates');
   }

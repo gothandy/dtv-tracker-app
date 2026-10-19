@@ -168,8 +168,8 @@ Projects (`/api/projects`, `/api/projects/:key`) include `status` when set. `POS
 |---|---|---|---|
 | `/api/templates[?context=Session]` | GET | `viewTemplates` | Email templates, all or one context's (`Session` or `Profile`), by title: `{ id, title, context, subject, text }` |
 | `/api/templates/:id` | GET | `viewTemplates` | One template, with its HTML source (`html`) and `preview: { subject, html, text }` rendered from made-up data for its context |
-| `/api/templates` | POST | `editTemplates` | Add a template: `{ title, subject, context }` (context `Session` or `Profile`); returns `{ id }`. HTML and Text are edited in SharePoint for now |
-| `/api/templates/:id` | PATCH | `editTemplates` | Change a template's `{ title, subject, context }` |
+| `/api/templates` | POST | `editTemplates` | Add a template: `{ title, subject, context }` (context `Session` or `Profile`); returns `{ id }` |
+| `/api/templates/:id` | PATCH | `editTemplates` | Change a template's `{ title, subject, context }`, and its `html` and `text` (Handlebars) when given |
 | `/api/templates/:id` | DELETE | `editTemplates` | Delete a template |
 
 ## Auth

@@ -286,7 +286,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 ## 8. Templates List
 
-**Purpose**: Email templates, shown in the tracker as *Email templates*. Admins add, edit (name, subject, context) and delete them in the tracker; the HTML and Text are edited here in SharePoint until #308. Changes made in SharePoint show in the tracker within 5 minutes (or straight away after *Clear all server caches* on the Tools page). Each row is Handlebars, wrapped in `templates/email/base.hbs` with the `{{#section}}` and `{{{nl2br}}}` helpers (`backend/services/email-renderer.ts`).
+**Purpose**: Email templates, shown in the tracker as *Email templates*. Admins add, edit and delete them in the tracker, the HTML and Text on the template's page (*Source*, with *Help* listing the variables and Handlebars). Changes made directly in SharePoint show in the tracker within 5 minutes (or straight away after *Clear all server caches* on the Tools page). Each row is Handlebars, wrapped in `templates/email/base.hbs` with the `{{#section}}` and `{{{nl2br}}}` helpers (`backend/services/email-renderer.ts`).
 
 **Address**: `Lists/Templates` (the tracker finds the list by address; `SHAREPOINT_ADDRESSES` in `backend/config.ts`)
 
@@ -302,8 +302,10 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 ### Contexts and their variables
 
-- **Session**: sent from a session's *Send Email* to its entries, one personalised email each. Variables: `buildSessionTemplateVars` in `backend/services/email-vars.ts` (the session's date, time, description and tags, the volunteer's name, Regular and member status, accompanied children, links).
-- **Profile**: sent from the Profiles page's *Send Email* to the ticked profiles. Variables: `buildProfileTemplateVars` (name, email, sign-in link, charity membership date).
+- **Session**: sent from a session's *Send Email* to its entries, one personalised email each.
+- **Profile**: sent from the Profiles page's *Send Email* to the ticked profiles.
+
+Each context's variables are listed, with descriptions, in `TEMPLATE_VARIABLES` (`types/email-template.ts`), and shown on a template's page under *Help*; they're filled in by `buildSessionTemplateVars` / `buildProfileTemplateVars` in `backend/services/email-vars.ts` (a test keeps the two in step).
 
 ---
 

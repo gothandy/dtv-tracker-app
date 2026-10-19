@@ -460,6 +460,9 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Child block shown when entry has accompanying child name; absent otherwise
 - [ ] Templates page (`/templates`, Check In and Admin; menu *Templates*): every template as a card (name, subject, first lines of its text); filter *Show all* / *Sessions* / *Profiles*, kept in `?context=`
 - [ ] *View* → the template's page: the standard 2:1 header (what it's for; action area with Share, and Edit for Admins), *Subject* / *HTML* / *Text* and *Preview* / *Source*: each rendered from made-up data, or the template's own source in a read-only box; a Handlebars mistake shows the error instead of failing
+- [ ] *Preview / Source / Help*: *Help* lists the template's context variables (Session and Profile differ) and the Handlebars basics, to copy; the version on the left stays chosen
+- [ ] Admin: *Source* boxes for Subject, HTML and Text are editable; one *Save* at the bottom (off until something's changed) saves all three; the preview re-renders, and a Handlebars mistake shows its error in the preview while the source keeps what was typed. Check In: read-only, no Save
+- [ ] Unsaved template edits: leaving by a link or Back asks to confirm (Cancel stays, edits kept); closing or reloading the tab gives the browser's *Leave site?*; no warning once saved or with nothing changed
 - [ ] Admin (switched to Admin): Templates → *New template* (Name, Subject, Context) → creates it and opens its page; *Edit* changes name, subject and context; *Delete* (in Edit) confirms, deletes and returns to Templates. Check In: no *New template* or *Edit*
 - [ ] `POST /api/templates`, `PATCH` and `DELETE /api/templates/:id` — `editTemplates` (Admin); Check In → 403
 - [ ] Self-Service and Public: `/templates` → forbidden / sign-in; `GET /api/templates` → 403

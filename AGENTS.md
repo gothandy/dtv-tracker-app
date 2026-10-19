@@ -119,7 +119,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
-- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with its HTML and Text as a preview from made-up data or as source; Admin adds, edits (name, subject, context) and deletes them; HTML and Text are edited in SharePoint until #308 ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
+- Email templates at `/templates` (Check In and Admin): list filtered by context, and each template's page with its Subject, HTML and Text as a preview from made-up data, as source, or *Help* (its variables and Handlebars); Admin adds, edits and deletes them, the Subject, HTML and Text on that page with one Save ([TemplateListPage.vue](frontend/src/pages/TemplateListPage.vue), [TemplateDetailPage.vue](frontend/src/pages/TemplateDetailPage.vue))
 - Governance docs page at `/docs` — public; reads SharePoint `Docs/` folder; PDFs via tracker proxy ([DocsPage.vue](frontend/src/pages/DocsPage.vue))
 
 ---
@@ -246,6 +246,10 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 
 - **Native `<select>` by default** (`ModalFormSelect` in modals, `FyFilter`…): the browser draws it above everything, fits it to the screen and gives phones their own picker.
 - **A custom dropdown uses `useDropdownPanel`** (`frontend/src/composables/useDropdownPanel.ts`), as `TermPicker` and `ProfilePicker` do: the list is drawn on the page body (`<Teleport to="body">`) so a modal can't clip it, placed below its box or above when there isn't room, fitted to the visible screen, and closed on a click outside, Escape or another dropdown opening. Behaviour added for one custom dropdown goes there, so every one gets it.
+
+### Vue Frontend: Unsaved changes
+
+- A page where something is edited in place (not in a modal) warns before it's left with unsaved edits: call `useUnsavedChanges(changed)` (`frontend/src/composables/useUnsavedChanges.ts`), which uses the browser's own confirm and *Leave site?* dialogs. First used by the template page.
 
 ### Vue Frontend: URL / Path Conventions
 
