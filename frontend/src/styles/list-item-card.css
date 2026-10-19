@@ -71,6 +71,17 @@
   text-overflow: ellipsis;
 }
 
+/* Pushed back: a placeholder rather than an item (e.g. a trail with no projects). Uses the
+   app's subdued text colour (sand-dark) on a lighter card. */
+.list-item-card--subdued {
+  background: var(--color-dtv-sand-light);
+}
+.list-item-card--subdued .list-item-card__title,
+.list-item-card--subdued .list-item-card__subtext,
+.list-item-card--subdued .list-item-card__stats {
+  color: var(--color-dtv-sand-dark);
+}
+
 /* One line shorter, when a subtext line sits above it (e.g. a project's trail). */
 .list-item-card__description--short {
   -webkit-line-clamp: 2;

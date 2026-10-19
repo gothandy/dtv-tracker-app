@@ -1,6 +1,6 @@
 <template>
   <!-- A trail with no projects (FY "Show all trails"): the same card as a project. -->
-  <div class="list-item-card project-card">
+  <div class="list-item-card list-item-card--subdued project-card">
     <div class="list-item-card__body">
       <p class="list-item-card__title">{{ name }}</p>
       <p class="list-item-card__subtext">{{ trail.replace(/:/g, ' › ') }}</p>
@@ -9,7 +9,7 @@
       <div class="list-item-card__stats">
         <span><strong>No projects</strong></span>
       </div>
-      <AppButton v-if="canAdd" label="Add New" @click="emit('add', trail)" />
+      <AppButton v-if="canAdd" label="Add New" variant="subtle" @click="emit('add', trail)" />
     </div>
   </div>
 </template>
