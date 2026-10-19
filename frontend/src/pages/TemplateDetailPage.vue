@@ -27,11 +27,6 @@
       </LayoutColumns>
 
       <section class="td-panel">
-        <h2>Subject</h2>
-        <p class="td-subject">{{ template.preview.subject }}</p>
-      </section>
-
-      <section class="td-panel">
         <!-- Which version (left) and how it's shown (right). -->
         <div class="td-tabs">
           <div class="td-tab-group">
@@ -57,11 +52,13 @@
         </div>
 
         <template v-if="view === 'Preview'">
+          <p v-if="format === 'Subject'" class="td-subject">{{ template.preview.subject }}</p>
           <!-- Sandboxed: the template's markup can't run scripts or reach the tracker, and its styles stay inside. -->
-          <iframe v-if="format === 'HTML'" class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
+          <iframe v-else-if="format === 'HTML'" class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
           <pre v-else class="td-text">{{ template.preview.text }}</pre>
         </template>
         <!-- The template's Handlebars source, to copy; read-only for now. -->
+        <ModalFormTextarea v-else-if="format === 'Subject'" v-model="subjectSource" :rows="2" readonly />
         <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" readonly />
         <ModalFormTextarea v-else v-model="textSource" :rows="20" readonly />
       </section>
@@ -98,10 +95,11 @@ const viewer = useViewer()
 const template = ref<TemplateDetailResponse | null>(null)
 const actionsRef = ref<InstanceType<typeof TemplateDetailActions> | null>(null)
 
-const FORMATS = ['HTML', 'Text'] as const
+const FORMATS = ['Subject', 'HTML', 'Text'] as const
 const VIEWS = ['Preview', 'Source'] as const
 const format = ref<typeof FORMATS[number]>('HTML')
 const view = ref<typeof VIEWS[number]>('Preview')
+const subjectSource = ref('')
 const textSource = ref('')
 const htmlSource = ref('')
 const loading = ref(true)
@@ -115,6 +113,7 @@ async function load() {
     if (res.status === 404) throw new Error("This template doesn't exist.")
     if (!res.ok) throw new Error('Could not load the template. Please try again.')
     template.value = (await res.json() as { data: TemplateDetailResponse }).data
+    subjectSource.value = template.value.subject
     textSource.value = template.value.text
     htmlSource.value = template.value.html
   } catch (e) {

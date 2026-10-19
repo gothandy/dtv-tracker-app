@@ -459,7 +459,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Regular block shown for regular volunteers; absent otherwise
 - [ ] Child block shown when entry has accompanying child name; absent otherwise
 - [ ] Templates page (`/templates`, Check In and Admin; menu *Templates*): every template as a card (name, subject, first lines of its text); filter *Show all* / *Sessions* / *Profiles*, kept in `?context=`
-- [ ] *View* → the template's page: the standard 2:1 header (what it's for; action area with Share, and Edit for Admins), Subject, then *HTML* / *Text* and *Preview* / *Source*: the email rendered from made-up data, or the template's own source in a read-only box; a Handlebars mistake shows the error instead of failing
+- [ ] *View* → the template's page: the standard 2:1 header (what it's for; action area with Share, and Edit for Admins), *Subject* / *HTML* / *Text* and *Preview* / *Source*: each rendered from made-up data, or the template's own source in a read-only box; a Handlebars mistake shows the error instead of failing
 - [ ] Admin (switched to Admin): Templates → *New template* (Name, Subject, Context) → creates it and opens its page; *Edit* changes name, subject and context; *Delete* (in Edit) confirms, deletes and returns to Templates. Check In: no *New template* or *Edit*
 - [ ] `POST /api/templates`, `PATCH` and `DELETE /api/templates/:id` — `editTemplates` (Admin); Check In → 403
 - [ ] Self-Service and Public: `/templates` → forbidden / sign-in; `GET /api/templates` → 403
