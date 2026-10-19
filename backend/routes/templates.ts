@@ -68,6 +68,7 @@ router.get('/templates/:id', requirePermission('viewTemplates'), async (req: Req
 
     const data: TemplateDetailResponse = {
       ...toResponse(template),
+      html: template.HTML ?? '',
       preview,
       editUrl: can(req.session.user?.role, 'editTemplates')
         ? `${sharePoint.siteUrl}/${SHAREPOINT_ADDRESSES.lists.templates}/EditForm.aspx?ID=${template.ID}`

@@ -167,7 +167,7 @@ Projects (`/api/projects`, `/api/projects/:key`) include `status` when set. `POS
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
 | `/api/templates[?context=Session]` | GET | `viewTemplates` | Email templates, all or one context's (`Session` or `Profile`), by title: `{ id, title, context, subject, text }` |
-| `/api/templates/:id` | GET | `viewTemplates` | One template, with `preview: { subject, html, text }` rendered from made-up data for its context, and `editUrl` (its SharePoint edit form) for `editTemplates` |
+| `/api/templates/:id` | GET | `viewTemplates` | One template, with its HTML source (`html`), `preview: { subject, html, text }` rendered from made-up data for its context, and `editUrl` (its SharePoint edit form) for `editTemplates` |
 
 ## Auth
 

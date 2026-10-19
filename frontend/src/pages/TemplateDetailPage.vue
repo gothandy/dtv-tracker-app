@@ -22,15 +22,39 @@
         <p class="td-subject">{{ template.preview.subject }}</p>
       </section>
 
-      <section v-if="template.preview.html" class="td-panel">
-        <h2>Email</h2>
-        <!-- Sandboxed: the template's markup can't run scripts or reach the tracker, and its styles stay inside. -->
-        <iframe class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
-      </section>
-
       <section class="td-panel">
-        <h2>Text version</h2>
-        <pre class="td-text">{{ template.preview.text }}</pre>
+        <!-- Which version (left) and how it's shown (right). -->
+        <div class="td-tabs">
+          <div class="td-tab-group">
+            <AppButton
+              v-for="f in FORMATS"
+              :key="f"
+              :label="f"
+              :variant="format === f ? 'primary' : 'subtle'"
+              :selected="format === f"
+              @click="format = f"
+            />
+          </div>
+          <div class="td-tab-group">
+            <AppButton
+              v-for="v in VIEWS"
+              :key="v"
+              :label="v"
+              :variant="view === v ? 'primary' : 'subtle'"
+              :selected="view === v"
+              @click="view = v"
+            />
+          </div>
+        </div>
+
+        <template v-if="view === 'Preview'">
+          <!-- Sandboxed: the template's markup can't run scripts or reach the tracker, and its styles stay inside. -->
+          <iframe v-if="format === 'HTML'" class="td-html" sandbox="" :srcdoc="template.preview.html" :title="`${template.title} preview`" />
+          <pre v-else class="td-text">{{ template.preview.text }}</pre>
+        </template>
+        <!-- The template's Handlebars source, to copy; read-only for now. -->
+        <ModalFormTextarea v-else-if="format === 'HTML'" v-model="htmlSource" :rows="20" readonly />
+        <ModalFormTextarea v-else v-model="textSource" :rows="20" readonly />
       </section>
     </template>
   </DefaultLayout>
@@ -43,6 +67,7 @@ import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
+import ModalFormTextarea from '../components/forms/ModalFormTextarea.vue'
 import { usePageTitle } from '../composables/usePageTitle'
 import { templatesPath } from '../router'
 import type { TemplateDetailResponse } from '../../../types/api-responses'
@@ -57,6 +82,13 @@ const ABOUT: Record<TemplateContext, string> = {
 const route = useRoute()
 const router = useRouter()
 const template = ref<TemplateDetailResponse | null>(null)
+
+const FORMATS = ['HTML', 'Text'] as const
+const VIEWS = ['Preview', 'Source'] as const
+const format = ref<typeof FORMATS[number]>('HTML')
+const view = ref<typeof VIEWS[number]>('Preview')
+const textSource = ref('')
+const htmlSource = ref('')
 const loading = ref(true)
 const error = ref('')
 
@@ -68,6 +100,8 @@ onMounted(async () => {
     if (res.status === 404) throw new Error("This template doesn't exist.")
     if (!res.ok) throw new Error('Could not load the template. Please try again.')
     template.value = (await res.json() as { data: TemplateDetailResponse }).data
+    textSource.value = template.value.text
+    htmlSource.value = template.value.html
   } catch (e) {
     console.error('[TemplateDetailPage] load', e)
     error.value = e instanceof Error ? e.message : 'Could not load the template.'
@@ -102,6 +136,19 @@ onMounted(async () => {
 
 .td-subject {
   margin: 0;
+}
+
+.td-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.td-tab-group {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .td-html {
