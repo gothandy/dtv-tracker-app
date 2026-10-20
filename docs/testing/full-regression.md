@@ -526,7 +526,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Admin (`uploadProjects`): Upload docs button; files appear as lozenges; × removes file. Check In: no Upload docs or ×; the upload page → Forbidden; `POST /api/projects/:key/attachments` → 403
 - [ ] Upload a test PDF via admin or SharePoint; document link opens
 - [ ] Header: description, metadata tags (check-in can edit tags)
-- [ ] Groups (everyone, above Linked sessions; the layout of Repeats and Regulars): each group with a linked session and its hours, most hours first; click → the group page; none → *No groups have worked on this project yet.*
+- [ ] Groups (everyone, above Linked sessions; the layout of Repeats and Regulars): each group with a linked session and its hours, most hours first; each a link (opens in a new tab, address can be copied) → the group page; none → *No groups have worked on this project yet.*
 - [ ] Carousel: cover photos from linked sessions (newest first)
 - [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
 - [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/projects/{new}/docs/…` URLs work

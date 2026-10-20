@@ -1,6 +1,6 @@
 <template>
   <!-- The groups that have worked on the project: the layout of Repeats and Regulars (RegularList),
-       each a link through to the group. -->
+       each a ProjectGroupItem linking through to the group. -->
   <div class="rl-wrap">
     <div class="rl-header">
       <h2 class="rl-title">Groups</h2>
@@ -9,27 +9,16 @@
     <p v-if="!groups.length" class="rl-empty">No groups have worked on this project yet.</p>
 
     <div v-else class="rl-grid">
-      <RegularItem
-        v-for="g in groups"
-        :key="g.groupKey"
-        :name="g.groupName"
-        :hours="g.hours"
-        :is-regular="false"
-        @edit="router.push(groupPath(g.groupKey))"
-      />
+      <ProjectGroupItem v-for="g in groups" :key="g.groupKey" :group="g" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import RegularItem from '../RegularItem.vue'
-import { groupPath } from '../../router/index'
+import ProjectGroupItem from './ProjectGroupItem.vue'
 import type { ProjectGroup } from '../../utils/projectGroups'
 
 defineProps<{ groups: ProjectGroup[] }>()
-
-const router = useRouter()
 </script>
 
 <style scoped>
