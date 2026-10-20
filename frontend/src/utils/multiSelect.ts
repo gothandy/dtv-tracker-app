@@ -37,8 +37,11 @@ export function multiSelectSummary(options: MultiSelectOption[], excluded: strin
   return shown.length <= hidden.length ? `Show: ${shown.join(', ')}` : `Hide: ${hidden.join(', ')}`
 }
 
-/** A list of values from the address (`?hide=Closed,Draft`), and back. */
+/**
+ * A list of values from the address, and back: one parameter per value
+ * (`?hide=Closed&hide=Draft`), so a value can hold a comma ("Design, funded").
+ */
 export const parseValueList = (raw: unknown): string[] =>
-  typeof raw === 'string' && raw ? raw.split(',').filter(Boolean) : []
-export const valueListParam = (values: string[]): string | undefined =>
-  values.length ? values.join(',') : undefined
+  (Array.isArray(raw) ? raw : [raw]).filter((v): v is string => typeof v === 'string' && v !== '')
+export const valueListParam = (values: string[]): string[] | undefined =>
+  values.length ? [...values] : undefined

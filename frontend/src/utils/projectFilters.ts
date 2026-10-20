@@ -7,8 +7,8 @@ export const FUTURE_OR_NEW = 'future-new'
 /** FY filter value: all years, plus a "No matches" card for each trail without a project. */
 export const ALL_TRAILS = 'trails'
 
-/** The Status filter's value for projects with no status. */
-export const NO_STATUS = 'none'
+/** The Status filter's value for projects with no status: outside the Status choices, as NO_TAGS. */
+export const NO_STATUS = '__none__'
 
 export function isFutureOrNew<T extends { id: number }>(
   project: T,

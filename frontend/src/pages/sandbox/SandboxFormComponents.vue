@@ -143,7 +143,7 @@
 
       <!-- Multi-select filter -->
       <h2>Multi-select filter</h2>
-      <p class="sfc-note">Every option starts ticked; pick one to cross it out (left out of the results), pick it again to tick it; the first choice puts every tick back. Crossed out: {{ multiExcluded.length ? multiExcluded.join(', ') : 'none' }}</p>
+      <p class="sfc-note">Every option starts ticked ([x]); pick one to untick it ([ ], left out of the results), pick it again to tick it; the first choice ticks them all again; the last tick can't be unticked. Unticked: {{ multiExcluded.length ? multiExcluded.join(', ') : 'none' }}</p>
       <FormLayout>
         <FormRow title="Statuses" :full-width="true">
           <MultiSelectFilter v-model:excluded="multiExcluded" :options="multiOptions" all-label="All statuses" aria-label="Status filter" />
@@ -276,10 +276,10 @@ const multiOptions = [
   { value: 'Active', label: 'Active' },
   { value: 'Planned', label: 'Planned' },
   { value: 'Closed', label: 'Closed' },
-  { value: 'none', label: 'No status' },
+  { value: '__none__', label: 'No status' },
 ]
 const multiExcluded = ref<string[]>([])
-const multiExcludedSome = ref<string[]>(['Closed', 'none'])
+const multiExcludedSome = ref<string[]>(['Closed', '__none__'])
 
 const fyValue = ref('all')
 const fyValueSelected = ref('FY2024')

@@ -1,8 +1,9 @@
 <template>
   <!--
     A filter where every option starts ticked and each can be crossed out, leaving it out of the
-    results. Version 1 is a native <select>: pick an option to flip its tick (✓) and cross (✗);
-    pick the All choice to put every tick back. The last tick can't be crossed out (it's greyed),
+    results. Version 1 is a native <select>: each option shows a text checkbox, "Closed [x]"
+    when shown and "Closed [ ]" when left out (text, as a native option can't show the app's
+    icons); pick an option to flip it; pick the All choice to tick every box again. The last tick can't be crossed out (it's greyed),
     so the filter never hides everything. Closed, it shows a summary ("Hide: Closed", "Show: No status").
     A later version may become checkboxes in a custom dropdown (useDropdownPanel).
   -->
@@ -10,7 +11,7 @@
     <option value="" disabled hidden>{{ summary }}</option>
     <option :value="MULTI_SELECT_ALL">{{ allLabel }}</option>
     <option v-for="o in options" :key="o.value" :value="o.value" :disabled="o.value === last">
-      {{ excluded.includes(o.value) ? '✗' : '✓' }} {{ o.label }}
+      {{ o.label }} {{ excluded.includes(o.value) ? '[ ]' : '[x]' }}
     </option>
   </select>
 </template>

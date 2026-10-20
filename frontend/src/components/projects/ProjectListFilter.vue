@@ -56,7 +56,7 @@ const route = useRoute()
 const router = useRouter()
 
 const fy = ref((route.query.fy as string) || ALL_TRAILS)   // Show all trails by default
-/** Statuses crossed out in the Status filter (`?hide=Closed,none`) */
+/** Statuses crossed out in the Status filter (`?hide=Closed&hide=__none__`) */
 const hiddenStatuses = ref<string[]>(parseValueList(route.query.hide))
 const tagLabel = ref((route.query.tag as string) || '')
 
@@ -142,7 +142,7 @@ watch(() => route.query.tag, tag => {
 })
 
 watch([fy, hiddenStatuses, tagLabel], ([newFy, newHidden, newTag]) => {
-  const query: Record<string, string> = {}
+  const query: Record<string, string | string[]> = {}
   if (newFy) query.fy = newFy
   const hide = valueListParam(newHidden)
   if (hide) query.hide = hide

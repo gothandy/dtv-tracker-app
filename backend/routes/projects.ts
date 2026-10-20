@@ -222,9 +222,12 @@ router.post('/projects/bulk-status', requirePermission('bulkEditProjects'), asyn
 // GET /api/projects/options — the Status column's choices, as set in SharePoint.
 // GET /api/projects/documents — the keys of projects with documents (Projects by location report).
 // Public, like the report: it only says which projects have documents, which are public too.
+// Only current projects: a deleted project's folder stays in the library, and its name isn't public.
 router.get('/projects/documents', async (_req: Request, res: Response) => {
   try {
-    const keys = await projectKeysWithDocuments();
+    const [folders, projects] = await Promise.all([projectKeysWithDocuments(), projectsRepository.getAll()]);
+    const current = new Set(projects.map(p => (p.Title || '').toLowerCase()));
+    const keys = folders.filter(k => current.has(k));
     res.json({ success: true, data: { keys } } as ApiResponse<{ keys: string[] }>);
   } catch (error: any) {
     console.error('Error listing project documents:', error.message || error);
