@@ -522,10 +522,11 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] **Public**: open a document `url` while logged out — file loads via app proxy (PDF/images inline); no SharePoint sign-in
 - [ ] Governance PDF under `Docs/Projects/…` opens at `/docs/projects/…/file.pdf` (not caught by project proxy)
 - [ ] Upload/delete project doc — list updates; re-open same `url` shows new file or 404 after delete
-- [ ] Public project detail: Documents card hidden when folder empty
+- [ ] Project detail, everyone (public included): Documents card beside Totals; *No documents yet.* when the folder is empty or missing; no Upload docs or × without `uploadProjects`
 - [ ] Admin (`uploadProjects`): Upload docs button; files appear as lozenges; × removes file. Check In: no Upload docs or ×; the upload page → Forbidden; `POST /api/projects/:key/attachments` → 403
 - [ ] Upload a test PDF via admin or SharePoint; document link opens
 - [ ] Header: description, metadata tags (check-in can edit tags)
+- [ ] Groups (everyone, above Linked sessions; the layout of Repeats and Regulars): each group with a linked session and its hours, most hours first; click → the group page; none → *No groups have worked on this project yet.*
 - [ ] Carousel: cover photos from linked sessions (newest first)
 - [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
 - [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/projects/{new}/docs/…` URLs work

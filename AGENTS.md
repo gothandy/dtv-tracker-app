@@ -110,7 +110,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Groups listing with FY filter ([GroupListPage.vue](frontend/src/pages/GroupListPage.vue))
 - Projects listing with cascading Status (multi-select: cross statuses out), FY and tag filters; FY *Show all trails* (the default) groups the projects by trail with a *No matches* card for each empty trail; the *Projects by location* CSV of what's shown, for everyone; Admin *Bulk actions*: select projects (and trails) to set their status or narrow the CSV ([ProjectListPage.vue](frontend/src/pages/ProjectListPage.vue))
 - Group detail with FY stats, FY bar chart, regulars, sessions, edit/create/delete ([GroupDetailPage.vue](frontend/src/pages/GroupDetailPage.vue))
-- Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
+- Project detail with all-FY session/hour totals, metadata tags, session carousel, documents, the groups that worked on it, linked sessions ([ProjectDetailPage.vue](frontend/src/pages/ProjectDetailPage.vue))
 - Sessions listing with FY filter, calendar view, text search, cascading filters, bulk tagging, CSV download ([SessionListPage.vue](frontend/src/pages/SessionListPage.vue))
 - Session detail with entries, check-in, set hours, move group, tags, photo gallery ([SessionDetailPage.vue](frontend/src/pages/SessionDetailPage.vue))
 - Profiles listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
@@ -475,3 +475,4 @@ When reviewing pull requests:
 - flag deviations from those documented patterns
 - prioritise correctness, permission safety, and regression risks
 - prefer repo conventions over generic framework advice
+- **Admin-set SharePoint configuration is trusted.** Choices, term sets and list options are set by an admin in SharePoint. Don't add guards or raise review findings for unlikely values in them, such as commas, reserved words or clashes with the app's own placeholders. Guard what users and API callers send.

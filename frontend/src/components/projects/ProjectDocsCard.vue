@@ -16,7 +16,7 @@
 
     <p v-else-if="error" class="pdc-error">{{ error }}</p>
 
-    <p v-else-if="allowManage && !hasFiles" class="pdc-empty">No documents yet.</p>
+    <p v-else-if="!hasFiles" class="pdc-empty">No documents yet.</p>
 
     <div v-else-if="hasFiles" class="pdc-tree">
       <DocsSection
