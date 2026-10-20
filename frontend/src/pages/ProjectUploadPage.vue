@@ -77,7 +77,7 @@ async function uploadDocument(file: File): Promise<boolean> {
     return false
   }
   if (res.status === 403) {
-    pickerRef.value?.setUploadError('Admin access required.')
+    pickerRef.value?.setUploadError("You don't have permission to upload documents.")
     return false
   }
   if (res.status === 413) {

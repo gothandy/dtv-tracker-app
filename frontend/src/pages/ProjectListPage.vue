@@ -16,17 +16,19 @@
         :profile="profile.context"
         :can-edit="profile.can('editProjects')"
         :sessions="sessionsStore.sessions"
-        :can-download="profile.can('bulkProjects')"
+        :can-bulk-edit="profile.can('bulkEditProjects')"
         :selected="selected"
         :selected-trails="selectedTrails"
+        :empty-trails="emptyTrails"
         @add-project="onAddProjectAt('')"
+        @set-status="showStatusModal = true"
       />
       <ProjectListResults
         :projects="filtered"
         :empty-trails="emptyTrails"
         :groups="groups"
         :can-add="profile.can('editProjects')"
-        :selected="profile.can('bulkProjects') ? selected : undefined"
+        :selected="profile.can('bulkEditProjects') ? selected : undefined"
         :selected-trails="selectedTrails"
         @update:selected-trails="selectedTrails = $event"
         :loading="projectsStore.loading || sessionsStore.loading"
@@ -36,6 +38,16 @@
         @filter-tag="tag => router.replace({ query: { ...route.query, tag } })"
       />
     </div>
+
+    <ProjectBulkStatusModal
+      v-if="showStatusModal"
+      :count="selectedProjectIds.length"
+      :statuses="statuses"
+      :working="statusWorking"
+      :error="statusModalError || statusesError"
+      @close="showStatusModal = false; statusModalError = ''"
+      @save="onApplyStatus"
+    />
 
     <ProjectAddModal
       v-if="showAddProject"
@@ -51,7 +63,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { pruneSelectionToVisible } from '../utils/listSelection'
+import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 import { useRoute, useRouter } from 'vue-router'
 import { useTaxonomy } from '../composables/useTaxonomy'
 import { projectsByLocation } from '../utils/projectsByLocation'
@@ -62,6 +74,7 @@ import ProjectListFilter from '../components/projects/ProjectListFilter.vue'
 import ProjectListActions from '../components/projects/ProjectListActions.vue'
 import ProjectListResults from '../components/projects/ProjectListResults.vue'
 import ProjectAddModal from './modals/ProjectAddModal.vue'
+import ProjectBulkStatusModal from './modals/ProjectBulkStatusModal.vue'
 import type { AddProjectPayload } from './modals/ProjectAddModal.vue'
 import { useProjectListStore } from '../stores/projectList'
 import { useSessionListStore } from '../stores/sessionList'
@@ -88,7 +101,7 @@ const groups = computed(() => allTrails.value
 const selected = ref<number[]>([])
 const selectedTrails = ref<string[]>([])
 const showAddProject = ref(false)
-/** The trail a new project starts at, when added from a No projects card */
+/** The trail a new project starts at, when added from a No matches card */
 const addProjectTag = ref('')
 
 // Keep the selection to the projects the filters show.
@@ -100,6 +113,36 @@ watch(emptyTrails, trails => {
   const pruned = selectedTrails.value.filter(t => trails.includes(t))
   if (pruned.length !== selectedTrails.value.length) selectedTrails.value = pruned
 })
+
+const showStatusModal = ref(false)
+const statusWorking = ref(false)
+const statusModalError = ref('')
+const selectedProjectIds = computed(() => visibleSelected(selected.value, filtered.value).map(p => p.id))
+
+// Set status on the selected projects (Bulk actions), as Sessions' Update project does.
+async function onApplyStatus(status: string | null) {
+  statusWorking.value = true
+  statusModalError.value = ''
+  try {
+    const res = await fetch('/api/projects/bulk-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectIds: selectedProjectIds.value, status }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Set status failed — please try again')
+    }
+    showStatusModal.value = false
+    selected.value = []
+    await projectsStore.fetch()
+  } catch (e) {
+    statusModalError.value = e instanceof Error ? e.message : 'Set status failed — please try again'
+    console.error('[ProjectListPage] bulk-status', e)
+  } finally {
+    statusWorking.value = false
+  }
+}
 
 function onAddProjectAt(trail: string) {
   addProjectTag.value = trail

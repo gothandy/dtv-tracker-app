@@ -178,11 +178,56 @@ async function requestedStatus(value: unknown): Promise<{ status?: string | null
   return { error: `Status must be one of: ${choices.join(', ')}` };
 }
 
+// POST /api/projects/bulk-status — set the status of the selected projects (Bulk actions).
+router.post('/projects/bulk-status', requirePermission('bulkEditProjects'), async (req: Request, res: Response) => {
+  try {
+    const { projectIds } = req.body;
+    if (!Array.isArray(projectIds) || projectIds.length === 0) {
+      res.status(400).json({ success: false, error: 'projectIds array is required' });
+      return;
+    }
+    // Every ID a whole positive number of an existing project, checked before any write.
+    if (!projectIds.every(id => Number.isInteger(id) && id > 0)) {
+      res.status(400).json({ success: false, error: 'projectIds must be project IDs (whole numbers)' });
+      return;
+    }
+    const known = new Set((await projectsRepository.getAll()).map(p => p.ID));
+    const unknown = projectIds.filter((id: number) => !known.has(id));
+    if (unknown.length) {
+      res.status(400).json({ success: false, error: `No project with ID ${unknown.join(', ')}` });
+      return;
+    }
+    if (!('status' in req.body)) {
+      res.status(400).json({ success: false, error: 'status is required (use null for no status)' });
+      return;
+    }
+    const { status, error: statusError } = await requestedStatus(req.body.status);
+    if (statusError) {
+      res.status(400).json({ success: false, error: statusError });
+      return;
+    }
+
+    let updated = 0;
+    for (const id of new Set<number>(projectIds)) {
+      await projectsRepository.updateFields(id, { Status: status ?? null });
+      updated++;
+    }
+    res.json({ success: true, data: { updated } } as ApiResponse<{ updated: number }>);
+  } catch (error: any) {
+    console.error('Error bulk updating project statuses:', error);
+    res.status(500).json({ success: false, error: 'Failed to update project statuses', message: error.message });
+  }
+});
+
 // GET /api/projects/options — the Status column's choices, as set in SharePoint.
 // GET /api/projects/documents — the keys of projects with documents (Projects by location report).
-router.get('/projects/documents', requirePermission('bulkProjects'), async (_req: Request, res: Response) => {
+// Public, like the report: it only says which projects have documents, which are public too.
+// Only current projects: a deleted project's folder stays in the library, and its name isn't public.
+router.get('/projects/documents', async (_req: Request, res: Response) => {
   try {
-    const keys = await projectKeysWithDocuments();
+    const [folders, projects] = await Promise.all([projectKeysWithDocuments(), projectsRepository.getAll()]);
+    const current = new Set(projects.map(p => (p.Title || '').toLowerCase()));
+    const keys = folders.filter(k => current.has(k));
     res.json({ success: true, data: { keys } } as ApiResponse<{ keys: string[] }>);
   } catch (error: any) {
     console.error('Error listing project documents:', error.message || error);
@@ -316,7 +361,7 @@ router.get('/projects/:key/attachments', async (req: Request, res: Response) => 
   }
 });
 
-router.post('/projects/:key/attachments', (req: Request, res: Response, next: express.NextFunction) => {
+router.post('/projects/:key/attachments', requirePermission('uploadProjects'), (req: Request, res: Response, next: express.NextFunction) => {
   projectDocUpload.array('documents', 10)(req, res, (err: unknown) => {
     if (err) {
       const code = (err as { code?: string }).code;
@@ -389,7 +434,7 @@ async function handleProjectDocUpload(req: Request, res: Response) {
   }
 }
 
-router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Response) => {
+router.delete('/projects/:key/attachments/:itemId', requirePermission('uploadProjects'), async (req: Request, res: Response) => {
   const key = String(req.params.key).toLowerCase();
   const itemId = String(req.params.itemId);
 
@@ -592,7 +637,7 @@ router.patch('/projects/:key', requirePermission('editProjects'), async (req: Re
   }
 });
 
-router.delete('/projects/:key', async (req: Request, res: Response) => {
+router.delete('/projects/:key', requirePermission('deleteProjects'), async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();
     const rawProjects = await projectsRepository.getAll();

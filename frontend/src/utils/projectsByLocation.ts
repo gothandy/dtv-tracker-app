@@ -16,7 +16,7 @@ export interface LocationProject {
 
 export const PROJECTS_BY_LOCATION_HEADERS = [
   'Location', 'Top level', 'Trail', 'Tag', 'Project', 'Project status',
-  'Sessions', 'Hours', 'Documents', 'Timing', 'Next session', 'Last session', 'Link', 'Description',
+  'Sessions', 'Hours', 'Documents', 'Timing', 'First session', 'Next session', 'Last session', 'Link', 'Description',
 ]
 
 /** Location label for projects with no location tag. */
@@ -46,8 +46,8 @@ type Tagged = { metadata?: Array<{ label: string }> }
 const atLocation = (p: Tagged, path: string) => p.metadata?.some(m => isUnder(m.label, path)) ?? false
 
 /**
- * The trails (locations) with none of these projects: the "No projects" trails shown on the
- * Projects page with *Include No projects*, and in its CSV. With a tag filter, only the trails
+ * The trails (locations) with none of these projects: the "No matches" trails shown on the
+ * Projects page with *Show all trails*, and in its CSV. With a tag filter, only the trails
  * beneath it, or the one it's beneath; with "No tags", none.
  */
 export function trailsWithoutProjects(projects: Tagged[], tree: TaxNode[], tagFilter: string): string[] {
@@ -57,16 +57,24 @@ export function trailsWithoutProjects(projects: Tagged[], tree: TaxNode[], tagFi
     .filter(path => !projects.some(p => atLocation(p, path)))
 }
 
-type Timing = { state: 'None' | 'Future' | 'Past'; next: string; last: string }
+/** The CSV's description: one line (line breaks become spaces), at most DESCRIPTION_MAX characters. */
+export const DESCRIPTION_MAX = 100
+export function csvDescription(text: string | undefined): string {
+  const line = (text ?? '').replace(/\s*[\r\n]+\s*/g, ' ').trim()
+  return line.length > DESCRIPTION_MAX ? line.slice(0, DESCRIPTION_MAX - 4).trimEnd() + ' ...' : line
+}
 
-/** Each project's sessions in time: none yet, still to come (next date), or all past (last date). */
+type Timing = { state: 'None' | 'Future' | 'Past'; first: string; next: string; last: string }
+
+/** Each project's sessions in time: none yet, still to come (next date), or all past (last date);
+ *  with its first session's date, whenever that is. */
 function projectTiming(projects: Array<{ id: number }>, sessions: Session[], todayIso: string): Map<number, Timing> {
   return new Map(projects.map(p => {
     const dates = sessions.filter(s => s.projectId === p.id).map(s => s.date.slice(0, 10)).sort()
     const next = dates.find(d => d >= todayIso)
     const last = [...dates].reverse().find(d => d < todayIso)
     const state: Timing['state'] = !dates.length ? 'None' : next ? 'Future' : 'Past'
-    return [p.id, { state, next: next ?? '', last: last ?? '' }]
+    return [p.id, { state, first: dates[0] ?? '', next: next ?? '', last: last ?? '' }]
   }))
 }
 
@@ -119,8 +127,9 @@ export function projectsByLocation<P extends Tagged & { id: number }>(
 /**
  * Projects by location, for a CSV of the projects selected on the Projects page: one row per
  * project, in projectsByLocation's order, with its trail ("Adit") and its own tag in full
- * ("XC:Adit:TNT"), whether it has documents, and its description. Each of `emptyTrails` gets
- * one "No projects" row in its place. Sessions and hours are for the page's FY.
+ * ("XC:Adit:TNT"), whether it has documents, its first, next and last session dates, and its
+ * description on one line (csvDescription). Each of `emptyTrails` gets
+ * one "No matches" row in its place. Sessions and hours are for the page's FY.
  */
 export function projectsByLocationRows(
   projects: LocationProject[],
@@ -142,16 +151,16 @@ export function projectsByLocationRows(
     const trail = path === NO_LOCATION ? '' : path.split(':')[1]
     if (!here.length) {
       // No link (the Projects page would be empty for it), and no sessions or hours to give.
-      return [[path, top, trail, '', 'No projects', '', '', '', '', '', '', '', '', '']]
+      return [[path, top, trail, '', 'No matches', '', '', '', '', '', '', '', '', '', '']]
     }
     return here.map(p => {
       const t = timing.get(p.id)!
       return [
         path, top, trail, tagAt(p, path), p.displayName || p.key, p.status ?? '',
         p.sessionCount, round1(p.hours), withDocuments.has(p.key.toLowerCase()) ? 'Yes' : 'No',
-        t.state, t.next, t.last,
+        t.state, t.first, t.next, t.last,
         `${origin}/projects/${encodeURIComponent(p.key)}`,
-        p.description ?? '',
+        csvDescription(p.description),
       ]
     })
   })

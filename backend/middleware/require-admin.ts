@@ -8,6 +8,10 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH', pattern: /^\/sessions\/[^/]+\/[^/]+$/ }, // edit session title/description
   { method: 'POST',  pattern: /^\/projects$/ },               // add project; handler checks editProjects
   { method: 'PATCH', pattern: /^\/projects\/[^/]+$/ },       // edit project; handler checks editProjects
+  { method: 'POST',  pattern: /^\/projects\/bulk-status$/ },   // set status on selected projects; handler checks bulkEditProjects
+  { method: 'DELETE', pattern: /^\/projects\/[^/]+$/ },      // delete project; handler checks deleteProjects
+  { method: 'POST',  pattern: /^\/projects\/[^/]+\/attachments$/ },          // upload project docs; handler checks uploadProjects
+  { method: 'DELETE', pattern: /^\/projects\/[^/]+\/attachments\/[^/]+$/ }, // remove a project doc; handler checks uploadProjects
   { method: 'POST',   pattern: /^\/templates$/ },               // add template; handler checks editTemplates
   { method: 'PATCH',  pattern: /^\/templates\/\d+$/ },          // edit template; handler checks editTemplates
   { method: 'DELETE', pattern: /^\/templates\/\d+$/ },          // delete template; handler checks editTemplates

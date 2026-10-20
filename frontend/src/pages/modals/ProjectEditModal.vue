@@ -70,7 +70,7 @@ const props = defineProps<{
   project: ProjectDetailResponse
   /** The Projects list's Status choices */
   statuses: string[]
-  /** Offer Delete (Admin only; editing is the editProjects permission) */
+  /** Offer Delete (permission deleteProjects; editing is editProjects) */
   canDelete: boolean
   working: boolean
   error?: string
