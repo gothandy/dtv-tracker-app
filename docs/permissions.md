@@ -91,7 +91,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
 | **Projects list** | Full view: Status, FY and tag filters, trail and project cards, totals, *Projects by location* CSV of what's shown | New project (`editProjects`) | *Bulk actions* (`bulkEditProjects`): select, Set status, CSV of the ticked projects |
-| **Project detail** | Description, tag, Totals box (Status, Sessions, Hours), documents, linked sessions | Edit (name, key, description, status, tag; `editProjects`) | Delete project (`deleteProjects`); upload and remove documents (`uploadProjects`) |
+| **Project detail** | Description, tag, Totals box (Status, Sessions, Hours), Documents card (*No documents yet.* when empty), Groups (each links to the group), linked sessions | Edit (name, key, description, status, tag; `editProjects`) | Delete project (`deleteProjects`); upload and remove documents (`uploadProjects`) |
 | **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | New, Edit and Delete (`editTemplates`) |
 | **Profiles page** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email (Profile templates) |
 | **Profile detail** | Redirected (auth required) | Edit profile (name/email/match name), Regulars checkboxes, inline hours (own profile only), Collect Consent | **`User`** field in edit modal, Add Record, record pill editing, inline hours (all profiles), Transfer, Delete Profile |

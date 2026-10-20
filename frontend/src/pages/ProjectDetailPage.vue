@@ -55,7 +55,8 @@
         </template>
       </LayoutColumns>
 
-      <LayoutColumns v-if="showDocumentsCard" ratio="1-2" align="start">
+      <!-- Documents for everyone, "No documents yet." when there are none; managing them is uploadProjects. -->
+      <LayoutColumns ratio="1-2" align="start">
         <template #left>
           <ProjectDetailStats :stats="store.project.stats" :status="store.project.status" />
         </template>
@@ -72,11 +73,7 @@
         </template>
       </LayoutColumns>
 
-      <LayoutColumns v-else ratio="1">
-        <template #left>
-          <ProjectDetailStats :stats="store.project.stats" :status="store.project.status" />
-        </template>
-      </LayoutColumns>
+      <ProjectGroupList :groups="groups" />
 
       <LayoutColumns ratio="1">
         <template #header><SectionHeader>Linked sessions</SectionHeader></template>
@@ -109,10 +106,11 @@ import ProjectDetailHeader from '../components/projects/ProjectDetailHeader.vue'
 import ProjectDetailActions from '../components/projects/ProjectDetailActions.vue'
 import ProjectDetailStats from '../components/projects/ProjectDetailStats.vue'
 import ProjectDocsCard from '../components/projects/ProjectDocsCard.vue'
+import ProjectGroupList from '../components/projects/ProjectGroupList.vue'
+import { projectGroups } from '../utils/projectGroups'
 import SessionListResults from '../components/sessions/SessionListResults.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import { sessionPath, projectPath, projectsPath } from '../router/index'
-import { docsTreeHasFiles } from '../utils/docsTree'
 import { mapSession } from '../utils/mapSession'
 import type { SessionResponse } from '../../../types/api-responses'
 import type { Session } from '../types/session'
@@ -145,14 +143,12 @@ const coverItems = computed<MediaItem[]>(() =>
   store.project ? buildSessionCoverCarouselItems(store.project.sessions) : []
 )
 
+/** The groups that have worked on the project, from its linked sessions */
+const groups = computed(() => projectGroups(store.project?.sessions ?? []))
+
 const linkedSessions = computed<Session[]>(() =>
   (store.project?.sessions ?? []).map(r => mapSession(r, profile.user?.profileStats))
 )
-
-const showDocumentsCard = computed(() => {
-  if (profile.can('uploadProjects')) return true
-  return store.attachmentsLoading || docsTreeHasFiles(store.docsTree)
-})
 
 function onCoverSelect(index: number) {
   selectedCoverIndex.value = index
