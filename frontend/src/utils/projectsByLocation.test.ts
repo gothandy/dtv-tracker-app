@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { projectsByLocation, projectsByLocationRows, trailsWithoutProjects, trailName, NO_LOCATION } from './projectsByLocation'
+import { projectsByLocation, projectsByLocationRows, trailsWithoutProjects, trailName, csvDescription, DESCRIPTION_MAX, NO_LOCATION } from './projectsByLocation'
 import { NO_TAGS } from './tagFilter'
 import type { Session } from '../types/session'
 
@@ -42,7 +42,7 @@ describe('projectsByLocationRows', () => {
 
   it('gives a trail with no projects one No matches row, with no link', () => {
     expect(rows.filter(r => r[0] === 'XC:Verderers')).toEqual([
-      ['XC:Verderers', 'XC', 'Verderers', '', 'No matches', '', '', '', '', '', '', '', '', ''],
+      ['XC:Verderers', 'XC', 'Verderers', '', 'No matches', '', '', '', '', '', '', '', '', '', ''],
     ])
   })
 
@@ -57,7 +57,7 @@ describe('projectsByLocationRows', () => {
 
   it('gives each project its location, trail, tag, status, totals, documents, timing, dates, link and description', () => {
     expect(rows.find(r => r[4] === 'Future')).toEqual([
-      'XC:Freeminers', 'XC', 'Freeminers', 'XC:Freeminers', 'Future', 'Active', 2, 5.5, 'No', 'Future', '2026-11-03', '2026-01-01', `${ORIGIN}/projects/future`, '',
+      'XC:Freeminers', 'XC', 'Freeminers', 'XC:Freeminers', 'Future', 'Active', 2, 5.5, 'No', 'Future', '2026-01-01', '2026-11-03', '2026-01-01', `${ORIGIN}/projects/future`, '',
     ])
   })
 
@@ -65,7 +65,13 @@ describe('projectsByLocationRows', () => {
     const described = projects.map(p => p.id === 1 ? { ...p, description: 'Rebuild the berms' } : p)
     const withDocs = projectsByLocationRows(described, sessions, tree, [], ORIGIN, TODAY, new Set(['past']))
     const past = withDocs.find(r => r[4] === 'Past')!
-    expect([past[8], past[13]]).toEqual(['Yes', 'Rebuild the berms'])
+    expect([past[8], past[14]]).toEqual(['Yes', 'Rebuild the berms'])
+  })
+
+  it('gives the first session date whether it is past or still to come', () => {
+    const past = rows.find(r => r[4] === 'Past')!
+    expect(past.slice(9, 13)).toEqual(['Past', '2026-01-10', '', '2026-01-10'])
+    expect(rows.find(r => r[4] === 'New')!.slice(9, 13)).toEqual(['None', '', '', ''])
   })
 
   it('puts projects tagged only higher up, or not at all, under (No location)', () => {
@@ -82,6 +88,23 @@ describe('projectsByLocationRows', () => {
     const picked = projects.filter(p => p.displayName === 'TNT')
     const r = projectsByLocationRows(picked, sessions, tree, ['DH:Corkscrew'], ORIGIN, TODAY)
     expect(r.map(x => [x[0], x[4]])).toEqual([['XC:Adit', 'TNT'], ['DH:Corkscrew', 'No matches']])
+  })
+})
+
+describe('csvDescription', () => {
+  it('puts the description on one line', () => {
+    expect(csvDescription('Rebuild the berms.\r\n\r\n  Then the drops.\nDone')).toBe('Rebuild the berms. Then the drops. Done')
+  })
+
+  it('keeps a short one as it is, and gives nothing for none', () => {
+    expect(csvDescription('x'.repeat(DESCRIPTION_MAX))).toBe('x'.repeat(DESCRIPTION_MAX))
+    expect(csvDescription(undefined)).toBe('')
+  })
+
+  it('cuts a long one to the limit, ending " ..."', () => {
+    const cut = csvDescription('word '.repeat(40))
+    expect(cut.length).toBeLessThanOrEqual(DESCRIPTION_MAX)
+    expect(cut.endsWith(' ...')).toBe(true)
   })
 })
 
