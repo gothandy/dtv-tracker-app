@@ -125,9 +125,10 @@ const emptyTrails = computed(() => fy.value === ALL_TRAILS
   ? trailsWithoutProjects(filtered.value, taxonomyTree.value, tagLabel.value)
   : [])
 
-watch(fyOptions, opts => {
-  // "Show all trails" is offered once the tags have loaded; don't drop it before then.
-  if (fy.value === ALL_TRAILS && !taxonomyTree.value.length) return
+watch([fyOptions, taxonomyLoading], ([opts]) => {
+  // "Show all trails" is offered once the tags have loaded; don't drop it while they're
+  // loading, but do if they couldn't load (it would put every project under No location).
+  if (fy.value === ALL_TRAILS && taxonomyLoading.value) return
   if (opts.length && !opts.some(o => o.value === fy.value)) fy.value = 'all'
 }, { immediate: true })
 

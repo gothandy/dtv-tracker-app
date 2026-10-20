@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toggleExcluded, multiSelectSummary, parseValueList, valueListParam, MULTI_SELECT_ALL } from './multiSelect'
+import { toggleExcluded, multiSelectSummary, lastTicked, parseValueList, valueListParam, MULTI_SELECT_ALL } from './multiSelect'
 
 const options = [
   { value: 'Active', label: 'Active' },
@@ -24,10 +24,28 @@ describe('multiSelectSummary', () => {
     expect(multiSelectSummary(options, [], 'All statuses')).toBe('All statuses')
   })
 
-  it('names up to two crossed-out options, then counts them', () => {
-    expect(multiSelectSummary(options, ['Closed'], 'All statuses')).toBe('Hiding: Closed')
-    expect(multiSelectSummary(options, ['Closed', 'none'], 'All statuses')).toBe('Hiding: Closed, No status')
-    expect(multiSelectSummary(options, ['Closed', 'Draft', 'none'], 'All statuses')).toBe('Hiding 3')
+  it('names the crossed-out options while they are fewer', () => {
+    expect(multiSelectSummary(options, ['Closed'], 'All statuses')).toBe('Hide: Closed')
+  })
+
+  it('names the ticked options when they are fewer, or as many', () => {
+    expect(multiSelectSummary(options, ['Active', 'Closed', 'Draft'], 'All statuses')).toBe('Show: No status')
+    expect(multiSelectSummary(options, ['Active', 'Draft'], 'All statuses')).toBe('Show: Closed, No status')
+  })
+
+  it('says when everything is crossed out', () => {
+    expect(multiSelectSummary(options, ['Active', 'Closed', 'Draft', 'none'], 'All statuses')).toBe('All hidden')
+  })
+})
+
+describe('lastTicked', () => {
+  it('is the one option still ticked, so it cannot be crossed out', () => {
+    expect(lastTicked(options, ['Active', 'Closed', 'Draft'])).toBe('none')
+  })
+
+  it('is nothing while two or more are ticked, or none are', () => {
+    expect(lastTicked(options, ['Closed'])).toBeUndefined()
+    expect(lastTicked(options, ['Active', 'Closed', 'Draft', 'none'])).toBeUndefined()
   })
 })
 

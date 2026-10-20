@@ -186,6 +186,17 @@ router.post('/projects/bulk-status', requirePermission('bulkEditProjects'), asyn
       res.status(400).json({ success: false, error: 'projectIds array is required' });
       return;
     }
+    // Every ID a whole positive number of an existing project, checked before any write.
+    if (!projectIds.every(id => Number.isInteger(id) && id > 0)) {
+      res.status(400).json({ success: false, error: 'projectIds must be project IDs (whole numbers)' });
+      return;
+    }
+    const known = new Set((await projectsRepository.getAll()).map(p => p.ID));
+    const unknown = projectIds.filter((id: number) => !known.has(id));
+    if (unknown.length) {
+      res.status(400).json({ success: false, error: `No project with ID ${unknown.join(', ')}` });
+      return;
+    }
     if (!('status' in req.body)) {
       res.status(400).json({ success: false, error: 'status is required (use null for no status)' });
       return;
@@ -197,9 +208,7 @@ router.post('/projects/bulk-status', requirePermission('bulkEditProjects'), asyn
     }
 
     let updated = 0;
-    for (const rawId of projectIds) {
-      const id = parseInt(String(rawId), 10);
-      if (isNaN(id)) continue;
+    for (const id of new Set<number>(projectIds)) {
       await projectsRepository.updateFields(id, { Status: status ?? null });
       updated++;
     }
