@@ -141,6 +141,21 @@
         </FormRow>
       </FormLayout>
 
+      <!-- Multi-select filter -->
+      <h2>Multi-select filter</h2>
+      <p class="sfc-note">Every option starts ticked; pick one to cross it out (left out of the results), pick it again to tick it; the first choice puts every tick back. Crossed out: {{ multiExcluded.length ? multiExcluded.join(', ') : 'none' }}</p>
+      <FormLayout>
+        <FormRow title="Statuses" :full-width="true">
+          <MultiSelectFilter v-model:excluded="multiExcluded" :options="multiOptions" all-label="All statuses" aria-label="Status filter" />
+        </FormRow>
+        <FormRow title="Some crossed out" :full-width="true">
+          <MultiSelectFilter v-model:excluded="multiExcludedSome" :options="multiOptions" all-label="All statuses" />
+        </FormRow>
+        <FormRow title="Disabled" :full-width="true">
+          <MultiSelectFilter :excluded="[]" :options="multiOptions" all-label="All statuses" disabled />
+        </FormRow>
+      </FormLayout>
+
       <!-- ─── Form page components (TaskLayout pattern) ─── -->
 
       <h2>FormCard</h2>
@@ -234,6 +249,7 @@ import FyFilter from '../../components/FyFilter.vue'
 import TermPicker from '../../components/TermPicker.vue'
 import EntryIconPicker from '../../components/EntryIconPicker.vue'
 import ProfilePicker, { type PickerProfile } from '../../components/ProfilePicker.vue'
+import MultiSelectFilter from '../../components/MultiSelectFilter.vue'
 import FormCard from '../../components/forms/FormCard.vue'
 import AlertBanner from '../../components/forms/AlertBanner.vue'
 import FormInput from '../../components/forms/FormInput.vue'
@@ -255,6 +271,15 @@ const taxonomyTree: TaxNode[] = [
   { label: 'DofE', id: 'uuid-3' },
 ]
 const taxonomyLoading = false
+
+const multiOptions = [
+  { value: 'Active', label: 'Active' },
+  { value: 'Planned', label: 'Planned' },
+  { value: 'Closed', label: 'Closed' },
+  { value: 'none', label: 'No status' },
+]
+const multiExcluded = ref<string[]>([])
+const multiExcludedSome = ref<string[]>(['Closed', 'none'])
 
 const fyValue = ref('all')
 const fyValueSelected = ref('FY2024')

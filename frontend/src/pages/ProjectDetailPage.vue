@@ -27,8 +27,8 @@
           <ProjectDetailActions
             ref="actionsRef"
             :project="store.project"
-            :profile="profile.context"
             :can-edit="profile.can('editProjects')"
+            :can-delete="profile.can('deleteProjects')"
             :statuses="projectStatuses"
             :statuses-error="projectStatusesError"
             @edit-project="onEditProject"
@@ -65,7 +65,7 @@
             :project-key="store.project.key"
             :loading="store.attachmentsLoading"
             :error="store.attachmentsError"
-            :allow-manage="profile.isAdmin"
+            :allow-manage="profile.can('uploadProjects')"
             :deleting-ids="store.docsDeletingIds"
             @delete="onDeleteDoc"
           />
@@ -150,7 +150,7 @@ const linkedSessions = computed<Session[]>(() =>
 )
 
 const showDocumentsCard = computed(() => {
-  if (profile.isAdmin) return true
+  if (profile.can('uploadProjects')) return true
   return store.attachmentsLoading || docsTreeHasFiles(store.docsTree)
 })
 

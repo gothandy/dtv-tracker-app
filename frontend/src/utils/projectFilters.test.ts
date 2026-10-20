@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isFutureOrNew, matchesStatus, ALL_STATUSES, NO_STATUS } from './projectFilters'
+import { isFutureOrNew, statusShown, NO_STATUS } from './projectFilters'
 import type { Session } from '../types/session'
 
 const link = (p: { id: number }, s: Session) => (s as any).projectId === p.id
@@ -19,19 +19,16 @@ describe('isFutureOrNew', () => {
   })
 })
 
-describe('matchesStatus', () => {
-  it('all statuses matches everything', () => {
-    expect(matchesStatus(undefined, ALL_STATUSES)).toBe(true)
-    expect(matchesStatus('Active', ALL_STATUSES)).toBe(true)
+describe('statusShown', () => {
+  it('shows everything when nothing is crossed out', () => {
+    expect(statusShown(undefined, [])).toBe(true)
+    expect(statusShown('Active', [])).toBe(true)
   })
 
-  it('no status matches only projects without one', () => {
-    expect(matchesStatus(undefined, NO_STATUS)).toBe(true)
-    expect(matchesStatus('Active', NO_STATUS)).toBe(false)
-  })
-
-  it('a choice matches only that status', () => {
-    expect(matchesStatus('Active', 'Active')).toBe(true)
-    expect(matchesStatus('Complete', 'Active')).toBe(false)
+  it('hides a crossed-out status, and No status', () => {
+    expect(statusShown('Closed', ['Closed'])).toBe(false)
+    expect(statusShown('Active', ['Closed'])).toBe(true)
+    expect(statusShown(undefined, [NO_STATUS])).toBe(false)
+    expect(statusShown('Active', [NO_STATUS])).toBe(true)
   })
 })

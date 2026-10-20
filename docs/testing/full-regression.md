@@ -499,20 +499,21 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] `GET /api/projects` — all projects (public)
 - [ ] Projects page: FY filter, session/hours totals from linked sessions
 - [ ] FY filter *Future + New*: only projects with a session still to come, or no sessions at all
-- [ ] Status filter: *All statuses* (default), each choice from the SharePoint Status column, *No status*; kept in `?status=`; a choice added in SharePoint appears here
-- [ ] Filters cascade as on Sessions: Status offers only the statuses (and *No status*) on projects the FY and tag filters leave; FY only periods with projects for the Status and tag chosen; tags only those on projects Status and FY leave
+- [ ] Status filter (multi-select, `MultiSelectFilter`): closed it shows *All statuses* or what's hidden (*Hiding: Closed*); open, *All statuses* then each status with ✓, plus statuses found on projects that are no longer column choices, and *No status*; picking one flips it to ✗ and hides those projects, picking it again shows them; *All statuses* puts every tick back; kept in `?hide=` (comma-separated)
+- [ ] Filters cascade as on Sessions: Status offers only the statuses (and *No status*) on projects the FY and tag filters leave, plus any crossed out; FY only periods with projects for the Status and tag chosen; tags only those on projects Status and FY leave
 - [ ] Tag filter (as on Sessions): pick a tag → projects with it or a tag beneath it; *No tags* → untagged projects; kept in `?tag=`; only tags on the listed projects are offered (tags stored as the term's own name are matched by term ID)
-- [ ] FY *Show all trails* (`?fy=trails`): all years; cards grouped by trail (second-level tag) in tag order under small green headings per top-level tag (each a link setting the tag filter), each empty trail as a *No projects* card in its place (lighter background, `XC › Adit`, a + for *Add New* with that trail pre-set), *(No location)* last; the tag filter narrows them; any year or *Future + New* hides them
+- [ ] FY *Show all trails* (`?fy=trails`, the default when the address has no `fy`): all years; cards grouped by trail (second-level tag) in tag order under small green headings per top-level tag (each a link setting the tag filter), each empty trail as a *No matches* card in its place (lighter background, `XC › Adit`, a + for *Add New* with that trail pre-set), *(No location)* last; the tag filter narrows them; any year or *Future + New* hides them
 - [ ] Action bar for everyone: Share, project and hour totals
-- [ ] Admin (*Bulk actions*, `bulkProjects`): *Select* / *Select all* on project and trail cards; the bar shows selected / total; Download is off until something's ticked → CSV of the ticked projects (Location, Top level, Trail, Tag, Project, status, sessions, hours, Documents Yes/No, timing None/Future/Past, next and last session, link, Description), a *No projects* row per ticked trail (sessions, hours and link blank), *(No location)* last; if the documents check fails, the bar says so and nothing downloads. Check In: no Select or Download
-- [ ] Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled; Status, then Tag (one tag, *No tag* by default) at the bottom) → navigates to detail
-- [ ] Project detail → Edit (Admin, `editProjects`): Status and Tag at the bottom; set, change and clear them; Delete in Edit for Admins. The tag shows on the page read-only (no *+ Add tag*). Check In: no Edit; `PATCH /api/projects/:key` → 403; more than one tag → 400
+- [ ] Admin (*Bulk actions*, `bulkProjects`): *Select* / *Select all* on project and trail cards; the bar shows selected / total; Download is off until something's ticked → CSV of the ticked projects (Location, Top level, Trail, Tag, Project, status, sessions, hours, Documents Yes/No, timing None/Future/Past, next and last session, link, Description), a *No matches* row per ticked trail (sessions, hours and link blank), *(No location)* last; if the documents check fails, the bar says so and nothing downloads. Check In: no Select or Download
+- [ ] Admin: *Set status* (off until projects are ticked) → modal with *No status* and the Status choices → Apply sets it on the ticked projects (trail cards ignored), clears the selection and refreshes; `POST /api/projects/bulk-status` `{ projectIds, status }` (`bulkProjects`; Check In → 403; a status not among the choices → 400)
+- [ ] Check In and Admin: "+" → New Project modal (Display Name and Key both required; Create disabled until both filled; Status, then Tag (one tag, *No tag* by default) at the bottom) → navigates to detail
+- [ ] Project detail → Edit (Check In and Admin, `editProjects`): Status and Tag at the bottom; set, change and clear them; Delete in Edit for Admins only (`deleteProjects`; Check In: no Delete; `DELETE /api/projects/:key` → 403). The tag shows on the page read-only (no *+ Add tag*). Self-Service and public: no Edit; `PATCH /api/projects/:key` → 403 (401 logged out); more than one tag → 400
 - [ ] Cards show display name, trail (under the name), description, status (if set), sessions/hrs for selected FY
 - [ ] Dropdown lists (`useDropdownPanel`: tag picker, profile picker) are never cut off by a modal and open above their box when near the bottom of the screen, desktop and phone (keyboard up): Projects/Sessions tag filters, New/Edit Project, Add Tags, Add Entry, Transfer; Escape or a click outside closes; only one open at a time
 
 ### M3b. Project detail
 - [ ] `GET /api/projects/:key` — live all-FY session/hour totals + linked sessions (sessions with `ProjectLookupId` set in SharePoint)
-- [ ] Totals box: Sessions, Hours, and Status when the project has one (left out when not set)
+- [ ] Totals box: Status first when the project has one (left out when not set), then Sessions and Hours (all linked sessions, all FYs)
 - [ ] `GET /api/projects/:key/attachments` — `DocsTreeNode[]` tree; file `url` like `/projects/{key}/docs/{slug-path}` (not SharePoint `webUrl`); subfolders shown as nested sections
 - [ ] Project detail Documents card: root files listed **above** folder headings; files and folders alphabetically sorted at each level
 - [ ] Documents section title matches Totals hero font (dark, not gold); folder headings one step smaller
@@ -521,10 +522,9 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Governance PDF under `Docs/Projects/…` opens at `/docs/projects/…/file.pdf` (not caught by project proxy)
 - [ ] Upload/delete project doc — list updates; re-open same `url` shows new file or 404 after delete
 - [ ] Public project detail: Documents card hidden when folder empty
-- [ ] Admin: Upload docs button; files appear as lozenges; × removes file
+- [ ] Admin (`uploadProjects`): Upload docs button; files appear as lozenges; × removes file. Check In: no Upload docs or ×; the upload page → Forbidden; `POST /api/projects/:key/attachments` → 403
 - [ ] Upload a test PDF via admin or SharePoint; document link opens
 - [ ] Header: description, metadata tags (check-in can edit tags)
-- [ ] Stats card: sessions + hours (all linked sessions, all FYs)
 - [ ] Carousel: cover photos from linked sessions (newest first)
 - [ ] Admin: edit display name/key/description (display name required; Save disabled if empty); renaming key to an existing project key returns 409; delete project
 - [ ] Admin: rename project key when documents exist — `Projects/{old}/` folder moves to `Projects/{new}/`; documents still listed and `/projects/{new}/docs/…` URLs work

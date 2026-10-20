@@ -37,12 +37,12 @@ describe('projectsByLocationRows', () => {
   })
 
   it('has one row per project, and no summary rows', () => {
-    expect(rows.filter(r => r[4] !== 'No projects')).toHaveLength(projects.length)
+    expect(rows.filter(r => r[4] !== 'No matches')).toHaveLength(projects.length)
   })
 
-  it('gives a trail with no projects one No projects row, with no link', () => {
+  it('gives a trail with no projects one No matches row, with no link', () => {
     expect(rows.filter(r => r[0] === 'XC:Verderers')).toEqual([
-      ['XC:Verderers', 'XC', 'Verderers', '', 'No projects', '', '', '', '', '', '', '', '', ''],
+      ['XC:Verderers', 'XC', 'Verderers', '', 'No matches', '', '', '', '', '', '', '', '', ''],
     ])
   })
 
@@ -81,7 +81,7 @@ describe('projectsByLocationRows', () => {
   it('lists only the projects it is given (the selection), with the empty trails it is given', () => {
     const picked = projects.filter(p => p.displayName === 'TNT')
     const r = projectsByLocationRows(picked, sessions, tree, ['DH:Corkscrew'], ORIGIN, TODAY)
-    expect(r.map(x => [x[0], x[4]])).toEqual([['XC:Adit', 'TNT'], ['DH:Corkscrew', 'No projects']])
+    expect(r.map(x => [x[0], x[4]])).toEqual([['XC:Adit', 'TNT'], ['DH:Corkscrew', 'No matches']])
   })
 })
 

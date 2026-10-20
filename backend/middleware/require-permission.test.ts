@@ -15,8 +15,12 @@ describe('can', () => {
     expect(can('checkin', 'viewTemplates')).toBe(true)
     expect(can('checkin', 'editTemplates')).toBe(false)
     expect(can('admin', 'editTemplates')).toBe(true)
-    expect(can('checkin', 'editProjects')).toBe(false)
+    expect(can('checkin', 'editProjects')).toBe(true)
     expect(can('admin', 'editProjects')).toBe(true)
+    expect(can('checkin', 'deleteProjects')).toBe(false)
+    expect(can('admin', 'deleteProjects')).toBe(true)
+    expect(can('checkin', 'uploadProjects')).toBe(false)
+    expect(can('admin', 'uploadProjects')).toBe(true)
   })
 
   it('gives nothing to Self-Service or the public', () => {

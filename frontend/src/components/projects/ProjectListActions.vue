@@ -11,6 +11,14 @@
     <div class="list-actions-buttons">
       <AppButton
         v-if="canDownload"
+        label="Set status"
+        icon="save"
+        mode="icon-responsive"
+        :disabled="!selectedProjects.length"
+        @click="emit('set-status')"
+      />
+      <AppButton
+        v-if="canDownload"
         label="Download projects by location"
         icon="download"
         mode="icon-only"
@@ -46,13 +54,13 @@ const props = defineProps<{
   canDownload: boolean
   /** Selected project IDs (Bulk actions) */
   selected: number[]
-  /** Selected trail cards (FY "Show all trails"), for the CSV's No projects rows */
+  /** Selected trail cards (FY "Show all trails"), for the CSV's No matches rows */
   selectedTrails: string[]
 }>()
 
 const { tree, loading: taxonomyLoading, error: taxonomyError } = useTaxonomy()
 
-const emit = defineEmits<{ 'add-project': [] }>()
+const emit = defineEmits<{ 'add-project': []; 'set-status': [] }>()
 
 const totalHours = computed(() =>
   Math.round(props.projects.reduce((sum, p) => sum + p.hours, 0) * 10) / 10)
@@ -64,7 +72,7 @@ const selectedHours = computed(() =>
 const downloading = ref(false)
 const downloadError = ref('')
 
-// The selected projects by location, with a No projects row for each selected trail card.
+// The selected projects by location, with a No matches row for each selected trail card.
 // Which projects have documents comes from the server; if it can't say, no report rather
 // than one saying No for every project.
 async function onDownload() {

@@ -178,6 +178,38 @@ async function requestedStatus(value: unknown): Promise<{ status?: string | null
   return { error: `Status must be one of: ${choices.join(', ')}` };
 }
 
+// POST /api/projects/bulk-status — set the status of the selected projects (Bulk actions).
+router.post('/projects/bulk-status', requirePermission('bulkProjects'), async (req: Request, res: Response) => {
+  try {
+    const { projectIds } = req.body;
+    if (!Array.isArray(projectIds) || projectIds.length === 0) {
+      res.status(400).json({ success: false, error: 'projectIds array is required' });
+      return;
+    }
+    if (!('status' in req.body)) {
+      res.status(400).json({ success: false, error: 'status is required (use null for no status)' });
+      return;
+    }
+    const { status, error: statusError } = await requestedStatus(req.body.status);
+    if (statusError) {
+      res.status(400).json({ success: false, error: statusError });
+      return;
+    }
+
+    let updated = 0;
+    for (const rawId of projectIds) {
+      const id = parseInt(String(rawId), 10);
+      if (isNaN(id)) continue;
+      await projectsRepository.updateFields(id, { Status: status ?? null });
+      updated++;
+    }
+    res.json({ success: true, data: { updated } } as ApiResponse<{ updated: number }>);
+  } catch (error: any) {
+    console.error('Error bulk updating project statuses:', error);
+    res.status(500).json({ success: false, error: 'Failed to update project statuses', message: error.message });
+  }
+});
+
 // GET /api/projects/options — the Status column's choices, as set in SharePoint.
 // GET /api/projects/documents — the keys of projects with documents (Projects by location report).
 router.get('/projects/documents', requirePermission('bulkProjects'), async (_req: Request, res: Response) => {
@@ -316,7 +348,7 @@ router.get('/projects/:key/attachments', async (req: Request, res: Response) => 
   }
 });
 
-router.post('/projects/:key/attachments', (req: Request, res: Response, next: express.NextFunction) => {
+router.post('/projects/:key/attachments', requirePermission('uploadProjects'), (req: Request, res: Response, next: express.NextFunction) => {
   projectDocUpload.array('documents', 10)(req, res, (err: unknown) => {
     if (err) {
       const code = (err as { code?: string }).code;
@@ -389,7 +421,7 @@ async function handleProjectDocUpload(req: Request, res: Response) {
   }
 }
 
-router.delete('/projects/:key/attachments/:itemId', async (req: Request, res: Response) => {
+router.delete('/projects/:key/attachments/:itemId', requirePermission('uploadProjects'), async (req: Request, res: Response) => {
   const key = String(req.params.key).toLowerCase();
   const itemId = String(req.params.itemId);
 
@@ -592,7 +624,7 @@ router.patch('/projects/:key', requirePermission('editProjects'), async (req: Re
   }
 });
 
-router.delete('/projects/:key', async (req: Request, res: Response) => {
+router.delete('/projects/:key', requirePermission('deleteProjects'), async (req: Request, res: Response) => {
   try {
     const key = String(req.params.key).toLowerCase();
     const rawProjects = await projectsRepository.getAll();

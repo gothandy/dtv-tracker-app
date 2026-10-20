@@ -15,8 +15,12 @@ export const PERMISSIONS = {
   viewTemplates: ['checkin', 'admin'],
   /** Add, edit and delete templates (name, subject, context; HTML and Text in SharePoint for now). */
   editTemplates: ['admin'],
-  /** Add and edit projects (name, key, description, status, tag). Deleting stays Admin-only. */
-  editProjects: ['admin'],
+  /** Add and edit projects (name, key, description, status, tag); deleting is deleteProjects. */
+  editProjects: ['checkin', 'admin'],
+  /** Delete a project (in its Edit). A candidate for Check In later. */
+  deleteProjects: ['admin'],
+  /** Upload and remove a project's documents (Upload docs). A candidate for Check In later. */
+  uploadProjects: ['admin'],
   /** Bulk actions on Projects: select projects and act on them (the Projects by location CSV). */
   bulkProjects: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;

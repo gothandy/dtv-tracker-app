@@ -7,7 +7,7 @@
       v-if="showEdit"
       :project="project"
       :statuses="statuses"
-      :can-delete="profile.isAdmin"
+      :can-delete="canDelete"
       :working="workingEdit"
       :error="editError || statusesError"
       @close="showEdit = false"
@@ -29,7 +29,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { ProjectDetailResponse } from '../../../../types/api-responses'
-import type { RoleContext } from '../../composables/useViewer'
 import AppButton from '../AppButton.vue'
 import ProjectEditModal, { type EditProjectPayload } from '../../pages/modals/ProjectEditModal.vue'
 import DeleteModal from '../../pages/modals/DeleteModal.vue'
@@ -37,9 +36,10 @@ import { shareCurrentUrl } from '../../utils/shareUrl'
 
 defineProps<{
   project: ProjectDetailResponse
-  profile: RoleContext
   /** Add and edit projects (permission editProjects) */
   canEdit: boolean
+  /** Delete in Edit (permission deleteProjects) */
+  canDelete: boolean
   /** The Projects list's Status choices, for Edit */
   statuses: string[]
   /** Set when the choices couldn't be loaded */

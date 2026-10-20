@@ -65,7 +65,7 @@ export type AddProjectPayload = {
 const props = defineProps<{
   /** The Projects list's Status choices */
   statuses: string[]
-  /** A tag to start with, e.g. the trail from a No projects card ("XC:Adit") */
+  /** A tag to start with, e.g. the trail from a No matches card ("XC:Adit") */
   initialTag?: string
   working: boolean
   error?: string

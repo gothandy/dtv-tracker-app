@@ -65,7 +65,7 @@ export const router = createRouter({
     {
       path: '/projects/:key/upload',
       component: () => import('../pages/ProjectUploadPage.vue'),
-      meta: { requiresAdmin: true },
+      meta: { permission: 'uploadProjects' },
     },
     { path: '/sessions', component: SessionListPage },
     { path: '/sessions/:groupKey/:date', component: SessionDetailPage },

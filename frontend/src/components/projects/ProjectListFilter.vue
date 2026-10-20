@@ -1,8 +1,6 @@
 <template>
   <div class="list-filter pf-wrap">
-    <select v-model="status" class="list-filter-select" aria-label="Status filter">
-      <option v-for="o in statusOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-    </select>
+    <MultiSelectFilter v-model:excluded="hiddenStatuses" :options="statusOptions" all-label="All statuses" aria-label="Status filter" />
     <select v-model="fy" class="list-filter-select" aria-label="Financial year filter">
       <option v-for="o in fyOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
     </select>
@@ -30,7 +28,9 @@ import {
   entitiesWithSessionsInFy,
   fyOptionsForEntities,
 } from '../../utils/entitySessionTotals'
-import { FUTURE_OR_NEW, ALL_TRAILS, ALL_STATUSES, NO_STATUS, isFutureOrNew, matchesStatus } from '../../utils/projectFilters'
+import { FUTURE_OR_NEW, ALL_TRAILS, NO_STATUS, isFutureOrNew, statusShown } from '../../utils/projectFilters'
+import MultiSelectFilter from '../MultiSelectFilter.vue'
+import { parseValueList, valueListParam } from '../../utils/multiSelect'
 import { trailsWithoutProjects } from '../../utils/projectsByLocation'
 
 export interface ProjectWithStats extends ProjectResponse {
@@ -55,8 +55,9 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 
-const fy = ref((route.query.fy as string) || 'all')
-const status = ref((route.query.status as string) || ALL_STATUSES)
+const fy = ref((route.query.fy as string) || ALL_TRAILS)   // Show all trails by default
+/** Statuses crossed out in the Status filter (`?hide=Closed,none`) */
+const hiddenStatuses = ref<string[]>(parseValueList(route.query.hide))
 const tagLabel = ref((route.query.tag as string) || '')
 
 const { tree: taxonomyTree, loading: taxonomyLoading } = useTaxonomy()
@@ -70,7 +71,7 @@ const projects = computed<ProjectResponse[]>(() => props.projects.map(p => p.met
 const linkSession = (p: ProjectResponse, s: Session) => s.projectId === p.id
 
 // Each filter narrows the list, and each offers only what the other two leave (as on Sessions).
-const byStatus = (list: ProjectResponse[]) => list.filter(p => matchesStatus(p.status, status.value))
+const byStatus = (list: ProjectResponse[]) => list.filter(p => statusShown(p.status, hiddenStatuses.value))
 const byTag = (list: ProjectResponse[]) => list.filter(p => matchesTag(p.metadata, tagLabel.value))
 /** "Show all trails" is all years, plus the trails without projects. */
 const fyValue = computed(() => fy.value === ALL_TRAILS ? 'all' : fy.value)
@@ -89,14 +90,19 @@ const fyOptions = computed(() => {
   return options
 })
 
-// Status choices in SharePoint's order, but only those on the projects FY and tags leave.
+// Status choices in SharePoint's order: those on the projects FY and tags leave, plus any
+// crossed out (so they can be ticked again). A status on a project that's no longer one of the
+// column's choices (e.g. after renaming a choice in SharePoint) is offered too, after them.
 const statusOptions = computed(() => {
   const others = byFy(byTag(projects.value))
-  const present = new Set(others.map(p => p.status ?? ''))
+  const present = new Set(others.map(p => p.status || NO_STATUS))
+  const offered = (v: string) => present.has(v) || hiddenStatuses.value.includes(v)
+  const notChoices = [...present, ...hiddenStatuses.value]
+    .filter((v, i, all) => v !== NO_STATUS && !props.statuses.includes(v) && all.indexOf(v) === i)
   return [
-    { value: ALL_STATUSES, label: 'All statuses' },
-    ...props.statuses.filter(s => present.has(s)).map(s => ({ value: s, label: s })),
-    ...(present.has('') ? [{ value: NO_STATUS, label: 'No status' }] : []),
+    ...props.statuses.filter(offered).map(s => ({ value: s, label: s })),
+    ...notChoices.map(s => ({ value: s, label: s })),
+    ...(offered(NO_STATUS) ? [{ value: NO_STATUS, label: 'No status' }] : []),
   ]
 })
 
@@ -125,13 +131,6 @@ watch(fyOptions, opts => {
   if (opts.length && !opts.some(o => o.value === fy.value)) fy.value = 'all'
 }, { immediate: true })
 
-watch(statusOptions, opts => {
-  // Wait for the choices and projects to load before dropping a status that isn't offered.
-  if (props.statuses.length && props.projects.length && !opts.some(o => o.value === status.value)) {
-    status.value = ALL_STATUSES
-  }
-})
-
 watch(filtered, list => emit('filtered', list), { immediate: true })
 watch(emptyTrails, trails => emit('emptyTrails', trails), { immediate: true })
 watch(() => fy.value === ALL_TRAILS, on => emit('allTrails', on), { immediate: true })
@@ -141,10 +140,11 @@ watch(() => route.query.tag, tag => {
   if ((tag ?? '') !== tagLabel.value) tagLabel.value = (tag as string) ?? ''
 })
 
-watch([fy, status, tagLabel], ([newFy, newStatus, newTag]) => {
+watch([fy, hiddenStatuses, tagLabel], ([newFy, newHidden, newTag]) => {
   const query: Record<string, string> = {}
   if (newFy) query.fy = newFy
-  if (newStatus !== ALL_STATUSES) query.status = newStatus
+  const hide = valueListParam(newHidden)
+  if (hide) query.hide = hide
   if (newTag) query.tag = newTag
   router.replace({ query })
 })

@@ -7,7 +7,7 @@
     </div>
     <div class="list-item-card__footer">
       <div class="list-item-card__stats">
-        <span><strong>No projects</strong></span>
+        <span><strong>No matches</strong></span>
       </div>
       <AppButton v-if="canAdd" label="Add New" icon="add" mode="icon-only" @click="emit('add', trail)" />
     </div>

@@ -46,8 +46,8 @@ type Tagged = { metadata?: Array<{ label: string }> }
 const atLocation = (p: Tagged, path: string) => p.metadata?.some(m => isUnder(m.label, path)) ?? false
 
 /**
- * The trails (locations) with none of these projects: the "No projects" trails shown on the
- * Projects page with *Include No projects*, and in its CSV. With a tag filter, only the trails
+ * The trails (locations) with none of these projects: the "No matches" trails shown on the
+ * Projects page with *Show all trails*, and in its CSV. With a tag filter, only the trails
  * beneath it, or the one it's beneath; with "No tags", none.
  */
 export function trailsWithoutProjects(projects: Tagged[], tree: TaxNode[], tagFilter: string): string[] {
@@ -120,7 +120,7 @@ export function projectsByLocation<P extends Tagged & { id: number }>(
  * Projects by location, for a CSV of the projects selected on the Projects page: one row per
  * project, in projectsByLocation's order, with its trail ("Adit") and its own tag in full
  * ("XC:Adit:TNT"), whether it has documents, and its description. Each of `emptyTrails` gets
- * one "No projects" row in its place. Sessions and hours are for the page's FY.
+ * one "No matches" row in its place. Sessions and hours are for the page's FY.
  */
 export function projectsByLocationRows(
   projects: LocationProject[],
@@ -142,7 +142,7 @@ export function projectsByLocationRows(
     const trail = path === NO_LOCATION ? '' : path.split(':')[1]
     if (!here.length) {
       // No link (the Projects page would be empty for it), and no sessions or hours to give.
-      return [[path, top, trail, '', 'No projects', '', '', '', '', '', '', '', '', '']]
+      return [[path, top, trail, '', 'No matches', '', '', '', '', '', '', '', '', '']]
     }
     return here.map(p => {
       const t = timing.get(p.id)!
