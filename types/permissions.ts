@@ -21,8 +21,8 @@ export const PERMISSIONS = {
   deleteProjects: ['admin'],
   /** Upload and remove a project's documents (Upload docs). A candidate for Check In later. */
   uploadProjects: ['admin'],
-  /** Bulk actions on Projects: select projects and act on them (the Projects by location CSV). */
-  bulkProjects: ['admin'],
+  /** Bulk actions on Projects: select projects and set their status. (The Projects by location CSV is public; ticked projects narrow it.) */
+  bulkEditProjects: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

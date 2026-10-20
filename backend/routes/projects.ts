@@ -179,7 +179,7 @@ async function requestedStatus(value: unknown): Promise<{ status?: string | null
 }
 
 // POST /api/projects/bulk-status — set the status of the selected projects (Bulk actions).
-router.post('/projects/bulk-status', requirePermission('bulkProjects'), async (req: Request, res: Response) => {
+router.post('/projects/bulk-status', requirePermission('bulkEditProjects'), async (req: Request, res: Response) => {
   try {
     const { projectIds } = req.body;
     if (!Array.isArray(projectIds) || projectIds.length === 0) {
@@ -212,7 +212,8 @@ router.post('/projects/bulk-status', requirePermission('bulkProjects'), async (r
 
 // GET /api/projects/options — the Status column's choices, as set in SharePoint.
 // GET /api/projects/documents — the keys of projects with documents (Projects by location report).
-router.get('/projects/documents', requirePermission('bulkProjects'), async (_req: Request, res: Response) => {
+// Public, like the report: it only says which projects have documents, which are public too.
+router.get('/projects/documents', async (_req: Request, res: Response) => {
   try {
     const keys = await projectKeysWithDocuments();
     res.json({ success: true, data: { keys } } as ApiResponse<{ keys: string[] }>);

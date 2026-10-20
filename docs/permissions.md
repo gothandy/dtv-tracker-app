@@ -26,7 +26,7 @@ There are **four** app permission levels. **Admin** extends **Check In** (same f
 | `editProjects` | Check In, Admin | *New project* and *Edit* on a project (name, key, description, status, tag): `POST /api/projects`, `PATCH /api/projects/:key`. Deleting is `deleteProjects`, documents `uploadProjects`. |
 | `deleteProjects` | Admin | *Delete* in a project's Edit: `DELETE /api/projects/:key`. A candidate for Check In later. |
 | `uploadProjects` | Admin | A project's documents: *Upload docs* (the upload page), removing a document, and the *Documents* card shown even when empty: `POST /api/projects/:key/attachments`, `DELETE /api/projects/:key/attachments/:itemId`. A candidate for Check In later. |
-| `bulkProjects` | Admin | *Bulk actions* on the Projects page: *Select* / *Select all* on projects, *Set status* on the selected (`POST /api/projects/bulk-status`), and the *Projects by location* CSV of the selected projects (with `GET /api/projects/documents` for its Documents column) |
+| `bulkEditProjects` | Admin | *Bulk actions* on the Projects page: *Select* / *Select all* on projects, and *Set status* on the selected (`POST /api/projects/bulk-status`). Ticked projects also narrow the *Projects by location* CSV, which is public. |
 
 ## Configuration
 
@@ -55,7 +55,7 @@ To migrate to Entra ID roles, configure App Roles in the Azure app registration 
 | Page | Access |
 |------|--------|
 | Dashboard, Groups list, Group detail, Sessions list | Full view (no volunteer names/emails) |
-| Projects list, Project detail | Full view, read only, with all the filters |
+| Projects list, Project detail | Full view, read only, with all the filters and the *Projects by location* CSV |
 | Session detail | Session info, stats, tags, public photos; entries and free parking hidden |
 | Profiles page | Redirected to `/login` |
 | Profile detail | Redirected to `/login` |
@@ -90,7 +90,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Send Email (Session templates), Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
 | **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
-| **Projects list** | Full view: Status, FY and tag filters, trail and project cards, totals | New project (`editProjects`) | *Bulk actions* (`bulkProjects`): select, Set status, Projects by location CSV |
+| **Projects list** | Full view: Status, FY and tag filters, trail and project cards, totals, *Projects by location* CSV of what's shown | New project (`editProjects`) | *Bulk actions* (`bulkEditProjects`): select, Set status, CSV of the ticked projects |
 | **Project detail** | Description, tag, Totals box (Status, Sessions, Hours), documents, linked sessions | Edit (name, key, description, status, tag; `editProjects`) | Delete project (`deleteProjects`); upload and remove documents (`uploadProjects`) |
 | **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | New, Edit and Delete (`editTemplates`) |
 | **Profiles page** | Redirected (auth required) | View, search, filter, sort, CSV download | Bulk Records, Add Entries, Send Email (Profile templates) |

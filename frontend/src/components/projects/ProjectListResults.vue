@@ -3,7 +3,7 @@
   <div v-else-if="error" class="pr-state pr-state--error">{{ error }}</div>
   <div v-else-if="!projects.length && !emptyTrails.length" class="pr-state">No projects found.</div>
   <template v-else>
-    <!-- Select all: Bulk actions (bulkProjects); projects and, with Show all trails, the trail cards. -->
+    <!-- Select all: Bulk actions (bulkEditProjects); projects and, with Show all trails, the trail cards. -->
     <div v-if="selected" class="list-select-row">
       <button class="list-select-all" @click="toggleSelectAll">
         {{ allSelected ? 'Deselect all' : 'Select all' }}
@@ -75,7 +75,7 @@ const props = withDefaults(defineProps<{
   groups?: LocationGroup<ProjectWithStats>[] | null
   /** May add projects, from a trail card (permission editProjects) */
   canAdd?: boolean
-  /** Selected project IDs; only for Bulk actions (permission bulkProjects) */
+  /** Selected project IDs; only for Bulk actions (permission bulkEditProjects) */
   selected?: number[]
   /** Selected trail cards (their paths), alongside the selected projects */
   selectedTrails?: string[]
