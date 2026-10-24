@@ -52,6 +52,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 | `preview/<name>` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
 | `main` | Build, tests, deploy | **Production**: https://tracker.dtv.org.uk |
 
+- **One PR at a time, tidy start.** As a general rule, finish and close the current PR, then delete its branches and other obsolete branches before starting another. Agree the scope of the next PR with the developer **before** creating any new preview or task branches. Exceptions are by explicit agreement. For exploratory work, a single PR may remain open while successive small, agreed changes are deployed to preview; avoid creating new branches for each follow-up unless a substantial separate task warrants one. Only the maintainer merges to `main`.
 - **All work happens on the task branch.** Pull before starting, push when done, and fetch and rebase before pushing so nobody else's commits are lost.
 - **Branches come in pairs with the same name:** `preview/<name>` holds the PR; `task/<name>` is where the work happens. Use a short name for the PR (e.g. `event-types`), so it's always clear which branches belong together and which can be deleted after merge.
 - **Nobody commits directly to a `preview/` branch.** It only changes when a task is **promoted**: `task/<name>` is squashed into it as one commit with a clear message. Each promotion deploys to preview, so promote deliberately.
