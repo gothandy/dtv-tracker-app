@@ -96,6 +96,15 @@ export interface SessionResponse {
 /** Microsoft Tracker role implied by Profile User + TRACKER_ADMIN_USERS — only on trusted responses. */
 export type TrackerAccess = 'none' | 'checkin' | 'admin';
 
+/** GET /api/profiles: the profiles, and the financial years any Profile has hours or sessions in. */
+export interface ProfileListResponse {
+  success: boolean;
+  count: number;
+  data: ProfileResponse[];
+  /** FY keys (e.g. FY2024) from Profile Stats, plus the current FY, oldest first. */
+  financialYears: string[];
+}
+
 export interface ProfileResponse {
   id: number;
   slug: string;
@@ -152,6 +161,7 @@ export interface ConsentRecordResponse {
   type: string;
   status: string;
   date: string;
+  notes?: string;
 }
 
 export interface ProfileDetailResponse {

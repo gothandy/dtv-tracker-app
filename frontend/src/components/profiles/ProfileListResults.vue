@@ -34,6 +34,7 @@ import { computed } from 'vue'
 import ProfileListItem from './ProfileListItem.vue'
 import LoadingSpinner from '../LoadingSpinner.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
+import { hoursInView, sessionsInView } from '../../../../types/hours'
 
 
 const props = defineProps<{
@@ -48,11 +49,11 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:selected': [ids: number[]] }>()
 
 function hoursFor(p: ProfileResponse): number {
-  return props.fy === 'all' ? p.hoursAll : p.hoursThisFY
+  return hoursInView(p, props.fy)
 }
 
 function sessionsFor(p: ProfileResponse): number {
-  return props.fy === 'all' ? p.sessionsAll : p.sessionsThisFY
+  return sessionsInView(p, props.fy)
 }
 
 

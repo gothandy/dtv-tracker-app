@@ -36,6 +36,7 @@ import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
+import { ukToday } from '../../../../types/uk-date'
 
 export interface AddRecordPayload {
   type: string
@@ -55,7 +56,7 @@ const emit = defineEmits<{
   add: [payload: AddRecordPayload]
 }>()
 
-const today = new Date().toISOString().slice(0, 10)
+const today = ukToday()
 
 const form = reactive({
   type: '',

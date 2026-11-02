@@ -15,6 +15,7 @@
  */
 
 import requiredSettings from './required-settings.json';
+import { UK_TIMEZONE } from '../types/uk-date';
 
 // ── Settings ────────────────────────────────────────────────────────────────
 
@@ -183,7 +184,7 @@ export const sharePoint = {
   get libraries() { return ids().libraries; },
   get idsFound() { return !!foundIds; },
   /** IANA timezone SharePoint dates are converted from. */
-  timezone: 'Europe/London',
+  timezone: UK_TIMEZONE,
 };
 
 // ── Fixed values ────────────────────────────────────────────────────────────

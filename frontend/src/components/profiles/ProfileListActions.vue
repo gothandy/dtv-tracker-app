@@ -20,6 +20,8 @@ import AppButton from '../AppButton.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
 import { downloadCsv } from '../../utils/listCsv'
 import { shareCurrentUrl } from '../../utils/shareUrl'
+import { ukToday } from '../../../../types/uk-date'
+import { hoursInView, sessionsInView } from '../../../../types/hours'
 
 const props = defineProps<{
   filteredProfiles: ProfileResponse[]
@@ -45,16 +47,16 @@ const emailableSelected = computed(() =>
 )
 
 function hoursFor(p: ProfileResponse): number {
-  return props.fy === 'all' ? p.hoursAll : p.hoursThisFY
+  return hoursInView(p, props.fy)
 }
 
 function sessionsFor(p: ProfileResponse): number {
-  return props.fy === 'all' ? p.sessionsAll : p.sessionsThisFY
+  return sessionsInView(p, props.fy)
 }
 
 function onDownload() {
   const source = selectedInFiltered.value
-  const today = new Date().toISOString().slice(0, 10)
+  const today = ukToday()
   downloadCsv(`${today} Profiles.csv`,
     ['Name', 'Email', 'Sessions', 'Hours'],
     source.map(p => [p.name ?? '', p.email ?? '', sessionsFor(p), Math.round(hoursFor(p) * 10) / 10])

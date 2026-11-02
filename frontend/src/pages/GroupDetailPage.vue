@@ -142,6 +142,7 @@ import type { EventbriteEventOption } from './modals/GroupAddFromEventbriteModal
 import { DEFAULT_SESSION_LENGTH } from '../utils/sessionTime'
 import type { ProjectItem } from './modals/SessionEditModal.vue'
 import { useProjectListStore } from '../stores/projectList'
+import { ukToday } from '../../../types/uk-date'
 
 const route = useRoute()
 const router = useRouter()
@@ -187,7 +188,7 @@ const selectedFy = ref('')
 const tagHours = ref<TagHoursItem[]>([])
 const selectedCoverIndex = ref<number | null>(null)
 
-const today = new Date().toISOString().slice(0, 10)
+const today = ukToday()
 
 const futureSessions = computed<Session[]>(() =>
   (store.group?.sessions ?? [])

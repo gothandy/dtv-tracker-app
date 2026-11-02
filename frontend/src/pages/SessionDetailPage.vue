@@ -249,6 +249,7 @@ import SessionDetailActions from '../components/sessions/SessionDetailActions.vu
 import SessionEntryList from '../components/sessions/SessionEntryList.vue'
 import SectionHeader from '../components/SectionHeader.vue'
 import CardTitle from '../components/CardTitle.vue'
+import { ukToday } from '../../../types/uk-date'
 
 
 const route = useRoute()
@@ -350,7 +351,7 @@ const repeatSpacesAvail = computed(() => {
   return repeat === undefined || repeatBookings.value < repeat
 })
 
-const isPastSession = computed(() => !!store.session && store.session.date < new Date().toISOString().slice(0, 10))
+const isPastSession = computed(() => !!store.session && store.session.date < ukToday())
 
 const showIsBooked = computed(() => !!store.session?.isBookable && !!store.session.isRegistered)
 

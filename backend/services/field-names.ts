@@ -32,6 +32,9 @@ export const SESSION_LIMITS      = 'Limits'; // Per-session capacity limits JSON
 export const SESSION_TIME        = 'Time';   // Start time HH:MM (24-hour clock)
 export const SESSION_LENGTH      = 'Length'; // Session duration in hours
 export const PROFILE_STATS       = 'Stats';  // Same field name on Profiles list
+export const RECORD_START        = 'Start';  // Records: date only; first day the Record applies (blank = no lower bound)
+export const RECORD_END          = 'End';    // Records: date only; last day the Record applies, inclusive (blank = no upper bound)
+export const RECORD_NOTES        = 'Notes';  // Records: single line of text
 export const ENTRY_CANCELLED             = 'Cancelled';         // Date/time when entry was cancelled; null = active booking
 export const ENTRY_LABELS                = 'Labels';            // Multi-select choice: Regular | CSR | Late | FirstAider | DigLead
 export const ENTRY_EVENTBRITE_ATTENDEE_ID = 'EventbriteAttendeeID'; // Eventbrite attendee ID — source of truth for the Eventbrite icon

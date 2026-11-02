@@ -1,4 +1,5 @@
 import type { EntryListItemResponse } from '../../../types/api-responses'
+import { ukToday } from '../../../types/uk-date'
 
 export type EntryQualityFilterValue = '' | 'error' | 'no-error'
 
@@ -11,11 +12,7 @@ function sessionDateOnly(date: string): string {
   return date.substring(0, 10)
 }
 
-export function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-export function isPastSession(sessionDate: string, today: string = todayIsoDate()): boolean {
+export function isPastSession(sessionDate: string, today: string = ukToday()): boolean {
   return sessionDateOnly(sessionDate) < today
 }
 

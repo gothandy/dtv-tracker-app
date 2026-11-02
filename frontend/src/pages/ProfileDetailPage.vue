@@ -109,7 +109,7 @@
         :profile-id="store.profile.id"
         :profile-slug="store.profile.slug"
         :show-consent-link="viewer.hasCheckInAccess || viewer.isSelfService"
-        :allow-edit="viewer.isAdmin"
+        :allow-edit="viewer.can('editRecords')"
         :types="recordTypes"
         :statuses="recordStatuses"
         ref="recordListRef"
@@ -171,6 +171,8 @@
 </template>
 
 <script setup lang="ts">
+import { recordStatus } from '../../../types/record-status'
+import { ukToday } from '../../../types/uk-date'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
@@ -307,7 +309,7 @@ watch(
 )
 
 const isMember = computed(() =>
-  store.profile?.records?.some(r => r.type === 'Charity Membership' && r.status === 'Accepted') ?? false
+  store.profile?.records?.some(r => r.type === 'Charity Membership' && recordStatus(r, ukToday()) === 'Accepted') ?? false
 )
 
 async function onDeleteProfile() {
@@ -419,7 +421,7 @@ async function onSaveRecord(id: number, payload: SaveRecordPayload) {
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
     const stored = store.profile.records?.find(r => r.id === id)
-    if (stored) { stored.status = payload.status; stored.date = payload.date }
+    if (stored) { stored.status = payload.status; stored.date = payload.date; stored.notes = payload.notes.trim() || undefined }
     recordListRef.value?.onSaveSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onSaveRecord failed', e)

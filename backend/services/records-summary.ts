@@ -9,7 +9,7 @@
 
 import crypto from 'crypto';
 import { SharePointRecord } from '../../types/sharepoint';
-import { buildBadgeLookups, safeParseLookupId } from './data-layer';
+import { buildBadgeLookups, recordProfileId } from './records';
 import { PROFILE_STATS } from './field-names';
 
 /** Records columns the migration needs to know about, by display or internal name. */
@@ -125,7 +125,7 @@ function summariseRecordsByType(records: SharePointRecord[], today: string): Rec
       if (date > today) s.dateAfterToday++;
     }
 
-    const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+    const pid = recordProfileId(r);
     if (pid === undefined) continue;
     const counts = pairCounts.get(type) ?? new Map<number, number>();
     pairCounts.set(type, counts);
@@ -152,7 +152,7 @@ export function summariseRecords(input: {
 }): RecordsSummary {
   const { records, profiles, today } = input;
 
-  const { memberIds, cardStatusMap } = buildBadgeLookups(records);
+  const { memberIds, cardStatusMap } = buildBadgeLookups(records, today);
   const cardIdsByStatus = new Map<string, number[]>();
   for (const [pid, status] of cardStatusMap) {
     cardIdsByStatus.set(status, [...(cardIdsByStatus.get(status) ?? []), pid]);
@@ -176,7 +176,7 @@ export function summariseRecords(input: {
     columns: summariseColumns(input.recordsColumns),
     records: {
       total: records.length,
-      withoutProfile: records.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === undefined).length,
+      withoutProfile: records.filter(r => recordProfileId(r) === undefined).length,
       byType: summariseRecordsByType(records, today),
     },
     profiles: {

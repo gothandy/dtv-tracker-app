@@ -4,6 +4,7 @@
     <PageHeader>Profiles</PageHeader>
     <ProfileListFilter
       :profiles="store.profiles"
+      :financial-years="store.financialYears"
       :groups="groupsStore.groups"
       :record-options="recordOptions"
       @filtered="filtered = $event"

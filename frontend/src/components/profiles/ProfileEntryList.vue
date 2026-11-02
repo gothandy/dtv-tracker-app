@@ -64,6 +64,7 @@ import EntryEditModal from '../../pages/modals/EntryEditModal.vue'
 import { sessionPath } from '../../router/index'
 import { iconsForEntry } from '../../utils/labelIcons'
 import { fetchSessionAdults } from '../../utils/fetchSessionAdults'
+import { ukToday, ukYearAgo } from '../../../../types/uk-date'
 
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
@@ -103,12 +104,6 @@ function fyLabel(fyKey: string): string {
   return `FY ${String(y).slice(2)}/${String(y + 1).slice(2)}`
 }
 
-function rollingStart(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
 const fyOptions = computed(() => {
   const keys = [...new Set(props.entries.map(e => financialYearOf(e.session.date)))]
     .filter(k => k.startsWith('FY'))
@@ -129,10 +124,10 @@ const totalHours = computed(() => {
 const filteredEntries = computed(() => {
   let result = props.entries
   if (fy.value === 'future') {
-    result = result.filter(e => e.session.date >= new Date().toISOString().slice(0, 10))
+    result = result.filter(e => e.session.date >= ukToday())
   } else if (fy.value === 'rolling') {
-    const start = rollingStart()
-    const today = new Date().toISOString().slice(0, 10)
+    const start = ukYearAgo()
+    const today = ukToday()
     result = result.filter(e => e.session.date >= start && e.session.date <= today)
   } else if (fy.value !== 'all') {
     result = result.filter(e => financialYearOf(e.session.date) === fy.value)

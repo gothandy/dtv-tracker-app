@@ -168,7 +168,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 - **MEMBER badge**: based on Charity Membership record (`isMember` field on ProfileResponse)
 - **CARD badge**: discount card status — green if Accepted, orange if Invited (`cardStatus`)
-- **Card highlighting** (green background on volunteers list): hours-based — 15h threshold in selected FY (`MEMBER_HOURS = 15` in ProfileListPage.vue)
+- **Hours bands**: the boundaries are always 0, 15 and 30, and each band includes its lower boundary (15h is 15h+, 30h is 30h+): 0h, more than 0 and under 15h, 15h up to under 30h, 30h+. Bands can be combined (e.g. 15h+). Defined once in [types/hours.ts](types/hours.ts) (`HOURS_FILTERS`, `hoursInView`); never write `> 15` or `> 30`.
 
 ---
 
@@ -270,6 +270,10 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 - **`em` not `px` or `rem`** in media queries.
 - **CSS**: write the literal `em` value — e.g. `@media (width < 48em)`. Tailwind's `theme()` cannot be used in scoped component styles.
 - **JS breakpoint checks**: use `belowBreakpointMd()` from `frontend/src/utils/breakpoints.ts`.
+
+### Dates
+
+- **A calendar date is a UK date.** For today, or a year ago (the start of the rolling 12 months), use `ukToday()` and `ukYearAgo()` from [types/uk-date.ts](types/uk-date.ts), on the server and in the browser. Never `new Date().toISOString().slice(0, 10)`: that's the UTC date, which is yesterday between midnight and 1am UK time in summer. `toISOString()` is right only for timestamps (e.g. when an entry was cancelled).
 
 ### Code Style
 
@@ -379,7 +383,7 @@ dtv-tracker-app/
 │   ├── middleware/                 # auth.ts, require-auth.ts, require-admin.ts, public-api-get-paths.ts
 │   ├── shared/                     # Shared constants (brand)
 │   └── scripts/                    # One-off maintenance scripts
-├── types/                          # api-responses.ts (HTTP contract), domain + SharePoint types
+├── types/                          # api-responses.ts (HTTP contract), domain + SharePoint types; code shared with the frontend (permissions.ts, uk-date.ts)
 ├── frontend/                       # Vue 3 + Vite SPA
 │   └── src/
 │       ├── router/index.ts         # Route definitions + path builder functions

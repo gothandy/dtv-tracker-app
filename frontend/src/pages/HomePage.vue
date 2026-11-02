@@ -163,6 +163,7 @@ import type { Session } from '../types/session'
 import type { TagHoursItem } from '../../../types/api-responses'
 import type { MediaItem } from '../types/media'
 import type { SessionSummary } from '../components/PersonalPrompt.vue'
+import { ukYearAgo } from '../../../types/uk-date'
 
 const route = useRoute()
 const router = useRouter()
@@ -179,11 +180,7 @@ const selectedGalleryIndex = ref<number | null>(null)
 
 // ── Personal context ─────────────────────────────────────────────────────────
 
-const oneYearAgo = computed(() => {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10) // YYYY-MM-DD
-})
+const oneYearAgo = computed(() => ukYearAgo())
 
 const nextPersonalSession = computed<SessionSummary | null>(() =>
   store.sessions

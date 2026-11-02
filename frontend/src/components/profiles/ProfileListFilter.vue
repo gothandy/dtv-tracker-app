@@ -9,7 +9,7 @@
         placeholder="Search volunteers…"
         autocomplete="off"
       />
-      <FyFilter v-model="fy" />
+      <FyFilter v-model="fy" :years="financialYears" />
       <select v-model="group" class="list-filter-select">
         <option value="">All groups</option>
         <option v-for="g in groups" :key="g.key" :value="g.key">{{ g.displayName ?? g.key }}</option>
@@ -30,11 +30,7 @@
       </select>
       <select v-model="hoursFilter" class="list-filter-select">
         <option value="">All hours</option>
-        <option value="0">0h</option>
-        <option value="lt15">&lt;15h</option>
-        <option value="15plus">15h+</option>
-        <option value="15to30">15–30h</option>
-        <option value="30plus">30h+</option>
+        <option v-for="h in HOURS_FILTERS" :key="h.value" :value="h.value">{{ h.label }}</option>
       </select>
       <select v-model="recordType" class="list-filter-select">
         <option value="">All record types</option>
@@ -61,9 +57,12 @@ import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
 import type { GroupResponse } from '../../../../types/api-responses'
+import { HOURS_FILTERS, hoursInView, matchesHoursFilter, sessionsInView } from '../../../../types/hours'
 
 const props = defineProps<{
   profiles: ProfileResponse[]
+  /** FY keys for the FY dropdown, from Profile Stats (so it doesn't wait on Sessions). */
+  financialYears: string[]
   groups: GroupResponse[]
   recordOptions: { types: string[]; statuses: string[] }
 }>()
@@ -100,11 +99,11 @@ const warningOptions = computed(() => {
 })
 
 function hoursForProfile(p: ProfileResponse): number {
-  return fy.value === 'all' ? p.hoursAll : p.hoursThisFY
+  return hoursInView(p, fy.value)
 }
 
 function sessionsForProfile(p: ProfileResponse): number {
-  return fy.value === 'all' ? p.sessionsAll : p.sessionsThisFY
+  return sessionsInView(p, fy.value)
 }
 
 const filtered = computed<ProfileResponse[]>(() => {
@@ -128,15 +127,7 @@ const filtered = computed<ProfileResponse[]>(() => {
 
   // Hours filter
   if (hoursFilter.value) {
-    list = list.filter(p => {
-      const h = hoursForProfile(p)
-      if (hoursFilter.value === '0')      return h === 0
-      if (hoursFilter.value === 'lt15')   return h > 0 && h < 15
-      if (hoursFilter.value === '15plus') return h >= 15
-      if (hoursFilter.value === '15to30') return h >= 15 && h <= 30
-      if (hoursFilter.value === '30plus') return h > 30
-      return true
-    })
+    list = list.filter(p => matchesHoursFilter(hoursForProfile(p), hoursFilter.value))
   }
 
   // Record filter

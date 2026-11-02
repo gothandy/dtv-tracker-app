@@ -16,6 +16,13 @@ describe('profileList store', () => {
   beforeEach(() => setActivePinia(createPinia()))
   afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks() })
 
+  it('keeps the financial years from the response, for the FY dropdown', async () => {
+    mockFetch({ data: [], financialYears: ['FY2023', 'FY2024', 'FY2026'] })
+    const store = useProfileListStore()
+    await store.fetch('future')
+    expect(store.financialYears).toEqual(['FY2023', 'FY2024', 'FY2026'])
+  })
+
   describe('query string construction', () => {
     it('fetches /api/profiles with no query string when no params given', async () => {
       const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ data: [] }) })

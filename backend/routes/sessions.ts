@@ -49,7 +49,8 @@ import { mediaDriveId } from '../services/media-upload';
 import { sharePoint, environmentName } from '../config';
 import { requirePermission } from '../middleware/require-permission';
 import { summariseRecords } from '../services/records-summary';
-import { ukToday } from '../services/uk-today';
+import { ukToday } from '../../types/uk-date';
+import { recordProfileId, statusOn } from '../services/records';
 
 const router: Router = express.Router();
 
@@ -115,7 +116,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
       if (gid !== undefined) groupRegularsCountMap.set(gid, (groupRegularsCountMap.get(gid) ?? 0) + 1);
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ukToday();
 
     const data: SessionResponse[] = sessionsRaw
       .filter(s => s.Date)
@@ -279,7 +280,7 @@ router.get('/sessions/export', async (req: Request, res: Response) => {
 
     const csv = [csvHeader, ...csvRows].join('\n');
 
-    const todayStr = today.toISOString().substring(0, 10);
+    const todayStr = ukToday();
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${todayStr} DTV Hours.csv"`);
     res.send(csv);
@@ -293,7 +294,7 @@ router.get('/sessions/export', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/records/export', async (req: Request, res: Response) => {
+router.get('/records/export', requirePermission('exportRecords'), async (req: Request, res: Response) => {
   try {
     const [rawRecords, rawProfiles, rawSessions, rawEntries] = await Promise.all([
       recordsRepository.getAll(),
@@ -330,12 +331,13 @@ router.get('/records/export', async (req: Request, res: Response) => {
     // Group records by profile ID
     const recordsByProfile = new Map<number, Map<string, { status: string; date: string }>>();
     const allTypes = new Set<string>();
+    const today = ukToday();
     for (const r of rawRecords) {
-      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+      const pid = recordProfileId(r);
       if (pid === undefined || !r.Type) continue;
       allTypes.add(r.Type);
       if (!recordsByProfile.has(pid)) recordsByProfile.set(pid, new Map());
-      recordsByProfile.get(pid)!.set(r.Type, { status: r.Status || '', date: r.Date || '' });
+      recordsByProfile.get(pid)!.set(r.Type, { status: statusOn(r, today), date: r.Date || '' });
     }
 
     // Format date like "8 Sept 2025"
@@ -379,7 +381,7 @@ router.get('/records/export', async (req: Request, res: Response) => {
     csvRows.sort((a, b) => a!.localeCompare(b!));
 
     const csv = [csvHeader, ...csvRows].join('\n');
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = ukToday();
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${todayStr} DTV Records.csv"`);
     res.send('\uFEFF' + csv);
@@ -628,7 +630,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const rawLimits = convertSession(spSession).limits;
     const sessionLimits = deriveLimits(rawLimits, regularsCount, storedStats.cancelledRegular ?? 0);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ukToday();
     const isPast = spSession.Date < today;
     const nextSpSession = isPast ? rawSessions
       .filter(s => safeParseLookupId(s[GROUP_LOOKUP] as unknown as string) === groupId && s.Date >= today)

@@ -44,6 +44,7 @@ import { useTaxonomy } from '../../composables/useTaxonomy'
 import type { RoleContext } from '../../composables/useViewer'
 import type { MediaStatus } from '../../types/session'
 import type { Session } from '../../types/session'
+import { ukToday, ukYearAgo } from '../../../../types/uk-date'
 
 const TRUSTED_MEDIA_FILTERS = new Set<MediaStatus>(['none', 'allPrivate', 'noCover'])
 
@@ -86,18 +87,12 @@ watch(
   { immediate: true },
 )
 
-function rollingStart(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
 function applyBase(list: Session[]): Session[] {
   let r = list
   if (fy.value === 'future')
-    r = r.filter(s => s.date >= new Date().toISOString().slice(0, 10))
+    r = r.filter(s => s.date >= ukToday())
   else if (fy.value === 'rolling')
-    r = r.filter(s => s.date >= rollingStart() && s.date <= new Date().toISOString().slice(0, 10))
+    r = r.filter(s => s.date >= ukYearAgo() && s.date <= ukToday())
   else if (fy.value && fy.value !== 'all')
     r = r.filter(s => s.financialYear === fy.value)
   if (search.value.length >= 3) {

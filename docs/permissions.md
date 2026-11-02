@@ -172,7 +172,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 |--------|----------|---------|
 | GET | `/entries` | All entries listing (admin-only) |
 | GET | `/sessions/export` | CSV export (GDPR) |
-| GET | `/records/export` | CSV export (GDPR) |
+| GET | `/records/export` | CSV export (GDPR) (permission `exportRecords`) |
 | GET | `/records/summary` | Records summary JSON: totals only, no volunteer data (permission `exportRecordsSummary`) |
 | POST | `/groups` | Create group |
 | PATCH | `/groups/:key` | Edit group |
@@ -182,10 +182,10 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | DELETE | `/projects/:key` | Delete project (permission `deleteProjects`) |
 | DELETE | `/sessions/:group/:date` | Delete session |
 | DELETE | `/entries/:id` | Delete entry |
-| POST | `/profiles/:slug/records` | Create record |
-| PATCH | `/records/:id` | Edit record |
-| DELETE | `/records/:id` | Delete record |
-| POST | `/records/bulk` | Bulk create/update records |
+| POST | `/profiles/:id/records` | Create record (permission `editRecords`) |
+| PATCH | `/records/:id` | Edit record: Status, Date, Notes (permission `editRecords`) |
+| DELETE | `/records/:id` | Delete record (permission `editRecords`) |
+| POST | `/records/bulk` | Bulk create/update records (permission `bulkEditRecords`) |
 | POST | `/profiles/bulk-email` | Send a Profile email template to selected profiles |
 | POST | `/entries/bulk` | Bulk add entries for profiles to a future session (skips anyone with any existing entry, including cancelled) |
 | POST | `/profiles/:slug/transfer` | Transfer profile |
@@ -210,6 +210,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
    - **Self-Service**: GETs restricted to `SELFSERVICE_ALLOWED_GET_PATTERNS` plus own profile slug; writes allowed only per `SELFSERVICE_ALLOWED_PATTERNS`.
    - **Check In** (`role === 'checkin'` only): GETs allowed except `ADMIN_ONLY_GET_PATTERNS` (exports, `/entries` list); writes allowed only for `CHECKIN_ALLOWED_PATTERNS`. Any other stored role (including legacy values) gets **403** — check-in patterns are never implied for unknown roles.
    - Export GETs (`/sessions/export`, `/records/export`) and **`GET /entries`** — **Admin only**.
+   - **Records routes** check the permissions table in the handler (`requirePermission`: `viewRecordOptions`, `editRecords`, `bulkEditRecords`, `exportRecords`, `exportRecordsSummary`); `backend/routes/route-permissions.test.ts` fails if a `/records` route has none.
 
 4. **Handler-level enforcement**: Route handlers perform a second ownership check for self-service users. `GET /api/profiles/:slug` checks `req.session.user.profileIds` and returns 403 if the profile ID doesn't match. Similar checks in entries and upload-context handlers.
 

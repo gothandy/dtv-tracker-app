@@ -49,6 +49,7 @@ import { aggregateSessionStatsForScope } from '../services/session-entity-stats'
 import { requirePermission } from '../middleware/require-permission';
 import { normalizeMetadataTagsInput, updateListItemMetadata, type MetadataTag } from '../services/metadata-tags';
 import type { SharePointSession } from '../../types/session';
+import { ukToday } from '../../types/uk-date';
 
 /** Top-level folder in the Documents library drive (same level as Backups/). */
 function projectDocsFolderPath(key: string): string {
@@ -124,7 +125,7 @@ function mapSessionsToResponses(
     const gid = safeParseLookupId(r[GROUP_LOOKUP]);
     if (gid !== undefined) groupRegularsCountMap.set(gid, (groupRegularsCountMap.get(gid) ?? 0) + 1);
   }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ukToday();
 
   return projectSessions
     .map(s => {

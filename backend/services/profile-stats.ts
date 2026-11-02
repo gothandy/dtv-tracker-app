@@ -18,6 +18,8 @@ import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear, toMatchName } from './data-layer';
 import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
+import { ukToday } from '../../types/uk-date';
+import { recordProfileId, statusOn } from './records';
 
 export interface ProfileStatsRefreshResult {
   total: number;
@@ -97,7 +99,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     .filter(p => p.ID !== profileId && (p.Email || '').split(',').some((e: string) => thisEmails.has(e.trim().toLowerCase())))
     .map(p => p.ID);
 
-  const today = new Date().toISOString().substring(0, 10);
+  const today = ukToday();
 
   const thisTitleKey = toMatchName(thisProfile?.Title);
   const thisMatchKey = toMatchName(thisProfile?.MatchName);
@@ -117,7 +119,7 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
     const sid = safeParseLookupId(e[SESSION_LOOKUP]);
     return sid !== undefined && (sessionDateMap.get(sid) ?? '') > today;
   });
-  const hasPrivacyConsent = profileRecordsRaw.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
+  const hasPrivacyConsent = profileRecordsRaw.some(r => r.Type === 'Privacy Consent' && statusOn(r, today) === 'Accepted');
   const warnings: Array<{ text: string; url?: string }> = [];
   if (hasDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(thisProfile?.Title || '')}` });
   if (hasMatchNameError) warnings.push({ text: 'Match Name Error' });
@@ -131,10 +133,11 @@ export async function computeAndSaveProfileStats(profileId: number): Promise<voi
   let isFirstAider = false;
   let noPhoto = true;
   for (const r of profileRecordsRaw) {
-    if (r.Type === 'Charity Membership' && r.Status === 'Accepted') isMember = true;
-    if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
-    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
-    if (r.Type === 'Photo Consent' && r.Status === 'Accepted') noPhoto = false;
+    const status = statusOn(r, today);
+    if (r.Type === 'Charity Membership' && status === 'Accepted') isMember = true;
+    if (r.Type === 'Discount Card' && status) cardStatus = status;
+    if (r.Type === 'First Aid Certificate' && status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
+    if (r.Type === 'Photo Consent' && status === 'Accepted') noPhoto = false;
   }
 
   if (thisProfile?.IsGroup && isMember) warnings.push({ text: 'Group + Member' });
@@ -233,15 +236,16 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
   const firstAiderIds = new Set<number>();
   const consentedPrivacyIds = new Set<number>();
   const consentedPhotoIds = new Set<number>();
-  const today = new Date().toISOString().substring(0, 10);
+  const today = ukToday();
   for (const r of recordsRaw) {
-    const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
+    const pid = recordProfileId(r);
     if (pid === undefined) continue;
-    if (r.Type === 'Charity Membership' && r.Status === 'Accepted') memberIds.add(pid);
-    if (r.Type === 'Discount Card' && r.Status) cardStatusMap.set(pid, r.Status);
-    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) firstAiderIds.add(pid);
-    if (r.Type === 'Privacy Consent' && r.Status === 'Accepted') consentedPrivacyIds.add(pid);
-    if (r.Type === 'Photo Consent' && r.Status === 'Accepted') consentedPhotoIds.add(pid);
+    const status = statusOn(r, today);
+    if (r.Type === 'Charity Membership' && status === 'Accepted') memberIds.add(pid);
+    if (r.Type === 'Discount Card' && status) cardStatusMap.set(pid, status);
+    if (r.Type === 'First Aid Certificate' && status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) firstAiderIds.add(pid);
+    if (r.Type === 'Privacy Consent' && status === 'Accepted') consentedPrivacyIds.add(pid);
+    if (r.Type === 'Photo Consent' && status === 'Accepted') consentedPhotoIds.add(pid);
   }
   const noPhotoIds = new Set(profilesRaw.filter(p => !consentedPhotoIds.has(p.ID)).map(p => p.ID));
 

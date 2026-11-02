@@ -22,6 +22,9 @@
       <FormRow title="Date" :full-width="true">
         <ModalFormInput v-model="form.date" type="date" />
       </FormRow>
+      <FormRow title="Notes" :full-width="true">
+        <ModalFormInput v-model="form.notes" />
+      </FormRow>
     </FormLayout>
   </ModalLayout>
 </template>
@@ -38,6 +41,7 @@ import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 export interface SaveRecordPayload {
   status: string
   date: string
+  notes: string
 }
 
 const props = defineProps<{
@@ -56,12 +60,14 @@ const emit = defineEmits<{
 const form = reactive({
   status: props.record.status,
   date: props.record.date?.slice(0, 10) ?? '',
+  notes: props.record.notes ?? '',
 })
 
 function save() {
   emit('save', {
     status: form.status,
     date: form.date,
+    notes: form.notes,
   })
 }
 </script>

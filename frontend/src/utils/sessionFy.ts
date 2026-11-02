@@ -1,17 +1,12 @@
 import type { Session } from '../types/session'
-
-export function rollingYearStartIso(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10)
-}
+import { ukToday, ukYearAgo } from '../../../types/uk-date'
 
 export function sessionMatchesFy(session: Session, fyValue: string, todayIso?: string): boolean {
-  const today = todayIso ?? new Date().toISOString().slice(0, 10)
+  const today = todayIso ?? ukToday()
   if (fyValue === 'all') return true
   if (fyValue === 'future') return session.date >= today
   if (fyValue === 'rolling') {
-    return session.date >= rollingYearStartIso() && session.date <= today
+    return session.date >= ukYearAgo() && session.date <= today
   }
   return session.financialYear === fyValue
 }

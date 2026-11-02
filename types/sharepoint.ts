@@ -145,7 +145,11 @@ export interface SharePointRecord extends SharePointBaseItem {
   Profile?: string;
   Type?: string;
   Status?: string;
+  /** Legacy: kept until Records v2 has moved every reader and writer to Start and End. */
   Date?: string;
+  Start?: string;
+  End?: string;
+  Notes?: string;
 }
 
 /**

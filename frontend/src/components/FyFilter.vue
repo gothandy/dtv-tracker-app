@@ -14,6 +14,8 @@ const props = defineProps<{
   disabled?: boolean
   /** When set, replaces the default session-based FY list (e.g. projects list). */
   options?: { value: string; label: string }[]
+  /** When set, the FY keys to list (e.g. FY2024) instead of those of the loaded sessions. */
+  years?: string[]
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -21,7 +23,7 @@ const sessionsStore = useSessionListStore()
 
 const options = computed(() => {
   if (props.options?.length) return props.options
-  const fyKeys = [...new Set(sessionsStore.sessions.map(s => s.financialYear))]
+  const fyKeys = [...new Set(props.years ?? sessionsStore.sessions.map(s => s.financialYear))]
     .filter(k => k && k.startsWith('FY'))
     .sort()
   return [

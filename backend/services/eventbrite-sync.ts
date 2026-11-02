@@ -11,6 +11,7 @@ import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
 import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID, ENTRY_CANCELLED } from './field-names';
 import { computeAndSaveProfileStats } from './profile-stats';
+import { findRecord } from './records';
 
 /**
  * Returns the booking email for an attendee — the order contact email (whoever
@@ -203,9 +204,7 @@ export async function upsertConsentRecords(
     if (!type) continue;
     const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
     const date = attendee.created || new Date().toISOString();
-    const existing = records.find(r =>
-      safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type
-    );
+    const existing = findRecord(records, profileId, type);
     if (existing) {
       // Only update if status changed — date comparison is unreliable because
       // SharePoint's date-only field strips the time component from attendee.created.

@@ -63,7 +63,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Check In: edit profile button visible, can update name/email
 - [ ] Check In: Upload button on entry detail visible and functional (navigates to `/upload?entryId=:id`)
 - [ ] Check In: Add Record, Transfer, Delete still hidden on profile page
-- [ ] Check In: `POST /api/profiles/:slug/records` returns 403
+- [ ] Check In: `POST /api/profiles/:slug/records`, `PATCH`/`DELETE /api/records/:id`, `POST /api/records/bulk` and `GET /api/records/export` return 403
 - [ ] Check In: `POST /api/groups` returns 403
 - [ ] Check In Only: `DELETE /api/sessions/:group/:date` returns 403
 - [ ] Check In Only: `GET /api/sessions/export` returns 403 (GDPR)
@@ -232,7 +232,8 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### H21. Edit record
 - [ ] Profile detail → click record pill → modal with Status, Date
-- [ ] `PATCH /api/records/:id` — `{ status?, date? }`
+- [ ] `PATCH /api/records/:id` — `{ status?, date?, notes? }`; Notes over 255 characters returns 400
+- [ ] Edit Record shows Notes; a saved note shows again on reopening Edit, and clearing it saves empty
 
 ### H22. Delete record
 - [ ] Profile detail → edit record modal → Delete button → confirmation
@@ -622,13 +623,14 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Groups: All / Last FY / This FY
 - [ ] Sessions: Past / Last FY / This FY / Future
 - [ ] Volunteers: All / Last FY / This FY
+- [ ] Volunteers (Profiles): on a fresh visit (no Sessions page opened first) the FY dropdown lists every year volunteers have hours or sessions in, from Profile Stats, plus the current FY
 - [ ] Profile detail: bar chart loads with no year selected (all entries shown); click a bar to select that FY; click selected bar again to deselect back to all
 - [ ] Profile detail: Groups card remains visible when a FY is selected; hours figure updates to show hours for that FY (0 if none)
 - [ ] Homepage nav cards (Sessions, Groups, Volunteers) link with `?fy=YYYY-YYYY` — clicking through applies the correct FY filter on the destination page
 
 ### L2. Volunteers advanced filters (client-side)
 - [ ] Type: All / Individuals / Groups
-- [ ] Hours: All / 0h / <15h / 15h+ / 15-30h / 30h+
+- [ ] Hours: All / 0h / <15h / 15h+ / 15-30h / 30h+. Boundaries include the lower edge: exactly 15h shows in 15h+ and 15-30h; exactly 30h shows in 30h+ and 15h+, not 15-30h
 - [ ] Record Type + Status combination
 - [ ] Filters combine with AND logic
 - [ ] Closing advanced section resets all filters and clears selection

@@ -15,6 +15,10 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'POST',   pattern: /^\/templates$/ },               // add template; handler checks editTemplates
   { method: 'PATCH',  pattern: /^\/templates\/\d+$/ },          // edit template; handler checks editTemplates
   { method: 'DELETE', pattern: /^\/templates\/\d+$/ },          // delete template; handler checks editTemplates
+  { method: 'POST',   pattern: /^\/profiles\/\d+\/records$/ },  // add a record; handler checks editRecords
+  { method: 'PATCH',  pattern: /^\/records\/\d+$/ },            // edit a record; handler checks editRecords
+  { method: 'DELETE', pattern: /^\/records\/\d+$/ },            // delete a record; handler checks editRecords
+  { method: 'POST',   pattern: /^\/records\/bulk$/ },            // bulk add records; handler checks bulkEditRecords
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular
   { method: 'PATCH', pattern: /^\/regulars\/\d+$/ },          // update regular (e.g. accompanying adult)
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular
@@ -54,7 +58,6 @@ const SELFSERVICE_ALLOWED_GET_PATTERNS = [
 
 const ADMIN_ONLY_GET_PATTERNS = [
   /^\/sessions\/export\/?$/,
-  /^\/records\/export\/?$/,
   /^\/entries\/?$/,
 ];
 

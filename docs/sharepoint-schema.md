@@ -264,15 +264,18 @@ This is a **many-to-many junction table** that creates the relationship between:
 | **Profile** | Profile | Lookup | No | Links to Profiles list (shows Title) |
 | **Type** | Type | Choice | No | Record type (see choices below) |
 | **Status** | Status | Choice | No | Record status (see choices below) |
-| **Date** | Date | Date (Date only) | No | Date of the record |
+| **Date** | Date | Date and Time | No | Legacy date of the record; read as a UK date. Being replaced by Start and End (Records v2, [#322](https://github.com/gothandy/dtv-tracker-app/issues/322); [inventory](records-v2-date-inventory.md)) |
+| **Start** | Start | Date (Date only) | No | First day the record applies; blank = no lower bound. Read by the tracker, not yet written |
+| **End** | End | Date (Date only) | No | Last day the record applies, inclusive; blank = no upper bound. Read by the tracker, not yet written |
+| **Notes** | Notes | Single line of text | No | Free text, 255 characters at most; edited in Edit Record |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
 ### Choice Values
 
-**Type**: Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card
+**Type** (preview, 2 Nov 2026): Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card, Bike Park Wales, Facebook Group, Parking Permit, First Aid Certificate, DofE
 
-**Status**: Accepted, Declined, Invited, Expired
+**Status** (preview, 2 Nov 2026): Invited, Accepted, Declined. Some Records still hold the old values Expires (First Aid Certificate) and Expired (Charity Membership); Records v2 PR 1 migrates them. Status checks go through `recordStatus()` (`types/record-status.ts`).
 
 ### Lookup Fields
 - **Profile** / **ProfileLookupId**: Lookup to Profiles list

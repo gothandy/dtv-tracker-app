@@ -17,6 +17,7 @@ import AppButton from '../AppButton.vue'
 import { downloadCsv } from '../../utils/listCsv'
 import { shareCurrentUrl } from '../../utils/shareUrl'
 import type { GroupWithStats } from './GroupListFilter.vue'
+import { ukToday } from '../../../../types/uk-date'
 
 const props = defineProps<{
   groups: GroupWithStats[]
@@ -38,7 +39,7 @@ const totalHours = computed(() =>
   Math.round(props.groups.reduce((sum, g) => sum + g.hours, 0) * 10) / 10)
 
 function onDownload() {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = ukToday()
   downloadCsv(`${today} Groups.csv`, ['Key', 'Name', 'Description', 'Regulars', 'Sessions', 'Hours'],
     selectedGroups.value.map(g => [g.key, g.displayName ?? '', g.description ?? '', g.regularsCount, g.sessionCount, g.hours])
   )
