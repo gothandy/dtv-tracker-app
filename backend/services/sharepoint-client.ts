@@ -459,20 +459,21 @@ export class SharePointClient {
    * changes during normal operation. Call clearColumnCache() for an explicit bust.
    */
   async getColumnChoices(listGuid: string, columnName: string): Promise<string[]> {
-    const entry = this.columnCache.get(listGuid);
-    let columns: any[];
-
-    if (entry && Date.now() - entry.fetchedAt < this.COLUMN_CACHE_TTL_MS) {
-      columns = entry.columns;
-    } else {
-      const siteId = await this.getSiteId();
-      const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
-      columns = data.value || [];
-      this.columnCache.set(listGuid, { columns, fetchedAt: Date.now() });
-    }
-
+    const columns = await this.getListColumns(listGuid);
     const column = columns.find((c: any) => c.name === columnName || c.displayName === columnName);
     return column?.choice?.choices || [];
+  }
+
+  /** All column definitions for a list (Graph), from the column schema cache. */
+  async getListColumns(listGuid: string): Promise<any[]> {
+    const entry = this.columnCache.get(listGuid);
+    if (entry && Date.now() - entry.fetchedAt < this.COLUMN_CACHE_TTL_MS) return entry.columns;
+
+    const siteId = await this.getSiteId();
+    const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);
+    const columns = data.value || [];
+    this.columnCache.set(listGuid, { columns, fetchedAt: Date.now() });
+    return columns;
   }
 
   clearColumnCache(): void {

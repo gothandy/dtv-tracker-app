@@ -54,6 +54,7 @@
           <div class="ap-actions">
             <AppButton label="FE Hours Download" href="/api/sessions/export" />
             <AppButton label="Records Download" href="/api/records/export" />
+            <AppButton label="Records Summary" href="/api/records/summary" />
           </div>
         </div>
 

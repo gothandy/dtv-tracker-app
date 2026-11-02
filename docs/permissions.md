@@ -173,6 +173,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | GET | `/entries` | All entries listing (admin-only) |
 | GET | `/sessions/export` | CSV export (GDPR) |
 | GET | `/records/export` | CSV export (GDPR) |
+| GET | `/records/summary` | Records summary JSON: totals only, no volunteer data (permission `exportRecordsSummary`) |
 | POST | `/groups` | Create group |
 | PATCH | `/groups/:key` | Edit group |
 | DELETE | `/groups/:key` | Delete group |

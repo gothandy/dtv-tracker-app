@@ -37,6 +37,7 @@ Term picker on session detail (Admin/Check In). Hierarchical picker backed by Sh
 - Sessions listing: export selected sessions (columns: Date, Group, Name, Registrations, Hours, New, Children, Regulars, FY); public-accessible
 - Volunteers listing: export selected or all visible profiles
 - Records export from admin page
+- Records summary from the Tools page (JSON, Admin only): totals by Type and Status, the Records list's columns, and Profile result counts with fingerprints (a hash of the Profile IDs, so a later run shows whether the same Profiles get each result). No names, emails or IDs. For planning Records v2 (#322)
 
 ## Tools page (`/tools`)
 

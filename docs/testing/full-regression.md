@@ -587,6 +587,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### M13. CSV exports
 - [ ] `GET /api/sessions/export` — downloads FE Hours CSV (this FY, past sessions)
 - [ ] `GET /api/records/export` — downloads Records CSV with hours breakdown
+- [ ] Tools → *Records Summary* downloads `{date} DTV Records Summary {environment}.json`: totals by Type and Status, the Records columns, and Profile counts with fingerprints; no names, emails or IDs. Check In and Self-Service get 403 from `GET /api/records/summary`
 - [ ] `GET /api/profiles/export?...` — downloads Profiles CSV with filter params
 
 ---

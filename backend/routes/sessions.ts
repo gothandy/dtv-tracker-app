@@ -46,7 +46,10 @@ import { trackerAccessForProfileUser } from '../services/tracker-access';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/session-stats';
 import { mediaDriveId } from '../services/media-upload';
-import { sharePoint } from '../config';
+import { sharePoint, environmentName } from '../config';
+import { requirePermission } from '../middleware/require-permission';
+import { summariseRecords } from '../services/records-summary';
+import { ukToday } from '../services/uk-today';
 
 const router: Router = express.Router();
 
@@ -385,6 +388,39 @@ router.get('/records/export', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to export records',
+      message: error.message
+    });
+  }
+});
+
+// Totals only, no volunteer data: for planning the Records v2 migration (#322).
+router.get('/records/summary', requirePermission('exportRecordsSummary'), async (req: Request, res: Response) => {
+  try {
+    const [records, profiles, recordsColumns] = await Promise.all([
+      recordsRepository.getAll(),
+      profilesRepository.getAll(),
+      sharePointClient.getListColumns(sharePoint.lists.records)
+    ]);
+
+    const environment = environmentName();
+    const today = ukToday();
+    const summary = summariseRecords({
+      environment,
+      generatedAt: new Date().toISOString(),
+      today,
+      records,
+      profiles,
+      recordsColumns
+    });
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${today} DTV Records Summary ${environment}.json"`);
+    res.send(JSON.stringify(summary, null, 2));
+  } catch (error: any) {
+    console.error('Error exporting records summary:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export records summary',
       message: error.message
     });
   }

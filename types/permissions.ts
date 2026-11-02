@@ -23,6 +23,8 @@ export const PERMISSIONS = {
   uploadProjects: ['admin'],
   /** Bulk actions on Projects: select projects and set their status. (The Projects by location CSV is public; ticked projects narrow it.) */
   bulkEditProjects: ['admin'],
+  /** Download the Records summary from Tools: totals only, no volunteer data (Records v2 planning, #322). */
+  exportRecordsSummary: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
