@@ -296,7 +296,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 | Column Name | Internal Name | Type | Required | Description |
 |------------|---------------|------|----------|-------------|
-| **Title** | Title | Single line of text | No | "{Record Type} {Name}" (e.g. *Charity Membership Accepted*), written by the migration so SharePoint's dropdowns and views read naturally; the app reads Name. Rename a State's Name and update its Title by hand |
+| **Title** | Title | Single line of text | No | "{Record Type} {Name}" (e.g. *Charity Membership Accepted*), written by the migration so SharePoint's dropdowns and views read naturally; the app reads Name. Re-running the migration overwrites any Title that doesn't match |
 | **Name** | Name | Single line of text | Yes | The State's name, shown in Add and Edit |
 | **Record Type** | RecordType | Choice (every Record Type, spelt as in Records Type) | Yes | The Record Type it belongs to; the migration writes the Records Type value. Not called Type: that name clashes with SharePoint's built-in DocIcon column |
 | **Before** | | Single line of text | No | Shown up to and including the Record's Date (e.g. *Expires*); blank = Name (from PR 1) |

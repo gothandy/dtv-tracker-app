@@ -383,7 +383,7 @@ router.post('/records/migration', requirePermission('migrateRecords'), async (re
   }
   try {
     const report = await runRecordsMigration({ dryRun: false, environment: environmentName() });
-    console.log(`[Records migration] ${report.environment}: ${report.statesToInsert.length} States inserted, ${report.recordsSet} Records set, ${report.errors?.length ?? 0} errors`);
+    console.log(`[Records migration] ${report.environment}: ${report.statesToInsert.length} States inserted, ${report.titlesSet} Titles fixed, ${report.recordsSet} Records set, ${report.errors?.length ?? 0} errors`);
     res.json({ success: true, data: report });
   } catch (error: any) {
     console.error('Error running records migration:', error);

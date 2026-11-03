@@ -372,7 +372,7 @@ const migrationResult = ref('')
 const migrationError = ref(false)
 
 async function runMigration() {
-  if (!window.confirm('Run the Records migration on this environment? It adds States and sets each Record\'s State. Check the Dry Run first.')) return
+  if (!window.confirm('Run the Records migration on this environment? It adds any missing States, fixes their Titles and sets each Record\'s State. Safe to run again. Check the Dry Run first.')) return
   migrationLoading.value = true
   migrationResult.value = ''
   migrationError.value = false
@@ -386,7 +386,7 @@ async function runMigration() {
     if (!res.ok || !data.success) throw new Error(data.message || data.error || 'Migration failed')
     const r = data.data
     const failed = r.errors?.length ?? 0
-    migrationResult.value = `${r.statesToInsert.length} States added, ${r.recordsSet} Records set, ${r.alreadySet} already set, ${r.missingTypeOrStatus.length} with no Type or Status`
+    migrationResult.value = `${r.statesToInsert.length} States added, ${r.titlesSet} Titles fixed, ${r.recordsSet} Records set, ${r.alreadySet} already set, ${r.missingTypeOrStatus.length} with no Type or Status`
       + (failed ? `, ${failed} failed: ${r.errors.slice(0, 3).join('; ')}` : '')
     migrationError.value = failed > 0
   } catch (e: any) {

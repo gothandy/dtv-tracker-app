@@ -1,13 +1,17 @@
 /**
- * Records v2 migration (#322 §5), run from Tools. For each Record without a State: match on
- * Type, then Status, in the States list; use that State, or insert one (Name = the Status,
- * Type = the Record's Type); set the Record's State lookup to it. It never changes a Record's
- * Type, Status, Date or Notes. A dry run reports what it would do and writes nothing.
- * Temporary: removed in Records v2 PR 1 (#323).
+ * Records v2 migration (#322 §5), run from Tools. Safe to run again: each run makes the lists
+ * right, whatever state they are in, and a repeat run finds nothing to do.
+ * - Each Record's Type and Status picks its State (match on Type, then Name = the Status); a
+ *   missing State is inserted.
+ * - Each State's Title is "{Type} {Name}"; a wrong one is overwritten.
+ * - Each Record's State lookup is set to its State if it isn't already (blank, a deleted State,
+ *   or another State).
+ * It never changes a Record's Type, Status, Date or Notes. A dry run reports what it would do
+ * and writes nothing. Temporary: removed in Records v2 PR 1 (#323).
  */
 
 import { sharePointClient } from './sharepoint-client';
-import { statesRepository, type SharePointState } from './repositories/states-repository';
+import { statesRepository, stateTitle, type SharePointState } from './repositories/states-repository';
 import { sharePoint } from '../config';
 import { RECORD_STATE, RECORD_STATE_LOOKUP } from './field-names';
 import { safeParseLookupId } from './data-layer';
@@ -21,12 +25,30 @@ export interface MigrationRecord {
 
 const key = (type: string, name: string) => `${type}\u0000${name}`;
 
+/** Each Type and Name's State ID; if the list has the same one twice, the lowest ID. */
+function stateIdsByKey(states: SharePointState[]): Map<string, number> {
+  const ids = new Map<string, number>();
+  for (const s of [...states].sort((a, b) => a.ID - b.ID)) {
+    if (s.Type && s.Name && !ids.has(key(s.Type, s.Name))) ids.set(key(s.Type, s.Name), s.ID);
+  }
+  return ids;
+}
+
+/** The Record's Type and Status, trimmed, or undefined if either is blank. */
+function typeAndStatus(r: MigrationRecord): { type: string; status: string } | undefined {
+  const type = r.Type?.trim() ?? '';
+  const status = r.Status?.trim() ?? '';
+  return type && status ? { type, status } : undefined;
+}
+
 export interface MigrationPlan {
   /** States to insert: one per Type and Status not yet in the States list. */
   statesToInsert: Array<{ type: string; name: string }>;
-  /** Records to set, by Type then Status, with how many. */
+  /** States whose Title isn't "{Type} {Name}", to overwrite. */
+  titlesToSet: Array<{ id: number; from: string; to: string }>;
+  /** Records whose State is blank or not their Type and Status's State, by Type then Status, with how many. */
   recordsToSet: Record<string, Record<string, number>>;
-  /** Records already with a State (skipped). */
+  /** Records already on the right State (left alone). */
   alreadySet: number;
   /** Records with no Type or no Status (skipped, need a look). */
   missingTypeOrStatus: Array<{ id: number; type: string; status: string }>;
@@ -34,23 +56,27 @@ export interface MigrationPlan {
 
 /** What the migration would do, from the Records and the States list as they are. */
 export function planMigration(records: MigrationRecord[], states: SharePointState[]): MigrationPlan {
-  const existing = new Set(states.filter(s => s.Type && s.Name).map(s => key(s.Type!, s.Name!)));
+  const ids = stateIdsByKey(states);
   const toInsert = new Map<string, { type: string; name: string }>();
   const recordsToSet: MigrationPlan['recordsToSet'] = {};
   const missingTypeOrStatus: MigrationPlan['missingTypeOrStatus'] = [];
   let alreadySet = 0;
 
   for (const r of records) {
-    if (safeParseLookupId(r.StateLookupId) !== undefined) { alreadySet++; continue; }
-    const type = r.Type?.trim() ?? '';
-    const status = r.Status?.trim() ?? '';
-    if (!type || !status) { missingTypeOrStatus.push({ id: r.ID, type, status }); continue; }
-    if (!existing.has(key(type, status))) toInsert.set(key(type, status), { type, name: status });
-    recordsToSet[type] ??= {};
-    recordsToSet[type][status] = (recordsToSet[type][status] ?? 0) + 1;
+    const ts = typeAndStatus(r);
+    if (!ts) { missingTypeOrStatus.push({ id: r.ID, type: r.Type?.trim() ?? '', status: r.Status?.trim() ?? '' }); continue; }
+    const id = ids.get(key(ts.type, ts.status));
+    if (id !== undefined && safeParseLookupId(r.StateLookupId) === id) { alreadySet++; continue; }
+    if (id === undefined) toInsert.set(key(ts.type, ts.status), { type: ts.type, name: ts.status });
+    recordsToSet[ts.type] ??= {};
+    recordsToSet[ts.type][ts.status] = (recordsToSet[ts.type][ts.status] ?? 0) + 1;
   }
 
-  return { statesToInsert: [...toInsert.values()], recordsToSet, alreadySet, missingTypeOrStatus };
+  const titlesToSet = states
+    .filter(s => s.Type && s.Name && (s.Title ?? '') !== stateTitle(s.Type, s.Name))
+    .map(s => ({ id: s.ID, from: s.Title ?? '', to: stateTitle(s.Type!, s.Name!) }));
+
+  return { statesToInsert: [...toInsert.values()], titlesToSet, recordsToSet, alreadySet, missingTypeOrStatus };
 }
 
 export interface MigrationReport extends MigrationPlan {
@@ -59,7 +85,8 @@ export interface MigrationReport extends MigrationPlan {
   dryRun: boolean;
   recordsTotal: number;
   statesBefore: number;
-  /** After a run: Records set, and any that failed. */
+  /** After a run: Titles and Records set, and any that failed. */
+  titlesSet?: number;
   recordsSet?: number;
   errors?: string[];
 }
@@ -86,26 +113,38 @@ export async function runRecordsMigration(options: { dryRun: boolean; environmen
   };
   if (options.dryRun) return report;
 
-  // Return or insert each State, then set every Record without one
-  const stateIds = new Map(states.filter(s => s.Type && s.Name).map(s => [key(s.Type!, s.Name!), s.ID]));
+  // Insert each missing State and fix each Title, then set every Record not on its State
+  const ids = stateIdsByKey(states);
+  const errors: string[] = [];
   for (const s of plan.statesToInsert) {
-    stateIds.set(key(s.type, s.name), await statesRepository.create({ Name: s.name, Type: s.type }));
+    ids.set(key(s.type, s.name), await statesRepository.create({ Name: s.name, Type: s.type }));
+  }
+  let titlesSet = 0;
+  for (const t of plan.titlesToSet) {
+    try {
+      await statesRepository.updateTitle(t.id, t.to);
+      titlesSet++;
+    } catch (err: any) {
+      errors.push(`State ${t.id} Title: ${err.message}`);
+    }
   }
 
-  const toSet = records.filter(r => safeParseLookupId(r.StateLookupId) === undefined && r.Type?.trim() && r.Status?.trim());
-  const errors: string[] = [];
+  const toSet = records.flatMap(r => {
+    const ts = typeAndStatus(r);
+    const stateId = ts && ids.get(key(ts.type, ts.status));
+    return stateId !== undefined && safeParseLookupId(r.StateLookupId) !== stateId ? [{ id: r.ID, stateId }] : [];
+  });
   let recordsSet = 0;
   for (let i = 0; i < toSet.length; i += 10) {
     await Promise.all(toSet.slice(i, i + 10).map(async r => {
       try {
-        const stateId = stateIds.get(key(r.Type!.trim(), r.Status!.trim()))!;
-        await sharePointClient.updateListItem(sharePoint.lists.records, r.ID, { [RECORD_STATE_LOOKUP]: stateId });
+        await sharePointClient.updateListItem(sharePoint.lists.records, r.id, { [RECORD_STATE_LOOKUP]: r.stateId });
         recordsSet++;
       } catch (err: any) {
-        errors.push(`Record ${r.ID}: ${err.message}`);
+        errors.push(`Record ${r.id}: ${err.message}`);
       }
     }));
   }
   sharePointClient.clearCacheKey('records');
-  return { ...report, recordsSet, errors };
+  return { ...report, titlesSet, recordsSet, errors };
 }
