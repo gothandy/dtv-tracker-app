@@ -49,6 +49,7 @@ import { buildBadgeLookups, recordProfileId, recordsForProfile, statusOn, toReco
 import { upsertRecord } from '../services/record-writer';
 import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
+import { matchesProfileRecordFilter, oneRecordPerType } from '../../types/profile-record-filter';
 
 const router: Router = express.Router();
 
@@ -146,6 +147,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
       profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: statusOn(r, todayStr) });
     }
+    for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
     const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords, todayStr);
 
@@ -273,6 +275,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
       profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: statusOn(r, ukToday()) });
     }
+    for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
     // Build profile list with stats
     let profileList = validProfiles.map(spProfile => {
@@ -306,16 +309,9 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     // Hours filter uses FY-appropriate hours
     if (hoursFilter) profileList = profileList.filter(p => matchesHoursFilter(hoursInView(p, fyParam), hoursFilter));
 
-    // Record filters
-    if (recordTypeFilter) {
-      profileList = profileList.filter(p => {
-        const recs = p.records.filter(r => r.type === recordTypeFilter);
-        if (recordStatusFilter === 'none') return recs.length === 0;
-        if (recordStatusFilter) return recs.some(r => r.status === recordStatusFilter);
-        return recs.length > 0;
-      });
-    } else if (recordStatusFilter === 'none') {
-      profileList = profileList.filter(p => p.records.length === 0);
+    // Record filters: the same rule as the Profiles page (Status works with or without a Type)
+    if (recordTypeFilter || recordStatusFilter) {
+      profileList = profileList.filter(p => matchesProfileRecordFilter(p.records, recordTypeFilter ?? '', recordStatusFilter ?? ''));
     }
 
     // Filter out profiles with no activity unless showing all or explicitly requesting 0h

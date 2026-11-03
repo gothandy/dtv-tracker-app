@@ -6,7 +6,6 @@
       :profiles="store.profiles"
       :financial-years="store.financialYears"
       :groups="groupsStore.groups"
-      :record-options="recordOptions"
       @filtered="filtered = $event"
       @filters-change="onFiltersChange"
     />

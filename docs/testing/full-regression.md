@@ -639,7 +639,10 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### L2. Volunteers advanced filters (client-side)
 - [ ] Type: All / Individuals / Groups
 - [ ] Hours: All / 0h / <15h / 15h+ / 15-30h / 30h+. Boundaries include the lower edge: exactly 15h shows in 15h+ and 15-30h; exactly 30h shows in 30h+ and 15h+, not 15-30h
-- [ ] Record Type + Status combination
+- [ ] Record Type lists only Types the shown volunteers have a Record of (e.g. no DofE until someone has one); Status lists only statuses they have, plus *No record* when it would match anyone
+- [ ] Status works without a Type: *Declined* shows everyone with any Declined Record; *No record* shows volunteers with no Records at all
+- [ ] Type + Status: that Type's Record has the Status; Type + *No record*: volunteers without that Type
+- [ ] Changing other filters drops a Record choice that no longer has anyone (back to All); choices kept in the address
 - [ ] Filters combine with AND logic
 - [ ] Closing advanced section resets all filters and clears selection
 - [ ] Opening Advanced shows checkboxes on all volunteer cards

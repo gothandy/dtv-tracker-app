@@ -34,12 +34,12 @@
       </select>
       <select v-model="recordType" class="list-filter-select">
         <option value="">All record types</option>
-        <option v-for="t in recordOptions.types" :key="t" :value="t">{{ t }}</option>
+        <option v-for="t in recordFilterOptions.types" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select v-model="recordStatus" class="list-filter-select" :disabled="!recordType">
+      <select v-model="recordStatus" class="list-filter-select">
         <option value="">All statuses</option>
-        <option value="none">No record</option>
-        <option v-for="s in recordOptions.statuses" :key="s" :value="s">{{ s }}</option>
+        <option v-if="recordFilterOptions.noRecord" :value="NO_RECORD">No record</option>
+        <option v-for="s in recordFilterOptions.statuses" :key="s" :value="s">{{ s }}</option>
       </select>
       <select v-model="warningsFilter" class="list-filter-select">
         <option value="">All profiles</option>
@@ -58,13 +58,14 @@ import FyFilter from '../FyFilter.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
 import type { GroupResponse } from '../../../../types/api-responses'
 import { HOURS_FILTERS, hoursInView, matchesHoursFilter, sessionsInView } from '../../../../types/hours'
+import { matchesProfileRecordFilter, NO_RECORD } from '../../../../types/profile-record-filter'
+import { profileRecordFilterOptions } from '../../utils/profileRecordFilter'
 
 const props = defineProps<{
   profiles: ProfileResponse[]
   /** FY keys for the FY dropdown, from Profile Stats (so it doesn't wait on Sessions). */
   financialYears: string[]
   groups: GroupResponse[]
-  recordOptions: { types: string[]; statuses: string[] }
 }>()
 
 const emit = defineEmits<{
@@ -89,8 +90,6 @@ const warningsFilter = ref((route.query.warnings as string)      || '')
 // immediate: true ensures deep-linked query params are emitted on first load
 watch([fy, group], ([newFy, newGroup]) => emit('filters-change', { fy: newFy, group: newGroup }), { immediate: true })
 
-// Clear record status when record type is cleared
-watch(recordType, val => { if (!val) recordStatus.value = '' })
 
 const warningOptions = computed(() => {
   const set = new Set<string>()
@@ -106,7 +105,8 @@ function sessionsForProfile(p: ProfileResponse): number {
   return sessionsInView(p, fy.value)
 }
 
-const filtered = computed<ProfileResponse[]>(() => {
+/** Profiles left by every filter except the Record ones: the Record choices come from these. */
+const beforeRecordFilters = computed<ProfileResponse[]>(() => {
   let list = props.profiles
 
   // FY visibility: hide zero-activity profiles unless showing 'all' or filtering for 0h
@@ -130,19 +130,6 @@ const filtered = computed<ProfileResponse[]>(() => {
     list = list.filter(p => matchesHoursFilter(hoursForProfile(p), hoursFilter.value))
   }
 
-  // Record filter
-  if (recordType.value) {
-    list = list.filter(p => {
-      const recs = (p.records ?? []).filter(r => r.type === recordType.value)
-      if (recordStatus.value === 'none') return recs.length === 0
-      if (recordStatus.value)           return recs.some(r => r.status === recordStatus.value)
-      return recs.length > 0
-    })
-  } else if (recordStatus.value === 'none') {
-    // Status 'none' with no type means no records at all
-    list = list.filter(p => !(p.records ?? []).length)
-  }
-
   // Warnings filter
   if (warningsFilter.value === '__any__') {
     list = list.filter(p => !!p.warnings?.length)
@@ -151,6 +138,22 @@ const filtered = computed<ProfileResponse[]>(() => {
   } else if (warningsFilter.value) {
     list = list.filter(p => p.warnings?.some(w => w.text === warningsFilter.value))
   }
+
+  return list
+})
+
+const recordFilterOptions = computed(() =>
+  profileRecordFilterOptions(beforeRecordFilters.value, recordType.value, recordStatus.value))
+
+// Filters cascade: a Record choice the other filters leave no Profiles for goes back to All (once loaded)
+watch(recordFilterOptions, opts => {
+  if (!props.profiles.length) return
+  if (recordType.value && !opts.types.includes(recordType.value)) recordType.value = ''
+  if (recordStatus.value === NO_RECORD ? !opts.noRecord : recordStatus.value && !opts.statuses.includes(recordStatus.value)) recordStatus.value = ''
+})
+
+const filtered = computed<ProfileResponse[]>(() => {
+  let list = beforeRecordFilters.value.filter(p => matchesProfileRecordFilter(p.records ?? [], recordType.value, recordStatus.value))
 
   // Sort
   list = [...list].sort((a, b) => {
