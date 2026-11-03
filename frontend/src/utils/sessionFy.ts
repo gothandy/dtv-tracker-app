@@ -18,7 +18,7 @@ export function dateMatchesFy(date: string | undefined, fyValue: string, todayIs
   const day = date.slice(0, 10)
   const today = todayIso ?? ukToday()
   if (fyValue === 'future') return day >= today
-  if (fyValue === 'rolling') return day >= ukYearAgo() && day <= today
+  if (fyValue === 'rolling') return day >= ukYearAgo(new Date(`${today}T12:00:00Z`)) && day <= today
   return financialYearOfDate(day) === fyValue
 }
 

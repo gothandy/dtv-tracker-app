@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { recordsPath } from '../../router/index'
 import FyFilter from '../FyFilter.vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
 import { DEFAULT_RECORD_FILTERS, matchesRecordFilters, recordFilterOptions, sortRecords, type RecordFilters } from '../../utils/recordFilters'
@@ -40,9 +41,13 @@ const filters = reactive<RecordFilters>({
 /** Shown in the chip; comes with profileId from the Profile page's link. */
 const profileName = ref((route.query.profileName as string) || '')
 
+/** True while the address is still the Records page (not mid-navigation to another page). */
+const onRecordsPage = () => route.path === recordsPath()
+
 // Links to this page from this page (View Archive) change the address, not the component:
 // take filters from the address when it differs from them.
 watch(() => route.query, q => {
+  if (!onRecordsPage()) return
   const profileId = q.profileId ? parseInt(q.profileId as string, 10) : undefined
   if (profileId !== filters.profileId) {
     filters.profileId = profileId
@@ -76,6 +81,8 @@ watch(options, opts => {
 })
 
 watch(filters, f => {
+  // Never write the Records filters onto another page's address
+  if (!onRecordsPage()) return
   const query: Record<string, string> = {}
   if (f.type) query.type = f.type
   if (f.status) query.status = f.status

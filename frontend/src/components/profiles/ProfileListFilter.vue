@@ -65,6 +65,8 @@ const props = defineProps<{
   profiles: ProfileResponse[]
   /** FY keys for the FY dropdown, from Profile Stats (so it doesn't wait on Sessions). */
   financialYears: string[]
+  /** True while the profiles are being refetched (e.g. after an FY change): they're stale. */
+  loading?: boolean
   groups: GroupResponse[]
 }>()
 
@@ -147,7 +149,8 @@ const recordFilterOptions = computed(() =>
 
 // Filters cascade: a Record choice the other filters leave no Profiles for goes back to All (once loaded)
 watch(recordFilterOptions, opts => {
-  if (!props.profiles.length) return
+  // Not on stale profiles mid-refetch, or a valid choice could be cleared before the new FY arrives
+  if (!props.profiles.length || props.loading) return
   if (recordType.value && !opts.types.includes(recordType.value)) recordType.value = ''
   if (recordStatus.value === NO_RECORD ? !opts.noRecord : recordStatus.value && !opts.statuses.includes(recordStatus.value)) recordStatus.value = ''
 })

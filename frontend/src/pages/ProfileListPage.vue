@@ -5,6 +5,7 @@
     <ProfileListFilter
       :profiles="store.profiles"
       :financial-years="store.financialYears"
+      :loading="store.loading"
       :groups="groupsStore.groups"
       @filtered="filtered = $event"
       @filters-change="onFiltersChange"
