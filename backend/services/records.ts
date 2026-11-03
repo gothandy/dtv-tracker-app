@@ -5,11 +5,18 @@
 
 import { SharePointRecord } from '../../types/sharepoint';
 import { recordStatus } from '../../types/record-status';
+import type { RecordTypeName } from '../../types/record-types';
+import type { RecordResponse } from '../../types/api-responses';
 import { safeParseLookupId } from './data-layer';
 
 /** The ID of the Profile this Record belongs to. */
 export function recordProfileId(record: SharePointRecord): number | undefined {
   return safeParseLookupId(record.ProfileLookupId as unknown as string);
+}
+
+/** Whether the Record is of this Type (a known Type name, checked at compile time). */
+export function isOfType(record: SharePointRecord, type: RecordTypeName): boolean {
+  return record.Type === type;
 }
 
 /** This Profile's Records. */
@@ -33,6 +40,20 @@ export function statusOn(record: SharePointRecord, evaluationDate: string): stri
   );
 }
 
+/** The Record as the app shows it, with its status as of `evaluationDate`. */
+export function toRecordResponse(record: SharePointRecord, evaluationDate: string): RecordResponse {
+  return {
+    id: record.ID,
+    type: record.Type || '',
+    status: statusOn(record, evaluationDate),
+    storedStatus: record.Status || '',
+    date: record.Date || '',
+    start: record.Start || undefined,
+    end: record.End || undefined,
+    notes: record.Notes || undefined,
+  };
+}
+
 /** Member and discount-card status per Profile, as of `evaluationDate`. */
 export function buildBadgeLookups(records: SharePointRecord[], evaluationDate: string): {
   memberIds: Set<number>;
@@ -44,8 +65,8 @@ export function buildBadgeLookups(records: SharePointRecord[], evaluationDate: s
     const pid = recordProfileId(r);
     if (pid === undefined) continue;
     const status = statusOn(r, evaluationDate);
-    if (r.Type === 'Charity Membership' && status === 'Accepted') memberIds.add(pid);
-    if (r.Type === 'Discount Card' && status) cardStatusMap.set(pid, status);
+    if (isOfType(r, 'Charity Membership') && status === 'Accepted') memberIds.add(pid);
+    if (isOfType(r, 'Discount Card') && status) cardStatusMap.set(pid, status);
   }
   return { memberIds, cardStatusMap };
 }

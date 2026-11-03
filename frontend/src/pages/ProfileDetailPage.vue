@@ -309,7 +309,7 @@ watch(
 )
 
 const isMember = computed(() =>
-  store.profile?.records?.some(r => r.type === 'Charity Membership' && recordStatus(r, ukToday()) === 'Accepted') ?? false
+  store.profile?.records?.some(r => r.type === 'Charity Membership' && r.status === 'Accepted') ?? false
 )
 
 async function onDeleteProfile() {
@@ -403,7 +403,8 @@ async function onAddRecord(payload: AddRecordPayload) {
     })
     if (!res.ok) throw new Error(`Add failed (${res.status})`)
     const json = await res.json()
-    store.profile.records = [...(store.profile.records ?? []), { id: json.data.id, ...payload }]
+    const added = { id: json.data.id, type: payload.type, storedStatus: payload.status, date: payload.date }
+    store.profile.records = [...(store.profile.records ?? []), { ...added, status: recordStatus({ status: payload.status }, ukToday()) }]
     recordListRef.value?.onAddSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onAddRecord failed', e)
@@ -421,7 +422,12 @@ async function onSaveRecord(id: number, payload: SaveRecordPayload) {
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
     const stored = store.profile.records?.find(r => r.id === id)
-    if (stored) { stored.status = payload.status; stored.date = payload.date; stored.notes = payload.notes.trim() || undefined }
+    if (stored) {
+      stored.storedStatus = payload.status
+      stored.status = recordStatus({ status: payload.status, start: stored.start, end: stored.end }, ukToday())
+      stored.date = payload.date
+      stored.notes = payload.notes.trim() || undefined
+    }
     recordListRef.value?.onSaveSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onSaveRecord failed', e)
@@ -531,7 +537,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,
-      isMember: store.profile?.isMember ?? false,
+      isMember: isMember.value,
       cardStatus: store.profile?.cardStatus,
       isGroup: store.profile?.isGroup ?? false,
       hasProfileWarning: !!(store.profile?.warnings?.length),

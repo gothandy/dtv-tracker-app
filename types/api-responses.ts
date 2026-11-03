@@ -156,11 +156,18 @@ export interface ProfileGroupHours {
   regularId?: number;
 }
 
-export interface ConsentRecordResponse {
+/** A Record as the app shows it. */
+export interface RecordResponse {
   id: number;
   type: string;
+  /** The status as of today (recordStatus); show this. */
   status: string;
+  /** The status stored in SharePoint; the Edit form's choice. */
+  storedStatus: string;
+  /** Legacy date (YYYY-MM-DD). */
   date: string;
+  start?: string;
+  end?: string;
   notes?: string;
 }
 
@@ -182,7 +189,7 @@ export interface ProfileDetailResponse {
   groupHours: ProfileGroupHours[];
   regularCount: number;
   entries: ProfileEntryResponse[];
-  records?: ConsentRecordResponse[];
+  records?: RecordResponse[];
   linkedProfiles?: Array<{ id: number; slug: string; name: string }>;
   warnings?: Array<{ text: string; url?: string }>;
 }

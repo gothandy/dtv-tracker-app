@@ -696,10 +696,6 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Shows all 12 icons with labels
 - [ ] Card Invited in orange, FirstAider and NoPhoto in red
 
-### L8. Member card highlighting
-- [ ] Volunteers page: green background + left border for individuals meeting 15h in selected FY
-- [ ] Changes with FY filter (hours-based, not membership-based)
-
 ### L9. Description clamping
 - [ ] Long session descriptions clamped to 3 lines with "Show more" toggle
 

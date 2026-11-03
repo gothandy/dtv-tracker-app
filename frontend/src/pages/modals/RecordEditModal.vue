@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { ConsentRecordResponse } from '../../../../types/api-responses'
+import type { RecordResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
@@ -45,7 +45,7 @@ export interface SaveRecordPayload {
 }
 
 const props = defineProps<{
-  record: ConsentRecordResponse
+  record: RecordResponse
   statuses: string[]
   working: boolean
   error?: string
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 }>()
 
 const form = reactive({
-  status: props.record.status,
+  status: props.record.storedStatus,
   date: props.record.date?.slice(0, 10) ?? '',
   notes: props.record.notes ?? '',
 })

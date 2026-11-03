@@ -121,9 +121,9 @@ const mockTypes = [
 const mockStatuses = ['Accepted', 'Invited', 'Declined', 'Pending']
 
 const mockRecords = [
-  { id: 1, type: 'Privacy Consent',    status: 'Accepted', date: '2025-09-01T00:00:00Z' },
-  { id: 2, type: 'Photo Consent',      status: 'Accepted', date: '2025-09-01T00:00:00Z' },
-  { id: 3, type: 'Charity Membership', status: 'Accepted', date: '2024-04-01T00:00:00Z' },
-  { id: 4, type: 'Discount Card',      status: 'Invited',  date: '2026-01-15T00:00:00Z' },
+  { id: 1, type: 'Privacy Consent',    status: 'Accepted', storedStatus: 'Accepted', date: '2025-09-01T00:00:00Z' },
+  { id: 2, type: 'Photo Consent',      status: 'Accepted', storedStatus: 'Accepted', date: '2025-09-01T00:00:00Z' },
+  { id: 3, type: 'Charity Membership', status: 'Accepted', storedStatus: 'Accepted', date: '2024-04-01T00:00:00Z' },
+  { id: 4, type: 'Discount Card',      status: 'Invited', storedStatus: 'Invited',  date: '2026-01-15T00:00:00Z' },
 ]
 </script>

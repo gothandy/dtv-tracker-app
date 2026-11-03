@@ -561,7 +561,7 @@ const mockRecordTypes = [
   'Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card',
 ]
 const mockRecordStatuses = ['Accepted', 'Invited', 'Declined', 'Pending']
-const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', date: '2026-01-15T00:00:00Z' }
+const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', storedStatus: 'Invited', date: '2026-01-15T00:00:00Z' }
 
 const session = { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' }
 const mockEntries: EntryItem[] = [

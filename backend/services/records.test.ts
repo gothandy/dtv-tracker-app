@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildBadgeLookups, findRecord, recordProfileId, recordsForProfile, statusOn } from './records'
+import { buildBadgeLookups, findRecord, recordProfileId, recordsForProfile, statusOn, toRecordResponse } from './records'
 
 const record = (id: number, profileId: number | string | undefined, type: string, status: string) =>
   ({ ID: id, ProfileLookupId: profileId, Type: type, Status: status }) as any
@@ -50,5 +50,15 @@ describe('buildBadgeLookups', () => {
     expect([...memberIds]).toEqual([10])
     expect(cardStatusMap.get(10)).toBe('Accepted')
     expect(cardStatusMap.has(11)).toBe(false)
+  })
+})
+
+describe('toRecordResponse', () => {
+  it('gives the status as of the date and the stored status, with dates and Notes', () => {
+    const r = { ID: 7, ProfileLookupId: 10, Type: 'DofE', Status: 'Accepted', Date: '2026-01-01', Start: '2026-01-01', End: '', Notes: 'Gold 1223123' } as any
+    expect(toRecordResponse(r, '2026-11-03')).toEqual({
+      id: 7, type: 'DofE', status: 'Accepted', storedStatus: 'Accepted', date: '2026-01-01',
+      start: '2026-01-01', end: undefined, notes: 'Gold 1223123',
+    })
   })
 })

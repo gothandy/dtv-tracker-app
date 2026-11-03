@@ -6,7 +6,6 @@ import { sessionsRepository } from '../services/repositories/sessions-repository
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
-import { recordsRepository } from '../services/repositories/records-repository';
 import {
   enrichSessions,
   sortSessionsByDate,
@@ -46,11 +45,8 @@ import { trackerAccessForProfileUser } from '../services/tracker-access';
 import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/session-stats';
 import { mediaDriveId } from '../services/media-upload';
-import { sharePoint, environmentName } from '../config';
-import { requirePermission } from '../middleware/require-permission';
-import { summariseRecords } from '../services/records-summary';
+import { sharePoint } from '../config';
 import { ukToday } from '../../types/uk-date';
-import { recordProfileId, statusOn } from '../services/records';
 
 const router: Router = express.Router();
 
@@ -289,140 +285,6 @@ router.get('/sessions/export', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to export sessions',
-      message: error.message
-    });
-  }
-});
-
-router.get('/records/export', requirePermission('exportRecords'), async (req: Request, res: Response) => {
-  try {
-    const [rawRecords, rawProfiles, rawSessions, rawEntries] = await Promise.all([
-      recordsRepository.getAll(),
-      profilesRepository.getAll(),
-      sessionsRepository.getAll(),
-      entriesRepository.getAll()
-    ]);
-
-    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const sessions = validateArray(rawSessions, validateSession, 'Session');
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-
-    // Build session map and FY info for hours calculation
-    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
-    const fy = calculateCurrentFY();
-    const lastFYStart = fy.startYear - 1;
-
-    // Calculate hours per profile
-    const hoursMap = new Map<number, { thisFY: number; lastFY: number }>();
-    for (const e of entries) {
-      const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-      const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-      if (pid === undefined || sid === undefined) continue;
-      const sess = sessionMap.get(sid);
-      if (!sess) continue;
-      const h = parseHours(e.Hours);
-      const sessionFY = calculateFinancialYear(new Date(sess.Date));
-      if (!hoursMap.has(pid)) hoursMap.set(pid, { thisFY: 0, lastFY: 0 });
-      const hours = hoursMap.get(pid)!;
-      if (sessionFY === fy.startYear) hours.thisFY += h;
-      else if (sessionFY === lastFYStart) hours.lastFY += h;
-    }
-
-    // Group records by profile ID
-    const recordsByProfile = new Map<number, Map<string, { status: string; date: string }>>();
-    const allTypes = new Set<string>();
-    const today = ukToday();
-    for (const r of rawRecords) {
-      const pid = recordProfileId(r);
-      if (pid === undefined || !r.Type) continue;
-      allTypes.add(r.Type);
-      if (!recordsByProfile.has(pid)) recordsByProfile.set(pid, new Map());
-      recordsByProfile.get(pid)!.set(r.Type, { status: statusOn(r, today), date: r.Date || '' });
-    }
-
-    // Format date like "8 Sept 2025"
-    function formatDateShort(dateStr: string): string {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
-    }
-
-    // Sort types alphabetically
-    const sortedTypes = [...allTypes].sort();
-
-    // Build CSV — only profiles that have at least one record
-    const profileIds = [...recordsByProfile.keys()];
-    const profileMap = new Map(profiles.map(p => [p.ID, p]));
-
-    const csvHeader = ['Name', 'Email', 'Hours Last FY', 'Hours This FY', ...sortedTypes]
-      .map(h => `"${h}"`).join(',');
-
-    const csvRows = profileIds
-      .map(pid => {
-        const profile = profileMap.get(pid);
-        if (!profile) return null;
-        const name = (profile.Title || '').replace(/"/g, '""');
-        const email = (profile.Email || '').replace(/"/g, '""');
-        const hours = hoursMap.get(pid) || { thisFY: 0, lastFY: 0 };
-        const lastFY = Math.round(hours.lastFY * 10) / 10;
-        const thisFY = Math.round(hours.thisFY * 10) / 10;
-        const recs = recordsByProfile.get(pid)!;
-        const typeCols = sortedTypes.map(t => {
-          const rec = recs.get(t);
-          if (!rec) return '""';
-          const val = rec.date ? `${rec.status} · ${formatDateShort(rec.date)}` : rec.status;
-          return `"${val.replace(/"/g, '""')}"`;
-        });
-        return `"${name}","${email}",${lastFY},${thisFY},${typeCols.join(',')}`;
-      })
-      .filter(Boolean);
-
-    // Sort by name
-    csvRows.sort((a, b) => a!.localeCompare(b!));
-
-    const csv = [csvHeader, ...csvRows].join('\n');
-    const todayStr = ukToday();
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${todayStr} DTV Records.csv"`);
-    res.send('\uFEFF' + csv);
-  } catch (error: any) {
-    console.error('Error exporting records CSV:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to export records',
-      message: error.message
-    });
-  }
-});
-
-// Totals only, no volunteer data: for planning the Records v2 migration (#322).
-router.get('/records/summary', requirePermission('exportRecordsSummary'), async (req: Request, res: Response) => {
-  try {
-    const [records, profiles, recordsColumns] = await Promise.all([
-      recordsRepository.getAll(),
-      profilesRepository.getAll(),
-      sharePointClient.getListColumns(sharePoint.lists.records)
-    ]);
-
-    const environment = environmentName();
-    const today = ukToday();
-    const summary = summariseRecords({
-      environment,
-      generatedAt: new Date().toISOString(),
-      today,
-      records,
-      profiles,
-      recordsColumns
-    });
-
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${today} DTV Records Summary ${environment}.json"`);
-    res.send(JSON.stringify(summary, null, 2));
-  } catch (error: any) {
-    console.error('Error exporting records summary:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to export records summary',
       message: error.message
     });
   }

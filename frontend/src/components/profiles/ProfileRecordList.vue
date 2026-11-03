@@ -56,12 +56,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ConsentRecordResponse } from '../../../../types/api-responses'
+import type { RecordResponse } from '../../../../types/api-responses'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
 
 const props = withDefaults(defineProps<{
-  records: ConsentRecordResponse[]
+  records: RecordResponse[]
   profileId: number
   profileSlug: string
   showConsentLink?: boolean
@@ -80,7 +80,7 @@ const emit = defineEmits<{
 }>()
 
 const showAdd = ref(false)
-const editingRecord = ref<ConsentRecordResponse | null>(null)
+const editingRecord = ref<RecordResponse | null>(null)
 const workingAdd = ref(false)
 const workingEdit = ref(false)
 const addError = ref('')
@@ -90,7 +90,7 @@ function openAdd() {
   showAdd.value = true
 }
 
-function openEdit(r: ConsentRecordResponse) {
+function openEdit(r: RecordResponse) {
   editingRecord.value = r
 }
 

@@ -152,20 +152,6 @@ export interface SharePointRecord extends SharePointBaseItem {
   Notes?: string;
 }
 
-/**
- * Record entity for UI display
- */
-export interface ConsentRecord {
-  id: number;
-  profileId: number;
-  profileName?: string;
-  type: string;
-  status: string;
-  date: string;
-  created: Date;
-  modified: Date;
-}
-
 // ============================================================================
 // Lookup Maps (for efficient data enrichment)
 // ============================================================================

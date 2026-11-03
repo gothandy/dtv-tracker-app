@@ -39,18 +39,16 @@ import {
   ENTRY_EVENTBRITE_ATTENDEE_ID,
   PROFILE_STATS
 } from '../services/field-names';
-import type { ProfileListResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours, ConsentRecordResponse } from '../../types/api-responses';
+import type { ProfileListResponse, ProfileResponse, ProfileDetailResponse, ProfileEntryResponse, ProfileGroupHours } from '../../types/api-responses';
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse, SharePointProfile } from '../../types/sharepoint';
 import { sharePoint } from '../config';
 import { requestOrigin } from '../services/request-origin';
 import { ukToday } from '../../types/uk-date';
-import { buildBadgeLookups, findRecord, recordProfileId, recordsForProfile, statusOn } from '../services/records';
+import { buildBadgeLookups, recordProfileId, recordsForProfile, statusOn, toRecordResponse } from '../services/records';
+import { upsertRecord } from '../services/record-writer';
+import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
-import { requirePermission } from '../middleware/require-permission';
-
-/** Records Notes is a single line of text, which SharePoint limits to 255 characters. */
-const RECORD_NOTES_MAX_LENGTH = 255;
 
 const router: Router = express.Router();
 
@@ -352,166 +350,6 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/profiles/records/options', requirePermission('viewRecordOptions'), async (req: Request, res: Response) => {
-  try {
-    const listGuid = sharePoint.lists.records;
-    const [types, statuses] = await Promise.all([
-      sharePointClient.getColumnChoices(listGuid, 'Type'),
-      sharePointClient.getColumnChoices(listGuid, 'Status')
-    ]);
-    res.json({ success: true, data: { types, statuses } });
-  } catch (error: any) {
-    console.error('Error fetching record options:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch record options' });
-  }
-});
-
-router.post('/profiles/:id/records', requirePermission('editRecords'), async (req: Request, res: Response) => {
-  try {
-    const profileId = parseInt(String(req.params.id), 10);
-    if (isNaN(profileId)) {
-      res.status(400).json({ success: false, error: 'Invalid profile ID' });
-      return;
-    }
-    const { type, status, date } = req.body;
-    if (!type || !status) {
-      res.status(400).json({ success: false, error: 'type and status are required' });
-      return;
-    }
-
-    const id = await recordsRepository.create({
-      ProfileLookupId: profileId,
-      Type: type,
-      Status: status,
-      Date: date || new Date().toISOString()
-    });
-    computeAndSaveProfileStats(profileId).catch(err =>
-      console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
-    );
-    res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
-  } catch (error: any) {
-    console.error('Error creating record:', error);
-    res.status(500).json({ success: false, error: 'Failed to create record', message: error.message });
-  }
-});
-
-router.patch('/records/:id', requirePermission('editRecords'), async (req: Request, res: Response) => {
-  try {
-    const recordId = parseInt(String(req.params.id), 10);
-    if (isNaN(recordId)) {
-      res.status(400).json({ success: false, error: 'Invalid record ID' });
-      return;
-    }
-    const { status, date, notes } = req.body;
-    const fields: { Status?: string; Date?: string; Notes?: string } = {};
-    if (typeof status === 'string') fields.Status = status;
-    if (typeof date === 'string') fields.Date = date;
-    if (typeof notes === 'string') {
-      const trimmed = notes.trim();
-      if (trimmed.length > RECORD_NOTES_MAX_LENGTH) {
-        res.status(400).json({ success: false, error: `Notes must be ${RECORD_NOTES_MAX_LENGTH} characters or fewer` });
-        return;
-      }
-      fields.Notes = trimmed;
-    }
-
-    if (Object.keys(fields).length === 0) {
-      res.status(400).json({ success: false, error: 'No valid fields to update' });
-      return;
-    }
-
-    // Look up profile ID from cache before the write clears it
-    const allRecordsForPatch = await recordsRepository.getAll();
-    const recordForPatch = allRecordsForPatch.find(r => r.ID === recordId);
-    const patchProfileId = recordForPatch ? recordProfileId(recordForPatch) : undefined;
-
-    await recordsRepository.update(recordId, fields);
-    if (patchProfileId !== undefined) {
-      computeAndSaveProfileStats(patchProfileId).catch(err =>
-        console.error(`[Stats] Failed targeted profile update for profile ${patchProfileId}:`, err)
-      );
-    }
-    res.json({ success: true } as ApiResponse<void>);
-  } catch (error: any) {
-    console.error('Error updating record:', error);
-    res.status(500).json({ success: false, error: 'Failed to update record', message: error.message });
-  }
-});
-
-router.delete('/records/:id', requirePermission('editRecords'), async (req: Request, res: Response) => {
-  try {
-    const recordId = parseInt(String(req.params.id), 10);
-    if (isNaN(recordId)) {
-      res.status(400).json({ success: false, error: 'Invalid record ID' });
-      return;
-    }
-    // Look up profile ID from cache before the write clears it
-    const allRecordsForDelete = await recordsRepository.getAll();
-    const recordForDelete = allRecordsForDelete.find(r => r.ID === recordId);
-    const deleteProfileId = recordForDelete ? recordProfileId(recordForDelete) : undefined;
-
-    await recordsRepository.delete(recordId);
-    if (deleteProfileId !== undefined) {
-      computeAndSaveProfileStats(deleteProfileId).catch(err =>
-        console.error(`[Stats] Failed targeted profile update for profile ${deleteProfileId}:`, err)
-      );
-    }
-    res.json({ success: true } as ApiResponse<void>);
-  } catch (error: any) {
-    console.error('Error deleting record:', error);
-    res.status(500).json({ success: false, error: 'Failed to delete record', message: error.message });
-  }
-});
-
-router.post('/records/bulk', requirePermission('bulkEditRecords'), async (req: Request, res: Response) => {
-  try {
-    const { profileIds, type, status, date } = req.body;
-    if (!Array.isArray(profileIds) || profileIds.length === 0) {
-      res.status(400).json({ success: false, error: 'profileIds array is required' });
-      return;
-    }
-    if (!type || !status) {
-      res.status(400).json({ success: false, error: 'type and status are required' });
-      return;
-    }
-
-    const allRecords = await recordsRepository.getAll();
-    const recordDate = date || new Date().toISOString();
-    let created = 0;
-    let updated = 0;
-
-    for (const profileId of profileIds) {
-      const id = parseInt(String(profileId), 10);
-      if (isNaN(id)) continue;
-
-      const existing = findRecord(allRecords, id, type);
-
-      if (existing) {
-        await recordsRepository.update(existing.ID, { Status: status, Date: recordDate });
-        updated++;
-      } else {
-        await recordsRepository.create({ ProfileLookupId: id, Type: type, Status: status, Date: recordDate });
-        created++;
-      }
-    }
-
-    // Fire profile stats update for all affected profiles
-    for (const profileId of profileIds) {
-      const id = parseInt(String(profileId), 10);
-      if (!isNaN(id)) {
-        computeAndSaveProfileStats(id).catch(err =>
-          console.error(`[Stats] Failed targeted profile update for profile ${id}:`, err)
-        );
-      }
-    }
-
-    res.json({ success: true, data: { created, updated } } as ApiResponse<{ created: number; updated: number }>);
-  } catch (error: any) {
-    console.error('Error bulk updating records:', error);
-    res.status(500).json({ success: false, error: 'Failed to bulk update records', message: error.message });
-  }
-});
-
 router.post('/profiles/bulk-email', async (req: Request, res: Response) => {
   try {
     const { profileIds, templateId, preview } = req.body as {
@@ -635,22 +473,11 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
     const today = new Date().toISOString();
     const existing = await recordsRepository.getByProfile(profileId);
 
-    // Upsert Privacy Consent (always Accepted — backend enforces this)
-    const privacyRecord = findRecord(existing, profileId, 'Privacy Consent');
-    if (privacyRecord) {
-      await recordsRepository.update(privacyRecord.ID, { Status: 'Accepted', Date: today });
-    } else {
-      await recordsRepository.create({ ProfileLookupId: profileId, Type: 'Privacy Consent', Status: 'Accepted', Date: today });
-    }
-
-    // Upsert Photo Consent (Accepted or Declined based on volunteer's choice)
-    const photoStatus = photoConsent === true ? 'Accepted' : 'Declined';
-    const photoRecord = findRecord(existing, profileId, 'Photo Consent');
-    if (photoRecord) {
-      await recordsRepository.update(photoRecord.ID, { Status: photoStatus, Date: today });
-    } else {
-      await recordsRepository.create({ ProfileLookupId: profileId, Type: 'Photo Consent', Status: photoStatus, Date: today });
-    }
+    // Privacy Consent is always Accepted (backend enforces this); Photo Consent is the volunteer's choice
+    const privacyType: RecordTypeName = 'Privacy Consent';
+    const photoType: RecordTypeName = 'Photo Consent';
+    await upsertRecord(existing, { profileId, type: privacyType, status: 'Accepted', date: today }, 'statusAndDate');
+    await upsertRecord(existing, { profileId, type: photoType, status: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'statusAndDate');
 
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
@@ -828,16 +655,12 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
     // Parse profile stats first so isNew can be derived per entry
     let profileWarnings: Array<{ text: string; url?: string }> = [];
-    let isMember = false;
-    let cardStatus: string | undefined;
     let firstSessionId: number | undefined;
     const storedStats = spProfile[PROFILE_STATS];
     if (storedStats) {
       try {
         const parsed = JSON.parse(storedStats);
         if (parsed.warnings?.length) profileWarnings = parsed.warnings;
-        isMember = parsed.isMember === true;
-        cardStatus = parsed.cardStatus ?? undefined;
         firstSessionId = Array.isArray(parsed.sessionIds) ? parsed.sessionIds[0] : undefined;
       } catch { /* skip malformed */ }
     }
@@ -875,13 +698,9 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
 
     // Filter consent records for this profile from the already-fetched batch
     const profileRecords = recordsForProfile(rawRecords, spProfile.ID);
-    const records: ConsentRecordResponse[] = profileRecords.map(r => ({
-      id: r.ID,
-      type: r.Type || '',
-      status: r.Status || '',
-      date: r.Date || '',
-      notes: r.Notes || undefined
-    }));
+    const today = ukToday();
+    const badges = buildBadgeLookups(profileRecords, today);
+    const records = profileRecords.map(r => toRecordResponse(r, today));
 
     const isSelfService = req.session.user?.role === 'selfservice';
     const trustedMicrosoft = req.session.user?.role === 'admin' || req.session.user?.role === 'checkin';
@@ -895,8 +714,9 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       user: spProfile.User,
       ...(trustedMicrosoft ? { trackerAccess: trackerAccessForProfileUser(spProfile.User) } : {}),
       isGroup: profile.isGroup,
-      isMember,
-      cardStatus,
+      // Worked out from Records, as the Profiles list does, not read from the stored Stats
+      isMember: badges.memberIds.has(spProfile.ID),
+      cardStatus: badges.cardStatusMap.get(spProfile.ID),
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       hoursAll: Math.round(calculatedAll * 10) / 10,
