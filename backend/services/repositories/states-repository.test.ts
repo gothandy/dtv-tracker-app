@@ -17,9 +17,9 @@ describe('statesRepository and the RecordType column', () => {
     expect(vi.mocked(sharePointClient.getListItems).mock.calls[0][1]).toBe('ID,Name,RecordType')
   })
 
-  it('writes Name (and a copy to Title) and RecordType', async () => {
+  it('writes Name and RecordType, leaving Title blank', async () => {
     vi.mocked(sharePointClient.createListItem).mockResolvedValue(4)
     expect(await statesRepository.create({ Name: 'Approved', Type: 'Charity Membership' })).toBe(4)
-    expect(vi.mocked(sharePointClient.createListItem).mock.calls[0][1]).toEqual({ Title: 'Approved', Name: 'Approved', RecordType: 'Charity Membership' })
+    expect(vi.mocked(sharePointClient.createListItem).mock.calls[0][1]).toEqual({ Name: 'Approved', RecordType: 'Charity Membership' })
   })
 })

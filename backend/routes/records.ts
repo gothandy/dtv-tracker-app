@@ -20,7 +20,7 @@ import {
   parseHours,
   profileSlug,
 } from '../services/data-layer';
-import { PROFILE_LOOKUP, PROFILE_STATS, RECORD_STATE, RECORD_STATE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { PROFILE_LOOKUP, RECORD_STATE, RECORD_STATE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
 import { statesRepository } from '../services/repositories/states-repository';
 import { runRecordsMigration } from '../services/records-migration';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
@@ -46,33 +46,21 @@ router.get('/records', requirePermission('viewRecords'), async (req: Request, re
       profilesRepository.getAll()
     ]);
     const today = ukToday();
-    const financialYears = new Set<string>([calculateCurrentFY().key]);
-    const profiles = new Map<number, { name?: string; hoursByFY: Record<string, number>; sessionsByFY: Record<string, number> }>();
-    for (const p of rawProfiles) {
-      let stats: { hoursByFY?: Record<string, number>; sessionsByFY?: Record<string, number> } = {};
-      try { stats = p[PROFILE_STATS] ? JSON.parse(p[PROFILE_STATS]) : {}; } catch { /* malformed Stats: no hours */ }
-      const hoursByFY = stats.hoursByFY ?? {};
-      const sessionsByFY = stats.sessionsByFY ?? {};
-      for (const key of [...Object.keys(hoursByFY), ...Object.keys(sessionsByFY)]) {
-        if (/^FY\d{4}$/.test(key)) financialYears.add(key);
-      }
-      profiles.set(p.ID, { name: p.Title, hoursByFY, sessionsByFY });
-    }
+    const profileNames = new Map(rawProfiles.map(p => [p.ID, p.Title]));
 
     const data: RecordListItemResponse[] = rawRecords.map(r => {
       const profileId = recordProfileId(r);
-      const profile = profileId !== undefined ? profiles.get(profileId) : undefined;
+      const known = profileId !== undefined && profileNames.has(profileId);
+      const name = known ? profileNames.get(profileId!) : undefined;
       return {
         ...toRecordResponse(r, today),
         profileId,
-        profileName: profile?.name,
-        profileSlug: profileId !== undefined && profile ? profileSlug(profile.name, profileId) : undefined,
-        hoursByFY: profile?.hoursByFY ?? {},
-        sessionsByFY: profile?.sessionsByFY ?? {},
+        profileName: name,
+        profileSlug: known ? profileSlug(name, profileId!) : undefined,
       };
     });
 
-    const response: RecordListResponse = { success: true, count: data.length, data, financialYears: [...financialYears].sort() };
+    const response: RecordListResponse = { success: true, count: data.length, data };
     res.json(response);
   } catch (error: any) {
     console.error('Error fetching records:', error);

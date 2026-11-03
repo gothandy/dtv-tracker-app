@@ -4,7 +4,6 @@
     <PageHeader>Records</PageHeader>
     <RecordListFilter
       :records="store.records"
-      :financial-years="store.financialYears"
       @filtered="filtered = $event"
     />
     <RecordListActions :records="filtered" :selected="selected" />

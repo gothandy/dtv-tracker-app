@@ -118,7 +118,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Profiles listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
 - Profile detail with FY stats, FY bar chart, group hours, entries, records ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
 - Entries page (admin-only): all entries with notes/adult filters, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
-- Records page (`/records`, Admin, `viewRecords`; first cut of Records v2 #322 §5a): every Record with cascading Type, Status, FY and Hours filters (FY and Hours are the linked Profile's, from Profile Stats), selection (no bulk actions yet), Share, and the Profile page's Edit Record with *View Profile* ([RecordsPage.vue](frontend/src/pages/RecordsPage.vue))
+- Records page (`/records`, Admin, `viewRecords`; first cut of Records v2 #322 §5a): every Record with cascading Type, Status and FY filters (FY on the Record's Date: each FY, Rolling and Future, as on Sessions), selection (no bulk actions yet), Share, and the Profile page's Edit Record with *View Profile* ([RecordsPage.vue](frontend/src/pages/RecordsPage.vue))
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))

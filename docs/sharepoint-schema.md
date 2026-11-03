@@ -296,11 +296,11 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 | Column Name | Internal Name | Type | Required | Description |
 |------------|---------------|------|----------|-------------|
-| **Title** | Title | Single line of text | Yes (SharePoint default) | Not used: the migration fills it with a copy of Name |
+| **Title** | Title | Single line of text | No (made optional) | Not used; left blank by the app |
 | **Name** | Name | Single line of text | Yes | The State's name, shown in Add and Edit |
 | **Record Type** | RecordType | Choice (every Record Type, spelt as in Records Type) | Yes | The Record Type it belongs to; the migration writes the Records Type value. Not called Type: that name clashes with SharePoint's built-in DocIcon column |
-| **Past label** | | Single line of text | No | Shown when the Record's Date is before today; blank = Name (from PR 1) |
-| **Future label** | | Single line of text | No | Shown when the Record's Date is today or later; blank = Name (from PR 1) |
+| **Before** | | Single line of text | No | Shown up to and including the Record's Date (e.g. *Expires*); blank = Name (from PR 1) |
+| **After** | | Single line of text | No | Shown from the day after the Record's Date (e.g. *Expired*); blank = Name (from PR 1) |
 | **Order** | | Number | No | Order in the dropdown (from PR 1) |
 | **Notes hint** | | Single line of text | No | Placeholder for Notes (from PR 1) |
 

@@ -26,9 +26,9 @@ class StatesRepository {
     return items.map((item: Record<string, any>) => ({ ID: item.ID, Name: item[STATE_NAME], Type: item[STATE_TYPE] }));
   }
 
-  /** Title gets a copy of the Name only because SharePoint requires it; the app reads Name. */
+  /** Title is left blank (not required on this list); the app reads Name. */
   async create(fields: { Name: string; Type: string }): Promise<number> {
-    return await sharePointClient.createListItem(this.listGuid, { Title: fields.Name, [STATE_NAME]: fields.Name, [STATE_TYPE]: fields.Type });
+    return await sharePointClient.createListItem(this.listGuid, { [STATE_NAME]: fields.Name, [STATE_TYPE]: fields.Type });
   }
 }
 

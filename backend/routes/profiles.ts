@@ -51,6 +51,9 @@ import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
 import { matchesProfileRecordFilter, oneRecordPerType } from '../../types/profile-record-filter';
 
+/** The cached lists whose items point at a Profile (Entries, Regulars, Records). */
+const PROFILE_LINKED_CACHE_KEYS = ['entries', 'regulars', 'records'];
+
 const router: Router = express.Router();
 
 router.get('/profiles', async (req: Request, res: Response) => {
@@ -797,6 +800,10 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       return;
     }
 
+    // Read what points at the Profile fresh from SharePoint, not the cache: anything added
+    // outside the app since the cache filled would otherwise be missed, and left pointing
+    // at a deleted Profile.
+    sharePointClient.clearCacheKey(PROFILE_LINKED_CACHE_KEYS);
     const [rawProfiles, rawEntries, rawRegulars, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
       entriesRepository.getAll(),
@@ -941,6 +948,10 @@ router.delete('/profiles/:slug', async (req: Request, res: Response) => {
   try {
     const slug = String(req.params.slug).toLowerCase();
 
+    // Read what points at the Profile fresh from SharePoint, not the cache: anything added
+    // outside the app since the cache filled would otherwise be missed, and left pointing
+    // at a deleted Profile.
+    sharePointClient.clearCacheKey(PROFILE_LINKED_CACHE_KEYS);
     const [rawProfiles, rawEntries, rawRegulars, rawRecords] = await Promise.all([
       profilesRepository.getAll(),
       entriesRepository.getAll(),

@@ -1,38 +1,24 @@
 import type { RecordListItemResponse } from '../../../types/api-responses'
-import { HOURS_FILTERS, matchesHoursFilter } from '../../../types/hours'
 import { RECORD_TYPE_NAMES } from '../../../types/record-types'
+import { dateMatchesFy, financialYearOfDate } from './sessionFy'
+import { fyKeyToLabel, type FyOption } from './entitySessionTotals'
 
-/** The Records page filters, as kept in the address. fy is 'all' or an FY key (FY2025). */
+/** The Records page filters, as kept in the address. fy is on the Record's Date: all | future | rolling | FY2025. */
 export interface RecordFilters {
   type: string
   status: string
   fy: string
-  hours: string
 }
 
-export const DEFAULT_RECORD_FILTERS: RecordFilters = { type: '', status: '', fy: 'all', hours: '' }
+export const DEFAULT_RECORD_FILTERS: RecordFilters = { type: '', status: '', fy: 'all' }
 
-const STATUS_ORDER = ['Invited', 'Accepted', 'Declined', 'Expired']
+const STATUS_ORDER = ['Invited', 'Accepted', 'Declined', 'Expires', 'Expired']
 const TYPE_ORDER: string[] = [...RECORD_TYPE_NAMES]
 
-/** The linked Profile's hours in the chosen FY ('all' = every year), from Profile Stats. */
-export function recordHoursIn(record: RecordListItemResponse, fy: string): number {
-  if (fy === 'all') return Object.values(record.hoursByFY).reduce((sum, h) => sum + h, 0)
-  return record.hoursByFY[fy] ?? 0
-}
-
-function recordSessionsIn(record: RecordListItemResponse, fy: string): number {
-  if (fy === 'all') return Object.values(record.sessionsByFY).reduce((sum, n) => sum + n, 0)
-  return record.sessionsByFY[fy] ?? 0
-}
-
-/** Whether the Record is in the filters. As on Profiles, a chosen FY shows only Profiles active in it, unless filtering for 0h. */
 export function matchesRecordFilters(record: RecordListItemResponse, filters: RecordFilters): boolean {
   if (filters.type && record.type !== filters.type) return false
   if (filters.status && record.status !== filters.status) return false
-  if (filters.fy !== 'all' && filters.hours !== '0'
-    && recordHoursIn(record, filters.fy) === 0 && recordSessionsIn(record, filters.fy) === 0) return false
-  return matchesHoursFilter(recordHoursIn(record, filters.fy), filters.hours)
+  return dateMatchesFy(record.date, filters.fy)
 }
 
 function byOrder(order: string[]) {
@@ -43,18 +29,31 @@ function byOrder(order: string[]) {
   }
 }
 
-/** The choices each filter offers: only those left by the other filters (filters cascade). */
-export function recordFilterOptions(records: RecordListItemResponse[], filters: RecordFilters, financialYears: string[]) {
+/**
+ * The choices each filter offers: only those left by the other filters (filters cascade). FY
+ * follows the other lists' pattern (fyOptionsForEntities): All FY, each FY, Rolling and Future,
+ * each only when it would show a Record.
+ */
+export function recordFilterOptions(records: RecordListItemResponse[], filters: RecordFilters) {
   const leftBy = (change: Partial<RecordFilters>) => records.filter(r => matchesRecordFilters(r, { ...filters, ...change }))
+  const hasResults = (fy: string) => leftBy({ fy }).length > 0
+
+  const fyKeys = [...new Set(records.filter(r => r.date).map(r => financialYearOfDate(r.date)))].sort().filter(hasResults)
+  const fyOptions: FyOption[] = [
+    ...(hasResults('all') ? [{ value: 'all', label: 'All FY' }] : []),
+    ...fyKeys.map(k => ({ value: k, label: fyKeyToLabel(k) })),
+    ...(hasResults('rolling') ? [{ value: 'rolling', label: 'Rolling' }] : []),
+    ...(hasResults('future') ? [{ value: 'future', label: 'Future' }] : []),
+  ]
+
   return {
     types: [...new Set(leftBy({ type: '' }).map(r => r.type))].sort(byOrder(TYPE_ORDER)),
     statuses: [...new Set(leftBy({ status: '' }).map(r => r.status))].sort(byOrder(STATUS_ORDER)),
-    financialYears: financialYears.filter(fy => leftBy({ fy }).length > 0),
-    hours: HOURS_FILTERS.filter(h => leftBy({ hours: h.value }).length > 0).map(h => h.value as string),
+    fyOptions,
   }
 }
 
-/** Records sorted by Type (in the Types table's order), then Profile name. */
+/** Records sorted by Type (in the Types' order), then Profile name. */
 export function sortRecords(records: RecordListItemResponse[]): RecordListItemResponse[] {
   const typeOrder = byOrder(TYPE_ORDER)
   return [...records].sort((a, b) => typeOrder(a.type, b.type) || (a.profileName ?? '').localeCompare(b.profileName ?? ''))
