@@ -10,9 +10,9 @@
     @action="save"
     @delete="emit('delete')"
   >
-    <div v-if="profileClick || historyClick" class="modal-form-links">
+    <div v-if="profileClick || archiveClick" class="modal-form-links">
       <AppButton v-if="profileClick" label="View Profile" icon="profile" @click="profileClick!()" />
-      <AppButton v-if="historyClick" label="View History" icon="clock" @click="historyClick!()" />
+      <AppButton v-if="archiveClick" label="View Archive" icon="clock" @click="archiveClick!()" />
     </div>
 
     <FormLayout :disabled="working">
@@ -59,8 +59,8 @@ const props = defineProps<{
   title?: string
   /** Shows View Profile at the top (Records page), as Edit Entry does. */
   profileClick?: () => void
-  /** Shows View History at the top: the Records page for this Profile and Type (viewRecords). */
-  historyClick?: () => void
+  /** Shows View Archive at the top: the Records page for this Profile and Type (viewRecords). */
+  archiveClick?: () => void
 }>()
 
 const emit = defineEmits<{

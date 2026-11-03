@@ -24,7 +24,7 @@
       :statuses="statuses"
       :title="editingRecord.profileName"
       :profile-click="editingRecord.profileSlug ? () => router.push(profilePath(editingRecord!.profileSlug!)) : undefined"
-      :history-click="editingRecord.profileId !== undefined && viewer.can('viewRecords') ? onViewHistory : undefined"
+      :archive-click="editingRecord.profileId !== undefined && viewer.can('viewRecords') ? onViewArchive : undefined"
       :working="editWorking"
       :error="editError"
       @close="closeEditModal"
@@ -84,7 +84,7 @@ function onEditRecord(r: RecordListItemResponse) {
 }
 
 /** This Record's Profile and Type: the filters change in place (RecordListFilter follows the address). */
-function onViewHistory() {
+function onViewArchive() {
   const r = editingRecord.value
   if (!r || r.profileId === undefined) return
   closeEditModal()

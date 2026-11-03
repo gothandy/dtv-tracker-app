@@ -294,11 +294,11 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### H24c. Records page (admin)
 - [ ] Menu shows **Records** for Admin only; Check In opening `/records` is turned away, and `GET /api/records` returns 403 for Check In and Self-Service
-- [ ] Lists every Record (same total as Tools → Records Summary), sorted by Type then Profile name; title `{Type} {Status}` green for Invited and Accepted, black otherwise; Profile name, Date and Notes shown
+- [ ] Lists every Record (same total as Tools → Records Summary), sorted by Type then Profile name; each card: Type with the Profile's name below (and Notes, if any) on the left, State with the Date below on the right; State green for Invited and Accepted, black otherwise
 - [ ] Type and Status filters; FY is on the Record's Date: All FY, each FY the Records' Dates fall in, Rolling (the year up to today) and Future (today or later), each only when it would show a Record; Records with no Date only under All FY
 - [ ] Filters cascade (each offers only what the others leave) and are kept in the address; Share copies the filtered link
 - [ ] Select all / tick cards: the count shows `n / total records`; changing filters drops ticked cards no longer shown
-- [ ] Edit Record (Admin): **View History** at the top (with View Profile on the Records page) opens the Records page for that Profile and Type, with the chip and Type filter set; from the Records page the filters change in place
+- [ ] Edit Record (Admin): **View Archive** at the top (with View Profile on the Records page) opens the Records page for that Profile and Type, with the chip and Type filter set; from the Records page the filters change in place
 - [ ] Profile page (Admin): Records header shows **View All**, which opens the Records page filtered to that Profile with a chip of its name; clicking the chip clears it; the filter is kept in the address. Check In doesn't see View All
 - [ ] Click a card: Edit Record with the Profile's name as title and View Profile at the top; Save (Status, Date, Notes) and Delete update the list
 

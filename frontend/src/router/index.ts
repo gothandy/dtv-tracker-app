@@ -36,7 +36,7 @@ export const groupPath = (key: string) => `/groups/${key}`
 export const templatesPath = () => '/templates'
 /**
  * The Records page; with a Profile, filtered to that Profile's Records (its name shows in the
- * filter chip), and with a type too, to that Profile's Records of the Type (its history).
+ * filter chip), and with a type too, to that Profile's Records of the Type (its archive).
  */
 export const recordsPath = (profile?: { id: number; name?: string; type?: string }) => {
   if (!profile) return '/records'

@@ -2,11 +2,12 @@
   <div class="rli-row" :class="{ 'rli-row--selected': selected }">
     <div class="rli-content">
       <div class="rli-left">
-        <span class="rli-title" :class="{ 'rli-title--current': isCurrent }">{{ record.type }} {{ record.status }}</span>
+        <span class="rli-type">{{ record.type }}</span>
+        <span class="rli-profile">{{ record.profileName ?? 'Unknown profile' }}</span>
         <span v-if="record.notes" class="rli-notes">{{ record.notes }}</span>
       </div>
       <div class="rli-right">
-        <span class="rli-profile">{{ record.profileName ?? 'Unknown profile' }}</span>
+        <span class="rli-state" :class="{ 'rli-state--current': isCurrent }">{{ record.status }}</span>
         <span v-if="record.date" class="rli-date">{{ formatDate(record.date) }}</span>
       </div>
     </div>
@@ -22,7 +23,7 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-/** Invited and Accepted show green; Declined and Expired show black (#322). */
+/** Invited and Accepted show green; the rest show black. */
 const isCurrent = computed(() => props.record.status === 'Invited' || props.record.status === 'Accepted')
 
 function formatDate(date: string): string {
@@ -57,46 +58,40 @@ function formatDate(date: string): string {
   background: var(--color-dtv-sand-dark);
 }
 
-.rli-left {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  min-width: 0;
-  flex: 2;
-}
-
-.rli-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--color-text);
-}
-.rli-title--current {
-  color: var(--color-dtv-green);
-}
-
-.rli-notes {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
+/* Left: Type, Profile (and Notes); right: State and Date */
+.rli-left,
 .rli-right {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  flex: 1;
   min-width: 0;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
+}
+.rli-left {
+  flex: 2;
+}
+.rli-right {
+  flex: 1;
+  align-items: flex-end;
   text-align: right;
 }
 
-.rli-profile {
-  font-weight: 500;
+.rli-type,
+.rli-state {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.rli-state--current {
+  color: var(--color-dtv-green);
+}
+
+.rli-profile,
+.rli-date,
+.rli-notes {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
