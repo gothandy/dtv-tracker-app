@@ -40,6 +40,22 @@ const filters = reactive<RecordFilters>({
 /** Shown in the chip; comes with profileId from the Profile page's link. */
 const profileName = ref((route.query.profileName as string) || '')
 
+// Links to this page from this page (View History) change the address, not the component:
+// take filters from the address when it differs from them.
+watch(() => route.query, q => {
+  const profileId = q.profileId ? parseInt(q.profileId as string, 10) : undefined
+  if (profileId !== filters.profileId) {
+    filters.profileId = profileId
+    profileName.value = (q.profileName as string) || ''
+  }
+  const type = (q.type as string) || DEFAULT_RECORD_FILTERS.type
+  if (type !== filters.type) filters.type = type
+  const status = (q.status as string) || DEFAULT_RECORD_FILTERS.status
+  if (status !== filters.status) filters.status = status
+  const fy = (q.fy as string) || DEFAULT_RECORD_FILTERS.fy
+  if (fy !== filters.fy) filters.fy = fy
+})
+
 function clearProfileFilter() {
   filters.profileId = undefined
   profileName.value = ''

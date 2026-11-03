@@ -48,6 +48,7 @@
       :statuses="statuses"
       :working="workingEdit"
       :error="editError"
+      :history-click="showHistory ? () => emit('viewHistory', editingRecord!) : undefined"
       @close="editingRecord = null"
       @save="onSave"
       @delete="onDelete"
@@ -69,6 +70,8 @@ const props = withDefaults(defineProps<{
   allowEdit?: boolean
   /** The Records page filtered to this Profile; shows View All (viewRecords). */
   viewAllTo?: string
+  /** Shows View History in Edit Record (viewRecords); the page goes there on viewHistory. */
+  showHistory?: boolean
   types?: string[]
   statuses?: string[]
 }>(), {
@@ -80,6 +83,7 @@ const emit = defineEmits<{
   addRecord: [payload: AddRecordPayload]
   saveRecord: [id: number, payload: SaveRecordPayload]
   deleteRecord: [id: number]
+  viewHistory: [record: RecordResponse]
 }>()
 
 const showAdd = ref(false)

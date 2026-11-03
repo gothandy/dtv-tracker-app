@@ -90,3 +90,11 @@ select.modal-form-control:disabled {
   font-size: 0.95rem;
   color: var(--color-text-muted);
 }
+
+/* The row of View buttons at the top of an Edit modal (View Profile, View Session, View History…) */
+.modal-form-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}

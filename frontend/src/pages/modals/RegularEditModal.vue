@@ -11,7 +11,7 @@
     @action="save"
     @delete="emit('delete')"
   >
-    <div class="rem-actions">
+    <div class="modal-form-links">
       <AppButton :label="viewLinkLabel ?? 'View Profile'" icon="profile" @click="emit('viewLink')" />
     </div>
 
@@ -79,10 +79,6 @@ function save() {
 </script>
 
 <style scoped>
-.rem-actions {
-  margin-bottom: 1.25rem;
-}
-
 .rem-info {
   margin: 0;
   font-size: 0.9rem;

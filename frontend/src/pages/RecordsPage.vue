@@ -24,6 +24,7 @@
       :statuses="statuses"
       :title="editingRecord.profileName"
       :profile-click="editingRecord.profileSlug ? () => router.push(profilePath(editingRecord!.profileSlug!)) : undefined"
+      :history-click="editingRecord.profileId !== undefined && viewer.can('viewRecords') ? onViewHistory : undefined"
       :working="editWorking"
       :error="editError"
       @close="closeEditModal"
@@ -47,7 +48,7 @@ import RecordListFilter from '../components/records/RecordListFilter.vue'
 import RecordListActions from '../components/records/RecordListActions.vue'
 import RecordListResults from '../components/records/RecordListResults.vue'
 import RecordEditModal, { type SaveRecordPayload } from './modals/RecordEditModal.vue'
-import { profilePath } from '../router/index'
+import { profilePath, recordsPath } from '../router/index'
 import { pruneSelectionToVisible } from '../utils/listSelection'
 
 const store = useRecordListStore()
@@ -80,6 +81,14 @@ onMounted(async () => {
 
 function onEditRecord(r: RecordListItemResponse) {
   editingRecord.value = r
+}
+
+/** This Record's Profile and Type: the filters change in place (RecordListFilter follows the address). */
+function onViewHistory() {
+  const r = editingRecord.value
+  if (!r || r.profileId === undefined) return
+  closeEditModal()
+  router.push(recordsPath({ id: r.profileId, name: r.profileName, type: r.type }))
 }
 
 function closeEditModal() {

@@ -111,12 +111,14 @@
         :show-consent-link="viewer.hasCheckInAccess || viewer.isSelfService"
         :allow-edit="viewer.can('editRecords')"
         :view-all-to="viewer.can('viewRecords') ? recordsPath({ id: store.profile.id, name: store.profile.name }) : undefined"
+        :show-history="viewer.can('viewRecords')"
         :types="recordTypes"
         :statuses="recordStatuses"
         ref="recordListRef"
         @add-record="onAddRecord"
         @save-record="onSaveRecord"
         @delete-record="onDeleteRecord"
+        @view-history="r => router.push(recordsPath({ id: store.profile!.id, name: store.profile!.name, type: r.type }))"
       />
 
       <LayoutColumns ratio="1">

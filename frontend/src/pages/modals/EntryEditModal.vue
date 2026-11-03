@@ -16,7 +16,7 @@
       Cancelled {{ formatCancelled(entry.cancelled) }}
     </div>
 
-    <div v-if="profileClick || sessionClick" class="eem-actions">
+    <div v-if="profileClick || sessionClick" class="modal-form-links">
       <AppButton v-if="profileClick" label="View Profile" icon="profile" @click="profileClick!()" />
       <AppButton v-if="sessionClick" label="View Session" icon="register" @click="sessionClick!()" />
     </div>
@@ -214,9 +214,4 @@ function deleteEntry() {
   margin-bottom: 1.25rem;
 }
 
-.eem-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
 </style>

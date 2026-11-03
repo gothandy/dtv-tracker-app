@@ -111,5 +111,6 @@ describe('recordsPath', () => {
   it('is the Records page, or filtered to one Profile with its name for the chip', () => {
     expect(recordsPath()).toBe('/records')
     expect(recordsPath({ id: 12, name: 'Alice O’Neil & Co' })).toBe('/records?profileId=12&profileName=Alice%20O%E2%80%99Neil%20%26%20Co')
+    expect(recordsPath({ id: 12, name: 'Al', type: 'First Aid Certificate' })).toBe('/records?profileId=12&profileName=Al&type=First%20Aid%20Certificate')
   })
 })
