@@ -18,10 +18,11 @@ import {
   calculateFinancialYear,
   safeParseLookupId,
   parseHours,
+  profileSlug,
 } from '../services/data-layer';
-import { PROFILE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { PROFILE_LOOKUP, PROFILE_STATS, SESSION_LOOKUP } from '../services/field-names';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
-import { recordProfileId, statusOn } from '../services/records';
+import { recordProfileId, statusOn, toRecordResponse } from '../services/records';
 import { createRecord, upsertRecord } from '../services/record-writer';
 import { summariseRecords } from '../services/records-summary';
 import { sharePointClient } from '../services/sharepoint-client';
@@ -29,11 +30,53 @@ import { requirePermission } from '../middleware/require-permission';
 import { sharePoint, environmentName } from '../config';
 import { ukToday } from '../../types/uk-date';
 import type { ApiResponse } from '../../types/sharepoint';
+import type { RecordListItemResponse, RecordListResponse } from '../../types/api-responses';
 
 /** Records Notes is a single line of text, which SharePoint limits to 255 characters. */
 const RECORD_NOTES_MAX_LENGTH = 255;
 
 const router: Router = express.Router();
+
+router.get('/records', requirePermission('viewRecords'), async (req: Request, res: Response) => {
+  try {
+    const [rawRecords, rawProfiles] = await Promise.all([
+      recordsRepository.getAll(),
+      profilesRepository.getAll()
+    ]);
+    const today = ukToday();
+    const financialYears = new Set<string>([calculateCurrentFY().key]);
+    const profiles = new Map<number, { name?: string; hoursByFY: Record<string, number>; sessionsByFY: Record<string, number> }>();
+    for (const p of rawProfiles) {
+      let stats: { hoursByFY?: Record<string, number>; sessionsByFY?: Record<string, number> } = {};
+      try { stats = p[PROFILE_STATS] ? JSON.parse(p[PROFILE_STATS]) : {}; } catch { /* malformed Stats: no hours */ }
+      const hoursByFY = stats.hoursByFY ?? {};
+      const sessionsByFY = stats.sessionsByFY ?? {};
+      for (const key of [...Object.keys(hoursByFY), ...Object.keys(sessionsByFY)]) {
+        if (/^FY\d{4}$/.test(key)) financialYears.add(key);
+      }
+      profiles.set(p.ID, { name: p.Title, hoursByFY, sessionsByFY });
+    }
+
+    const data: RecordListItemResponse[] = rawRecords.map(r => {
+      const profileId = recordProfileId(r);
+      const profile = profileId !== undefined ? profiles.get(profileId) : undefined;
+      return {
+        ...toRecordResponse(r, today),
+        profileId,
+        profileName: profile?.name,
+        profileSlug: profileId !== undefined && profile ? profileSlug(profile.name, profileId) : undefined,
+        hoursByFY: profile?.hoursByFY ?? {},
+        sessionsByFY: profile?.sessionsByFY ?? {},
+      };
+    });
+
+    const response: RecordListResponse = { success: true, count: data.length, data, financialYears: [...financialYears].sort() };
+    res.json(response);
+  } catch (error: any) {
+    console.error('Error fetching records:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch records', message: error.message });
+  }
+});
 
 router.get('/profiles/records/options', requirePermission('viewRecordOptions'), async (req: Request, res: Response) => {
   try {

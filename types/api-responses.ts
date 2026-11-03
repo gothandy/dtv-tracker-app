@@ -171,6 +171,25 @@ export interface RecordResponse {
   notes?: string;
 }
 
+/** A Record on the Records page, with the Profile it belongs to. */
+export interface RecordListItemResponse extends RecordResponse {
+  profileId?: number;
+  profileName?: string;
+  profileSlug?: string;
+  /** The Profile's hours and sessions per FY (FY2025: 12.5), from Profile Stats, for the FY and Hours filters. */
+  hoursByFY: Record<string, number>;
+  sessionsByFY: Record<string, number>;
+}
+
+/** GET /api/records: every Record, and the financial years any Profile has hours or sessions in. */
+export interface RecordListResponse {
+  success: boolean;
+  count: number;
+  data: RecordListItemResponse[];
+  /** FY keys from Profile Stats, plus the current FY, oldest first. */
+  financialYears: string[];
+}
+
 export interface ProfileDetailResponse {
   id: number;
   slug: string;

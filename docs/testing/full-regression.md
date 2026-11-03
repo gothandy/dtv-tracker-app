@@ -291,6 +291,14 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Profiles already on session skipped (including cancelled bookings — cancellation left in place); returns `{ created, skipped }`
 - [ ] On success: modal closes, selection cleared, profile list reloads
 
+### H24c. Records page (admin)
+- [ ] Menu shows **Records** for Admin only; Check In opening `/records` is turned away, and `GET /api/records` returns 403 for Check In and Self-Service
+- [ ] Lists every Record (same total as Tools → Records Summary), sorted by Type then Profile name; title `{Type} {Status}` green for Invited and Accepted, black otherwise; Profile name, Date and Notes shown
+- [ ] Type and Status filters; FY lists All and the years from Profile Stats (no Rolling or Future); Hours uses the shared bands on the linked Profile's hours in that FY (exactly 15h in 15h+ and 15–30h, exactly 30h in 30h+)
+- [ ] Filters cascade (each offers only what the others leave) and are kept in the address; Share copies the filtered link
+- [ ] Select all / tick cards: the count shows `n / total records`; changing filters drops ticked cards no longer shown
+- [ ] Click a card: Edit Record with the Profile's name as title and View Profile at the top; Save (Status, Date, Notes) and Delete update the list
+
 ### H24b. Entries page (admin)
 
 - [ ] Admin: "Entries" nav link visible in header; non-admin users (Check In, Self-Service, Public) do not see the link

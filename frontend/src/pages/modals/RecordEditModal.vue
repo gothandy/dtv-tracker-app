@@ -1,6 +1,6 @@
 <template>
   <ModalLayout
-    title="Edit Record"
+    :title="title ?? 'Edit Record'"
     action="Save"
     action-icon="save"
     show-delete
@@ -10,6 +10,10 @@
     @action="save"
     @delete="emit('delete')"
   >
+    <div v-if="profileClick" class="rem-actions">
+      <AppButton label="View Profile" icon="profile" @click="profileClick!()" />
+    </div>
+
     <FormLayout :disabled="working">
       <FormRow title="Type" :full-width="true">
         <span class="modal-form-readonly">{{ record.type }}</span>
@@ -33,6 +37,7 @@
 import { reactive } from 'vue'
 import type { RecordResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
+import AppButton from '../../components/AppButton.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
@@ -49,6 +54,10 @@ const props = defineProps<{
   statuses: string[]
   working: boolean
   error?: string
+  /** Heading; defaults to "Edit Record". The Records page uses the Profile's name, as Edit Entry does. */
+  title?: string
+  /** Shows View Profile at the top (Records page), as Edit Entry does. */
+  profileClick?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -71,3 +80,12 @@ function save() {
   })
 }
 </script>
+
+<style scoped>
+/* Same as Edit Entry's View Profile / View Session row */
+.rem-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+</style>

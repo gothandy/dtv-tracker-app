@@ -34,6 +34,7 @@ export const sessionPath = (groupKey: string, date: string) => `/sessions/${grou
 export const groupsPath = () => '/groups'
 export const groupPath = (key: string) => `/groups/${key}`
 export const templatesPath = () => '/templates'
+export const recordsPath = () => '/records'
 export const templatePath = (id: number) => `/templates/${id}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`
@@ -75,6 +76,7 @@ export const router = createRouter({
     { path: '/docs/:pathMatch(.*)*', component: DocsPage },
     { path: '/login', component: LoginPage },
     { path: '/entries', component: EntriesPage, meta: { requiresAdmin: true } },
+    { path: '/records', component: () => import('../pages/RecordsPage.vue'), meta: { permission: 'viewRecords' } },
     { path: '/admin', redirect: '/tools' },
     { path: '/tools', component: AdminPage },
     { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
