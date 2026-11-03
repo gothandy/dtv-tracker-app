@@ -166,8 +166,6 @@ export interface RecordResponse {
   storedStatus: string;
   /** Legacy date (YYYY-MM-DD). */
   date: string;
-  start?: string;
-  end?: string;
   notes?: string;
 }
 

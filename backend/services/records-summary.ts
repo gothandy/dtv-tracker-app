@@ -10,10 +10,12 @@
 import crypto from 'crypto';
 import { SharePointRecord } from '../../types/sharepoint';
 import { buildBadgeLookups, recordProfileId } from './records';
+import { safeParseLookupId } from './data-layer';
 import { PROFILE_STATS } from './field-names';
 
 /** Records columns the migration needs to know about, by display or internal name. */
-const RECORDS_COLUMNS = ['Type', 'Status', 'Date', 'Start', 'End', 'Notes'];
+/** Start and End stay listed so the report shows when they've been deleted (#322). */
+const RECORDS_COLUMNS = ['Type', 'Status', 'State', 'Date', 'Start', 'End', 'Notes'];
 
 const COLUMN_KINDS = ['text', 'choice', 'dateTime', 'lookup', 'number', 'boolean'];
 
@@ -68,6 +70,44 @@ export interface RecordsSummary {
     firstAiders: ProfileResult;
     noPhoto: ProfileResult;
   };
+  /** Records v2 migration check (#322 §5): null until the Records State column exists. */
+  states: StatesSummary | null;
+}
+
+export interface StatesSummary {
+  statesInList: number;
+  recordsWithState: number;
+  recordsWithoutState: number;
+  /** Records by their State's Type and Name. */
+  byType: Record<string, Record<string, number>>;
+  /** Records whose State is of a different Type from the Record's Type. */
+  typeMismatch: number;
+  /** Records whose State isn't in the States list. */
+  stateNotFound: number;
+}
+
+/** A Record's ID and State lookup, and the States list, for the State part of the summary. */
+export interface StatesInput {
+  recordStates: Array<{ ID: number; Type?: string; StateLookupId?: number | string }>;
+  states: Array<{ ID: number; Name?: string; Type?: string }>;
+}
+
+export function summariseStates({ recordStates, states }: StatesInput): StatesSummary {
+  const byId = new Map(states.map(s => [s.ID, s]));
+  const summary: StatesSummary = { statesInList: states.length, recordsWithState: 0, recordsWithoutState: 0, byType: {}, typeMismatch: 0, stateNotFound: 0 };
+  for (const r of recordStates) {
+    const stateId = safeParseLookupId(r.StateLookupId as string | undefined);
+    if (stateId === undefined) { summary.recordsWithoutState++; continue; }
+    summary.recordsWithState++;
+    const state = byId.get(stateId);
+    if (!state) { summary.stateNotFound++; continue; }
+    const type = state.Type || '(blank)';
+    const name = state.Name || '(blank)';
+    summary.byType[type] ??= {};
+    summary.byType[type][name] = (summary.byType[type][name] ?? 0) + 1;
+    if (state.Type !== r.Type) summary.typeMismatch++;
+  }
+  return summary;
 }
 
 interface SummaryProfile {
@@ -149,6 +189,8 @@ export function summariseRecords(input: {
   records: SharePointRecord[];
   profiles: SummaryProfile[];
   recordsColumns: any[];
+  /** Omitted until the Records State column exists. */
+  states?: StatesInput;
 }): RecordsSummary {
   const { records, profiles, today } = input;
 
@@ -187,5 +229,6 @@ export function summariseRecords(input: {
       firstAiders: profileResult(firstAiderIds),
       noPhoto: profileResult(noPhotoIds),
     },
+    states: input.states ? summariseStates(input.states) : null,
   };
 }

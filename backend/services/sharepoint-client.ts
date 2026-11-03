@@ -464,10 +464,10 @@ export class SharePointClient {
     return column?.choice?.choices || [];
   }
 
-  /** All column definitions for a list (Graph), from the column schema cache. */
-  async getListColumns(listGuid: string): Promise<any[]> {
+  /** All column definitions for a list (Graph), from the column schema cache unless `fresh`. */
+  async getListColumns(listGuid: string, options: { fresh?: boolean } = {}): Promise<any[]> {
     const entry = this.columnCache.get(listGuid);
-    if (entry && Date.now() - entry.fetchedAt < this.COLUMN_CACHE_TTL_MS) return entry.columns;
+    if (!options.fresh && entry && Date.now() - entry.fetchedAt < this.COLUMN_CACHE_TTL_MS) return entry.columns;
 
     const siteId = await this.getSiteId();
     const data = await this.get(`sites/${siteId}/lists/${listGuid}/columns`);

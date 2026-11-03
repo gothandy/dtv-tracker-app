@@ -35,6 +35,8 @@ export const PERMISSIONS = {
   exportRecords: ['admin'],
   /** Download the Records summary from Tools: totals only, no volunteer data (Records v2 planning, #322). */
   exportRecordsSummary: ['admin'],
+  /** Dry run and run the Records v2 migration from Tools (#322 §5). Temporary: removed in PR 1. */
+  migrateRecords: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

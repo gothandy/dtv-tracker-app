@@ -8,17 +8,16 @@ import { SharePointRecord } from '../../../types/sharepoint';
 import { recordsForProfile } from '../records';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { sharePoint } from '../../config';
-import { RECORD_START, RECORD_END, RECORD_NOTES } from '../field-names';
+import { RECORD_NOTES } from '../field-names';
 
 class RecordsRepository {
   private get listGuid(): string { return sharePoint.lists.records; }
 
-
   private get selectFields(): string {
-    return `ID,Title,Profile,ProfileLookupId,Type,Status,Date,${RECORD_START},${RECORD_END},${RECORD_NOTES},Created,Modified`;
+    return `ID,Title,Profile,ProfileLookupId,Type,Status,Date,${RECORD_NOTES},Created,Modified`;
   }
 
-  private readonly dateOnlyFields = ['Date', RECORD_START, RECORD_END];
+  private readonly dateOnlyFields = ['Date'];
 
   async getAll(): Promise<SharePointRecord[]> {
     const cacheKey = 'records';

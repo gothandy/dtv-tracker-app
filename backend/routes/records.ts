@@ -20,7 +20,9 @@ import {
   parseHours,
   profileSlug,
 } from '../services/data-layer';
-import { PROFILE_LOOKUP, PROFILE_STATS, SESSION_LOOKUP } from '../services/field-names';
+import { PROFILE_LOOKUP, PROFILE_STATS, RECORD_STATE, RECORD_STATE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { statesRepository } from '../services/repositories/states-repository';
+import { runRecordsMigration } from '../services/records-migration';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { recordProfileId, statusOn, toRecordResponse } from '../services/records';
 import { createRecord, upsertRecord } from '../services/record-writer';
@@ -334,8 +336,17 @@ router.get('/records/summary', requirePermission('exportRecordsSummary'), async 
     const [records, profiles, recordsColumns] = await Promise.all([
       recordsRepository.getAll(),
       profilesRepository.getAll(),
-      sharePointClient.getListColumns(sharePoint.lists.records)
+      sharePointClient.getListColumns(sharePoint.lists.records, { fresh: true })
     ]);
+
+    // The Records v2 migration check, once the State column exists (#322 §5)
+    const hasStateColumn = recordsColumns.some((c: any) => c.name === RECORD_STATE);
+    const states = hasStateColumn
+      ? {
+          recordStates: await sharePointClient.getListItems(sharePoint.lists.records, `ID,Type,${RECORD_STATE_LOOKUP}`),
+          states: await statesRepository.getAll(),
+        }
+      : undefined;
 
     const environment = environmentName();
     const today = ukToday();
@@ -345,7 +356,8 @@ router.get('/records/summary', requirePermission('exportRecordsSummary'), async 
       today,
       records,
       profiles,
-      recordsColumns
+      recordsColumns,
+      states
     });
 
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -358,6 +370,36 @@ router.get('/records/summary', requirePermission('exportRecordsSummary'), async 
       error: 'Failed to export records summary',
       message: error.message
     });
+  }
+});
+
+// Records v2 migration (#322 §5), from Tools. GET is the dry run (a JSON download); POST with
+// { confirm: 'run' } writes. Temporary: removed in Records v2 PR 1 (#323).
+router.get('/records/migration', requirePermission('migrateRecords'), async (req: Request, res: Response) => {
+  try {
+    const environment = environmentName();
+    const report = await runRecordsMigration({ dryRun: true, environment });
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${ukToday()} DTV Records Migration Dry Run ${environment}.json"`);
+    res.send(JSON.stringify(report, null, 2));
+  } catch (error: any) {
+    console.error('Error in records migration dry run:', error);
+    res.status(500).json({ success: false, error: 'Records migration dry run failed', message: error.message });
+  }
+});
+
+router.post('/records/migration', requirePermission('migrateRecords'), async (req: Request, res: Response) => {
+  if (req.body?.confirm !== 'run') {
+    res.status(400).json({ success: false, error: 'Send { "confirm": "run" } to run the migration' });
+    return;
+  }
+  try {
+    const report = await runRecordsMigration({ dryRun: false, environment: environmentName() });
+    console.log(`[Records migration] ${report.environment}: ${report.statesToInsert.length} States inserted, ${report.recordsSet} Records set, ${report.errors?.length ?? 0} errors`);
+    res.json({ success: true, data: report });
+  } catch (error: any) {
+    console.error('Error running records migration:', error);
+    res.status(500).json({ success: false, error: 'Records migration failed', message: error.message });
   }
 });
 

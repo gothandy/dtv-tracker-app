@@ -1,6 +1,6 @@
 import type { RecordListItemResponse } from '../../../types/api-responses'
 import { HOURS_FILTERS, matchesHoursFilter } from '../../../types/hours'
-import { RECORD_TYPES } from '../../../types/record-types'
+import { RECORD_TYPE_NAMES } from '../../../types/record-types'
 
 /** The Records page filters, as kept in the address. fy is 'all' or an FY key (FY2025). */
 export interface RecordFilters {
@@ -13,7 +13,7 @@ export interface RecordFilters {
 export const DEFAULT_RECORD_FILTERS: RecordFilters = { type: '', status: '', fy: 'all', hours: '' }
 
 const STATUS_ORDER = ['Invited', 'Accepted', 'Declined', 'Expired']
-const TYPE_ORDER: string[] = Object.keys(RECORD_TYPES)
+const TYPE_ORDER: string[] = [...RECORD_TYPE_NAMES]
 
 /** The linked Profile's hours in the chosen FY ('all' = every year), from Profile Stats. */
 export function recordHoursIn(record: RecordListItemResponse, fy: string): number {

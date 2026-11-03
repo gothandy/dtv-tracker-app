@@ -97,6 +97,8 @@ export const SHAREPOINT_ADDRESSES = {
     profiles: 'Lists/Profiles',
     regulars: 'Lists/Regulars',
     records: 'Lists/Records',
+    /** Each Record Type's States (Records v2, #322). Must exist before the app starts. */
+    states: 'Lists/States',
     logins: 'Lists/Logins',
     /** Email templates (types/email-template.ts). */
     templates: 'Lists/Templates',

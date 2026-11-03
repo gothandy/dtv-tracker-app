@@ -103,7 +103,7 @@ async function onSave(payload: SaveRecordPayload) {
     const stored = store.records.find(r => r.id === editingRecord.value!.id)
     if (stored) {
       stored.storedStatus = payload.status
-      stored.status = recordStatus({ status: payload.status, start: stored.start, end: stored.end }, ukToday())
+      stored.status = recordStatus({ status: payload.status }, ukToday())
       stored.date = payload.date
       stored.notes = payload.notes.trim() || undefined
     }

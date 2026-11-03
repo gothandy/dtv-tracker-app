@@ -1,17 +1,16 @@
 /**
- * The one Record status evaluator, shared by the server and the browser (#322 §4).
+ * The one place a Record's status is read for a check, shared by the server and the browser.
  *
  * Every status check asks `recordStatus(record, evaluationDate)` rather than reading the
  * stored Status: today (`ukToday()`) for Profile views, the Session's date for anything
- * shown on a Session. For now it returns the stored Status unchanged; Records v2 PR 1
- * changes only this function, so Expired is worked out from End.
+ * shown on a Session. For now it returns the stored Status unchanged. Records v2 PR 1
+ * (#322, #323) moves the checks to the Profile's latest Record on that date and its
+ * State's labels, so every check is already in one place to change.
  */
 
-/** The parts of a Record its status depends on. Dates are YYYY-MM-DD. */
+/** The parts of a Record its status depends on. */
 export interface RecordFacts {
   status: string;
-  start?: string;
-  end?: string;
 }
 
 /** The Record's status as of `evaluationDate` (YYYY-MM-DD). */

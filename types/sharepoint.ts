@@ -144,11 +144,10 @@ export interface SharePointRecord extends SharePointBaseItem {
   ProfileLookupId?: number;
   Profile?: string;
   Type?: string;
+  /** The status choice; replaced by the State lookup in Records v2 PR 1 (#322). */
   Status?: string;
-  /** Legacy: kept until Records v2 has moved every reader and writer to Start and End. */
+  /** The date of the Record: when it happened, or will (e.g. an expiry). */
   Date?: string;
-  Start?: string;
-  End?: string;
   Notes?: string;
 }
 

@@ -175,6 +175,8 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | GET | `/records` | Every Record with its Profile's name and hours per FY, for the Records page (permission `viewRecords`) |
 | GET | `/records/export` | CSV export (GDPR) (permission `exportRecords`) |
 | GET | `/records/summary` | Records summary JSON: totals only, no volunteer data (permission `exportRecordsSummary`) |
+| GET | `/records/migration` | Records v2 migration dry run, JSON download (permission `migrateRecords`; temporary) |
+| POST | `/records/migration` | Run the Records v2 migration, `{ confirm: 'run' }` (permission `migrateRecords`; temporary) |
 | POST | `/groups` | Create group |
 | PATCH | `/groups/:key` | Edit group |
 | DELETE | `/groups/:key` | Delete group |

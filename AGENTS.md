@@ -129,7 +129,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 
 ## Data Model
 
-The application uses 9 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
+The application uses 10 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
 
 ### Lists
 
@@ -144,6 +144,7 @@ The code finds each list by its address on the site, set in `SHAREPOINT_ADDRESSE
 | Profiles | `Lists/Profiles` | Volunteer profiles |
 | Regulars | `Lists/Regulars` | Profile↔group regulars |
 | Records | `Lists/Records` | Consents/governance |
+| States | `Lists/States` | Each Record Type's States (Records v2, #322); filled by the migration, read from PR 1 |
 | Logins | `Lists/Logins` | Session token hashes |
 | Templates | `Lists/Templates` | Email templates (Handlebars), edited in SharePoint |
 

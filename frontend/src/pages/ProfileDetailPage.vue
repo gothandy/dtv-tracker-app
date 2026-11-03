@@ -424,7 +424,7 @@ async function onSaveRecord(id: number, payload: SaveRecordPayload) {
     const stored = store.profile.records?.find(r => r.id === id)
     if (stored) {
       stored.storedStatus = payload.status
-      stored.status = recordStatus({ status: payload.status, start: stored.start, end: stored.end }, ukToday())
+      stored.status = recordStatus({ status: payload.status }, ukToday())
       stored.date = payload.date
       stored.notes = payload.notes.trim() || undefined
     }

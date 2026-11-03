@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { summariseRecords } from './records-summary'
+import { summariseRecords, summariseStates } from './records-summary'
 
 const record = (id: number, profileId: number | undefined, type: string, status: string, date?: string) =>
   ({ ID: id, ProfileLookupId: profileId, Type: type, Status: status, Date: date }) as any
@@ -94,5 +94,31 @@ describe('summariseRecords', () => {
     expect(summary.columns.Start[0]).toEqual({ name: 'Start', displayName: 'Start', kind: 'dateTime', dateFormat: 'dateOnly', readOnly: false })
     expect(summary.columns.Status[0].choices).toEqual(['Invited', 'Accepted'])
     expect(summary.columns.Notes).toEqual([])
+  })
+})
+
+describe('summariseStates', () => {
+  it('counts Records with and without a State, by the State’s Type and Name, and flags mismatches', () => {
+    const summary = summariseStates({
+      states: [
+        { ID: 1, Name: 'Approved', Type: 'Charity Membership' },
+        { ID: 2, Name: 'Accepted', Type: 'Photo Consent' },
+      ],
+      recordStates: [
+        { ID: 10, Type: 'Charity Membership', StateLookupId: 1 },
+        { ID: 11, Type: 'Charity Membership', StateLookupId: '1' },
+        { ID: 12, Type: 'Charity Membership', StateLookupId: 2 },
+        { ID: 13, Type: 'Photo Consent', StateLookupId: 99 },
+        { ID: 14, Type: 'Photo Consent' },
+      ],
+    })
+    expect(summary).toEqual({
+      statesInList: 2,
+      recordsWithState: 4,
+      recordsWithoutState: 1,
+      byType: { 'Charity Membership': { Approved: 2 }, 'Photo Consent': { Accepted: 1 } },
+      typeMismatch: 1,
+      stateNotFound: 1,
+    })
   })
 })

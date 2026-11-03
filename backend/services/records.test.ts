@@ -54,11 +54,10 @@ describe('buildBadgeLookups', () => {
 })
 
 describe('toRecordResponse', () => {
-  it('gives the status as of the date and the stored status, with dates and Notes', () => {
-    const r = { ID: 7, ProfileLookupId: 10, Type: 'DofE', Status: 'Accepted', Date: '2026-01-01', Start: '2026-01-01', End: '', Notes: 'Gold 1223123' } as any
+  it('gives the status as of the date and the stored status, with the Date and Notes', () => {
+    const r = { ID: 7, ProfileLookupId: 10, Type: 'DofE', Status: 'Accepted', Date: '2026-01-01', Notes: 'Gold 1223123' } as any
     expect(toRecordResponse(r, '2026-11-03')).toEqual({
-      id: 7, type: 'DofE', status: 'Accepted', storedStatus: 'Accepted', date: '2026-01-01',
-      start: '2026-01-01', end: undefined, notes: 'Gold 1223123',
+      id: 7, type: 'DofE', status: 'Accepted', storedStatus: 'Accepted', date: '2026-01-01', notes: 'Gold 1223123',
     })
   })
 })

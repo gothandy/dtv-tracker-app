@@ -597,6 +597,8 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] `GET /api/sessions/export` — downloads FE Hours CSV (this FY, past sessions)
 - [ ] `GET /api/records/export` — downloads Records CSV with hours breakdown
 - [ ] Tools → *Records Summary* downloads `{date} DTV Records Summary {environment}.json`: totals by Type and Status, the Records columns, and Profile counts with fingerprints; no names, emails or IDs. Check In and Self-Service get 403 from `GET /api/records/summary`
+- [ ] Records Summary `states`: null until the Records State column exists; then Records with and without a State, counts by State Type and Name, `typeMismatch` and `stateNotFound` both 0 after the migration
+- [ ] Tools → *Records Migration* (Admin only, temporary): *Dry Run* downloads the States it would add and the Records it would set, per Type, and writes nothing; it explains plainly if the State column is missing. *Run Migration* asks to confirm, then reports States added and Records set; a second run finds nothing to do
 - [ ] `GET /api/profiles/export?...` — downloads Profiles CSV with filter params
 
 ---

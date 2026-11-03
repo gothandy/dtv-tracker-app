@@ -1,9 +1,9 @@
 import type { ProfileResponse } from '../../../types/api-responses'
 import { matchesProfileRecordFilter, NO_RECORD } from '../../../types/profile-record-filter'
-import { RECORD_TYPES } from '../../../types/record-types'
+import { RECORD_TYPE_NAMES } from '../../../types/record-types'
 
 const STATUS_ORDER = ['Invited', 'Accepted', 'Declined', 'Expires', 'Expired']
-const TYPE_ORDER: string[] = Object.keys(RECORD_TYPES)
+const TYPE_ORDER: string[] = [...RECORD_TYPE_NAMES]
 
 function byOrder(order: string[]) {
   return (a: string, b: string) => {

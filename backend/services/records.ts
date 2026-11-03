@@ -35,7 +35,7 @@ export function findRecord(records: SharePointRecord[], profileId: number, type:
 /** The Record's status as of `evaluationDate` (YYYY-MM-DD): today for Profiles, the Session's date for Sessions. */
 export function statusOn(record: SharePointRecord, evaluationDate: string): string {
   return recordStatus(
-    { status: record.Status || '', start: record.Start || undefined, end: record.End || undefined },
+    { status: record.Status || '' },
     evaluationDate,
   );
 }
@@ -48,8 +48,6 @@ export function toRecordResponse(record: SharePointRecord, evaluationDate: strin
     status: statusOn(record, evaluationDate),
     storedStatus: record.Status || '',
     date: record.Date || '',
-    start: record.Start || undefined,
-    end: record.End || undefined,
     notes: record.Notes || undefined,
   };
 }
