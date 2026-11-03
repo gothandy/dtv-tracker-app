@@ -1,5 +1,5 @@
 <template>
-  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, colour && colourStyle !== 'text' ? `rli-row--${colourStyle}-${colour}` : '']">
+  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, stateStyle ? `rli-row--${stateStyle}` : '']">
     <div class="rli-content">
       <div class="rli-left">
         <span class="rli-type">{{ record.type }}</span>
@@ -18,26 +18,25 @@
 import { computed } from 'vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
 
-/** A State's colour (Records v2 PR 2, #324): Green, Amber (brand gold) or Red; none = sand. */
-export type RecordColour = 'green' | 'amber' | 'red'
-/** How the colour shows; being chosen on /sandbox/record-list-item, then one stays. */
-export type RecordColourStyle = 'text' | 'border' | 'background'
+/**
+ * A State's style (Records v2 PR 2, #324; the States list's BeforeStyle and AfterStyle): Active
+ * (green), Info (gold) or Warn (dirt); none = sand. Shown as a left border (as Entries) and the
+ * State's text, chosen on /sandbox/record-list-item.
+ */
+export type RecordStateStyle = 'active' | 'info' | 'warn'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   record: RecordListItemResponse
   selected?: boolean
-  colour?: RecordColour
-  colourStyle?: RecordColourStyle
-}>(), {
-  colourStyle: 'text',
-})
+  stateStyle?: RecordStateStyle
+}>()
 
-/** Without a colour (until PR 2): Invited and Accepted show green; the rest show black. */
+/** Without a style (until PR 2): Invited and Accepted show green; the rest show black. */
 const isCurrent = computed(() => props.record.status === 'Invited' || props.record.status === 'Accepted')
 
 const stateClass = computed(() => {
-  if (!props.colour) return { 'rli-state--current': isCurrent.value }
-  return props.colourStyle === 'text' ? `rli-state--${props.colour}` : ''
+  if (!props.stateStyle) return { 'rli-state--current': isCurrent.value }
+  return `rli-state--${props.stateStyle}`
 })
 
 function formatDate(date: string): string {
@@ -101,25 +100,13 @@ function formatDate(date: string): string {
   color: var(--color-dtv-green);
 }
 
-/* State colours (PR 2 mock-up): text, left border, or background */
-.rli-state--green { color: var(--color-dtv-green-dark); }
-.rli-state--amber { color: var(--color-dtv-gold-dark); }
-.rli-state--red   { color: var(--color-dtv-dirt); }
-
-.rli-row--border-green { border-left-color: var(--color-dtv-green); }
-.rli-row--border-amber { border-left-color: var(--color-dtv-gold); }
-.rli-row--border-red   { border-left-color: var(--color-dtv-dirt); }
-
-.rli-row--background-green { background: var(--color-dtv-green); }
-.rli-row--background-amber { background: var(--color-dtv-gold-light); }
-.rli-row--background-red   { background: var(--color-dtv-dirt); }
-.rli-row--background-green .rli-content,
-.rli-row--background-red .rli-content { color: var(--color-white); }
-.rli-row--background-green .rli-content :is(.rli-profile, .rli-date, .rli-notes),
-.rli-row--background-red .rli-content :is(.rli-profile, .rli-date, .rli-notes) { color: var(--color-white); }
-.rli-row--background-green .rli-content:hover { background: var(--color-dtv-green-dark); }
-.rli-row--background-amber .rli-content:hover { background: var(--color-dtv-gold); }
-.rli-row--background-red .rli-content:hover { background: var(--color-dtv-dirt-dark); }
+/* State styles: a left border and the State's text */
+.rli-row--active { border-left-color: var(--color-dtv-green); }
+.rli-row--info   { border-left-color: var(--color-dtv-gold); }
+.rli-row--warn   { border-left-color: var(--color-dtv-dirt); }
+.rli-state--active { color: var(--color-dtv-green-dark); }
+.rli-state--info   { color: var(--color-dtv-gold-dark); }
+.rli-state--warn   { color: var(--color-dtv-dirt); }
 
 .rli-profile,
 .rli-date,
