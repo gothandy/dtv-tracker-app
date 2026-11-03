@@ -24,6 +24,11 @@ describe('matchesRecordFilters', () => {
     expect(ids(DEFAULT_RECORD_FILTERS)).toEqual([1, 2, 3, 4, 5])
   })
 
+  it('filters to one Profile’s Records', () => {
+    expect(ids(f({ profileId: 3 }))).toEqual([3])
+    expect(ids(f({ profileId: 3, type: 'Photo Consent' }))).toEqual([])
+  })
+
   it('filters by Type and Status', () => {
     expect(ids(f({ type: 'Discount Card' }))).toEqual([2, 3, 5])
     expect(ids(f({ type: 'Discount Card', status: 'Accepted' }))).toEqual([3, 5])

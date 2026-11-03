@@ -26,7 +26,7 @@
       <option value="">All entries</option>
       <option v-for="opt in qualityOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
     </select>
-    <button v-if="profileName" class="elf-profile-chip" @click="clearProfileFilter">
+    <button v-if="profileName" class="list-filter-chip" @click="clearProfileFilter">
       {{ profileName }} ×
     </button>
   </div>
@@ -152,20 +152,3 @@ watch([q, fy, accompanyingAdult, cancelled, entryQuality, profileId, profileName
   router.replace({ query })
 })
 </script>
-
-<style scoped>
-.elf-profile-chip {
-  background: var(--color-dtv-dirt);
-  color: var(--color-white);
-  border: none;
-  border-radius: 3px;
-  padding: 0.25rem 0.6rem;
-  font-family: var(--font-head);
-  font-size: 0.85rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.elf-profile-chip:hover {
-  opacity: 0.85;
-}
-</style>

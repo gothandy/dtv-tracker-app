@@ -3,11 +3,15 @@ import { RECORD_TYPE_NAMES } from '../../../types/record-types'
 import { dateMatchesFy, financialYearOfDate } from './sessionFy'
 import { fyKeyToLabel, type FyOption } from './entitySessionTotals'
 
-/** The Records page filters, as kept in the address. fy is on the Record's Date: all | future | rolling | FY2025. */
+/**
+ * The Records page filters, as kept in the address. fy is on the Record's Date: all | future |
+ * rolling | FY2025. profileId narrows to one Profile's Records (set from its Profile page).
+ */
 export interface RecordFilters {
   type: string
   status: string
   fy: string
+  profileId?: number
 }
 
 export const DEFAULT_RECORD_FILTERS: RecordFilters = { type: '', status: '', fy: 'all' }
@@ -16,6 +20,7 @@ const STATUS_ORDER = ['Invited', 'Accepted', 'Declined', 'Expires', 'Expired']
 const TYPE_ORDER: string[] = [...RECORD_TYPE_NAMES]
 
 export function matchesRecordFilters(record: RecordListItemResponse, filters: RecordFilters): boolean {
+  if (filters.profileId !== undefined && record.profileId !== filters.profileId) return false
   if (filters.type && record.type !== filters.type) return false
   if (filters.status && record.status !== filters.status) return false
   return dateMatchesFy(record.date, filters.fy)

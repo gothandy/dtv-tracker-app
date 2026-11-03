@@ -34,7 +34,9 @@ export const sessionPath = (groupKey: string, date: string) => `/sessions/${grou
 export const groupsPath = () => '/groups'
 export const groupPath = (key: string) => `/groups/${key}`
 export const templatesPath = () => '/templates'
-export const recordsPath = () => '/records'
+/** The Records page; with a Profile, filtered to that Profile's Records (its name shows in the filter chip). */
+export const recordsPath = (profile?: { id: number; name?: string }) =>
+  profile ? `/records?profileId=${profile.id}&profileName=${encodeURIComponent(profile.name ?? '')}` : '/records'
 export const templatePath = (id: number) => `/templates/${id}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`

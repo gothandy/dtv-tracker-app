@@ -110,6 +110,7 @@
         :profile-slug="store.profile.slug"
         :show-consent-link="viewer.hasCheckInAccess || viewer.isSelfService"
         :allow-edit="viewer.can('editRecords')"
+        :view-all-to="viewer.can('viewRecords') ? recordsPath({ id: store.profile.id, name: store.profile.name }) : undefined"
         :types="recordTypes"
         :statuses="recordStatuses"
         ref="recordListRef"
@@ -198,7 +199,7 @@ import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { contactEmail } from '../utils/siteInfo'
 import { useProfileDetailStore } from '../stores/profileDetail'
-import { groupPath, profilePath, profilesPath, sessionPath } from '../router/index'
+import { groupPath, profilePath, profilesPath, recordsPath, sessionPath } from '../router/index'
 import type { ProfileEntryResponse, EntryListItemResponse } from '../../../types/api-responses'
 import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
 import type { TransferProfilePayload } from './modals/ProfileTransferModal.vue'

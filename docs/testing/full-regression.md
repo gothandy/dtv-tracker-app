@@ -298,6 +298,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Type and Status filters; FY is on the Record's Date: All FY, each FY the Records' Dates fall in, Rolling (the year up to today) and Future (today or later), each only when it would show a Record; Records with no Date only under All FY
 - [ ] Filters cascade (each offers only what the others leave) and are kept in the address; Share copies the filtered link
 - [ ] Select all / tick cards: the count shows `n / total records`; changing filters drops ticked cards no longer shown
+- [ ] Profile page (Admin): Records header shows **View All**, which opens the Records page filtered to that Profile with a chip of its name; clicking the chip clears it; the filter is kept in the address. Check In doesn't see View All
 - [ ] Click a card: Edit Record with the Profile's name as title and View Profile at the top; Save (Status, Date, Notes) and Delete update the list
 
 ### H24b. Entries page (admin)

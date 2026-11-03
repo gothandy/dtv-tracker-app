@@ -3,6 +3,7 @@
     <div class="prl-header">
       <h2 class="prl-title">Records</h2>
       <div class="prl-actions">
+        <RouterLink v-if="viewAllTo" :to="viewAllTo" class="prl-link">View All</RouterLink>
         <a
           v-if="showConsentLink"
           :href="`/profiles/${profileSlug}/consent`"
@@ -66,6 +67,8 @@ const props = withDefaults(defineProps<{
   profileSlug: string
   showConsentLink?: boolean
   allowEdit?: boolean
+  /** The Records page filtered to this Profile; shows View All (viewRecords). */
+  viewAllTo?: string
   types?: string[]
   statuses?: string[]
 }>(), {

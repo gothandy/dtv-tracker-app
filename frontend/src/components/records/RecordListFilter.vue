@@ -9,11 +9,14 @@
       <option v-for="s in options.statuses" :key="s" :value="s">{{ s }}</option>
     </select>
     <FyFilter v-model="filters.fy" :options="options.fyOptions" class="list-filter-select" />
+    <button v-if="filters.profileId !== undefined" class="list-filter-chip" @click="clearProfileFilter">
+      {{ profileName || 'Profile' }} ×
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
@@ -32,7 +35,15 @@ const filters = reactive<RecordFilters>({
   type: (route.query.type as string) || DEFAULT_RECORD_FILTERS.type,
   status: (route.query.status as string) || DEFAULT_RECORD_FILTERS.status,
   fy: (route.query.fy as string) || DEFAULT_RECORD_FILTERS.fy,
+  profileId: route.query.profileId ? parseInt(route.query.profileId as string, 10) : undefined,
 })
+/** Shown in the chip; comes with profileId from the Profile page's link. */
+const profileName = ref((route.query.profileName as string) || '')
+
+function clearProfileFilter() {
+  filters.profileId = undefined
+  profileName.value = ''
+}
 
 const options = computed(() => recordFilterOptions(props.records, filters))
 
@@ -53,6 +64,10 @@ watch(filters, f => {
   if (f.type) query.type = f.type
   if (f.status) query.status = f.status
   if (f.fy !== DEFAULT_RECORD_FILTERS.fy) query.fy = f.fy
+  if (f.profileId !== undefined) {
+    query.profileId = String(f.profileId)
+    if (profileName.value) query.profileName = profileName.value
+  }
   router.replace({ query })
 })
 </script>
