@@ -66,6 +66,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 
 - **Plan first.** Before writing code, explore the relevant code and existing patterns, then write the PR plan: the tasks as a checklist and a plain-English **What to check** list for testing on preview. Get the maintainer's approval before starting. For trivial changes, still explain what you'll do and why before acting.
 - **Issues and milestones.** Work is tracked in [GitHub Issues](https://github.com/gothandy/dtv-tracker-app/issues), one milestone per roadmap priority. PRs reference the issues they close (`Closes #123`).
+- **Tidy as you touch.** When a change touches code that breaks a rule in this file (e.g. a component calling `useViewer()`), fix it in the same change. If the same problem runs wider than the files being touched, raise a `tech-debt` issue for a full refactor rather than widening the change.
 - **Tech debt is fixed in passing, not scheduled.** `tech-debt` issues have no milestone. When planning, search open `tech-debt` issues for the files and features being touched. Fold in fixes that are small and low-risk as an extra task and reference the issue; if a related fix is larger, name it in the plan and ask before including it.
 
 ### Documentation review after every task
