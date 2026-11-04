@@ -127,7 +127,6 @@
           <ProfileEntryList
             :entries="entries"
             :allow-edit="viewer.hasCheckInAccess"
-            :is-admin="viewer.isAdmin"
             :working-id="workingId"
             ref="entryListRef"
             @update="onEntryUpdate"
@@ -156,7 +155,6 @@
         v-if="childEditingEntry"
         :entry="childEditingEntry"
         :title="childEditingEntry.profile.name"
-        :is-admin="viewer.isAdmin"
         :profile-click="childEditingEntry.profile.slug ? () => router.push(profilePath(childEditingEntry!.profile.slug!)) : undefined"
         :session-click="() => router.push(sessionPath(childEditingEntry!.session.groupKey, childEditingEntry!.session.date))"
         :session-adults="childSessionAdults"

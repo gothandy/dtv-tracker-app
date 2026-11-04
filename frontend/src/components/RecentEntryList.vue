@@ -26,7 +26,6 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
-      :is-admin="true"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"

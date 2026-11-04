@@ -41,7 +41,6 @@
       v-if="editingEntry"
       :entry="editingEntry"
       :title="cardTitle(editingEntry)"
-      :is-admin="isAdmin"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
       :working="workingEdit"
@@ -71,7 +70,6 @@ type EditData = { checkedIn: boolean; count: number; hours: number; notes: strin
 const props = defineProps<{
   entries: EntryItem[]
   allowEdit?: boolean
-  isAdmin?: boolean
   workingId?: number | null
 }>()
 
