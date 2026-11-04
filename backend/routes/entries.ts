@@ -50,6 +50,8 @@ import type { MediaStatus, EntryDetailResponse, EntryListItemResponse, RecentSig
 import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
 import { requestOrigin } from '../services/request-origin';
+import { ukToday, ukYearAgo } from '../../types/uk-date';
+import { isOfType, statusOn } from '../services/records';
 
 const router: Router = express.Router();
 
@@ -235,8 +237,8 @@ router.get('/entries', async (req: Request, res: Response) => {
     const cancelledFilter = req.query.cancelled ? String(req.query.cancelled) : 'false';
     // fy filter: 'future' | 'rolling' | 'FY####' | 'all' (omit = no filter)
     const fyParam = req.query.fy ? String(req.query.fy) : '';
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const rollingStart = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10); })();
+    const todayStr = ukToday();
+    const rollingStart = ukYearAgo();
 
     const [rawEntries, rawSessions, rawGroups, rawProfiles] = await Promise.all([
       entriesRepository.getAll(),
@@ -341,7 +343,7 @@ router.post('/entries/bulk', async (req: Request, res: Response) => {
       return;
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ukToday();
     const [rawSessions, rawProfiles] = await Promise.all([
       sessionsRepository.getAll(),
       profilesRepository.getAll(),
@@ -488,7 +490,8 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
     const profileRecords = volunteerId !== undefined
       ? await recordsRepository.getByProfile(volunteerId)
       : [];
-    const hasPrivacyConsent = profileRecords.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
+    const sessionDate = (spSession.Date || '').slice(0, 10);
+    const hasPrivacyConsent = profileRecords.some(r => isOfType(r, 'Privacy Consent') && statusOn(r, sessionDate) === 'Accepted');
 
     const vSlug2 = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : undefined;
     const data: EntryDetailResponse = {
@@ -566,7 +569,7 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
           res.status(404).json({ success: false, error: 'Session not found' });
           return;
         }
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayStr = ukToday();
         if ((spSessionSelf.Date || '').slice(0, 10) < todayStr) {
           res.status(400).json({ success: false, error: 'Session has already passed' });
           return;
@@ -880,7 +883,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
       return;
     }
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = ukToday();
     if ((spSession.Date || '').slice(0, 10) < todayStr && req.session.user?.role !== 'admin') {
       res.status(400).json({ success: false, error: 'Cannot refresh a past session' });
       return;
@@ -898,7 +901,7 @@ router.post('/sessions/:group/:date/refresh', async (req: Request, res: Response
     let newProfiles = 0;
     let updatedRecords = 0;
 
-    const isFutureSession = new Date(spSession.Date) >= new Date(new Date().toISOString().slice(0, 10));
+    const isFutureSession = (spSession.Date || '').slice(0, 10) >= ukToday();
 
     // Step 1: Add missing regulars; update accompanying adult on existing entries if needed
     const groupRegulars = rawRegulars.filter(r => safeParseLookupId(r[GROUP_LOOKUP]) === spGroup.ID);

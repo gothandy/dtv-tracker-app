@@ -24,6 +24,7 @@ import AppButton from '../AppButton.vue'
 import type { EntryListItemResponse } from '../../../../types/api-responses'
 import { downloadCsv } from '../../utils/listCsv'
 import { shareCurrentUrl } from '../../utils/shareUrl'
+import { ukToday } from '../../../../types/uk-date'
 
 const props = defineProps<{
   entries: EntryListItemResponse[]
@@ -46,7 +47,7 @@ const totalHours = computed(() =>
 function onDownload() {
   const source = selectedEntries.value.length ? selectedEntries.value : props.entries
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = ukToday()
   downloadCsv(`${today} Entries.csv`,
     ['Date', 'Group', 'Volunteer', 'Hours', 'Checked In', 'Notes'],
     source.map(e => [

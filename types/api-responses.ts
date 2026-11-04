@@ -96,6 +96,15 @@ export interface SessionResponse {
 /** Microsoft Tracker role implied by Profile User + TRACKER_ADMIN_USERS — only on trusted responses. */
 export type TrackerAccess = 'none' | 'checkin' | 'admin';
 
+/** GET /api/profiles: the profiles, and the financial years any Profile has hours or sessions in. */
+export interface ProfileListResponse {
+  success: boolean;
+  count: number;
+  data: ProfileResponse[];
+  /** FY keys (e.g. FY2024) from Profile Stats, plus the current FY, oldest first. */
+  financialYears: string[];
+}
+
 export interface ProfileResponse {
   id: number;
   slug: string;
@@ -147,11 +156,31 @@ export interface ProfileGroupHours {
   regularId?: number;
 }
 
-export interface ConsentRecordResponse {
+/** A Record as the app shows it. */
+export interface RecordResponse {
   id: number;
   type: string;
+  /** The status as of today (recordStatus); show this. */
   status: string;
+  /** The status stored in SharePoint; the Edit form's choice. */
+  storedStatus: string;
+  /** Legacy date (YYYY-MM-DD). */
   date: string;
+  notes?: string;
+}
+
+/** A Record on the Records page, with the Profile it belongs to. */
+export interface RecordListItemResponse extends RecordResponse {
+  profileId?: number;
+  profileName?: string;
+  profileSlug?: string;
+}
+
+/** GET /api/records: every Record. */
+export interface RecordListResponse {
+  success: boolean;
+  count: number;
+  data: RecordListItemResponse[];
 }
 
 export interface ProfileDetailResponse {
@@ -172,7 +201,7 @@ export interface ProfileDetailResponse {
   groupHours: ProfileGroupHours[];
   regularCount: number;
   entries: ProfileEntryResponse[];
-  records?: ConsentRecordResponse[];
+  records?: RecordResponse[];
   linkedProfiles?: Array<{ id: number; slug: string; name: string }>;
   warnings?: Array<{ text: string; url?: string }>;
 }

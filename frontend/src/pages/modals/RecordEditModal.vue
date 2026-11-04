@@ -1,6 +1,6 @@
 <template>
   <ModalLayout
-    title="Edit Record"
+    :title="title ?? 'Edit Record'"
     action="Save"
     action-icon="save"
     show-delete
@@ -10,6 +10,11 @@
     @action="save"
     @delete="emit('delete')"
   >
+    <div v-if="profileClick || archiveClick" class="modal-form-links">
+      <AppButton v-if="profileClick" label="View Profile" icon="profile" @click="profileClick!()" />
+      <AppButton v-if="archiveClick" label="View Archive" icon="clock" @click="archiveClick!()" />
+    </div>
+
     <FormLayout :disabled="working">
       <FormRow title="Type" :full-width="true">
         <span class="modal-form-readonly">{{ record.type }}</span>
@@ -22,14 +27,18 @@
       <FormRow title="Date" :full-width="true">
         <ModalFormInput v-model="form.date" type="date" />
       </FormRow>
+      <FormRow title="Notes" :full-width="true">
+        <ModalFormInput v-model="form.notes" />
+      </FormRow>
     </FormLayout>
   </ModalLayout>
 </template>
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { ConsentRecordResponse } from '../../../../types/api-responses'
+import type { RecordResponse } from '../../../../types/api-responses'
 import ModalLayout from '../../components/ModalLayout.vue'
+import AppButton from '../../components/AppButton.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
@@ -38,13 +47,20 @@ import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 export interface SaveRecordPayload {
   status: string
   date: string
+  notes: string
 }
 
 const props = defineProps<{
-  record: ConsentRecordResponse
+  record: RecordResponse
   statuses: string[]
   working: boolean
   error?: string
+  /** Heading; defaults to "Edit Record". The Records page uses the Profile's name, as Edit Entry does. */
+  title?: string
+  /** Shows View Profile at the top (Records page), as Edit Entry does. */
+  profileClick?: () => void
+  /** Shows View Archive at the top: the Records page for this Profile and Type (viewRecords). */
+  archiveClick?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -54,14 +70,17 @@ const emit = defineEmits<{
 }>()
 
 const form = reactive({
-  status: props.record.status,
+  status: props.record.storedStatus,
   date: props.record.date?.slice(0, 10) ?? '',
+  notes: props.record.notes ?? '',
 })
 
 function save() {
   emit('save', {
     status: form.status,
     date: form.date,
+    notes: form.notes,
   })
 }
 </script>
+

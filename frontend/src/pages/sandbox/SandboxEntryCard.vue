@@ -80,7 +80,7 @@
           :title-to="profilePath('alice-bowen-42')"
           :checked-in="false"
           :hours="0"
-          :icons="[]"
+          :icons="[{ icon: 'brands/dofe.svg', alt: 'DofE', type: 'tag' }]"
           :allow-cancel="true"
           @cancel="log('cancel: Alice Bowen')"
         />

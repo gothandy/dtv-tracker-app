@@ -1,6 +1,7 @@
 import type { TaxNode } from '../composables/useTaxonomy'
 import type { Session } from '../types/session'
 import { NO_TAGS } from './tagFilter'
+import { ukToday } from '../../../types/uk-date'
 
 export interface LocationProject {
   id: number
@@ -110,7 +111,7 @@ export function projectsByLocation<P extends Tagged & { id: number }>(
   sessions: Session[],
   tree: TaxNode[],
   emptyTrails: string[],
-  todayIso: string = new Date().toISOString().slice(0, 10),
+  todayIso: string = ukToday(),
 ): LocationGroup<P>[] {
   const allLocations = locationTerms(tree)
   const empty = new Set(emptyTrails)
@@ -137,7 +138,7 @@ export function projectsByLocationRows(
   tree: TaxNode[],
   emptyTrails: string[],
   origin: string,
-  todayIso: string = new Date().toISOString().slice(0, 10),
+  todayIso: string = ukToday(),
   /** Keys of the projects with documents (GET /api/projects/documents), for the Documents column */
   withDocuments: Set<string> = new Set(),
 ): Array<Array<string | number>> {

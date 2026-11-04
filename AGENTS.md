@@ -52,6 +52,7 @@ A volunteer hours tracking and registration system for managing volunteer crews,
 | `preview/<name>` with a PR into `main` | Build, tests, deploy | **Preview**: https://preview.tracker.dtv.org.uk |
 | `main` | Build, tests, deploy | **Production**: https://tracker.dtv.org.uk |
 
+- **One PR at a time, tidy start.** As a general rule, finish and close the current PR, then delete its branches and other obsolete branches before starting another. Agree the scope of the next PR with the developer **before** creating any new preview or task branches. Exceptions are by explicit agreement. For exploratory work, a single PR may remain open while successive small, agreed changes are deployed to preview; avoid creating new branches for each follow-up unless a substantial separate task warrants one. Only the maintainer merges to `main`.
 - **All work happens on the task branch.** Pull before starting, push when done, and fetch and rebase before pushing so nobody else's commits are lost.
 - **Branches come in pairs with the same name:** `preview/<name>` holds the PR; `task/<name>` is where the work happens. Use a short name for the PR (e.g. `event-types`), so it's always clear which branches belong together and which can be deleted after merge.
 - **Nobody commits directly to a `preview/` branch.** It only changes when a task is **promoted**: `task/<name>` is squashed into it as one commit with a clear message. Each promotion deploys to preview, so promote deliberately.
@@ -117,6 +118,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 - Profiles listing with FY filter, sort, group filter, search, advanced filters (including warnings filter), bulk records, CSV download ([ProfileListPage.vue](frontend/src/pages/ProfileListPage.vue))
 - Profile detail with FY stats, FY bar chart, group hours, entries, records ([ProfileDetailPage.vue](frontend/src/pages/ProfileDetailPage.vue))
 - Entries page (admin-only): all entries with notes/adult filters, checkbox selection, edit modal ([EntriesPage.vue](frontend/src/pages/EntriesPage.vue))
+- Records page (`/records`, Admin, `viewRecords`; first cut of Records v2 #322 §5a): every Record with cascading Type, Status and FY filters (FY on the Record's Date: each FY, Rolling and Future, as on Sessions), a Profile filter set from the Profile page's *View All* (a chip, as on Entries), selection (no bulk actions yet), Share, and the Profile page's Edit Record with *View Profile* ([RecordsPage.vue](frontend/src/pages/RecordsPage.vue))
 - Unified sign-in page: verification code (self-service) + Microsoft (trusted) ([LoginPage.vue](frontend/src/pages/LoginPage.vue))
 - Volunteer media upload page ([UploadPage.vue](frontend/src/pages/UploadPage.vue))
 - Consent collection page at `/profiles/:slug/consent` ([ConsentPage.vue](frontend/src/pages/ConsentPage.vue))
@@ -127,7 +129,7 @@ All pages are Vue 3 SPA routes defined in [frontend/src/router/index.ts](fronten
 
 ## Data Model
 
-The application uses 9 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
+The application uses 10 SharePoint lists on the Tracker site (`/sites/tracker`). Full schema: [docs/sharepoint-schema.md](docs/sharepoint-schema.md).
 
 ### Lists
 
@@ -142,6 +144,7 @@ The code finds each list by its address on the site, set in `SHAREPOINT_ADDRESSE
 | Profiles | `Lists/Profiles` | Volunteer profiles |
 | Regulars | `Lists/Regulars` | Profile↔group regulars |
 | Records | `Lists/Records` | Consents/governance |
+| States | `Lists/States` | Each Record Type's States (Records v2, #322); filled by the migration, read from PR 1 |
 | Logins | `Lists/Logins` | Session token hashes |
 | Templates | `Lists/Templates` | Email templates (Handlebars), edited in SharePoint |
 
@@ -167,7 +170,7 @@ A volunteer becomes a **member** when they have a "Charity Membership" record wi
 
 - **MEMBER badge**: based on Charity Membership record (`isMember` field on ProfileResponse)
 - **CARD badge**: discount card status — green if Accepted, orange if Invited (`cardStatus`)
-- **Card highlighting** (green background on volunteers list): hours-based — 15h threshold in selected FY (`MEMBER_HOURS = 15` in ProfileListPage.vue)
+- **Hours bands**: the boundaries are always 0, 15 and 30, and each band includes its lower boundary (15h is 15h+, 30h is 30h+): 0h, more than 0 and under 15h, 15h up to under 30h, 30h+. Bands can be combined (e.g. 15h+). Defined once in [types/hours.ts](types/hours.ts) (`HOURS_FILTERS`, `hoursInView`); never write `> 15` or `> 30`.
 
 ---
 
@@ -269,6 +272,10 @@ All data computation is server-side in the stats pipeline (ProfileStats → Sess
 - **`em` not `px` or `rem`** in media queries.
 - **CSS**: write the literal `em` value — e.g. `@media (width < 48em)`. Tailwind's `theme()` cannot be used in scoped component styles.
 - **JS breakpoint checks**: use `belowBreakpointMd()` from `frontend/src/utils/breakpoints.ts`.
+
+### Dates
+
+- **A calendar date is a UK date.** For today, or a year ago (the start of the rolling 12 months), use `ukToday()` and `ukYearAgo()` from [types/uk-date.ts](types/uk-date.ts), on the server and in the browser. Never `new Date().toISOString().slice(0, 10)`: that's the UTC date, which is yesterday between midnight and 1am UK time in summer. `toISOString()` is right only for timestamps (e.g. when an entry was cancelled).
 
 ### Code Style
 
@@ -378,7 +385,7 @@ dtv-tracker-app/
 │   ├── middleware/                 # auth.ts, require-auth.ts, require-admin.ts, public-api-get-paths.ts
 │   ├── shared/                     # Shared constants (brand)
 │   └── scripts/                    # One-off maintenance scripts
-├── types/                          # api-responses.ts (HTTP contract), domain + SharePoint types
+├── types/                          # api-responses.ts (HTTP contract), domain + SharePoint types; code shared with the frontend (permissions.ts, uk-date.ts)
 ├── frontend/                       # Vue 3 + Vite SPA
 │   └── src/
 │       ├── router/index.ts         # Route definitions + path builder functions

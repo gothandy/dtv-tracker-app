@@ -5,6 +5,7 @@
 import type { SharePointSession } from '../../types/session';
 import { calculateCurrentFY, calculateFinancialYear, parseSessionStats, safeParseLookupId } from './data-layer';
 import { GROUP_LOOKUP, PROJECT_LOOKUP, SESSION_STATS } from './field-names';
+import { ukToday, ukYearAgo } from '../../types/uk-date';
 
 export type FyScope = 'current' | 'all';
 
@@ -66,15 +67,12 @@ export function sessionMatchesFyFilter(
   sessionDate: string,
   sessionFinancialYear: string | undefined,
   fyFilter: string,
-  todayIso: string = new Date().toISOString().slice(0, 10)
+  todayIso: string = ukToday()
 ): boolean {
   if (fyFilter === 'all') return true;
   if (fyFilter === 'future') return sessionDate >= todayIso;
   if (fyFilter === 'rolling') {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 1);
-    const start = d.toISOString().slice(0, 10);
-    return sessionDate >= start && sessionDate <= todayIso;
+    return sessionDate >= ukYearAgo() && sessionDate <= todayIso;
   }
   if (sessionFinancialYear) return sessionFinancialYear === fyFilter;
   const fyYear = parseInt(fyFilter.replace('FY', ''), 10);

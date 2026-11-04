@@ -1,11 +1,13 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router'
-import type { ProfileResponse } from '../../../types/api-responses'
+import type { ProfileListResponse, ProfileResponse } from '../../../types/api-responses'
 import { apiErrorMessage } from '../utils/api-error'
 
 export const useProfileListStore = defineStore('profiles', () => {
   const profiles = ref<ProfileResponse[]>([])
+  /** FY keys any Profile has hours or sessions in (from Profile Stats), for the FY dropdown. */
+  const financialYears = ref<string[]>([])
   const loading = ref(true)
   const error = ref<string | null>(null)
 
@@ -34,8 +36,9 @@ export const useProfileListStore = defineStore('profiles', () => {
         return
       }
       if (!res.ok) throw new Error(await apiErrorMessage(res, `Failed to load profiles (${res.status})`))
-      const json: { data: ProfileResponse[] } = await res.json()
+      const json: ProfileListResponse = await res.json()
       profiles.value = json.data
+      financialYears.value = json.financialYears
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return
       error.value = e instanceof Error ? e.message : 'Unknown error'
@@ -45,5 +48,5 @@ export const useProfileListStore = defineStore('profiles', () => {
     }
   }
 
-  return { profiles, loading, error, fetch }
+  return { profiles, financialYears, loading, error, fetch }
 })

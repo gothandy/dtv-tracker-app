@@ -5,12 +5,13 @@
 
 import { entriesRepository } from './repositories/entries-repository';
 import { profilesRepository } from './repositories/profiles-repository';
-import { recordsRepository } from './repositories/records-repository';
 import { toMatchName, safeParseLookupId, parseEmails } from './data-layer';
 import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
 import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID, ENTRY_CANCELLED } from './field-names';
 import { computeAndSaveProfileStats } from './profile-stats';
+import { upsertRecord } from './record-writer';
+import type { RecordTypeName } from '../../types/record-types';
 
 /**
  * Returns the booking email for an attendee — the order contact email (whoever
@@ -176,7 +177,7 @@ export async function findOrCreateProfile(
   return { profile: newProfile, isNew: true, clash };
 }
 
-const CONSENT_MAP: Record<string, string> = {
+const CONSENT_MAP: Record<string, RecordTypeName> = {
   'Personal Data Consent': 'Privacy Consent',
   'Photo and Video Consent': 'Photo Consent'
 };
@@ -203,21 +204,11 @@ export async function upsertConsentRecords(
     if (!type) continue;
     const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
     const date = attendee.created || new Date().toISOString();
-    const existing = records.find(r =>
-      safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId && r.Type === type
-    );
-    if (existing) {
-      // Only update if status changed — date comparison is unreliable because
-      // SharePoint's date-only field strips the time component from attendee.created.
-      if (existing.Status !== status) {
-        await recordsRepository.update(existing.ID, { Status: status });
-        updated++;
-      }
-    } else {
-      const newId = await recordsRepository.create({ ProfileLookupId: profileId, Type: type, Status: status, Date: date });
-      records.push({ ID: newId, ProfileLookupId: profileId, Type: type, Status: status, Date: date });
-      created++;
-    }
+    // Only the Status is updated — date comparison is unreliable because
+    // SharePoint's date-only field strips the time component from attendee.created.
+    const result = await upsertRecord(records, { profileId, type, status, date }, 'statusIfChanged');
+    if (result === 'created') created++;
+    else if (result === 'updated') updated++;
   }
 
   return { created, updated };

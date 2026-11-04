@@ -54,7 +54,18 @@
           <div class="ap-actions">
             <AppButton label="FE Hours Download" href="/api/sessions/export" />
             <AppButton label="Records Download" href="/api/records/export" />
+            <AppButton label="Records Summary" href="/api/records/summary" />
           </div>
+        </div>
+
+        <!-- Records v2 migration (#322): temporary, removed in Records v2 PR 1 -->
+        <div v-if="profile.can('migrateRecords')" class="ap-section">
+          <h2 class="ap-title">Records Migration</h2>
+          <div class="ap-actions">
+            <AppButton label="Dry Run" href="/api/records/migration" />
+            <AppButton label="Run Migration" :working="migrationLoading" @click="runMigration" />
+          </div>
+          <div v-if="migrationResult" :class="['ap-result', migrationError && 'ap-error']">{{ migrationResult }}</div>
         </div>
 
         <!-- Stats Cache -->
@@ -81,7 +92,6 @@
             <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
-          <div class="ap-result">Tags have one term set, on the production site, used by every environment. Term Store opens it there.</div>
           <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
           <div v-if="backupResult" :class="['ap-result', backupError && 'ap-error']">{{ backupResult }}</div>
         </div>
@@ -352,6 +362,37 @@ async function exportBackup() {
     backupError.value = true
   } finally {
     backupLoading.value = false
+  }
+}
+
+const migrationLoading = ref(false)
+const migrationResult = ref('')
+const migrationError = ref(false)
+
+async function runMigration() {
+  if (!window.confirm('Run the Records migration on this environment?')) return
+  migrationLoading.value = true
+  migrationResult.value = ''
+  migrationError.value = false
+  try {
+    const res = await fetch('/api/records/migration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'run' }),
+    })
+    const data = await res.json()
+    if (!res.ok || !data.success) throw new Error(data.message || data.error || 'Migration failed')
+    const r = data.data
+    const failed = r.errors?.length ?? 0
+    migrationResult.value = `${r.statesToInsert.length} States added, ${r.titlesSet} Titles fixed, ${r.recordsSet} Records set, ${r.alreadySet} already set, ${r.missingTypeOrStatus.length} with no Type or Status`
+      + (failed ? `, ${failed} failed: ${r.errors.slice(0, 3).join('; ')}` : '')
+    migrationError.value = failed > 0
+  } catch (e: any) {
+    console.error('[AdminPage] runMigration failed', e)
+    migrationResult.value = e.message || 'Migration failed'
+    migrationError.value = true
+  } finally {
+    migrationLoading.value = false
   }
 }
 

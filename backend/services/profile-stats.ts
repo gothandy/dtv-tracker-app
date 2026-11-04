@@ -8,6 +8,9 @@
  *
  * thisFY / lastFY are derived at request time from the dict using calculateCurrentFY(),
  * so stats never go stale across financial year boundaries.
+ *
+ * One function, buildProfileStats(), works out a Profile's Stats; the targeted update (after an
+ * entry or record change) and the nightly refresh both call it, so they can't drift apart.
  */
 
 import { profilesRepository } from './repositories/profiles-repository';
@@ -18,6 +21,10 @@ import { regularsRepository } from './repositories/regulars-repository';
 import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear, toMatchName } from './data-layer';
 import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
+import { ukToday } from '../../types/uk-date';
+import { isOfType, recordProfileId, statusOn } from './records';
+import type { SharePointEntry, SharePointProfile, SharePointRecord, SharePointRegular } from '../../types/sharepoint';
+import type { SharePointSession } from '../../types/session';
 
 export interface ProfileStatsRefreshResult {
   total: number;
@@ -26,125 +33,192 @@ export interface ProfileStatsRefreshResult {
   errors: string[];
 }
 
-/**
- * Recomputes and saves Stats for a single profile after an entry or record change.
- * Called as fire-and-forget so the response isn't delayed.
- * Sessions come from cache; entries and records are targeted Graph calls.
- */
-export async function computeAndSaveProfileStats(profileId: number): Promise<void> {
-  const start = Date.now();
+/** The Stats JSON stored on each Profile. Key order matters: the nightly refresh skips unchanged Stats by comparing JSON. */
+export interface StoredProfileStats {
+  hoursByFY: Record<string, number>;
+  sessionsByFY: Record<string, number>;
+  isMember: boolean;
+  cardStatus: string | null;
+  regularGroupIds: number[];
+  repeatGroupIds: number[];
+  sessionIds: number[];
+  linkedProfileIds: number[];
+  isFirstAider: boolean;
+  noPhoto: boolean;
+  warnings: Array<{ text: string; url?: string }>;
+}
 
-  // Sessions from cache for FY mapping and date-ordering sessionIds
-  const sessionsRaw = await sessionsRepository.getAll();
-  const sessionFYMap = new Map<number, string>();
-  const sessionDateMap = new Map<number, string>();
-  for (const s of sessionsRaw) {
+/** Per-session lookups the Stats need: FY key, date (YYYY-MM-DD) and group. */
+export interface SessionLookups {
+  fy: Map<number, string>;
+  date: Map<number, string>;
+  group: Map<number, number>;
+}
+
+export function buildSessionLookups(sessions: SharePointSession[]): SessionLookups {
+  const lookups: SessionLookups = { fy: new Map(), date: new Map(), group: new Map() };
+  for (const s of sessions) {
     if (!s.Date) continue;
-    const fy = calculateFinancialYear(new Date(s.Date));
-    sessionFYMap.set(s.ID, `FY${fy}`);
-    sessionDateMap.set(s.ID, s.Date.substring(0, 10));
-  }
-
-  // Targeted fetches for this profile
-  const [profileEntries, profileRecordsRaw, regularsRaw] = await Promise.all([
-    entriesRepository.getByProfileId(profileId),
-    recordsRepository.getByProfile(profileId),
-    regularsRepository.getAll()
-  ]);
-
-  // session ID → group ID for repeatGroupIds derivation
-  const sessionGroupMap = new Map<number, number>();
-  for (const s of sessionsRaw) {
+    lookups.fy.set(s.ID, `FY${calculateFinancialYear(new Date(s.Date))}`);
+    lookups.date.set(s.ID, s.Date.substring(0, 10));
     const groupId = safeParseLookupId(s[GROUP_LOOKUP] as unknown as string);
-    if (groupId !== undefined) sessionGroupMap.set(s.ID, groupId);
+    if (groupId !== undefined) lookups.group.set(s.ID, groupId);
   }
+  return lookups;
+}
+
+/** Profiles that share a name (Title) or Match Name with another Profile. */
+export function findPossibleDuplicates(profiles: SharePointProfile[]): Set<number> {
+  const byTitle = new Map<string, number[]>();
+  const byMatchName = new Map<string, number[]>();
+  for (const p of profiles) {
+    const tk = toMatchName(p.Title);
+    if (tk) byTitle.set(tk, [...(byTitle.get(tk) ?? []), p.ID]);
+    const mk = toMatchName(p.MatchName);
+    if (mk) byMatchName.set(mk, [...(byMatchName.get(mk) ?? []), p.ID]);
+  }
+  const ids = new Set<number>();
+  for (const group of [...byTitle.values(), ...byMatchName.values()]) {
+    if (group.length > 1) group.forEach(id => ids.add(id));
+  }
+  return ids;
+}
+
+function profileEmails(profile: SharePointProfile | undefined): string[] {
+  return (profile?.Email || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+}
+
+/** Other Profiles sharing any email with this one. */
+export function findLinkedProfileIds(profileId: number, profile: SharePointProfile | undefined, profiles: SharePointProfile[]): number[] {
+  const emails = new Set(profileEmails(profile));
+  return profiles
+    .filter(p => p.ID !== profileId && profileEmails(p).some(e => emails.has(e)))
+    .map(p => p.ID);
+}
+
+/** Works out one Profile's Stats from its own entries, records and regulars. */
+export function buildProfileStats(input: {
+  profileId: number;
+  profile: SharePointProfile | undefined;
+  entries: SharePointEntry[];
+  records: SharePointRecord[];
+  regulars: SharePointRegular[];
+  sessions: SessionLookups;
+  linkedProfileIds: number[];
+  isPossibleDuplicate: boolean;
+  today: string;
+}): StoredProfileStats {
+  const { profileId, profile, sessions, today } = input;
+  const activeEntries = input.entries.filter(e => !e[ENTRY_CANCELLED]); // cancelled bookings excluded from all stats
 
   const hoursByFY: Record<string, number> = {};
   const sessionsByFY: Record<string, number> = {};
   const sessionIds: number[] = [];
-  const repeatGroupIdSet = new Set<number>();
-
-  for (const e of profileEntries) {
-    if (e[ENTRY_CANCELLED]) continue; // cancelled bookings excluded from all stats
+  const repeatGroupIds = new Set<number>();
+  for (const e of activeEntries) {
     const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
     if (sessionId === undefined) continue;
     sessionIds.push(sessionId);
-    const groupId = sessionGroupMap.get(sessionId);
-    if (groupId !== undefined) repeatGroupIdSet.add(groupId);
-    const fyKey = sessionFYMap.get(sessionId);
+    const groupId = sessions.group.get(sessionId);
+    if (groupId !== undefined) repeatGroupIds.add(groupId);
+    const fyKey = sessions.fy.get(sessionId);
     if (!fyKey) continue;
-    const hours = parseFloat(String(e.Hours)) || 0;
-    hoursByFY[fyKey] = (hoursByFY[fyKey] || 0) + hours;
+    hoursByFY[fyKey] = (hoursByFY[fyKey] || 0) + (parseFloat(String(e.Hours)) || 0);
     sessionsByFY[fyKey] = (sessionsByFY[fyKey] || 0) + 1;
   }
+  for (const k of Object.keys(hoursByFY)) hoursByFY[k] = Math.round(hoursByFY[k] * 10) / 10;
+  sessionIds.sort((a, b) => (sessions.date.get(a) || '').localeCompare(sessions.date.get(b) || ''));
 
-  const repeatGroupIds = Array.from(repeatGroupIdSet);
-
-  for (const k of Object.keys(hoursByFY)) {
-    hoursByFY[k] = Math.round(hoursByFY[k] * 10) / 10;
-  }
-
-  const regularGroupIds = regularsRaw
-    .filter(r => safeParseLookupId(r[PROFILE_LOOKUP] as unknown as string) === profileId)
+  const regularGroupIds = input.regulars
     .map(r => safeParseLookupId(r[GROUP_LOOKUP] as unknown as string))
     .filter((id): id is number => id !== undefined);
-
-  // Other profiles sharing any email with this one — available from cached profiles list
-  const profilesRaw = await profilesRepository.getAll();
-  const thisProfile = profilesRaw.find(p => p.ID === profileId);
-  const thisEmails = new Set((thisProfile?.Email || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean));
-  const linkedProfileIds = profilesRaw
-    .filter(p => p.ID !== profileId && (p.Email || '').split(',').some((e: string) => thisEmails.has(e.trim().toLowerCase())))
-    .map(p => p.ID);
-
-  const today = new Date().toISOString().substring(0, 10);
-
-  const thisTitleKey = toMatchName(thisProfile?.Title);
-  const thisMatchKey = toMatchName(thisProfile?.MatchName);
-  const hasDuplicate = thisTitleKey
-    ? profilesRaw.some(p => {
-        if (p.ID === profileId) return false;
-        return toMatchName(p.Title) === thisTitleKey || (thisMatchKey && toMatchName(p.MatchName) === thisMatchKey);
-      })
-    : false;
-  const hasMatchNameError = !!(thisProfile?.Title && thisProfile?.MatchName &&
-    toMatchName(thisProfile.Title) !== thisProfile.MatchName);
-  const hasChildNoAdult = profileEntries.some(e =>
-    !e[ENTRY_CANCELLED] && e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId
-  );
-  const hasFutureBooking = profileEntries.some(e => {
-    if (e[ENTRY_CANCELLED]) return false;
-    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-    return sid !== undefined && (sessionDateMap.get(sid) ?? '') > today;
-  });
-  const hasPrivacyConsent = profileRecordsRaw.some(r => r.Type === 'Privacy Consent' && r.Status === 'Accepted');
-  const warnings: Array<{ text: string; url?: string }> = [];
-  if (hasDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(thisProfile?.Title || '')}` });
-  if (hasMatchNameError) warnings.push({ text: 'Match Name Error' });
-  if (hasChildNoAdult) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${profileId}&profileName=${encodeURIComponent(thisProfile?.Title || '')}` });
-  if (!thisProfile?.IsGroup && hasFutureBooking && !hasPrivacyConsent) {
-    warnings.push({ text: 'No Consent' });
-  }
 
   let isMember = false;
   let cardStatus: string | null = null;
   let isFirstAider = false;
   let noPhoto = true;
-  for (const r of profileRecordsRaw) {
-    if (r.Type === 'Charity Membership' && r.Status === 'Accepted') isMember = true;
-    if (r.Type === 'Discount Card' && r.Status) cardStatus = r.Status;
-    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
-    if (r.Type === 'Photo Consent' && r.Status === 'Accepted') noPhoto = false;
+  let hasPrivacyConsent = false;
+  for (const r of input.records) {
+    const status = statusOn(r, today);
+    if (isOfType(r, 'Charity Membership') && status === 'Accepted') isMember = true;
+    if (isOfType(r, 'Discount Card') && status) cardStatus = status;
+    if (isOfType(r, 'First Aid Certificate') && status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
+    if (isOfType(r, 'Photo Consent') && status === 'Accepted') noPhoto = false;
+    if (isOfType(r, 'Privacy Consent') && status === 'Accepted') hasPrivacyConsent = true;
   }
 
-  if (thisProfile?.IsGroup && isMember) warnings.push({ text: 'Group + Member' });
+  const name = profile?.Title || '';
+  const hasChildNoAdult = activeEntries.some(e => e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId);
+  const hasFutureBooking = activeEntries.some(e => {
+    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
+    return sid !== undefined && (sessions.date.get(sid) ?? '') > today;
+  });
+  const warnings: Array<{ text: string; url?: string }> = [];
+  if (input.isPossibleDuplicate) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(name)}` });
+  if (profile?.Title && profile.MatchName && toMatchName(profile.Title) !== profile.MatchName) warnings.push({ text: 'Match Name Error' });
+  if (hasChildNoAdult) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${profileId}&profileName=${encodeURIComponent(name)}` });
+  if (!profile?.IsGroup && hasFutureBooking && !hasPrivacyConsent) warnings.push({ text: 'No Consent' });
+  if (profile?.IsGroup && isMember) warnings.push({ text: 'Group + Member' });
 
-  sessionIds.sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || ''));
+  return {
+    hoursByFY,
+    sessionsByFY,
+    isMember,
+    cardStatus,
+    regularGroupIds,
+    repeatGroupIds: Array.from(repeatGroupIds),
+    sessionIds,
+    linkedProfileIds: input.linkedProfileIds,
+    isFirstAider,
+    noPhoto,
+    warnings,
+  };
+}
 
-  await profilesRepository.updateStats(profileId, { hoursByFY, sessionsByFY, isMember, cardStatus, regularGroupIds, repeatGroupIds, sessionIds, linkedProfileIds, isFirstAider, noPhoto, warnings });
+/**
+ * Recomputes and saves Stats for a single profile after an entry or record change.
+ * Called as fire-and-forget so the response isn't delayed.
+ * Sessions and profiles come from cache; entries and records are targeted Graph calls.
+ */
+export async function computeAndSaveProfileStats(profileId: number): Promise<void> {
+  const start = Date.now();
+
+  const [sessionsRaw, profilesRaw, entries, records, regularsRaw] = await Promise.all([
+    sessionsRepository.getAll(),
+    profilesRepository.getAll(),
+    entriesRepository.getByProfileId(profileId),
+    recordsRepository.getByProfile(profileId),
+    regularsRepository.getAll()
+  ]);
+  const profile = profilesRaw.find(p => p.ID === profileId);
+
+  const stats = buildProfileStats({
+    profileId,
+    profile,
+    entries,
+    records,
+    regulars: regularsRaw.filter(r => safeParseLookupId(r[PROFILE_LOOKUP] as unknown as string) === profileId),
+    sessions: buildSessionLookups(sessionsRaw),
+    linkedProfileIds: findLinkedProfileIds(profileId, profile, profilesRaw),
+    isPossibleDuplicate: findPossibleDuplicates(profilesRaw).has(profileId),
+    today: ukToday(),
+  });
+
+  await profilesRepository.updateStats(profileId, stats);
   sharePointClient.clearCacheKey('profiles');
 
   console.log(`[Stats] Profile ${profileId} targeted stats update in ${Date.now() - start}ms`);
+}
+
+function groupByProfile<T>(items: T[], profileIdOf: (item: T) => number | undefined): Map<number, T[]> {
+  const map = new Map<number, T[]>();
+  for (const item of items) {
+    const pid = profileIdOf(item);
+    if (pid === undefined) continue;
+    const list = map.get(pid);
+    if (list) list.push(item); else map.set(pid, [item]);
+  }
+  return map;
 }
 
 export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResult> {
@@ -161,128 +235,12 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
 
   console.log(`[Stats] Fetched ${profilesRaw.length} profiles, ${entriesRaw.length} entries, ${recordsRaw.length} records in ${Date.now() - start}ms`);
 
-  // session ID → FY key, date (YYYY-MM-DD), and group ID
-  const sessionFYMap = new Map<number, string>();
-  const sessionDateMap = new Map<number, string>();
-  const sessionGroupMap = new Map<number, number>();
-  for (const s of sessionsRaw) {
-    if (!s.Date) continue;
-    const fy = calculateFinancialYear(new Date(s.Date));
-    sessionFYMap.set(s.ID, `FY${fy}`);
-    sessionDateMap.set(s.ID, s.Date.substring(0, 10));
-    const groupId = safeParseLookupId(s[GROUP_LOOKUP] as unknown as string);
-    if (groupId !== undefined) sessionGroupMap.set(s.ID, groupId);
-  }
-
-  // Aggregate hours, session counts, session ID lists, and repeat group IDs per profile
-  const profileHours = new Map<number, Record<string, number>>();   // profileId → { FY2025: 120.0 }
-  const profileSessions = new Map<number, Record<string, number>>(); // profileId → { FY2025: 28 }
-  const profileSessionIds = new Map<number, number[]>();             // profileId → [sessionId, ...]
-  const profileRepeatGroupIds = new Map<number, Set<number>>();      // profileId → Set of groupIds attended
-
-  for (const e of entriesRaw) {
-    if (e[ENTRY_CANCELLED]) continue; // cancelled bookings excluded from all stats
-    const profileId = safeParseLookupId(e[PROFILE_LOOKUP]);
-    const sessionId = safeParseLookupId(e[SESSION_LOOKUP]);
-    if (profileId === undefined || sessionId === undefined) continue;
-
-    if (!profileSessionIds.has(profileId)) profileSessionIds.set(profileId, []);
-    profileSessionIds.get(profileId)!.push(sessionId);
-
-    const groupId = sessionGroupMap.get(sessionId);
-    if (groupId !== undefined) {
-      if (!profileRepeatGroupIds.has(profileId)) profileRepeatGroupIds.set(profileId, new Set());
-      profileRepeatGroupIds.get(profileId)!.add(groupId);
-    }
-
-    const fyKey = sessionFYMap.get(sessionId);
-    if (!fyKey) continue;
-
-    const hours = parseFloat(String(e.Hours)) || 0;
-
-    if (!profileHours.has(profileId)) profileHours.set(profileId, {});
-    profileHours.get(profileId)![fyKey] = (profileHours.get(profileId)![fyKey] || 0) + hours;
-
-    if (!profileSessions.has(profileId)) profileSessions.set(profileId, {});
-    profileSessions.get(profileId)![fyKey] = (profileSessions.get(profileId)![fyKey] || 0) + 1;
-  }
-
-  // Regular group IDs per profile
-  const profileRegularGroupIds = new Map<number, number[]>();
-  for (const r of regularsRaw) {
-    const pid = safeParseLookupId(r[PROFILE_LOOKUP] as unknown as string);
-    const gid = safeParseLookupId(r[GROUP_LOOKUP] as unknown as string);
-    if (pid === undefined || gid === undefined) continue;
-    if (!profileRegularGroupIds.has(pid)) profileRegularGroupIds.set(pid, []);
-    profileRegularGroupIds.get(pid)!.push(gid);
-  }
-
-  // Linked profile IDs — other profiles sharing any email with this one
-  const profileLinkedIds = new Map<number, number[]>();
-  for (const p of profilesRaw) {
-    const emails = (p.Email || '').split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
-    const linked = profilesRaw
-      .filter(q => q.ID !== p.ID && (q.Email || '').split(',').some((e: string) => emails.includes(e.trim().toLowerCase())))
-      .map(q => q.ID);
-    if (linked.length) profileLinkedIds.set(p.ID, linked);
-  }
-
-  // membership, card status, first aider, and consent status from records
-  const memberIds = new Set<number>();
-  const cardStatusMap = new Map<number, string>();
-  const firstAiderIds = new Set<number>();
-  const consentedPrivacyIds = new Set<number>();
-  const consentedPhotoIds = new Set<number>();
-  const today = new Date().toISOString().substring(0, 10);
-  for (const r of recordsRaw) {
-    const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
-    if (pid === undefined) continue;
-    if (r.Type === 'Charity Membership' && r.Status === 'Accepted') memberIds.add(pid);
-    if (r.Type === 'Discount Card' && r.Status) cardStatusMap.set(pid, r.Status);
-    if (r.Type === 'First Aid Certificate' && r.Status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) firstAiderIds.add(pid);
-    if (r.Type === 'Privacy Consent' && r.Status === 'Accepted') consentedPrivacyIds.add(pid);
-    if (r.Type === 'Photo Consent' && r.Status === 'Accepted') consentedPhotoIds.add(pid);
-  }
-  const noPhotoIds = new Set(profilesRaw.filter(p => !consentedPhotoIds.has(p.ID)).map(p => p.ID));
-
-  // No Consent: future booking but missing Accepted Privacy Consent (photo consent is separate — noPhoto badge)
-  const futureBookingIds = new Set<number>();
-  for (const e of entriesRaw) {
-    if (e[ENTRY_CANCELLED]) continue;
-    const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-    const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-    if (pid !== undefined && sid !== undefined && (sessionDateMap.get(sid) ?? '') > today)
-      futureBookingIds.add(pid);
-  }
-
-  // Possible Duplicate: profiles sharing the same title key or match name
-  const titleKeyToIds = new Map<string, number[]>();
-  const matchNameToIds = new Map<string, number[]>();
-  for (const p of profilesRaw) {
-    const tk = toMatchName(p.Title);
-    if (tk) { if (!titleKeyToIds.has(tk)) titleKeyToIds.set(tk, []); titleKeyToIds.get(tk)!.push(p.ID); }
-    const mk = toMatchName(p.MatchName);
-    if (mk) { if (!matchNameToIds.has(mk)) matchNameToIds.set(mk, []); matchNameToIds.get(mk)!.push(p.ID); }
-  }
-  const possibleDuplicateIds = new Set<number>();
-  for (const [, ids] of titleKeyToIds) if (ids.length > 1) ids.forEach(id => possibleDuplicateIds.add(id));
-  for (const [, ids] of matchNameToIds) if (ids.length > 1) ids.forEach(id => possibleDuplicateIds.add(id));
-
-  // Child No Adult: entry has #child in notes but no AccompanyingAdultLookupId
-  const childNoAdultIds = new Set<number>();
-  for (const e of entriesRaw) {
-    if (e[ENTRY_CANCELLED]) continue;
-    const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-    if (pid !== undefined && e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId)
-      childNoAdultIds.add(pid);
-  }
-
-  // Round hours to 1 decimal place
-  function roundHours(obj: Record<string, number>): Record<string, number> {
-    const result: Record<string, number> = {};
-    for (const [k, v] of Object.entries(obj)) result[k] = Math.round(v * 10) / 10;
-    return result;
-  }
+  const sessions = buildSessionLookups(sessionsRaw);
+  const entriesByProfile = groupByProfile(entriesRaw, e => safeParseLookupId(e[PROFILE_LOOKUP]));
+  const recordsByProfile = groupByProfile(recordsRaw, recordProfileId);
+  const regularsByProfile = groupByProfile(regularsRaw, r => safeParseLookupId(r[PROFILE_LOOKUP] as unknown as string));
+  const possibleDuplicates = findPossibleDuplicates(profilesRaw);
+  const today = ukToday();
 
   const total = profilesRaw.length;
   let updated = 0;
@@ -293,28 +251,17 @@ export async function runProfileStatsRefresh(): Promise<ProfileStatsRefreshResul
     const batch = profilesRaw.slice(i, i + 10);
     await Promise.all(batch.map(async (spProfile) => {
       try {
-        const warnings: Array<{ text: string; url?: string }> = [];
-        if (possibleDuplicateIds.has(spProfile.ID)) warnings.push({ text: 'Possible Duplicate', url: `/profiles?fy=all&search=${encodeURIComponent(spProfile.Title || '')}` });
-        if (spProfile.Title && spProfile.MatchName && toMatchName(spProfile.Title) !== spProfile.MatchName) warnings.push({ text: 'Match Name Error' });
-        if (childNoAdultIds.has(spProfile.ID)) warnings.push({ text: 'Child No Adult', url: `/entries?q=%23child&fy=all&accompanyingAdult=empty&profileId=${spProfile.ID}&profileName=${encodeURIComponent(spProfile.Title || '')}` });
-        if (!spProfile.IsGroup && futureBookingIds.has(spProfile.ID) && !consentedPrivacyIds.has(spProfile.ID)) {
-          warnings.push({ text: 'No Consent' });
-        }
-        if (spProfile.IsGroup && memberIds.has(spProfile.ID)) warnings.push({ text: 'Group + Member' });
-
-        const newStats = {
-          hoursByFY: roundHours(profileHours.get(spProfile.ID) || {}),
-          sessionsByFY: profileSessions.get(spProfile.ID) || {},
-          isMember: memberIds.has(spProfile.ID),
-          cardStatus: cardStatusMap.get(spProfile.ID) || null,
-          regularGroupIds: profileRegularGroupIds.get(spProfile.ID) || [],
-          repeatGroupIds: Array.from(profileRepeatGroupIds.get(spProfile.ID) || []),
-          sessionIds: (profileSessionIds.get(spProfile.ID) || []).sort((a, b) => (sessionDateMap.get(a) || '').localeCompare(sessionDateMap.get(b) || '')),
-          linkedProfileIds: profileLinkedIds.get(spProfile.ID) || [],
-          isFirstAider: firstAiderIds.has(spProfile.ID),
-          noPhoto: noPhotoIds.has(spProfile.ID),
-          warnings
-        };
+        const newStats = buildProfileStats({
+          profileId: spProfile.ID,
+          profile: spProfile,
+          entries: entriesByProfile.get(spProfile.ID) ?? [],
+          records: recordsByProfile.get(spProfile.ID) ?? [],
+          regulars: regularsByProfile.get(spProfile.ID) ?? [],
+          sessions,
+          linkedProfileIds: findLinkedProfileIds(spProfile.ID, spProfile, profilesRaw),
+          isPossibleDuplicate: possibleDuplicates.has(spProfile.ID),
+          today,
+        });
 
         // Skip if stored stats already match
         const stored = spProfile[PROFILE_STATS];

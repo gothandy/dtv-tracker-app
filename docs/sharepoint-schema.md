@@ -263,16 +263,20 @@ This is a **many-to-many junction table** that creates the relationship between:
 | **Title** | Title | Single line of text | No | Auto-generated or unused |
 | **Profile** | Profile | Lookup | No | Links to Profiles list (shows Title) |
 | **Type** | Type | Choice | No | Record type (see choices below) |
-| **Status** | Status | Choice | No | Record status (see choices below) |
-| **Date** | Date | Date (Date only) | No | Date of the record |
+| **Status** | Status | Choice | No | Record status (see choices below). Replaced by State in Records v2 PR 1 ([#322](https://github.com/gothandy/dtv-tracker-app/issues/322)), then removed |
+| **State** | State | Lookup | No | Being added: lookup to the States list, set by the Records v2 migration; read by the app from PR 1 |
+| **Date** | Date | Date and Time | No | The date of the record: when it happened, or will (e.g. an expiry); read as a UK date |
+| **Notes** | Notes | Single line of text | No | Free text, 255 characters at most; edited in Edit Record |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
 ### Choice Values
 
-**Type**: Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card
+**Type** (preview, 2 Nov 2026): Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card, Bike Park Wales, Facebook Group, Parking Permit, First Aid Certificate, DofE
 
-**Status**: Accepted, Declined, Invited, Expired
+**Status** (preview, 3 Nov 2026): Invited, Accepted, Declined, Expires, Expired. Status checks go through `recordStatus()` (`types/record-status.ts`).
+
+Start and End (date only) were added for an earlier Records v2 design and are no longer used; the app doesn't read them, and they can be deleted.
 
 ### Lookup Fields
 - **Profile** / **ProfileLookupId**: Lookup to Profiles list
@@ -281,6 +285,24 @@ This is a **many-to-many junction table** that creates the relationship between:
 One profile can have multiple records of different types. Consent records (Privacy, Photo) are upserted during Eventbrite attendee sync — one per profile+type, latest answer wins.
 
 A volunteer becomes a **member** when they have a "Charity Membership" record with Status "Accepted".
+
+---
+
+## 6b. States List
+
+**Purpose**: each Record Type's States (Records v2, [#322](https://github.com/gothandy/dtv-tracker-app/issues/322)). A Record's State is a lookup to an item here, and its Type comes from that item. Filled first by the Records migration (Tools, from each Record's Type and Status), then edited by the maintainer. Read by the app from Records v2 PR 1.
+
+**Address**: `Lists/States`. Must exist before the app starts (it looks up every list's ID by address).
+
+| Column Name | Internal Name | Type | Required | Description |
+|------------|---------------|------|----------|-------------|
+| **Title** | Title | Single line of text | No | "{Record Type} {Name}" (e.g. *Charity Membership Accepted*), written by the migration so SharePoint's dropdowns and views read naturally; the app reads Name. Re-running the migration overwrites any Title that doesn't match |
+| **Name** | Name | Single line of text | Yes | The State's name, shown in Add and Edit |
+| **Record Type** | RecordType | Choice (every Record Type, spelt as in Records Type) | Yes | The Record Type it belongs to; the migration writes the Records Type value. Not called Type: that name clashes with SharePoint's built-in DocIcon column |
+| **Before** | | Single line of text | No | Shown up to and including the Record's Date (e.g. *Expires*); blank = Name (from PR 1) |
+| **After** | | Single line of text | No | Shown from the day after the Record's Date (e.g. *Expired*); blank = Name (from PR 1) |
+| **Order** | | Number | No | Order in the dropdown (from PR 1) |
+| **Notes hint** | | Single line of text | No | Placeholder for Notes (from PR 1) |
 
 ---
 

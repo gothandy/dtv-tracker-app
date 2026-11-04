@@ -28,6 +28,10 @@
         · entryQuality: "{{ entryFilterParams.entryQuality || '(all)' }}" · showing {{ entryFilterCount }} entries
       </p>
 
+      <h2>RecordListFilter</h2>
+      <RecordListFilter :records="sampleRecords" @filtered="recordFilterCount = $event.length" />
+      <p class="filter-note">showing {{ recordFilterCount }} of {{ sampleRecords.length }} records</p>
+
     </div>
   </DefaultLayout>
 </template>
@@ -41,12 +45,13 @@ import SessionListFilter from '../../components/sessions/SessionListFilter.vue'
 import SessionListActions from '../../components/sessions/SessionListActions.vue'
 import GroupListFilter from '../../components/groups/GroupListFilter.vue'
 import EntryListFilter from '../../components/entries/EntryListFilter.vue'
+import RecordListFilter from '../../components/records/RecordListFilter.vue'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { Session } from '../../types/session'
 import type { GroupResponse } from '../../../../types/api-responses'
 import type { GroupWithStats } from '../../components/groups/GroupListFilter.vue'
 import type { EntryFilterParams } from '../../components/entries/EntryListFilter.vue'
-import type { EntryListItemResponse } from '../../../../types/api-responses'
+import type { EntryListItemResponse, RecordListItemResponse } from '../../../../types/api-responses'
 
 usePageTitle('Sandbox')
 
@@ -54,6 +59,7 @@ const filteredSessions = ref<Session[]>([])
 const filteredGroups = ref<GroupWithStats[]>([])
 const entryFilterParams = ref<EntryFilterParams | null>(null)
 const entryFilterCount = ref(0)
+const recordFilterCount = ref(0)
 const emptySelected = ref<number[]>([])
 const activeSelected = ref<number[]>([1, 3, 4])
 
@@ -98,6 +104,13 @@ const groups: GroupResponse[] = [
   { id: 1, key: 'wed-dig', displayName: 'Wednesday Dig', description: 'Our popular mid-week dig.', regularsCount: 13, regulars: [] },
   { id: 2, key: 'trail-crew', displayName: 'Trail Crew', description: 'General trail maintenance across the forest.', regularsCount: 18, regulars: [] },
   { id: 3, key: 'family-ride', displayName: 'Family Ride', description: 'Easy-going rides for families with children.', regularsCount: 4, regulars: [] },
+]
+
+const sampleRecords: RecordListItemResponse[] = [
+  { id: 1, type: 'Discount Card', status: 'Accepted', storedStatus: 'Accepted', date: '2025-05-02', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
+  { id: 2, type: 'Discount Card', status: 'Invited', storedStatus: 'Invited', date: '2026-02-23', profileId: 12, profileName: 'Bob Carter', profileSlug: 'bob-carter-12' },
+  { id: 3, type: 'Photo Consent', status: 'Declined', storedStatus: 'Declined', date: '2026-10-02', notes: 'Asked again in May', profileId: 13, profileName: 'Carol Davies', profileSlug: 'carol-davies-13' },
+  { id: 4, type: 'First Aid Certificate', status: 'Expires', storedStatus: 'Expires', date: '2027-08-22', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
 ]
 
 const sampleEntries: EntryListItemResponse[] = [

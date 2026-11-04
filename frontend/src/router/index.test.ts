@@ -6,7 +6,7 @@ vi.mock('../composables/useAuth', () => ({
   ensureAuth: vi.fn().mockResolvedValue(undefined),
 }))
 
-import { authGuard } from './index'
+import { authGuard, recordsPath } from './index'
 
 function to(path: string, meta: { requiresTrusted?: boolean; requiresAdmin?: boolean; requiresAuth?: boolean; permission?: 'viewTemplates' | 'editTemplates' } = {}) {
   return { path, meta }
@@ -104,5 +104,13 @@ describe('authGuard — unprotected routes', () => {
     expect(await authGuard(to('/templates', { permission: 'viewTemplates' }))).toBeUndefined()
     mockUser.value = { role: 'admin' }
     expect(await authGuard(to('/templates', { permission: 'viewTemplates' }))).toBeUndefined()
+  })
+})
+
+describe('recordsPath', () => {
+  it('is the Records page, or filtered to one Profile with its name for the chip', () => {
+    expect(recordsPath()).toBe('/records')
+    expect(recordsPath({ id: 12, name: 'Alice O’Neil & Co' })).toBe('/records?profileId=12&profileName=Alice%20O%E2%80%99Neil%20%26%20Co')
+    expect(recordsPath({ id: 12, name: 'Al', type: 'First Aid Certificate' })).toBe('/records?profileId=12&profileName=Al&type=First%20Aid%20Certificate')
   })
 })

@@ -31,6 +31,7 @@ import type { GroupResponse, GroupDetailResponse, SessionResponse } from '../../
 import type { ApiResponse } from '../../types/sharepoint';
 import { sharePointClient } from '../services/sharepoint-client';
 import { aggregateSessionStatsForScope } from '../services/session-entity-stats';
+import { ukToday } from '../../types/uk-date';
 
 const router: Router = express.Router();
 
@@ -196,7 +197,7 @@ router.get('/groups/:key', async (req: Request, res: Response) => {
     }
 
     // Build session responses from Stats field — no entries or media calls needed
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ukToday();
 
     const allSessionResponses: SessionResponse[] = groupSessions
       .map(s => {

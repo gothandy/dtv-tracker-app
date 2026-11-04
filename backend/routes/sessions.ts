@@ -6,7 +6,6 @@ import { sessionsRepository } from '../services/repositories/sessions-repository
 import { entriesRepository } from '../services/repositories/entries-repository';
 import { profilesRepository } from '../services/repositories/profiles-repository';
 import { regularsRepository } from '../services/repositories/regulars-repository';
-import { recordsRepository } from '../services/repositories/records-repository';
 import {
   enrichSessions,
   sortSessionsByDate,
@@ -47,6 +46,7 @@ import { taxonomyClient } from '../services/taxonomy-client';
 import { runSessionStatsRefresh, refreshSessionMediaStats } from '../services/session-stats';
 import { mediaDriveId } from '../services/media-upload';
 import { sharePoint } from '../config';
+import { ukToday } from '../../types/uk-date';
 
 const router: Router = express.Router();
 
@@ -112,7 +112,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
       if (gid !== undefined) groupRegularsCountMap.set(gid, (groupRegularsCountMap.get(gid) ?? 0) + 1);
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ukToday();
 
     const data: SessionResponse[] = sessionsRaw
       .filter(s => s.Date)
@@ -276,7 +276,7 @@ router.get('/sessions/export', async (req: Request, res: Response) => {
 
     const csv = [csvHeader, ...csvRows].join('\n');
 
-    const todayStr = today.toISOString().substring(0, 10);
+    const todayStr = ukToday();
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${todayStr} DTV Hours.csv"`);
     res.send(csv);
@@ -285,106 +285,6 @@ router.get('/sessions/export', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to export sessions',
-      message: error.message
-    });
-  }
-});
-
-router.get('/records/export', async (req: Request, res: Response) => {
-  try {
-    const [rawRecords, rawProfiles, rawSessions, rawEntries] = await Promise.all([
-      recordsRepository.getAll(),
-      profilesRepository.getAll(),
-      sessionsRepository.getAll(),
-      entriesRepository.getAll()
-    ]);
-
-    const profiles = validateArray(rawProfiles, validateProfile, 'Profile');
-    const sessions = validateArray(rawSessions, validateSession, 'Session');
-    const entries = validateArray(rawEntries, validateEntry, 'Entry');
-
-    // Build session map and FY info for hours calculation
-    const sessionMap = new Map(sessions.map(s => [s.ID, s]));
-    const fy = calculateCurrentFY();
-    const lastFYStart = fy.startYear - 1;
-
-    // Calculate hours per profile
-    const hoursMap = new Map<number, { thisFY: number; lastFY: number }>();
-    for (const e of entries) {
-      const pid = safeParseLookupId(e[PROFILE_LOOKUP]);
-      const sid = safeParseLookupId(e[SESSION_LOOKUP]);
-      if (pid === undefined || sid === undefined) continue;
-      const sess = sessionMap.get(sid);
-      if (!sess) continue;
-      const h = parseHours(e.Hours);
-      const sessionFY = calculateFinancialYear(new Date(sess.Date));
-      if (!hoursMap.has(pid)) hoursMap.set(pid, { thisFY: 0, lastFY: 0 });
-      const hours = hoursMap.get(pid)!;
-      if (sessionFY === fy.startYear) hours.thisFY += h;
-      else if (sessionFY === lastFYStart) hours.lastFY += h;
-    }
-
-    // Group records by profile ID
-    const recordsByProfile = new Map<number, Map<string, { status: string; date: string }>>();
-    const allTypes = new Set<string>();
-    for (const r of rawRecords) {
-      const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
-      if (pid === undefined || !r.Type) continue;
-      allTypes.add(r.Type);
-      if (!recordsByProfile.has(pid)) recordsByProfile.set(pid, new Map());
-      recordsByProfile.get(pid)!.set(r.Type, { status: r.Status || '', date: r.Date || '' });
-    }
-
-    // Format date like "8 Sept 2025"
-    function formatDateShort(dateStr: string): string {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
-    }
-
-    // Sort types alphabetically
-    const sortedTypes = [...allTypes].sort();
-
-    // Build CSV — only profiles that have at least one record
-    const profileIds = [...recordsByProfile.keys()];
-    const profileMap = new Map(profiles.map(p => [p.ID, p]));
-
-    const csvHeader = ['Name', 'Email', 'Hours Last FY', 'Hours This FY', ...sortedTypes]
-      .map(h => `"${h}"`).join(',');
-
-    const csvRows = profileIds
-      .map(pid => {
-        const profile = profileMap.get(pid);
-        if (!profile) return null;
-        const name = (profile.Title || '').replace(/"/g, '""');
-        const email = (profile.Email || '').replace(/"/g, '""');
-        const hours = hoursMap.get(pid) || { thisFY: 0, lastFY: 0 };
-        const lastFY = Math.round(hours.lastFY * 10) / 10;
-        const thisFY = Math.round(hours.thisFY * 10) / 10;
-        const recs = recordsByProfile.get(pid)!;
-        const typeCols = sortedTypes.map(t => {
-          const rec = recs.get(t);
-          if (!rec) return '""';
-          const val = rec.date ? `${rec.status} · ${formatDateShort(rec.date)}` : rec.status;
-          return `"${val.replace(/"/g, '""')}"`;
-        });
-        return `"${name}","${email}",${lastFY},${thisFY},${typeCols.join(',')}`;
-      })
-      .filter(Boolean);
-
-    // Sort by name
-    csvRows.sort((a, b) => a!.localeCompare(b!));
-
-    const csv = [csvHeader, ...csvRows].join('\n');
-    const todayStr = new Date().toISOString().substring(0, 10);
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${todayStr} DTV Records.csv"`);
-    res.send('\uFEFF' + csv);
-  } catch (error: any) {
-    console.error('Error exporting records CSV:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to export records',
       message: error.message
     });
   }
@@ -592,7 +492,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
     const rawLimits = convertSession(spSession).limits;
     const sessionLimits = deriveLimits(rawLimits, regularsCount, storedStats.cancelledRegular ?? 0);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ukToday();
     const isPast = spSession.Date < today;
     const nextSpSession = isPast ? rawSessions
       .filter(s => safeParseLookupId(s[GROUP_LOOKUP] as unknown as string) === groupId && s.Date >= today)

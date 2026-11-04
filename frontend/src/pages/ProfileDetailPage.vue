@@ -109,13 +109,16 @@
         :profile-id="store.profile.id"
         :profile-slug="store.profile.slug"
         :show-consent-link="viewer.hasCheckInAccess || viewer.isSelfService"
-        :allow-edit="viewer.isAdmin"
+        :allow-edit="viewer.can('editRecords')"
+        :view-all-to="viewer.can('viewRecords') ? recordsPath({ id: store.profile.id, name: store.profile.name }) : undefined"
+        :show-archive="viewer.can('viewRecords')"
         :types="recordTypes"
         :statuses="recordStatuses"
         ref="recordListRef"
         @add-record="onAddRecord"
         @save-record="onSaveRecord"
         @delete-record="onDeleteRecord"
+        @view-archive="r => router.push(recordsPath({ id: store.profile!.id, name: store.profile!.name, type: r.type }))"
       />
 
       <LayoutColumns ratio="1">
@@ -171,6 +174,8 @@
 </template>
 
 <script setup lang="ts">
+import { recordStatus } from '../../../types/record-status'
+import { ukToday } from '../../../types/uk-date'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
@@ -196,7 +201,7 @@ import { useViewer } from '../composables/useViewer'
 import { usePageTitle } from '../composables/usePageTitle'
 import { contactEmail } from '../utils/siteInfo'
 import { useProfileDetailStore } from '../stores/profileDetail'
-import { groupPath, profilePath, profilesPath, sessionPath } from '../router/index'
+import { groupPath, profilePath, profilesPath, recordsPath, sessionPath } from '../router/index'
 import type { ProfileEntryResponse, EntryListItemResponse } from '../../../types/api-responses'
 import type { EditProfilePayload } from './modals/ProfileEditModal.vue'
 import type { TransferProfilePayload } from './modals/ProfileTransferModal.vue'
@@ -401,7 +406,8 @@ async function onAddRecord(payload: AddRecordPayload) {
     })
     if (!res.ok) throw new Error(`Add failed (${res.status})`)
     const json = await res.json()
-    store.profile.records = [...(store.profile.records ?? []), { id: json.data.id, ...payload }]
+    const added = { id: json.data.id, type: payload.type, storedStatus: payload.status, date: payload.date }
+    store.profile.records = [...(store.profile.records ?? []), { ...added, status: recordStatus({ status: payload.status }, ukToday()) }]
     recordListRef.value?.onAddSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onAddRecord failed', e)
@@ -419,7 +425,12 @@ async function onSaveRecord(id: number, payload: SaveRecordPayload) {
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
     const stored = store.profile.records?.find(r => r.id === id)
-    if (stored) { stored.status = payload.status; stored.date = payload.date }
+    if (stored) {
+      stored.storedStatus = payload.status
+      stored.status = recordStatus({ status: payload.status }, ukToday())
+      stored.date = payload.date
+      stored.notes = payload.notes.trim() || undefined
+    }
     recordListRef.value?.onSaveSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onSaveRecord failed', e)
@@ -529,7 +540,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
     profile: {
       name: store.profile?.name ?? 'Unknown',
       slug: store.profile?.slug,
-      isMember: store.profile?.isMember ?? false,
+      isMember: isMember.value,
       cardStatus: store.profile?.cardStatus,
       isGroup: store.profile?.isGroup ?? false,
       hasProfileWarning: !!(store.profile?.warnings?.length),

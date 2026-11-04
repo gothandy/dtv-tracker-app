@@ -34,6 +34,15 @@ export const sessionPath = (groupKey: string, date: string) => `/sessions/${grou
 export const groupsPath = () => '/groups'
 export const groupPath = (key: string) => `/groups/${key}`
 export const templatesPath = () => '/templates'
+/**
+ * The Records page; with a Profile, filtered to that Profile's Records (its name shows in the
+ * filter chip), and with a type too, to that Profile's Records of the Type (its archive).
+ */
+export const recordsPath = (profile?: { id: number; name?: string; type?: string }) => {
+  if (!profile) return '/records'
+  const type = profile.type ? `&type=${encodeURIComponent(profile.type)}` : ''
+  return `/records?profileId=${profile.id}&profileName=${encodeURIComponent(profile.name ?? '')}${type}`
+}
 export const templatePath = (id: number) => `/templates/${id}`
 export const projectsPath = () => '/projects'
 export const projectPath = (key: string) => `/projects/${key}`
@@ -75,6 +84,7 @@ export const router = createRouter({
     { path: '/docs/:pathMatch(.*)*', component: DocsPage },
     { path: '/login', component: LoginPage },
     { path: '/entries', component: EntriesPage, meta: { requiresAdmin: true } },
+    { path: '/records', component: () => import('../pages/RecordsPage.vue'), meta: { permission: 'viewRecords' } },
     { path: '/admin', redirect: '/tools' },
     { path: '/tools', component: AdminPage },
     { path: '/not-found', component: () => import('../pages/NotFoundPage.vue') },
@@ -113,6 +123,10 @@ export const router = createRouter({
     { path: '/sandbox/profile-warnings', component: () => import('../pages/sandbox/SandboxProfileWarnings.vue') },
     { path: '/sandbox/profile-linked-accounts', component: () => import('../pages/sandbox/SandboxProfileLinkedAccounts.vue') },
     { path: '/sandbox/profile-list-item', component: () => import('../pages/sandbox/SandboxProfileListItem.vue') },
+    { path: '/sandbox/record-list-item', component: () => import('../pages/sandbox/SandboxRecordListItem.vue') },
+    { path: '/sandbox/record-chip', component: () => import('../pages/sandbox/SandboxRecordChip.vue') },
+    { path: '/sandbox/record-list-results', component: () => import('../pages/sandbox/SandboxRecordListResults.vue') },
+    { path: '/sandbox/filter-chip', component: () => import('../pages/sandbox/SandboxFilterChip.vue') },
     { path: '/sandbox/profile-list-results', component: () => import('../pages/sandbox/SandboxProfileListResults.vue') },
     { path: '/sandbox/entry-list-item', component: () => import('../pages/sandbox/SandboxEntryListItem.vue') },
     { path: '/sandbox/entry-list-results', component: () => import('../pages/sandbox/SandboxEntryListResults.vue') },

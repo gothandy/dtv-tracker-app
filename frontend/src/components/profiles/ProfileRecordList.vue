@@ -3,6 +3,7 @@
     <div class="prl-header">
       <h2 class="prl-title">Records</h2>
       <div class="prl-actions">
+        <RouterLink v-if="viewAllTo" :to="viewAllTo" class="prl-link">View All</RouterLink>
         <a
           v-if="showConsentLink"
           :href="`/profiles/${profileSlug}/consent`"
@@ -19,16 +20,13 @@
     <p v-if="!records.length" class="prl-empty">No records.</p>
 
     <div v-else class="prl-list">
-      <button
+      <RecordChip
         v-for="r in records"
         :key="r.id"
-        class="prl-pill"
-        :class="`prl-pill--${r.status.toLowerCase().replace(/\s+/g, '-')}`"
+        :record="r"
         :disabled="!allowEdit"
         @click="allowEdit && openEdit(r)"
-      >
-        {{ r.type }} · {{ r.status }} · {{ formatDate(r.date) }}
-      </button>
+      />
     </div>
 
     <RecordAddModal
@@ -47,6 +45,7 @@
       :statuses="statuses"
       :working="workingEdit"
       :error="editError"
+      :archive-click="showArchive ? () => emit('viewArchive', editingRecord!) : undefined"
       @close="editingRecord = null"
       @save="onSave"
       @delete="onDelete"
@@ -56,16 +55,21 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ConsentRecordResponse } from '../../../../types/api-responses'
+import type { RecordResponse } from '../../../../types/api-responses'
+import RecordChip from '../records/RecordChip.vue'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
 
 const props = withDefaults(defineProps<{
-  records: ConsentRecordResponse[]
+  records: RecordResponse[]
   profileId: number
   profileSlug: string
   showConsentLink?: boolean
   allowEdit?: boolean
+  /** The Records page filtered to this Profile; shows View All (viewRecords). */
+  viewAllTo?: string
+  /** Shows View Archive in Edit Record (viewRecords); the page goes there on viewArchive. */
+  showArchive?: boolean
   types?: string[]
   statuses?: string[]
 }>(), {
@@ -77,10 +81,11 @@ const emit = defineEmits<{
   addRecord: [payload: AddRecordPayload]
   saveRecord: [id: number, payload: SaveRecordPayload]
   deleteRecord: [id: number]
+  viewArchive: [record: RecordResponse]
 }>()
 
 const showAdd = ref(false)
-const editingRecord = ref<ConsentRecordResponse | null>(null)
+const editingRecord = ref<RecordResponse | null>(null)
 const workingAdd = ref(false)
 const workingEdit = ref(false)
 const addError = ref('')
@@ -90,7 +95,7 @@ function openAdd() {
   showAdd.value = true
 }
 
-function openEdit(r: ConsentRecordResponse) {
+function openEdit(r: RecordResponse) {
   editingRecord.value = r
 }
 
@@ -110,11 +115,6 @@ function onDelete() {
   workingEdit.value = true
   editError.value = ''
   emit('deleteRecord', editingRecord.value!.id)
-}
-
-function formatDate(iso: string) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 defineExpose({
@@ -197,27 +197,4 @@ defineExpose({
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-
-.prl-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.8rem;
-  border: none;
-  background: var(--color-dtv-sand);
-  color: var(--color-text);
-  cursor: default;
-  appearance: none;
-}
-
-button.prl-pill:not(:disabled) {
-  cursor: pointer;
-}
-button.prl-pill:not(:disabled):hover {
-  opacity: 0.8;
-}
-
-.prl-pill--accepted { background: var(--color-dtv-sand); color: var(--color-dtv-green-dark); }
-.prl-pill--invited  { background: var(--color-dtv-sand); color: var(--color-dtv-gold-dark); }
-.prl-pill--declined { background: var(--color-dtv-sand); color: var(--color-dtv-dirt); }
 </style>

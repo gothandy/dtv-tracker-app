@@ -144,22 +144,11 @@ export interface SharePointRecord extends SharePointBaseItem {
   ProfileLookupId?: number;
   Profile?: string;
   Type?: string;
+  /** The status choice; replaced by the State lookup in Records v2 PR 1 (#322). */
   Status?: string;
+  /** The date of the Record: when it happened, or will (e.g. an expiry). */
   Date?: string;
-}
-
-/**
- * Record entity for UI display
- */
-export interface ConsentRecord {
-  id: number;
-  profileId: number;
-  profileName?: string;
-  type: string;
-  status: string;
-  date: string;
-  created: Date;
-  modified: Date;
+  Notes?: string;
 }
 
 // ============================================================================

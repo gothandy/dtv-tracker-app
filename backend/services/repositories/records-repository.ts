@@ -5,16 +5,16 @@
  */
 
 import { SharePointRecord } from '../../../types/sharepoint';
-import { safeParseLookupId } from '../data-layer';
+import { recordsForProfile } from '../records';
 import { sharePointClient, CACHE_TTL } from '../sharepoint-client';
 import { sharePoint } from '../../config';
+import { RECORD_NOTES } from '../field-names';
 
 class RecordsRepository {
   private get listGuid(): string { return sharePoint.lists.records; }
 
-
   private get selectFields(): string {
-    return 'ID,Title,Profile,ProfileLookupId,Type,Status,Date,Created,Modified';
+    return `ID,Title,Profile,ProfileLookupId,Type,Status,Date,${RECORD_NOTES},Created,Modified`;
   }
 
   private readonly dateOnlyFields = ['Date'];
@@ -41,7 +41,7 @@ class RecordsRepository {
 
   async getByProfile(profileId: number): Promise<SharePointRecord[]> {
     const all = await this.getAll();
-    return all.filter(r => safeParseLookupId(r.ProfileLookupId as unknown as string) === profileId);
+    return recordsForProfile(all, profileId);
   }
 
   async create(fields: { ProfileLookupId: number; Type: string; Status: string; Date: string }): Promise<number> {
@@ -50,7 +50,7 @@ class RecordsRepository {
     return id;
   }
 
-  async update(itemId: number, fields: { Status?: string; Date?: string }): Promise<void> {
+  async update(itemId: number, fields: { Status?: string; Date?: string; Notes?: string }): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, itemId, fields, this.dateOnlyFields);
     sharePointClient.clearCacheKey('records');
   }

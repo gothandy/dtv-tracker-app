@@ -16,7 +16,7 @@
       Cancelled {{ formatCancelled(entry.cancelled) }}
     </div>
 
-    <div v-if="profileClick || sessionClick" class="eem-actions">
+    <div v-if="profileClick || sessionClick" class="modal-form-links">
       <AppButton v-if="profileClick" label="View Profile" icon="profile" @click="profileClick!()" />
       <AppButton v-if="sessionClick" label="View Session" icon="register" @click="sessionClick!()" />
     </div>
@@ -89,6 +89,7 @@ import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import { iconsForEntry } from '../../utils/labelIcons'
+import { ukToday } from '../../../../types/uk-date'
 
 const props = defineProps<{
   entry: EntryItem
@@ -123,7 +124,7 @@ const form = reactive({
   eventbriteAttendeeId: props.entry.eventbriteAttendeeId ?? null as string | null,
 })
 
-const isPastSession = computed(() => props.entry.session.date < new Date().toISOString().slice(0, 10))
+const isPastSession = computed(() => props.entry.session.date < ukToday())
 
 const accompanyingAdultMissing = computed(() =>
   form.accompanyingAdultId !== null &&
@@ -213,9 +214,4 @@ function deleteEntry() {
   margin-bottom: 1.25rem;
 }
 
-.eem-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
 </style>

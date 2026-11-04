@@ -7,6 +7,8 @@ import type { TemplateContext } from '../../types/email-template';
 import {
   SESSION_NOTES, SESSION_METADATA, PROFILE_DISPLAY, ENTRY_CANCELLED,
 } from './field-names';
+import { isOfType, statusOn } from './records';
+import { ukToday } from '../../types/uk-date';
 
 // ============================================================================
 // Shared helpers
@@ -48,11 +50,10 @@ function findChildEntries(sessionEntries: SharePointEntry[], profileId: number |
     : [];
 }
 
-const CHARITY_MEMBERSHIP_TYPE = 'Charity Membership';
 
-/** True when the profile has an Accepted Charity Membership record. */
-export function profileIsMember(profileRecords: SharePointRecord[]): boolean {
-  return profileRecords.some(r => r.Type === CHARITY_MEMBERSHIP_TYPE && r.Status === 'Accepted');
+/** True when the profile has an Accepted Charity Membership record on `evaluationDate` (YYYY-MM-DD). */
+export function profileIsMember(profileRecords: SharePointRecord[], evaluationDate: string): boolean {
+  return profileRecords.some(r => isOfType(r, 'Charity Membership') && statusOn(r, evaluationDate) === 'Accepted');
 }
 
 // ============================================================================
@@ -115,7 +116,7 @@ export function buildSessionTemplateVars(
     loginUrl: `${baseUrl}/login?returnTo=${encodeURIComponent(`/sessions/${groupKey}/${dateParam}`)}`,
     myChildNames: myChildNames || null,
     isRegular: /#Regular\b/i.test(String(entry.Notes || '')),
-    isMember: profileIsMember(profileRecords),
+    isMember: profileIsMember(profileRecords, (session.Date || '').slice(0, 10)),
     tags,
   };
 }
@@ -143,8 +144,9 @@ export function buildProfileLoginUrl(baseUrl: string, email: string): string {
 }
 
 function charityMembershipRecord(records: SharePointRecord[]): SharePointRecord | undefined {
-  const matching = records.filter(r => r.Type === CHARITY_MEMBERSHIP_TYPE);
-  return matching.find(r => r.Status === 'Accepted') ?? matching[0];
+  const matching = records.filter(r => isOfType(r, 'Charity Membership'));
+  const today = ukToday();
+  return matching.find(r => statusOn(r, today) === 'Accepted') ?? matching[0];
 }
 
 export function buildProfileTemplateVars(

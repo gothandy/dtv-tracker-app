@@ -53,6 +53,7 @@
         <nav>
           <RouterLink to="/sandbox/action-bars">Action Bars</RouterLink>
           <RouterLink to="/sandbox/filter-components">Filter Components</RouterLink>
+          <RouterLink to="/sandbox/filter-chip">FilterChip</RouterLink>
           <RouterLink to="/sandbox/session-card">SessionCard</RouterLink>
           <RouterLink to="/sandbox/session-next-action">Session Next Action</RouterLink>
           <RouterLink to="/sandbox/group-card">GroupCard</RouterLink>
@@ -60,6 +61,8 @@
           <RouterLink to="/sandbox/profile-list-results">ProfileListResults</RouterLink>
           <RouterLink to="/sandbox/entry-list-item">EntryListItem</RouterLink>
           <RouterLink to="/sandbox/entry-list-results">EntryListResults</RouterLink>
+          <RouterLink to="/sandbox/record-list-item">RecordListItem</RouterLink>
+          <RouterLink to="/sandbox/record-list-results">RecordListResults</RouterLink>
         </nav>
       </section>
 
@@ -71,6 +74,7 @@
           <RouterLink to="/sandbox/entry-list">EntryList</RouterLink>
           <RouterLink to="/sandbox/entry-icon-picker">EntryIconPicker</RouterLink>
           <RouterLink to="/sandbox/profile-record-list">ProfileRecordList</RouterLink>
+          <RouterLink to="/sandbox/record-chip">RecordChip</RouterLink>
           <RouterLink to="/sandbox/profile-warnings">ProfileWarnings</RouterLink>
           <RouterLink to="/sandbox/profile-linked-accounts">ProfileLinkedAccounts</RouterLink>
           <RouterLink to="/sandbox/regular-list">RegularList</RouterLink>
@@ -104,6 +108,9 @@
           <li>EntryIconPicker — tag toggle buttons; test via entry detail or session entry list</li>
           <li>ProfilePicker — volunteer search/select; test via add entry or entry edit modal</li>
           <li>TermPicker — term store tag picker; test via session view tags</li>
+          <li>ProfileListFilter — incl. the Record Type and Status filters (they cascade; Status works without a Type); test via profiles page</li>
+          <li>ProfileListActions — incl. Bulk Add Records (the modal is in All Modals); test via profiles page (Admin)</li>
+          <li>RecordsPage — Profile chip (View All from a profile), View Archive and View Profile from Edit Record; test via records page (Admin)</li>
         </ul>
       </section>
 

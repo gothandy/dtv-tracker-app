@@ -99,6 +99,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Session } from '../types/session'
 import { belowBreakpointMd } from '../utils/breakpoints'
+import { ukToday } from '../../../types/uk-date'
 
 const props = defineProps<{
   sessions: Session[]
@@ -121,7 +122,7 @@ function formatMonthYear(year: number, month: number): string {
 }
 
 const today = new Date()
-const todayKey = today.toISOString().substring(0, 10)
+const todayKey = ukToday(today)
 
 const currentYear = ref(today.getFullYear())
 const currentMonth = ref(today.getMonth())

@@ -4,7 +4,7 @@
  * The server checks the same table (backend/middleware/require-permission.ts), so the
  * screens and the API always agree.
  *
- * Today this covers email templates only; the rest of the app still checks roles directly
+ * Today this covers email templates, projects and Records; the rest of the app still checks roles directly
  * and moves over as each page is next touched (#293).
  */
 
@@ -23,6 +23,20 @@ export const PERMISSIONS = {
   uploadProjects: ['admin'],
   /** Bulk actions on Projects: select projects and set their status. (The Projects by location CSV is public; ticked projects narrow it.) */
   bulkEditProjects: ['admin'],
+  /** The Records page: every Record, with filters (read and edit one at a time, as editRecords allows). */
+  viewRecords: ['admin'],
+  /** The Record Type and Status choices, for the Add and Edit Record forms. */
+  viewRecordOptions: ['checkin', 'admin'],
+  /** Add, edit and delete a Profile's Records, one at a time. */
+  editRecords: ['admin'],
+  /** Bulk Add Records to selected Profiles. */
+  bulkEditRecords: ['admin'],
+  /** Download the Records CSV from Tools (names, emails and every Record). */
+  exportRecords: ['admin'],
+  /** Download the Records summary from Tools: totals only, no volunteer data (Records v2 planning, #322). */
+  exportRecordsSummary: ['admin'],
+  /** Dry run and run the Records v2 migration from Tools (#322 §5). Temporary: removed in PR 1. */
+  migrateRecords: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

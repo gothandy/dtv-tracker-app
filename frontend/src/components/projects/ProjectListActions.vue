@@ -41,6 +41,7 @@ import { visibleSelected } from '../../utils/listSelection'
 import type { Session } from '../../types/session'
 import type { ProjectWithStats } from './ProjectListFilter.vue'
 import type { RoleContext } from '../../composables/useViewer'
+import { ukToday } from '../../../../types/uk-date'
 
 const props = defineProps<{
   projects: ProjectWithStats[]
@@ -89,7 +90,7 @@ async function onDownload() {
     const res = await fetch('/api/projects/documents')
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const keys: string[] = (await res.json()).data?.keys ?? []
-    const today = new Date().toISOString().slice(0, 10)
+    const today = ukToday()
     const rows = projectsByLocationRows(toDownload.value.projects, props.sessions, tree.value,
       toDownload.value.trails, window.location.origin, today, new Set(keys))
     downloadCsv(`${today} Projects by location.csv`, PROJECTS_BY_LOCATION_HEADERS, rows)

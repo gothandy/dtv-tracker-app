@@ -9,7 +9,7 @@
         placeholder="Search volunteers…"
         autocomplete="off"
       />
-      <FyFilter v-model="fy" />
+      <FyFilter v-model="fy" :years="financialYears" />
       <select v-model="group" class="list-filter-select">
         <option value="">All groups</option>
         <option v-for="g in groups" :key="g.key" :value="g.key">{{ g.displayName ?? g.key }}</option>
@@ -30,20 +30,16 @@
       </select>
       <select v-model="hoursFilter" class="list-filter-select">
         <option value="">All hours</option>
-        <option value="0">0h</option>
-        <option value="lt15">&lt;15h</option>
-        <option value="15plus">15h+</option>
-        <option value="15to30">15–30h</option>
-        <option value="30plus">30h+</option>
+        <option v-for="h in HOURS_FILTERS" :key="h.value" :value="h.value">{{ h.label }}</option>
       </select>
       <select v-model="recordType" class="list-filter-select">
         <option value="">All record types</option>
-        <option v-for="t in recordOptions.types" :key="t" :value="t">{{ t }}</option>
+        <option v-for="t in recordFilterOptions.types" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select v-model="recordStatus" class="list-filter-select" :disabled="!recordType">
+      <select v-model="recordStatus" class="list-filter-select">
         <option value="">All statuses</option>
-        <option value="none">No record</option>
-        <option v-for="s in recordOptions.statuses" :key="s" :value="s">{{ s }}</option>
+        <option v-if="recordFilterOptions.noRecord" :value="NO_RECORD">No record</option>
+        <option v-for="s in recordFilterOptions.statuses" :key="s" :value="s">{{ s }}</option>
       </select>
       <select v-model="warningsFilter" class="list-filter-select">
         <option value="">All profiles</option>
@@ -61,11 +57,17 @@ import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
 import type { ProfileResponse } from '../../../../types/api-responses'
 import type { GroupResponse } from '../../../../types/api-responses'
+import { HOURS_FILTERS, hoursInView, matchesHoursFilter, sessionsInView } from '../../../../types/hours'
+import { matchesProfileRecordFilter, NO_RECORD } from '../../../../types/profile-record-filter'
+import { profileRecordFilterOptions } from '../../utils/profileRecordFilter'
 
 const props = defineProps<{
   profiles: ProfileResponse[]
+  /** FY keys for the FY dropdown, from Profile Stats (so it doesn't wait on Sessions). */
+  financialYears: string[]
+  /** True while the profiles are being refetched (e.g. after an FY change): they're stale. */
+  loading?: boolean
   groups: GroupResponse[]
-  recordOptions: { types: string[]; statuses: string[] }
 }>()
 
 const emit = defineEmits<{
@@ -90,8 +92,6 @@ const warningsFilter = ref((route.query.warnings as string)      || '')
 // immediate: true ensures deep-linked query params are emitted on first load
 watch([fy, group], ([newFy, newGroup]) => emit('filters-change', { fy: newFy, group: newGroup }), { immediate: true })
 
-// Clear record status when record type is cleared
-watch(recordType, val => { if (!val) recordStatus.value = '' })
 
 const warningOptions = computed(() => {
   const set = new Set<string>()
@@ -100,14 +100,15 @@ const warningOptions = computed(() => {
 })
 
 function hoursForProfile(p: ProfileResponse): number {
-  return fy.value === 'all' ? p.hoursAll : p.hoursThisFY
+  return hoursInView(p, fy.value)
 }
 
 function sessionsForProfile(p: ProfileResponse): number {
-  return fy.value === 'all' ? p.sessionsAll : p.sessionsThisFY
+  return sessionsInView(p, fy.value)
 }
 
-const filtered = computed<ProfileResponse[]>(() => {
+/** Profiles left by every filter except the Record ones: the Record choices come from these. */
+const beforeRecordFilters = computed<ProfileResponse[]>(() => {
   let list = props.profiles
 
   // FY visibility: hide zero-activity profiles unless showing 'all' or filtering for 0h
@@ -128,28 +129,7 @@ const filtered = computed<ProfileResponse[]>(() => {
 
   // Hours filter
   if (hoursFilter.value) {
-    list = list.filter(p => {
-      const h = hoursForProfile(p)
-      if (hoursFilter.value === '0')      return h === 0
-      if (hoursFilter.value === 'lt15')   return h > 0 && h < 15
-      if (hoursFilter.value === '15plus') return h >= 15
-      if (hoursFilter.value === '15to30') return h >= 15 && h <= 30
-      if (hoursFilter.value === '30plus') return h > 30
-      return true
-    })
-  }
-
-  // Record filter
-  if (recordType.value) {
-    list = list.filter(p => {
-      const recs = (p.records ?? []).filter(r => r.type === recordType.value)
-      if (recordStatus.value === 'none') return recs.length === 0
-      if (recordStatus.value)           return recs.some(r => r.status === recordStatus.value)
-      return recs.length > 0
-    })
-  } else if (recordStatus.value === 'none') {
-    // Status 'none' with no type means no records at all
-    list = list.filter(p => !(p.records ?? []).length)
+    list = list.filter(p => matchesHoursFilter(hoursForProfile(p), hoursFilter.value))
   }
 
   // Warnings filter
@@ -160,6 +140,23 @@ const filtered = computed<ProfileResponse[]>(() => {
   } else if (warningsFilter.value) {
     list = list.filter(p => p.warnings?.some(w => w.text === warningsFilter.value))
   }
+
+  return list
+})
+
+const recordFilterOptions = computed(() =>
+  profileRecordFilterOptions(beforeRecordFilters.value, recordType.value, recordStatus.value))
+
+// Filters cascade: a Record choice the other filters leave no Profiles for goes back to All (once loaded)
+watch(recordFilterOptions, opts => {
+  // Not on stale profiles mid-refetch, or a valid choice could be cleared before the new FY arrives
+  if (!props.profiles.length || props.loading) return
+  if (recordType.value && !opts.types.includes(recordType.value)) recordType.value = ''
+  if (recordStatus.value === NO_RECORD ? !opts.noRecord : recordStatus.value && !opts.statuses.includes(recordStatus.value)) recordStatus.value = ''
+})
+
+const filtered = computed<ProfileResponse[]>(() => {
+  let list = beforeRecordFilters.value.filter(p => matchesProfileRecordFilter(p.records ?? [], recordType.value, recordStatus.value))
 
   // Sort
   list = [...list].sort((a, b) => {

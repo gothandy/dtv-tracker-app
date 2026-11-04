@@ -28,6 +28,7 @@ import {
   SESSION_NOTES, SESSION_LIMITS, SESSION_TIME, SESSION_LENGTH,
 } from './field-names';
 import type { MediaStatus, SessionStats } from '../../types/api-responses';
+import { ukToday, ukYearAgo } from '../../types/uk-date';
 
 const MEDIA_STATUS_VALUES = new Set<MediaStatus>(['none', 'allPrivate', 'noCover', 'coverPrivate', 'public']);
 
@@ -544,13 +545,7 @@ export function calculateCurrentFY(): { startYear: number; endYear: number; key:
 
 /** Returns the inclusive YYYY-MM-DD date range for the rolling 12-month window ending today. */
 export function calculateRollingYear(): { start: string; end: string } {
-  const end = new Date();
-  const start = new Date(end);
-  start.setFullYear(end.getFullYear() - 1);
-  return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
-  };
+  return { start: ukYearAgo(), end: ukToday() };
 }
 
 /**
@@ -782,27 +777,4 @@ export function findSessionByGroupAndDate(
     if (safeParseLookupId(s[GROUP_LOOKUP]) !== groupId) return false;
     return s.Date === date;
   });
-}
-
-/**
- * Builds membership and card status lookups from Records list.
- * Returns a Set of member profile IDs and a Map of profile ID → card status.
- */
-export function buildBadgeLookups(records: SharePointRecord[]): {
-  memberIds: Set<number>;
-  cardStatusMap: Map<number, string>;
-} {
-  const memberIds = new Set<number>();
-  const cardStatusMap = new Map<number, string>();
-  for (const r of records) {
-    const pid = safeParseLookupId(r.ProfileLookupId as unknown as string);
-    if (pid === undefined) continue;
-    if (r.Type === 'Charity Membership' && r.Status === 'Accepted') {
-      memberIds.add(pid);
-    }
-    if (r.Type === 'Discount Card' && r.Status) {
-      cardStatusMap.set(pid, r.Status);
-    }
-  }
-  return { memberIds, cardStatusMap };
 }
