@@ -28,7 +28,8 @@ import { createRecord, requireState, setRecordState } from '../services/record-w
 import { requirePermission } from '../middleware/require-permission';
 import { ukToday } from '../../types/uk-date';
 import type { ApiResponse } from '../../types/sharepoint';
-import type { RecordListItemResponse, RecordListResponse } from '../../types/api-responses';
+import type { RecordListItemResponse, RecordListResponse, RecordResponse } from '../../types/api-responses';
+import type { RecordState } from '../../types/record-state';
 
 /** Records Notes is a single line of text, which SharePoint limits to 255 characters. */
 const RECORD_NOTES_MAX_LENGTH = 255;
@@ -88,11 +89,13 @@ router.post('/profiles/:id/records', requirePermission('editRecords'), async (re
       return;
     }
 
-    const { ID: id } = await createRecord({ profileId, type, status, date: date || new Date().toISOString() });
+    const created = await createRecord({ profileId, type, status, date: date || new Date().toISOString() });
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
     );
-    res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
+    // The Record as the app shows it (its label and style are worked out here, #322 §3)
+    const record = toRecordResponse(created, ukToday());
+    res.json({ success: true, data: { id: created.ID, record } } as ApiResponse<{ id: number; record: RecordResponse }>);
   } catch (error: any) {
     console.error('Error creating record:', error);
     res.status(500).json({ success: false, error: 'Failed to create record', message: error.message });
@@ -127,13 +130,14 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
     const allRecordsForPatch = await recordsRepository.getAll();
     const recordForPatch = allRecordsForPatch.find(r => r.ID === recordId);
     const patchProfileId = recordForPatch ? recordProfileId(recordForPatch) : undefined;
+    let patchState: RecordState | undefined;
     if (typeof status === 'string') {
       if (!recordForPatch) {
         res.status(404).json({ success: false, error: 'Record not found' });
         return;
       }
-      const state = await requireState(recordType(recordForPatch), status);
-      fields.StateLookupId = state.id;
+      patchState = await requireState(recordType(recordForPatch), status);
+      fields.StateLookupId = patchState.id;
       fields.Status = status;
     }
 
@@ -143,7 +147,11 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
         console.error(`[Stats] Failed targeted profile update for profile ${patchProfileId}:`, err)
       );
     }
-    res.json({ success: true } as ApiResponse<void>);
+    // The Record as saved, as the app shows it (label and style worked out here, #322 §3)
+    const record = recordForPatch
+      ? toRecordResponse({ ...recordForPatch, ...fields, State: patchState ?? recordForPatch.State }, ukToday())
+      : undefined;
+    res.json({ success: true, data: { record } } as ApiResponse<{ record?: RecordResponse }>);
   } catch (error: any) {
     console.error('Error updating record:', error);
     res.status(500).json({ success: false, error: 'Failed to update record', message: error.message });

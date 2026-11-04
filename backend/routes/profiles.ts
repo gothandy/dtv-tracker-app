@@ -47,6 +47,7 @@ import { requestOrigin } from '../services/request-origin';
 import { ukToday } from '../../types/uk-date';
 import { buildBadgeLookups, currentRecords, recordProfileId, recordStateName, recordsForProfile, recordType, toRecordResponse } from '../services/records';
 import { setRecordState } from '../services/record-writer';
+import { recordFlags } from '../services/record-rules';
 import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
 import { matchesProfileRecordFilter, oneRecordPerType } from '../../types/profile-record-filter';
@@ -718,6 +719,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       // Worked out from Records, as the Profiles list does, not read from the stored Stats
       isMember: badges.memberIds.has(spProfile.ID),
       cardStatus: badges.cardStatusMap.get(spProfile.ID),
+      isDofE: recordFlags(profileRecords, today).isDofE || undefined,
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       hoursAll: Math.round(calculatedAll * 10) / 10,

@@ -313,6 +313,7 @@ router.get('/entries', async (req: Request, res: Response) => {
           isGroup: profile?.IsGroup || false,
           isMember: profileStats.isMember === true,
           cardStatus: profileStats.cardStatus ?? undefined,
+          isDofE: profileStats.isDofE === true || undefined,
           hasProfileWarning: profileStats.warnings?.length ? true : undefined,
           hasAccompanyingAdult: hasAdult,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),

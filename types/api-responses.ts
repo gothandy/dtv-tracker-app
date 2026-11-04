@@ -170,7 +170,7 @@ export interface RecordResponse {
   /** What the Record shows on the day it's read: the State's Before or After label (#322 §3). */
   label: string;
   /** The style for that label; absent = Default (sand). */
-  style?: 'active' | 'info' | 'warn';
+  style?: import('./record-state').RecordStateStyle;
   /** The Record's date (YYYY-MM-DD). */
   date: string;
   notes?: string;
@@ -202,6 +202,8 @@ export interface ProfileDetailResponse {
   isGroup: boolean;
   isMember?: boolean;
   cardStatus?: string;
+  /** The Profile's current DofE Record is Active (record-rules.ts); shown as an icon on its entries. */
+  isDofE?: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
   hoursAll: number;
@@ -380,6 +382,7 @@ export interface EntryListItemResponse {
   isGroup: boolean;
   isMember?: boolean;
   cardStatus?: string;
+  isDofE?: boolean;
   hasProfileWarning?: boolean;
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;

@@ -5,24 +5,19 @@
       <h1>RecordChip</h1>
       <p class="sandbox-warning">Static mocked data — no API calls.</p>
 
-      <h2>No stateStyle</h2>
+      <h2>Default, Active, Info, Warn</h2>
       <div class="demo srch-list">
-        <RecordChip v-for="e in examples" :key="e.record.type + e.record.status" :record="e.record" @click="log(e.record)" />
-      </div>
-
-      <h2>stateStyle — active, info, warn</h2>
-      <div class="demo srch-list">
-        <RecordChip v-for="e in examples" :key="e.record.type + e.record.status" :record="e.record" :state-style="e.stateStyle" @click="log(e.record)" />
+        <RecordChip v-for="r in examples" :key="r.type + r.label" :record="r" @click="log(r)" />
       </div>
 
       <h2>Disabled</h2>
       <div class="demo srch-list">
-        <RecordChip v-for="e in examples" :key="e.record.type + e.record.status" :record="e.record" :state-style="e.stateStyle" disabled />
+        <RecordChip v-for="r in examples" :key="r.type + r.label" :record="r" disabled />
       </div>
 
       <h2>No Date</h2>
       <div class="demo srch-list">
-        <RecordChip :record="{ type: 'Newsletter Consent', status: 'Pending' }" @click="log({ type: 'Newsletter Consent', status: 'Pending' })" />
+        <RecordChip :record="noDate" @click="log(noDate)" />
       </div>
 
       <h2>Event log</h2>
@@ -40,26 +35,27 @@ import { ref } from 'vue'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import SandboxBackLink from './SandboxBackLink.vue'
 import RecordChip from '../../components/records/RecordChip.vue'
-import type { RecordStateStyle } from '../../utils/recordStateStyle'
+import type { RecordStateStyle } from '../../../../types/record-state'
 import { usePageTitle } from '../../composables/usePageTitle'
 
 usePageTitle('Sandbox')
 
 const events = ref<string[]>([])
-function log(record: { type: string; status: string }) {
-  events.value.unshift(`click → ${record.type} · ${record.status}`)
+function log(record: Chip) {
+  events.value.unshift(`click → ${record.type} · ${record.label}`)
 }
 
-type Example = { record: { type: string; status: string; date?: string }; stateStyle?: RecordStateStyle }
+type Chip = { type: string; label: string; style?: RecordStateStyle; date?: string }
 
-/** The same Records in each style; the State shown is the label PR 1 will give it. */
-const examples: Example[] = [
-  { record: { type: 'Privacy Consent', status: 'Accepted', date: '2025-09-01' }, stateStyle: 'active' },
-  { record: { type: 'Discount Card', status: 'Invited', date: '2026-01-15' }, stateStyle: 'info' },
-  { record: { type: 'Photo Consent', status: 'Declined', date: '2026-03-01' }, stateStyle: 'warn' },
-  { record: { type: 'First Aid Certificate', status: 'Requested', date: '2026-10-01' } },
-  { record: { type: 'First Aid Certificate', status: 'Expired', date: '2025-08-22' }, stateStyle: 'warn' },
+/** A From State shows its After label; an Until State its Before label up to its Date, then After. */
+const examples: Chip[] = [
+  { type: 'Privacy Consent', label: 'Given', style: 'active', date: '2025-09-01' },
+  { type: 'Parking Permit', label: 'Invited', style: 'info', date: '2026-01-15' },
+  { type: 'Parking Permit', label: 'Expires', style: 'active', date: '2026-12-31' },
+  { type: 'First Aid Certificate', label: 'Expired', style: 'warn', date: '2025-08-22' },
+  { type: 'Photo Consent', label: 'Declined', date: '2026-03-01' },
 ]
+const noDate: Chip = { type: 'Newsletter Consent', label: 'Invited' }
 </script>
 
 <style scoped>

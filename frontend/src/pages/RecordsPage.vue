@@ -40,8 +40,6 @@ import { useRouter } from 'vue-router'
 import { useRecordListStore } from '../stores/recordList'
 import { useViewer } from '../composables/useViewer'
 import type { RecordListItemResponse } from '../../../types/api-responses'
-import { recordStatus } from '../../../types/record-status'
-import { ukToday } from '../../../types/uk-date'
 import type { RecordState } from '../../../types/record-state'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
@@ -109,13 +107,9 @@ async function onSave(payload: SaveRecordPayload) {
       body: JSON.stringify(payload),
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    const saved = (await res.json()).data?.record
     const stored = store.records.find(r => r.id === editingRecord.value!.id)
-    if (stored) {
-      stored.storedStatus = payload.status
-      stored.status = recordStatus({ status: payload.status }, ukToday())
-      stored.date = payload.date
-      stored.notes = payload.notes.trim() || undefined
-    }
+    if (saved && stored) Object.assign(stored, saved)
     closeEditModal()
   } catch (e) {
     console.error('[RecordsPage] save failed', e)

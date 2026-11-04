@@ -173,8 +173,6 @@
 </template>
 
 <script setup lang="ts">
-import { recordStatus } from '../../../types/record-status'
-import { ukToday } from '../../../types/uk-date'
 import type { RecordState } from '../../../types/record-state'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -404,8 +402,7 @@ async function onAddRecord(payload: AddRecordPayload) {
     })
     if (!res.ok) throw new Error(`Add failed (${res.status})`)
     const json = await res.json()
-    const added = { id: json.data.id, type: payload.type, storedStatus: payload.status, label: payload.status, date: payload.date }
-    store.profile.records = [...(store.profile.records ?? []), { ...added, status: recordStatus({ status: payload.status }, ukToday()) }]
+    store.profile.records = [...(store.profile.records ?? []), json.data.record]
     recordListRef.value?.onAddSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onAddRecord failed', e)
@@ -422,13 +419,8 @@ async function onSaveRecord(id: number, payload: SaveRecordPayload) {
       body: JSON.stringify(payload),
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
-    const stored = store.profile.records?.find(r => r.id === id)
-    if (stored) {
-      stored.storedStatus = payload.status
-      stored.status = recordStatus({ status: payload.status }, ukToday())
-      stored.date = payload.date
-      stored.notes = payload.notes.trim() || undefined
-    }
+    const saved = (await res.json()).data?.record
+    if (saved) store.profile.records = store.profile.records?.map(r => r.id === id ? saved : r)
     recordListRef.value?.onSaveSuccess()
   } catch (e) {
     console.error('[ProfileDetailPage] onSaveRecord failed', e)
@@ -542,6 +534,7 @@ function mapProfileEntry(e: ProfileEntryResponse): EntryItem {
       cardStatus: store.profile?.cardStatus,
       isGroup: store.profile?.isGroup ?? false,
       hasProfileWarning: !!(store.profile?.warnings?.length),
+      isDofE: store.profile?.isDofE,
     },
     session: {
       groupKey: e.groupKey ?? '',
@@ -633,6 +626,7 @@ function mapChildEntryToItem(e: EntryListItemResponse): EntryItem {
       cardStatus: e.cardStatus,
       isGroup: e.isGroup,
       hasProfileWarning: e.hasProfileWarning,
+      isDofE: e.isDofE,
     },
     session: {
       groupKey: e.groupKey,

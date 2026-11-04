@@ -1,5 +1,5 @@
 <template>
-  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, appliedStyle ? `rli-row--${appliedStyle}` : '']">
+  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, record.style ? `rli-row--${record.style}` : '']">
     <div class="rli-content">
       <div class="rli-left">
         <span class="rli-type">{{ record.type }}</span>
@@ -7,7 +7,7 @@
         <span v-if="record.notes" class="rli-notes">{{ record.notes }}</span>
       </div>
       <div class="rli-right">
-        <span class="rli-state" :class="appliedStyle ? `rli-state--${appliedStyle}` : ''">{{ record.status }}</span>
+        <span class="rli-state" :class="record.style ? `rli-state--${record.style}` : ''">{{ record.label }}</span>
         <span v-if="record.date" class="rli-date">{{ formatDate(record.date) }}</span>
       </div>
     </div>
@@ -15,17 +15,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
-import { todayStyle, type RecordStateStyle } from '../../utils/recordStateStyle'
 
-const props = defineProps<{
+/** One Record on the Records page: its label and style come with it (#322 §3). */
+defineProps<{
   record: RecordListItemResponse
   selected?: boolean
-  stateStyle?: RecordStateStyle
 }>()
-
-const appliedStyle = computed<RecordStateStyle | undefined>(() => props.stateStyle ?? todayStyle(props.record.status))
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
