@@ -4,24 +4,18 @@
       <SandboxBackLink />
       <h1>RecordChip</h1>
       <p class="sandbox-warning">Static mocked data — no API calls.</p>
-      <p>
-        One Record on the Profile page (<RouterLink to="/sandbox/profile-record-list">ProfileRecordList</RouterLink>).
-        Today its style comes from its Status; from Records v2 PR 2 (#324) by the State's <strong>BeforeStyle</strong> or
-        <strong>AfterStyle</strong>: <strong>Active</strong> (green), <strong>Info</strong> (gold) or <strong>Warn</strong>
-        (dirt); blank = sand. Shown here as on the Records cards: a left border and the text.
-      </p>
 
-      <h2>No style (today: Accepted Active, Invited and Declined Warn, the rest Default)</h2>
+      <h2>No stateStyle</h2>
       <div class="demo srch-list">
         <RecordChip v-for="e in examples" :key="e.record.type + e.record.status" :record="e.record" @click="log(e.record)" />
       </div>
 
-      <h2>With State styles</h2>
+      <h2>stateStyle — active, info, warn</h2>
       <div class="demo srch-list">
         <RecordChip v-for="e in examples" :key="e.record.type + e.record.status" :record="e.record" :state-style="e.stateStyle" @click="log(e.record)" />
       </div>
 
-      <h2>Disabled (can't edit)</h2>
+      <h2>Disabled</h2>
       <div class="demo srch-list">
         <RecordChip v-for="e in examples" :key="e.record.type + e.record.status" :record="e.record" :state-style="e.stateStyle" disabled />
       </div>

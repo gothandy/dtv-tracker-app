@@ -73,7 +73,7 @@
         />
       </div>
 
-      <h2>Allow cancel (with the DofE icon: a mock-up, not yet driven by data)</h2>
+      <h2>Allow cancel</h2>
       <div class="demo">
         <EntryCard
           title="Alice Bowen"

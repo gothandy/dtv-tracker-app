@@ -28,10 +28,9 @@
         · entryQuality: "{{ entryFilterParams.entryQuality || '(all)' }}" · showing {{ entryFilterCount }} entries
       </p>
 
-      <h2>RecordListFilter — Type, Status, FY of the Record's Date; they cascade (static records; the address only changes on /records)</h2>
+      <h2>RecordListFilter</h2>
       <RecordListFilter :records="sampleRecords" @filtered="recordFilterCount = $event.length" />
       <p class="filter-note">showing {{ recordFilterCount }} of {{ sampleRecords.length }} records</p>
-      <p class="filter-note">The Profile chip (from the Profile page's View All) needs <code>?profileId=</code> on /records: test on the main site.</p>
 
     </div>
   </DefaultLayout>

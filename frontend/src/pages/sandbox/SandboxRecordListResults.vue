@@ -4,7 +4,6 @@
       <SandboxBackLink />
       <h1>RecordListResults</h1>
       <p class="sandbox-warning">Static mocked data — no API calls. Selection and edit events work locally.</p>
-      <p>The Records page's list: <RouterLink to="/sandbox/record-list-item">RecordListItem</RouterLink> cards with selection and Edit.</p>
 
       <h2>Default (no select, no edit)</h2>
       <div class="demo">
@@ -24,7 +23,7 @@
       </div>
       <p class="note">Selected IDs: {{ selected.length ? selected.join(', ') : '(none)' }}</p>
 
-      <h2>allowEdit — click a card to open Edit (edit event logged)</h2>
+      <h2>allowEdit — click a card to edit</h2>
       <div class="demo">
         <RecordListResults
           :records="mockRecords"

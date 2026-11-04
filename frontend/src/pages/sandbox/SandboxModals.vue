@@ -63,11 +63,11 @@
           <AppButton label="Open" @click="open = 'record-edit'" />
         </div>
         <div>
-          <h2>Record Edit (Records page: name, View Profile, View Archive)</h2>
+          <h2>Record Edit (Records page)</h2>
           <AppButton label="Open" @click="open = 'record-edit-records'" />
         </div>
         <div>
-          <h2>Bulk Add Records (Profiles)</h2>
+          <h2>Bulk Add Records</h2>
           <AppButton label="Open" @click="open = 'bulk-records'" />
         </div>
         <div>

@@ -4,18 +4,13 @@
       <SandboxBackLink />
       <h1>RecordListItem</h1>
       <p class="sandbox-warning">Static mocked data — no API calls.</p>
-      <p>
-        State styles for Records v2 PR 2 (#324): each State has a <strong>BeforeStyle</strong> and an
-        <strong>AfterStyle</strong>: <strong>Active</strong> (green), <strong>Info</strong> (gold) or
-        <strong>Warn</strong> (dirt); blank = sand. Shown as a left border and the State's text.
-      </p>
 
-      <h2>No style (today: Accepted Active, Invited and Declined Warn, the rest Default)</h2>
+      <h2>No stateStyle</h2>
       <div class="demo srli-list">
         <RecordListItem v-for="e in examples" :key="e.record.id" :record="e.record" />
       </div>
 
-      <h2>With State styles</h2>
+      <h2>stateStyle — active, info, warn</h2>
       <div class="demo srli-list">
         <RecordListItem v-for="e in examples" :key="e.record.id" :record="e.record" :state-style="e.stateStyle" />
       </div>
