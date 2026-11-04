@@ -124,6 +124,7 @@ export const router = createRouter({
     { path: '/sandbox/profile-linked-accounts', component: () => import('../pages/sandbox/SandboxProfileLinkedAccounts.vue') },
     { path: '/sandbox/profile-list-item', component: () => import('../pages/sandbox/SandboxProfileListItem.vue') },
     { path: '/sandbox/record-list-item', component: () => import('../pages/sandbox/SandboxRecordListItem.vue') },
+    { path: '/sandbox/record-chip', component: () => import('../pages/sandbox/SandboxRecordChip.vue') },
     { path: '/sandbox/profile-list-results', component: () => import('../pages/sandbox/SandboxProfileListResults.vue') },
     { path: '/sandbox/entry-list-item', component: () => import('../pages/sandbox/SandboxEntryListItem.vue') },
     { path: '/sandbox/entry-list-results', component: () => import('../pages/sandbox/SandboxEntryListResults.vue') },

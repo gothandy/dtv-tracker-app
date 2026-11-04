@@ -20,16 +20,13 @@
     <p v-if="!records.length" class="prl-empty">No records.</p>
 
     <div v-else class="prl-list">
-      <button
+      <RecordChip
         v-for="r in records"
         :key="r.id"
-        class="prl-pill"
-        :class="`prl-pill--${r.status.toLowerCase().replace(/\s+/g, '-')}`"
+        :record="r"
         :disabled="!allowEdit"
         @click="allowEdit && openEdit(r)"
-      >
-        {{ r.type }} · {{ r.status }} · {{ formatDate(r.date) }}
-      </button>
+      />
     </div>
 
     <RecordAddModal
@@ -59,6 +56,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { RecordResponse } from '../../../../types/api-responses'
+import RecordChip from '../records/RecordChip.vue'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
 
@@ -117,11 +115,6 @@ function onDelete() {
   workingEdit.value = true
   editError.value = ''
   emit('deleteRecord', editingRecord.value!.id)
-}
-
-function formatDate(iso: string) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 defineExpose({
@@ -204,27 +197,4 @@ defineExpose({
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-
-.prl-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.8rem;
-  border: none;
-  background: var(--color-dtv-sand);
-  color: var(--color-text);
-  cursor: default;
-  appearance: none;
-}
-
-button.prl-pill:not(:disabled) {
-  cursor: pointer;
-}
-button.prl-pill:not(:disabled):hover {
-  opacity: 0.8;
-}
-
-.prl-pill--accepted { background: var(--color-dtv-sand); color: var(--color-dtv-green-dark); }
-.prl-pill--invited  { background: var(--color-dtv-sand); color: var(--color-dtv-gold-dark); }
-.prl-pill--declined { background: var(--color-dtv-sand); color: var(--color-dtv-dirt); }
 </style>

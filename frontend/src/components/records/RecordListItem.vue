@@ -1,5 +1,5 @@
 <template>
-  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, stateStyle ? `rli-row--${stateStyle}` : '']">
+  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, appliedStyle ? `rli-row--${appliedStyle}` : '']">
     <div class="rli-content">
       <div class="rli-left">
         <span class="rli-type">{{ record.type }}</span>
@@ -7,7 +7,7 @@
         <span v-if="record.notes" class="rli-notes">{{ record.notes }}</span>
       </div>
       <div class="rli-right">
-        <span class="rli-state" :class="stateClass">{{ record.status }}</span>
+        <span class="rli-state" :class="appliedStyle ? `rli-state--${appliedStyle}` : ''">{{ record.status }}</span>
         <span v-if="record.date" class="rli-date">{{ formatDate(record.date) }}</span>
       </div>
     </div>
@@ -17,13 +17,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
-
-/**
- * A State's style (Records v2 PR 2, #324; the States list's BeforeStyle and AfterStyle): Active
- * (green), Info (gold) or Warn (dirt); none = sand. Shown as a left border (as Entries) and the
- * State's text, chosen on /sandbox/record-list-item.
- */
-export type RecordStateStyle = 'active' | 'info' | 'warn'
+import { todayStyle, type RecordStateStyle } from '../../utils/recordStateStyle'
 
 const props = defineProps<{
   record: RecordListItemResponse
@@ -31,13 +25,7 @@ const props = defineProps<{
   stateStyle?: RecordStateStyle
 }>()
 
-/** Without a style (until PR 2): Invited and Accepted show green; the rest show black. */
-const isCurrent = computed(() => props.record.status === 'Invited' || props.record.status === 'Accepted')
-
-const stateClass = computed(() => {
-  if (!props.stateStyle) return { 'rli-state--current': isCurrent.value }
-  return `rli-state--${props.stateStyle}`
-})
+const appliedStyle = computed<RecordStateStyle | undefined>(() => props.stateStyle ?? todayStyle(props.record.status))
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -96,10 +84,6 @@ function formatDate(date: string): string {
   text-overflow: ellipsis;
   max-width: 100%;
 }
-.rli-state--current {
-  color: var(--color-dtv-green);
-}
-
 /* State styles: a left border and the State's text */
 .rli-row--active { border-left-color: var(--color-dtv-green); }
 .rli-row--info   { border-left-color: var(--color-dtv-gold); }

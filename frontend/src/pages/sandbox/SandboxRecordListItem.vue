@@ -10,7 +10,7 @@
         <strong>Warn</strong> (dirt); blank = sand. Shown as a left border and the State's text.
       </p>
 
-      <h2>No style (today)</h2>
+      <h2>No style (today: Accepted Active, Invited and Declined Warn, the rest Default)</h2>
       <div class="demo srli-list">
         <RecordListItem v-for="e in examples" :key="e.record.id" :record="e.record" />
       </div>
@@ -32,7 +32,8 @@
 import '../../styles/sandbox.css'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import SandboxBackLink from './SandboxBackLink.vue'
-import RecordListItem, { type RecordStateStyle } from '../../components/records/RecordListItem.vue'
+import RecordListItem from '../../components/records/RecordListItem.vue'
+import type { RecordStateStyle } from '../../utils/recordStateStyle'
 import { usePageTitle } from '../../composables/usePageTitle'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
 
@@ -49,6 +50,7 @@ const examples: Array<{ record: RecordListItemResponse; stateStyle?: RecordState
   { record: record(3, 'First Aid Certificate', 'Expired', 'Cara Example', '2025-08-22'), stateStyle: 'info' },
   { record: record(4, 'Photo Consent', 'Given', 'Dan Example', '2026-02-24'), stateStyle: 'active' },
   { record: record(5, 'Photo Consent', 'Declined', 'Eve Example', '2026-03-01'), stateStyle: 'warn' },
+  { record: record(6, 'Discount Card', 'Accepted', 'Fay Example', '2026-05-02'), stateStyle: 'active' },
 ]
 </script>
 
