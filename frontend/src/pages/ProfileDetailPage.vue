@@ -126,7 +126,8 @@
           <ProfileEntryList
             :entries="entries"
             :allow-edit="viewer.hasCheckInAccess"
-            :is-admin="viewer.isAdmin"
+            :can-cancel="viewer.can('cancelEntries')"
+            :can-delete="viewer.can('deleteEntries')"
             :working-id="workingId"
             ref="entryListRef"
             @update="onEntryUpdate"
@@ -154,8 +155,9 @@
       <EntryEditModal
         v-if="childEditingEntry"
         :entry="childEditingEntry"
+        :can-cancel="viewer.can('cancelEntries')"
+        :can-delete="viewer.can('deleteEntries')"
         :title="childEditingEntry.profile.name"
-        :is-admin="viewer.isAdmin"
         :profile-click="childEditingEntry.profile.slug ? () => router.push(profilePath(childEditingEntry!.profile.slug!)) : undefined"
         :session-click="() => router.push(sessionPath(childEditingEntry!.session.groupKey, childEditingEntry!.session.date))"
         :session-adults="childSessionAdults"

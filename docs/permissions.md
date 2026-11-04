@@ -89,7 +89,7 @@ Check In and Admin share the **same** base visibility on these pages; **Admin** 
 | **Sessions list** | Full view | CSV download, checkboxes (Advanced) | Add Tags, Update Project buttons |
 | **Session detail** | Session info, stats, tags, photos; Privacy Protection card | Entries list, Free Parking card; check-in, Set Hours, Add Entry, Refresh, Send Email (Session templates), Edit (title + description); photo edit (caption, public, cover — not delete); past sessions: Refresh and Set Hours disabled | Delete session; delete photos; edit modal: Group, Date, Eventbrite ID; past sessions: Refresh and Set Hours enabled |
 | **Add entry** | Redirected (auth required) | Full access | — |
-| **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload | Notes, tag buttons, Delete Entry |
+| **Entry detail** | Redirected (auth required) | Checked In toggle, Hours, Count, Upload, Cancel Booking (both ways, `cancelEntries`) | Notes, tag buttons, Delete Entry (`deleteEntries`, cancelled entries only) |
 | **Projects list** | Full view: Status, FY and tag filters, trail and project cards, totals, *Projects by location* CSV of what's shown | New project (`editProjects`) | *Bulk actions* (`bulkEditProjects`): select, Set status, CSV of the ticked projects |
 | **Project detail** | Description, tag, Totals box (Status, Sessions, Hours), Documents card (*No documents yet.* when empty), Groups (each links to the group), linked sessions | Edit (name, key, description, status, tag; `editProjects`) | Delete project (`deleteProjects`); upload and remove documents (`uploadProjects`) |
 | **Templates** (`viewTemplates`) | Redirected (auth required) | List and view each template with a preview | New, Edit and Delete (`editTemplates`) |
@@ -181,7 +181,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | DELETE | `/projects/:key/attachments/:itemId` | Delete a project document (permission `uploadProjects`) |
 | DELETE | `/projects/:key` | Delete project (permission `deleteProjects`) |
 | DELETE | `/sessions/:group/:date` | Delete session |
-| DELETE | `/entries/:id` | Delete entry |
+| DELETE | `/entries/:id` | Delete entry (permission `deleteEntries`; cancelled entries only) |
 | POST | `/profiles/:id/records` | Create record (permission `editRecords`) |
 | PATCH | `/records/:id` | Edit record: Status, Date, Notes (permission `editRecords`) |
 | DELETE | `/records/:id` | Delete record (permission `editRecords`) |

@@ -187,6 +187,8 @@
             :entries="entries"
             :allow-edit="profile.hasCheckInAccess"
             :is-admin="profile.isAdmin"
+            :can-cancel="profile.can('cancelEntries')"
+            :can-delete="profile.can('deleteEntries')"
             :profiles="profiles"
             :working-id="workingId"
             :refresh-working="refreshWorking"

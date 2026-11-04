@@ -41,6 +41,8 @@ import { buildSessionTemplateVars } from '../services/email-vars';
 import { templatesRepository } from '../services/repositories/templates-repository';
 
 import { computeAndSaveProfileStats } from '../services/profile-stats';
+import { cancelledChange } from '../services/entry-cancel';
+import { can } from '../../types/permissions';
 import { refreshSessionMediaStats } from '../services/session-stats';
 import multer from 'multer';
 import { sharePointClient } from '../services/sharepoint-client';
@@ -604,25 +606,19 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
     const fields: Record<string, any> = {};
 
     if (typeof cancelled === 'boolean') {
-      if (cancelled) {
-        // Set Cancelled only if not already set — preserve original cancellation date
-        const existing = await entriesRepository.getById(entryId);
-        if (!existing) {
-          res.status(404).json({ success: false, error: 'Entry not found' });
+      // Edit Entry always sends `cancelled`; only a real change counts (permission cancelEntries)
+      const existing = await entriesRepository.getById(entryId);
+      if (!existing) {
+        res.status(404).json({ success: false, error: 'Entry not found' });
+        return;
+      }
+      const change = cancelledChange(cancelled, existing[ENTRY_CANCELLED]);
+      if (change.kind === 'set') {
+        if (!can(req.session.user?.role, 'cancelEntries')) {
+          res.status(403).json({ success: false, error: 'Not permitted to cancel or un-cancel bookings' });
           return;
         }
-        if (!existing[ENTRY_CANCELLED]) {
-          fields[ENTRY_CANCELLED] = new Date().toISOString();
-        }
-        // If already cancelled, no-op (preserve original date) — still returns 200
-      } else {
-        // cancelled: false — clear the Cancelled field (admin only)
-        const role = req.session.user?.role;
-        if (role !== 'admin') {
-          res.status(403).json({ success: false, error: 'Only admins can un-cancel an entry' });
-          return;
-        }
-        fields[ENTRY_CANCELLED] = null;
+        fields[ENTRY_CANCELLED] = change.value;
       }
     }
 
@@ -727,9 +723,8 @@ router.delete('/entries/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Hard delete is admin-only and only permitted on already-cancelled entries
-    const role = req.session.user?.role;
-    if (role !== 'admin') {
+    // Hard delete (permission deleteEntries) is only permitted on already-cancelled entries
+    if (!can(req.session.user?.role, 'deleteEntries')) {
       res.status(403).json({ success: false, error: 'Only admins can delete entries — use cancel instead' });
       return;
     }

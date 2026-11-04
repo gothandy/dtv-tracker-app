@@ -117,6 +117,8 @@
       <EntryEditModal
         v-if="open === 'entry-edit'"
         :entry="mockEntry"
+        can-cancel
+        can-delete
         :profile-click="() => log('entry-edit: View Profile clicked')"
         :session-click="() => log('entry-edit: View Session clicked')"
         :session-adults="mockSessionAdults"
