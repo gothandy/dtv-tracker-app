@@ -65,7 +65,6 @@
             <AppButton label="Dry Run" href="/api/records/migration" />
             <AppButton label="Run Migration" :working="migrationLoading" @click="runMigration" />
           </div>
-          <div class="ap-result">Sets every Record's State from its Type and Status, adding any missing States to the States list. Dry Run downloads what it would do; check it first. Records Summary shows the result.</div>
           <div v-if="migrationResult" :class="['ap-result', migrationError && 'ap-error']">{{ migrationResult }}</div>
         </div>
 
@@ -93,7 +92,6 @@
             <AppButton label="Term Store" :href="termStoreUrl" target="_blank" />
             <AppButton label="Backup" :working="backupLoading" @click="exportBackup" />
           </div>
-          <div class="ap-result">Tags have one term set, on the production site, used by every environment. Term Store opens it there.</div>
           <div v-if="cacheClearResult" :class="['ap-result', cacheClearError && 'ap-error']">{{ cacheClearResult }}</div>
           <div v-if="backupResult" :class="['ap-result', backupError && 'ap-error']">{{ backupResult }}</div>
         </div>
@@ -372,7 +370,7 @@ const migrationResult = ref('')
 const migrationError = ref(false)
 
 async function runMigration() {
-  if (!window.confirm('Run the Records migration on this environment? It adds any missing States, fixes their Titles and sets each Record\'s State. Safe to run again. Check the Dry Run first.')) return
+  if (!window.confirm('Run the Records migration on this environment?')) return
   migrationLoading.value = true
   migrationResult.value = ''
   migrationError.value = false
