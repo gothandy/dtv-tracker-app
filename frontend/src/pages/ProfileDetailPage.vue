@@ -406,7 +406,7 @@ async function onAddRecord(payload: AddRecordPayload) {
     })
     if (!res.ok) throw new Error(`Add failed (${res.status})`)
     const json = await res.json()
-    const added = { id: json.data.id, type: payload.type, storedStatus: payload.status, date: payload.date }
+    const added = { id: json.data.id, type: payload.type, storedStatus: payload.status, label: payload.status, date: payload.date }
     store.profile.records = [...(store.profile.records ?? []), { ...added, status: recordStatus({ status: payload.status }, ukToday()) }]
     recordListRef.value?.onAddSuccess()
   } catch (e) {

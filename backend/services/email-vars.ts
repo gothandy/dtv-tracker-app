@@ -7,7 +7,8 @@ import type { TemplateContext } from '../../types/email-template';
 import {
   SESSION_NOTES, SESSION_METADATA, PROFILE_DISPLAY, ENTRY_CANCELLED,
 } from './field-names';
-import { isOfType, statusOn } from './records';
+import { currentRecord, recordProfileId } from './records';
+import { recordFlags } from './record-rules';
 import { ukToday } from '../../types/uk-date';
 
 // ============================================================================
@@ -51,9 +52,9 @@ function findChildEntries(sessionEntries: SharePointEntry[], profileId: number |
 }
 
 
-/** True when the profile has an Accepted Charity Membership record on `evaluationDate` (YYYY-MM-DD). */
+/** True when the profile's current Charity Membership Record makes them a member, as of `evaluationDate` (YYYY-MM-DD). */
 export function profileIsMember(profileRecords: SharePointRecord[], evaluationDate: string): boolean {
-  return profileRecords.some(r => isOfType(r, 'Charity Membership') && statusOn(r, evaluationDate) === 'Accepted');
+  return recordFlags(profileRecords, evaluationDate).isMember;
 }
 
 // ============================================================================
@@ -143,10 +144,10 @@ export function buildProfileLoginUrl(baseUrl: string, email: string): string {
   return `${baseUrl}/login?email=${encodeURIComponent(email)}`;
 }
 
+/** The Profile's current Charity Membership Record (the records are one Profile's). */
 function charityMembershipRecord(records: SharePointRecord[]): SharePointRecord | undefined {
-  const matching = records.filter(r => isOfType(r, 'Charity Membership'));
-  const today = ukToday();
-  return matching.find(r => statusOn(r, today) === 'Accepted') ?? matching[0];
+  const profileId = records.length ? recordProfileId(records[0]) : undefined;
+  return profileId === undefined ? undefined : currentRecord(records, profileId, 'Charity Membership');
 }
 
 export function buildProfileTemplateVars(

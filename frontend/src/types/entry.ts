@@ -7,6 +7,7 @@ export interface EntryProfileSummary {
   hasProfileWarning?: boolean
   noPhoto?: boolean
   isFirstAiderAvailable?: boolean
+  isDofE?: boolean
 }
 
 export interface EntrySessionSummary {

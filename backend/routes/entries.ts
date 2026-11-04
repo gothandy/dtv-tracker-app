@@ -51,7 +51,7 @@ import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
 import { requestOrigin } from '../services/request-origin';
 import { ukToday, ukYearAgo } from '../../types/uk-date';
-import { isOfType, statusOn } from '../services/records';
+import { recordFlags } from '../services/record-rules';
 
 const router: Router = express.Router();
 
@@ -216,6 +216,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           isNew: isNew || undefined,
           noPhoto: profileStats.noPhoto === true || undefined,
           isFirstAiderAvailable: profileStats.isFirstAider === true || undefined,
+          isDofE: profileStats.isDofE === true || undefined,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       });
@@ -491,7 +492,7 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       ? await recordsRepository.getByProfile(volunteerId)
       : [];
     const sessionDate = (spSession.Date || '').slice(0, 10);
-    const hasPrivacyConsent = profileRecords.some(r => isOfType(r, 'Privacy Consent') && statusOn(r, sessionDate) === 'Accepted');
+    const { hasPrivacyConsent } = recordFlags(profileRecords, sessionDate);
 
     const vSlug2 = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : undefined;
     const data: EntryDetailResponse = {

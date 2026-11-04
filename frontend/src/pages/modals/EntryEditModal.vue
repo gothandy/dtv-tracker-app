@@ -141,6 +141,7 @@ const entryIcons = computed(() => iconsForEntry({
   isNew: props.entry.isNew,
   noPhoto: props.entry.profile.noPhoto,
   isFirstAiderAvailable: props.entry.profile.isFirstAiderAvailable,
+  isDofE: props.entry.profile.isDofE,
   eventbriteAttendeeId: form.eventbriteAttendeeId ?? undefined,
 }))
 

@@ -144,4 +144,9 @@ describe('iconsForEntry — member badges', () => {
     const icons = iconsForEntry({ cardStatus: 'Invited' })
     expect(icons.some(i => i.alt === 'Card Invited')).toBe(true)
   })
+
+  it('shows the DofE icon when isDofE', () => {
+    expect(iconsForEntry({ isDofE: true }).map(i => i.alt)).toContain('DofE')
+    expect(iconsForEntry({}).map(i => i.alt)).not.toContain('DofE')
+  })
 })

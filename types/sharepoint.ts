@@ -143,9 +143,14 @@ export interface SharePointRecord extends SharePointBaseItem {
   Title?: string;
   ProfileLookupId?: number;
   Profile?: string;
+  /** The old Type choice: written alongside the State until the column is deleted (Records v2 PR 1, #323). Read the Type from the State. */
   Type?: string;
-  /** The status choice; replaced by the State lookup in Records v2 PR 1 (#322). */
+  /** The old Status choice: as Type. Read the State's Name instead. */
   Status?: string;
+  /** Lookup to the States list (#322). */
+  StateLookupId?: number | string;
+  /** The State the lookup points at, attached when the Records are read (recordsRepository.getAll). */
+  State?: import('./record-state').RecordState;
   /** The date of the Record: when it happened, or will (e.g. an expiry). */
   Date?: string;
   Notes?: string;

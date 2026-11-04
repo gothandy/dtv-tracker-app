@@ -35,7 +35,7 @@ import type { RecordListItemResponse } from '../../../../types/api-responses'
 usePageTitle('Sandbox')
 
 const record = (id: number, type: string, status: string, profileName: string, date: string, notes?: string): RecordListItemResponse => ({
-  id, type, status, storedStatus: status, date, notes, profileId: id, profileName, profileSlug: `p-${id}`,
+  id, type, status, storedStatus: status, label: status, date, notes, profileId: id, profileName, profileSlug: `p-${id}`,
 })
 
 /** The same Records in each style; the State shown is the label PR 1 will give it. */

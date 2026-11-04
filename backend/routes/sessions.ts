@@ -577,6 +577,7 @@ router.get('/sessions/:group/:date', async (req: Request, res: Response) => {
         isNew: isNew || undefined,
         noPhoto: pStats.noPhoto === true || undefined,
         isFirstAiderAvailable: pStats.isFirstAider === true || undefined,
+        isDofE: pStats.isDofE === true || undefined,
         eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined
       };
     });

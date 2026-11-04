@@ -4,7 +4,7 @@ import { DEFAULT_RECORD_FILTERS, matchesRecordFilters, recordFilterOptions, sort
 import { ukToday } from '../../../types/uk-date'
 
 const rec = (id: number, type: string, status: string, profileName: string, date: string): RecordListItemResponse => ({
-  id, type, status, storedStatus: status, date, profileId: id, profileName, profileSlug: `p-${id}`,
+  id, type, status, storedStatus: status, label: status, date, profileId: id, profileName, profileSlug: `p-${id}`,
 })
 
 const today = ukToday()

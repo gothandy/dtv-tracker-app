@@ -36,6 +36,10 @@ export const RECORD_STATE_LOOKUP = 'StateLookupId'; // Records: lookup to the St
 export const RECORD_STATE        = 'State';        // Records: the State lookup column's internal name
 export const STATE_NAME          = 'Name';         // States: the State's name (Title is "{Type} {Name}", for SharePoint's own views; the app reads Name)
 export const STATE_TYPE          = 'RecordType';   // States: the Record Type the State belongs to ("Record Type"; the name Type clashes with SharePoint's built-in DocIcon column)
+export const STATE_BEFORE        = 'Before';      // States: label up to and including the Record's Date; empty = a From State (#322 §1)
+export const STATE_AFTER         = 'After';       // States: label after the Date (a From State's only label)
+export const STATE_BEFORE_STYLE  = 'BeforeStyle'; // States: Choice Default | Active | Info | Warn, while Before shows
+export const STATE_AFTER_STYLE   = 'AfterStyle';  // States: as BeforeStyle, while After shows
 export const RECORD_NOTES        = 'Notes';  // Records: single line of text
 export const ENTRY_CANCELLED             = 'Cancelled';         // Date/time when entry was cancelled; null = active booking
 export const ENTRY_LABELS                = 'Labels';            // Multi-select choice: Regular | CSR | Late | FirstAider | DigLead

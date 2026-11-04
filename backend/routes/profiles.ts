@@ -45,7 +45,7 @@ import type { ApiResponse, SharePointProfile } from '../../types/sharepoint';
 import { sharePoint } from '../config';
 import { requestOrigin } from '../services/request-origin';
 import { ukToday } from '../../types/uk-date';
-import { buildBadgeLookups, recordProfileId, recordsForProfile, statusOn, toRecordResponse } from '../services/records';
+import { buildBadgeLookups, recordProfileId, recordStateName, recordsForProfile, recordType, toRecordResponse } from '../services/records';
 import { upsertRecord } from '../services/record-writer';
 import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
@@ -148,11 +148,11 @@ router.get('/profiles', async (req: Request, res: Response) => {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
-      profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: statusOn(r, todayStr) });
+      profileRecordsMap.get(pid)!.push({ type: recordType(r), status: recordStateName(r) });
     }
     for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
-    const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords, todayStr);
+    const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
 
     const profileWarningsMap = new Map<number, Array<{ text: string; url?: string }>>();
     const financialYears = new Set<string>([calculateCurrentFY().key]);
@@ -276,7 +276,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
-      profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: statusOn(r, ukToday()) });
+      profileRecordsMap.get(pid)!.push({ type: recordType(r), status: recordStateName(r) });
     }
     for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
@@ -698,7 +698,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     // Filter consent records for this profile from the already-fetched batch
     const profileRecords = recordsForProfile(rawRecords, spProfile.ID);
     const today = ukToday();
-    const badges = buildBadgeLookups(profileRecords, today);
+    const badges = buildBadgeLookups(profileRecords);
     const records = profileRecords.map(r => toRecordResponse(r, today));
 
     const isSelfService = req.session.user?.role === 'selfservice';
@@ -873,11 +873,11 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
     // Transfer records (skip if target already has the same type)
     let recordsTransferred = 0;
     const sourceRecords = recordsForProfile(rawRecords, sourceProfile.ID);
-    const targetRecordTypes = new Set(recordsForProfile(rawRecords, targetProfile.ID).map(r => r.Type));
+    const targetRecordTypes = new Set(recordsForProfile(rawRecords, targetProfile.ID).map(recordType));
     const recordsListGuid = sharePoint.lists.records;
 
     for (const record of sourceRecords) {
-      if (!targetRecordTypes.has(record.Type)) {
+      if (!targetRecordTypes.has(recordType(record))) {
         await sharePointClient.updateListItem(recordsListGuid, record.ID, {
           ProfileLookupId: String(targetProfile.ID)
         });

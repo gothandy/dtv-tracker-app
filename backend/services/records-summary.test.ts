@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { summariseRecords, summariseStates } from './records-summary'
 
 const record = (id: number, profileId: number | undefined, type: string, status: string, date?: string) =>
-  ({ ID: id, ProfileLookupId: profileId, Type: type, Status: status, Date: date }) as any
+  ({ ID: id, ProfileLookupId: profileId, Type: type, Status: status, State: { id: 0, type, name: status }, Date: date }) as any
 
 const base = {
   environment: 'Preview',

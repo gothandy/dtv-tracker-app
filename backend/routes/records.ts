@@ -24,8 +24,8 @@ import { PROFILE_LOOKUP, RECORD_STATE, RECORD_STATE_LOOKUP, SESSION_LOOKUP } fro
 import { statesRepository } from '../services/repositories/states-repository';
 import { runRecordsMigration } from '../services/records-migration';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
-import { recordProfileId, statusOn, toRecordResponse } from '../services/records';
-import { createRecord, upsertRecord } from '../services/record-writer';
+import { currentRecords, recordProfileId, recordStateName, recordType, toRecordResponse } from '../services/records';
+import { createRecord, requireState, upsertRecord } from '../services/record-writer';
 import { summariseRecords } from '../services/records-summary';
 import { sharePointClient } from '../services/sharepoint-client';
 import { requirePermission } from '../middleware/require-permission';
@@ -114,8 +114,7 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       return;
     }
     const { status, date, notes } = req.body;
-    const fields: { Status?: string; Date?: string; Notes?: string } = {};
-    if (typeof status === 'string') fields.Status = status;
+    const fields: { StateLookupId?: number; Status?: string; Date?: string; Notes?: string } = {};
     if (typeof date === 'string') fields.Date = date;
     if (typeof notes === 'string') {
       const trimmed = notes.trim();
@@ -126,15 +125,24 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       fields.Notes = trimmed;
     }
 
-    if (Object.keys(fields).length === 0) {
+    if (Object.keys(fields).length === 0 && typeof status !== 'string') {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
 
-    // Look up profile ID from cache before the write clears it
+    // Look up the Record (its Profile, and its Type for a new State) before the write clears the cache
     const allRecordsForPatch = await recordsRepository.getAll();
     const recordForPatch = allRecordsForPatch.find(r => r.ID === recordId);
     const patchProfileId = recordForPatch ? recordProfileId(recordForPatch) : undefined;
+    if (typeof status === 'string') {
+      if (!recordForPatch) {
+        res.status(404).json({ success: false, error: 'Record not found' });
+        return;
+      }
+      const state = await requireState(recordType(recordForPatch), status);
+      fields.StateLookupId = state.id;
+      fields.Status = status;
+    }
 
     await recordsRepository.update(recordId, fields);
     if (patchProfileId !== undefined) {
@@ -255,12 +263,12 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
     const recordsByProfile = new Map<number, Map<string, { status: string; date: string }>>();
     const allTypes = new Set<string>();
     const today = ukToday();
-    for (const r of rawRecords) {
-      const pid = recordProfileId(r);
-      if (pid === undefined || !r.Type) continue;
-      allTypes.add(r.Type);
+    for (const r of currentRecords(rawRecords)) {
+      const pid = recordProfileId(r)!;
+      const type = recordType(r);
+      allTypes.add(type);
       if (!recordsByProfile.has(pid)) recordsByProfile.set(pid, new Map());
-      recordsByProfile.get(pid)!.set(r.Type, { status: statusOn(r, today), date: r.Date || '' });
+      recordsByProfile.get(pid)!.set(type, { status: recordStateName(r), date: r.Date || '' });
     }
 
     // Format date like "8 Sept 2025"

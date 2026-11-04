@@ -194,7 +194,7 @@ export function summariseRecords(input: {
 }): RecordsSummary {
   const { records, profiles, today } = input;
 
-  const { memberIds, cardStatusMap } = buildBadgeLookups(records, today);
+  const { memberIds, cardStatusMap } = buildBadgeLookups(records);
   const cardIdsByStatus = new Map<string, number[]>();
   for (const [pid, status] of cardStatusMap) {
     cardIdsByStatus.set(status, [...(cardIdsByStatus.get(status) ?? []), pid]);

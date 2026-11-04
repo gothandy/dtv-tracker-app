@@ -10,7 +10,7 @@ const sessions = buildSessionLookups([
 const entry = (sessionId: number, hours: number, extra: Record<string, unknown> = {}) =>
   ({ ID: sessionId * 100, SessionLookupId: sessionId, ProfileLookupId: 10, Hours: hours, ...extra }) as any
 const record = (type: string, status: string, date?: string) =>
-  ({ ID: Math.random(), ProfileLookupId: 10, Type: type, Status: status, Date: date }) as any
+  ({ ID: Math.random(), ProfileLookupId: 10, Type: type, Status: status, State: { id: 0, type, name: status }, Date: date }) as any
 
 function build(overrides: Partial<Parameters<typeof buildProfileStats>[0]> = {}) {
   return buildProfileStats({
@@ -44,7 +44,9 @@ describe('buildProfileStats', () => {
       record('Photo Consent', 'Accepted'),
     ] })
     expect(stats).toMatchObject({ isMember: true, cardStatus: 'Invited', isFirstAider: true, noPhoto: false })
-    expect(build({ records: [record('First Aid Certificate', 'Expires', '2026-11-03')] }).isFirstAider).toBe(false)
+    // Up to and including the expiry (#322 §1); the day after, not
+    expect(build({ records: [record('First Aid Certificate', 'Expires', '2026-11-03')] }).isFirstAider).toBe(true)
+    expect(build({ records: [record('First Aid Certificate', 'Expires', '2026-11-02')] }).isFirstAider).toBe(false)
     expect(build().noPhoto).toBe(true)
   })
 
@@ -61,7 +63,7 @@ describe('buildProfileStats', () => {
   it('keeps the stored key order, which the nightly refresh compares', () => {
     expect(Object.keys(build())).toEqual([
       'hoursByFY', 'sessionsByFY', 'isMember', 'cardStatus', 'regularGroupIds', 'repeatGroupIds',
-      'sessionIds', 'linkedProfileIds', 'isFirstAider', 'noPhoto', 'warnings',
+      'sessionIds', 'linkedProfileIds', 'isFirstAider', 'noPhoto', 'isDofE', 'warnings',
     ])
   })
 })
