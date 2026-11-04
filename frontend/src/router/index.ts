@@ -126,6 +126,7 @@ export const router = createRouter({
     { path: '/sandbox/record-list-item', component: () => import('../pages/sandbox/SandboxRecordListItem.vue') },
     { path: '/sandbox/record-chip', component: () => import('../pages/sandbox/SandboxRecordChip.vue') },
     { path: '/sandbox/record-list-results', component: () => import('../pages/sandbox/SandboxRecordListResults.vue') },
+    { path: '/sandbox/filter-chip', component: () => import('../pages/sandbox/SandboxFilterChip.vue') },
     { path: '/sandbox/profile-list-results', component: () => import('../pages/sandbox/SandboxProfileListResults.vue') },
     { path: '/sandbox/entry-list-item', component: () => import('../pages/sandbox/SandboxEntryListItem.vue') },
     { path: '/sandbox/entry-list-results', component: () => import('../pages/sandbox/SandboxEntryListResults.vue') },

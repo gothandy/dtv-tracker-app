@@ -26,10 +26,7 @@
       <option value="">All entries</option>
       <option v-for="opt in qualityOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
     </select>
-    <button v-if="profileName" class="list-filter-chip" :aria-label="`Clear ${profileName} filter`" @click="clearProfileFilter">
-      {{ profileName }}
-      <img src="/icons/close.svg" width="10" height="10" alt="" class="svg-white" />
-    </button>
+    <FilterChip v-if="profileName" :label="profileName" @clear="clearProfileFilter" />
   </div>
 </template>
 
@@ -37,6 +34,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FyFilter from '../FyFilter.vue'
+import FilterChip from '../FilterChip.vue'
 import type { EntryListItemResponse } from '../../../../types/api-responses'
 import {
   entryQualityOptionsForEntries,

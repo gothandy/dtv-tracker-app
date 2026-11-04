@@ -47,25 +47,6 @@
 }
 .list-filter-select:disabled { opacity: 0.5; cursor: default; }
 
-/* A filter set from a link (e.g. one Profile): its name, and × to clear it. Entries and Records. */
-.list-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--color-dtv-dirt);
-  color: var(--color-white);
-  border: none;
-  border-radius: 3px;
-  padding: 0.25rem 0.6rem;
-  font-family: var(--font-head);
-  font-size: 0.85rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.list-filter-chip:hover {
-  opacity: 0.85;
-}
-
 @import "./list-item-card.css";
 
 /* Shared card grid — Groups, Sessions, Projects list results */

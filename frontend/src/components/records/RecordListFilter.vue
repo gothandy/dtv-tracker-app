@@ -9,10 +9,7 @@
       <option v-for="s in options.statuses" :key="s" :value="s">{{ s }}</option>
     </select>
     <FyFilter v-model="filters.fy" :options="options.fyOptions" class="list-filter-select" />
-    <button v-if="filters.profileId !== undefined" class="list-filter-chip" :aria-label="`Clear ${profileName || 'Profile'} filter`" @click="clearProfileFilter">
-      {{ profileName || 'Profile' }}
-      <img src="/icons/close.svg" width="10" height="10" alt="" class="svg-white" />
-    </button>
+    <FilterChip v-if="filters.profileId !== undefined" :label="profileName || 'Profile'" @clear="clearProfileFilter" />
   </div>
 </template>
 
@@ -21,6 +18,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { recordsPath } from '../../router/index'
 import FyFilter from '../FyFilter.vue'
+import FilterChip from '../FilterChip.vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
 import { DEFAULT_RECORD_FILTERS, matchesRecordFilters, recordFilterOptions, sortRecords, type RecordFilters } from '../../utils/recordFilters'
 

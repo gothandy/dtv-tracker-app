@@ -53,6 +53,7 @@
         <nav>
           <RouterLink to="/sandbox/action-bars">Action Bars</RouterLink>
           <RouterLink to="/sandbox/filter-components">Filter Components</RouterLink>
+          <RouterLink to="/sandbox/filter-chip">FilterChip</RouterLink>
           <RouterLink to="/sandbox/session-card">SessionCard</RouterLink>
           <RouterLink to="/sandbox/session-next-action">Session Next Action</RouterLink>
           <RouterLink to="/sandbox/group-card">GroupCard</RouterLink>
