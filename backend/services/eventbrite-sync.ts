@@ -10,7 +10,7 @@ import type { EventbriteAttendee } from './eventbrite-client';
 import type { SharePointProfile, SharePointEntry } from '../../types/sharepoint';
 import { SESSION_LOOKUP, PROFILE_LOOKUP, ENTRY_EVENTBRITE_ATTENDEE_ID, ENTRY_CANCELLED } from './field-names';
 import { computeAndSaveProfileStats } from './profile-stats';
-import { upsertRecord } from './record-writer';
+import { setRecordState } from './record-writer';
 import type { RecordTypeName } from '../../types/record-types';
 
 /**
@@ -204,9 +204,9 @@ export async function upsertConsentRecords(
     if (!type) continue;
     const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
     const date = attendee.created || new Date().toISOString();
-    // Only the Status is updated — date comparison is unreliable because
-    // SharePoint's date-only field strips the time component from attendee.created.
-    const result = await upsertRecord(records, { profileId, type, status, date }, 'statusIfChanged');
+    // A changed answer is a new Record; the same answer leaves the Record alone (date comparison is
+    // unreliable: SharePoint's date-only field strips the time from attendee.created).
+    const result = await setRecordState(records, { profileId, type, status, date }, 'leave');
     if (result === 'created') created++;
     else if (result === 'updated') updated++;
   }

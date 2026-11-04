@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isUntil, stateLabel, stateStyle, type RecordState } from './record-state'
+import { isUntil, stateLabel, stateStyle, stateTypes, statesOfType, type RecordState } from './record-state'
 
 const invited: RecordState = { id: 1, type: 'Parking Permit', name: 'Invite', after: 'Invited', afterStyle: 'Info' }
 const permit: RecordState = { id: 3, type: 'Parking Permit', name: 'Active', before: 'Expires', after: 'Expired', beforeStyle: 'Active', afterStyle: 'Warn' }
@@ -36,5 +36,20 @@ describe('From and Until States', () => {
     expect(stateStyle({ ...permit, afterStyle: undefined }, '2026-12-31', '2027-01-01')).toBeUndefined()
     expect(stateStyle({ ...permit, beforeStyle: 'Default' }, '2026-12-31', '2026-11-04')).toBeUndefined()
     expect(stateStyle(bare, '2026-01-01', '2026-11-04')).toBeUndefined()
+  })
+})
+
+describe('stateTypes and statesOfType', () => {
+  const states: RecordState[] = [
+    { id: 5, type: 'Privacy Consent', name: 'Consent' },
+    { id: 2, type: 'Parking Permit', name: 'Decline' },
+    { id: 1, type: 'Parking Permit', name: 'Invite' },
+    { id: 4, type: 'Privacy Consent', name: 'Invite' },
+    { id: 3, type: 'Parking Permit', name: 'Active' },
+  ]
+  it('lists the Types, and a Type’s States, by ID', () => {
+    expect(stateTypes(states)).toEqual(['Parking Permit', 'Privacy Consent'])
+    expect(statesOfType(states, 'Parking Permit').map(s => s.name)).toEqual(['Invite', 'Decline', 'Active'])
+    expect(statesOfType(states, 'DofE')).toEqual([])
   })
 })

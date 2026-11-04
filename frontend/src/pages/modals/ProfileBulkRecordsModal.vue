@@ -12,13 +12,13 @@
       <FormRow title="Type" :full-width="true">
         <ModalFormSelect v-model="form.type">
           <option value="" disabled>Select type…</option>
-          <option v-for="t in recordOptions.types" :key="t" :value="t">{{ t }}</option>
+          <option v-for="t in types" :key="t" :value="t">{{ t }}</option>
         </ModalFormSelect>
       </FormRow>
-      <FormRow title="Status" :full-width="true">
-        <ModalFormSelect v-model="form.status">
-          <option value="" disabled>Select status…</option>
-          <option v-for="s in recordOptions.statuses" :key="s" :value="s">{{ s }}</option>
+      <FormRow title="State" :full-width="true">
+        <ModalFormSelect v-model="form.status" :disabled="!form.type">
+          <option value="" disabled>Select state…</option>
+          <option v-for="s in typeStates" :key="s.id" :value="s.name">{{ s.name }}</option>
         </ModalFormSelect>
       </FormRow>
       <FormRow title="Date" :full-width="true">
@@ -29,13 +29,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import ModalLayout from '../../components/ModalLayout.vue'
 import FormLayout from '../../components/FormLayout.vue'
 import FormRow from '../../components/FormRow.vue'
 import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import { ukToday } from '../../../../types/uk-date'
+import { stateTypes, statesOfType, type RecordState } from '../../../../types/record-state'
 
 export interface BulkRecordPayload {
   type: string
@@ -43,9 +44,10 @@ export interface BulkRecordPayload {
   date: string
 }
 
-defineProps<{
+const props = defineProps<{
   count: number
-  recordOptions: { types: string[]; statuses: string[] }
+  /** The States list: Types and each Type's States come from here. */
+  states: RecordState[]
   working: boolean
   error?: string
 }>()
@@ -62,6 +64,10 @@ const form = reactive({
   status: '',
   date: today,
 })
+
+const types = computed(() => stateTypes(props.states))
+const typeStates = computed(() => statesOfType(props.states, form.type))
+watch(() => form.type, () => { form.status = '' })
 
 function save() {
   if (!form.type || !form.status) return

@@ -19,9 +19,9 @@
       <FormRow title="Type" :full-width="true">
         <span class="modal-form-readonly">{{ record.type }}</span>
       </FormRow>
-      <FormRow title="Status" :full-width="true">
+      <FormRow title="State" :full-width="true">
         <ModalFormSelect v-model="form.status">
-          <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+          <option v-for="s in stateNames" :key="s" :value="s">{{ s }}</option>
         </ModalFormSelect>
       </FormRow>
       <FormRow title="Date" :full-width="true">
@@ -35,8 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import type { RecordResponse } from '../../../../types/api-responses'
+import { statesOfType, type RecordState } from '../../../../types/record-state'
 import ModalLayout from '../../components/ModalLayout.vue'
 import AppButton from '../../components/AppButton.vue'
 import FormLayout from '../../components/FormLayout.vue'
@@ -52,7 +53,8 @@ export interface SaveRecordPayload {
 
 const props = defineProps<{
   record: RecordResponse
-  statuses: string[]
+  /** The States list: Edit offers the Record's Type's States. */
+  states: RecordState[]
   working: boolean
   error?: string
   /** Heading; defaults to "Edit Record". The Records page uses the Profile's name, as Edit Entry does. */
@@ -73,6 +75,12 @@ const form = reactive({
   status: props.record.storedStatus,
   date: props.record.date?.slice(0, 10) ?? '',
   notes: props.record.notes ?? '',
+})
+
+/** The Record's Type's States (by ID); its current State stays offered even if it's no longer listed. */
+const stateNames = computed(() => {
+  const names = statesOfType(props.states, props.record.type).map(st => st.name)
+  return props.record.storedStatus && !names.includes(props.record.storedStatus) ? [props.record.storedStatus, ...names] : names
 })
 
 function save() {

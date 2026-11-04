@@ -42,7 +42,7 @@
     <ProfileBulkRecordsModal
       v-if="showBulkModal"
       :count="individualSelectedCount"
-      :record-options="recordOptions"
+      :states="recordStates"
       :working="bulkWorking"
       :error="bulkError"
       @close="showBulkModal = false"
@@ -99,6 +99,7 @@ import { bulkEntrySessionOptions as buildBulkEntrySessionOptions } from '../util
 import { useRouter } from 'vue-router'
 import { profilePath } from '../router'
 import type { ProfileResponse, TemplateResponse } from '../../../types/api-responses'
+import type { RecordState } from '../../../types/record-state'
 import { pruneSelectionToVisible, visibleSelected } from '../utils/listSelection'
 
 usePageTitle('Profiles')
@@ -128,7 +129,7 @@ const entriesError = ref('')
 const showAddProfile = ref(false)
 const addProfileWorking = ref(false)
 const addProfileError = ref('')
-const recordOptions = ref<{ types: string[]; statuses: string[] }>({ types: [], statuses: [] })
+const recordStates = ref<RecordState[]>([])
 
 watch(filtered, list => {
   const pruned = pruneSelectionToVisible(selected.value, list)
@@ -283,7 +284,7 @@ onMounted(async () => {
     const res = await fetch('/api/profiles/records/options')
     if (res.ok) {
       const json = await res.json()
-      recordOptions.value = json.data ?? { types: [], statuses: [] }
+      recordStates.value = json.data?.states ?? []
     }
   } catch (e) {
     console.error('[ProfileListPage] failed to load record options', e)

@@ -19,7 +19,6 @@ const CHECKIN_ALLOWED_PATTERNS = [
   { method: 'PATCH',  pattern: /^\/records\/\d+$/ },            // edit a record; handler checks editRecords
   { method: 'DELETE', pattern: /^\/records\/\d+$/ },            // delete a record; handler checks editRecords
   { method: 'POST',   pattern: /^\/records\/bulk$/ },            // bulk add records; handler checks bulkEditRecords
-  { method: 'POST',   pattern: /^\/records\/migration$/ },       // Records v2 migration; handler checks migrateRecords
   { method: 'POST',  pattern: /^\/profiles\/[^/]+\/regulars$/ }, // add regular
   { method: 'PATCH', pattern: /^\/regulars\/\d+$/ },          // update regular (e.g. accompanying adult)
   { method: 'DELETE', pattern: /^\/regulars\/\d+$/ },         // remove regular

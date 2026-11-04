@@ -31,8 +31,7 @@
 
     <RecordAddModal
       v-if="showAdd"
-      :types="types"
-      :statuses="statuses"
+      :states="states"
       :working="workingAdd"
       :error="addError"
       @close="showAdd = false"
@@ -42,7 +41,7 @@
     <RecordEditModal
       v-if="editingRecord"
       :record="editingRecord"
-      :statuses="statuses"
+      :states="states"
       :working="workingEdit"
       :error="editError"
       :archive-click="showArchive ? () => emit('viewArchive', editingRecord!) : undefined"
@@ -56,6 +55,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { RecordResponse } from '../../../../types/api-responses'
+import type { RecordState } from '../../../../types/record-state'
 import RecordChip from '../records/RecordChip.vue'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
@@ -70,11 +70,10 @@ const props = withDefaults(defineProps<{
   viewAllTo?: string
   /** Shows View Archive in Edit Record (viewRecords); the page goes there on viewArchive. */
   showArchive?: boolean
-  types?: string[]
-  statuses?: string[]
+  /** The States list, for Add and Edit. */
+  states?: RecordState[]
 }>(), {
-  types: () => [],
-  statuses: () => [],
+  states: () => [],
 })
 
 const emit = defineEmits<{

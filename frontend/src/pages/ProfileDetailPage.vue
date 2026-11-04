@@ -112,8 +112,7 @@
         :allow-edit="viewer.can('editRecords')"
         :view-all-to="viewer.can('viewRecords') ? recordsPath({ id: store.profile.id, name: store.profile.name }) : undefined"
         :show-archive="viewer.can('viewRecords')"
-        :types="recordTypes"
-        :statuses="recordStatuses"
+        :states="recordStates"
         ref="recordListRef"
         @add-record="onAddRecord"
         @save-record="onSaveRecord"
@@ -176,6 +175,7 @@
 <script setup lang="ts">
 import { recordStatus } from '../../../types/record-status'
 import { ukToday } from '../../../types/uk-date'
+import type { RecordState } from '../../../types/record-state'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
@@ -265,8 +265,7 @@ const regularItems = computed<RegularListItem[]>(() =>
     regularId: g.regularId,
   }))
 )
-const recordTypes = ref<string[]>([])
-const recordStatuses = ref<string[]>([])
+const recordStates = ref<RecordState[]>([])
 
 usePageTitle(computed(() => store.profile?.name ?? 'Profile'))
 const entryListRef = ref<InstanceType<typeof ProfileEntryList> | null>(null)
@@ -287,8 +286,7 @@ onMounted(async () => {
     const res = await fetch('/api/profiles/records/options')
     if (res.ok) {
       const json = await res.json()
-      recordTypes.value = json.data?.types ?? []
-      recordStatuses.value = json.data?.statuses ?? []
+      recordStates.value = json.data?.states ?? []
     }
   } catch (e) {
     console.error('[ProfileDetailPage] Failed to load record options', e)

@@ -36,26 +36,24 @@ export async function createRecord(values: RecordValues): Promise<SharePointReco
 }
 
 /**
- * Sets the Profile's current Record of this Type (currentRecord), creating one if there isn't
- * one. `statusAndDate` overwrites both; `statusIfChanged` changes only a different State and
- * keeps the Date. A created Record is added to `records`, so later calls in the same batch find it.
+ * Gives the Profile this State for the Type (Records v2: a new State is a new Record, #322 §1).
+ * - No Record of the Type, or the current one has another State: creates a Record.
+ * - The current Record already has the State: `refreshDate` sets its Date (the consent page,
+ *   bulk Add); `leave` changes nothing (Eventbrite sync, whose dates are unreliable).
+ * A created Record is added to `records`, so later calls in the same batch see it.
  */
-export async function upsertRecord(
+export async function setRecordState(
   records: SharePointRecord[],
   values: RecordValues,
-  update: 'statusAndDate' | 'statusIfChanged',
+  sameState: 'refreshDate' | 'leave',
 ): Promise<'created' | 'updated' | 'unchanged'> {
-  const existing = currentRecord(records, values.profileId, values.type);
-  if (!existing) {
+  const current = currentRecord(records, values.profileId, values.type);
+  if (!current || recordStateName(current) !== values.status) {
     records.push(await createRecord(values));
     return 'created';
   }
-  if (update === 'statusIfChanged' && recordStateName(existing) === values.status) return 'unchanged';
-  const state = await requireState(values.type, values.status);
-  const fields = update === 'statusIfChanged'
-    ? { StateLookupId: state.id, Status: values.status }
-    : { StateLookupId: state.id, Status: values.status, Date: values.date };
-  await recordsRepository.update(existing.ID, fields);
-  Object.assign(existing, fields, { State: state });
+  if (sameState === 'leave') return 'unchanged';
+  await recordsRepository.update(current.ID, { Date: values.date });
+  current.Date = values.date;
   return 'updated';
 }

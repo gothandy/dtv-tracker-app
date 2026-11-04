@@ -179,8 +179,7 @@
 
       <RecordAddModal
         v-if="open === 'record-add'"
-        :types="mockRecordTypes"
-        :statuses="mockRecordStatuses"
+        :states="mockStates"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -190,7 +189,7 @@
       <RecordEditModal
         v-if="open === 'record-edit'"
         :record="mockRecord"
-        :statuses="mockRecordStatuses"
+        :states="mockStates"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -201,7 +200,7 @@
       <RecordEditModal
         v-if="open === 'record-edit-records'"
         :record="mockRecord"
-        :statuses="mockRecordStatuses"
+        :states="mockStates"
         :working="working"
         :error="error"
         title="Alice Example"
@@ -215,7 +214,7 @@
       <ProfileBulkRecordsModal
         v-if="open === 'bulk-records'"
         :count="3"
-        :record-options="{ types: mockRecordTypes, statuses: mockRecordStatuses }"
+        :states="mockStates"
         :working="working"
         :error="error"
         @close="closeModal('close')"
@@ -337,6 +336,7 @@ import ProfileEditModal from '../modals/ProfileEditModal.vue'
 import ProfileTransferModal from '../modals/ProfileTransferModal.vue'
 import RecordAddModal from '../modals/RecordAddModal.vue'
 import RecordEditModal from '../modals/RecordEditModal.vue'
+import type { RecordState } from '../../../../types/record-state'
 import ProfileBulkRecordsModal from '../modals/ProfileBulkRecordsModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import GroupAddFromEventbriteModal, { type EventbriteEventOption } from '../modals/GroupAddFromEventbriteModal.vue'
@@ -590,10 +590,21 @@ const mockTransferProfiles: PickerProfile[] = [
   { id: 4, name: 'David Evans', email: 'david@example.com' },
 ]
 
-const mockRecordTypes = [
-  'Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card',
+const mockStates: RecordState[] = [
+  { id: 1, type: 'Parking Permit', name: 'Invite', after: 'Invited' },
+  { id: 2, type: 'Parking Permit', name: 'Decline', after: 'Declined' },
+  { id: 3, type: 'Parking Permit', name: 'Active', before: 'Expires', after: 'Expired' },
+  { id: 4, type: 'Privacy Consent', name: 'Invited' },
+  { id: 5, type: 'Privacy Consent', name: 'Accepted' },
+  { id: 6, type: 'Photo Consent', name: 'Accepted' },
+  { id: 7, type: 'Photo Consent', name: 'Declined' },
+  { id: 8, type: 'Charity Membership', name: 'Invited' },
+  { id: 9, type: 'Charity Membership', name: 'Accepted' },
+  { id: 10, type: 'Discount Card', name: 'Invited' },
+  { id: 11, type: 'Discount Card', name: 'Accepted' },
+  { id: 12, type: 'First Aid Certificate', name: 'Active', before: 'Expires', after: 'Expired' },
+  { id: 13, type: 'DofE', name: 'Active', before: 'Starts', after: 'Started' },
 ]
-const mockRecordStatuses = ['Accepted', 'Invited', 'Declined', 'Pending']
 const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', storedStatus: 'Invited', label: 'Invited', date: '2026-01-15T00:00:00Z', notes: 'Form sent by email' }
 
 const session = { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' }

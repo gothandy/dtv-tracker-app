@@ -45,8 +45,8 @@ import type { ApiResponse, SharePointProfile } from '../../types/sharepoint';
 import { sharePoint } from '../config';
 import { requestOrigin } from '../services/request-origin';
 import { ukToday } from '../../types/uk-date';
-import { buildBadgeLookups, recordProfileId, recordStateName, recordsForProfile, recordType, toRecordResponse } from '../services/records';
-import { upsertRecord } from '../services/record-writer';
+import { buildBadgeLookups, currentRecords, recordProfileId, recordStateName, recordsForProfile, recordType, toRecordResponse } from '../services/records';
+import { setRecordState } from '../services/record-writer';
 import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
 import { matchesProfileRecordFilter, oneRecordPerType } from '../../types/profile-record-filter';
@@ -143,8 +143,9 @@ router.get('/profiles', async (req: Request, res: Response) => {
       }
     });
 
+    // Each Profile's current Record of each Type: the Record filters match on these (#322 §1)
     const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
-    for (const r of rawRecords) {
+    for (const r of currentRecords(rawRecords)) {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
@@ -271,8 +272,9 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     });
 
     // Build records map
+    // Each Profile's current Record of each Type: the Record filters match on these (#322 §1)
     const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
-    for (const r of rawRecords) {
+    for (const r of currentRecords(rawRecords)) {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
@@ -475,8 +477,8 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
     // Privacy Consent is always Accepted (backend enforces this); Photo Consent is the volunteer's choice
     const privacyType: RecordTypeName = 'Privacy Consent';
     const photoType: RecordTypeName = 'Photo Consent';
-    await upsertRecord(existing, { profileId, type: privacyType, status: 'Accepted', date: today }, 'statusAndDate');
-    await upsertRecord(existing, { profileId, type: photoType, status: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'statusAndDate');
+    await setRecordState(existing, { profileId, type: privacyType, status: 'Accepted', date: today }, 'refreshDate');
+    await setRecordState(existing, { profileId, type: photoType, status: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'refreshDate');
 
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
@@ -870,21 +872,16 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       }
     }
 
-    // Transfer records (skip if target already has the same type)
+    // Transfer every Record: a Profile can hold several of a Type, and the latest by Date is current (#322 §1)
     let recordsTransferred = 0;
     const sourceRecords = recordsForProfile(rawRecords, sourceProfile.ID);
-    const targetRecordTypes = new Set(recordsForProfile(rawRecords, targetProfile.ID).map(recordType));
     const recordsListGuid = sharePoint.lists.records;
 
     for (const record of sourceRecords) {
-      if (!targetRecordTypes.has(recordType(record))) {
-        await sharePointClient.updateListItem(recordsListGuid, record.ID, {
-          ProfileLookupId: String(targetProfile.ID)
-        });
-        recordsTransferred++;
-      } else {
-        await sharePointClient.deleteListItem(recordsListGuid, record.ID);
-      }
+      await sharePointClient.updateListItem(recordsListGuid, record.ID, {
+        ProfileLookupId: String(targetProfile.ID)
+      });
+      recordsTransferred++;
     }
 
     // Add source primary email to target if requested — non-fatal: transfer already committed above

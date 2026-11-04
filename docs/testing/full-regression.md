@@ -210,7 +210,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Profile detail → "Transfer" button → only visible when profile has entries
 - [ ] Search target → select → confirm
 - [ ] `POST /api/profiles/:slug/transfer` — `{ targetProfileId, deleteAfter? }`
-- [ ] Entries, regulars, records transferred. Duplicates skipped.
+- [ ] Entries and regulars transferred (duplicates skipped); every Record transferred
 - [ ] A Record added directly in SharePoint just before a Transfer is moved too, and Delete refuses a Profile with a Record added that way (both read Entries, Regulars and Records fresh, not from the cache)
 - [ ] Redirects to target profile (new ID-appended slug)
 
@@ -294,7 +294,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 
 ### H24c. Records page (admin)
 - [ ] Menu shows **Records** for Admin only; Check In opening `/records` is turned away, and `GET /api/records` returns 403 for Check In and Self-Service
-- [ ] Lists every Record (same total as Tools → Records Summary), sorted by Type then Profile name; each card: Type with the Profile's name below (and Notes, if any) on the left, State with the Date below on the right; State green for Invited and Accepted, black otherwise
+- [ ] Lists every Record (same total as the Records list in SharePoint), sorted by Type then Profile name; each card: Type with the Profile's name below (and Notes, if any) on the left, State with the Date below on the right; State green for Invited and Accepted, black otherwise
 - [ ] Type and Status filters; FY is on the Record's Date: All FY, each FY the Records' Dates fall in, Rolling (the year up to today) and Future (today or later), each only when it would show a Record; Records with no Date only under All FY
 - [ ] Filters cascade (each offers only what the others leave) and are kept in the address; Share copies the filtered link
 - [ ] Select all / tick cards: the count shows `n / total records`; changing filters drops ticked cards no longer shown
@@ -599,9 +599,6 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### M13. CSV exports
 - [ ] `GET /api/sessions/export` — downloads FE Hours CSV (this FY, past sessions)
 - [ ] `GET /api/records/export` — downloads Records CSV with hours breakdown
-- [ ] Tools → *Records Summary* downloads `{date} DTV Records Summary {environment}.json`: totals by Type and Status, the Records columns, and Profile counts with fingerprints; no names, emails or IDs. Check In and Self-Service get 403 from `GET /api/records/summary`
-- [ ] Records Summary `states`: null until the Records State column exists; then Records with and without a State, counts by State Type and Name, `typeMismatch` and `stateNotFound` both 0 after the migration
-- [ ] Tools → *Records Migration* (Admin only, temporary): *Dry Run* downloads the States it would add and the Records it would set, per Type, and writes nothing; it explains plainly if the State column is missing. *Run Migration* asks to confirm, then reports States added and Records set; a second run finds nothing to do
 - [ ] `GET /api/profiles/export?...` — downloads Profiles CSV with filter params
 
 ---

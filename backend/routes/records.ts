@@ -1,6 +1,6 @@
 /**
- * Records routes: the Type and Status choices, add, edit, delete and bulk add, and the Tools
- * Records CSV and summary. Every route checks a permission (types/permissions.ts);
+ * Records routes: the States (for Add and Edit), add, edit, delete and bulk add, and the Tools
+ * Records CSV. Every route checks a permission (types/permissions.ts);
  * route-permissions.test.ts fails if one doesn't.
  */
 
@@ -20,16 +20,12 @@ import {
   parseHours,
   profileSlug,
 } from '../services/data-layer';
-import { PROFILE_LOOKUP, RECORD_STATE, RECORD_STATE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { PROFILE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
 import { statesRepository } from '../services/repositories/states-repository';
-import { runRecordsMigration } from '../services/records-migration';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
 import { currentRecords, recordProfileId, recordStateName, recordType, toRecordResponse } from '../services/records';
-import { createRecord, requireState, upsertRecord } from '../services/record-writer';
-import { summariseRecords } from '../services/records-summary';
-import { sharePointClient } from '../services/sharepoint-client';
+import { createRecord, requireState, setRecordState } from '../services/record-writer';
 import { requirePermission } from '../middleware/require-permission';
-import { sharePoint, environmentName } from '../config';
 import { ukToday } from '../../types/uk-date';
 import type { ApiResponse } from '../../types/sharepoint';
 import type { RecordListItemResponse, RecordListResponse } from '../../types/api-responses';
@@ -70,12 +66,9 @@ router.get('/records', requirePermission('viewRecords'), async (req: Request, re
 
 router.get('/profiles/records/options', requirePermission('viewRecordOptions'), async (req: Request, res: Response) => {
   try {
-    const listGuid = sharePoint.lists.records;
-    const [types, statuses] = await Promise.all([
-      sharePointClient.getColumnChoices(listGuid, 'Type'),
-      sharePointClient.getColumnChoices(listGuid, 'Status')
-    ]);
-    res.json({ success: true, data: { types, statuses } });
+    // The States list: Add and Edit offer each Type's States (#322 §3)
+    const states = (await statesRepository.getStates()).slice().sort((a, b) => a.id - b.id);
+    res.json({ success: true, data: { states } });
   } catch (error: any) {
     console.error('Error fetching record options:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch record options' });
@@ -203,7 +196,7 @@ router.post('/records/bulk', requirePermission('bulkEditRecords'), async (req: R
       const id = parseInt(String(profileId), 10);
       if (isNaN(id)) continue;
 
-      const result = await upsertRecord(allRecords, { profileId: id, type, status, date: recordDate }, 'statusAndDate');
+      const result = await setRecordState(allRecords, { profileId: id, type, status, date: recordDate }, 'refreshDate');
       if (result === 'created') created++;
       else updated++;
     }
@@ -323,79 +316,6 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
       error: 'Failed to export records',
       message: error.message
     });
-  }
-});
-
-// Totals only, no volunteer data: for planning the Records v2 migration (#322).
-router.get('/records/summary', requirePermission('exportRecordsSummary'), async (req: Request, res: Response) => {
-  try {
-    const [records, profiles, recordsColumns] = await Promise.all([
-      recordsRepository.getAll(),
-      profilesRepository.getAll(),
-      sharePointClient.getListColumns(sharePoint.lists.records, { fresh: true })
-    ]);
-
-    // The Records v2 migration check, once the State column exists (#322 §5)
-    const hasStateColumn = recordsColumns.some((c: any) => c.name === RECORD_STATE);
-    const states = hasStateColumn
-      ? {
-          recordStates: await sharePointClient.getListItems(sharePoint.lists.records, `ID,Type,${RECORD_STATE_LOOKUP}`),
-          states: await statesRepository.getAll(),
-        }
-      : undefined;
-
-    const environment = environmentName();
-    const today = ukToday();
-    const summary = summariseRecords({
-      environment,
-      generatedAt: new Date().toISOString(),
-      today,
-      records,
-      profiles,
-      recordsColumns,
-      states
-    });
-
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${today} DTV Records Summary ${environment}.json"`);
-    res.send(JSON.stringify(summary, null, 2));
-  } catch (error: any) {
-    console.error('Error exporting records summary:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to export records summary',
-      message: error.message
-    });
-  }
-});
-
-// Records v2 migration (#322 §5), from Tools. GET is the dry run (a JSON download); POST with
-// { confirm: 'run' } writes. Temporary: removed in Records v2 PR 1 (#323).
-router.get('/records/migration', requirePermission('migrateRecords'), async (req: Request, res: Response) => {
-  try {
-    const environment = environmentName();
-    const report = await runRecordsMigration({ dryRun: true, environment });
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${ukToday()} DTV Records Migration Dry Run ${environment}.json"`);
-    res.send(JSON.stringify(report, null, 2));
-  } catch (error: any) {
-    console.error('Error in records migration dry run:', error);
-    res.status(500).json({ success: false, error: 'Records migration dry run failed', message: error.message });
-  }
-});
-
-router.post('/records/migration', requirePermission('migrateRecords'), async (req: Request, res: Response) => {
-  if (req.body?.confirm !== 'run') {
-    res.status(400).json({ success: false, error: 'Send { "confirm": "run" } to run the migration' });
-    return;
-  }
-  try {
-    const report = await runRecordsMigration({ dryRun: false, environment: environmentName() });
-    console.log(`[Records migration] ${report.environment}: ${report.statesToInsert.length} States inserted, ${report.titlesSet} Titles fixed, ${report.recordsSet} Records set, ${report.errors?.length ?? 0} errors`);
-    res.json({ success: true, data: report });
-  } catch (error: any) {
-    console.error('Error running records migration:', error);
-    res.status(500).json({ success: false, error: 'Records migration failed', message: error.message });
   }
 });
 

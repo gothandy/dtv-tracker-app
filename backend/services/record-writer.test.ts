@@ -9,7 +9,7 @@ vi.mock('./repositories/states-repository', () => ({
 
 import { recordsRepository } from './repositories/records-repository'
 import { statesRepository } from './repositories/states-repository'
-import { createRecord, upsertRecord } from './record-writer'
+import { createRecord, setRecordState } from './record-writer'
 
 const states = [
   { id: 1, type: 'Photo Consent', name: 'Accepted' },
@@ -40,29 +40,33 @@ describe('createRecord', () => {
   })
 })
 
-describe('upsertRecord', () => {
+describe('setRecordState', () => {
   const values = { profileId: 10, type: 'Photo Consent', status: 'Declined', date: '2026-11-03' }
 
   it('creates a Record when the Profile has none of the Type, and adds it to the batch', async () => {
     const records = [record(1, 11, 'Accepted')]
-    expect(await upsertRecord(records, values, 'statusAndDate')).toBe('created')
+    expect(await setRecordState(records, values, 'refreshDate')).toBe('created')
     expect(records.map(r => r.ID)).toEqual([1, 50])
-    expect(await upsertRecord(records, { ...values, status: 'Accepted' }, 'statusAndDate')).toBe('updated')
-    expect(recordsRepository.create).toHaveBeenCalledTimes(1)
   })
 
-  it('statusAndDate overwrites the State and Date on the current Record', async () => {
-    const records = [record(1, 10, 'Accepted', '2025-01-01'), record(2, 10, 'Accepted', '2025-06-01')]
-    expect(await upsertRecord(records, values, 'statusAndDate')).toBe('updated')
-    expect(recordsRepository.update).toHaveBeenCalledWith(2, { StateLookupId: 2, Status: 'Declined', Date: '2026-11-03' })
-  })
-
-  it('statusIfChanged changes only a different State and keeps the Date', async () => {
-    const records = [record(1, 10, 'Accepted')]
-    expect(await upsertRecord(records, { ...values, status: 'Accepted' }, 'statusIfChanged')).toBe('unchanged')
+  it('creates a new Record when the current State is different, leaving the old one as it was', async () => {
+    const records = [record(1, 10, 'Accepted', '2025-01-01')]
+    expect(await setRecordState(records, values, 'refreshDate')).toBe('created')
+    expect(recordsRepository.create).toHaveBeenCalledWith({ ProfileLookupId: 10, StateLookupId: 2, Type: 'Photo Consent', Status: 'Declined', Date: '2026-11-03' })
     expect(recordsRepository.update).not.toHaveBeenCalled()
-    expect(await upsertRecord(records, values, 'statusIfChanged')).toBe('updated')
-    expect(recordsRepository.update).toHaveBeenCalledWith(1, { StateLookupId: 2, Status: 'Declined' })
-    expect(records[0].State).toEqual(states[1])
+  })
+
+  it('compares with the current Record (the latest by Date), not an older one', async () => {
+    const records = [record(1, 10, 'Declined', '2025-01-01'), record(2, 10, 'Accepted', '2025-06-01')]
+    expect(await setRecordState(records, values, 'leave')).toBe('created')
+  })
+
+  it('the same State: refreshDate sets its Date; leave changes nothing', async () => {
+    const records = [record(1, 10, 'Declined', '2025-01-01')]
+    expect(await setRecordState(records, values, 'leave')).toBe('unchanged')
+    expect(recordsRepository.update).not.toHaveBeenCalled()
+    expect(await setRecordState(records, values, 'refreshDate')).toBe('updated')
+    expect(recordsRepository.update).toHaveBeenCalledWith(1, { Date: '2026-11-03' })
+    expect(recordsRepository.create).not.toHaveBeenCalled()
   })
 })

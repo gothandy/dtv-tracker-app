@@ -21,7 +21,7 @@
     <RecordEditModal
       v-if="editingRecord"
       :record="editingRecord"
-      :statuses="statuses"
+      :states="states"
       :title="editingRecord.profileName"
       :profile-click="editingRecord.profileSlug ? () => router.push(profilePath(editingRecord!.profileSlug!)) : undefined"
       :archive-click="editingRecord.profileId !== undefined && viewer.can('viewRecords') ? onViewArchive : undefined"
@@ -42,6 +42,7 @@ import { useViewer } from '../composables/useViewer'
 import type { RecordListItemResponse } from '../../../types/api-responses'
 import { recordStatus } from '../../../types/record-status'
 import { ukToday } from '../../../types/uk-date'
+import type { RecordState } from '../../../types/record-state'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import RecordListFilter from '../components/records/RecordListFilter.vue'
@@ -57,7 +58,7 @@ const viewer = useViewer()
 
 const selected = ref<number[]>([])
 const filtered = ref<RecordListItemResponse[]>([])
-const statuses = ref<string[]>([])
+const states = ref<RecordState[]>([])
 const editingRecord = ref<RecordListItemResponse | null>(null)
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
@@ -73,7 +74,7 @@ onMounted(async () => {
     const res = await fetch('/api/profiles/records/options')
     if (!res.ok) throw new Error(`Failed to load record options (${res.status})`)
     const json = await res.json()
-    statuses.value = json.data?.statuses ?? []
+    states.value = json.data?.states ?? []
   } catch (e) {
     console.error('[RecordsPage] failed to load record options', e)
   }

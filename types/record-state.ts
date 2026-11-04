@@ -51,3 +51,13 @@ export function stateStyle(state: RecordState, date: string | undefined, onDate:
   const style = showsBefore(state, date, onDate) ? state.beforeStyle : state.afterStyle;
   return style ? STYLES[style] : undefined;
 }
+
+/** The Types in the States list, in the order their first State was added (by ID). */
+export function stateTypes(states: RecordState[]): string[] {
+  return [...new Set([...states].sort((a, b) => a.id - b.id).map(s => s.type).filter(Boolean))];
+}
+
+/** A Type's States, in the order they were added (by ID): what Add and Edit offer. */
+export function statesOfType(states: RecordState[], type: string): RecordState[] {
+  return states.filter(s => s.type === type).sort((a, b) => a.id - b.id);
+}
