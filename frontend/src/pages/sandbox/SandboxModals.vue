@@ -63,6 +63,14 @@
           <AppButton label="Open" @click="open = 'record-edit'" />
         </div>
         <div>
+          <h2>Record Edit (Records page: name, View Profile, View Archive)</h2>
+          <AppButton label="Open" @click="open = 'record-edit-records'" />
+        </div>
+        <div>
+          <h2>Bulk Add Records (Profiles)</h2>
+          <AppButton label="Open" @click="open = 'bulk-records'" />
+        </div>
+        <div>
           <h2>Delete</h2>
           <AppButton label="Open" @click="open = 'delete'" />
         </div>
@@ -190,6 +198,30 @@
         @delete="onRecordDelete"
       />
 
+      <RecordEditModal
+        v-if="open === 'record-edit-records'"
+        :record="mockRecord"
+        :statuses="mockRecordStatuses"
+        :working="working"
+        :error="error"
+        title="Alice Example"
+        :profile-click="() => simulate('record-edit: view profile')"
+        :archive-click="() => simulate('record-edit: view archive')"
+        @close="closeModal('close')"
+        @save="onRecordSave"
+        @delete="onRecordDelete"
+      />
+
+      <ProfileBulkRecordsModal
+        v-if="open === 'bulk-records'"
+        :count="3"
+        :record-options="{ types: mockRecordTypes, statuses: mockRecordStatuses }"
+        :working="working"
+        :error="error"
+        @close="closeModal('close')"
+        @save="(p: unknown) => simulate(`bulk-records: save → ${JSON.stringify(p)}`)"
+      />
+
       <GroupEditModal
         v-if="open === 'group-edit'"
         :group="mockGroup"
@@ -305,6 +337,7 @@ import ProfileEditModal from '../modals/ProfileEditModal.vue'
 import ProfileTransferModal from '../modals/ProfileTransferModal.vue'
 import RecordAddModal from '../modals/RecordAddModal.vue'
 import RecordEditModal from '../modals/RecordEditModal.vue'
+import ProfileBulkRecordsModal from '../modals/ProfileBulkRecordsModal.vue'
 import GroupAddSessionModal from '../modals/GroupAddSessionModal.vue'
 import GroupAddFromEventbriteModal, { type EventbriteEventOption } from '../modals/GroupAddFromEventbriteModal.vue'
 import SessionAddTagsModal from '../modals/SessionAddTagsModal.vue'
@@ -561,7 +594,7 @@ const mockRecordTypes = [
   'Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card',
 ]
 const mockRecordStatuses = ['Accepted', 'Invited', 'Declined', 'Pending']
-const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', storedStatus: 'Invited', date: '2026-01-15T00:00:00Z' }
+const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', storedStatus: 'Invited', date: '2026-01-15T00:00:00Z', notes: 'Form sent by email' }
 
 const session = { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' }
 const mockEntries: EntryItem[] = [

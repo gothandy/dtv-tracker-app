@@ -92,6 +92,12 @@
       <h2>EntryListActions — all selected</h2>
       <EntryListActions :entries="mockEntries" :selected="mockEntries.map(e => e.id)" />
 
+      <h2>RecordListActions — no selection</h2>
+      <RecordListActions :records="sampleRecords" :selected="[]" />
+
+      <h2>RecordListActions — 2 selected</h2>
+      <RecordListActions :records="sampleRecords" :selected="[1, 3]" />
+
       <label class="fail-toggle">
         <input type="checkbox" v-model="failNext" /> Fail next action
       </label>
@@ -123,7 +129,8 @@ import SessionDetailActions from '../../components/sessions/SessionDetailActions
 import SessionListActions from '../../components/sessions/SessionListActions.vue'
 import GroupDetailActions from '../../components/groups/GroupDetailActions.vue'
 import EntryListActions from '../../components/entries/EntryListActions.vue'
-import type { GroupDetailResponse, SessionDetailResponse, EntryListItemResponse } from '../../../../types/api-responses'
+import RecordListActions from '../../components/records/RecordListActions.vue'
+import type { GroupDetailResponse, SessionDetailResponse, EntryListItemResponse, RecordListItemResponse } from '../../../../types/api-responses'
 import type { Session } from '../../types/session'
 
 const actionsWithEbRef = ref<InstanceType<typeof GroupDetailActions> | null>(null)
@@ -158,6 +165,13 @@ async function onGroupAction(actions: ActionsInstance, label: string, data?: unk
 function onListAddTags() {
   log('add-tags → (modal would open on real page)')
 }
+
+const sampleRecords: RecordListItemResponse[] = [
+  { id: 1, type: 'Discount Card', status: 'Accepted', storedStatus: 'Accepted', date: '2025-05-02', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
+  { id: 2, type: 'Discount Card', status: 'Invited', storedStatus: 'Invited', date: '2026-02-23', profileId: 12, profileName: 'Bob Carter', profileSlug: 'bob-carter-12' },
+  { id: 3, type: 'Photo Consent', status: 'Declined', storedStatus: 'Declined', date: '2026-10-02', notes: 'Asked again in May', profileId: 13, profileName: 'Carol Davies', profileSlug: 'carol-davies-13' },
+  { id: 4, type: 'First Aid Certificate', status: 'Expires', storedStatus: 'Expires', date: '2027-08-22', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
+]
 
 const mockGroups = [
   { id: 1, name: 'Sheepskull', key: 'sheepskull' },
