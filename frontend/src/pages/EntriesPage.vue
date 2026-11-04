@@ -37,6 +37,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
+      :can-cancel="viewer.can('cancelEntries')"
+      :can-delete="viewer.can('deleteEntries')"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"

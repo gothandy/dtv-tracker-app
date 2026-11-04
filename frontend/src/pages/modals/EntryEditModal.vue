@@ -3,7 +3,7 @@
     :title="title ?? entry.profile.name"
     action="Save"
     action-icon="save"
-    :show-delete="viewer.can('deleteEntries')"
+    :show-delete="canDelete"
     :delete-disabled="!form.cancelled"
     delete-text="Delete"
     :working="working"
@@ -64,7 +64,7 @@
         <ModalFormInput v-model="form.eventbriteAttendeeId" :disabled="working" />
       </FormRow>
 
-      <FormRow v-if="viewer.can('cancelEntries')" :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
+      <FormRow v-if="canCancel" :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
         <ModalFormCheckbox v-model="form.cancelled" />
       </FormRow>
 
@@ -89,7 +89,6 @@ import ModalFormInput from '../../components/forms/ModalFormInput.vue'
 import ModalFormCheckbox from '../../components/forms/ModalFormCheckbox.vue'
 import ModalFormSelect from '../../components/forms/ModalFormSelect.vue'
 import { iconsForEntry } from '../../utils/labelIcons'
-import { useViewer } from '../../composables/useViewer'
 import { ukToday } from '../../../../types/uk-date'
 
 const props = defineProps<{
@@ -97,12 +96,14 @@ const props = defineProps<{
   working: boolean
   error?: string
   title?: string
+  /** Cancel Booking, both ways (the page passes viewer.can('cancelEntries')). */
+  canCancel?: boolean
+  /** Delete Entry, on a cancelled entry (the page passes viewer.can('deleteEntries')). */
+  canDelete?: boolean
   profileClick?: () => void
   sessionClick?: () => void
   sessionAdults?: { id: number; name: string }[]
 }>()
-
-const viewer = useViewer()
 
 const emit = defineEmits<{
   close: []

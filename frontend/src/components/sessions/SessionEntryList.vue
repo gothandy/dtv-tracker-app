@@ -35,6 +35,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
+      :can-cancel="canCancel"
+      :can-delete="canDelete"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-adults="sessionAdults"
       :working="workingEdit"
@@ -86,6 +88,9 @@ type AddPayload = { profileId: number } | { newName: string; newEmail: string }
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 const props = defineProps<{
+  /** Passed on to Edit Entry (the page works these out with viewer.can). */
+  canCancel?: boolean
+  canDelete?: boolean
   entries: EntryItem[]
   allowEdit: boolean
   isAdmin?: boolean
