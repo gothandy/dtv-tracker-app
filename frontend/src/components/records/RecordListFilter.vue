@@ -9,8 +9,9 @@
       <option v-for="s in options.statuses" :key="s" :value="s">{{ s }}</option>
     </select>
     <FyFilter v-model="filters.fy" :options="options.fyOptions" class="list-filter-select" />
-    <button v-if="filters.profileId !== undefined" class="list-filter-chip" @click="clearProfileFilter">
-      {{ profileName || 'Profile' }} ×
+    <button v-if="filters.profileId !== undefined" class="list-filter-chip" :aria-label="`Clear ${profileName || 'Profile'} filter`" @click="clearProfileFilter">
+      {{ profileName || 'Profile' }}
+      <img src="/icons/close.svg" width="10" height="10" alt="" class="svg-white" />
     </button>
   </div>
 </template>

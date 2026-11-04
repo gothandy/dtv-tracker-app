@@ -26,8 +26,9 @@
       <option value="">All entries</option>
       <option v-for="opt in qualityOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
     </select>
-    <button v-if="profileName" class="list-filter-chip" @click="clearProfileFilter">
-      {{ profileName }} ×
+    <button v-if="profileName" class="list-filter-chip" :aria-label="`Clear ${profileName} filter`" @click="clearProfileFilter">
+      {{ profileName }}
+      <img src="/icons/close.svg" width="10" height="10" alt="" class="svg-white" />
     </button>
   </div>
 </template>
