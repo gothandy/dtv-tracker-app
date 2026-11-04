@@ -107,7 +107,7 @@
     <!-- Recent sign-ups — admin/check-in only -->
     <section v-if="profile.hasCheckInAccess" class="mb-8">
       <SectionHeader>Recent Bookings</SectionHeader>
-      <RecentEntryList :is-admin="profile.isAdmin" />
+      <RecentEntryList :is-admin="profile.isAdmin" :can-cancel="profile.can('cancelEntries')" :can-delete="profile.can('deleteEntries')" />
     </section>
 
     <DebugData label="homepage personal context" :item="{

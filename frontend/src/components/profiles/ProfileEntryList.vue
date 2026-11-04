@@ -40,8 +40,9 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
+      :can-cancel="canCancel"
+      :can-delete="canDelete"
       :title="cardTitle(editingEntry)"
-      :is-admin="isAdmin"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
       :working="workingEdit"
@@ -69,9 +70,11 @@ import { ukToday, ukYearAgo } from '../../../../types/uk-date'
 type EditData = { checkedIn: boolean; count: number; hours: number; notes: string; accompanyingAdultId: number | null; labels: string[]; cancelled: boolean; eventbriteAttendeeId: string | null }
 
 const props = defineProps<{
+  /** Passed on to Edit Entry (the page works these out with viewer.can). */
+  canCancel?: boolean
+  canDelete?: boolean
   entries: EntryItem[]
   allowEdit?: boolean
-  isAdmin?: boolean
   workingId?: number | null
 }>()
 

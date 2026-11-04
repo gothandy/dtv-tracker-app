@@ -26,7 +26,8 @@
     <EntryEditModal
       v-if="editingEntry"
       :entry="editingEntry"
-      :is-admin="true"
+      :can-cancel="canCancel"
+      :can-delete="canDelete"
       :profile-click="editingEntry.profile.slug ? () => router.push(profilePath(editingEntry!.profile.slug!)) : undefined"
       :session-click="() => router.push(sessionPath(editingEntry!.session.groupKey, editingEntry!.session.date))"
       :session-adults="sessionAdults"
@@ -50,7 +51,12 @@ import EntryListItem from './entries/EntryListItem.vue'
 import EntryEditModal from '../pages/modals/EntryEditModal.vue'
 import { fetchSessionAdults } from '../utils/fetchSessionAdults'
 
-const props = defineProps<{ isAdmin?: boolean }>()
+const props = defineProps<{
+  isAdmin?: boolean
+  /** Passed on to Edit Entry (the page works these out with viewer.can). */
+  canCancel?: boolean
+  canDelete?: boolean
+}>()
 
 const router = useRouter()
 const since = ref<string>('24h')

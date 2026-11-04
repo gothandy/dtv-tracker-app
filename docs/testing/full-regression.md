@@ -168,6 +168,9 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Label picker buttons toggle label strings in `Labels` field (CSR, Late, DigLead, FirstAider)
 - [ ] FirstAider button only enabled when profile has a valid first aid cert (`profile.stats.isFirstAider`)
 - [ ] Icon updates in entry card immediately after save
+- [ ] **Check In** can save Edit Entry (e.g. tick Checked In or a label) without touching Cancel Booking
+- [ ] Admin and Check In can cancel a booking and un-cancel it (Cancel Booking, `cancelEntries`); the original cancellation date is kept when saving an already-cancelled entry
+- [ ] Delete Entry shows for Admin only (`deleteEntries`), and only on a cancelled entry; Check In gets 403 from `DELETE /api/entries/:id`
 
 ### H11. Delete entry
 - [ ] Entry detail → red Delete button → confirmation

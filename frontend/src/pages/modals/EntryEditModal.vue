@@ -3,7 +3,7 @@
     :title="title ?? entry.profile.name"
     action="Save"
     action-icon="save"
-    :show-delete="isAdmin"
+    :show-delete="canDelete"
     :delete-disabled="!form.cancelled"
     delete-text="Delete"
     :working="working"
@@ -64,7 +64,7 @@
         <ModalFormInput v-model="form.eventbriteAttendeeId" :disabled="working" />
       </FormRow>
 
-      <FormRow :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
+      <FormRow v-if="canCancel" :title="form.cancelled ? 'Uncancel Booking' : 'Cancel Booking'">
         <ModalFormCheckbox v-model="form.cancelled" />
       </FormRow>
 
@@ -96,7 +96,10 @@ const props = defineProps<{
   working: boolean
   error?: string
   title?: string
-  isAdmin?: boolean
+  /** Cancel Booking, both ways (the page passes viewer.can('cancelEntries')). */
+  canCancel?: boolean
+  /** Delete Entry, on a cancelled entry (the page passes viewer.can('deleteEntries')). */
+  canDelete?: boolean
   profileClick?: () => void
   sessionClick?: () => void
   sessionAdults?: { id: number; name: string }[]

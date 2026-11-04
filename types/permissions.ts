@@ -4,7 +4,7 @@
  * The server checks the same table (backend/middleware/require-permission.ts), so the
  * screens and the API always agree.
  *
- * Today this covers email templates, projects and Records; the rest of the app still checks roles directly
+ * Today this covers email templates, projects, Records and entries (cancel and delete); the rest of the app still checks roles directly
  * and moves over as each page is next touched (#293).
  */
 
@@ -37,6 +37,10 @@ export const PERMISSIONS = {
   exportRecordsSummary: ['admin'],
   /** Dry run and run the Records v2 migration from Tools (#322 §5). Temporary: removed in PR 1. */
   migrateRecords: ['admin'],
+  /** Cancel a booking, and undo a cancellation (Edit Entry's Cancel Booking). */
+  cancelEntries: ['checkin', 'admin'],
+  /** Delete an entry (only once it's cancelled). */
+  deleteEntries: ['admin'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
