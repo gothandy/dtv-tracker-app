@@ -40,6 +40,7 @@ const examples: RecordListItemResponse[] = [
   record(3, 'Parking Permit', 'Invited', 'info', 'Cara Example', '2026-01-15'),
   record(4, 'First Aid Certificate', 'Expired', 'warn', 'Dan Example', '2025-08-22'),
   record(5, 'Privacy Consent', 'Given', 'active', 'Eve Example', '2026-02-24'),
+  record(6, 'First Aid Certificate', 'Expires', 'active', 'Frances Example-Longname', '2027-03-01', 'St John Ambulance, 3 day First Aid at Work, certificate number FAW-2026-118834, renewed early'),
 ]
 </script>
 
