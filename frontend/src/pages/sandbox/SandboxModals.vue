@@ -75,6 +75,10 @@
           <AppButton label="Open" @click="open = 'delete'" />
         </div>
         <div>
+          <h2>Confirm</h2>
+          <AppButton label="Open" @click="open = 'confirm'" />
+        </div>
+        <div>
           <h2>About</h2>
           <AppButton label="Open" @click="open = 'about'" />
         </div>
@@ -271,6 +275,17 @@
         @save="onAddTags"
       />
 
+      <ConfirmModal
+        v-if="open === 'confirm'"
+        title="Change State?"
+        body="Updating the Record to Withdrawn will archive this Record and create a new one."
+        confirm-label="Add New"
+        confirm-icon="add"
+        :working="working"
+        @close="closeModal('close')"
+        @confirm="simulate('confirm: Add New')"
+      />
+
       <DeleteModal
         v-if="open === 'delete'"
         title="Delete something?"
@@ -333,6 +348,7 @@ import EntryAddModal from '../modals/EntryAddModal.vue'
 import EntryUploadPickerModal from '../modals/EntryUploadPickerModal.vue'
 import MediaEditModal from '../modals/MediaEditModal.vue'
 import DeleteModal from '../modals/DeleteModal.vue'
+import ConfirmModal from '../modals/ConfirmModal.vue'
 import GroupEditModal from '../modals/GroupEditModal.vue'
 import ProfileEditModal from '../modals/ProfileEditModal.vue'
 import ProfileTransferModal from '../modals/ProfileTransferModal.vue'

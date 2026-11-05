@@ -26,9 +26,9 @@ beforeEach(() => {
 })
 
 describe('createRecord', () => {
-  it('writes the Profile, the State lookup (and the old Type and Status) and Date, and returns the Record with its State', async () => {
+  it('writes the Profile, the State lookup and Date, and returns the Record with its State', async () => {
     const created = await createRecord({ profileId: 10, type: 'Photo Consent', status: 'Accepted', date: '2026-11-03' })
-    expect(recordsRepository.create).toHaveBeenCalledWith({ ProfileLookupId: 10, StateLookupId: 1, Type: 'Photo Consent', Status: 'Accepted', Date: '2026-11-03' })
+    expect(recordsRepository.create).toHaveBeenCalledWith({ ProfileLookupId: 10, StateLookupId: 1, Date: '2026-11-03' })
     expect(created.ID).toBe(50)
     expect(created.State).toEqual(states[0])
   })
@@ -52,7 +52,7 @@ describe('setRecordState', () => {
   it('creates a new Record when the current State is different, leaving the old one as it was', async () => {
     const records = [record(1, 10, 'Accepted', '2025-01-01')]
     expect(await setRecordState(records, values, 'refreshDate')).toBe('created')
-    expect(recordsRepository.create).toHaveBeenCalledWith({ ProfileLookupId: 10, StateLookupId: 2, Type: 'Photo Consent', Status: 'Declined', Date: '2026-11-03' })
+    expect(recordsRepository.create).toHaveBeenCalledWith({ ProfileLookupId: 10, StateLookupId: 2, Date: '2026-11-03' })
     expect(recordsRepository.update).not.toHaveBeenCalled()
   })
 

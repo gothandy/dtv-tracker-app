@@ -169,6 +169,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] FirstAider button only enabled when profile has a valid first aid cert (`profile.stats.isFirstAider`)
 - [ ] Icon updates in entry card immediately after save
 - [ ] **Check In** can save Edit Entry (e.g. tick Checked In or a label) without touching Cancel Booking
+- [ ] A checked-in entry with the Hours box cleared saves as 0 hours (no "Hours must be a non-negative number")
 - [ ] Admin and Check In can cancel a booking and un-cancel it (Cancel Booking, `cancelEntries`); the original cancellation date is kept when saving an already-cancelled entry
 - [ ] Delete Entry shows for Admin only (`deleteEntries`), and only on a cancelled entry; Check In gets 403 from `DELETE /api/entries/:id`
 

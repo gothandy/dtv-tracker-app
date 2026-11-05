@@ -32,9 +32,11 @@
     <RecordAddModal
       v-if="showAdd"
       :states="states"
+      :initial-type="addPrefill?.type"
+      :initial-status="addPrefill?.status"
       :working="workingAdd"
       :error="addError"
-      @close="showAdd = false"
+      @close="showAdd = false; addPrefill = null"
       @add="onAdd"
     />
 
@@ -45,6 +47,8 @@
       :working="workingEdit"
       :error="editError"
       :archive-click="showArchive ? () => emit('viewArchive', editingRecord!) : undefined"
+      :is-current="isCurrentRecord(records, editingRecord)"
+      @change-state="onChangeState"
       @close="editingRecord = null"
       @save="onSave"
       @delete="onDelete"
@@ -57,6 +61,7 @@ import { ref } from 'vue'
 import type { RecordResponse } from '../../../../types/api-responses'
 import type { RecordState } from '../../../../types/record-state'
 import RecordChip from '../records/RecordChip.vue'
+import { isCurrentRecord } from '../../utils/currentRecord'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
 
@@ -90,7 +95,18 @@ const workingEdit = ref(false)
 const addError = ref('')
 const editError = ref('')
 
+/** Type and State for Add, when it opens from Edit Record's change of State. */
+const addPrefill = ref<{ type: string; status: string } | null>(null)
+
 function openAdd() {
+  addPrefill.value = null
+  showAdd.value = true
+}
+
+/** A new State for the current Record: add a new Record, pre-filled (#322 §1). */
+function onChangeState(status: string) {
+  addPrefill.value = { type: editingRecord.value!.type, status }
+  editingRecord.value = null
   showAdd.value = true
 }
 
@@ -119,6 +135,7 @@ function onDelete() {
 defineExpose({
   onAddSuccess() {
     showAdd.value = false
+    addPrefill.value = null
     workingAdd.value = false
     addError.value = ''
   },

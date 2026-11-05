@@ -110,7 +110,7 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       return;
     }
     const { status, date, notes } = req.body;
-    const fields: { StateLookupId?: number; Status?: string; Date?: string; Notes?: string } = {};
+    const fields: { StateLookupId?: number; Date?: string; Notes?: string } = {};
     if (typeof date === 'string') fields.Date = date;
     if (typeof notes === 'string') {
       const trimmed = notes.trim();
@@ -138,7 +138,6 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       }
       patchState = await requireState(recordType(recordForPatch), status);
       fields.StateLookupId = patchState.id;
-      fields.Status = status;
     }
 
     await recordsRepository.update(recordId, fields);

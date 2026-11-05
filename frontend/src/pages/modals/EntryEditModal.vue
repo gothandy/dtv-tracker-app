@@ -194,7 +194,8 @@ function save() {
   emit('save', {
     checkedIn: form.checkedIn,
     count: form.count,
-    hours: form.hours,
+    // A blank Hours box means no hours (the number box gives '' when empty)
+    hours: Number(form.hours) || 0,
     notes: form.notes,
     accompanyingAdultId: form.accompanyingAdultId,
     labels: form.labels,

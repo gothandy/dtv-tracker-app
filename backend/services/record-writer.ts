@@ -1,8 +1,7 @@
 /**
  * Writing Records: every new or changed Record (Add, bulk Add, the consent page, Eventbrite
  * sync) goes through here. A Record's State is given by Type and State Name and written as the
- * State lookup (Records v2, #322); the old Type and Status columns are written alongside until
- * they're deleted (#323).
+ * State lookup (Records v2, #322).
  */
 
 import { SharePointRecord } from '../../types/sharepoint';
@@ -30,7 +29,7 @@ export async function requireState(type: string, name: string): Promise<RecordSt
 /** Creates a Record and returns it as it would be read back. */
 export async function createRecord(values: RecordValues): Promise<SharePointRecord> {
   const state = await requireState(values.type, values.status);
-  const fields = { ProfileLookupId: values.profileId, StateLookupId: state.id, Type: values.type, Status: values.status, Date: values.date };
+  const fields = { ProfileLookupId: values.profileId, StateLookupId: state.id, Date: values.date };
   const id = await recordsRepository.create(fields);
   return { ID: id, ...fields, State: state } as SharePointRecord;
 }

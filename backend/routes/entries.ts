@@ -634,7 +634,8 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       fields.Count = countNum;
     }
     if (hours !== undefined) {
-      const hoursNum = parseFloat(String(hours));
+      // A blank Hours box (or null) means no hours
+      const hoursNum = hours === '' || hours === null ? 0 : parseFloat(String(hours));
       if (isNaN(hoursNum) || hoursNum < 0) {
         res.status(400).json({ success: false, error: 'Hours must be a non-negative number' });
         return;

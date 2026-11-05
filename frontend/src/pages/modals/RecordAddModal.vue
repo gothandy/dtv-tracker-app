@@ -48,6 +48,9 @@ export interface AddRecordPayload {
 const props = defineProps<{
   /** The States list: Types and each Type's States come from here. */
   states: RecordState[]
+  /** Pre-filled Type and State (from Edit Record's change of State). */
+  initialType?: string
+  initialStatus?: string
   working: boolean
   error?: string
 }>()
@@ -60,8 +63,8 @@ const emit = defineEmits<{
 const today = ukToday()
 
 const form = reactive({
-  type: '',
-  status: '',
+  type: props.initialType ?? '',
+  status: props.initialStatus ?? '',
   date: today,
 })
 

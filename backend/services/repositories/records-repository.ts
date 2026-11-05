@@ -17,8 +17,7 @@ class RecordsRepository {
   private get listGuid(): string { return sharePoint.lists.records; }
 
   private get selectFields(): string {
-    // Type and Status are still read for the Records Migration and Summary until they're removed (#323)
-    return `ID,Title,Profile,ProfileLookupId,${RECORD_STATE_LOOKUP},Type,Status,Date,${RECORD_NOTES},Created,Modified`;
+    return `ID,Title,Profile,ProfileLookupId,${RECORD_STATE_LOOKUP},Date,${RECORD_NOTES},Created,Modified`;
   }
 
   private readonly dateOnlyFields = ['Date'];
@@ -58,13 +57,13 @@ class RecordsRepository {
     return recordsForProfile(all, profileId);
   }
 
-  async create(fields: { ProfileLookupId: number; StateLookupId: number; Type: string; Status: string; Date: string }): Promise<number> {
+  async create(fields: { ProfileLookupId: number; StateLookupId: number; Date: string }): Promise<number> {
     const id = await sharePointClient.createListItem(this.listGuid, fields, this.dateOnlyFields);
     sharePointClient.clearCacheKey('records');
     return id;
   }
 
-  async update(itemId: number, fields: { StateLookupId?: number; Status?: string; Date?: string; Notes?: string }): Promise<void> {
+  async update(itemId: number, fields: { StateLookupId?: number; Date?: string; Notes?: string }): Promise<void> {
     await sharePointClient.updateListItem(this.listGuid, itemId, fields, this.dateOnlyFields);
     sharePointClient.clearCacheKey('records');
   }

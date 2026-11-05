@@ -25,11 +25,24 @@
       :title="editingRecord.profileName"
       :profile-click="editingRecord.profileSlug ? () => router.push(profilePath(editingRecord!.profileSlug!)) : undefined"
       :archive-click="editingRecord.profileId !== undefined && viewer.can('viewRecords') ? onViewArchive : undefined"
+      :is-current="isCurrentRecord(store.records, editingRecord)"
       :working="editWorking"
       :error="editError"
       @close="closeEditModal"
+      @change-state="onChangeState"
       @save="onSave"
       @delete="onDelete"
+    />
+
+    <RecordAddModal
+      v-if="adding"
+      :states="states"
+      :initial-type="adding.type"
+      :initial-status="adding.status"
+      :working="addWorking"
+      :error="addError"
+      @close="adding = null"
+      @add="onAdd"
     />
   </DefaultLayout>
 </template>
@@ -47,6 +60,8 @@ import RecordListFilter from '../components/records/RecordListFilter.vue'
 import RecordListActions from '../components/records/RecordListActions.vue'
 import RecordListResults from '../components/records/RecordListResults.vue'
 import RecordEditModal, { type SaveRecordPayload } from './modals/RecordEditModal.vue'
+import RecordAddModal, { type AddRecordPayload } from './modals/RecordAddModal.vue'
+import { isCurrentRecord } from '../utils/currentRecord'
 import { profilePath, recordsPath } from '../router/index'
 import { pruneSelectionToVisible } from '../utils/listSelection'
 
@@ -60,6 +75,11 @@ const states = ref<RecordState[]>([])
 const editingRecord = ref<RecordListItemResponse | null>(null)
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
+
+/** Add Record, opened from Edit's change of State: the Record it follows (its Profile), and the new State. */
+const adding = ref<{ from: RecordListItemResponse; type: string; status: string } | null>(null)
+const addWorking = ref(false)
+const addError = ref<string | undefined>()
 
 watch(filtered, list => {
   const pruned = pruneSelectionToVisible(selected.value, list)
@@ -88,6 +108,41 @@ function onViewArchive() {
   if (!r || r.profileId === undefined) return
   closeEditModal()
   router.push(recordsPath({ id: r.profileId, name: r.profileName, type: r.type }))
+}
+
+/** A new State for the current Record: add a new Record for the same Profile and Type (#322 §1). */
+function onChangeState(status: string) {
+  const from = editingRecord.value
+  if (!from) return
+  closeEditModal()
+  adding.value = { from, type: from.type, status }
+  addWorking.value = false
+  addError.value = undefined
+}
+
+async function onAdd(payload: AddRecordPayload) {
+  const from = adding.value?.from
+  if (!from || from.profileId === undefined) return
+  addWorking.value = true
+  addError.value = undefined
+  try {
+    const res = await fetch(`/api/profiles/${from.profileId}/records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    const record = (await res.json()).data?.record
+    if (record) {
+      store.records = [...store.records, { ...record, profileId: from.profileId, profileName: from.profileName, profileSlug: from.profileSlug }]
+    }
+    adding.value = null
+  } catch (e) {
+    console.error('[RecordsPage] add failed', e)
+    addError.value = 'Failed to add — please try again'
+  } finally {
+    addWorking.value = false
+  }
 }
 
 function closeEditModal() {
