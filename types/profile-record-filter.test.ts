@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { matchesProfileRecordFilter, NO_RECORD, oneRecordPerType } from './profile-record-filter'
 
-const alice = [{ type: 'Photo Consent', status: 'Declined' }, { type: 'Discount Card', status: 'Accepted' }]
-const bob = [{ type: 'Photo Consent', status: 'Accepted' }]
-const cy: { type: string; status: string }[] = []
+const alice = [{ type: 'Photo Consent', state: 'Declined' }, { type: 'Discount Card', state: 'Accepted' }]
+const bob = [{ type: 'Photo Consent', state: 'Accepted' }]
+const cy: { type: string; state: string }[] = []
 const people = { alice, bob, cy }
-const who = (type: string, status: string) =>
-  Object.entries(people).filter(([, recs]) => matchesProfileRecordFilter(recs, type, status)).map(([name]) => name)
+const who = (type: string, state: string) =>
+  Object.entries(people).filter(([, recs]) => matchesProfileRecordFilter(recs, type, state)).map(([name]) => name)
 
 describe('matchesProfileRecordFilter', () => {
   it('matches everyone with no Record filter', () => {
@@ -31,7 +31,7 @@ describe('matchesProfileRecordFilter', () => {
 
 describe('oneRecordPerType', () => {
   it('keeps the first Record of each Type', () => {
-    const recs = [{ type: 'A', status: '1' }, { type: 'B', status: '2' }, { type: 'A', status: '3' }]
-    expect(oneRecordPerType(recs)).toEqual([{ type: 'A', status: '1' }, { type: 'B', status: '2' }])
+    const recs = [{ type: 'A', state: '1' }, { type: 'B', state: '2' }, { type: 'A', state: '3' }]
+    expect(oneRecordPerType(recs)).toEqual([{ type: 'A', state: '1' }, { type: 'B', state: '2' }])
   })
 })

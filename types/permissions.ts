@@ -25,7 +25,7 @@ export const PERMISSIONS = {
   bulkEditProjects: ['admin'],
   /** The Records page: every Record, with filters (read and edit one at a time, as editRecords allows). */
   viewRecords: ['admin'],
-  /** The Record Type and Status choices, for the Add and Edit Record forms. */
+  /** The States list (each Type's States), for the Add and Edit Record forms. */
   viewRecordOptions: ['checkin', 'admin'],
   /** Add, edit and delete a Profile's Records, one at a time. */
   editRecords: ['admin'],
@@ -33,10 +33,6 @@ export const PERMISSIONS = {
   bulkEditRecords: ['admin'],
   /** Download the Records CSV from Tools (names, emails and every Record). */
   exportRecords: ['admin'],
-  /** Download the Records summary from Tools: totals only, no volunteer data (Records v2 planning, #322). */
-  exportRecordsSummary: ['admin'],
-  /** Dry run and run the Records v2 migration from Tools (#322 §5). Temporary: removed in PR 1. */
-  migrateRecords: ['admin'],
   /** Cancel a booking, and undo a cancellation (Edit Entry's Cancel Booking). */
   cancelEntries: ['checkin', 'admin'],
   /** Delete an entry (only once it's cancelled). */

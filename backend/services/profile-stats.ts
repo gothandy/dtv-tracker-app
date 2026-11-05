@@ -22,7 +22,8 @@ import { sharePointClient } from './sharepoint-client';
 import { safeParseLookupId, calculateFinancialYear, toMatchName } from './data-layer';
 import { PROFILE_LOOKUP, GROUP_LOOKUP, SESSION_LOOKUP, PROFILE_STATS, ENTRY_CANCELLED } from './field-names';
 import { ukToday } from '../../types/uk-date';
-import { isOfType, recordProfileId, statusOn } from './records';
+import { recordProfileId } from './records';
+import { recordFlags } from './record-rules';
 import type { SharePointEntry, SharePointProfile, SharePointRecord, SharePointRegular } from '../../types/sharepoint';
 import type { SharePointSession } from '../../types/session';
 
@@ -45,6 +46,7 @@ export interface StoredProfileStats {
   linkedProfileIds: number[];
   isFirstAider: boolean;
   noPhoto: boolean;
+  isDofE: boolean;
   warnings: Array<{ text: string; url?: string }>;
 }
 
@@ -133,19 +135,7 @@ export function buildProfileStats(input: {
     .map(r => safeParseLookupId(r[GROUP_LOOKUP] as unknown as string))
     .filter((id): id is number => id !== undefined);
 
-  let isMember = false;
-  let cardStatus: string | null = null;
-  let isFirstAider = false;
-  let noPhoto = true;
-  let hasPrivacyConsent = false;
-  for (const r of input.records) {
-    const status = statusOn(r, today);
-    if (isOfType(r, 'Charity Membership') && status === 'Accepted') isMember = true;
-    if (isOfType(r, 'Discount Card') && status) cardStatus = status;
-    if (isOfType(r, 'First Aid Certificate') && status === 'Expires' && r.Date && r.Date.substring(0, 10) > today) isFirstAider = true;
-    if (isOfType(r, 'Photo Consent') && status === 'Accepted') noPhoto = false;
-    if (isOfType(r, 'Privacy Consent') && status === 'Accepted') hasPrivacyConsent = true;
-  }
+  const { isMember, cardStatus, isFirstAider, noPhoto, hasPrivacyConsent, isDofE } = recordFlags(input.records, today);
 
   const name = profile?.Title || '';
   const hasChildNoAdult = activeEntries.some(e => e.Notes?.toLowerCase().includes('#child') && !e.AccompanyingAdultLookupId);
@@ -171,6 +161,7 @@ export function buildProfileStats(input: {
     linkedProfileIds: input.linkedProfileIds,
     isFirstAider,
     noPhoto,
+    isDofE,
     warnings,
   };
 }

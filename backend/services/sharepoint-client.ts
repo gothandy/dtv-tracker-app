@@ -77,6 +77,7 @@ export const CACHE_TTL = {
   fileProxy: FILE_PROXY_CACHE_TTL_SEC, //  6 hr — media/doc folder listings; see file-proxy-cache-ttl.ts
   slug:     86400,  // 24 hr  — group+date→ID mappings; cleared on session create/update/delete
   templates:  300,  //  5 min — email templates are edited directly in SharePoint, so changes show soon
+  states:     300,  //  5 min — States are edited directly in SharePoint, so changes show soon
 } as const;
 
 /** Cache key for listProjectDocFolders (cleared with the project docs folder cache). */

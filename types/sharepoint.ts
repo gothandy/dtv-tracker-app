@@ -136,16 +136,17 @@ export interface Regular {
 
 /**
  * Raw Record entity from SharePoint
- * Tracks consents, benefits, and governance items per profile.
- * Type is a choice field (extensible via Graph API).
+ * Tracks consents, benefits, and governance items per profile. Its Type and State come from
+ * the State lookup (Records v2, #322).
  */
 export interface SharePointRecord extends SharePointBaseItem {
   Title?: string;
   ProfileLookupId?: number;
   Profile?: string;
-  Type?: string;
-  /** The status choice; replaced by the State lookup in Records v2 PR 1 (#322). */
-  Status?: string;
+  /** Lookup to the States list (#322). */
+  StateLookupId?: number | string;
+  /** The State the lookup points at, attached when the Records are read (recordsRepository.getAll). */
+  State?: import('./record-state').RecordState;
   /** The date of the Record: when it happened, or will (e.g. an expiry). */
   Date?: string;
   Notes?: string;

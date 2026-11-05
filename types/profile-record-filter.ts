@@ -1,24 +1,24 @@
 /**
- * The Profiles list's Record filters (Type and Status), shared by the browser filter and the
- * Profiles CSV API so they always agree. Status works with or without a Type:
+ * The Profiles list's Record filters (Type and State), shared by the browser filter and the
+ * Profiles CSV API so they always agree. State works with or without a Type:
  * - Type only: has a Record of the Type
- * - Type + Status: the Type's Record has the Status; Status "No record": has none of the Type
- * - Status only: any Record has the Status; Status "No record": has no Records at all
+ * - Type + State: the Type's Record has the State; State "No record": has none of the Type
+ * - State only: any Record has the State; State "No record": has no Records at all
  * A Profile has one Record per Type in these lists (the latest; today, the first match).
  */
 
 export interface ProfileRecordFacts {
   type: string;
-  status: string;
+  state: string;
 }
 
-/** The Status filter's "No record" choice. */
+/** The State filter's "No record" choice. */
 export const NO_RECORD = 'none';
 
-export function matchesProfileRecordFilter(records: ProfileRecordFacts[], recordType: string, recordStatus: string): boolean {
+export function matchesProfileRecordFilter(records: ProfileRecordFacts[], recordType: string, recordState: string): boolean {
   const ofType = recordType ? records.filter(r => r.type === recordType) : records;
-  if (recordStatus === NO_RECORD) return ofType.length === 0;
-  if (recordStatus) return ofType.some(r => r.status === recordStatus);
+  if (recordState === NO_RECORD) return ofType.length === 0;
+  if (recordState) return ofType.some(r => r.state === recordState);
   return recordType ? ofType.length > 0 : true;
 }
 

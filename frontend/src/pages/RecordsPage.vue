@@ -21,15 +21,28 @@
     <RecordEditModal
       v-if="editingRecord"
       :record="editingRecord"
-      :statuses="statuses"
+      :states="states"
       :title="editingRecord.profileName"
       :profile-click="editingRecord.profileSlug ? () => router.push(profilePath(editingRecord!.profileSlug!)) : undefined"
       :archive-click="editingRecord.profileId !== undefined && viewer.can('viewRecords') ? onViewArchive : undefined"
+      :is-current="isCurrentRecord(store.records, editingRecord)"
       :working="editWorking"
       :error="editError"
       @close="closeEditModal"
+      @change-state="onChangeState"
       @save="onSave"
       @delete="onDelete"
+    />
+
+    <RecordAddModal
+      v-if="adding"
+      :states="states"
+      :initial-type="adding.type"
+      :initial-state="adding.state"
+      :working="addWorking"
+      :error="addError"
+      @close="adding = null"
+      @add="onAdd"
     />
   </DefaultLayout>
 </template>
@@ -40,14 +53,15 @@ import { useRouter } from 'vue-router'
 import { useRecordListStore } from '../stores/recordList'
 import { useViewer } from '../composables/useViewer'
 import type { RecordListItemResponse } from '../../../types/api-responses'
-import { recordStatus } from '../../../types/record-status'
-import { ukToday } from '../../../types/uk-date'
+import type { RecordState } from '../../../types/record-state'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
 import PageHeader from '../components/PageHeader.vue'
 import RecordListFilter from '../components/records/RecordListFilter.vue'
 import RecordListActions from '../components/records/RecordListActions.vue'
 import RecordListResults from '../components/records/RecordListResults.vue'
 import RecordEditModal, { type SaveRecordPayload } from './modals/RecordEditModal.vue'
+import RecordAddModal, { type AddRecordPayload } from './modals/RecordAddModal.vue'
+import { isCurrentRecord } from '../utils/currentRecord'
 import { profilePath, recordsPath } from '../router/index'
 import { pruneSelectionToVisible } from '../utils/listSelection'
 
@@ -57,10 +71,15 @@ const viewer = useViewer()
 
 const selected = ref<number[]>([])
 const filtered = ref<RecordListItemResponse[]>([])
-const statuses = ref<string[]>([])
+const states = ref<RecordState[]>([])
 const editingRecord = ref<RecordListItemResponse | null>(null)
 const editWorking = ref(false)
 const editError = ref<string | undefined>()
+
+/** Add Record, opened from Edit's change of State: the Record it follows (its Profile), and the new State. */
+const adding = ref<{ from: RecordListItemResponse; type: string; state: string } | null>(null)
+const addWorking = ref(false)
+const addError = ref<string | undefined>()
 
 watch(filtered, list => {
   const pruned = pruneSelectionToVisible(selected.value, list)
@@ -73,7 +92,7 @@ onMounted(async () => {
     const res = await fetch('/api/profiles/records/options')
     if (!res.ok) throw new Error(`Failed to load record options (${res.status})`)
     const json = await res.json()
-    statuses.value = json.data?.statuses ?? []
+    states.value = json.data?.states ?? []
   } catch (e) {
     console.error('[RecordsPage] failed to load record options', e)
   }
@@ -89,6 +108,41 @@ function onViewArchive() {
   if (!r || r.profileId === undefined) return
   closeEditModal()
   router.push(recordsPath({ id: r.profileId, name: r.profileName, type: r.type }))
+}
+
+/** A new State for the current Record: add a new Record for the same Profile and Type (#322 §1). */
+function onChangeState(state: string) {
+  const from = editingRecord.value
+  if (!from) return
+  closeEditModal()
+  adding.value = { from, type: from.type, state }
+  addWorking.value = false
+  addError.value = undefined
+}
+
+async function onAdd(payload: AddRecordPayload) {
+  const from = adding.value?.from
+  if (!from || from.profileId === undefined) return
+  addWorking.value = true
+  addError.value = undefined
+  try {
+    const res = await fetch(`/api/profiles/${from.profileId}/records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error(`Add failed (${res.status})`)
+    const record = (await res.json()).data?.record
+    if (record) {
+      store.records = [...store.records, { ...record, profileId: from.profileId, profileName: from.profileName, profileSlug: from.profileSlug }]
+    }
+    adding.value = null
+  } catch (e) {
+    console.error('[RecordsPage] add failed', e)
+    addError.value = 'Failed to add — please try again'
+  } finally {
+    addWorking.value = false
+  }
 }
 
 function closeEditModal() {
@@ -108,13 +162,9 @@ async function onSave(payload: SaveRecordPayload) {
       body: JSON.stringify(payload),
     })
     if (!res.ok) throw new Error(`Save failed (${res.status})`)
+    const saved = (await res.json()).data?.record
     const stored = store.records.find(r => r.id === editingRecord.value!.id)
-    if (stored) {
-      stored.storedStatus = payload.status
-      stored.status = recordStatus({ status: payload.status }, ukToday())
-      stored.date = payload.date
-      stored.notes = payload.notes.trim() || undefined
-    }
+    if (saved && stored) Object.assign(stored, saved)
     closeEditModal()
   } catch (e) {
     console.error('[RecordsPage] save failed', e)

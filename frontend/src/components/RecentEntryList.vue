@@ -92,6 +92,7 @@ function mapToEntryItem(e: RecentSignupResponse): EntryItem {
       hasProfileWarning: e.hasProfileWarning,
       noPhoto: e.noPhoto,
       isFirstAiderAvailable: e.isFirstAiderAvailable,
+      isDofE: e.isDofE,
     },
     session: {
       groupKey: e.groupKey,

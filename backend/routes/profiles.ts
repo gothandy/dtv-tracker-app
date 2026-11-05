@@ -45,8 +45,9 @@ import type { ApiResponse, SharePointProfile } from '../../types/sharepoint';
 import { sharePoint } from '../config';
 import { requestOrigin } from '../services/request-origin';
 import { ukToday } from '../../types/uk-date';
-import { buildBadgeLookups, recordProfileId, recordsForProfile, statusOn, toRecordResponse } from '../services/records';
-import { upsertRecord } from '../services/record-writer';
+import { buildBadgeLookups, currentRecords, recordProfileId, recordStateName, recordsForProfile, recordType, toRecordResponse } from '../services/records';
+import { setRecordState } from '../services/record-writer';
+import { recordFlags } from '../services/record-rules';
 import type { RecordTypeName } from '../../types/record-types';
 import { hoursInView, matchesHoursFilter, sessionsInView } from '../../types/hours';
 import { matchesProfileRecordFilter, oneRecordPerType } from '../../types/profile-record-filter';
@@ -143,16 +144,17 @@ router.get('/profiles', async (req: Request, res: Response) => {
       }
     });
 
-    const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
-    for (const r of rawRecords) {
+    // Each Profile's current Record of each Type: the Record filters match on these (#322 §1)
+    const profileRecordsMap = new Map<number, Array<{ type: string; state: string }>>();
+    for (const r of currentRecords(rawRecords)) {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
-      profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: statusOn(r, todayStr) });
+      profileRecordsMap.get(pid)!.push({ type: recordType(r), state: recordStateName(r) });
     }
     for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
-    const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords, todayStr);
+    const { memberIds, cardStatusMap } = buildBadgeLookups(rawRecords);
 
     const profileWarningsMap = new Map<number, Array<{ text: string; url?: string }>>();
     const financialYears = new Set<string>([calculateCurrentFY().key]);
@@ -214,7 +216,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     const typeFilter = req.query.type ? String(req.query.type) : undefined;
     const hoursFilter = req.query.hours ? String(req.query.hours) : undefined;
     const recordTypeFilter = req.query.recordType ? String(req.query.recordType) : undefined;
-    const recordStatusFilter = req.query.recordStatus ? String(req.query.recordStatus) : undefined;
+    const recordStateFilter = req.query.recordState ? String(req.query.recordState) : undefined;
     const profileIdsFilter = req.query.profileIds
       ? new Set(String(req.query.profileIds).split(',').map(Number).filter(n => !isNaN(n) && n > 0))
       : undefined;
@@ -271,12 +273,13 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     });
 
     // Build records map
-    const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
-    for (const r of rawRecords) {
+    // Each Profile's current Record of each Type: the Record filters match on these (#322 §1)
+    const profileRecordsMap = new Map<number, Array<{ type: string; state: string }>>();
+    for (const r of currentRecords(rawRecords)) {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
-      profileRecordsMap.get(pid)!.push({ type: r.Type || '', status: statusOn(r, ukToday()) });
+      profileRecordsMap.get(pid)!.push({ type: recordType(r), state: recordStateName(r) });
     }
     for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
@@ -312,9 +315,9 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     // Hours filter uses FY-appropriate hours
     if (hoursFilter) profileList = profileList.filter(p => matchesHoursFilter(hoursInView(p, fyParam), hoursFilter));
 
-    // Record filters: the same rule as the Profiles page (Status works with or without a Type)
-    if (recordTypeFilter || recordStatusFilter) {
-      profileList = profileList.filter(p => matchesProfileRecordFilter(p.records, recordTypeFilter ?? '', recordStatusFilter ?? ''));
+    // Record filters: the same rule as the Profiles page (State works with or without a Type)
+    if (recordTypeFilter || recordStateFilter) {
+      profileList = profileList.filter(p => matchesProfileRecordFilter(p.records, recordTypeFilter ?? '', recordStateFilter ?? ''));
     }
 
     // Filter out profiles with no activity unless showing all or explicitly requesting 0h
@@ -475,8 +478,8 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
     // Privacy Consent is always Accepted (backend enforces this); Photo Consent is the volunteer's choice
     const privacyType: RecordTypeName = 'Privacy Consent';
     const photoType: RecordTypeName = 'Photo Consent';
-    await upsertRecord(existing, { profileId, type: privacyType, status: 'Accepted', date: today }, 'statusAndDate');
-    await upsertRecord(existing, { profileId, type: photoType, status: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'statusAndDate');
+    await setRecordState(existing, { profileId, type: privacyType, state: 'Accepted', date: today }, 'refreshDate');
+    await setRecordState(existing, { profileId, type: photoType, state: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'refreshDate');
 
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
@@ -698,7 +701,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
     // Filter consent records for this profile from the already-fetched batch
     const profileRecords = recordsForProfile(rawRecords, spProfile.ID);
     const today = ukToday();
-    const badges = buildBadgeLookups(profileRecords, today);
+    const badges = buildBadgeLookups(profileRecords);
     const records = profileRecords.map(r => toRecordResponse(r, today));
 
     const isSelfService = req.session.user?.role === 'selfservice';
@@ -716,6 +719,7 @@ router.get('/profiles/:slug', async (req: Request, res: Response) => {
       // Worked out from Records, as the Profiles list does, not read from the stored Stats
       isMember: badges.memberIds.has(spProfile.ID),
       cardStatus: badges.cardStatusMap.get(spProfile.ID),
+      isDofE: recordFlags(profileRecords, today).isDofE || undefined,
       hoursLastFY: Math.round(calculatedLastFY * 10) / 10,
       hoursThisFY: Math.round(calculatedThisFY * 10) / 10,
       hoursAll: Math.round(calculatedAll * 10) / 10,
@@ -870,21 +874,16 @@ router.post('/profiles/:slug/transfer', async (req: Request, res: Response) => {
       }
     }
 
-    // Transfer records (skip if target already has the same type)
+    // Transfer every Record: a Profile can hold several of a Type, and the latest by Date is current (#322 §1)
     let recordsTransferred = 0;
     const sourceRecords = recordsForProfile(rawRecords, sourceProfile.ID);
-    const targetRecordTypes = new Set(recordsForProfile(rawRecords, targetProfile.ID).map(r => r.Type));
     const recordsListGuid = sharePoint.lists.records;
 
     for (const record of sourceRecords) {
-      if (!targetRecordTypes.has(record.Type)) {
-        await sharePointClient.updateListItem(recordsListGuid, record.ID, {
-          ProfileLookupId: String(targetProfile.ID)
-        });
-        recordsTransferred++;
-      } else {
-        await sharePointClient.deleteListItem(recordsListGuid, record.ID);
-      }
+      await sharePointClient.updateListItem(recordsListGuid, record.ID, {
+        ProfileLookupId: String(targetProfile.ID)
+      });
+      recordsTransferred++;
     }
 
     // Add source primary email to target if requested — non-fatal: transfer already committed above

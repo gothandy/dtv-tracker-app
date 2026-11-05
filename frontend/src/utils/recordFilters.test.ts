@@ -4,7 +4,7 @@ import { DEFAULT_RECORD_FILTERS, matchesRecordFilters, recordFilterOptions, sort
 import { ukToday } from '../../../types/uk-date'
 
 const rec = (id: number, type: string, status: string, profileName: string, date: string): RecordListItemResponse => ({
-  id, type, status, storedStatus: status, date, profileId: id, profileName, profileSlug: `p-${id}`,
+  id, type, stateName: status, label: status, date, profileId: id, profileName, profileSlug: `p-${id}`,
 })
 
 const today = ukToday()
@@ -31,7 +31,7 @@ describe('matchesRecordFilters', () => {
 
   it('filters by Type and Status', () => {
     expect(ids(f({ type: 'Discount Card' }))).toEqual([2, 3, 5])
-    expect(ids(f({ type: 'Discount Card', status: 'Accepted' }))).toEqual([3, 5])
+    expect(ids(f({ type: 'Discount Card', state: 'Accepted' }))).toEqual([3, 5])
   })
 
   it('filters by the financial year of the Record’s Date (1 April to 31 March); no Date only under All', () => {
@@ -48,7 +48,7 @@ describe('matchesRecordFilters', () => {
 describe('recordFilterOptions', () => {
   it('offers only the choices left by the other filters, FY in the usual order', () => {
     const options = recordFilterOptions(records, f({ type: 'Discount Card' }))
-    expect(options.statuses).toEqual(['Invited', 'Accepted'])
+    expect(options.states).toEqual(['Invited', 'Accepted'])
     expect(options.types).toEqual(['Photo Consent', 'Discount Card', 'First Aid Certificate'])
     expect(options.fyOptions.map(o => o.value)).toEqual(['all', 'FY2024', 'FY2025'])
   })

@@ -13,8 +13,7 @@
           profile-slug="alice-bowen-1"
           :show-consent-link="true"
           :allow-edit="true"
-          :types="mockTypes"
-          :statuses="mockStatuses"
+          :states="mockStates"
           ref="adminRef"
           @add-record="onAddRecord"
           @save-record="onSaveRecord"
@@ -29,8 +28,7 @@
           :profile-id="1"
           profile-slug="alice-bowen-1"
           :show-consent-link="true"
-          :types="mockTypes"
-          :statuses="mockStatuses"
+          :states="mockStates"
         />
       </div>
 
@@ -41,8 +39,7 @@
           :profile-id="1"
           profile-slug="alice-bowen-1"
           :show-consent-link="true"
-          :types="mockTypes"
-          :statuses="mockStatuses"
+          :states="mockStates"
         />
       </div>
 
@@ -52,8 +49,7 @@
           :records="mockRecords"
           :profile-id="1"
           profile-slug="alice-bowen-1"
-          :types="mockTypes"
-          :statuses="mockStatuses"
+          :states="mockStates"
         />
       </div>
 
@@ -65,8 +61,7 @@
           profile-slug="alice-bowen-1"
           :show-consent-link="true"
           :allow-edit="true"
-          :types="mockTypes"
-          :statuses="mockStatuses"
+          :states="mockStates"
         />
       </div>
 
@@ -89,6 +84,7 @@ import SandboxBackLink from './SandboxBackLink.vue'
 import ProfileRecordList from '../../components/profiles/ProfileRecordList.vue'
 import type { AddRecordPayload } from '../modals/RecordAddModal.vue'
 import type { SaveRecordPayload } from '../modals/RecordEditModal.vue'
+import type { RecordState } from '../../../../types/record-state'
 
 usePageTitle('Sandbox')
 
@@ -114,16 +110,26 @@ function onDeleteRecord(id: number) {
   setTimeout(() => adminRef.value?.onDeleteSuccess(), 1000)
 }
 
-const mockTypes = [
-  'Privacy Consent', 'Photo Consent', 'Newsletter Consent', 'Charity Membership', 'Discount Card',
+const mockStates: RecordState[] = [
+  { id: 1, type: 'Parking Permit', name: 'Invite', after: 'Invited' },
+  { id: 2, type: 'Parking Permit', name: 'Decline', after: 'Declined' },
+  { id: 3, type: 'Parking Permit', name: 'Active', before: 'Expires', after: 'Expired' },
+  { id: 4, type: 'Privacy Consent', name: 'Invited' },
+  { id: 5, type: 'Privacy Consent', name: 'Accepted' },
+  { id: 6, type: 'Photo Consent', name: 'Accepted' },
+  { id: 7, type: 'Photo Consent', name: 'Declined' },
+  { id: 8, type: 'Charity Membership', name: 'Invited' },
+  { id: 9, type: 'Charity Membership', name: 'Accepted' },
+  { id: 10, type: 'Discount Card', name: 'Invited' },
+  { id: 11, type: 'Discount Card', name: 'Accepted' },
+  { id: 12, type: 'First Aid Certificate', name: 'Active', before: 'Expires', after: 'Expired' },
+  { id: 13, type: 'DofE', name: 'Active', before: 'Starts', after: 'Started' },
 ]
 
-const mockStatuses = ['Accepted', 'Invited', 'Declined', 'Pending']
-
 const mockRecords = [
-  { id: 1, type: 'Privacy Consent',    status: 'Accepted', storedStatus: 'Accepted', date: '2025-09-01T00:00:00Z' },
-  { id: 2, type: 'Photo Consent',      status: 'Accepted', storedStatus: 'Accepted', date: '2025-09-01T00:00:00Z' },
-  { id: 3, type: 'Charity Membership', status: 'Accepted', storedStatus: 'Accepted', date: '2024-04-01T00:00:00Z' },
-  { id: 4, type: 'Discount Card',      status: 'Invited', storedStatus: 'Invited',  date: '2026-01-15T00:00:00Z' },
+  { id: 1, type: 'Privacy Consent',    stateName: 'Accepted', label: 'Accepted', date: '2025-09-01T00:00:00Z' },
+  { id: 2, type: 'Photo Consent',      stateName: 'Accepted', label: 'Accepted', date: '2025-09-01T00:00:00Z' },
+  { id: 3, type: 'Charity Membership', stateName: 'Accepted', label: 'Accepted', date: '2024-04-01T00:00:00Z' },
+  { id: 4, type: 'Discount Card',      stateName: 'Invited', label: 'Invited',  date: '2026-01-15T00:00:00Z' },
 ]
 </script>

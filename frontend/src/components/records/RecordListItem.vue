@@ -1,31 +1,29 @@
 <template>
-  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, appliedStyle ? `rli-row--${appliedStyle}` : '']">
+  <div class="rli-row" :class="[{ 'rli-row--selected': selected }, record.style ? `rli-row--${record.style}` : '']">
     <div class="rli-content">
-      <div class="rli-left">
-        <span class="rli-type">{{ record.type }}</span>
-        <span class="rli-profile">{{ record.profileName ?? 'Unknown profile' }}</span>
-        <span v-if="record.notes" class="rli-notes">{{ record.notes }}</span>
+      <div class="rli-main">
+        <div class="rli-left">
+          <span class="rli-type" :class="record.style ? `rli-text--${record.style}` : ''">{{ record.type }}</span>
+          <span class="rli-profile">{{ record.profileName ?? 'Unknown profile' }}</span>
+        </div>
+        <div class="rli-right">
+          <span class="rli-state" :class="record.style ? `rli-text--${record.style}` : ''">{{ record.label }}</span>
+          <span v-if="record.date" class="rli-date">{{ formatDate(record.date) }}</span>
+        </div>
       </div>
-      <div class="rli-right">
-        <span class="rli-state" :class="appliedStyle ? `rli-state--${appliedStyle}` : ''">{{ record.status }}</span>
-        <span v-if="record.date" class="rli-date">{{ formatDate(record.date) }}</span>
-      </div>
+      <span v-if="record.notes" class="rli-notes">{{ record.notes }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { RecordListItemResponse } from '../../../../types/api-responses'
-import { todayStyle, type RecordStateStyle } from '../../utils/recordStateStyle'
 
-const props = defineProps<{
+/** One Record on the Records page: its label and style come with it (#322 §3). */
+defineProps<{
   record: RecordListItemResponse
   selected?: boolean
-  stateStyle?: RecordStateStyle
 }>()
-
-const appliedStyle = computed<RecordStateStyle | undefined>(() => props.stateStyle ?? todayStyle(props.record.status))
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -45,9 +43,8 @@ function formatDate(date: string): string {
 
 .rli-content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.15rem;
   padding: 0.5rem 1.5rem;
   /* Align text with px-6 content; border-left is outside this box */
   padding-left: calc(1.5rem - 4px);
@@ -59,7 +56,14 @@ function formatDate(date: string): string {
   background: var(--color-dtv-sand-dark);
 }
 
-/* Left: Type, Profile (and Notes); right: State and Date */
+/* Top: Type and the Profile's name (left), State and Date (right); Notes below, across the full width */
+.rli-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
 .rli-left,
 .rli-right {
   display: flex;
@@ -84,17 +88,29 @@ function formatDate(date: string): string {
   text-overflow: ellipsis;
   max-width: 100%;
 }
-/* State styles: a left border and the State's text */
+/* State styles: a left border, and the title and State in the style's colour */
 .rli-row--active { border-left-color: var(--color-dtv-green); }
 .rli-row--info   { border-left-color: var(--color-dtv-gold); }
 .rli-row--warn   { border-left-color: var(--color-dtv-dirt); }
-.rli-state--active { color: var(--color-dtv-green-dark); }
-.rli-state--info   { color: var(--color-dtv-gold-dark); }
-.rli-state--warn   { color: var(--color-dtv-dirt); }
+.rli-text--active { color: var(--color-dtv-green-dark); }
+.rli-text--info   { color: var(--color-dtv-gold-dark); }
+.rli-text--warn   { color: var(--color-dtv-dirt); }
 
-.rli-profile,
-.rli-date,
+.rli-profile {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+/* Notes wrap onto further lines rather than being cut short */
 .rli-notes {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+.rli-date {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   white-space: nowrap;

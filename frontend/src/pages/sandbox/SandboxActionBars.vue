@@ -167,10 +167,10 @@ function onListAddTags() {
 }
 
 const sampleRecords: RecordListItemResponse[] = [
-  { id: 1, type: 'Discount Card', status: 'Accepted', storedStatus: 'Accepted', date: '2025-05-02', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
-  { id: 2, type: 'Discount Card', status: 'Invited', storedStatus: 'Invited', date: '2026-02-23', profileId: 12, profileName: 'Bob Carter', profileSlug: 'bob-carter-12' },
-  { id: 3, type: 'Photo Consent', status: 'Declined', storedStatus: 'Declined', date: '2026-10-02', notes: 'Asked again in May', profileId: 13, profileName: 'Carol Davies', profileSlug: 'carol-davies-13' },
-  { id: 4, type: 'First Aid Certificate', status: 'Expires', storedStatus: 'Expires', date: '2027-08-22', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
+  { id: 1, type: 'Discount Card', stateName: 'Accepted', label: 'Accepted', date: '2025-05-02', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
+  { id: 2, type: 'Discount Card', stateName: 'Invited', label: 'Invited', date: '2026-02-23', profileId: 12, profileName: 'Bob Carter', profileSlug: 'bob-carter-12' },
+  { id: 3, type: 'Photo Consent', stateName: 'Declined', label: 'Declined', date: '2026-10-02', notes: 'Asked again in May', profileId: 13, profileName: 'Carol Davies', profileSlug: 'carol-davies-13' },
+  { id: 4, type: 'First Aid Certificate', stateName: 'Expires', label: 'Expires', date: '2027-08-22', profileId: 11, profileName: 'Alice Bowen', profileSlug: 'alice-bowen-11' },
 ]
 
 const mockGroups = [

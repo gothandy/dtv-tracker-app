@@ -31,21 +31,24 @@
 
     <RecordAddModal
       v-if="showAdd"
-      :types="types"
-      :statuses="statuses"
+      :states="states"
+      :initial-type="addPrefill?.type"
+      :initial-state="addPrefill?.state"
       :working="workingAdd"
       :error="addError"
-      @close="showAdd = false"
+      @close="showAdd = false; addPrefill = null"
       @add="onAdd"
     />
 
     <RecordEditModal
       v-if="editingRecord"
       :record="editingRecord"
-      :statuses="statuses"
+      :states="states"
       :working="workingEdit"
       :error="editError"
       :archive-click="showArchive ? () => emit('viewArchive', editingRecord!) : undefined"
+      :is-current="isCurrentRecord(records, editingRecord)"
+      @change-state="onChangeState"
       @close="editingRecord = null"
       @save="onSave"
       @delete="onDelete"
@@ -56,7 +59,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { RecordResponse } from '../../../../types/api-responses'
+import type { RecordState } from '../../../../types/record-state'
 import RecordChip from '../records/RecordChip.vue'
+import { isCurrentRecord } from '../../utils/currentRecord'
 import RecordAddModal, { type AddRecordPayload } from '../../pages/modals/RecordAddModal.vue'
 import RecordEditModal, { type SaveRecordPayload } from '../../pages/modals/RecordEditModal.vue'
 
@@ -70,11 +75,10 @@ const props = withDefaults(defineProps<{
   viewAllTo?: string
   /** Shows View Archive in Edit Record (viewRecords); the page goes there on viewArchive. */
   showArchive?: boolean
-  types?: string[]
-  statuses?: string[]
+  /** The States list, for Add and Edit. */
+  states?: RecordState[]
 }>(), {
-  types: () => [],
-  statuses: () => [],
+  states: () => [],
 })
 
 const emit = defineEmits<{
@@ -91,7 +95,18 @@ const workingEdit = ref(false)
 const addError = ref('')
 const editError = ref('')
 
+/** Type and State for Add, when it opens from Edit Record's change of State. */
+const addPrefill = ref<{ type: string; state: string } | null>(null)
+
 function openAdd() {
+  addPrefill.value = null
+  showAdd.value = true
+}
+
+/** A new State for the current Record: add a new Record, pre-filled (#322 §1). */
+function onChangeState(state: string) {
+  addPrefill.value = { type: editingRecord.value!.type, state }
+  editingRecord.value = null
   showAdd.value = true
 }
 
@@ -120,6 +135,7 @@ function onDelete() {
 defineExpose({
   onAddSuccess() {
     showAdd.value = false
+    addPrefill.value = null
     workingAdd.value = false
     addError.value = ''
   },

@@ -122,7 +122,7 @@ export interface ProfileResponse {
   sessionsLastFY: number;
   sessionsThisFY: number;
   sessionsAll: number;
-  records?: Array<{ type: string; status: string }>;
+  records?: Array<{ type: string; state: string }>;
   warnings?: Array<{ text: string; url?: string }>;
 }
 
@@ -159,12 +159,17 @@ export interface ProfileGroupHours {
 /** A Record as the app shows it. */
 export interface RecordResponse {
   id: number;
+  /** The Record's Type, from its State. */
   type: string;
-  /** The status as of today (recordStatus); show this. */
-  status: string;
-  /** The status stored in SharePoint; the Edit form's choice. */
-  storedStatus: string;
-  /** Legacy date (YYYY-MM-DD). */
+  /** The States list item (absent if the Record has no State). */
+  stateId?: number;
+  /** The State's Name: what Add and Edit offer, filters list and the rules match on. */
+  stateName: string;
+  /** What the Record shows on the day it's read: the State's Before or After label (#322 §3). */
+  label: string;
+  /** The style for that label; absent = Default (sand). */
+  style?: import('./record-state').RecordStateStyle;
+  /** The Record's date (YYYY-MM-DD). */
   date: string;
   notes?: string;
 }
@@ -195,6 +200,8 @@ export interface ProfileDetailResponse {
   isGroup: boolean;
   isMember?: boolean;
   cardStatus?: string;
+  /** The Profile's current DofE Record is Active (record-rules.ts); shown as an icon on its entries. */
+  isDofE?: boolean;
   hoursLastFY: number;
   hoursThisFY: number;
   hoursAll: number;
@@ -247,6 +254,7 @@ export interface EntryResponse {
   isNew?: boolean;             // profile.stats.sessionIds[0] === this session
   noPhoto?: boolean;           // profile.stats.noPhoto (current)
   isFirstAiderAvailable?: boolean; // profile.stats.isFirstAider
+  isDofE?: boolean;            // profile.stats.isDofE (DofE · Active)
   eventbriteAttendeeId?: string; // present when entry originated from Eventbrite
 }
 
@@ -352,6 +360,7 @@ export interface RecentSignupResponse {
   isNew?: boolean;
   noPhoto?: boolean;
   isFirstAiderAvailable?: boolean;
+  isDofE?: boolean;
   eventbriteAttendeeId?: string;
 }
 
@@ -371,6 +380,7 @@ export interface EntryListItemResponse {
   isGroup: boolean;
   isMember?: boolean;
   cardStatus?: string;
+  isDofE?: boolean;
   hasProfileWarning?: boolean;
   hasAccompanyingAdult: boolean;
   accompanyingAdultId?: number;

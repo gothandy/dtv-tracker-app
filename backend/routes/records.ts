@@ -1,6 +1,6 @@
 /**
- * Records routes: the Type and Status choices, add, edit, delete and bulk add, and the Tools
- * Records CSV and summary. Every route checks a permission (types/permissions.ts);
+ * Records routes: the States (for Add and Edit), add, edit, delete and bulk add, and the Tools
+ * Records CSV. Every route checks a permission (types/permissions.ts);
  * route-permissions.test.ts fails if one doesn't.
  */
 
@@ -20,19 +20,16 @@ import {
   parseHours,
   profileSlug,
 } from '../services/data-layer';
-import { PROFILE_LOOKUP, RECORD_STATE, RECORD_STATE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
+import { PROFILE_LOOKUP, SESSION_LOOKUP } from '../services/field-names';
 import { statesRepository } from '../services/repositories/states-repository';
-import { runRecordsMigration } from '../services/records-migration';
 import { computeAndSaveProfileStats } from '../services/profile-stats';
-import { recordProfileId, statusOn, toRecordResponse } from '../services/records';
-import { createRecord, upsertRecord } from '../services/record-writer';
-import { summariseRecords } from '../services/records-summary';
-import { sharePointClient } from '../services/sharepoint-client';
+import { currentRecords, recordProfileId, recordStateName, recordType, toRecordResponse } from '../services/records';
+import { createRecord, requireState, setRecordState } from '../services/record-writer';
 import { requirePermission } from '../middleware/require-permission';
-import { sharePoint, environmentName } from '../config';
 import { ukToday } from '../../types/uk-date';
 import type { ApiResponse } from '../../types/sharepoint';
-import type { RecordListItemResponse, RecordListResponse } from '../../types/api-responses';
+import type { RecordListItemResponse, RecordListResponse, RecordResponse } from '../../types/api-responses';
+import type { RecordState } from '../../types/record-state';
 
 /** Records Notes is a single line of text, which SharePoint limits to 255 characters. */
 const RECORD_NOTES_MAX_LENGTH = 255;
@@ -70,12 +67,9 @@ router.get('/records', requirePermission('viewRecords'), async (req: Request, re
 
 router.get('/profiles/records/options', requirePermission('viewRecordOptions'), async (req: Request, res: Response) => {
   try {
-    const listGuid = sharePoint.lists.records;
-    const [types, statuses] = await Promise.all([
-      sharePointClient.getColumnChoices(listGuid, 'Type'),
-      sharePointClient.getColumnChoices(listGuid, 'Status')
-    ]);
-    res.json({ success: true, data: { types, statuses } });
+    // The States list: Add and Edit offer each Type's States (#322 §3)
+    const states = (await statesRepository.getStates()).slice().sort((a, b) => a.id - b.id);
+    res.json({ success: true, data: { states } });
   } catch (error: any) {
     console.error('Error fetching record options:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch record options' });
@@ -89,17 +83,19 @@ router.post('/profiles/:id/records', requirePermission('editRecords'), async (re
       res.status(400).json({ success: false, error: 'Invalid profile ID' });
       return;
     }
-    const { type, status, date } = req.body;
-    if (!type || !status) {
-      res.status(400).json({ success: false, error: 'type and status are required' });
+    const { type, state, date } = req.body;
+    if (!type || !state) {
+      res.status(400).json({ success: false, error: 'type and state are required' });
       return;
     }
 
-    const { ID: id } = await createRecord({ profileId, type, status, date: date || new Date().toISOString() });
+    const created = await createRecord({ profileId, type, state, date: date || new Date().toISOString() });
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
     );
-    res.json({ success: true, data: { id } } as ApiResponse<{ id: number }>);
+    // The Record as the app shows it (its label and style are worked out here, #322 §3)
+    const record = toRecordResponse(created, ukToday());
+    res.json({ success: true, data: { id: created.ID, record } } as ApiResponse<{ id: number; record: RecordResponse }>);
   } catch (error: any) {
     console.error('Error creating record:', error);
     res.status(500).json({ success: false, error: 'Failed to create record', message: error.message });
@@ -113,9 +109,8 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       res.status(400).json({ success: false, error: 'Invalid record ID' });
       return;
     }
-    const { status, date, notes } = req.body;
-    const fields: { Status?: string; Date?: string; Notes?: string } = {};
-    if (typeof status === 'string') fields.Status = status;
+    const { state, date, notes } = req.body;
+    const fields: { StateLookupId?: number; Date?: string; Notes?: string } = {};
     if (typeof date === 'string') fields.Date = date;
     if (typeof notes === 'string') {
       const trimmed = notes.trim();
@@ -126,15 +121,24 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       fields.Notes = trimmed;
     }
 
-    if (Object.keys(fields).length === 0) {
+    if (Object.keys(fields).length === 0 && typeof state !== 'string') {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
 
-    // Look up profile ID from cache before the write clears it
+    // Look up the Record (its Profile, and its Type for a new State) before the write clears the cache
     const allRecordsForPatch = await recordsRepository.getAll();
     const recordForPatch = allRecordsForPatch.find(r => r.ID === recordId);
     const patchProfileId = recordForPatch ? recordProfileId(recordForPatch) : undefined;
+    let patchState: RecordState | undefined;
+    if (typeof state === 'string') {
+      if (!recordForPatch) {
+        res.status(404).json({ success: false, error: 'Record not found' });
+        return;
+      }
+      patchState = await requireState(recordType(recordForPatch), state);
+      fields.StateLookupId = patchState.id;
+    }
 
     await recordsRepository.update(recordId, fields);
     if (patchProfileId !== undefined) {
@@ -142,7 +146,11 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
         console.error(`[Stats] Failed targeted profile update for profile ${patchProfileId}:`, err)
       );
     }
-    res.json({ success: true } as ApiResponse<void>);
+    // The Record as saved, as the app shows it (label and style worked out here, #322 §3)
+    const record = recordForPatch
+      ? toRecordResponse({ ...recordForPatch, ...fields, State: patchState ?? recordForPatch.State }, ukToday())
+      : undefined;
+    res.json({ success: true, data: { record } } as ApiResponse<{ record?: RecordResponse }>);
   } catch (error: any) {
     console.error('Error updating record:', error);
     res.status(500).json({ success: false, error: 'Failed to update record', message: error.message });
@@ -176,13 +184,13 @@ router.delete('/records/:id', requirePermission('editRecords'), async (req: Requ
 
 router.post('/records/bulk', requirePermission('bulkEditRecords'), async (req: Request, res: Response) => {
   try {
-    const { profileIds, type, status, date } = req.body;
+    const { profileIds, type, state, date } = req.body;
     if (!Array.isArray(profileIds) || profileIds.length === 0) {
       res.status(400).json({ success: false, error: 'profileIds array is required' });
       return;
     }
-    if (!type || !status) {
-      res.status(400).json({ success: false, error: 'type and status are required' });
+    if (!type || !state) {
+      res.status(400).json({ success: false, error: 'type and state are required' });
       return;
     }
 
@@ -195,7 +203,7 @@ router.post('/records/bulk', requirePermission('bulkEditRecords'), async (req: R
       const id = parseInt(String(profileId), 10);
       if (isNaN(id)) continue;
 
-      const result = await upsertRecord(allRecords, { profileId: id, type, status, date: recordDate }, 'statusAndDate');
+      const result = await setRecordState(allRecords, { profileId: id, type, state, date: recordDate }, 'refreshDate');
       if (result === 'created') created++;
       else updated++;
     }
@@ -252,15 +260,15 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
     }
 
     // Group records by profile ID
-    const recordsByProfile = new Map<number, Map<string, { status: string; date: string }>>();
+    const recordsByProfile = new Map<number, Map<string, { state: string; date: string }>>();
     const allTypes = new Set<string>();
     const today = ukToday();
-    for (const r of rawRecords) {
-      const pid = recordProfileId(r);
-      if (pid === undefined || !r.Type) continue;
-      allTypes.add(r.Type);
+    for (const r of currentRecords(rawRecords)) {
+      const pid = recordProfileId(r)!;
+      const type = recordType(r);
+      allTypes.add(type);
       if (!recordsByProfile.has(pid)) recordsByProfile.set(pid, new Map());
-      recordsByProfile.get(pid)!.set(r.Type, { status: statusOn(r, today), date: r.Date || '' });
+      recordsByProfile.get(pid)!.set(type, { state: recordStateName(r), date: r.Date || '' });
     }
 
     // Format date like "8 Sept 2025"
@@ -293,7 +301,7 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
         const typeCols = sortedTypes.map(t => {
           const rec = recs.get(t);
           if (!rec) return '""';
-          const val = rec.date ? `${rec.status} · ${formatDateShort(rec.date)}` : rec.status;
+          const val = rec.date ? `${rec.state} · ${formatDateShort(rec.date)}` : rec.state;
           return `"${val.replace(/"/g, '""')}"`;
         });
         return `"${name}","${email}",${lastFY},${thisFY},${typeCols.join(',')}`;
@@ -315,79 +323,6 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
       error: 'Failed to export records',
       message: error.message
     });
-  }
-});
-
-// Totals only, no volunteer data: for planning the Records v2 migration (#322).
-router.get('/records/summary', requirePermission('exportRecordsSummary'), async (req: Request, res: Response) => {
-  try {
-    const [records, profiles, recordsColumns] = await Promise.all([
-      recordsRepository.getAll(),
-      profilesRepository.getAll(),
-      sharePointClient.getListColumns(sharePoint.lists.records, { fresh: true })
-    ]);
-
-    // The Records v2 migration check, once the State column exists (#322 §5)
-    const hasStateColumn = recordsColumns.some((c: any) => c.name === RECORD_STATE);
-    const states = hasStateColumn
-      ? {
-          recordStates: await sharePointClient.getListItems(sharePoint.lists.records, `ID,Type,${RECORD_STATE_LOOKUP}`),
-          states: await statesRepository.getAll(),
-        }
-      : undefined;
-
-    const environment = environmentName();
-    const today = ukToday();
-    const summary = summariseRecords({
-      environment,
-      generatedAt: new Date().toISOString(),
-      today,
-      records,
-      profiles,
-      recordsColumns,
-      states
-    });
-
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${today} DTV Records Summary ${environment}.json"`);
-    res.send(JSON.stringify(summary, null, 2));
-  } catch (error: any) {
-    console.error('Error exporting records summary:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to export records summary',
-      message: error.message
-    });
-  }
-});
-
-// Records v2 migration (#322 §5), from Tools. GET is the dry run (a JSON download); POST with
-// { confirm: 'run' } writes. Temporary: removed in Records v2 PR 1 (#323).
-router.get('/records/migration', requirePermission('migrateRecords'), async (req: Request, res: Response) => {
-  try {
-    const environment = environmentName();
-    const report = await runRecordsMigration({ dryRun: true, environment });
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${ukToday()} DTV Records Migration Dry Run ${environment}.json"`);
-    res.send(JSON.stringify(report, null, 2));
-  } catch (error: any) {
-    console.error('Error in records migration dry run:', error);
-    res.status(500).json({ success: false, error: 'Records migration dry run failed', message: error.message });
-  }
-});
-
-router.post('/records/migration', requirePermission('migrateRecords'), async (req: Request, res: Response) => {
-  if (req.body?.confirm !== 'run') {
-    res.status(400).json({ success: false, error: 'Send { "confirm": "run" } to run the migration' });
-    return;
-  }
-  try {
-    const report = await runRecordsMigration({ dryRun: false, environment: environmentName() });
-    console.log(`[Records migration] ${report.environment}: ${report.statesToInsert.length} States inserted, ${report.titlesSet} Titles fixed, ${report.recordsSet} Records set, ${report.errors?.length ?? 0} errors`);
-    res.json({ success: true, data: report });
-  } catch (error: any) {
-    console.error('Error running records migration:', error);
-    res.status(500).json({ success: false, error: 'Records migration failed', message: error.message });
   }
 });
 

@@ -1,29 +1,24 @@
 <template>
   <button
     class="rch-chip"
-    :class="appliedStyle ? [`rch-chip--${appliedStyle}`, 'rch-chip--styled'] : ''"
+    :class="record.style ? [`rch-chip--${record.style}`, 'rch-chip--styled'] : ''"
     :disabled="disabled"
   >
-    {{ record.type }} · {{ record.status }}<template v-if="record.date"> · {{ formatDate(record.date) }}</template>
+    {{ record.type }} · {{ record.label }}<template v-if="record.date"> · {{ formatDate(record.date) }}</template>
   </button>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { todayStyle, type RecordStateStyle } from '../../utils/recordStateStyle'
+import type { RecordStateStyle } from '../../../../types/record-state'
 
 /**
- * One Record as a chip: "{Type} · {Status} · {Date}" (the Profile page's Records). Click to edit
- * unless disabled. Refined on /sandbox/record-chip.
+ * One Record as a chip: "{Type} · {label} · {Date}" (the Profile page's Records), in its State's
+ * style (#322 §3). Click to edit unless disabled. Refined on /sandbox/record-chip.
  */
-const props = defineProps<{
-  record: { type: string; status: string; date?: string }
+defineProps<{
+  record: { type: string; label: string; style?: RecordStateStyle; date?: string }
   disabled?: boolean
-  /** A State's style (Records v2 PR 2, #324), as on RecordListItem. */
-  stateStyle?: RecordStateStyle
 }>()
-
-const appliedStyle = computed<RecordStateStyle | undefined>(() => props.stateStyle ?? todayStyle(props.record.status))
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })

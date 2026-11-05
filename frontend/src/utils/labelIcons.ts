@@ -27,6 +27,7 @@ export const LABEL_ICONS: LabelIcon[] = [
   { icon: 'badges/regular.svg',    alt: 'Regular',        type: 'tag', labelKey: 'Regular' },
   { icon: 'badges/new.svg',        alt: 'New',            type: 'tag' },
   { icon: 'badges/nophoto.svg',    alt: 'No Photo',       type: 'tag', color: 'red' },
+  { icon: 'brands/dofe.svg',       alt: 'DofE',           type: 'tag' },
   { icon: 'status/warning.svg',    alt: 'Profile Warning', type: 'badge', color: 'red' },
 ]
 
@@ -46,6 +47,7 @@ interface EntryIconSource {
   isNew?: boolean               // profile.stats.sessionIds[0] === sessionId
   noPhoto?: boolean             // profile.stats.noPhoto (always current)
   isFirstAiderAvailable?: boolean  // profile.stats.isFirstAider
+  isDofE?: boolean                 // profile.stats.isDofE (DofE · Active)
 }
 
 /** Builds the full icon list for an entry: profile badges + derived badges + labels */
@@ -81,6 +83,7 @@ export function iconsForEntry(e: EntryIconSource): LabelIcon[] {
   // Derived from profile.stats
   if (e.isNew) icons.push({ icon: 'badges/new.svg', alt: 'New', type: 'tag' })
   if (e.noPhoto) icons.push({ icon: 'badges/nophoto.svg', alt: 'No Photo', type: 'tag', color: 'red' })
+  if (e.isDofE) icons.push({ icon: 'brands/dofe.svg', alt: 'DofE', type: 'tag' })
 
   // Labels (stored on entry)
   if (labels.includes('Regular')) icons.push({ icon: 'badges/regular.svg', alt: 'Regular', type: 'tag' })

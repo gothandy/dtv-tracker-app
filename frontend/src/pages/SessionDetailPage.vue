@@ -444,6 +444,7 @@ function mapEntry(e: EntryResponse): EntryItem {
       hasProfileWarning: e.profileWarning,
       noPhoto: e.noPhoto,
       isFirstAiderAvailable: e.isFirstAiderAvailable,
+      isDofE: e.isDofE,
     },
     session: {
       groupKey: route.params.groupKey as string,

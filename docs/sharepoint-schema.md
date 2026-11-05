@@ -262,21 +262,13 @@ This is a **many-to-many junction table** that creates the relationship between:
 | **ID** | ID | Counter | Auto | Unique identifier (Primary Key) |
 | **Title** | Title | Single line of text | No | Auto-generated or unused |
 | **Profile** | Profile | Lookup | No | Links to Profiles list (shows Title) |
-| **Type** | Type | Choice | No | Record type (see choices below) |
-| **Status** | Status | Choice | No | Record status (see choices below). Replaced by State in Records v2 PR 1 ([#322](https://github.com/gothandy/dtv-tracker-app/issues/322)), then removed |
-| **State** | State | Lookup | No | Being added: lookup to the States list, set by the Records v2 migration; read by the app from PR 1 |
+| **State** | State | Lookup | No | Lookup to the States list: the Record's Type and State come from here ([#322](https://github.com/gothandy/dtv-tracker-app/issues/322)) |
 | **Date** | Date | Date and Time | No | The date of the record: when it happened, or will (e.g. an expiry); read as a UK date |
 | **Notes** | Notes | Single line of text | No | Free text, 255 characters at most; edited in Edit Record |
 | **Modified** | Modified | Date and Time | Auto | Last modified timestamp (read-only) |
 | **Created** | Created | Date and Time | Auto | Creation timestamp (read-only) |
 
-### Choice Values
-
-**Type** (preview, 2 Nov 2026): Privacy Consent, Photo Consent, Newsletter Consent, Charity Membership, Discount Card, Bike Park Wales, Facebook Group, Parking Permit, First Aid Certificate, DofE
-
-**Status** (preview, 3 Nov 2026): Invited, Accepted, Declined, Expires, Expired. Status checks go through `recordStatus()` (`types/record-status.ts`).
-
-Start and End (date only) were added for an earlier Records v2 design and are no longer used; the app doesn't read them, and they can be deleted.
+The old **Type** and **Status** choice columns are no longer read or written (Records v2 PR 1); delete them once PR 1 is deployed. Start and End (date only), from an earlier Records v2 design, can also be deleted.
 
 ### Lookup Fields
 - **Profile** / **ProfileLookupId**: Lookup to Profiles list

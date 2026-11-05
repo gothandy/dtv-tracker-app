@@ -9,20 +9,20 @@ import { fyKeyToLabel, type FyOption } from './entitySessionTotals'
  */
 export interface RecordFilters {
   type: string
-  status: string
+  state: string
   fy: string
   profileId?: number
 }
 
-export const DEFAULT_RECORD_FILTERS: RecordFilters = { type: '', status: '', fy: 'all' }
+export const DEFAULT_RECORD_FILTERS: RecordFilters = { type: '', state: '', fy: 'all' }
 
-const STATUS_ORDER = ['Invited', 'Accepted', 'Declined', 'Expires', 'Expired']
+const STATE_ORDER = ['Invited', 'Accepted', 'Declined', 'Expires', 'Expired']
 const TYPE_ORDER: string[] = [...RECORD_TYPE_NAMES]
 
 export function matchesRecordFilters(record: RecordListItemResponse, filters: RecordFilters): boolean {
   if (filters.profileId !== undefined && record.profileId !== filters.profileId) return false
   if (filters.type && record.type !== filters.type) return false
-  if (filters.status && record.status !== filters.status) return false
+  if (filters.state && record.stateName !== filters.state) return false
   return dateMatchesFy(record.date, filters.fy)
 }
 
@@ -53,7 +53,7 @@ export function recordFilterOptions(records: RecordListItemResponse[], filters: 
 
   return {
     types: [...new Set(leftBy({ type: '' }).map(r => r.type))].sort(byOrder(TYPE_ORDER)),
-    statuses: [...new Set(leftBy({ status: '' }).map(r => r.status))].sort(byOrder(STATUS_ORDER)),
+    states: [...new Set(leftBy({ state: '' }).map(r => r.stateName))].sort(byOrder(STATE_ORDER)),
     fyOptions,
   }
 }

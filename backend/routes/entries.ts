@@ -53,7 +53,7 @@ import { trackerAccessForProfileUser } from '../services/tracker-access';
 import type { ApiResponse } from '../../types/sharepoint';
 import { requestOrigin } from '../services/request-origin';
 import { ukToday, ukYearAgo } from '../../types/uk-date';
-import { isOfType, statusOn } from '../services/records';
+import { recordFlags } from '../services/record-rules';
 
 const router: Router = express.Router();
 
@@ -218,6 +218,7 @@ router.get('/entries/recent', async (req: Request, res: Response) => {
           isNew: isNew || undefined,
           noPhoto: profileStats.noPhoto === true || undefined,
           isFirstAiderAvailable: profileStats.isFirstAider === true || undefined,
+          isDofE: profileStats.isDofE === true || undefined,
           eventbriteAttendeeId: e[ENTRY_EVENTBRITE_ATTENDEE_ID] || undefined,
         }];
       });
@@ -314,6 +315,7 @@ router.get('/entries', async (req: Request, res: Response) => {
           isGroup: profile?.IsGroup || false,
           isMember: profileStats.isMember === true,
           cardStatus: profileStats.cardStatus ?? undefined,
+          isDofE: profileStats.isDofE === true || undefined,
           hasProfileWarning: profileStats.warnings?.length ? true : undefined,
           hasAccompanyingAdult: hasAdult,
           accompanyingAdultId: safeParseLookupId(e.AccompanyingAdultLookupId),
@@ -493,7 +495,7 @@ router.get('/entries/:id', async (req: Request, res: Response) => {
       ? await recordsRepository.getByProfile(volunteerId)
       : [];
     const sessionDate = (spSession.Date || '').slice(0, 10);
-    const hasPrivacyConsent = profileRecords.some(r => isOfType(r, 'Privacy Consent') && statusOn(r, sessionDate) === 'Accepted');
+    const { hasPrivacyConsent } = recordFlags(profileRecords, sessionDate);
 
     const vSlug2 = volunteerId !== undefined ? profileSlug(spEntry[PROFILE_DISPLAY], volunteerId) : undefined;
     const data: EntryDetailResponse = {
@@ -632,7 +634,8 @@ router.patch('/entries/:id', async (req: Request, res: Response) => {
       fields.Count = countNum;
     }
     if (hours !== undefined) {
-      const hoursNum = parseFloat(String(hours));
+      // A blank Hours box (or null) means no hours
+      const hoursNum = hours === '' || hours === null ? 0 : parseFloat(String(hours));
       if (isNaN(hoursNum) || hoursNum < 0) {
         res.status(400).json({ success: false, error: 'Hours must be a non-negative number' });
         return;

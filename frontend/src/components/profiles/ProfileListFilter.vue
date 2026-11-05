@@ -36,10 +36,10 @@
         <option value="">All record types</option>
         <option v-for="t in recordFilterOptions.types" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select v-model="recordStatus" class="list-filter-select">
-        <option value="">All statuses</option>
+      <select v-model="recordState" class="list-filter-select">
+        <option value="">All states</option>
         <option v-if="recordFilterOptions.noRecord" :value="NO_RECORD">No record</option>
-        <option v-for="s in recordFilterOptions.statuses" :key="s" :value="s">{{ s }}</option>
+        <option v-for="s in recordFilterOptions.states" :key="s" :value="s">{{ s }}</option>
       </select>
       <select v-model="warningsFilter" class="list-filter-select">
         <option value="">All profiles</option>
@@ -85,7 +85,7 @@ const sort        = ref((route.query.sort as string)         || 'az')
 const type        = ref((route.query.type as string)         || '')
 const hoursFilter = ref((route.query.hours as string)        || '')
 const recordType     = ref((route.query.recordType as string)    || '')
-const recordStatus   = ref((route.query.recordStatus as string)  || '')
+const recordState   = ref((route.query.recordState as string)  || '')
 const warningsFilter = ref((route.query.warnings as string)      || '')
 
 // FY and group changes require a store re-fetch — emit upward as a single event
@@ -145,18 +145,18 @@ const beforeRecordFilters = computed<ProfileResponse[]>(() => {
 })
 
 const recordFilterOptions = computed(() =>
-  profileRecordFilterOptions(beforeRecordFilters.value, recordType.value, recordStatus.value))
+  profileRecordFilterOptions(beforeRecordFilters.value, recordType.value, recordState.value))
 
 // Filters cascade: a Record choice the other filters leave no Profiles for goes back to All (once loaded)
 watch(recordFilterOptions, opts => {
   // Not on stale profiles mid-refetch, or a valid choice could be cleared before the new FY arrives
   if (!props.profiles.length || props.loading) return
   if (recordType.value && !opts.types.includes(recordType.value)) recordType.value = ''
-  if (recordStatus.value === NO_RECORD ? !opts.noRecord : recordStatus.value && !opts.statuses.includes(recordStatus.value)) recordStatus.value = ''
+  if (recordState.value === NO_RECORD ? !opts.noRecord : recordState.value && !opts.states.includes(recordState.value)) recordState.value = ''
 })
 
 const filtered = computed<ProfileResponse[]>(() => {
-  let list = beforeRecordFilters.value.filter(p => matchesProfileRecordFilter(p.records ?? [], recordType.value, recordStatus.value))
+  let list = beforeRecordFilters.value.filter(p => matchesProfileRecordFilter(p.records ?? [], recordType.value, recordState.value))
 
   // Sort
   list = [...list].sort((a, b) => {
@@ -173,7 +173,7 @@ const filtered = computed<ProfileResponse[]>(() => {
 
 watch(filtered, list => emit('filtered', list), { immediate: true })
 
-watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus, warningsFilter], ([newFy, newGroup, newSearch, newSort, newType, newHours, newRecordType, newRecordStatus, newWarnings]) => {
+watch([fy, group, search, sort, type, hoursFilter, recordType, recordState, warningsFilter], ([newFy, newGroup, newSearch, newSort, newType, newHours, newRecordType, newRecordState, newWarnings]) => {
   const query: Record<string, string> = {}
   if (newFy)           query.fy           = newFy
   if (newGroup)        query.group        = newGroup
@@ -182,7 +182,7 @@ watch([fy, group, search, sort, type, hoursFilter, recordType, recordStatus, war
   if (newType)         query.type         = newType
   if (newHours)        query.hours        = newHours
   if (newRecordType)   query.recordType   = newRecordType
-  if (newRecordStatus) query.recordStatus = newRecordStatus
+  if (newRecordState) query.recordState = newRecordState
   if (newWarnings)     query.warnings     = newWarnings
   router.replace({ query })
 })
