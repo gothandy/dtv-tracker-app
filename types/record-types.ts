@@ -1,7 +1,7 @@
 /**
  * The Record Types the code's rules name (badges, consent, warnings), keyed by the SharePoint
  * Type value. Where code must name a Type, `RecordTypeName` makes a misspelling a compile
- * error. Each Type's statuses, labels and Notes hints are content in SharePoint (the
+ * error. Each Type's States and labels are content in SharePoint (the
  * States list, Records v2 #322), not here.
  */
 

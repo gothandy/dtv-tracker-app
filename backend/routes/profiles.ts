@@ -145,12 +145,12 @@ router.get('/profiles', async (req: Request, res: Response) => {
     });
 
     // Each Profile's current Record of each Type: the Record filters match on these (#322 §1)
-    const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
+    const profileRecordsMap = new Map<number, Array<{ type: string; state: string }>>();
     for (const r of currentRecords(rawRecords)) {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
-      profileRecordsMap.get(pid)!.push({ type: recordType(r), status: recordStateName(r) });
+      profileRecordsMap.get(pid)!.push({ type: recordType(r), state: recordStateName(r) });
     }
     for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
@@ -216,7 +216,7 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     const typeFilter = req.query.type ? String(req.query.type) : undefined;
     const hoursFilter = req.query.hours ? String(req.query.hours) : undefined;
     const recordTypeFilter = req.query.recordType ? String(req.query.recordType) : undefined;
-    const recordStatusFilter = req.query.recordStatus ? String(req.query.recordStatus) : undefined;
+    const recordStateFilter = req.query.recordState ? String(req.query.recordState) : undefined;
     const profileIdsFilter = req.query.profileIds
       ? new Set(String(req.query.profileIds).split(',').map(Number).filter(n => !isNaN(n) && n > 0))
       : undefined;
@@ -274,12 +274,12 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
 
     // Build records map
     // Each Profile's current Record of each Type: the Record filters match on these (#322 §1)
-    const profileRecordsMap = new Map<number, Array<{ type: string; status: string }>>();
+    const profileRecordsMap = new Map<number, Array<{ type: string; state: string }>>();
     for (const r of currentRecords(rawRecords)) {
       const pid = recordProfileId(r);
       if (pid === undefined) continue;
       if (!profileRecordsMap.has(pid)) profileRecordsMap.set(pid, []);
-      profileRecordsMap.get(pid)!.push({ type: recordType(r), status: recordStateName(r) });
+      profileRecordsMap.get(pid)!.push({ type: recordType(r), state: recordStateName(r) });
     }
     for (const [pid, recs] of profileRecordsMap) profileRecordsMap.set(pid, oneRecordPerType(recs));
 
@@ -315,9 +315,9 @@ router.get('/profiles/export', async (req: Request, res: Response) => {
     // Hours filter uses FY-appropriate hours
     if (hoursFilter) profileList = profileList.filter(p => matchesHoursFilter(hoursInView(p, fyParam), hoursFilter));
 
-    // Record filters: the same rule as the Profiles page (Status works with or without a Type)
-    if (recordTypeFilter || recordStatusFilter) {
-      profileList = profileList.filter(p => matchesProfileRecordFilter(p.records, recordTypeFilter ?? '', recordStatusFilter ?? ''));
+    // Record filters: the same rule as the Profiles page (State works with or without a Type)
+    if (recordTypeFilter || recordStateFilter) {
+      profileList = profileList.filter(p => matchesProfileRecordFilter(p.records, recordTypeFilter ?? '', recordStateFilter ?? ''));
     }
 
     // Filter out profiles with no activity unless showing all or explicitly requesting 0h
@@ -478,8 +478,8 @@ router.post('/profiles/:id/consent', async (req: Request, res: Response) => {
     // Privacy Consent is always Accepted (backend enforces this); Photo Consent is the volunteer's choice
     const privacyType: RecordTypeName = 'Privacy Consent';
     const photoType: RecordTypeName = 'Photo Consent';
-    await setRecordState(existing, { profileId, type: privacyType, status: 'Accepted', date: today }, 'refreshDate');
-    await setRecordState(existing, { profileId, type: photoType, status: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'refreshDate');
+    await setRecordState(existing, { profileId, type: privacyType, state: 'Accepted', date: today }, 'refreshDate');
+    await setRecordState(existing, { profileId, type: photoType, state: photoConsent === true ? 'Accepted' : 'Declined', date: today }, 'refreshDate');
 
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)

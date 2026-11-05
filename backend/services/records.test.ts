@@ -90,7 +90,7 @@ describe('toRecordResponse', () => {
     const permit = state('Parking Permit', 'Active', { before: 'Expires', after: 'Expired', beforeStyle: 'Active', afterStyle: 'Warn' })
     const r = { ID: 7, ProfileLookupId: 10, State: permit, Date: '2026-12-31', Notes: 'AB12 CDE' } as any
     expect(toRecordResponse(r, '2026-11-04')).toEqual({
-      id: 7, type: 'Parking Permit', stateId: permit.id, status: 'Active', storedStatus: 'Active',
+      id: 7, type: 'Parking Permit', stateId: permit.id, stateName: 'Active',
       label: 'Expires', style: 'active', date: '2026-12-31', notes: 'AB12 CDE',
     })
     expect(toRecordResponse(r, '2027-01-01')).toMatchObject({ label: 'Expired', style: 'warn' })

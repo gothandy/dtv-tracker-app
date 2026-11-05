@@ -184,7 +184,7 @@ const CONSENT_MAP: Record<string, RecordTypeName> = {
 
 /**
  * Upserts consent records for a profile from Eventbrite attendee answers.
- * Only writes to SharePoint if the status or date has changed.
+ * Only writes to SharePoint if the State has changed (a new State is a new Record).
  * Mutates `records` by pushing any newly-created record so subsequent
  * lookups within the same batch stay consistent.
  */
@@ -202,11 +202,11 @@ export async function upsertConsentRecords(
     if (!ans.answer) continue; // skip attendees who registered before the form was added
     const type = CONSENT_MAP[ans.question] ?? null;
     if (!type) continue;
-    const status = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
+    const state = ans.answer === 'accepted' ? 'Accepted' : 'Declined';
     const date = attendee.created || new Date().toISOString();
     // A changed answer is a new Record; the same answer leaves the Record alone (date comparison is
     // unreliable: SharePoint's date-only field strips the time from attendee.created).
-    const result = await setRecordState(records, { profileId, type, status, date }, 'leave');
+    const result = await setRecordState(records, { profileId, type, state, date }, 'leave');
     if (result === 'created') created++;
     else if (result === 'updated') updated++;
   }

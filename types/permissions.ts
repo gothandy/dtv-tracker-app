@@ -25,7 +25,7 @@ export const PERMISSIONS = {
   bulkEditProjects: ['admin'],
   /** The Records page: every Record, with filters (read and edit one at a time, as editRecords allows). */
   viewRecords: ['admin'],
-  /** The Record Type and Status choices, for the Add and Edit Record forms. */
+  /** The States list (each Type's States), for the Add and Edit Record forms. */
   viewRecordOptions: ['checkin', 'admin'],
   /** Add, edit and delete a Profile's Records, one at a time. */
   editRecords: ['admin'],

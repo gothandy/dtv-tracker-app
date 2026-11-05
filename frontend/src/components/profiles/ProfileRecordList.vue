@@ -33,7 +33,7 @@
       v-if="showAdd"
       :states="states"
       :initial-type="addPrefill?.type"
-      :initial-status="addPrefill?.status"
+      :initial-state="addPrefill?.state"
       :working="workingAdd"
       :error="addError"
       @close="showAdd = false; addPrefill = null"
@@ -96,7 +96,7 @@ const addError = ref('')
 const editError = ref('')
 
 /** Type and State for Add, when it opens from Edit Record's change of State. */
-const addPrefill = ref<{ type: string; status: string } | null>(null)
+const addPrefill = ref<{ type: string; state: string } | null>(null)
 
 function openAdd() {
   addPrefill.value = null
@@ -104,8 +104,8 @@ function openAdd() {
 }
 
 /** A new State for the current Record: add a new Record, pre-filled (#322 §1). */
-function onChangeState(status: string) {
-  addPrefill.value = { type: editingRecord.value!.type, status }
+function onChangeState(state: string) {
+  addPrefill.value = { type: editingRecord.value!.type, state }
   editingRecord.value = null
   showAdd.value = true
 }

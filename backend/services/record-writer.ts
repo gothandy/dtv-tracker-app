@@ -14,7 +14,7 @@ export interface RecordValues {
   profileId: number;
   type: string;
   /** The State's Name. */
-  status: string;
+  state: string;
   /** YYYY-MM-DD from a form, or a full timestamp when the tracker picks it. */
   date: string;
 }
@@ -28,7 +28,7 @@ export async function requireState(type: string, name: string): Promise<RecordSt
 
 /** Creates a Record and returns it as it would be read back. */
 export async function createRecord(values: RecordValues): Promise<SharePointRecord> {
-  const state = await requireState(values.type, values.status);
+  const state = await requireState(values.type, values.state);
   const fields = { ProfileLookupId: values.profileId, StateLookupId: state.id, Date: values.date };
   const id = await recordsRepository.create(fields);
   return { ID: id, ...fields, State: state } as SharePointRecord;
@@ -47,7 +47,7 @@ export async function setRecordState(
   sameState: 'refreshDate' | 'leave',
 ): Promise<'created' | 'updated' | 'unchanged'> {
   const current = currentRecord(records, values.profileId, values.type);
-  if (!current || recordStateName(current) !== values.status) {
+  if (!current || recordStateName(current) !== values.state) {
     records.push(await createRecord(values));
     return 'created';
   }

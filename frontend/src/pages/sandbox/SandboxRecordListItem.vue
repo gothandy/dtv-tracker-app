@@ -30,7 +30,7 @@ import type { RecordListItemResponse } from '../../../../types/api-responses'
 usePageTitle('Sandbox')
 
 const record = (id: number, type: string, label: string, style: RecordStateStyle | undefined, profileName: string, date: string, notes?: string): RecordListItemResponse => ({
-  id, type, status: label, storedStatus: label, label, style, date, notes, profileId: id, profileName, profileSlug: `p-${id}`,
+  id, type, stateName: label, label, style, date, notes, profileId: id, profileName, profileSlug: `p-${id}`,
 })
 
 /** A From State shows its After label; an Until State its Before label up to its Date, then After. */

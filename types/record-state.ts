@@ -61,3 +61,8 @@ export function stateTypes(states: RecordState[]): string[] {
 export function statesOfType(states: RecordState[], type: string): RecordState[] {
   return states.filter(s => s.type === type).sort((a, b) => a.id - b.id);
 }
+
+/** The label for a Record's Date field in Add and Edit: the State's Before text, else its After text, else "Date". */
+export function dateLabel(state: RecordState | undefined): string {
+  return state?.before?.trim() || state?.after?.trim() || 'Date'
+}

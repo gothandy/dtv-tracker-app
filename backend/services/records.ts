@@ -80,8 +80,7 @@ export function toRecordResponse(record: SharePointRecord, onDate: string): Reco
     id: record.ID,
     type: recordType(record),
     stateId: state?.id,
-    status: name,
-    storedStatus: name,
+    stateName: name,
     label: state ? stateLabel(state, record.Date, onDate) : name,
     style: state ? stateStyle(state, record.Date, onDate) : undefined,
     date: record.Date || '',
@@ -89,7 +88,7 @@ export function toRecordResponse(record: SharePointRecord, onDate: string): Reco
   };
 }
 
-/** Member and discount-card status per Profile, from each Profile's current Records. */
+/** Member and Discount Card State per Profile, from each Profile's current Records. */
 export function buildBadgeLookups(records: SharePointRecord[]): {
   memberIds: Set<number>;
   cardStatusMap: Map<number, string>;

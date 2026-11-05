@@ -183,7 +183,7 @@ Check In can make a session photo non-public via `PATCH /media/:itemId`; permane
 | DELETE | `/sessions/:group/:date` | Delete session |
 | DELETE | `/entries/:id` | Delete entry (permission `deleteEntries`; cancelled entries only) |
 | POST | `/profiles/:id/records` | Create record (permission `editRecords`) |
-| PATCH | `/records/:id` | Edit record: Status, Date, Notes (permission `editRecords`) |
+| PATCH | `/records/:id` | Edit record: State, Date, Notes (permission `editRecords`) |
 | DELETE | `/records/:id` | Delete record (permission `editRecords`) |
 | POST | `/records/bulk` | Bulk create/update records (permission `bulkEditRecords`) |
 | POST | `/profiles/bulk-email` | Send a Profile email template to selected profiles |

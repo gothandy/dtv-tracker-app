@@ -231,13 +231,14 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Uncheck: `DELETE /api/regulars/:id`
 
 ### H20. Create record
-- [ ] Profile detail → Records → "+ Add" → modal with Type, Status, Date
-- [ ] `POST /api/profiles/:id/records` — `{ type, status, date? }`
+- [ ] Profile detail → Records → "+ Add" → modal with Type, then that Type's States, Date (today by default)
+- [ ] `POST /api/profiles/:id/records` — `{ type, state, date? }`; returns the saved Record with its label and style
 - [ ] Record appears in pills list
 
 ### H21. Edit record
-- [ ] Profile detail → click record pill → modal with Status, Date
-- [ ] `PATCH /api/records/:id` — `{ status?, date?, notes? }`; Notes over 255 characters returns 400
+- [ ] Profile detail → click record chip → modal with State (the Record's Type's States), Date, Notes
+- [ ] `PATCH /api/records/:id` — `{ state?, date?, notes? }`; Notes over 255 characters returns 400
+- [ ] Changing the State of the current Record asks *Change State?* → **Add New** opens Add Record pre-filled; an older Record's State is corrected in place
 - [ ] Edit Record shows Notes; a saved note shows again on reopening Edit, and clearing it saves empty
 
 ### H22. Delete record
@@ -249,7 +250,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] Click → `/profiles/:slug/consent` — shows volunteer name; Submit disabled
 - [ ] Tick Privacy only → Submit enabled; submit → Privacy Consent: Accepted, Photo Consent: Declined
 - [ ] Tick both → submit → both Accepted
-- [ ] Return to profile → record pills show updated status and today's date
+- [ ] Return to profile → record chips show the updated State and today's date
 - [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: true, photoConsent: false }` → 200
 - [ ] `POST /api/profiles/:id/consent` — `{ privacyConsent: false }` → 400 (privacy required)
 - [ ] **Entry detail consent button** (Check In / Admin): visible when volunteer has no Privacy Consent record; hidden once they have an Accepted record
@@ -262,8 +263,8 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### H23. Bulk add records
 - [ ] Volunteers page → Advanced → no checkboxes ticked → "Add Records" → modal shows count of filtered individuals (groups excluded)
 - [ ] With checkboxes ticked → "Add Records (N)" → modal shows count of selected individuals only
-- [ ] Confirmation dialog: "You are about to update N records with Type: Status"
-- [ ] `POST /api/records/bulk` — `{ profileIds, type, status, date? }`
+- [ ] Confirmation dialog: "You are about to update N records with Type: State"
+- [ ] `POST /api/records/bulk` — `{ profileIds, type, state, date? }`; a different State adds a new Record, the same State refreshes the Date
 - [ ] Shows "Done: X created, Y updated", auto-closes, reloads list
 - [ ] Upsert: same type updates existing records, doesn't duplicate
 
@@ -299,12 +300,12 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### H24c. Records page (admin)
 - [ ] Menu shows **Records** for Admin only; Check In opening `/records` is turned away, and `GET /api/records` returns 403 for Check In and Self-Service
 - [ ] Lists every Record (same total as the Records list in SharePoint), sorted by Type then Profile name; each card: Type with the Profile's name below (and Notes, if any) on the left, State with the Date below on the right; State green for Invited and Accepted, black otherwise
-- [ ] Type and Status filters; FY is on the Record's Date: All FY, each FY the Records' Dates fall in, Rolling (the year up to today) and Future (today or later), each only when it would show a Record; Records with no Date only under All FY
+- [ ] Type and State filters; FY is on the Record's Date: All FY, each FY the Records' Dates fall in, Rolling (the year up to today) and Future (today or later), each only when it would show a Record; Records with no Date only under All FY
 - [ ] Filters cascade (each offers only what the others leave) and are kept in the address; Share copies the filtered link
 - [ ] Select all / tick cards: the count shows `n / total records`; changing filters drops ticked cards no longer shown
 - [ ] Edit Record (Admin): **View Archive** at the top (with View Profile on the Records page) opens the Records page for that Profile and Type, with the chip and Type filter set; from the Records page the filters change in place
 - [ ] Profile page (Admin): Records header shows **View All**, which opens the Records page filtered to that Profile with a chip of its name; clicking the chip clears it; the filter is kept in the address. Check In doesn't see View All
-- [ ] Click a card: Edit Record with the Profile's name as title and View Profile at the top; Save (Status, Date, Notes) and Delete update the list
+- [ ] Click a card: Edit Record with the Profile's name as title and View Profile at the top; Save (State, Date, Notes) and Delete update the list
 
 ### H24b. Entries page (admin)
 
@@ -572,7 +573,7 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 - [ ] `GET /api/profiles` — all volunteers with hours, records, membership status
 - [ ] `GET /api/profiles?group=X` — filtered by group attendance
 - [ ] `GET /api/groups` — populate group dropdown
-- [ ] `GET /api/records/options` — populate record type/status dropdowns
+- [ ] `GET /api/profiles/records/options` — the States list, for the Add and Edit Record forms
 - [ ] Warnings filter dropdown appears in the advanced filters row
 - [ ] "All profiles" (default) — no filter applied; all volunteers shown
 - [ ] "All warnings" — only volunteers with at least one warning shown
@@ -645,9 +646,9 @@ Run on the preview (https://preview.tracker.dtv.org.uk) or locally with `npm run
 ### L2. Volunteers advanced filters (client-side)
 - [ ] Type: All / Individuals / Groups
 - [ ] Hours: All / 0h / <15h / 15h+ / 15-30h / 30h+. Boundaries include the lower edge: exactly 15h shows in 15h+ and 15-30h; exactly 30h shows in 30h+ and 15h+, not 15-30h
-- [ ] Record Type lists only Types the shown volunteers have a Record of (e.g. no DofE until someone has one); Status lists only statuses they have, plus *No record* when it would match anyone
-- [ ] Status works without a Type: *Declined* shows everyone with any Declined Record; *No record* shows volunteers with no Records at all
-- [ ] Type + Status: that Type's Record has the Status; Type + *No record*: volunteers without that Type
+- [ ] Record Type lists only Types the shown volunteers have a Record of (e.g. no DofE until someone has one); State lists only States they have, plus *No record* when it would match anyone
+- [ ] State works without a Type: *Declined* shows everyone whose current Record of some Type is Declined; *No record* shows volunteers with no Records at all
+- [ ] Type + State: that Type's current Record has the State; Type + *No record*: volunteers without that Type
 - [ ] Changing other filters drops a Record choice that no longer has anyone (back to All); choices kept in the address
 - [ ] Filters combine with AND logic
 - [ ] Closing advanced section resets all filters and clears selection

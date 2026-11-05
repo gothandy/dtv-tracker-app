@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest'
 import type { ProfileResponse } from '../../../types/api-responses'
 import { profileRecordFilterOptions } from './profileRecordFilter'
 
-const profile = (id: number, records: { type: string; status: string }[]) => ({ id, records }) as unknown as ProfileResponse
+const profile = (id: number, records: { type: string; state: string }[]) => ({ id, records }) as unknown as ProfileResponse
 
 const profiles = [
-  profile(1, [{ type: 'Photo Consent', status: 'Declined' }, { type: 'Discount Card', status: 'Accepted' }]),
-  profile(2, [{ type: 'Photo Consent', status: 'Accepted' }]),
+  profile(1, [{ type: 'Photo Consent', state: 'Declined' }, { type: 'Discount Card', state: 'Accepted' }]),
+  profile(2, [{ type: 'Photo Consent', state: 'Accepted' }]),
   profile(3, []),
 ]
 
@@ -14,7 +14,7 @@ describe('profileRecordFilterOptions', () => {
   it('offers only the Types and Statuses the shown Profiles have', () => {
     expect(profileRecordFilterOptions(profiles, '', '')).toEqual({
       types: ['Photo Consent', 'Discount Card'],
-      statuses: ['Accepted', 'Declined'],
+      states: ['Accepted', 'Declined'],
       noRecord: true,
     })
   })
@@ -22,7 +22,7 @@ describe('profileRecordFilterOptions', () => {
   it('with a Type, offers that Type’s Statuses, and No record when someone lacks it', () => {
     expect(profileRecordFilterOptions(profiles, 'Discount Card', '')).toEqual({
       types: ['Photo Consent', 'Discount Card'],
-      statuses: ['Accepted'],
+      states: ['Accepted'],
       noRecord: true,
     })
   })
@@ -36,6 +36,6 @@ describe('profileRecordFilterOptions', () => {
   })
 
   it('offers nothing for an empty list', () => {
-    expect(profileRecordFilterOptions([], '', '')).toEqual({ types: [], statuses: [], noRecord: false })
+    expect(profileRecordFilterOptions([], '', '')).toEqual({ types: [], states: [], noRecord: false })
   })
 })

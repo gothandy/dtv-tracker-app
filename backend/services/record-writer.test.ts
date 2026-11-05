@@ -27,21 +27,21 @@ beforeEach(() => {
 
 describe('createRecord', () => {
   it('writes the Profile, the State lookup and Date, and returns the Record with its State', async () => {
-    const created = await createRecord({ profileId: 10, type: 'Photo Consent', status: 'Accepted', date: '2026-11-03' })
+    const created = await createRecord({ profileId: 10, type: 'Photo Consent', state: 'Accepted', date: '2026-11-03' })
     expect(recordsRepository.create).toHaveBeenCalledWith({ ProfileLookupId: 10, StateLookupId: 1, Date: '2026-11-03' })
     expect(created.ID).toBe(50)
     expect(created.State).toEqual(states[0])
   })
 
   it('says plainly when the States list has no such State, and writes nothing', async () => {
-    await expect(createRecord({ profileId: 10, type: 'Photo Consent', status: 'Withdrawn', date: '2026-11-03' }))
+    await expect(createRecord({ profileId: 10, type: 'Photo Consent', state: 'Withdrawn', date: '2026-11-03' }))
       .rejects.toThrow('The States list has no State "Withdrawn" for Photo Consent')
     expect(recordsRepository.create).not.toHaveBeenCalled()
   })
 })
 
 describe('setRecordState', () => {
-  const values = { profileId: 10, type: 'Photo Consent', status: 'Declined', date: '2026-11-03' }
+  const values = { profileId: 10, type: 'Photo Consent', state: 'Declined', date: '2026-11-03' }
 
   it('creates a Record when the Profile has none of the Type, and adds it to the batch', async () => {
     const records = [record(1, 11, 'Accepted')]

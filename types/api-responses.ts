@@ -122,7 +122,7 @@ export interface ProfileResponse {
   sessionsLastFY: number;
   sessionsThisFY: number;
   sessionsAll: number;
-  records?: Array<{ type: string; status: string }>;
+  records?: Array<{ type: string; state: string }>;
   warnings?: Array<{ text: string; url?: string }>;
 }
 
@@ -163,10 +163,8 @@ export interface RecordResponse {
   type: string;
   /** The States list item (absent if the Record has no State). */
   stateId?: number;
-  /** The State's Name: what filters list and the rules match on. */
-  status: string;
-  /** The State's Name, for the Edit form's choice. */
-  storedStatus: string;
+  /** The State's Name: what Add and Edit offer, filters list and the rules match on. */
+  stateName: string;
   /** What the Record shows on the day it's read: the State's Before or After label (#322 §3). */
   label: string;
   /** The style for that label; absent = Default (sand). */

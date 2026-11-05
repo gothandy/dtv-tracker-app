@@ -623,7 +623,7 @@ const mockStates: RecordState[] = [
   { id: 12, type: 'First Aid Certificate', name: 'Active', before: 'Expires', after: 'Expired' },
   { id: 13, type: 'DofE', name: 'Active', before: 'Starts', after: 'Started' },
 ]
-const mockRecord = { id: 1, type: 'Charity Membership', status: 'Invited', storedStatus: 'Invited', label: 'Invited', date: '2026-01-15T00:00:00Z', notes: 'Form sent by email' }
+const mockRecord = { id: 1, type: 'Charity Membership', stateName: 'Invited', label: 'Invited', date: '2026-01-15T00:00:00Z', notes: 'Form sent by email' }
 
 const session = { groupKey: 'dhsc', groupName: 'Sheepskull', date: '2026-04-19' }
 const mockEntries: EntryItem[] = [

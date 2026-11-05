@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isUntil, stateLabel, stateStyle, stateTypes, statesOfType, type RecordState } from './record-state'
+import { dateLabel, isUntil, stateLabel, stateStyle, stateTypes, statesOfType, type RecordState } from './record-state'
 
 const invited: RecordState = { id: 1, type: 'Parking Permit', name: 'Invite', after: 'Invited', afterStyle: 'Info' }
 const permit: RecordState = { id: 3, type: 'Parking Permit', name: 'Active', before: 'Expires', after: 'Expired', beforeStyle: 'Active', afterStyle: 'Warn' }
@@ -51,5 +51,14 @@ describe('stateTypes and statesOfType', () => {
     expect(stateTypes(states)).toEqual(['Parking Permit', 'Privacy Consent'])
     expect(statesOfType(states, 'Parking Permit').map(s => s.name)).toEqual(['Invite', 'Decline', 'Active'])
     expect(statesOfType(states, 'DofE')).toEqual([])
+  })
+})
+
+describe('dateLabel', () => {
+  it('is the Before text, else the After text, else Date', () => {
+    expect(dateLabel(permit)).toBe('Expires')
+    expect(dateLabel(invited)).toBe('Invited')
+    expect(dateLabel(bare)).toBe('Date')
+    expect(dateLabel(undefined)).toBe('Date')
   })
 })

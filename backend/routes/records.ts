@@ -83,13 +83,13 @@ router.post('/profiles/:id/records', requirePermission('editRecords'), async (re
       res.status(400).json({ success: false, error: 'Invalid profile ID' });
       return;
     }
-    const { type, status, date } = req.body;
-    if (!type || !status) {
-      res.status(400).json({ success: false, error: 'type and status are required' });
+    const { type, state, date } = req.body;
+    if (!type || !state) {
+      res.status(400).json({ success: false, error: 'type and state are required' });
       return;
     }
 
-    const created = await createRecord({ profileId, type, status, date: date || new Date().toISOString() });
+    const created = await createRecord({ profileId, type, state, date: date || new Date().toISOString() });
     computeAndSaveProfileStats(profileId).catch(err =>
       console.error(`[Stats] Failed targeted profile update for profile ${profileId}:`, err)
     );
@@ -109,7 +109,7 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       res.status(400).json({ success: false, error: 'Invalid record ID' });
       return;
     }
-    const { status, date, notes } = req.body;
+    const { state, date, notes } = req.body;
     const fields: { StateLookupId?: number; Date?: string; Notes?: string } = {};
     if (typeof date === 'string') fields.Date = date;
     if (typeof notes === 'string') {
@@ -121,7 +121,7 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
       fields.Notes = trimmed;
     }
 
-    if (Object.keys(fields).length === 0 && typeof status !== 'string') {
+    if (Object.keys(fields).length === 0 && typeof state !== 'string') {
       res.status(400).json({ success: false, error: 'No valid fields to update' });
       return;
     }
@@ -131,12 +131,12 @@ router.patch('/records/:id', requirePermission('editRecords'), async (req: Reque
     const recordForPatch = allRecordsForPatch.find(r => r.ID === recordId);
     const patchProfileId = recordForPatch ? recordProfileId(recordForPatch) : undefined;
     let patchState: RecordState | undefined;
-    if (typeof status === 'string') {
+    if (typeof state === 'string') {
       if (!recordForPatch) {
         res.status(404).json({ success: false, error: 'Record not found' });
         return;
       }
-      patchState = await requireState(recordType(recordForPatch), status);
+      patchState = await requireState(recordType(recordForPatch), state);
       fields.StateLookupId = patchState.id;
     }
 
@@ -184,13 +184,13 @@ router.delete('/records/:id', requirePermission('editRecords'), async (req: Requ
 
 router.post('/records/bulk', requirePermission('bulkEditRecords'), async (req: Request, res: Response) => {
   try {
-    const { profileIds, type, status, date } = req.body;
+    const { profileIds, type, state, date } = req.body;
     if (!Array.isArray(profileIds) || profileIds.length === 0) {
       res.status(400).json({ success: false, error: 'profileIds array is required' });
       return;
     }
-    if (!type || !status) {
-      res.status(400).json({ success: false, error: 'type and status are required' });
+    if (!type || !state) {
+      res.status(400).json({ success: false, error: 'type and state are required' });
       return;
     }
 
@@ -203,7 +203,7 @@ router.post('/records/bulk', requirePermission('bulkEditRecords'), async (req: R
       const id = parseInt(String(profileId), 10);
       if (isNaN(id)) continue;
 
-      const result = await setRecordState(allRecords, { profileId: id, type, status, date: recordDate }, 'refreshDate');
+      const result = await setRecordState(allRecords, { profileId: id, type, state, date: recordDate }, 'refreshDate');
       if (result === 'created') created++;
       else updated++;
     }
@@ -260,7 +260,7 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
     }
 
     // Group records by profile ID
-    const recordsByProfile = new Map<number, Map<string, { status: string; date: string }>>();
+    const recordsByProfile = new Map<number, Map<string, { state: string; date: string }>>();
     const allTypes = new Set<string>();
     const today = ukToday();
     for (const r of currentRecords(rawRecords)) {
@@ -268,7 +268,7 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
       const type = recordType(r);
       allTypes.add(type);
       if (!recordsByProfile.has(pid)) recordsByProfile.set(pid, new Map());
-      recordsByProfile.get(pid)!.set(type, { status: recordStateName(r), date: r.Date || '' });
+      recordsByProfile.get(pid)!.set(type, { state: recordStateName(r), date: r.Date || '' });
     }
 
     // Format date like "8 Sept 2025"
@@ -301,7 +301,7 @@ router.get('/records/export', requirePermission('exportRecords'), async (req: Re
         const typeCols = sortedTypes.map(t => {
           const rec = recs.get(t);
           if (!rec) return '""';
-          const val = rec.date ? `${rec.status} · ${formatDateShort(rec.date)}` : rec.status;
+          const val = rec.date ? `${rec.state} · ${formatDateShort(rec.date)}` : rec.state;
           return `"${val.replace(/"/g, '""')}"`;
         });
         return `"${name}","${email}",${lastFY},${thisFY},${typeCols.join(',')}`;

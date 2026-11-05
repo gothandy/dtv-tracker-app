@@ -310,7 +310,7 @@ watch(
 )
 
 const isMember = computed(() =>
-  store.profile?.records?.some(r => r.type === 'Charity Membership' && r.status === 'Accepted') ?? false
+  store.profile?.records?.some(r => r.type === 'Charity Membership' && r.stateName === 'Accepted') ?? false
 )
 
 async function onDeleteProfile() {

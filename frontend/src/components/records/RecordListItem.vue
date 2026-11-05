@@ -2,12 +2,12 @@
   <div class="rli-row" :class="[{ 'rli-row--selected': selected }, record.style ? `rli-row--${record.style}` : '']">
     <div class="rli-content">
       <div class="rli-left">
-        <span class="rli-type">{{ record.type }}</span>
+        <span class="rli-type" :class="record.style ? `rli-text--${record.style}` : ''">{{ record.type }}</span>
         <span class="rli-profile">{{ record.profileName ?? 'Unknown profile' }}</span>
         <span v-if="record.notes" class="rli-notes">{{ record.notes }}</span>
       </div>
       <div class="rli-right">
-        <span class="rli-state" :class="record.style ? `rli-state--${record.style}` : ''">{{ record.label }}</span>
+        <span class="rli-state" :class="record.style ? `rli-text--${record.style}` : ''">{{ record.label }}</span>
         <span v-if="record.date" class="rli-date">{{ formatDate(record.date) }}</span>
       </div>
     </div>
@@ -80,13 +80,13 @@ function formatDate(date: string): string {
   text-overflow: ellipsis;
   max-width: 100%;
 }
-/* State styles: a left border and the State's text */
+/* State styles: a left border, and the title and State in the style's colour */
 .rli-row--active { border-left-color: var(--color-dtv-green); }
 .rli-row--info   { border-left-color: var(--color-dtv-gold); }
 .rli-row--warn   { border-left-color: var(--color-dtv-dirt); }
-.rli-state--active { color: var(--color-dtv-green-dark); }
-.rli-state--info   { color: var(--color-dtv-gold-dark); }
-.rli-state--warn   { color: var(--color-dtv-dirt); }
+.rli-text--active { color: var(--color-dtv-green-dark); }
+.rli-text--info   { color: var(--color-dtv-gold-dark); }
+.rli-text--warn   { color: var(--color-dtv-dirt); }
 
 .rli-profile,
 .rli-date,

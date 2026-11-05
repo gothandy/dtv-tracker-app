@@ -38,7 +38,7 @@
       v-if="adding"
       :states="states"
       :initial-type="adding.type"
-      :initial-status="adding.status"
+      :initial-state="adding.state"
       :working="addWorking"
       :error="addError"
       @close="adding = null"
@@ -77,7 +77,7 @@ const editWorking = ref(false)
 const editError = ref<string | undefined>()
 
 /** Add Record, opened from Edit's change of State: the Record it follows (its Profile), and the new State. */
-const adding = ref<{ from: RecordListItemResponse; type: string; status: string } | null>(null)
+const adding = ref<{ from: RecordListItemResponse; type: string; state: string } | null>(null)
 const addWorking = ref(false)
 const addError = ref<string | undefined>()
 
@@ -111,11 +111,11 @@ function onViewArchive() {
 }
 
 /** A new State for the current Record: add a new Record for the same Profile and Type (#322 §1). */
-function onChangeState(status: string) {
+function onChangeState(state: string) {
   const from = editingRecord.value
   if (!from) return
   closeEditModal()
-  adding.value = { from, type: from.type, status }
+  adding.value = { from, type: from.type, state }
   addWorking.value = false
   addError.value = undefined
 }

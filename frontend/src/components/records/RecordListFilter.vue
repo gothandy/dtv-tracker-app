@@ -4,9 +4,9 @@
       <option value="">All record types</option>
       <option v-for="t in options.types" :key="t" :value="t">{{ t }}</option>
     </select>
-    <select v-model="filters.status" class="list-filter-select">
-      <option value="">All statuses</option>
-      <option v-for="s in options.statuses" :key="s" :value="s">{{ s }}</option>
+    <select v-model="filters.state" class="list-filter-select">
+      <option value="">All states</option>
+      <option v-for="s in options.states" :key="s" :value="s">{{ s }}</option>
     </select>
     <FyFilter v-model="filters.fy" :options="options.fyOptions" class="list-filter-select" />
     <FilterChip v-if="filters.profileId !== undefined" :label="profileName || 'Profile'" @clear="clearProfileFilter" />
@@ -33,7 +33,7 @@ const router = useRouter()
 
 const filters = reactive<RecordFilters>({
   type: (route.query.type as string) || DEFAULT_RECORD_FILTERS.type,
-  status: (route.query.status as string) || DEFAULT_RECORD_FILTERS.status,
+  state: (route.query.state as string) || DEFAULT_RECORD_FILTERS.state,
   fy: (route.query.fy as string) || DEFAULT_RECORD_FILTERS.fy,
   profileId: route.query.profileId ? parseInt(route.query.profileId as string, 10) : undefined,
 })
@@ -54,8 +54,8 @@ watch(() => route.query, q => {
   }
   const type = (q.type as string) || DEFAULT_RECORD_FILTERS.type
   if (type !== filters.type) filters.type = type
-  const status = (q.status as string) || DEFAULT_RECORD_FILTERS.status
-  if (status !== filters.status) filters.status = status
+  const state = (q.state as string) || DEFAULT_RECORD_FILTERS.state
+  if (state !== filters.state) filters.state = state
   const fy = (q.fy as string) || DEFAULT_RECORD_FILTERS.fy
   if (fy !== filters.fy) filters.fy = fy
 })
@@ -75,7 +75,7 @@ watch(filtered, list => emit('filtered', list), { immediate: true })
 watch(options, opts => {
   if (!props.records.length) return
   if (filters.type && !opts.types.includes(filters.type)) filters.type = ''
-  if (filters.status && !opts.statuses.includes(filters.status)) filters.status = ''
+  if (filters.state && !opts.states.includes(filters.state)) filters.state = ''
   if (filters.fy !== 'all' && !opts.fyOptions.some(o => o.value === filters.fy)) filters.fy = 'all'
 })
 
@@ -84,7 +84,7 @@ watch(filters, f => {
   if (!onRecordsPage()) return
   const query: Record<string, string> = {}
   if (f.type) query.type = f.type
-  if (f.status) query.status = f.status
+  if (f.state) query.state = f.state
   if (f.fy !== DEFAULT_RECORD_FILTERS.fy) query.fy = f.fy
   if (f.profileId !== undefined) {
     query.profileId = String(f.profileId)
